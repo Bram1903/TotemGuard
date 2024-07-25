@@ -1,0 +1,88 @@
+#  ___________     __                   ________                       .___
+#  \__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+#    |    | /  _ \   __\/ __ \ /     \/   \  ___|  |  \__  \\_  __ \/ __ |
+#    |    |(  <_> )  | \  ___/|  Y Y  \    \_\  \  |  // __ \|  | \/ /_/ |
+#    |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
+#                           \/      \/        \/           \/           \/
+
+# Plugin Configuration File
+
+# General Information:
+# This configuration file allows you to customize the settings for the plugin.
+# Each setting is explained below.
+
+# Developed by: Asleepp & OutDev
+
+# Prefix option: Sets the command prefix for the plugin.
+prefix: ""
+
+# Command/Alert permissions: Permissions required to use commands and receive alerts.
+command-permissions: "admin"
+alert_permissions: "moderator"
+
+# Webhook settings:
+webhook:
+  # Enable and/or disable the webhook implementation.
+  enabled: false
+  # Webhook URL: The URL of the webhook to send notifications to.
+  url: "https://discord.com/api/webhooks/your_webhook_url"
+  # Webhook Name: Name of webhook
+  name: "TotemGuard"
+  # Webhook Embed color: Color of the webhook embed (in hex).
+  color: "#d9b61a"
+  # Webhook Title: Brief description about what the webhook is about.
+  title: "TotemGuard AutoTotem Check"
+  # Edit the message that contains the information about the report, you can use placeholders such as %player%, %ping%, and more. Supports Markdown.
+  # Using more than one string will add a new line.
+  description:
+    - "**Player:** %player%"
+    - "**Ping:** %ping%"
+    - "**Retotemed in** %retotem_time%"
+    - "**Is Moving:** %moving_status%"
+    - "**Confidence:** %confidence%"
+    - "**TPS:** %tps%"
+    - ""
+    - "**Total Flags:** %total_flags%"
+  # Webhook Image: Sets the image that is displayed in the embed.
+  # This example displays the player's head using the Minotar website.
+  image: "https://minotar.net/avatar/user/%player%.png"
+  # Webhook Profile Image: Sets the image of the embed's profile
+  profile_image: "https://example.com/profile_image.png" # TODO ADD IMAGE HERE
+  # Webhook Timestamp: Displays the time that this embed was sent at.
+  timestamp: true
+
+# Extra Flags: Toggles the checks for S: Sneaking, B: Blocking, M: sprinting, swimming, climbing (SBM).
+toggle_extra_flags: true
+
+
+# Automatic Normal Checks: Toggles automatic normal checks.
+toggle_automatic_normal_checks: true
+
+# Check Time: Amount of time the /check command waits for a retotem. (in ticks)
+# Changing this is not recommended as it can make checking inaccurate. (Recommended: 5)
+# It does help with determining the real time it took to retotem. (if set higher)
+check_time: 5
+
+# Normal Check Time: Sets the interval (in ms) for normal checks.
+# Valid values are between 50 and 250 ms.
+normal_check_time_ms: 175
+
+# Advanced System Check: Enables an advanced system check that calculates the retotem time.
+# This check uses the player's ping to determine the real retotem time.
+# By default, this is true.
+advanced_system_check: true
+
+# Damage on /check: Toggles damage on /check command to ensure a more accurate result.
+# If set to true and damage_amount_on_check: 0, this check will damage the player by half their hearts (recommended)
+toggle_damage_on_check: false
+damage_amount_on_check: 0
+
+# Additional Damage Option: Applies a small amount of damage after removing the totem
+# to trigger a retotem more effectively. Set the amount of damage (in hearts).
+additional_damage: false
+additional_damage_amount: 0.1
+
+# Save your changes and reload the plugin to apply the new settings. (/totemguard reload)
+
+# Discord: @asleepp, @outdev
+# GitHub: @outdev0, @asleeepp
