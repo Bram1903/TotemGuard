@@ -1,5 +1,6 @@
 package de.outdev.totemguardv2;
 
+import de.outdev.totemguardv2.commands.ReloadCommand;
 import de.outdev.totemguardv2.listeners.TotemUseListener;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,6 +28,8 @@ public final class TotemGuardV2 extends JavaPlugin {
 
         long start = System.currentTimeMillis();
 
+        new ReloadCommand(this);
+
         instance = this;
         config = getConfig();
 
@@ -34,13 +37,11 @@ public final class TotemGuardV2 extends JavaPlugin {
 
         new TotemUseListener(this);
 
-        getLogger().info(" _____     _                 _____                     _ ");
-        getLogger().info("|_   _|   | |               |  __ \\\\                   | |");
-        getLogger().info("  | | ___ | |_ ___ _ __ ___ | |  \\\\/_   _  __ _ _ __ __| |");
-        getLogger().info("  | |/ _ \\\\| __/ _ \\\\ '_ ` _ \\\\| | __| | | |/ _` | '__/ _` |");
-        getLogger().info("  | | (_) | ||  __/ | | | | | |_\\\\ \\\\ |_| | (_| | | | (_| |");
-        getLogger().info("  \\\\_/\\\\___/ \\\\__\\\\___|_| |_| |_|\\\\____/\\\\__,_|\\\\__,_|_|  \\\\__,_|");
-        getLogger().info("                                                         ");
+        getLogger().info(" _____ __ _____ ___ __ __  __ _  _  __  ___ __   ");
+        getLogger().info("|_   _/__\\_   _| __|  V  |/ _] || |/  \\| _ \\ _\\  ");
+        getLogger().info("  | || \\/ || | | _|| \\_/ | [/\\ \\/ | /\\ | v / v | ");
+        getLogger().info("  |_| \\__/ |_| |___|_| |_|\\__/\\__/|_||_|_|_\\__/  ");
+        getLogger().info("                                                ");
 
         long finish = System.currentTimeMillis() - start;
         getLogger().info("Successfully loaded TotemGuard in " + finish + "ms!");
