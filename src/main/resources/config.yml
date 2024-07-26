@@ -86,6 +86,16 @@ damage_amount_on_check: 0
 min_tps: 15.0
 max_ping: 250
 
+# A system that automatically punishes a player after they reach a specific number of AutoTotem flags.
+# Punish After: Determines how many flags a player can accumulate before executing the punishment command.
+# Remove Flags Min: Interval (in minutes) at which flags are reset globally for all players.
+# Punish Command: Command executed when a player reaches the 'punish_after' limit.
+# The %player% variable will be replaced with the player's name.
+punish: false
+punish_after: 10
+remove_flags_min: 30
+punish_command: "ban %player% 1d AutoTotem"
+
 # Save your changes and reload the plugin to apply the new settings. (/totemguard reload)
 
 # Discord: @asleepp, @outdev

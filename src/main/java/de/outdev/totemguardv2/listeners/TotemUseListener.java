@@ -16,31 +16,37 @@ public class TotemUseListener implements Listener {
 
     private final TotemGuardV2 plugin;
     private final HashMap<Player, Integer> totemUsage;
+    private final HashMap<Player, Integer> flagCounts;
 
     public TotemUseListener(TotemGuardV2 plugin) {
         this.plugin = plugin;
         this.totemUsage = new HashMap<>();
+        this.flagCounts = new HashMap<>();
         Bukkit.getPluginManager().registerEvents(this, plugin); // registering the events
+
+        // Schedule the reset task
+        long resetInterval = plugin.getConfig().getInt("remove_flags_min") * 60L * 20L; // Convert minutes to ticks (20 ticks = 1 second)
+        Bukkit.getScheduler().runTaskTimer(plugin, this::resetAllFlagCounts, resetInterval, resetInterval);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTotemUse(EntityResurrectEvent event) {
         boolean toggleCheck = plugin.getConfig().getBoolean("toggle_automatic_normal_checks");
 
-        if (toggleCheck == false){
+        if (!toggleCheck) {
             return;
         }
 
         double minTps = plugin.getConfig().getDouble("min_tps");
         int maxPing = plugin.getConfig().getInt("max_ping");
 
-        if (plugin.getTPS() < minTps){
+        if (plugin.getTPS() < minTps) {
             return;
         }
 
         if (event.getEntity() instanceof Player) { // Checks if the entity is a player
             Player player = (Player) event.getEntity();
-            if (player.getPing() > maxPing){
+            if (player.getPing() > maxPing) {
                 return;
             }
 
@@ -94,22 +100,29 @@ public class TotemUseListener implements Listener {
     }
 
     public void flag(Player player, String flag_01, String flag_02, String flag_03, int timeDifference, int realTotem) {
-
         boolean advancedCheck = plugin.getConfig().getBoolean("advanced_system_check");
         boolean checkToggle = plugin.getConfig().getBoolean("toggle_extra_flags");
         String prefix = plugin.getConfig().getString("prefix");
+        int punishAfter = plugin.getConfig().getInt("punish_after");
+        boolean punish = plugin.getConfig().getBoolean("punish");
 
         String alertMessage;
+        String extraFlags = " &8[&7" + flag_01 + "&7, " + flag_02 + "&7, " + flag_03 + "&8]";
+        int flagCount = flagCounts.getOrDefault(player, 0) + 1;
+        String flags = "&e[" + flagCount + "/" + punishAfter + "] ";
 
-        String extraFlags = " &8[&7" + flag_01 + "&7, " + flag_02 +"&7, " + flag_03 +"&8]";
-
-        if (checkToggle == false) {
+        if (punish) {
+            flagCounts.put(player, flagCount);
+        } else {
+            flags = "";
+        }
+        if (!checkToggle) {
             extraFlags = "";
         }
-        if (advancedCheck == true){
-            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem &7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, "+ player.getClientBrandName()+ ", " +extraFlags +"&7)";
-        }else{
-            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem &7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, "+ player.getClientBrandName()+ ", " +extraFlags +"&7)";
+        if (advancedCheck) {
+            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem &7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, " + player.getClientBrandName() + ", " + extraFlags + "&7)";
+        } else {
+            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, " + player.getClientBrandName() + ", " + extraFlags + "&7)";
         }
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
 
@@ -120,5 +133,22 @@ public class TotemUseListener implements Listener {
             }
         }
 
+        if (!punish) {
+            return;
+        }
+        String punishCommand = plugin.getConfig().getString("punish_command").replace("%player%", player.getName());
+
+        if (flagCounts.get(player) >= punishAfter) {
+
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
+            });
+            flagCounts.remove(player);
+        }
+    }
+
+    public void resetAllFlagCounts() {
+        flagCounts.clear();
+        plugin.getLogger().info("All flag counts have been reset.");
     }
 }

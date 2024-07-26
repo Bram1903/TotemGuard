@@ -8,12 +8,11 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Method;
-
 public final class TotemGuardV2 extends JavaPlugin {
 
     private static TotemGuardV2 instance;
     private static FileConfiguration config;
+    private TotemUseListener totemUseListener;
 
     @Nullable
     public static TotemGuardV2 getInstance() {
@@ -39,8 +38,7 @@ public final class TotemGuardV2 extends JavaPlugin {
 
         saveDefaultConfig();
 
-        new TotemUseListener(this);
-
+        totemUseListener = new TotemUseListener(this);
 
         getLogger().info(" _____ __ _____ ___ __ __  __ _  _  __  ___ __   ");
         getLogger().info("|_   _/__\\_   _| __|  V  |/ _] || |/  \\| _ \\ _\\  ");
@@ -68,4 +66,5 @@ public final class TotemGuardV2 extends JavaPlugin {
             return -1;
         }
     }
+
 }
