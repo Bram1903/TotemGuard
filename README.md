@@ -1,4 +1,3 @@
-Here's a comprehensive README for your plugin, including all relevant information and configuration details:
 
 ---
 
