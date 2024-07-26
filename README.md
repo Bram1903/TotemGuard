@@ -1,10 +1,8 @@
+## TotemGuard
 
+TotemGuard is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp & OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
 
-# TotemGuard
-
-**TotemGuard** is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp & OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
-
-## Features
+### Features
 
 - **Permission-Based Commands**: Ensure only authorized users can execute checks.
 - **Configurable Checks**: Customize the duration and conditions for totem checks.
@@ -12,18 +10,23 @@
 - **Advanced System Check**: Calculate retotem time using the player's ping.
 - **Damage on Check**: Optionally damage players to ensure accurate results.
 - **Extra Flags**: Monitor additional player actions like sneaking, blocking, and sprinting.
+- **Automatic Punish System**: Automatically penalizes players who accumulate too many flags.
+  - **`punish`**: Enable or disable the automatic punishment system.
+  - **`punish_after`**: Number of flags before applying punishment.
+  - **`remove_flags_min`**: Interval (in minutes) for globally resetting all players' flags.
+  - **`punish_command:`**: Command executed when the flag limit is reached. `%player%` is replaced with the player’s name.
 
-## Installation
+### Installation
 
 1. Download the TotemGuard plugin.
 2. Place the plugin `.jar` file into your server's `plugins` directory.
 3. Start or restart your server to load the plugin.
-4. Configure the plugin by editing the `config.yml` file located in the `TotemGuardV2` folder.
+4. Configure the plugin by editing the `config.yml` file located in the TotemGuard folder.
 5. Reload the plugin using `/totemguard reload` to apply any changes made to the configuration.
 
-## Configuration
+### Configuration
 
-Here's the default `config.yml` with explanations for each setting:
+Here’s the default `config.yml` with explanations for each setting:
 
 ```yaml
 # Plugin Configuration File
@@ -106,59 +109,66 @@ damage_amount_on_check: 0
 min_tps: 15.0
 max_ping: 250
 
+# Automatic Punish System: Automatically applies penalties to players who accumulate too many flags.
+punish: false
+punish_after: 10
+remove_flags_min: 30
+punish_command: "ban %player% 1d AutoTotem"
+
 # Save your changes and reload the plugin to apply the new settings. (/totemguard reload)
 
 # Discord: @asleepp, @outdev
 # GitHub: @outdev0, @asleeepp
 ```
 
-## Commands
+### Commands
 
-- **/check \<player>**: Manually check a player for unauthorized totem usage.
-  - Permission: `totemguard.check`
+- **`/check <player>`**: Manually check a player for unauthorized totem usage.  
+  **Permission**: `totemguard.check`
 
-- **/totemguard reload**: Reload the plugin configuration.
-  - Permission: `totemguard.admin`
+- **`/totemguard reload`**: Reload the plugin configuration.  
+  **Permission**: `totemguard.admin`
 
-## Permissions
+### Permissions
 
-- `totemguard.admin`: Allows access to admin commands.
-- `totemguard.check`: Allows checking players for unauthorized totem usage.
-- `totemguard.alert`: Receives alerts from the plugin.
+- **`totemguard.admin`**: Allows access to admin commands.
+- **`totemguard.check`**: Allows checking players for unauthorized totem usage.
+- **`totemguard.alert`**: Receives alerts from the plugin.
 
-## Webhook Integration
+### Webhook Integration
 
-TotemGuardV2 can send notifications to a Discord webhook. Configure the webhook settings in the `config.yml`:
+TotemGuard can send notifications to a Discord webhook. Configure the webhook settings in the `config.yml`:
 
-- **enabled**: Toggle webhook notifications on or off.
-- **url**: The URL of your Discord webhook.
-- **name**: The name of the webhook.
-- **color**: Embed color in hex format.
-- **title**: The title of the webhook message.
-- **description**: The content of the webhook message. Supports placeholders and Markdown.
-- **image**: URL of the image displayed in the embed.
-- **profile_image**: URL of the webhook's profile image.
-- **timestamp**: Whether to include a timestamp in the webhook message.
+- **`enabled`**: Toggle webhook notifications on or off.
+- **`url`**: The URL of your Discord webhook.
+- **`name`**: The name of the webhook.
+- **`color`**: Embed color in hex format.
+- **`title`**: The title of the webhook message.
+- **`description`**: The content of the webhook message. Supports placeholders and Markdown.
+- **`image`**: URL of the image displayed in the embed.
+- **`profile_image`**: URL of the webhook's profile image.
+- **`timestamp`**: Whether to include a timestamp in the webhook message.
 
-## Advanced Configuration
+### Advanced Configuration
 
-- **toggle_extra_flags**: Enable or disable checks for additional actions like sneaking, blocking, and sprinting.
-- **toggle_automatic_normal_checks**: Enable or disable automatic normal checks.
-- **check_time**: The duration in ticks for the `/check` command.
-- **normal_check_time_ms**: Interval in milliseconds for normal checks (50 to 250 ms).
-- **advanced_system_check**: Use the player's ping to determine the real retotem time.
-- **toggle_damage_on_check**: Damage the player during the `/check` command to ensure accuracy.
-- **damage_amount_on_check**: The amount of damage to apply during the check. Set to 0 to damage by half the player's health.
-- **min_tps**: Minimum TPS required to perform checks.
-- **max_ping**: Maximum ping allowed for a player to be checked.
+- **`toggle_extra_flags`**: Enable or disable checks for additional actions like sneaking, blocking, and sprinting.
+- **`toggle_automatic_normal_checks`**: Enable or disable automatic normal checks.
+- **`check_time`**: The duration in ticks for the /check command.
+- **`normal_check_time_ms`**: Interval in milliseconds for normal checks (50 to 250 ms).
+- **`advanced_system_check`**: Use the player's ping to determine the real retotem time.
+- **`toggle_damage_on_check`**: Damage the player during the /check command to ensure accuracy.
+- **`damage_amount_on_check`**: The amount of damage to apply during the check. Set to 0 to damage by half the player's health.
+- **`min_tps`**: Minimum TPS required to perform checks.
+- **`max_ping`**: Maximum ping allowed for a player to be checked.
 
-## Support
+### Support
 
 For support, you can reach out to the developers on Discord:
-- @asleepp
-- @outdev
+
+- **@asleepp**
+- **@outdev**
 
 GitHub:
-- [OutDev](https://github.com/outdev0)
-- [Asleepp](https://github.com/asleeepp)
 
+- **[OutDev](https://github.com/outdev0)**
+- **[Asleepp](https://github.com/asleeepp)**
