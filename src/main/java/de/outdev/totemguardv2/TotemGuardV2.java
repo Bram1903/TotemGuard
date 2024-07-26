@@ -1,10 +1,14 @@
 package de.outdev.totemguardv2;
 
+import de.outdev.totemguardv2.commands.CheckCommand;
 import de.outdev.totemguardv2.commands.ReloadCommand;
 import de.outdev.totemguardv2.listeners.TotemUseListener;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Method;
 
 public final class TotemGuardV2 extends JavaPlugin {
 
@@ -21,7 +25,6 @@ public final class TotemGuardV2 extends JavaPlugin {
         return config;
     }
 
-
     @Override
     public void onEnable() {
         getLogger().info("Loading TotemGuard...");
@@ -29,6 +32,7 @@ public final class TotemGuardV2 extends JavaPlugin {
         long start = System.currentTimeMillis();
 
         new ReloadCommand(this);
+        new CheckCommand(this);
 
         instance = this;
         config = getConfig();
@@ -36,6 +40,7 @@ public final class TotemGuardV2 extends JavaPlugin {
         saveDefaultConfig();
 
         new TotemUseListener(this);
+
 
         getLogger().info(" _____ __ _____ ___ __ __  __ _  _  __  ___ __   ");
         getLogger().info("|_   _/__\\_   _| __|  V  |/ _] || |/  \\| _ \\ _\\  ");
@@ -51,5 +56,16 @@ public final class TotemGuardV2 extends JavaPlugin {
     public void onDisable() {
         getLogger().info("Disabling plugin 'TotemGuard'...");
         saveDefaultConfig();
+    }
+
+    public double getTPS() {
+        try {
+            Object server = Bukkit.getServer().getClass().getDeclaredMethod("getServer").invoke(Bukkit.getServer());
+            double[] tps = (double[]) server.getClass().getField("recentTps").get(server);
+            return tps[0];
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 }

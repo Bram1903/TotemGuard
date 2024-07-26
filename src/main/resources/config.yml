@@ -13,12 +13,16 @@
 
 # Developed by: Asleepp & OutDev
 
-# Prefix option: Sets the command prefix for the plugin.
-prefix: ""
+# Prefix: Sets the command prefix for the plugin.
+prefix: "&e&lAUTOTOTEM &8➟ "
+
+# Check Prefix: Sets the prefix for the /check command.
+check_prefix: "&6&lCHECK &8➟ "
 
 # Command/Alert permissions: Permissions required to use commands and receive alerts.
-command-permissions: "admin"
-alert_permissions: "moderator"
+command_permissions: totemguard.admin
+check_permission: totemguard.check
+alert_permissions: totemguard.alert
 
 # Webhook settings:
 webhook:
@@ -70,17 +74,17 @@ normal_check_time_ms: 175
 # Advanced System Check: Enables an advanced system check that calculates the retotem time.
 # This check uses the player's ping to determine the real retotem time.
 # By default, this is true.
-advanced_system_check: true
+advanced_system_check: false
 
 # Damage on /check: Toggles damage on /check command to ensure a more accurate result.
 # If set to true and damage_amount_on_check: 0, this check will damage the player by half their hearts (recommended)
-toggle_damage_on_check: false
+toggle_damage_on_check: true
 damage_amount_on_check: 0
 
-# Additional Damage Option: Applies a small amount of damage after removing the totem
-# to trigger a retotem more effectively. Set the amount of damage (in hearts).
-additional_damage: false
-additional_damage_amount: 0.1
+# Detements when the plugin should stop for checking a player.
+# This is to ensure no false flags being created by low tps or ping.
+min_tps: 15.0
+max_ping: 250
 
 # Save your changes and reload the plugin to apply the new settings. (/totemguard reload)
 

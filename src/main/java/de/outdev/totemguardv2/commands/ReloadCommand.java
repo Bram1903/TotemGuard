@@ -27,7 +27,9 @@ public class ReloadCommand implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        if (!(sender.hasPermission("totemguard.reload"))) {
+        String commandPerm = plugin.getConfig().getString("command_permissions");
+
+        if (!(sender.hasPermission(commandPerm))) {
             sender.sendMessage("§cYou do not have permission to use this!");
             return false;
         }

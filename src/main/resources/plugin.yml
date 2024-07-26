@@ -6,4 +6,9 @@ authors: [OutDev, Asleepp]
 description: A plugin specifically designed to detect players using the 'AutoTotem' hack.
 commands:
   totemguard:
-    permission: op
+    aliases: tg
+    description: Main plugin command used to reload the plugin.
+
+  check:
+    aliases: totemcheck, checktotem
+    description: Checks a player for manually for AutoTotem.
