@@ -1,8 +1,8 @@
 
 
-# TotemGuardV2
+# TotemGuard
 
-**TotemGuardV2** is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp & OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
+**TotemGuard** is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp & OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
 
 ## Features
 
@@ -15,7 +15,7 @@
 
 ## Installation
 
-1. Download the TotemGuardV2 plugin.
+1. Download the TotemGuard plugin.
 2. Place the plugin `.jar` file into your server's `plugins` directory.
 3. Start or restart your server to load the plugin.
 4. Configure the plugin by editing the `config.yml` file located in the `TotemGuardV2` folder.
