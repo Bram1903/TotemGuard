@@ -149,6 +149,15 @@ public class TotemUseListener implements Listener {
 
     public void resetAllFlagCounts() {
         flagCounts.clear();
-        plugin.getLogger().info("All flag counts have been reset.");
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+
+            String alertPerm = plugin.getConfig().getString("alert_permissions");
+            String prefix = plugin.getConfig().getString("prefix");
+
+            if (onlinePlayer.hasPermission(alertPerm)) {
+                sendMiniMessage(onlinePlayer, prefix+"&fAll flag counts have been reset.");
+
+            }
+        }
     }
 }
