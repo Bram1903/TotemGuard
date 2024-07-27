@@ -12,9 +12,9 @@ import java.util.List;
 
 public class ReloadCommand implements CommandExecutor, TabCompleter {
 
-    private TotemGuardV2 plugin = TotemGuardV2 .getInstance();
+    private TotemGuardV2 plugin = TotemGuardV2.getInstance();
 
-    public ReloadCommand(TotemGuardV2  plugin) {
+    public ReloadCommand(TotemGuardV2 plugin) {
         this.plugin = plugin;
         this.plugin.getCommand("totemguard").setExecutor(this);
         this.plugin.getCommand("totemguard").setTabCompleter(this);

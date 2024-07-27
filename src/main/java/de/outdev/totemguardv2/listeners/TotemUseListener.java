@@ -3,25 +3,34 @@ package de.outdev.totemguardv2.listeners;
 import de.outdev.totemguardv2.TotemGuardV2;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TotemUseListener implements Listener {
 
     private final TotemGuardV2 plugin;
     private final HashMap<Player, Integer> totemUsage;
     private final HashMap<Player, Integer> flagCounts;
+    private final Set<Player> playersWithOpenInventory;
 
     public TotemUseListener(TotemGuardV2 plugin) {
         this.plugin = plugin;
         this.totemUsage = new HashMap<>();
         this.flagCounts = new HashMap<>();
+        this.playersWithOpenInventory = new HashSet<>();
         Bukkit.getPluginManager().registerEvents(this, plugin); // registering the events
 
         // Schedule the reset task
@@ -63,6 +72,23 @@ public class TotemUseListener implements Listener {
             if (event.getRawSlot() == 45) { // Checks slot 45 which is usually the offhand slot
                 checkSuspiciousActivity(player);
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        if (event.getPlayer() instanceof Player) {
+            Player player = (Player) event.getPlayer();
+            playersWithOpenInventory.add(player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+
+        if (playersWithOpenInventory.contains(player)) {
+            checkHotbarForTotem(player);
         }
     }
 
@@ -155,9 +181,33 @@ public class TotemUseListener implements Listener {
             String prefix = plugin.getConfig().getString("prefix");
 
             if (onlinePlayer.hasPermission(alertPerm)) {
-                sendMiniMessage(onlinePlayer, prefix+"&fAll flag counts have been reset.");
-
+                sendMiniMessage(onlinePlayer, prefix + "&fAll flag counts have been reset.");
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInventoryClose(org.bukkit.event.inventory.InventoryCloseEvent event) {
+        if (event.getPlayer() instanceof Player) {
+            Player player = (Player) event.getPlayer();
+            playersWithOpenInventory.remove(player);
+        }
+    }
+
+    private void checkHotbarForTotem(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        boolean hasTotem = false;
+
+        for (int i = 0; i < 9; i++) { // Iterate through hotbar slots
+            ItemStack hotbarItem = inventory.getItem(i);
+            if (hotbarItem != null && hotbarItem.getType() == Material.TOTEM_OF_UNDYING) {
+                hasTotem = true;
+                break;
+            }
+        }
+
+        if (!hasTotem) {
+            flag(player, "&cNo", "&cTotem", "&cFound", 0, 0);
         }
     }
 }
