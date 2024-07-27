@@ -58,7 +58,6 @@ webhook:
 # Extra Flags: Toggles the checks for S: Sneaking, B: Blocking, M: sprinting, swimming, climbing (SBM).
 toggle_extra_flags: true
 
-
 # Automatic Normal Checks: Toggles automatic normal checks.
 toggle_automatic_normal_checks: true
 

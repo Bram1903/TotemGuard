@@ -1,6 +1,7 @@
 package de.outdev.totemguardv2.listeners;
 
 import de.outdev.totemguardv2.TotemGuardV2;
+import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -154,7 +155,7 @@ public class TotemUseListener implements Listener {
 
             String alertPerm = plugin.getConfig().getString("alert_permissions");
 
-            if (onlinePlayer.hasPermission(alertPerm)) {
+            if (onlinePlayer.hasPermission(alertPerm) && TotemGuardCommand.getToggle(player)) {
                 sendMiniMessage(onlinePlayer, alertMessage);
             }
         }

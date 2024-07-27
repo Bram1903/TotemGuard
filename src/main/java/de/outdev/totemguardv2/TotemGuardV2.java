@@ -1,7 +1,7 @@
 package de.outdev.totemguardv2;
 
 import de.outdev.totemguardv2.commands.CheckCommand;
-import de.outdev.totemguardv2.commands.ReloadCommand;
+import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import de.outdev.totemguardv2.listeners.TotemUseListener;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -30,7 +30,7 @@ public final class TotemGuardV2 extends JavaPlugin {
 
         long start = System.currentTimeMillis();
 
-        new ReloadCommand(this);
+        new TotemGuardCommand(this);
         new CheckCommand(this);
 
         instance = this;
