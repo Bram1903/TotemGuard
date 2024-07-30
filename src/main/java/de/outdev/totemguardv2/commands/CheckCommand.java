@@ -71,7 +71,7 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
 
         // Apply damage immediately
         if (toggleDamageOnCheck) {
-            double damage = damageAmountOnCheck > 0 ? damageAmountOnCheck : player.getHealth() / 2;
+            double damage = damageAmountOnCheck > 0 ? damageAmountOnCheck : player.getHealth() / 1.25;
             damage = Math.min(damage, player.getHealth() - 1);
             if (damage > 0) {
                 player.damage(damage);
