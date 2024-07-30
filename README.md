@@ -100,7 +100,7 @@ normal_check_time_ms: 175
 advanced_system_check: false
 
 # Damage on /check: Toggles damage on /check command to ensure a more accurate result.
-# If set to true and damage_amount_on_check: 0, this check will damage the player by half their hearts (recommended)
+# If set to true and damage_amount_on_check: 0, this check will damage the player by 80% their hearts (recommended)
 toggle_damage_on_check: true
 damage_amount_on_check: 0
 
