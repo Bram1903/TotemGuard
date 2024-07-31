@@ -6,7 +6,7 @@ TotemGuard is a plugin specifically designed to detect players using the 'AutoTo
 
 - **Permission-Based Commands**: Ensure only authorized users can execute checks.
 - **Configurable Checks**: Customize the duration and conditions for totem checks.
-- **Webhook Integration**: Send alerts to a Discord webhook with detailed information.
+- **Webhook Integration** (not added yet): Send alerts to a Discord webhook with detailed information.
 - **Advanced System Check**: Calculate retotem time using the player's ping.
 - **Damage on Check**: Optionally damage players to ensure accurate results.
 - **Extra Flags**: Monitor additional player actions like sneaking, blocking, and sprinting.
@@ -135,7 +135,8 @@ punish_command: "ban %player% 1d AutoTotem"
 - **`totemguard.check`**: Allows checking players for unauthorized totem usage.
 - **`totemguard.alert`**: Receives alerts from the plugin.
 
-### Webhook Integration
+### Webhook Integration 
+(not added yet)
 
 TotemGuard can send notifications to a Discord webhook. Configure the webhook settings in the `config.yml`:
 
