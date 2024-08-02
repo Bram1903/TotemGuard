@@ -72,7 +72,7 @@ normal_check_time_ms: 175
 
 # Advanced System Check: Enables an advanced system check that calculates the retotem time.
 # This check uses the player's ping to determine the real retotem time.
-# By default, this is true.
+# By default, this is false.
 advanced_system_check: false
 
 # Damage on /check: Toggles damage on /check command to ensure a more accurate result.
