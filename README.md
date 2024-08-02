@@ -158,7 +158,7 @@ TotemGuard can send notifications to a Discord webhook. Configure the webhook se
 - **`normal_check_time_ms`**: Interval in milliseconds for normal checks (50 to 250 ms).
 - **`advanced_system_check`**: Use the player's ping to determine the real retotem time.
 - **`toggle_damage_on_check`**: Damage the player during the /check command to ensure accuracy.
-- **`damage_amount_on_check`**: The amount of damage to apply during the check. Set to 0 to damage by half the player's health.
+- **`damage_amount_on_check`**: The amount of damage to apply during the check. Set to 0 to damage by 80% the player's health.
 - **`min_tps`**: Minimum TPS required to perform checks.
 - **`max_ping`**: Maximum ping allowed for a player to be checked.
 
