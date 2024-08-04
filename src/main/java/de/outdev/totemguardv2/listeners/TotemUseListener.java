@@ -13,7 +13,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 import java.util.HashMap;
 
-
 public class TotemUseListener implements Listener {
 
     private final TotemGuardV2 plugin;
@@ -24,6 +23,8 @@ public class TotemUseListener implements Listener {
         this.plugin = plugin;
         this.totemUsage = new HashMap<>();
         this.flagCounts = new HashMap<>();
+
+
         Bukkit.getPluginManager().registerEvents(this, plugin); // registering the events
 
         // Schedule the reset task
@@ -92,7 +93,7 @@ public class TotemUseListener implements Listener {
             if (player.isBlocking()) {
                 flag_02 = "&aB";
             }
-            if (player.isSprinting() || player.isClimbing() || player.isJumping()) { // Set in the config later
+            if (player.isSprinting() || player.isClimbing() || player.isJumping() || player.isSwimming()) { // Set in the config later
                 flag_03 = "&aM";
             }
 
@@ -138,13 +139,13 @@ public class TotemUseListener implements Listener {
         if (advancedCheck) {
             alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, " + player.getClientBrandName() + extraFlags + "&7)";
         } else {
-            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, " + player.getClientBrandName()  + extraFlags + "&7)";
+            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, " + player.getClientBrandName() + extraFlags + "&7)";
         }
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
 
             String alertPerm = plugin.getConfig().getString("alert_permissions");
 
-            if (onlinePlayer.hasPermission(alertPerm) && TotemGuardCommand.getToggle(player)) {
+            if (onlinePlayer.hasPermission(alertPerm) && TotemGuardCommand.getToggle(onlinePlayer)) {
                 sendMiniMessage(onlinePlayer, alertMessage);
             }
         }
@@ -162,6 +163,8 @@ public class TotemUseListener implements Listener {
             flagCounts.remove(player);
         }
     }
+
+
 
     public void resetAllFlagCounts() {
         flagCounts.clear();
