@@ -1,4 +1,4 @@
-## TotemGuard
+## TotemGuard, AutoTotem AntiCheat
 
 TotemGuard is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp & OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
 
@@ -7,9 +7,9 @@ TotemGuard is a plugin specifically designed to detect players using the 'AutoTo
 - **Permission-Based Commands**: Ensure only authorized users can execute checks.
 - **Configurable Checks**: Customize the duration and conditions for totem checks.
 - **Webhook Integration** (not added yet): Send alerts to a Discord webhook with detailed information.
-- **Advanced System Check**: Calculate retotem time using the player's ping.
+- **Advanced System Check**: Calculate retotem time using the player's ping for more accurate detection.
 - **Damage on Check**: Optionally damage players to ensure accurate results.
-- **Extra Flags**: Monitor additional player actions like sneaking, blocking, and sprinting.
+- **Extra Flags**: Monitor additional player actions like sneaking, blocking, sprinting, swimming, and climbing.
 - **Automatic Punish System**: Automatically penalizes players who accumulate too many flags.
   - **`punish`**: Enable or disable the automatic punishment system.
   - **`punish_after`**: Number of flags before applying punishment.
@@ -29,6 +29,13 @@ TotemGuard is a plugin specifically designed to detect players using the 'AutoTo
 Here’s the default `config.yml` with explanations for each setting:
 
 ```yaml
+#  ___________     __                   ________                       .___
+#  \__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+#    |    | /  _ \   __\/ __ \ /     \/   \  ___|  |  \__  \\_  __ \/ __ |
+#    |    |(  <_> )  | \  ___/|  Y Y  \    \_\  \  |  // __ \|  | \/ /_/ |
+#    |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
+#                           \/      \/        \/           \/           \/
+
 # Plugin Configuration File
 
 # General Information:
@@ -92,12 +99,19 @@ check_time: 5
 
 # Normal Check Time: Sets the interval (in ms) for normal checks.
 # Valid values are between 50 and 250 ms.
+# This value is recommended to be set higher than 'trigger_amount_ms' if
+# 'advanced_system_check' is set to true (recommended: 300+)
 normal_check_time_ms: 175
 
-# Advanced System Check: Enables an advanced system check that calculates the retotem time.
-# This check uses the player's ping to determine the real retotem time.
-# By default, this is false.
+# Advanced System Check: Enables an advanced system check that calculates the real totem time making the flag more accurate.
+# This check uses the player's ping to determine the actual totem usage time. Generally, this flag provides
+# more accurate results, especially if a delay is used in the AutoTotem mod. Note that some flags might not
+# be recognized due to ping spikes or inaccurate ping readings from the server.
+
+# Trigger amount: The flag is only triggered if this value (in ms) is reached.
+# Make sure to adjust your 'normal_check_time_ms' and 'trigger_amount_ms' in the configuration file accordingly. (300+)
 advanced_system_check: false
+trigger_amount_ms: 75
 
 # Damage on /check: Toggles damage on /check command to ensure a more accurate result.
 # If set to true and damage_amount_on_check: 0, this check will damage the player by 80% their hearts (recommended)
@@ -109,7 +123,11 @@ damage_amount_on_check: 0
 min_tps: 15.0
 max_ping: 250
 
-# Automatic Punish System: Automatically applies penalties to players who accumulate too many flags.
+# A system that automatically punishes a player after they reach a specific number of AutoTotem flags.
+# Punish After: Determines how many flags a player can accumulate before executing the punishment command.
+# Remove Flags Min: Interval (in minutes) at which flags are reset globally for all players.
+# Punish Command: Command executed when a player reaches the 'punish_after' limit.
+# The %player% variable will be replaced with the player's name.
 punish: false
 punish_after: 10
 remove_flags_min: 30
@@ -152,24 +170,7 @@ TotemGuard can send notifications to a Discord webhook. Configure the webhook se
 
 ### Advanced Configuration
 
-- **`toggle_extra_flags`**: Enable or disable checks for additional actions like sneaking, blocking, and sprinting.
+- **`toggle_extra_flags`**: Enable or disable checks for additional actions like sneaking, blocking, sprinting, swimming, and climbing.
 - **`toggle_automatic_normal_checks`**: Enable or disable automatic normal checks.
 - **`check_time`**: The duration in ticks for the /check command.
-- **`normal_check_time_ms`**: Interval in milliseconds for normal checks (50 to 250 ms).
-- **`advanced_system_check`**: Use the player's ping to determine the real retotem time.
-- **`toggle_damage_on_check`**: Damage the player during the /check command to ensure accuracy.
-- **`damage_amount_on_check`**: The amount of damage to apply during the check. Set to 0 to damage by 80% the player's health.
-- **`min_tps`**: Minimum TPS required to perform checks.
-- **`max_ping`**: Maximum ping allowed for a player to be checked.
-
-### Support
-
-For support, you can reach out to the developers on Discord:
-
-- **@asleepp**
-- **@outdev**
-
-GitHub:
-
-- **[OutDev](https://github.com/outdev0)**
-- **[Asleepp](https://github.com/asleeepp)**
+- **`normal_check_time_ms`**: Interval in milliseconds for normal checks (50 to 250 ms). 
