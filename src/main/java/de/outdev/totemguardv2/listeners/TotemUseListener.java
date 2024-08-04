@@ -77,21 +77,35 @@ public class TotemUseListener implements Listener {
             totemUsage.remove(player);
 
             int normalTime = plugin.getConfig().getInt("normal_check_time_ms");
+            boolean advancedCheck = plugin.getConfig().getBoolean("advanced_system_check");
 
-            if (timeDifference < normalTime) { // Time set in the config later for what to check etc
-                String flag_01 = "&cS";
-                String flag_02 = "&cB";
-                String flag_03 = "&cM";
-                if (player.isSneaking()) {
-                    flag_01 = "&aS";
+            if (timeDifference > normalTime) {
+                return;
+            }
+
+            String flag_01 = "&cS";
+            String flag_02 = "&cB";
+            String flag_03 = "&cM";
+            if (player.isSneaking()) {
+                flag_01 = "&aS";
+            }
+            if (player.isBlocking()) {
+                flag_02 = "&aB";
+            }
+            if (player.isSprinting() || player.isClimbing() || player.isJumping()) { // Set in the config later
+                flag_03 = "&aM";
+            }
+
+            int realTotem = timeDifference - player.getPing();
+
+            if (advancedCheck) {
+                int triggerAmount = plugin.getConfig().getInt("trigger_amount_ms");
+                if (realTotem <= triggerAmount) {
+                    flag(player, flag_01, flag_02, flag_03, timeDifference, realTotem);
+                } else {
+                    return;
                 }
-                if (player.isBlocking()) {
-                    flag_02 = "&aB";
-                }
-                if (player.isSprinting() || player.isClimbing() || player.isJumping()) { // Set in the config later
-                    flag_03 = "&aM";
-                }
-                int realTotem = timeDifference - player.getPing();
+            } else {
                 flag(player, flag_01, flag_02, flag_03, timeDifference, realTotem);
             }
         }
@@ -109,7 +123,7 @@ public class TotemUseListener implements Listener {
         boolean punish = plugin.getConfig().getBoolean("punish");
 
         String alertMessage;
-        String extraFlags = " &8[&7" + flag_01 + "&7, " + flag_02 + "&7, " + flag_03 + "&8]";
+        String extraFlags = ", &8[&7" + flag_01 + "&7, " + flag_02 + "&7, " + flag_03 + "&8]";
         int flagCount = flagCounts.getOrDefault(player, 0) + 1;
         String flags = "&e[" + flagCount + "/" + punishAfter + "] ";
 
@@ -122,9 +136,9 @@ public class TotemUseListener implements Listener {
             extraFlags = "";
         }
         if (advancedCheck) {
-            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem &7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, " + player.getClientBrandName() + ", " + extraFlags + "&7)";
+            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, " + player.getClientBrandName() + extraFlags + "&7)";
         } else {
-            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, " + player.getClientBrandName() + ", " + extraFlags + "&7)";
+            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, " + player.getClientBrandName()  + extraFlags + "&7)";
         }
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
 

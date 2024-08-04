@@ -33,6 +33,7 @@ public class TotemGuardCommand implements CommandExecutor, TabCompleter {
         }
 
         String commandPerm = plugin.getConfig().getString("command_permissions");
+        String prefix = plugin.getConfig().getString("prefix").replace("&", "§");;
 
         if (!(sender.hasPermission(commandPerm))) {
             sender.sendMessage("§cYou do not have permission to use this!");
@@ -41,7 +42,7 @@ public class TotemGuardCommand implements CommandExecutor, TabCompleter {
 
         if (args[0].equalsIgnoreCase("reload")) {
             plugin.reloadConfig();
-            sender.sendMessage("§aReloaded configuration!");
+            sender.sendMessage(prefix+"§aReloaded configuration!");
         }
 
         if (args[0].equalsIgnoreCase("alerts")) {
@@ -52,7 +53,7 @@ public class TotemGuardCommand implements CommandExecutor, TabCompleter {
             Player player = (Player) sender;
             boolean currentState = getToggle(player);
             setToggle(player, !currentState);
-            sender.sendMessage("§aAlerts" + (currentState ? "§cdisabled" : "§aenabled") + "§a!");
+            sender.sendMessage(prefix+"§aAlerts " + (currentState ? "§cdisabled" : "§aenabled") + "§a!");
         }
         return true;
     }

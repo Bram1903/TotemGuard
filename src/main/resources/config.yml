@@ -68,12 +68,19 @@ check_time: 5
 
 # Normal Check Time: Sets the interval (in ms) for normal checks.
 # Valid values are between 50 and 250 ms.
+# This value is recommended to be set higher than 'trigger_amount_ms' if
+# 'advanced_system_check' is set to true (recommended: 300+)
 normal_check_time_ms: 175
 
-# Advanced System Check: Enables an advanced system check that calculates the retotem time.
-# This check uses the player's ping to determine the real retotem time.
-# By default, this is false.
+# Advanced System Check: Enables an advanced system check that calculates the real totem time making the flag more accurate.
+# This check uses the player's ping to determine the actual totem usage time. Generally, this flag provides
+# more accurate results, especially if a delay is used in the AutoTotem mod. Note that some flags might not
+# be recognized due to ping spikes or inaccurate ping readings from the server.
+
+# Trigger amount: The flag is only triggered if this value (in ms) is reached.
+# Make sure to adjust your 'normal_check_time_ms' and 'trigger_amount_ms' in the configuration file accordingly. (300+)
 advanced_system_check: false
+trigger_amount_ms: 75
 
 # Damage on /check: Toggles damage on /check command to ensure a more accurate result.
 # If set to true and damage_amount_on_check: 0, this check will damage the player by 80% their hearts (recommended)
