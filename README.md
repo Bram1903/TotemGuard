@@ -1,4 +1,4 @@
-## TotemGuard
+## TotemGuard, AutoTotem AntiCheat
 
 TotemGuard is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp & OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
 
