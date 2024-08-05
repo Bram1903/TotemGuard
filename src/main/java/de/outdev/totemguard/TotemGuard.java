@@ -1,8 +1,8 @@
-package de.outdev.totemguardv2;
+package de.outdev.totemguard;
 
-import de.outdev.totemguardv2.commands.CheckCommand;
-import de.outdev.totemguardv2.commands.TotemGuardCommand;
-import de.outdev.totemguardv2.listeners.TotemUseListener;
+import de.outdev.totemguard.commands.CheckCommand;
+import de.outdev.totemguard.commands.TotemGuardCommand;
+import de.outdev.totemguard.listeners.TotemUseListener;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;

@@ -1,6 +1,6 @@
-package de.outdev.totemguardv2.commands;
+package de.outdev.totemguard.commands;
 
-import de.outdev.totemguardv2.TotemGuard;
+import de.outdev.totemguard.TotemGuard;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

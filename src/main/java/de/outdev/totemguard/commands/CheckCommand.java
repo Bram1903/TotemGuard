@@ -1,6 +1,6 @@
-package de.outdev.totemguardv2.commands;
+package de.outdev.totemguard.commands;
 
-import de.outdev.totemguardv2.TotemGuard;
+import de.outdev.totemguard.TotemGuard;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;

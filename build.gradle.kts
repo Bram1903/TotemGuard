@@ -19,6 +19,7 @@ java {
 
 dependencies {
     compileOnly(libs.paper.api)
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.3")
 }
 
 group = "de.outdev.totemguard"

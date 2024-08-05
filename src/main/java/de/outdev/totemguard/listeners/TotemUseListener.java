@@ -1,7 +1,8 @@
-package de.outdev.totemguardv2.listeners;
+package de.outdev.totemguard.listeners;
 
-import de.outdev.totemguardv2.TotemGuard;
-import de.outdev.totemguardv2.commands.TotemGuardCommand;
+import de.outdev.totemguard.TotemGuard;
+import de.outdev.totemguard.commands.TotemGuardCommand;
+import de.outdev.totemguard.discord.DiscordWebhook;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -11,13 +12,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class TotemUseListener implements Listener {
 
     private final TotemGuard plugin;
     private final HashMap<Player, Integer> totemUsage;
-    private final HashMap<Player, Integer> flagCounts;
+    private final HashMap<UUID, Integer> flagCounts;
 
     public TotemUseListener(TotemGuard plugin) {
         this.plugin = plugin;
@@ -125,16 +129,18 @@ public class TotemUseListener implements Listener {
 
         String alertMessage;
         String extraFlags = ", &8[&7" + flag_01 + "&7, " + flag_02 + "&7, " + flag_03 + "&8]";
+        boolean flagbool = true;
         int flagCount = flagCounts.getOrDefault(player, 0) + 1;
         String flags = "&e[" + flagCount + "/" + punishAfter + "] ";
 
         if (punish) {
-            flagCounts.put(player, flagCount);
+            flagCounts.put(player.getUniqueId(), flagCount);
         } else {
             flags = "";
         }
         if (!checkToggle) {
             extraFlags = "";
+            flagbool = false;
         }
         if (advancedCheck) {
             alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, " + player.getClientBrandName() + extraFlags + "&7)";
@@ -162,9 +168,23 @@ public class TotemUseListener implements Listener {
             });
             flagCounts.remove(player);
         }
+
+        boolean finalFlagbool = flagbool;
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            Map<String, String> placeholders = new HashMap<>();
+            placeholders.put("player", player.getName());
+            placeholders.put("ping", String.valueOf(player.getPing()));
+            placeholders.put("retotem_time", String.valueOf(timeDifference));
+            placeholders.put("moving_status", finalFlagbool ? "Yes" : "No");
+            placeholders.put("tps", Arrays.toString(plugin.getServer().getTPS()));
+            placeholders.put("flag_count", String.valueOf(flagCounts.get(player.getUniqueId())));
+            placeholders.put("punish_after", String.valueOf(punishAfter));
+            placeholders.put("brand", player.getClientBrandName());
+
+
+            DiscordWebhook.sendWebhook(placeholders);
+        });
     }
-
-
 
     public void resetAllFlagCounts() {
         flagCounts.clear();
