@@ -1,5 +1,5 @@
 name: TotemGuardV2
-version: '${project.version}'
+version: ${version}
 main: de.outdev.totemguardv2.TotemGuardV2
 api-version: '1.20'
 authors: [OutDev, Asleepp]
