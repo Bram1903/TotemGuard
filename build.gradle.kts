@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     `maven-publish`
+    alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
 }
 
@@ -24,13 +25,24 @@ group = "de.outdev.totemguardv2"
 version = "1.1.1-SNAPSHOT"
 description = "TotemGuardV2"
 
-publishing {
-    publications.create<MavenPublication>("maven") {
-        from(components["java"])
-    }
-}
-
 tasks {
+    jar {
+        enabled = false
+    }
+
+    shadowJar {
+        archiveFileName = "${rootProject.name}-${project.version}.jar"
+        archiveClassifier = null
+
+        manifest {
+            attributes["Implementation-Version"] = rootProject.version
+        }
+    }
+
+    assemble {
+        dependsOn(shadowJar)
+    }
+
     withType<JavaCompile> {
         options.encoding = Charsets.UTF_8.name()
         options.release = 17
