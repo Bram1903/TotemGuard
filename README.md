@@ -72,12 +72,13 @@ webhook:
   description:
     - "**Player:** %player%"
     - "**Ping:** %ping%"
-    - "**Retotemed in** %retotem_time%"
-    - "**Is Moving:** %moving_status%"
-    - "**Confidence:** %confidence%"
-    - "**TPS:** %tps%"
+    - "**Retotemed in:** %retotem_time%"
+    - "**Real Time: %real_retotem_time%"
+    - "**Extra Flags:** %moving_status%"
     - ""
-    - "**Total Flags:** %total_flags%"
+    - "**Client Brand:** %brand%"
+    - "**Flags:** %flag_count%/%punish_after%"
+    - "**TPS:** %tps%"
   # Webhook Image: Sets the image that is displayed in the embed.
   # This example displays the player's head using the Minotar website.
   image: "https://minotar.net/avatar/user/%player%.png"
@@ -118,7 +119,7 @@ trigger_amount_ms: 75
 toggle_damage_on_check: true
 damage_amount_on_check: 0
 
-# Determines when the plugin should stop for checking a player.
+# Detements when the plugin should stop for checking a player.
 # This is to ensure no false flags being created by low tps or ping.
 min_tps: 15.0
 max_ping: 250
