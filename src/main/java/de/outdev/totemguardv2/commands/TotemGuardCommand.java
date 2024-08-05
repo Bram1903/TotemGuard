@@ -1,6 +1,9 @@
 package de.outdev.totemguardv2.commands;
 
 import de.outdev.totemguardv2.TotemGuardV2;
+import de.outdev.totemguardv2.data.PermissionConstants;
+import de.outdev.totemguardv2.data.Settings;
+import de.outdev.totemguardv2.manager.ConfigManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -16,13 +19,16 @@ import java.util.UUID;
 
 public class TotemGuardCommand implements CommandExecutor, TabCompleter {
 
-    private TotemGuardV2 plugin = TotemGuardV2.getInstance();
+    private final TotemGuardV2 plugin;
+    private final ConfigManager configManager;
+
     private static final Map<UUID, Boolean> alertToggle = new HashMap<>();
 
     public TotemGuardCommand(TotemGuardV2 plugin) {
         this.plugin = plugin;
+        this.configManager = plugin.configManager;
+
         this.plugin.getCommand("totemguard").setExecutor(this);
-        this.plugin.getCommand("totemguard").setTabCompleter(this);
     }
 
     @Override
@@ -32,25 +38,24 @@ public class TotemGuardCommand implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        String commandPerm = plugin.getConfig().getString("command_permissions");
-        String prefix = plugin.getConfig().getString("prefix").replace("&", "§");;
+        String prefix = configManager.getSettings().getPrefix().replace("&", "§");;
 
-        if (!(sender.hasPermission(commandPerm))) {
+        if (!(sender.hasPermission(PermissionConstants.CommandPermission))) {
             sender.sendMessage("§cYou do not have permission to use this!");
             return false;
         }
 
         if (args[0].equalsIgnoreCase("reload")) {
-            plugin.reloadConfig();
+            configManager.reload();
             sender.sendMessage(prefix+"§aReloaded configuration!");
         }
 
         if (args[0].equalsIgnoreCase("alerts")) {
-            if (!(sender instanceof Player)) {
+            if (!(sender instanceof Player player)) {
                 sender.sendMessage("§cOnly players can toggle alerts!");
                 return false;
             }
-            Player player = (Player) sender;
+
             boolean currentState = getToggle(player);
             setToggle(player, !currentState);
             sender.sendMessage(prefix+"§aAlerts " + (currentState ? "§cdisabled" : "§aenabled") + "§a!");
