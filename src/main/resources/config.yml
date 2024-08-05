@@ -42,7 +42,7 @@ webhook:
     - "**Player:** %player%"
     - "**Ping:** %ping%"
     - "**Retotemed in:** %retotem_time%"
-    - "**Real Time: %real_retotem_time%"
+    - "**Real Time:** %real_retotem_time%"
     - "**Extra Flags:** %moving_status%"
     - ""
     - "**Client Brand:** %brand%"

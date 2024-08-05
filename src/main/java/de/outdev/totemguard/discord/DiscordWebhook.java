@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +39,7 @@ public class DiscordWebhook {
     private static void sendWebhook(String url, String name, String color, String title, List<String> descriptionLines, String image, String profileImage, boolean timestamp, Map<String, String> placeholders) throws IOException {
         List<String> replacedDescriptionLines = Placeholders.replacePlaceholders(descriptionLines, placeholders);
         String replacedDescription = Placeholders.joinMessages(replacedDescriptionLines);
-
+        String replacedImage = Placeholders.replacePlaceholders(Collections.singletonList(image), placeholders).get(0);
 
         JSONObject json = new JSONObject();
         json.put("username", name);
@@ -48,16 +49,19 @@ public class DiscordWebhook {
         embed.put("title", title);
         embed.put("description", replacedDescription);
         embed.put("color", Integer.parseInt(color.replace("#", ""), 16));
-        embed.put("thumbnail", new JSONObject().put("url", image));
-
+        embed.put("thumbnail", new JSONObject().put("url", replacedImage));
 
         if (timestamp) {
             embed.put("timestamp", Instant.now().toString());
         }
 
-        json.put("embeds", new JSONArray().add(embed));
+        JSONArray embeds = new JSONArray();
+        embeds.add(embed);
+        json.put("embeds", embeds);
 
-        RequestBody body = RequestBody.create(json.toString(), MediaType.get("application/json; charset=utf-8"));
+        String jsonString = json.toString();
+
+        RequestBody body = RequestBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
 
         Request request = new Request.Builder()
                 .url(url)
@@ -66,7 +70,7 @@ public class DiscordWebhook {
 
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("Unexpected code " + response);
+                throw new IOException("Unexpected code " + response + ": " + response.body().string());
             }
         }
     }
@@ -102,7 +106,6 @@ public class DiscordWebhook {
     private static String getWebhookProfileImage() {
         return getConfig().getString("webhook.profile_image");
     }
-
 
     private static boolean isWebhookTimestampEnabled() {
         return getConfig().getBoolean("webhook.timestamp");

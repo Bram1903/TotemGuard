@@ -129,18 +129,17 @@ public class TotemUseListener implements Listener {
 
         String alertMessage;
         String extraFlags = ", &8[&7" + flag_01 + "&7, " + flag_02 + "&7, " + flag_03 + "&8]";
-        boolean flagbool = true;
-        int flagCount = flagCounts.getOrDefault(player, 0) + 1;
+        int flagCount = flagCounts.getOrDefault(player.getUniqueId(), 0) + 1;
+        flagCounts.put(player.getUniqueId(), flagCount);
         String flags = "&e[" + flagCount + "/" + punishAfter + "] ";
 
-        if (punish) {
-            flagCounts.put(player.getUniqueId(), flagCount);
-        } else {
+
+        if (!punish) {
             flags = "";
         }
+
         if (!checkToggle) {
             extraFlags = "";
-            flagbool = false;
         }
         if (advancedCheck) {
             alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, " + player.getClientBrandName() + extraFlags + "&7)";
@@ -156,27 +155,14 @@ public class TotemUseListener implements Listener {
             }
         }
 
-        if (!punish) {
-            return;
-        }
-        String punishCommand = plugin.getConfig().getString("punish_command").replace("%player%", player.getName());
-
-        if (flagCounts.get(player) >= punishAfter) {
-
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
-            });
-            flagCounts.remove(player);
-        }
-
-        boolean finalFlagbool = flagbool;
+        String finalExtraFlags = extraFlags;
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             Map<String, String> placeholders = new HashMap<>();
             placeholders.put("player", player.getName());
             placeholders.put("ping", String.valueOf(player.getPing()));
             placeholders.put("retotem_time", String.valueOf(timeDifference));
-            placeholders.put("moving_status", finalFlagbool ? "Yes" : "No");
-            placeholders.put("tps", Arrays.toString(plugin.getServer().getTPS()));
+            placeholders.put("moving_status", finalExtraFlags);
+            placeholders.put("tps", String.valueOf(Math.round(plugin.getTPS())));
             placeholders.put("flag_count", String.valueOf(flagCounts.get(player.getUniqueId())));
             placeholders.put("punish_after", String.valueOf(punishAfter));
             placeholders.put("brand", player.getClientBrandName());
@@ -184,6 +170,20 @@ public class TotemUseListener implements Listener {
 
             DiscordWebhook.sendWebhook(placeholders);
         });
+
+        if (!punish) {
+            return;
+        }
+        String punishCommand = plugin.getConfig().getString("punish_command").replace("%player%", player.getName());
+
+        if (flagCounts.get(player.getUniqueId()) >= punishAfter) {
+
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
+            });
+            flagCounts.remove(player.getUniqueId());
+        }
+
     }
 
     public void resetAllFlagCounts() {
