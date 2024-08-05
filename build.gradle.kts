@@ -21,7 +21,7 @@ dependencies {
 }
 
 group = "de.outdev.totemguardv2"
-version = "1.0"
+version = "1.1.1-SNAPSHOT"
 description = "TotemGuardV2"
 
 publishing {
