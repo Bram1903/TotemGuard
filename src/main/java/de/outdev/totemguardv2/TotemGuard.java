@@ -8,14 +8,14 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
-public final class TotemGuardV2 extends JavaPlugin {
+public final class TotemGuard extends JavaPlugin {
 
-    private static TotemGuardV2 instance;
+    private static TotemGuard instance;
     private static FileConfiguration config;
     private TotemUseListener totemUseListener;
 
     @Nullable
-    public static TotemGuardV2 getInstance() {
+    public static TotemGuard getInstance() {
         return instance;
     }
 

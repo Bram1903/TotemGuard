@@ -1,6 +1,6 @@
 package de.outdev.totemguardv2.listeners;
 
-import de.outdev.totemguardv2.TotemGuardV2;
+import de.outdev.totemguardv2.TotemGuard;
 import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -15,11 +15,11 @@ import java.util.HashMap;
 
 public class TotemUseListener implements Listener {
 
-    private final TotemGuardV2 plugin;
+    private final TotemGuard plugin;
     private final HashMap<Player, Integer> totemUsage;
     private final HashMap<Player, Integer> flagCounts;
 
-    public TotemUseListener(TotemGuardV2 plugin) {
+    public TotemUseListener(TotemGuard plugin) {
         this.plugin = plugin;
         this.totemUsage = new HashMap<>();
         this.flagCounts = new HashMap<>();

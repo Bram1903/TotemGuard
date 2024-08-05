@@ -21,7 +21,7 @@ dependencies {
     compileOnly(libs.paper.api)
 }
 
-group = "de.outdev.totemguardv2"
+group = "de.outdev.totemguard"
 version = "1.1.1-SNAPSHOT"
 description = "TotemGuardV2"
 
