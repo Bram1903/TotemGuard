@@ -1,6 +1,8 @@
 package de.outdev.totemguardv2.commands;
 
 import de.outdev.totemguardv2.TotemGuardV2;
+import de.outdev.totemguardv2.data.PermissionConstants;
+import de.outdev.totemguardv2.data.Settings;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -21,25 +23,24 @@ import java.util.List;
 public class CheckCommand implements CommandExecutor, TabCompleter {
 
     private final TotemGuardV2 plugin;
+    private final Settings settings;
 
     public CheckCommand(TotemGuardV2 plugin) {
         this.plugin = plugin;
+        this.settings = plugin.configManager.getSettings();
+
         this.plugin.getCommand("check").setExecutor(this);
-        this.plugin.getCommand("check").setTabCompleter(this);
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
 
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player executor)) {
             sender.sendMessage(ChatColor.RED + "You need to be a player to execute this command!");
             return false;
         }
 
-        Player executor = (Player) sender;
-        String checkPerm = plugin.getConfig().getString("check_permission");
-
-        if (!executor.hasPermission(checkPerm)) {
+        if (!executor.hasPermission(PermissionConstants.CheckPermission)) {
             sendMiniMessage(executor, "&cYou do not have the required permissions to execute this command!");
             return false;
         }
@@ -64,14 +65,9 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
         ItemStack totem = player.getInventory().getItemInOffHand();
         player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
 
-        boolean toggleDamageOnCheck = plugin.getConfig().getBoolean("toggle_damage_on_check");
-        double damageAmountOnCheck = plugin.getConfig().getDouble("damage_amount_on_check");
-        int checkInterval = plugin.getConfig().getInt("check_interval");
-        int checkTime = plugin.getConfig().getInt("check_time");
-
         // Apply damage immediately
-        if (toggleDamageOnCheck) {
-            double damage = damageAmountOnCheck > 0 ? damageAmountOnCheck : player.getHealth() / 1.25;
+        if (settings.isToggleDamageOnCheck()) {
+            double damage = settings.getDamageAmountOnCheck() > 0 ? settings.getDamageAmountOnCheck() : player.getHealth() / 1.25;
             damage = Math.min(damage, player.getHealth() - 1);
             if (damage > 0) {
                 player.damage(damage);
@@ -88,8 +84,8 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
                     failed(player, executor, elapsedTicks);
                     cancel();
                     player.getInventory().setItemInOffHand(totem); // Restore the totem
-                } else if (elapsedTicks >= checkTime) {
-                    sendMiniMessage(executor, "&aConcluded check. The player does not have a totem in their offhand. (" + checkTime + " ticks)");
+                } else if (elapsedTicks >= settings.getCheckTime()) {
+                    sendMiniMessage(executor, "&aConcluded check. The player does not have a totem in their offhand. (" + settings.getCheckTime() + " ticks)");
                     player.getInventory().setItemInOffHand(totem); // Restore the totem
                     cancel();
                 }
@@ -124,9 +120,8 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
         }
 
         String extraFlags = "§8[§7" + flag_01 + "§7, " + flag_02 +"§7, " + flag_03+"§8]";
-        String prefix = plugin.getConfig().getString("check_prefix");
 
-        sendMiniMessage(executor, prefix+"&6" + player.getName() + " Failed the AutoTotem check &7(in: " + elapsedTicks + " ticks, Ping: " + player.getPing() + ", Brand: " +player.getClientBrandName()+", Gamemode: " +player.getGameMode()+ ", " +extraFlags+"&7) &8TPS: " + plugin.getTPS());
+        sendMiniMessage(executor, settings.getCheckPrefix() + "&6" + player.getName() + " Failed the AutoTotem check &7(in: " + elapsedTicks + " ticks, Ping: " + player.getPing() + ", Brand: " +player.getClientBrandName()+", Gamemode: " +player.getGameMode()+ ", " +extraFlags+"&7) &8TPS: " + plugin.getTPS());
     }
 
     @Override

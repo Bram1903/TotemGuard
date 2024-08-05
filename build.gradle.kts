@@ -19,6 +19,10 @@ java {
 
 dependencies {
     compileOnly(libs.paper.api)
+    compileOnly(libs.configlib.yaml)
+    compileOnly(libs.configlib.paper)
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
 }
 
 group = "de.outdev.totemguardv2"
@@ -54,8 +58,13 @@ tasks {
 
     processResources {
         inputs.property("version", project.version)
+        inputs.property("configlibVersion", libs.versions.configlib.get())
+
         filesMatching("plugin.yml") {
-            expand("version" to project.version)
+            expand(
+                "version" to rootProject.version,
+                "configlibVersion" to libs.versions.configlib.get()
+            )
         }
     }
 

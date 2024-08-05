@@ -2,6 +2,8 @@ package de.outdev.totemguardv2.listeners;
 
 import de.outdev.totemguardv2.TotemGuardV2;
 import de.outdev.totemguardv2.commands.TotemGuardCommand;
+import de.outdev.totemguardv2.data.PermissionConstants;
+import de.outdev.totemguardv2.data.Settings;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -16,40 +18,37 @@ import java.util.HashMap;
 public class TotemUseListener implements Listener {
 
     private final TotemGuardV2 plugin;
+    private final Settings settings;
+
     private final HashMap<Player, Integer> totemUsage;
     private final HashMap<Player, Integer> flagCounts;
 
     public TotemUseListener(TotemGuardV2 plugin) {
         this.plugin = plugin;
+        this.settings = plugin.configManager.getSettings();
+
         this.totemUsage = new HashMap<>();
         this.flagCounts = new HashMap<>();
-
 
         Bukkit.getPluginManager().registerEvents(this, plugin); // registering the events
 
         // Schedule the reset task
-        long resetInterval = plugin.getConfig().getInt("remove_flags_min") * 60L * 20L; // Convert minutes to ticks (20 ticks = 1 second)
+        long resetInterval = settings.getPunish().getRemoveFlagsMin() * 60L * 20L; // Convert minutes to ticks (20 ticks = 1 second)
         Bukkit.getScheduler().runTaskTimer(plugin, this::resetAllFlagCounts, resetInterval, resetInterval);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTotemUse(EntityResurrectEvent event) {
-        boolean toggleCheck = plugin.getConfig().getBoolean("toggle_automatic_normal_checks");
-
-        if (!toggleCheck) {
+        if (!settings.isToggleAutomaticNormalChecks()) {
             return;
         }
 
-        double minTps = plugin.getConfig().getDouble("min_tps");
-        int maxPing = plugin.getConfig().getInt("max_ping");
-
-        if (plugin.getTPS() < minTps) {
+        if (plugin.getTPS() < settings.getDetements().getMinTps()) {
             return;
         }
 
-        if (event.getEntity() instanceof Player) { // Checks if the entity is a player
-            Player player = (Player) event.getEntity();
-            if (player.getPing() > maxPing) {
+        if (event.getEntity() instanceof Player player) { // Checks if the entity is a player
+            if (player.getPing() > settings.getDetements().getMaxPing()) {
                 return;
             }
 
@@ -61,8 +60,7 @@ public class TotemUseListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClick(InventoryClickEvent event) { // Inventory click event to check for the totem
-        if (event.getWhoClicked() instanceof Player) { // Checks if the cause is a player
-            Player player = (Player) event.getWhoClicked();
+        if (event.getWhoClicked() instanceof Player player) { // Checks if the cause is a player
             if (event.getRawSlot() == 45) { // Checks slot 45 which is usually the offhand slot
                 checkSuspiciousActivity(player);
             }
@@ -77,10 +75,7 @@ public class TotemUseListener implements Listener {
 
             totemUsage.remove(player);
 
-            int normalTime = plugin.getConfig().getInt("normal_check_time_ms");
-            boolean advancedCheck = plugin.getConfig().getBoolean("advanced_system_check");
-
-            if (timeDifference > normalTime) {
+            if (timeDifference > settings.getNormalCheckTimeMs()) {
                 return;
             }
 
@@ -99,12 +94,9 @@ public class TotemUseListener implements Listener {
 
             int realTotem = timeDifference - player.getPing();
 
-            if (advancedCheck) {
-                int triggerAmount = plugin.getConfig().getInt("trigger_amount_ms");
-                if (realTotem <= triggerAmount) {
+            if (settings.isAdvancedSystemCheck()) {
+                if (realTotem <= settings.getTriggerAmountMs()) {
                     flag(player, flag_01, flag_02, flag_03, timeDifference, realTotem);
-                } else {
-                    return;
                 }
             } else {
                 flag(player, flag_01, flag_02, flag_03, timeDifference, realTotem);
@@ -117,11 +109,12 @@ public class TotemUseListener implements Listener {
     }
 
     public void flag(Player player, String flag_01, String flag_02, String flag_03, int timeDifference, int realTotem) {
-        boolean advancedCheck = plugin.getConfig().getBoolean("advanced_system_check");
-        boolean checkToggle = plugin.getConfig().getBoolean("toggle_extra_flags");
-        String prefix = plugin.getConfig().getString("prefix");
-        int punishAfter = plugin.getConfig().getInt("punish_after");
-        boolean punish = plugin.getConfig().getBoolean("punish");
+
+        boolean advancedCheck = settings.isAdvancedSystemCheck();
+        boolean checkToggle = settings.isToggleExtraFlags();
+        String prefix = settings.getPrefix();
+        int punishAfter = settings.getPunish().getPunishAfter();
+        boolean punish = settings.getPunish().isEnabled();
 
         String alertMessage;
         String extraFlags = ", &8[&7" + flag_01 + "&7, " + flag_02 + "&7, " + flag_03 + "&8]";
@@ -141,19 +134,18 @@ public class TotemUseListener implements Listener {
         } else {
             alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, " + player.getClientBrandName() + extraFlags + "&7)";
         }
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
 
-            String alertPerm = plugin.getConfig().getString("alert_permissions");
-
-            if (onlinePlayer.hasPermission(alertPerm) && TotemGuardCommand.getToggle(onlinePlayer)) {
+        Bukkit.getOnlinePlayers().forEach(onlinePlayer -> {
+            if (onlinePlayer.hasPermission(PermissionConstants.AlertPermission) && TotemGuardCommand.getToggle(onlinePlayer)) {
                 sendMiniMessage(onlinePlayer, alertMessage);
             }
-        }
+        });
 
         if (!punish) {
             return;
         }
-        String punishCommand = plugin.getConfig().getString("punish_command").replace("%player%", player.getName());
+
+        String punishCommand = settings.getPunish().getPunishCommand().replace("%player%", player.getName());
 
         if (flagCounts.get(player) >= punishAfter) {
 
@@ -168,14 +160,12 @@ public class TotemUseListener implements Listener {
 
     public void resetAllFlagCounts() {
         flagCounts.clear();
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+        String prefix = settings.getPrefix();
 
-            String alertPerm = plugin.getConfig().getString("alert_permissions");
-            String prefix = plugin.getConfig().getString("prefix");
-
-            if (onlinePlayer.hasPermission(alertPerm)) {
+        Bukkit.getOnlinePlayers().forEach(onlinePlayer -> {
+            if (onlinePlayer.hasPermission(PermissionConstants.AlertPermission)) {
                 sendMiniMessage(onlinePlayer, prefix + "&fAll flag counts have been reset.");
             }
-        }
+        });
     }
 }

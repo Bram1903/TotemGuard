@@ -3,42 +3,34 @@ package de.outdev.totemguardv2;
 import de.outdev.totemguardv2.commands.CheckCommand;
 import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import de.outdev.totemguardv2.listeners.TotemUseListener;
+import de.outdev.totemguardv2.manager.ConfigManager;
+import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 public final class TotemGuardV2 extends JavaPlugin {
 
+    @Getter
     private static TotemGuardV2 instance;
-    private static FileConfiguration config;
-    private TotemUseListener totemUseListener;
 
-    @Nullable
-    public static TotemGuardV2 getInstance() {
-        return instance;
-    }
-
-    @Nullable
-    public static FileConfiguration getConfiguration() {
-        return config;
-    }
+    public ConfigManager configManager;
 
     @Override
     public void onEnable() {
-        getLogger().info("Loading TotemGuard...");
-
         long start = System.currentTimeMillis();
 
-        new TotemGuardCommand(this);
-        new CheckCommand(this);
-
         instance = this;
-        config = getConfig();
+        configManager = new ConfigManager(this);
 
-        saveDefaultConfig();
+        if (!loadConfig()) {
+            instance.getServer().getPluginManager().disablePlugin(instance);
+            return;
+        }
 
-        totemUseListener = new TotemUseListener(this);
+        registerCommands();
+        registerListeners();
 
         getLogger().info(" \n"+
                 "  _____    _             ___                  _ \n" +
@@ -54,6 +46,29 @@ public final class TotemGuardV2 extends JavaPlugin {
     public void onDisable() {
         getLogger().info("Disabling plugin 'TotemGuard'...");
         saveDefaultConfig();
+    }
+
+    private void registerCommands() {
+        new TotemGuardCommand(this);
+        new CheckCommand(this);
+    }
+
+    private void registerListeners() {
+        new TotemUseListener(this);
+    }
+
+    /**
+     * Loads the plugin configuration.
+     *
+     * @return true if the configuration was loaded successfully, false otherwise.
+     */
+    private boolean loadConfig() {
+        final Optional<Throwable> error = configManager.loadConfig();
+        if (error.isPresent()) {
+            instance.getLogger().log(java.util.logging.Level.SEVERE, "Failed to load configuration", error.get());
+            return false;
+        }
+        return true;
     }
 
     public double getTPS() {

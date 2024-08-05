@@ -2,13 +2,32 @@ name: TotemGuardV2
 version: ${version}
 main: de.outdev.totemguardv2.TotemGuardV2
 api-version: '1.20'
-authors: [OutDev, Asleepp]
+authors: [ OutDev, Asleepp, Bram ]
 description: A plugin specifically designed to detect players using the 'AutoTotem' hack.
+load: POSTWORLD
+libraries:
+  - de.exlll:configlib-yaml:${configlibVersion}
+  - de.exlll:configlib-paper:${configlibVersion}
 commands:
-  totemguard:
-    aliases: tg
+  TotemGuard:
     description: Main plugin command used to reload the plugin.
-
-  check:
-    aliases: totemcheck, checktotem
+    permission: TotemGuard.Admin
+    permission-message: Unknown command. Type "/help" for help
+    aliases: tg
+  Check:
     description: Checks a player for manually for AutoTotem.
+    permission: TotemGuard.Check
+    permission-message: Unknown command. Type "/help" for help
+    aliases:
+      - totemcheck
+      - checktotem
+permissions:
+  TotemGuard.Admin:
+    description: Allows the player to use the /totemguard command.
+    default: op
+  TotemGuard.Check:
+    description: Allows the player to use the /check command.
+    default: op
+  TotemGuard.Alert:
+    description: Allows the player to receive a notification when a player is detected using AutoTotem.
+    default: op
