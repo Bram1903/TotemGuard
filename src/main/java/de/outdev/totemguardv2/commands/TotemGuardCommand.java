@@ -2,8 +2,7 @@ package de.outdev.totemguardv2.commands;
 
 import de.outdev.totemguardv2.TotemGuardV2;
 import de.outdev.totemguardv2.data.PermissionConstants;
-import de.outdev.totemguardv2.data.Settings;
-import de.outdev.totemguardv2.manager.ConfigManager;
+import de.outdev.totemguardv2.config.ConfigManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

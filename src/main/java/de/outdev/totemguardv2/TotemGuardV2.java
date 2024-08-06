@@ -3,7 +3,7 @@ package de.outdev.totemguardv2;
 import de.outdev.totemguardv2.commands.CheckCommand;
 import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import de.outdev.totemguardv2.listeners.TotemUseListener;
-import de.outdev.totemguardv2.manager.ConfigManager;
+import de.outdev.totemguardv2.config.ConfigManager;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;

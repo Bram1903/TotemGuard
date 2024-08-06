@@ -3,7 +3,7 @@ package de.outdev.totemguardv2.listeners;
 import de.outdev.totemguardv2.TotemGuardV2;
 import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import de.outdev.totemguardv2.data.PermissionConstants;
-import de.outdev.totemguardv2.data.Settings;
+import de.outdev.totemguardv2.config.Settings;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;

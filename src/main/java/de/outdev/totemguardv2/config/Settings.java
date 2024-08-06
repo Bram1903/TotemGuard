@@ -1,4 +1,4 @@
-package de.outdev.totemguardv2.data;
+package de.outdev.totemguardv2.config;
 
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;

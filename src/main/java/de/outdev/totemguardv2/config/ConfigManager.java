@@ -1,10 +1,9 @@
-package de.outdev.totemguardv2.manager;
+package de.outdev.totemguardv2.config;
 
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import de.outdev.totemguardv2.TotemGuardV2;
-import de.outdev.totemguardv2.data.Settings;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
