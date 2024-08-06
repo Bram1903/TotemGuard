@@ -1,6 +1,6 @@
-name: TotemGuardV2
+name: TotemGuard
 version: ${version}
-main: de.outdev.totemguardv2.TotemGuardV2
+main: de.outdev.totemguard.TotemGuard
 api-version: '1.20'
 authors: [ OutDev, Asleepp, Bram ]
 description: A plugin specifically designed to detect players using the 'AutoTotem' hack.

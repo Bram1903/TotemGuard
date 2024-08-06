@@ -1,8 +1,8 @@
 package de.outdev.totemguardv2.commands;
 
-import de.outdev.totemguardv2.TotemGuardV2;
 import de.outdev.totemguardv2.data.PermissionConstants;
 import de.outdev.totemguardv2.config.Settings;
+import de.outdev.totemguard.TotemGuard;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -22,14 +22,15 @@ import java.util.List;
 
 public class CheckCommand implements CommandExecutor, TabCompleter {
 
-    private final TotemGuardV2 plugin;
+    private final TotemGuard plugin;
     private final Settings settings;
 
-    public CheckCommand(TotemGuardV2 plugin) {
+    public CheckCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.settings = plugin.configManager.getSettings();
 
         this.plugin.getCommand("check").setExecutor(this);
+        this.plugin.getCommand("check").setTabCompleter(this);
     }
 
     @Override

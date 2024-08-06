@@ -1,20 +1,35 @@
-package de.outdev.totemguardv2;
+package de.outdev.totemguard;
 
 import de.outdev.totemguardv2.commands.CheckCommand;
 import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import de.outdev.totemguardv2.listeners.TotemUseListener;
 import de.outdev.totemguardv2.config.ConfigManager;
 import lombok.Getter;
+import de.outdev.totemguard.commands.CheckCommand;
+import de.outdev.totemguard.commands.TotemGuardCommand;
+import de.outdev.totemguard.listeners.TotemUseListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
 
-public final class TotemGuardV2 extends JavaPlugin {
+public final class TotemGuard extends JavaPlugin {
 
+    private static TotemGuard instance;
+    private static FileConfiguration config;
+    private TotemUseListener totemUseListener;
     @Getter
     private static TotemGuardV2 instance;
 
+    @Nullable
+    public static TotemGuard getInstance() {
+        return instance;
+    }
+
+    @Nullable
+    public static FileConfiguration getConfiguration() {
+        return config;
+    }
     public ConfigManager configManager;
 
     @Override

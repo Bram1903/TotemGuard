@@ -1,9 +1,12 @@
-package de.outdev.totemguardv2.listeners;
+package de.outdev.totemguard.listeners;
 
 import de.outdev.totemguardv2.TotemGuardV2;
 import de.outdev.totemguardv2.commands.TotemGuardCommand;
 import de.outdev.totemguardv2.data.PermissionConstants;
 import de.outdev.totemguardv2.config.Settings;
+import de.outdev.totemguard.TotemGuard;
+import de.outdev.totemguard.commands.TotemGuardCommand;
+import de.outdev.totemguard.discord.DiscordWebhook;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -13,17 +16,21 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class TotemUseListener implements Listener {
 
     private final TotemGuardV2 plugin;
     private final Settings settings;
 
+    private final TotemGuard plugin;
     private final HashMap<Player, Integer> totemUsage;
-    private final HashMap<Player, Integer> flagCounts;
+    private final HashMap<UUID, Integer> flagCounts;
 
-    public TotemUseListener(TotemGuardV2 plugin) {
+    public TotemUseListener(TotemGuard plugin) {
         this.plugin = plugin;
         this.settings = plugin.configManager.getSettings();
 
@@ -118,14 +125,15 @@ public class TotemUseListener implements Listener {
 
         String alertMessage;
         String extraFlags = ", &8[&7" + flag_01 + "&7, " + flag_02 + "&7, " + flag_03 + "&8]";
-        int flagCount = flagCounts.getOrDefault(player, 0) + 1;
+        int flagCount = flagCounts.getOrDefault(player.getUniqueId(), 0) + 1;
+        flagCounts.put(player.getUniqueId(), flagCount);
         String flags = "&e[" + flagCount + "/" + punishAfter + "] ";
 
-        if (punish) {
-            flagCounts.put(player, flagCount);
-        } else {
+
+        if (!punish) {
             flags = "";
         }
+
         if (!checkToggle) {
             extraFlags = "";
         }
@@ -141,22 +149,37 @@ public class TotemUseListener implements Listener {
             }
         });
 
+        String finalExtraFlags = extraFlags;
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            Map<String, String> placeholders = new HashMap<>();
+            placeholders.put("player", player.getName());
+            placeholders.put("ping", String.valueOf(player.getPing()));
+            placeholders.put("retotem_time", String.valueOf(timeDifference));
+            placeholders.put("moving_status", finalExtraFlags);
+            placeholders.put("tps", String.valueOf(Math.round(plugin.getTPS())));
+            placeholders.put("flag_count", String.valueOf(flagCounts.get(player.getUniqueId())));
+            placeholders.put("punish_after", String.valueOf(punishAfter));
+            placeholders.put("brand", player.getClientBrandName());
+
+
+            DiscordWebhook.sendWebhook(placeholders);
+        });
+
         if (!punish) {
             return;
         }
 
         String punishCommand = settings.getPunish().getPunishCommand().replace("%player%", player.getName());
 
-        if (flagCounts.get(player) >= punishAfter) {
+        if (flagCounts.get(player.getUniqueId()) >= punishAfter) {
 
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
             });
-            flagCounts.remove(player);
+            flagCounts.remove(player.getUniqueId());
         }
+
     }
-
-
 
     public void resetAllFlagCounts() {
         flagCounts.clear();
