@@ -1,9 +1,7 @@
 package de.outdev.totemguard.listeners;
 
-import de.outdev.totemguardv2.TotemGuardV2;
-import de.outdev.totemguardv2.commands.TotemGuardCommand;
-import de.outdev.totemguardv2.data.PermissionConstants;
-import de.outdev.totemguardv2.config.Settings;
+import de.outdev.totemguard.data.PermissionConstants;
+import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.TotemGuard;
 import de.outdev.totemguard.commands.TotemGuardCommand;
 import de.outdev.totemguard.discord.DiscordWebhook;
@@ -16,17 +14,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class TotemUseListener implements Listener {
 
-    private final TotemGuardV2 plugin;
+    private final TotemGuard plugin;
     private final Settings settings;
 
-    private final TotemGuard plugin;
     private final HashMap<Player, Integer> totemUsage;
     private final HashMap<UUID, Integer> flagCounts;
 

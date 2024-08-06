@@ -1,4 +1,4 @@
-package de.outdev.totemguardv2.data;
+package de.outdev.totemguard.data;
 
 public final class PermissionConstants {
     public static final String CommandPermission = "TotemGuard.Admin";

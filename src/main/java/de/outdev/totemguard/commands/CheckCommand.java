@@ -1,7 +1,7 @@
-package de.outdev.totemguardv2.commands;
+package de.outdev.totemguard.commands;
 
-import de.outdev.totemguardv2.data.PermissionConstants;
-import de.outdev.totemguardv2.config.Settings;
+import de.outdev.totemguard.data.PermissionConstants;
+import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.TotemGuard;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

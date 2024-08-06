@@ -1,9 +1,9 @@
-package de.outdev.totemguardv2.config;
+package de.outdev.totemguard.config;
 
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
-import de.outdev.totemguardv2.TotemGuardV2;
+import de.outdev.totemguard.TotemGuard;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,10 +14,10 @@ import java.util.Optional;
 @Getter
 public class ConfigManager {
 
-    private final TotemGuardV2 plugin;
+    private final TotemGuard plugin;
     private Settings settings;
 
-    public ConfigManager(TotemGuardV2 plugin) {
+    public ConfigManager(TotemGuard plugin) {
         this.plugin = plugin;
     }
 

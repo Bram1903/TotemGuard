@@ -1,8 +1,7 @@
 package de.outdev.totemguard.commands;
 
-import de.outdev.totemguardv2.TotemGuardV2;
-import de.outdev.totemguardv2.data.PermissionConstants;
-import de.outdev.totemguardv2.config.ConfigManager;
+import de.outdev.totemguard.data.PermissionConstants;
+import de.outdev.totemguard.config.ConfigManager;
 import de.outdev.totemguard.TotemGuard;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -19,10 +18,9 @@ import java.util.UUID;
 
 public class TotemGuardCommand implements CommandExecutor, TabCompleter {
 
-    private final TotemGuardV2 plugin;
+    private final TotemGuard plugin;
     private final ConfigManager configManager;
 
-    private TotemGuard plugin = TotemGuard.getInstance();
     private static final Map<UUID, Boolean> alertToggle = new HashMap<>();
 
     public TotemGuardCommand(TotemGuard plugin) {

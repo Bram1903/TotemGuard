@@ -1,9 +1,6 @@
 package de.outdev.totemguard;
 
-import de.outdev.totemguardv2.commands.CheckCommand;
-import de.outdev.totemguardv2.commands.TotemGuardCommand;
-import de.outdev.totemguardv2.listeners.TotemUseListener;
-import de.outdev.totemguardv2.config.ConfigManager;
+import de.outdev.totemguard.config.ConfigManager;
 import lombok.Getter;
 import de.outdev.totemguard.commands.CheckCommand;
 import de.outdev.totemguard.commands.TotemGuardCommand;
@@ -15,21 +12,9 @@ import java.util.Optional;
 
 public final class TotemGuard extends JavaPlugin {
 
-    private static TotemGuard instance;
-    private static FileConfiguration config;
-    private TotemUseListener totemUseListener;
     @Getter
-    private static TotemGuardV2 instance;
+    private static TotemGuard instance;
 
-    @Nullable
-    public static TotemGuard getInstance() {
-        return instance;
-    }
-
-    @Nullable
-    public static FileConfiguration getConfiguration() {
-        return config;
-    }
     public ConfigManager configManager;
 
     @Override
