@@ -27,7 +27,7 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
 
     public CheckCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        this.settings = plugin.configManager.getSettings();
+        this.settings = plugin.getConfigManager().getSettings();
 
         this.plugin.getCommand("check").setExecutor(this);
         this.plugin.getCommand("check").setTabCompleter(this);

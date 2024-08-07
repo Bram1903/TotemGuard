@@ -28,7 +28,7 @@ public class TotemUseListener implements Listener {
 
     public TotemUseListener(TotemGuard plugin) {
         this.plugin = plugin;
-        this.settings = plugin.configManager.getSettings();
+        this.settings = plugin.getConfigManager().getSettings();
 
         this.totemUsage = new HashMap<>();
         this.flagCounts = new HashMap<>();
@@ -46,12 +46,12 @@ public class TotemUseListener implements Listener {
             return;
         }
 
-        if (plugin.getTPS() < settings.getDetements().getMinTps()) {
+        if (plugin.getTPS() < settings.getDetermine().getMinTps()) {
             return;
         }
 
         if (event.getEntity() instanceof Player player) { // Checks if the entity is a player
-            if (player.getPing() > settings.getDetements().getMaxPing()) {
+            if (player.getPing() > settings.getDetermine().getMaxPing()) {
                 return;
             }
 

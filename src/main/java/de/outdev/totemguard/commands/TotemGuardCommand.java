@@ -25,7 +25,7 @@ public class TotemGuardCommand implements CommandExecutor, TabCompleter {
 
     public TotemGuardCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        this.configManager = plugin.configManager;
+        this.configManager = plugin.getConfigManager();
 
         this.plugin.getCommand("totemguard").setExecutor(this);
     }

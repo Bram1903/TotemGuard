@@ -1,6 +1,8 @@
 package de.outdev.totemguard;
 
+import de.outdev.totemguard.commands.AlertsCommand;
 import de.outdev.totemguard.config.ConfigManager;
+import de.outdev.totemguard.manager.AlertManager;
 import lombok.Getter;
 import de.outdev.totemguard.commands.CheckCommand;
 import de.outdev.totemguard.commands.TotemGuardCommand;
@@ -15,7 +17,10 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
-    public ConfigManager configManager;
+    @Getter
+    private ConfigManager configManager;
+    @Getter
+    private AlertManager alertManager;
 
     @Override
     public void onEnable() {
@@ -28,6 +33,8 @@ public final class TotemGuard extends JavaPlugin {
             instance.getServer().getPluginManager().disablePlugin(instance);
             return;
         }
+
+        alertManager = new AlertManager(this);
 
         registerCommands();
         registerListeners();
@@ -51,6 +58,7 @@ public final class TotemGuard extends JavaPlugin {
     private void registerCommands() {
         new TotemGuardCommand(this);
         new CheckCommand(this);
+        new AlertsCommand(this);
     }
 
     private void registerListeners() {

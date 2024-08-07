@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class DiscordWebhook {
-    private static final Settings settings = TotemGuard.getInstance().configManager.getSettings();
+    private static final Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
     private static final HttpClient httpClient = HttpClient.newHttpClient();
 
     public static void sendWebhook(Map<String, String> placeholders) {
