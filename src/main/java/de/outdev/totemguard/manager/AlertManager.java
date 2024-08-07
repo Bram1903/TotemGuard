@@ -60,12 +60,12 @@ public class AlertManager implements Listener {
 
     private void initMessages() {
         this.alertsEnabled = Component.text()
-                .append(Component.text(settings.getCheckPrefix()))
+                .append(Component.text(settings.getPrefix()))
                 .append(Component.text("Alerts enabled!", NamedTextColor.GREEN))
                 .build();
 
         this.alertsDisabled = Component.text()
-                .append(Component.text(settings.getCheckPrefix()))
+                .append(Component.text(settings.getPrefix()))
                 .append(Component.text("Alerts disabled!", NamedTextColor.RED))
                 .build();
     }

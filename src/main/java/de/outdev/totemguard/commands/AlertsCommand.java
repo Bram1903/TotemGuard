@@ -44,7 +44,7 @@ public class AlertsCommand {
         NamedTextColor color = alertsEnabled ? NamedTextColor.RED : NamedTextColor.GREEN;
         String message = alertsEnabled ? "disabled" : "enabled";
 
-        sender.sendMessage(Component.text(settings.getCheckPrefix() + "Alerts are now " + message + " for " + target.getName() + ".", color));
+        sender.sendMessage(Component.text(settings.getPrefix() + "Alerts are now " + message + " for " + target.getName() + ".", color));
         alertManager.toggleAlerts(target);
     }
 }
