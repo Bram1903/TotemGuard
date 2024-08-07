@@ -41,7 +41,7 @@ public final class Settings {
     @Comment("\nDamage Amount on /check: Amount of damage to inflict on check.")
     private int damageAmountOnCheck = 0;
 
-    @Comment("\nDetements when the plugin should stop for checking a player.")
+    @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
     @Comment("\nA system that automatically punishes a player after they reach a specific number of AutoTotem flags.")
