@@ -43,7 +43,7 @@ public class TotemUseListener implements Listener {
 
         // Schedule the reset task
         long resetInterval = settings.getPunish().getRemoveFlagsMin() * 60L * 20L; // Convert minutes to ticks (20 ticks = 1 second)
-        Bukkit.getScheduler().runTaskTimer(plugin, this::resetAllFlagCounts, resetInterval, resetInterval);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetAllFlagCounts, resetInterval, resetInterval);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
