@@ -4,6 +4,7 @@ import de.outdev.totemguard.checks.impl.AutoTotemA;
 import de.outdev.totemguard.commands.CheckCommand;
 import de.outdev.totemguard.commands.TotemGuardCommand;
 import de.outdev.totemguard.config.ConfigManager;
+import de.outdev.totemguard.listeners.PlayerJoin;
 import de.outdev.totemguard.manager.AlertManager;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -51,6 +52,7 @@ public final class TotemGuard extends JavaPlugin {
 
     private void registerListeners() {
         new AutoTotemA(this);
+        new PlayerJoin(this);
     }
 
     /**

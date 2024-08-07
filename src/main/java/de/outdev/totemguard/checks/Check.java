@@ -48,7 +48,7 @@ public class Check {
         int totalViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
         int ping = player.getPing();
-        int tps = (int) Bukkit.getTPS()[0];
+        int tps = (int) Math.round(Bukkit.getTPS()[0]);
         String clientBrand = player.getClientBrandName();
 
         Component hoverInfo = Component.text()

@@ -51,6 +51,11 @@ public class AlertManager implements Listener {
         }
     }
 
+    public void enableAlerts(Player player) {
+        enabledAlerts.add(player);
+        player.sendMessage(alertsEnabled);
+    }
+
     public boolean hasAlertsEnabled(Player player) {
         return enabledAlerts.contains(player);
     }
