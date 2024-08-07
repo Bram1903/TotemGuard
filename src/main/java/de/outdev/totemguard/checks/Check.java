@@ -83,6 +83,8 @@ public class Check {
     }
 
     private void sendWebhookMessage(Player player, int totalViolations) {
+        if (!settings.getWebhook().isEnabled()) return;
+
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             Map<String, String> placeholders = new HashMap<>();
             placeholders.put("%player%", player.getName());
