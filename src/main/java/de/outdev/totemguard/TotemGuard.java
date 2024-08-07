@@ -1,6 +1,5 @@
 package de.outdev.totemguard;
 
-import de.outdev.totemguard.commands.AlertsCommand;
 import de.outdev.totemguard.config.ConfigManager;
 import de.outdev.totemguard.manager.AlertManager;
 import lombok.Getter;
@@ -24,7 +23,6 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        long start = System.currentTimeMillis();
 
         instance = this;
         configManager = new ConfigManager(this);
@@ -38,15 +36,6 @@ public final class TotemGuard extends JavaPlugin {
 
         registerCommands();
         registerListeners();
-
-        getLogger().info(" \n"+
-                "  _____    _             ___                  _ \n" +
-                " |_   _|__| |_ ___ _ __ / __|_  _ __ _ _ _ __| |\n" +
-                "   | |/ _ \\  _/ -_) '  \\ (_ | || / _` | '_/ _` |\n" +
-                "   |_|\\___/\\__\\___|_|_|_\\___|\\_,_\\__,_|_| \\__,_|\n" +
-                "                                                ");
-        long finish = System.currentTimeMillis() - start;
-        getLogger().info("Successfully loaded TotemGuard in " + finish + "ms!");
     }
 
     @Override
@@ -58,7 +47,6 @@ public final class TotemGuard extends JavaPlugin {
     private void registerCommands() {
         new TotemGuardCommand(this);
         new CheckCommand(this);
-        new AlertsCommand(this);
     }
 
     private void registerListeners() {

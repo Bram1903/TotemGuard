@@ -5,6 +5,10 @@ import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.TotemGuard;
 import de.outdev.totemguard.commands.TotemGuardCommand;
 import de.outdev.totemguard.discord.DiscordWebhook;
+import de.outdev.totemguard.manager.AlertManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -22,6 +26,7 @@ public class TotemUseListener implements Listener {
 
     private final TotemGuard plugin;
     private final Settings settings;
+    private final AlertManager alertManager;
 
     private final HashMap<Player, Integer> totemUsage;
     private final HashMap<UUID, Integer> flagCounts;
@@ -29,6 +34,7 @@ public class TotemUseListener implements Listener {
     public TotemUseListener(TotemGuard plugin) {
         this.plugin = plugin;
         this.settings = plugin.getConfigManager().getSettings();
+        this.alertManager = plugin.getAlertManager();
 
         this.totemUsage = new HashMap<>();
         this.flagCounts = new HashMap<>();
@@ -115,7 +121,6 @@ public class TotemUseListener implements Listener {
 
         boolean advancedCheck = settings.isAdvancedSystemCheck();
         boolean checkToggle = settings.isToggleExtraFlags();
-        String prefix = settings.getPrefix();
         int punishAfter = settings.getPunish().getPunishAfter();
         boolean punish = settings.getPunish().isEnabled();
 
@@ -133,17 +138,43 @@ public class TotemUseListener implements Listener {
         if (!checkToggle) {
             extraFlags = "";
         }
+
+        Component alert;
+
         if (advancedCheck) {
-            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "&8[" + realTotem + "]&7ms, " + player.getClientBrandName() + extraFlags + "&7)";
+            alert = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                    .append(Component.text(player.getName(), NamedTextColor.GOLD))
+                    .append(Component.text(" Flagged for AutoTotem ", NamedTextColor.YELLOW))
+                    .append(Component.text(flags, NamedTextColor.YELLOW))
+                    .append(Component.text("(Ping: ", NamedTextColor.GRAY))
+                    .append(Component.text(player.getPing(), NamedTextColor.GRAY))
+                    .append(Component.text(", In: ", NamedTextColor.GRAY))
+                    .append(Component.text(timeDifference, NamedTextColor.GRAY))
+                    .append(Component.text(" [", NamedTextColor.GRAY))
+                    .append(Component.text(realTotem, NamedTextColor.GRAY))
+                    .append(Component.text("]", NamedTextColor.GRAY))
+                    .append(Component.text("ms, ", NamedTextColor.GRAY))
+                    .append(Component.text(player.getClientBrandName(), NamedTextColor.GRAY))
+                    .append(Component.text(extraFlags, NamedTextColor.GRAY))
+                    .build();
         } else {
-            alertMessage = prefix + "&e" + player.getName() + " Flagged for AutoTotem " + flags + "&7(Ping: " + player.getPing() + ", In: " + timeDifference + "ms, " + player.getClientBrandName() + extraFlags + "&7)";
+            alert = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                    .append(Component.text(player.getName(), NamedTextColor.GOLD))
+                    .append(Component.text(" Flagged for AutoTotem ", NamedTextColor.YELLOW))
+                    .append(Component.text(flags, NamedTextColor.YELLOW))
+                    .append(Component.text("(Ping: ", NamedTextColor.GRAY))
+                    .append(Component.text(player.getPing(), NamedTextColor.GRAY))
+                    .append(Component.text(", In: ", NamedTextColor.GRAY))
+                    .append(Component.text(timeDifference, NamedTextColor.GRAY))
+                    .append(Component.text("ms, ", NamedTextColor.GRAY))
+                    .append(Component.text(player.getClientBrandName(), NamedTextColor.GRAY))
+                    .append(Component.text(extraFlags, NamedTextColor.GRAY))
+                    .build();
         }
 
-        Bukkit.getOnlinePlayers().forEach(onlinePlayer -> {
-            if (onlinePlayer.hasPermission(PermissionConstants.AlertPermission) && TotemGuardCommand.getToggle(onlinePlayer)) {
-                sendMiniMessage(onlinePlayer, alertMessage);
-            }
-        });
+        this.alertManager.sentAlert(alert);
 
         String finalExtraFlags = extraFlags;
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {

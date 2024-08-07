@@ -1,77 +1,98 @@
 package de.outdev.totemguard.commands;
 
-import de.outdev.totemguard.data.PermissionConstants;
 import de.outdev.totemguard.config.ConfigManager;
 import de.outdev.totemguard.TotemGuard;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
+import de.outdev.totemguard.config.Settings;
+import de.outdev.totemguard.manager.AlertManager;
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.PlayerArgument;
+import dev.jorel.commandapi.exceptions.WrapperCommandSyntaxException;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-public class TotemGuardCommand implements CommandExecutor, TabCompleter {
+public class TotemGuardCommand {
 
-    private final TotemGuard plugin;
     private final ConfigManager configManager;
-
-    private static final Map<UUID, Boolean> alertToggle = new HashMap<>();
+    private final AlertManager alertManager;
 
     public TotemGuardCommand(TotemGuard plugin) {
-        this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
+        this.alertManager = plugin.getAlertManager();
 
-        this.plugin.getCommand("totemguard").setExecutor(this);
+        registerTotemGuardCommand();
     }
 
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
-        if (args.length == 0) {
-            sender.sendMessage("§cPlease provide an argument!");
-            return false;
-        }
+    private void registerTotemGuardCommand() {
+        new CommandAPICommand("TotemGuard")
+                .withPermission("TotemGuard")
+                .withAliases("tg")
+                .withSubcommand(new CommandAPICommand("alerts")
+                        .withPermission("TotemGuard.Alerts")
+                        .withOptionalArguments(new PlayerArgument("target"))
+                        .executes((sender, args) -> {
+                            if (sender instanceof Player) {
+                                handlePlayerCommand((Player) sender, args.getOptional("target"));
+                            } else {
+                                handleConsoleCommand(sender, args.get("target"));
+                            }
+                        }))
+                .withSubcommand(new CommandAPICommand("reload")
+                        .withPermission("TotemGuard.Reload")
+                        .executes((sender, args) -> {
+                            configManager.reload();
+                            sender.sendMessage(Component.text("The configuration has been reloaded!", NamedTextColor.GREEN));
+                        }))
+                .register();
+    }
 
-        String prefix = configManager.getSettings().getPrefix().replace("&", "§");;
-
-        if (!(sender.hasPermission(PermissionConstants.CommandPermission))) {
-            sender.sendMessage("§cYou do not have permission to use this!");
-            return false;
-        }
-
-        if (args[0].equalsIgnoreCase("reload")) {
-            configManager.reload();
-            sender.sendMessage(prefix+"§aReloaded configuration!");
-        }
-
-        if (args[0].equalsIgnoreCase("alerts")) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage("§cOnly players can toggle alerts!");
-                return false;
+    private void handlePlayerCommand(Player player, Optional<Object> targetArg) throws WrapperCommandSyntaxException {
+        if (targetArg.isEmpty()) {
+            alertManager.toggleAlerts(player);
+        } else {
+            Player target = (Player) targetArg.get();
+            if (!player.hasPermission("TotemGuard.Alerts.Others")) {
+                throw CommandAPI.failWithString("You do not have permission to toggle alerts for other players.");
             }
 
-            boolean currentState = getToggle(player);
-            setToggle(player, !currentState);
-            sender.sendMessage(prefix+"§aAlerts " + (currentState ? "§cdisabled" : "§aenabled") + "§a!");
+            if (player.equals(target)) {
+                alertManager.toggleAlerts(target);
+                return;
+            }
+
+            alertManager.toggleAlerts(target);
+            sendToggleMessage(player, target);
         }
-        return true;
     }
 
-    @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        return List.of("reload", "alerts");
+    private void handleConsoleCommand(CommandSender sender, Object targetArg) throws WrapperCommandSyntaxException {
+        Player target = (Player) targetArg;
+
+        alertManager.toggleAlerts(target);
+        sendToggleMessage(sender, target);
     }
 
-    public static boolean getToggle(Player player) {
-        return alertToggle.getOrDefault(player.getUniqueId(), true);
-    }
+    private void sendToggleMessage(CommandSender sender, Player target) {
+        Settings settings = configManager.getSettings();
 
-    public static void setToggle(Player player, boolean value) {
-        alertToggle.put(player.getUniqueId(), value);
+        boolean alertsEnabled = alertManager.hasAlertsEnabled(target);
+        NamedTextColor color = alertsEnabled ? NamedTextColor.RED : NamedTextColor.GREEN;
+        String message = alertsEnabled ? "disabled" : "enabled";
+
+        Component alertMessage = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                .append(Component.text("Alerts are now ", NamedTextColor.WHITE))
+                .append(Component.text(message, color))
+                .append(Component.text(" for ", NamedTextColor.WHITE))
+                .append(Component.text(target.getName(), NamedTextColor.AQUA))
+                .append(Component.text(".", NamedTextColor.WHITE))
+                .build();
+
+        sender.sendMessage(alertMessage);
     }
 }

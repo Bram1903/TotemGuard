@@ -9,11 +9,6 @@ libraries:
   - de.exlll:configlib-yaml:${configlibVersion}
   - de.exlll:configlib-paper:${configlibVersion}
 commands:
-  TotemGuard:
-    description: Main plugin command used to reload the plugin.
-    permission: TotemGuard.Admin
-    permission-message: Unknown command. Type "/help" for help
-    aliases: tg
   Check:
     description: Checks a player for manually for AutoTotem.
     permission: TotemGuard.Check
@@ -22,12 +17,12 @@ commands:
       - totemcheck
       - checktotem
 permissions:
-  TotemGuard.Admin:
-    description: Allows the player to use the /totemguard command.
+  TotemGuard.Alerts:
+    description: Allows the player to use /totemguard alerts.
+    default: op
+  TotemGuard.Reload:
+    description: Allows the player to use /totemguard reload.
     default: op
   TotemGuard.Check:
     description: Allows the player to use the /check command.
-    default: op
-  TotemGuard.Alert:
-    description: Allows the player to receive a notification when a player is detected using AutoTotem.
     default: op

@@ -34,9 +34,9 @@ public class AlertManager implements Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    public void sentAlert(String alert) {
+    public void sentAlert(Component alert) {
         for (Player player : enabledAlerts) {
-            player.sendMessage(Component.text(alert, NamedTextColor.RED));
+            player.sendMessage(alert);
         }
     }
 
