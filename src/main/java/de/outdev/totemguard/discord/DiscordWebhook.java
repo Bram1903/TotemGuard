@@ -2,20 +2,22 @@ package de.outdev.totemguard.discord;
 
 import de.outdev.totemguard.TotemGuard;
 import de.outdev.totemguard.config.Settings;
-import okhttp3.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class DiscordWebhook {
     private static final Settings settings = TotemGuard.getInstance().configManager.getSettings();
-    private static final OkHttpClient httpClient = new OkHttpClient();
+    private static final HttpClient httpClient = HttpClient.newHttpClient();
 
     public static void sendWebhook(Map<String, String> placeholders) {
         if (!settings.getWebhook().isEnabled()) return;
@@ -60,19 +62,24 @@ public class DiscordWebhook {
         embeds.add(embed);
         json.put("embeds", embeds);
 
-        String jsonString = json.toString();
+        String jsonString = json.toJSONString();
 
-        RequestBody body = RequestBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
-
-        Request request = new Request.Builder()
-                .url(url)
-                .post(body)
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonString))
                 .build();
 
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("Unexpected code " + response + ": " + response.body().string());
-            }
+        HttpResponse<String> response = null;
+
+        try {
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (response.statusCode() != 200 && response.statusCode() != 204) {
+            throw new IOException("Unexpected response code " + response.statusCode() + ": " + response.body());
         }
     }
 }
