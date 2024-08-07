@@ -23,7 +23,6 @@ dependencies {
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.3")
 }
 
 group = "de.outdev.totemguard"
