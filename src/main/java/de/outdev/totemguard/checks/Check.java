@@ -87,13 +87,13 @@ public class Check {
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             Map<String, String> placeholders = new HashMap<>();
-            placeholders.put("%player%", player.getName());
-            placeholders.put("%check%", checkName);
-            placeholders.put("%violations%", String.valueOf(totalViolations));
-            placeholders.put("%max_violations%", String.valueOf(maxViolations));
-            placeholders.put("%client_brand%", player.getClientBrandName());
-            placeholders.put("%ping%", String.valueOf(player.getPing()));
-            placeholders.put("%tps%", String.valueOf((int) Bukkit.getTPS()[0]));
+            placeholders.put("player", player.getName());
+            placeholders.put("check", checkName);
+            placeholders.put("violations", String.valueOf(totalViolations));
+            placeholders.put("max_violations", String.valueOf(maxViolations));
+            placeholders.put("client_brand", player.getClientBrandName());
+            placeholders.put("ping", String.valueOf(player.getPing()));
+            placeholders.put("tps", String.valueOf((int) Bukkit.getTPS()[0]));
 
             DiscordWebhook.sendWebhook(placeholders);
         });
