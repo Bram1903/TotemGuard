@@ -5,6 +5,7 @@ import de.outdev.totemguard.config.Settings;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -60,12 +61,12 @@ public class AlertManager implements Listener {
 
     private void initMessages() {
         this.alertsEnabled = Component.text()
-                .append(Component.text(settings.getPrefix()))
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
                 .append(Component.text("Alerts enabled!", NamedTextColor.GREEN))
                 .build();
 
         this.alertsDisabled = Component.text()
-                .append(Component.text(settings.getPrefix()))
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
                 .append(Component.text("Alerts disabled!", NamedTextColor.RED))
                 .build();
     }
