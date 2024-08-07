@@ -104,6 +104,7 @@ public class Check {
 
         if (totalViolations >= maxViolations) {
             String punishCommand = settings.getPunish().getPunishCommand().replace("%player%", player.getName());
+            violations.remove(player.getUniqueId());
 
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
