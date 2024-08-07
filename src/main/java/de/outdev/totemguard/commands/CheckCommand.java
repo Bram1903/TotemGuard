@@ -3,6 +3,9 @@ package de.outdev.totemguard.commands;
 import de.outdev.totemguard.TotemGuard;
 import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.data.PermissionConstants;
+import de.outdev.totemguard.util.Util;
+import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.PlayerArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -20,53 +23,50 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CheckCommand implements CommandExecutor, TabCompleter {
+public class CheckCommand {
 
     private final TotemGuard plugin;
+    private final Util util;
     private final Settings settings;
 
     public CheckCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.settings = plugin.getConfigManager().getSettings();
+        this.util = new Util(plugin);
 
-        this.plugin.getCommand("check").setExecutor(this);
-        this.plugin.getCommand("check").setTabCompleter(this);
+        registerCheckCommand();
     }
 
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    private void registerCheckCommand() {
 
-        if (!(sender instanceof Player executor)) {
-            sender.sendMessage(ChatColor.RED + "You need to be a player to execute this command!");
-            return false;
-        }
+        new CommandAPICommand("check")
+                .withPermission("TotemGuard.Check")
+                .withAliases("totemcheck", "checktotem")
+                .withArguments(new PlayerArgument("target"))
+                .executesPlayer((sender, args) -> {
+                    Player player = (Player) args.get(0);
 
-        if (!executor.hasPermission(PermissionConstants.CheckPermission)) {
-            sendMiniMessage(executor, "&cYou do not have the required permissions to execute this command!");
-            return false;
-        }
+                    handleCheckCommand(sender, player);
+                })
+                .register();
 
-        if (args.length != 1) {
-            sendMiniMessage(executor, "&cUsage: /check <player>");
-            return false;
-        }
+    }
 
-        Player player = Bukkit.getPlayer(args[0]);
+    private void handleCheckCommand(Player sender, Player player) {
         if (player == null) {
-            sendMiniMessage(executor, "&cPlayer not found!");
-            return false;
+            Util.sendMiniMessage(sender, "<red>Player not found!");
+            return;
         }
 
-        if (!hasTotemInOffhand(player)) {
-            sendMiniMessage(executor, "&cThis player has no totem in their offhand!");
-            executor.playSound(executor.getLocation(), Sound.ENTITY_ENDERMAN_DEATH, 1, 1);
-            return true;
+        if (!hasTotemInOffhand(sender)) {
+            Util.sendMiniMessage(sender, "<red>This player has no totem in their offhand!");
+            sender.playSound(sender, Sound.ENTITY_ENDERMAN_DEATH, 1, 1);
+            return;
         }
 
         ItemStack totem = player.getInventory().getItemInOffHand();
         player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
 
-        // Apply damage immediately
         if (settings.isToggleDamageOnCheck()) {
             double damage = settings.getDamageAmountOnCheck() > 0 ? settings.getDamageAmountOnCheck() : player.getHealth() / 1.25;
             damage = Math.min(damage, player.getHealth() - 1);
@@ -75,38 +75,34 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
             }
         }
 
-        // Schedule a task to run periodically and check for the totem
         new BukkitRunnable() {
             int elapsedTicks = 0;
 
             @Override
             public void run() {
                 if (hasTotemInOffhand(player)) {
-                    failed(player, executor, elapsedTicks);
+                    failed(player, sender, elapsedTicks);
                     cancel();
                     player.getInventory().setItemInOffHand(totem); // Restore the totem
                 } else if (elapsedTicks >= settings.getCheckTime()) {
-                    sendMiniMessage(executor, "&aConcluded check. The player does not have a totem in their offhand. (" + settings.getCheckTime() + " ticks)");
+                    Util.sendMiniMessage(sender, "<green>Concluded check. The player does not have a totem in their offhand. (" + settings.getCheckTime() + " ticks)");
                     player.getInventory().setItemInOffHand(totem); // Restore the totem
                     cancel();
                 }
                 elapsedTicks += 1;
             }
-        }.runTaskTimer(plugin, 0L, 1); // Check every checkInterval ticks
+        }.runTaskTimer(plugin, 0L, 1);
 
-        return true;
     }
+
 
     private boolean hasTotemInOffhand(Player player) {
         ItemStack itemInOffHand = player.getInventory().getItemInOffHand();
         return itemInOffHand != null && itemInOffHand.getType() == Material.TOTEM_OF_UNDYING;
     }
 
-    private void sendMiniMessage(Player player, String message) {
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
-    }
 
-    private void failed(Player player, Player executor, int elapsedTicks) {
+    private void failed(Player player, Player executor, int elapsedTicks) { // TODO replace later
         String flag_01 = "§cS";
         String flag_02 = "§cB";
         String flag_03 = "§cM";
@@ -116,24 +112,12 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
         if (player.isBlocking()) {
             flag_02 = "§aB";
         }
-        if (player.isSprinting() || player.isClimbing() || player.isJumping()) { // Set in the config later
+        if (player.isSprinting() || player.isClimbing() || player.isJumping()) {
             flag_03 = "§aM";
         }
 
         String extraFlags = "§8[§7" + flag_01 + "§7, " + flag_02 + "§7, " + flag_03 + "§8]";
 
-        sendMiniMessage(executor, settings.getCheckPrefix() + "&6" + player.getName() + " Failed the AutoTotem check &7(in: " + elapsedTicks + " ticks, Ping: " + player.getPing() + ", Brand: " + player.getClientBrandName() + ", Gamemode: " + player.getGameMode() + ", " + extraFlags + "&7) &8TPS: " + plugin.getTPS());
-    }
-
-    @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        if (args.length == 1) {
-            List<String> playerNames = new ArrayList<>();
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                playerNames.add(player.getName());
-            }
-            return playerNames;
-        }
-        return null;
+        Util.sendMiniMessage(executor, settings.getCheckPrefix() + "&6" + player.getName() + " Failed the AutoTotem check &7(in: " + elapsedTicks + " ticks, Ping: " + player.getPing() + ", Brand: " + player.getClientBrandName() + ", Gamemode: " + player.getGameMode() + ", " + extraFlags + "&7) &8TPS: " + plugin.getTPS());
     }
 }
