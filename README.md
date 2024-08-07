@@ -1,6 +1,7 @@
 ## TotemGuard, AutoTotem AntiCheat
 
-TotemGuard is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp & OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
+TotemGuard is a plugin specifically designed to detect players using the 'AutoTotem' hack. Developed by Asleepp &
+OutDev, this plugin ensures fair play on your server by checking for unauthorized totem usage.
 
 ### Features
 
@@ -11,10 +12,11 @@ TotemGuard is a plugin specifically designed to detect players using the 'AutoTo
 - **Damage on Check**: Optionally damage players to ensure accurate results.
 - **Extra Flags**: Monitor additional player actions like sneaking, blocking, sprinting, swimming, and climbing.
 - **Automatic Punish System**: Automatically penalizes players who accumulate too many flags.
-  - **`punish`**: Enable or disable the automatic punishment system.
-  - **`punish_after`**: Number of flags before applying punishment.
-  - **`remove_flags_min`**: Interval (in minutes) for globally resetting all players' flags.
-  - **`punish_command:`**: Command executed when the flag limit is reached. `%player%` is replaced with the player’s name.
+    - **`punish`**: Enable or disable the automatic punishment system.
+    - **`punish_after`**: Number of flags before applying punishment.
+    - **`remove_flags_min`**: Interval (in minutes) for globally resetting all players' flags.
+    - **`punish_command:`**: Command executed when the flag limit is reached. `%player%` is replaced with the player’s
+      name.
 
 ### Installation
 
@@ -154,7 +156,8 @@ punish_command: "ban %player% 1d AutoTotem"
 - **`totemguard.check`**: Allows checking players for unauthorized totem usage.
 - **`totemguard.alert`**: Receives alerts from the plugin.
 
-### Webhook Integration 
+### Webhook Integration
+
 (not added yet)
 
 TotemGuard can send notifications to a Discord webhook. Configure the webhook settings in the `config.yml`:
@@ -171,7 +174,8 @@ TotemGuard can send notifications to a Discord webhook. Configure the webhook se
 
 ### Advanced Configuration
 
-- **`toggle_extra_flags`**: Enable or disable checks for additional actions like sneaking, blocking, sprinting, swimming, and climbing.
+- **`toggle_extra_flags`**: Enable or disable checks for additional actions like sneaking, blocking, sprinting,
+  swimming, and climbing.
 - **`toggle_automatic_normal_checks`**: Enable or disable automatic normal checks.
 - **`check_time`**: The duration in ticks for the /check command.
 - **`normal_check_time_ms`**: Interval in milliseconds for normal checks (50 to 250 ms). 

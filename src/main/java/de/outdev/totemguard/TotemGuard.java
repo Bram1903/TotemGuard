@@ -1,11 +1,11 @@
 package de.outdev.totemguard;
 
+import de.outdev.totemguard.checks.impl.AutoTotemA;
+import de.outdev.totemguard.commands.CheckCommand;
+import de.outdev.totemguard.commands.TotemGuardCommand;
 import de.outdev.totemguard.config.ConfigManager;
 import de.outdev.totemguard.manager.AlertManager;
 import lombok.Getter;
-import de.outdev.totemguard.commands.CheckCommand;
-import de.outdev.totemguard.commands.TotemGuardCommand;
-import de.outdev.totemguard.listeners.TotemUseListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -50,7 +50,7 @@ public final class TotemGuard extends JavaPlugin {
     }
 
     private void registerListeners() {
-        new TotemUseListener(this);
+        new AutoTotemA(this);
     }
 
     /**

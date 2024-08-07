@@ -1,10 +1,11 @@
 package de.outdev.totemguard.commands;
 
-import de.outdev.totemguard.data.PermissionConstants;
-import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.TotemGuard;
+import de.outdev.totemguard.config.Settings;
+import de.outdev.totemguard.data.PermissionConstants;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -12,7 +13,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.Material;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -120,9 +120,9 @@ public class CheckCommand implements CommandExecutor, TabCompleter {
             flag_03 = "§aM";
         }
 
-        String extraFlags = "§8[§7" + flag_01 + "§7, " + flag_02 +"§7, " + flag_03+"§8]";
+        String extraFlags = "§8[§7" + flag_01 + "§7, " + flag_02 + "§7, " + flag_03 + "§8]";
 
-        sendMiniMessage(executor, settings.getCheckPrefix() + "&6" + player.getName() + " Failed the AutoTotem check &7(in: " + elapsedTicks + " ticks, Ping: " + player.getPing() + ", Brand: " +player.getClientBrandName()+", Gamemode: " +player.getGameMode()+ ", " +extraFlags+"&7) &8TPS: " + plugin.getTPS());
+        sendMiniMessage(executor, settings.getCheckPrefix() + "&6" + player.getName() + " Failed the AutoTotem check &7(in: " + elapsedTicks + " ticks, Ping: " + player.getPing() + ", Brand: " + player.getClientBrandName() + ", Gamemode: " + player.getGameMode() + ", " + extraFlags + "&7) &8TPS: " + plugin.getTPS());
     }
 
     @Override

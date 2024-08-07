@@ -1,7 +1,7 @@
 package de.outdev.totemguard.commands;
 
-import de.outdev.totemguard.config.ConfigManager;
 import de.outdev.totemguard.TotemGuard;
+import de.outdev.totemguard.config.ConfigManager;
 import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.manager.AlertManager;
 import dev.jorel.commandapi.CommandAPI;
@@ -14,7 +14,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.Optional;
 
 public class TotemGuardCommand {
 
