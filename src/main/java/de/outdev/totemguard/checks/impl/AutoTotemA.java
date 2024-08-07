@@ -77,20 +77,13 @@ public class AutoTotemA extends Check implements Listener {
 
             int realTotem = timeDifference - player.getPing();
 
-            Component details = Component.text()
-                    .append(Component.text("Time Difference: ", NamedTextColor.GOLD))
-                    .append(Component.text(timeDifference, NamedTextColor.GREEN))
-                    .append(Component.newline())
-                    .append(Component.text("Real Totem: ", NamedTextColor.GOLD))
-                    .append(Component.text(realTotem, NamedTextColor.GREEN))
-                    .build();
 
             if (settings.isAdvancedSystemCheck()) {
                 if (realTotem <= settings.getTriggerAmountMs()) {
-                    flag(player, details);
+                    flag(player, timeDifference, realTotem);
                 }
             } else {
-                flag(player, details);
+                flag(player, timeDifference, realTotem);
             }
         }
     }

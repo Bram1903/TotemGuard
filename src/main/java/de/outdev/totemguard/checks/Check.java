@@ -9,7 +9,10 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,43 +46,96 @@ public class Check {
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetAllFlagCounts, resetInterval, resetInterval);
     }
 
-    public final void flag(Player player, Component details) {
+    public String getMainHandItemString(Player player) {
+        ItemStack itemInMainHand = player.getInventory().getItemInMainHand();
+        if (itemInMainHand != null && ((ItemStack) itemInMainHand).getType() != Material.AIR) {
+            ItemMeta itemMeta = itemInMainHand.getItemMeta();
+            String itemName = itemMeta.hasDisplayName() ? itemMeta.getDisplayName() : itemInMainHand.getType().name();
+            return itemName;
+        } else {
+            return "Empty Hand";
+        }
+    }
+
+    public final void flag(Player player, int timeDifference, int realTotem) {
         UUID uuid = player.getUniqueId();
         int totalViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
         int ping = player.getPing();
         int tps = (int) Math.round(Bukkit.getTPS()[0]);
+        int health = (int) player.getHealth();
+        boolean sneaking = player.isSneaking();
+        boolean blocking = player.isBlocking();
+        boolean sprinting = false;
+        if (player.isSwimming() || player.isSprinting() || player.isClimbing()) {
+            sprinting = true;
+        }
+
+        String item = getMainHandItemString(player);
+        String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = player.getClientBrandName();
 
         Component hoverInfo = Component.text()
-                .append(Component.text("Client: ", NamedTextColor.GOLD))
-                .append(Component.text(clientBrand, NamedTextColor.GREEN))
+                .append(Component.text("Ping: ", NamedTextColor.GRAY))
+                .append(Component.text(ping, NamedTextColor.GOLD))
+                .append(Component.text(" |", NamedTextColor.DARK_GRAY))
+                .append(Component.text(" TPS: ", NamedTextColor.GRAY))
+                .append(Component.text(tps, NamedTextColor.GOLD))
+                .append(Component.text(" |", NamedTextColor.DARK_GRAY))
+                .append(Component.text(" Client: ", NamedTextColor.GRAY))
+                .append(Component.text(clientBrand, NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.text("Ping: ", NamedTextColor.GOLD))
-                .append(Component.text(ping, NamedTextColor.GREEN))
                 .append(Component.newline())
-                .append(Component.text("TPS: ", NamedTextColor.GOLD))
-                .append(Component.text(tps, NamedTextColor.GREEN))
+                .append(Component.text("Player: ", NamedTextColor.GRAY))
+                .append(Component.text(player.getName(), NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Gamemode: ", NamedTextColor.GRAY))
+                .append(Component.text(gamemode, NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Health: ", NamedTextColor.GRAY))
+                .append(Component.text(health, NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
+                .append(Component.text(item, NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.newline())
+                .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
+                .append(Component.text(sneaking, NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Blocking: ", NamedTextColor.GRAY))
+                .append(Component.text(blocking, NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
+                .append(Component.text(sprinting, NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.newline())
+                .append(Component.text("TotemTime: ", NamedTextColor.GRAY))
+                .append(Component.text(timeDifference+"ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("RealTotemTime: ", NamedTextColor.GRAY))
+                .append(Component.text(realTotem+"ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.newline())
+                .append(Component.text("Click to ", NamedTextColor.GRAY))
+                .append(Component.text("teleport ", NamedTextColor.GOLD))
+                .append(Component.text("to  "+player.getName()+".", NamedTextColor.GRAY))
                 .build();
 
         Component message = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("Player: ", NamedTextColor.RED))
                 .append(Component.text(player.getName(), NamedTextColor.YELLOW))
-                .append(Component.text(" failed check: ", NamedTextColor.RED))
-                .append(Component.text(checkName, NamedTextColor.YELLOW)
+                .append(Component.text(" failed ", NamedTextColor.YELLOW))
+                .append(Component.text(checkName, NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(Component.text(checkDescription, NamedTextColor.GRAY))))
-                .append(Component.text(" - ", NamedTextColor.RED))
-                .append(Component.text("Additional Details", NamedTextColor.RED)
-                        .hoverEvent(HoverEvent.showText(details)))
-                .append(Component.text(" [Hover for Client Info]", NamedTextColor.BLUE)
+                .append(Component.text(" [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.YELLOW))
+                .append(Component.text(" (In: "+timeDifference + "ms, Ping: "+ping+")", NamedTextColor.GRAY))
+                .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
                         .hoverEvent(HoverEvent.showText(hoverInfo)))
-                .append(Component.text(" [Failed [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.RED))
                 .build();
 
-        alertManager.sentAlert(message);
-        sendWebhookMessage(player, totalViolations);
-        punishPlayer(player, totalViolations);
+            alertManager.sentAlert(message);
+            sendWebhookMessage(player, totalViolations);
+            punishPlayer(player, totalViolations);
     }
 
     private void sendWebhookMessage(Player player, int totalViolations) {
