@@ -42,7 +42,7 @@ public final class Settings {
     private int damageAmountOnCheck = 0;
 
     @Comment("\nDetements when the plugin should stop for checking a player.")
-    private Detements detements = new Detements();
+    private Determine determine = new Determine();
 
     @Comment("\nA system that automatically punishes a player after they reach a specific number of AutoTotem flags.")
     private Punish punish = new Punish();
@@ -90,7 +90,7 @@ public final class Settings {
 
     @Configuration
     @Getter
-    public static class Detements {
+    public static class Determine {
         @Comment("Minimum TPS.")
         private double minTps = 15.0;
 
