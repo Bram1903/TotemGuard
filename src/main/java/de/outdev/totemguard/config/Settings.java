@@ -27,7 +27,7 @@ public final class Settings {
     private int checkTime = 5;
 
     @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-    private int normalCheckTimeMs = 260;
+    private int normalCheckTimeMs = 300;
 
     @Comment("\nClick Time Difference [Experimental]: Measures the amount of time the hacked client takes to move a totem from the inventory slot to the offhand. \nRecommended value: true ")
     private boolean clickTimeDifference = true;
