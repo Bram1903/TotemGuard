@@ -23,7 +23,7 @@ public class Check {
 
     private final ConcurrentHashMap<UUID, Integer> violations;
 
-    private final String checkName;
+    private String checkName;
     private final String checkDescription;
     private final int maxViolations;
 
@@ -57,18 +57,21 @@ public class Check {
         }
     }
 
-    public final void flag(Player player, int timeDifference, int realTotem) {
+    public final void flag(Player player, int timeDifference, int realTotem, int clickTimeDifference) {
         UUID uuid = player.getUniqueId();
         int totalViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
         int ping = player.getPing();
         int tps = (int) Math.round(Bukkit.getTPS()[0]);
-        int health = (int) player.getHealth();
         boolean sneaking = player.isSneaking();
         boolean blocking = player.isBlocking();
         boolean sprinting = false;
         if (player.isSwimming() || player.isSprinting() || player.isClimbing()) {
             sprinting = true;
+        }
+        checkName = "AutoTotemA";
+        if (sprinting || blocking || sneaking){
+            checkName = "AutoTotemB";
         }
 
         String item = getMainHandItemString(player);
@@ -95,9 +98,6 @@ public class Check {
                 .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
                 .append(Component.text(item, NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.text("Health: ", NamedTextColor.GRAY))
-                .append(Component.text(health, NamedTextColor.GOLD))
-                .append(Component.newline())
                 .append(Component.newline())
                 .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
                 .append(Component.text(sneaking, NamedTextColor.GOLD))
@@ -114,6 +114,9 @@ public class Check {
                 .append(Component.newline())
                 .append(Component.text("RealTotemTime: ", NamedTextColor.GRAY))
                 .append(Component.text(realTotem+"ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("ClickTimeDifference: ", NamedTextColor.GRAY))
+                .append(Component.text(clickTimeDifference+"ms", NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.newline())
                 .append(Component.text("Click to ", NamedTextColor.GRAY))

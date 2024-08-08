@@ -27,12 +27,15 @@ public final class Settings {
     private int checkTime = 5;
 
     @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-    private int normalCheckTimeMs = 175;
+    private int normalCheckTimeMs = 260;
 
-    @Comment("\nAdvanced System Check: Enables an advanced system check that calculates the real totem time making the flag more accurate.")
+    @Comment("\nClick Time Difference [Experimental]: Measures the amount of time the hacked client takes to move a totem from the inventory slot to the offhand. \nRecommended value: true ")
+    private boolean clickTimeDifference = true;
+
+    @Comment("\nAdvanced System Check: Enables an advanced system check that calculates the real totem time making the flag more accurate. \nRecommended value: false")
     private boolean advancedSystemCheck = false;
 
-    @Comment("\nTrigger amount: The flag is only triggered if this value (in ms) is reached.")
+    @Comment("\nTrigger amount: The flag is only triggered if this value (in ms) is reached. (Advanced System Check)")
     private int triggerAmountMs = 75;
 
     @Comment("\nDamage on /check: Toggles damage on /check command to ensure a more accurate result.")

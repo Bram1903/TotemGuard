@@ -73,7 +73,7 @@ public class CheckCommand extends Check {
             @Override
             public void run() {
                 if (hasTotemInOffhand(player)) {
-                    flag(player, Component.text(sender.getName()));
+                    //flag(player, Component.text(sender.getName()));
                     cancel();
                     player.getInventory().setItemInOffHand(totem); // Restore the totem
                 } else if (elapsedTicks >= settings.getCheckTime()) {
