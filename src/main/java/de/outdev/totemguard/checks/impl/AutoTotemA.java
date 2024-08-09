@@ -87,6 +87,7 @@ public class AutoTotemA extends Check implements Listener {
             int clickTimeDifference = currentTime - clickTimes;
 
             totemUsage.remove(player);
+            clickTimes.remove(player);
 
             if (timeDifference > settings.getNormalCheckTimeMs()) {
                 return;
