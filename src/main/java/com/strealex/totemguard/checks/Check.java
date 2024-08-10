@@ -1,11 +1,11 @@
-package de.outdev.totemguard.checks;
+package com.strealex.totemguard.checks;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
-import de.outdev.totemguard.TotemGuard;
-import de.outdev.totemguard.config.Settings;
-import de.outdev.totemguard.discord.DiscordWebhook;
-import de.outdev.totemguard.manager.AlertManager;
+import com.strealex.totemguard.TotemGuard;
+import com.strealex.totemguard.config.Settings;
+import com.strealex.totemguard.discord.DiscordWebhook;
+import com.strealex.totemguard.manager.AlertManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;

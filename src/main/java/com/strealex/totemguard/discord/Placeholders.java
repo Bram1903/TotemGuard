@@ -1,4 +1,4 @@
-package de.outdev.totemguard.discord;
+package com.strealex.totemguard.discord;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package de.outdev.totemguard.config;
+package com.strealex.totemguard.config;
 
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;

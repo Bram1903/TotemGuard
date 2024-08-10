@@ -1,9 +1,9 @@
-package de.outdev.totemguard.commands;
+package com.strealex.totemguard.commands;
 
-import de.outdev.totemguard.TotemGuard;
-import de.outdev.totemguard.config.ConfigManager;
-import de.outdev.totemguard.config.Settings;
-import de.outdev.totemguard.manager.AlertManager;
+import com.strealex.totemguard.TotemGuard;
+import com.strealex.totemguard.config.ConfigManager;
+import com.strealex.totemguard.config.Settings;
+import com.strealex.totemguard.manager.AlertManager;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.PlayerArgument;

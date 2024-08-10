@@ -1,7 +1,7 @@
-package de.outdev.totemguard.util;
+package com.strealex.totemguard.util;
 
-import de.outdev.totemguard.TotemGuard;
-import de.outdev.totemguard.config.Settings;
+import com.strealex.totemguard.TotemGuard;
+import com.strealex.totemguard.config.Settings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;

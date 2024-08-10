@@ -1,7 +1,7 @@
-package de.outdev.totemguard.discord;
+package com.strealex.totemguard.discord;
 
-import de.outdev.totemguard.TotemGuard;
-import de.outdev.totemguard.config.Settings;
+import com.strealex.totemguard.TotemGuard;
+import com.strealex.totemguard.config.Settings;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 

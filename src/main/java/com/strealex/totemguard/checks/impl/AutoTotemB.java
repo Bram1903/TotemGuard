@@ -1,7 +1,7 @@
-package de.outdev.totemguard.checks.impl;
+package com.strealex.totemguard.checks.impl;
 
-import de.outdev.totemguard.TotemGuard;
-import de.outdev.totemguard.checks.Check;
+import com.strealex.totemguard.TotemGuard;
+import com.strealex.totemguard.checks.Check;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;

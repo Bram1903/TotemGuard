@@ -1,12 +1,12 @@
-package de.outdev.totemguard;
+package com.strealex.totemguard;
 
-import de.outdev.totemguard.checks.impl.AutoTotemA;
-import de.outdev.totemguard.checks.impl.AutoTotemB;
-import de.outdev.totemguard.commands.CheckCommand;
-import de.outdev.totemguard.commands.TotemGuardCommand;
-import de.outdev.totemguard.config.ConfigManager;
-import de.outdev.totemguard.listeners.PlayerJoin;
-import de.outdev.totemguard.manager.AlertManager;
+import com.strealex.totemguard.checks.impl.AutoTotemA;
+import com.strealex.totemguard.checks.impl.AutoTotemB;
+import com.strealex.totemguard.commands.CheckCommand;
+import com.strealex.totemguard.commands.TotemGuardCommand;
+import com.strealex.totemguard.config.ConfigManager;
+import com.strealex.totemguard.listeners.PlayerJoin;
+import com.strealex.totemguard.manager.AlertManager;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;

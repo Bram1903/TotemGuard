@@ -1,9 +1,9 @@
-package de.outdev.totemguard.commands;
+package com.strealex.totemguard.commands;
 
-import de.outdev.totemguard.TotemGuard;
-import de.outdev.totemguard.checks.Check;
-import de.outdev.totemguard.config.Settings;
-import de.outdev.totemguard.util.Util;
+import com.strealex.totemguard.TotemGuard;
+import com.strealex.totemguard.checks.Check;
+import com.strealex.totemguard.config.Settings;
+import com.strealex.totemguard.util.Util;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 import org.bukkit.Material;

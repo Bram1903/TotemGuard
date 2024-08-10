@@ -1,7 +1,7 @@
-package de.outdev.totemguard.listeners;
+package com.strealex.totemguard.listeners;
 
-import de.outdev.totemguard.TotemGuard;
-import de.outdev.totemguard.manager.AlertManager;
+import com.strealex.totemguard.TotemGuard;
+import com.strealex.totemguard.manager.AlertManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
