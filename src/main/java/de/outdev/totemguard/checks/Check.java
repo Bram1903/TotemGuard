@@ -109,8 +109,8 @@ public abstract class Check {
         }
 
         alertManager.sentAlert(message);
-        //sendWebhookMessage(player, totalViolations);
-        //punishPlayer(player, totalViolations);
+        sendWebhookMessage(player, totalViolations);
+        punishPlayer(player, totalViolations);
     }
 
     private void sendWebhookMessage(Player player, int totalViolations) {
