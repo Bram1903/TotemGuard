@@ -63,13 +63,6 @@ public abstract class Check {
         String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = player.getClientBrandName();
 
-        Component teleportMessage = Component.text()
-                .append(Component.text("Click to ", NamedTextColor.GRAY))
-                .append(Component.text("teleport ", NamedTextColor.GOLD))
-                .append(Component.text("to " + player.getName() + ".", NamedTextColor.GRAY))
-                .clickEvent(ClickEvent.runCommand("/tp " + player.getName()))
-                .build();
-
         Component hoverInfo = Component.text()
                 .append(Component.text("Ping: ", NamedTextColor.GRAY))
                 .append(Component.text(ping, NamedTextColor.GOLD))
@@ -94,7 +87,9 @@ public abstract class Check {
                 .append(details)
                 .append(Component.newline())
                 .append(Component.newline())
-                .append(teleportMessage)
+                .append(Component.text("Click to ", NamedTextColor.GRAY))
+                .append(Component.text("teleport ", NamedTextColor.GOLD))
+                .append(Component.text("to " + player.getName() + ".", NamedTextColor.GRAY))
                 .build();
 
         Component message = Component.text()
@@ -103,6 +98,7 @@ public abstract class Check {
                 .append(Component.text(" failed ", NamedTextColor.YELLOW))
                 .append(Component.text(checkName, NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(Component.text(checkDescription, NamedTextColor.GRAY))))
+                .clickEvent(ClickEvent.runCommand("/tp " + player.getName()))
                 .build();
 
         // Determine the violation format based on whether punishment is enabled
