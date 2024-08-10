@@ -96,18 +96,30 @@ public abstract class Check {
         Component message = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
                 .append(Component.text(player.getName(), NamedTextColor.YELLOW))
-                .append(Component.text(" failed ", NamedTextColor.YELLOW))
+                .append(Component.text(" failed ", NamedTextColor.GRAY))
                 .append(Component.text(checkName, NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(Component.text(checkDescription, NamedTextColor.GRAY))))
                 .clickEvent(ClickEvent.runCommand("/tp " + player.getName()))
                 .build();
 
         // Determine the violation format based on whether punishment is enabled
+        Component totalViolationsComponent;
         if (settings.getPunish().isEnabled()) {
-            message = message.append(Component.text(" [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.YELLOW));
+            totalViolationsComponent = Component.text()
+                    .append(Component.text(" VL[", NamedTextColor.GRAY))
+                    .append(Component.text(totalViolations + "/" + maxViolations, NamedTextColor.GOLD))
+                    .append(Component.text("]", NamedTextColor.GRAY))
+                    .build();
+
         } else {
-            message = message.append(Component.text(" " + totalViolations + "x", NamedTextColor.YELLOW));
+            totalViolationsComponent = Component.text()
+                    .append(Component.text(" VL[", NamedTextColor.GRAY))
+                    .append(Component.text(totalViolations, NamedTextColor.GOLD))
+                    .append(Component.text("]", NamedTextColor.GRAY))
+                    .build();
+
         }
+        message = message.append(totalViolationsComponent);
 
         message = message
                 .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
