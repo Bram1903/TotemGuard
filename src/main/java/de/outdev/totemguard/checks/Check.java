@@ -1,5 +1,7 @@
 package de.outdev.totemguard.checks;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.player.User;
 import de.outdev.totemguard.TotemGuard;
 import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.discord.DiscordWebhook;
@@ -16,23 +18,25 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Check {
+public abstract class Check {
 
     private final ConcurrentHashMap<UUID, Integer> violations;
 
     private final String checkName;
     private final String checkDescription;
     private final int maxViolations;
+    private final boolean experimental;
 
     private final TotemGuard plugin;
     private final Settings settings;
     private final AlertManager alertManager;
 
-    public Check(TotemGuard plugin, String checkName, String checkDescription, int maxViolations) {
+    public Check(TotemGuard plugin, String checkName, String checkDescription, int maxViolations, boolean experimental) {
         this.plugin = plugin;
         this.checkName = checkName;
         this.checkDescription = checkDescription;
         this.maxViolations = maxViolations;
+        this.experimental = experimental;
 
         this.violations = new ConcurrentHashMap<>();
 
@@ -40,13 +44,18 @@ public class Check {
         this.alertManager = plugin.getAlertManager();
 
         long resetInterval = settings.getPunish().getRemoveFlagsMin() * 60L * 20L; // Convert minutes to ticks (20 ticks = 1 second)
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetAllFlagCounts, resetInterval, resetInterval);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetData, resetInterval, resetInterval);
+    }
+
+    public Check(TotemGuard plugin, String checkName, String checkDescription, int maxViolations) {
+        this(plugin, checkName, checkDescription, maxViolations, false);
     }
 
     public final void flag(Player player, Component details) {
         UUID uuid = player.getUniqueId();
         int totalViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
+        User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
         int ping = player.getPing();
         int tps = (int) Math.round(Bukkit.getTPS()[0]);
 
@@ -60,7 +69,10 @@ public class Check {
                 .append(Component.text(" TPS: ", NamedTextColor.GRAY))
                 .append(Component.text(tps, NamedTextColor.GOLD))
                 .append(Component.text(" |", NamedTextColor.DARK_GRAY))
-                .append(Component.text(" Client: ", NamedTextColor.GRAY))
+                .append(Component.text(" Client Version: ", NamedTextColor.GRAY))
+                .append(Component.text(user.getClientVersion().getReleaseName(), NamedTextColor.GOLD))
+                .append(Component.text(" |", NamedTextColor.DARK_GRAY))
+                .append(Component.text(" Client Brand: ", NamedTextColor.GRAY))
                 .append(Component.text(clientBrand, NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.newline())
@@ -86,14 +98,19 @@ public class Check {
                 .append(Component.text(checkName, NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(Component.text(checkDescription, NamedTextColor.GRAY))))
                 .append(Component.text(" [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.YELLOW))
-                .append(Component.text(" (Latency: " + ping + " ms)", NamedTextColor.GRAY))
+                .append(Component.text(" (Ping: " + ping + "ms)", NamedTextColor.GRAY))
                 .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
                         .hoverEvent(HoverEvent.showText(hoverInfo)))
                 .build();
 
+        // Add a * if the check is experimental
+        if (experimental) {
+            message = message.append(Component.text(" *", NamedTextColor.RED));
+        }
+
         alertManager.sentAlert(message);
-        sendWebhookMessage(player, totalViolations);
-        punishPlayer(player, totalViolations);
+        //sendWebhookMessage(player, totalViolations);
+        //punishPlayer(player, totalViolations);
     }
 
     private void sendWebhookMessage(Player player, int totalViolations) {
@@ -126,7 +143,7 @@ public class Check {
         }
     }
 
-    private void resetAllFlagCounts() {
+    public void resetData() {
         violations.clear();
 
         alertManager.sentAlert(Component.text()

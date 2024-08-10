@@ -7,8 +7,12 @@ plugins {
 
 repositories {
     mavenLocal()
+    mavenCentral()
     maven {
         url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
+    maven {
+        url = uri("https://repo.codemc.io/repository/maven-releases/")
     }
 }
 
@@ -19,6 +23,7 @@ java {
 
 dependencies {
     compileOnly(libs.paper.api)
+    compileOnly(libs.packetevents.spigot)
     compileOnly(libs.commandapi)
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.configlib.paper)
@@ -27,7 +32,7 @@ dependencies {
 }
 
 group = "de.outdev.totemguard"
-version = "1.1.1-SNAPSHOT"
+version = "0.0.1-SNAPSHOT"
 description = "TotemGuardV2"
 
 tasks {

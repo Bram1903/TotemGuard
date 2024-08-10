@@ -9,10 +9,10 @@ import lombok.Getter;
 public final class Settings {
 
     @Comment("Prefix: Sets the command prefix for the plugin.")
-    private String prefix = "&e&lAutoTotem &8➟ ";
+    private String prefix = "&e&lAUTOTOTEM &8➟ ";
 
     @Comment("\nCheck Prefix: Sets the prefix for the /check command.")
-    private String checkPrefix = "&6&lCheck &8➟ ";
+    private String checkPrefix = "&6&lCHECK &8➟ ";
 
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();
@@ -66,7 +66,7 @@ public final class Settings {
         private String color = "#d9b61a";
 
         @Comment("\nWebhook Title: Brief description about what the webhook is about.")
-        private String title = "TotemGuard AutoTotem Check";
+        private String title = "TotemGuard";
 
         @Comment("\nEdit the message that contains the information about the report, you can use placeholders such as %player%, %ping%, and more. Supports Markdown.")
         private String[] description = {
@@ -85,7 +85,7 @@ public final class Settings {
         private String image = "https://minotar.net/avatar/user/%player%.png";
 
         @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
-        private String profileImage = "https://example.com/profile_image.png";
+        private String profileImage = "https://i.imgur.com/hqaGO5H.png";
 
         @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
         private boolean timestamp = true;

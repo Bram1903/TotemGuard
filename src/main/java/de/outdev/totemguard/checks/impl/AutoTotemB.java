@@ -14,7 +14,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 public class AutoTotemB extends Check implements Listener {
 
     public AutoTotemB(TotemGuard plugin) {
-        super(plugin, "AutoTotemB", "Player is moving while clicking his totem slot!", plugin.getConfigManager().getSettings().getPunish().getPunishAfter());
+        super(plugin, "AutoTotemB", "Player is moving while clicking his totem slot!", plugin.getConfigManager().getSettings().getPunish().getPunishAfter(), true);
 
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -25,6 +25,10 @@ public class AutoTotemB extends Check implements Listener {
             boolean isSpring = player.isSprinting();
             boolean isSneaking = player.isSneaking();
             boolean isBlocking = player.isBlocking();
+
+            if (!isSpring && !isSneaking && !isBlocking) {
+                return;
+            }
 
             Component details = Component.text()
                     .append(Component.text("Sprinting: ", NamedTextColor.GRAY))

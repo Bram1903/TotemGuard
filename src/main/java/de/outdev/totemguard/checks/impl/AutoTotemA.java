@@ -79,6 +79,12 @@ public class AutoTotemA extends Check implements Listener {
         }
     }
 
+    @Override
+    public void resetData() {
+        totemUsage.clear();
+        clickTimes.clear();
+    }
+
     private void checkSuspiciousActivity(Player player, int clickTime) {
         Integer usageTime = totemUsage.get(player);
 

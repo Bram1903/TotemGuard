@@ -1,6 +1,7 @@
 package de.outdev.totemguard;
 
 import de.outdev.totemguard.checks.impl.AutoTotemA;
+import de.outdev.totemguard.checks.impl.AutoTotemB;
 import de.outdev.totemguard.commands.CheckCommand;
 import de.outdev.totemguard.commands.TotemGuardCommand;
 import de.outdev.totemguard.config.ConfigManager;
@@ -52,6 +53,7 @@ public final class TotemGuard extends JavaPlugin {
 
     private void registerListeners() {
         new AutoTotemA(this);
+        new AutoTotemB(this);
         new PlayerJoin(this);
     }
 

@@ -8,6 +8,9 @@ load: POSTWORLD
 libraries:
   - de.exlll:configlib-yaml:${configlibVersion}
   - de.exlll:configlib-paper:${configlibVersion}
+depend:
+  - packetevents
+  - CommandAPI
 commands:
   Check:
     description: Checks a player for manually for AutoTotem.
