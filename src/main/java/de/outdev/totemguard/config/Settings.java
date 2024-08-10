@@ -9,10 +9,10 @@ import lombok.Getter;
 public final class Settings {
 
     @Comment("Prefix: Sets the command prefix for the plugin.")
-    private String prefix = "&e&lAUTOTOTEM &8➟ ";
+    private String prefix = "&e&lAutoTotem &8➟ ";
 
     @Comment("\nCheck Prefix: Sets the prefix for the /check command.")
-    private String checkPrefix = "&6&lCHECK &8➟ ";
+    private String checkPrefix = "&6&lCheck &8➟ ";
 
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();

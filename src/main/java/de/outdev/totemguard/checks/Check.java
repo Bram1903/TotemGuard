@@ -9,10 +9,7 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +20,7 @@ public class Check {
 
     private final ConcurrentHashMap<UUID, Integer> violations;
 
-    private String checkName;
+    private final String checkName;
     private final String checkDescription;
     private final int maxViolations;
 
@@ -46,35 +43,13 @@ public class Check {
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetAllFlagCounts, resetInterval, resetInterval);
     }
 
-    public String getMainHandItemString(Player player) {
-        ItemStack itemInMainHand = player.getInventory().getItemInMainHand();
-        if (itemInMainHand != null && ((ItemStack) itemInMainHand).getType() != Material.AIR) {
-            ItemMeta itemMeta = itemInMainHand.getItemMeta();
-            String itemName = itemMeta.hasDisplayName() ? itemMeta.getDisplayName() : itemInMainHand.getType().name();
-            return itemName;
-        } else {
-            return "Empty Hand";
-        }
-    }
-
-    public final void flag(Player player, int timeDifference, int realTotem, int clickTimeDifference) {
+    public final void flag(Player player, Component details) {
         UUID uuid = player.getUniqueId();
         int totalViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
         int ping = player.getPing();
         int tps = (int) Math.round(Bukkit.getTPS()[0]);
-        boolean sneaking = player.isSneaking();
-        boolean blocking = player.isBlocking();
-        boolean sprinting = false;
-        if (player.isSwimming() || player.isSprinting() || player.isClimbing()) {
-            sprinting = true;
-        }
-        checkName = "AutoTotemA";
-        if (sprinting || blocking || sneaking){
-            checkName = "AutoTotemB";
-        }
 
-        String item = getMainHandItemString(player);
         String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = player.getClientBrandName();
 
@@ -95,28 +70,8 @@ public class Check {
                 .append(Component.text("Gamemode: ", NamedTextColor.GRAY))
                 .append(Component.text(gamemode, NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
-                .append(Component.text(item, NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.newline())
-                .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                .append(Component.text(sneaking, NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                .append(Component.text(blocking, NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                .append(Component.text(sprinting, NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.newline())
-                .append(Component.text("TotemTime: ", NamedTextColor.GRAY))
-                .append(Component.text(timeDifference+"ms", NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("RealTotemTime: ", NamedTextColor.GRAY))
-                .append(Component.text(realTotem+"ms", NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("ClickTimeDifference: ", NamedTextColor.GRAY))
-                .append(Component.text(clickTimeDifference+"ms", NamedTextColor.GOLD))
+                .append(details)
                 .append(Component.newline())
                 .append(Component.newline())
                 .append(Component.text("Click to ", NamedTextColor.GRAY))
@@ -131,7 +86,7 @@ public class Check {
                 .append(Component.text(checkName, NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(Component.text(checkDescription, NamedTextColor.GRAY))))
                 .append(Component.text(" [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.YELLOW))
-                .append(Component.text(" (In: "+timeDifference + "ms, Ping: "+ping+")", NamedTextColor.GRAY))
+                .append(Component.text(" (Latency: "+ping+ " ms)", NamedTextColor.GRAY))
                 .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
                         .hoverEvent(HoverEvent.showText(hoverInfo)))
                 .build();

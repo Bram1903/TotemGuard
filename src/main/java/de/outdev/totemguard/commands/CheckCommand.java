@@ -6,7 +6,6 @@ import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.util.Util;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.PlayerArgument;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
@@ -17,7 +16,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class CheckCommand extends Check {
 
     private final TotemGuard plugin;
-    private final Util util;
     private final Settings settings;
 
     public CheckCommand(TotemGuard plugin) {
@@ -25,7 +23,6 @@ public class CheckCommand extends Check {
 
         this.plugin = plugin;
         this.settings = plugin.getConfigManager().getSettings();
-        this.util = new Util(plugin);
 
         registerCheckCommand();
     }

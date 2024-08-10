@@ -3,6 +3,8 @@ package de.outdev.totemguard.checks.impl;
 import de.outdev.totemguard.TotemGuard;
 import de.outdev.totemguard.checks.Check;
 import de.outdev.totemguard.config.Settings;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -77,14 +79,13 @@ public class AutoTotemA extends Check implements Listener {
         }
     }
 
-    private void checkSuspiciousActivity(Player player, int clickTimes) {
+    private void checkSuspiciousActivity(Player player, int clickTime) {
         Integer usageTime = totemUsage.get(player);
-
 
         if (usageTime != null) {
             int currentTime = (int) System.currentTimeMillis();
             int timeDifference = currentTime - usageTime;
-            int clickTimeDifference = currentTime - clickTimes;
+            int clickTimeDifference = currentTime - clickTime;
 
             totemUsage.remove(player);
             clickTimes.remove(player);
@@ -95,16 +96,37 @@ public class AutoTotemA extends Check implements Listener {
 
             int realTotemTime = timeDifference - player.getPing();
 
+            Component checkDetails = Component.text()
+                    .append(Component.text("TotemTime: ", NamedTextColor.GRAY))
+                    .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
+                    .append(Component.newline())
+                    .append(Component.text("RealTotemTime: ", NamedTextColor.GRAY))
+                    .append(Component.text(realTotemTime + "ms", NamedTextColor.GOLD))
+                    .append(Component.newline())
+                    .append(Component.text("ClickTimeDifference: ", NamedTextColor.GRAY))
+                    .append(Component.text(clickTimeDifference + "ms", NamedTextColor.GOLD))
+                    .append(Component.newline())
+                    .append(Component.newline())
+                    .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
+                    .append(Component.text(player.isSneaking(), NamedTextColor.GOLD))
+                    .append(Component.newline())
+                    .append(Component.text("Blocking: ", NamedTextColor.GRAY))
+                    .append(Component.text(player.isBlocking(), NamedTextColor.GOLD))
+                    .append(Component.newline())
+                    .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
+                    .append(Component.text(player.isSprinting(), NamedTextColor.GOLD))
+                    .build();
+
             if (settings.isAdvancedSystemCheck()) {
                 if (realTotemTime <= settings.getTriggerAmountMs()) {
-                    flag(player, timeDifference, realTotemTime, clickTimeDifference);
+                    flag(player, checkDetails);
                 }
             } else {
                 if (!(settings.isClickTimeDifference())){
-                        flag(player, timeDifference, realTotemTime, clickTimeDifference);
+                        flag(player, checkDetails);
                 }else{
                     if (clickTimeDifference <= 25) {
-                        flag(player, timeDifference, realTotemTime, clickTimeDifference);
+                        flag(player, checkDetails);
                     }
                 }
             }
