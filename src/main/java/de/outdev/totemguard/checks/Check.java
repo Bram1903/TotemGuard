@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -62,7 +63,7 @@ public abstract class Check {
         int tps = (int) Math.round(Bukkit.getTPS()[0]);
 
         String gamemode = String.valueOf(player.getGameMode());
-        String clientBrand = player.getClientBrandName();
+        String clientBrand = Objects.requireNonNullElse(player.getClientBrandName(), "Unknown");
 
         Component hoverInfo = Component.text()
                 .append(Component.text("TPS: ", NamedTextColor.GRAY))
