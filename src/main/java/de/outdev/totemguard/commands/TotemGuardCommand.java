@@ -30,7 +30,6 @@ public class TotemGuardCommand {
 
     private void registerTotemGuardCommand() {
         new CommandAPICommand("totemguard")
-                .withPermission("TotemGuard")
                 .withAliases("tg")
                 .withSubcommand(new CommandAPICommand("alerts")
                         .withPermission("TotemGuard.Alerts")
