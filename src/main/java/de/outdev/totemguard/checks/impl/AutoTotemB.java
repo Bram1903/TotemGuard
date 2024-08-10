@@ -30,6 +30,10 @@ public class AutoTotemB extends Check implements Listener {
                 return;
             }
 
+            if (event.getRawSlot() != 45) {
+                return;
+            }
+
             Component details = Component.text()
                     .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
                     .append(Component.text(isSpring, isSpring ? NamedTextColor.GREEN : NamedTextColor.RED))
@@ -41,9 +45,7 @@ public class AutoTotemB extends Check implements Listener {
                     .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.RED))
                     .build();
 
-            if (event.getRawSlot() == 45) {
-                flag(player, details);
-            }
+            flag(player, details);
         }
     }
 }
