@@ -14,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -102,6 +103,10 @@ public class AutoTotemA extends Check implements Listener {
 
             int realTotemTime = timeDifference - player.getPing();
 
+            boolean isSprinting = player.isSprinting();
+            boolean isSneaking = player.isSneaking();
+            boolean isBlocking = player.isBlocking();
+
             Component checkDetails = Component.text()
                     .append(Component.text("TotemTime: ", NamedTextColor.GRAY))
                     .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
@@ -112,15 +117,18 @@ public class AutoTotemA extends Check implements Listener {
                     .append(Component.text("ClickTimeDifference: ", NamedTextColor.GRAY))
                     .append(Component.text(clickTimeDifference + "ms", NamedTextColor.GOLD))
                     .append(Component.newline())
+                    .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
+                    .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
                     .append(Component.newline())
-                    .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                    .append(Component.text(player.isSneaking(), NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                    .append(Component.text(player.isBlocking(), NamedTextColor.GOLD))
                     .append(Component.newline())
                     .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                    .append(Component.text(player.isSprinting(), NamedTextColor.GOLD))
+                    .append(Component.text(isSprinting, isSprinting ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.newline())
+                    .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
+                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.newline())
+                    .append(Component.text("Blocking: ", NamedTextColor.GRAY))
+                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.RED))
                     .build();
 
             if (settings.isAdvancedSystemCheck()) {
@@ -136,6 +144,16 @@ public class AutoTotemA extends Check implements Listener {
                     }
                 }
             }
+        }
+    }
+
+    private String getMainHandItemString(Player player) {
+        ItemStack itemInMainHand = player.getInventory().getItemInMainHand();
+        if (itemInMainHand != null && itemInMainHand.getType() != Material.AIR) {
+            ItemMeta itemMeta = itemInMainHand.getItemMeta();
+            return itemMeta.hasDisplayName() ? itemMeta.getDisplayName() : itemInMainHand.getType().name();
+        } else {
+            return "Empty Hand";
         }
     }
 }

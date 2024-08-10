@@ -7,6 +7,7 @@ import de.outdev.totemguard.config.Settings;
 import de.outdev.totemguard.discord.DiscordWebhook;
 import de.outdev.totemguard.manager.AlertManager;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -62,6 +63,13 @@ public abstract class Check {
         String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = player.getClientBrandName();
 
+        Component teleportMessage = Component.text()
+                .append(Component.text("Click to ", NamedTextColor.GRAY))
+                .append(Component.text("teleport ", NamedTextColor.GOLD))
+                .append(Component.text("to " + player.getName() + ".", NamedTextColor.GRAY))
+                .clickEvent(ClickEvent.runCommand("/tp " + player.getName()))
+                .build();
+
         Component hoverInfo = Component.text()
                 .append(Component.text("Ping: ", NamedTextColor.GRAY))
                 .append(Component.text(ping, NamedTextColor.GOLD))
@@ -86,9 +94,7 @@ public abstract class Check {
                 .append(details)
                 .append(Component.newline())
                 .append(Component.newline())
-                .append(Component.text("Click to ", NamedTextColor.GRAY))
-                .append(Component.text("teleport ", NamedTextColor.GOLD))
-                .append(Component.text("to " + player.getName() + ".", NamedTextColor.GRAY))
+                .append(teleportMessage)
                 .build();
 
         Component message = Component.text()
@@ -97,11 +103,19 @@ public abstract class Check {
                 .append(Component.text(" failed ", NamedTextColor.YELLOW))
                 .append(Component.text(checkName, NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(Component.text(checkDescription, NamedTextColor.GRAY))))
-                .append(Component.text(" [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.YELLOW))
+                .build();
+
+        // Determine the violation format based on whether punishment is enabled
+        if (settings.getPunish().isEnabled()) {
+            message = message.append(Component.text(" [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.YELLOW));
+        } else {
+            message = message.append(Component.text(" " + totalViolations + "x", NamedTextColor.YELLOW));
+        }
+
+        message = message
                 .append(Component.text(" (Ping: " + ping + "ms)", NamedTextColor.GRAY))
                 .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
-                        .hoverEvent(HoverEvent.showText(hoverInfo)))
-                .build();
+                        .hoverEvent(HoverEvent.showText(hoverInfo)));
 
         // Add a * if the check is experimental
         if (experimental) {
@@ -111,6 +125,7 @@ public abstract class Check {
         alertManager.sentAlert(message);
         sendWebhookMessage(player, totalViolations);
         punishPlayer(player, totalViolations);
+
     }
 
     private void sendWebhookMessage(Player player, int totalViolations) {
