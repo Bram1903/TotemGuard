@@ -10,6 +10,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -64,10 +65,7 @@ public abstract class Check {
         String clientBrand = player.getClientBrandName();
 
         Component hoverInfo = Component.text()
-                .append(Component.text("Ping: ", NamedTextColor.GRAY))
-                .append(Component.text(ping, NamedTextColor.GOLD))
-                .append(Component.text(" |", NamedTextColor.DARK_GRAY))
-                .append(Component.text(" TPS: ", NamedTextColor.GRAY))
+                .append(Component.text("TPS: ", NamedTextColor.GRAY))
                 .append(Component.text(tps, NamedTextColor.GOLD))
                 .append(Component.text(" |", NamedTextColor.DARK_GRAY))
                 .append(Component.text(" Client Version: ", NamedTextColor.GRAY))
@@ -82,6 +80,9 @@ public abstract class Check {
                 .append(Component.newline())
                 .append(Component.text("Gamemode: ", NamedTextColor.GRAY))
                 .append(Component.text(gamemode, NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Ping: ", NamedTextColor.GRAY))
+                .append(Component.text(ping + "ms", NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.newline())
                 .append(details)
@@ -109,13 +110,12 @@ public abstract class Check {
         }
 
         message = message
-                .append(Component.text(" (Ping: " + ping + "ms)", NamedTextColor.GRAY))
                 .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
                         .hoverEvent(HoverEvent.showText(hoverInfo)));
 
         // Add a * if the check is experimental
         if (experimental) {
-            message = message.append(Component.text(" *", NamedTextColor.RED));
+            message = message.append(Component.text(" *", NamedTextColor.RED).decorate(TextDecoration.BOLD));
         }
 
         alertManager.sentAlert(message);

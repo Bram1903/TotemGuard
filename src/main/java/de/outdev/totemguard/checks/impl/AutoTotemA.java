@@ -108,13 +108,13 @@ public class AutoTotemA extends Check implements Listener {
             boolean isBlocking = player.isBlocking();
 
             Component checkDetails = Component.text()
-                    .append(Component.text("TotemTime: ", NamedTextColor.GRAY))
+                    .append(Component.text("Totem Time: ", NamedTextColor.GRAY))
                     .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
                     .append(Component.newline())
-                    .append(Component.text("RealTotemTime: ", NamedTextColor.GRAY))
+                    .append(Component.text("Real Totem Time: ", NamedTextColor.GRAY))
                     .append(Component.text(realTotemTime + "ms", NamedTextColor.GOLD))
                     .append(Component.newline())
-                    .append(Component.text("ClickTimeDifference: ", NamedTextColor.GRAY))
+                    .append(Component.text("Click Time Difference: ", NamedTextColor.GRAY))
                     .append(Component.text(clickTimeDifference + "ms", NamedTextColor.GOLD))
                     .append(Component.newline())
                     .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
@@ -122,13 +122,13 @@ public class AutoTotemA extends Check implements Listener {
                     .append(Component.newline())
                     .append(Component.newline())
                     .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSprinting, isSprinting ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.text(isSprinting, isSprinting ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                     .append(Component.newline())
                     .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                     .append(Component.newline())
                     .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                     .build();
 
             if (settings.isAdvancedSystemCheck()) {

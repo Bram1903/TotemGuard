@@ -36,13 +36,13 @@ public class AutoTotemB extends Check implements Listener {
 
             Component details = Component.text()
                     .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSpring, isSpring ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.text(isSpring, isSpring ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                     .append(Component.newline())
                     .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                     .append(Component.newline())
                     .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                     .build();
 
             flag(player, details);
