@@ -76,7 +76,7 @@ public class Check {
                 .append(Component.newline())
                 .append(Component.text("Click to ", NamedTextColor.GRAY))
                 .append(Component.text("teleport ", NamedTextColor.GOLD))
-                .append(Component.text("to  "+player.getName()+".", NamedTextColor.GRAY))
+                .append(Component.text("to " + player.getName() + ".", NamedTextColor.GRAY))
                 .build();
 
         Component message = Component.text()
@@ -86,14 +86,14 @@ public class Check {
                 .append(Component.text(checkName, NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(Component.text(checkDescription, NamedTextColor.GRAY))))
                 .append(Component.text(" [" + totalViolations + "/" + maxViolations + "]", NamedTextColor.YELLOW))
-                .append(Component.text(" (Latency: "+ping+ " ms)", NamedTextColor.GRAY))
+                .append(Component.text(" (Latency: " + ping + " ms)", NamedTextColor.GRAY))
                 .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
                         .hoverEvent(HoverEvent.showText(hoverInfo)))
                 .build();
 
-            alertManager.sentAlert(message);
-            sendWebhookMessage(player, totalViolations);
-            punishPlayer(player, totalViolations);
+        alertManager.sentAlert(message);
+        sendWebhookMessage(player, totalViolations);
+        punishPlayer(player, totalViolations);
     }
 
     private void sendWebhookMessage(Player player, int totalViolations) {

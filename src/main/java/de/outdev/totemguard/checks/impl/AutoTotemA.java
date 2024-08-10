@@ -122,9 +122,9 @@ public class AutoTotemA extends Check implements Listener {
                     flag(player, checkDetails);
                 }
             } else {
-                if (!(settings.isClickTimeDifference())){
-                        flag(player, checkDetails);
-                }else{
+                if (!(settings.isClickTimeDifference())) {
+                    flag(player, checkDetails);
+                } else {
                     if (clickTimeDifference <= 25) {
                         flag(player, checkDetails);
                     }

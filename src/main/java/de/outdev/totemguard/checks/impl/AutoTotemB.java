@@ -27,15 +27,15 @@ public class AutoTotemB extends Check implements Listener {
             boolean isBlocking = player.isBlocking();
 
             Component details = Component.text()
-                .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                .append(Component.text(isSpring, isSpring ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(Component.newline())
-                .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
+                    .append(Component.text(isSpring, isSpring ? NamedTextColor.GREEN : NamedTextColor.RED))
                     .append(Component.newline())
-                .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .build();
+                    .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
+                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .append(Component.newline())
+                    .append(Component.text("Blocking: ", NamedTextColor.GRAY))
+                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.RED))
+                    .build();
 
             if (event.getRawSlot() == 45) {
                 flag(player, details);
