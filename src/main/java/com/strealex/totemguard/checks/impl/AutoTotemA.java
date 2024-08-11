@@ -107,29 +107,7 @@ public class AutoTotemA extends Check implements Listener {
             boolean isSneaking = player.isSneaking();
             boolean isBlocking = player.isBlocking();
 
-            Component checkDetails = Component.text()
-                    .append(Component.text("Totem Time: ", NamedTextColor.GRAY))
-                    .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Real Totem Time: ", NamedTextColor.GRAY))
-                    .append(Component.text(realTotemTime + "ms", NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Click Time Difference: ", NamedTextColor.GRAY))
-                    .append(Component.text(clickTimeDifference + "ms", NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
-                    .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.newline())
-                    .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSprinting, isSprinting ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                    .build();
+            Component checkDetails = createDetails(timeDifference, realTotemTime, clickTimeDifference, player, isSprinting, isSneaking, isBlocking);
 
             if (settings.isAdvancedSystemCheck()) {
                 if (realTotemTime <= settings.getTriggerAmountMs()) {
@@ -155,5 +133,31 @@ public class AutoTotemA extends Check implements Listener {
         } else {
             return "Empty Hand";
         }
+    }
+
+    private Component createDetails(int timeDifference, int realTotemTime, int clickTimeDifference, Player player, boolean isSprinting, boolean isSneaking, boolean isBlocking) {
+        return Component.text()
+                .append(Component.text("Totem Time: ", NamedTextColor.GRAY))
+                .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Real Totem Time: ", NamedTextColor.GRAY))
+                .append(Component.text(realTotemTime + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Click Time Difference: ", NamedTextColor.GRAY))
+                .append(Component.text(clickTimeDifference + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
+                .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.newline())
+                .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
+                .append(Component.text(isSprinting, isSprinting ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
+                .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Blocking: ", NamedTextColor.GRAY))
+                .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .build();
     }
 }

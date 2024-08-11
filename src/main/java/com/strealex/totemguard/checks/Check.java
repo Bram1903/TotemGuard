@@ -65,6 +65,54 @@ public abstract class Check {
         String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = Objects.requireNonNullElse(player.getClientBrandName(), "Unknown");
 
+        Component message = createAlertComponent(tps, user, clientBrand, player, gamemode, ping, totalViolations, details);
+
+        alertManager.sentAlert(message);
+        sendWebhookMessage(player, totalViolations);
+        punishPlayer(player, totalViolations);
+
+    }
+
+    public void resetData() {
+        violations.clear();
+
+        alertManager.sentAlert(Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
+                .build());
+    }
+
+    private void sendWebhookMessage(Player player, int totalViolations) {
+        if (!settings.getWebhook().isEnabled()) return;
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            Map<String, String> placeholders = new HashMap<>();
+            placeholders.put("player", player.getName());
+            placeholders.put("check", checkName);
+            placeholders.put("violations", String.valueOf(totalViolations));
+            placeholders.put("max_violations", String.valueOf(maxViolations));
+            placeholders.put("client_brand", player.getClientBrandName());
+            placeholders.put("ping", String.valueOf(player.getPing()));
+            placeholders.put("tps", String.valueOf((int) Bukkit.getTPS()[0]));
+
+            DiscordWebhook.sendWebhook(placeholders);
+        });
+    }
+
+    private void punishPlayer(Player player, int totalViolations) {
+        if (!settings.getPunish().isEnabled()) return;
+
+        if (totalViolations >= maxViolations) {
+            String punishCommand = settings.getPunish().getPunishCommand().replace("%player%", player.getName());
+            violations.remove(player.getUniqueId());
+
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
+            });
+        }
+    }
+
+    private Component createAlertComponent(int tps, User user, String clientBrand, Player player, String gamemode, int ping, int totalViolations, Component details) {
         Component hoverInfo = Component.text()
                 .append(Component.text("TPS: ", NamedTextColor.GRAY))
                 .append(Component.text(tps, NamedTextColor.GOLD))
@@ -131,48 +179,6 @@ public abstract class Check {
             message = message.append(Component.text(" *", NamedTextColor.RED).decorate(TextDecoration.BOLD));
         }
 
-        alertManager.sentAlert(message);
-        sendWebhookMessage(player, totalViolations);
-        punishPlayer(player, totalViolations);
-
-    }
-
-    private void sendWebhookMessage(Player player, int totalViolations) {
-        if (!settings.getWebhook().isEnabled()) return;
-
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            Map<String, String> placeholders = new HashMap<>();
-            placeholders.put("player", player.getName());
-            placeholders.put("check", checkName);
-            placeholders.put("violations", String.valueOf(totalViolations));
-            placeholders.put("max_violations", String.valueOf(maxViolations));
-            placeholders.put("client_brand", player.getClientBrandName());
-            placeholders.put("ping", String.valueOf(player.getPing()));
-            placeholders.put("tps", String.valueOf((int) Bukkit.getTPS()[0]));
-
-            DiscordWebhook.sendWebhook(placeholders);
-        });
-    }
-
-    private void punishPlayer(Player player, int totalViolations) {
-        if (!settings.getPunish().isEnabled()) return;
-
-        if (totalViolations >= maxViolations) {
-            String punishCommand = settings.getPunish().getPunishCommand().replace("%player%", player.getName());
-            violations.remove(player.getUniqueId());
-
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
-            });
-        }
-    }
-
-    public void resetData() {
-        violations.clear();
-
-        alertManager.sentAlert(Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
-                .build());
+        return message;
     }
 }

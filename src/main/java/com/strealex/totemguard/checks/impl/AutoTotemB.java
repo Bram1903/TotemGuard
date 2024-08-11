@@ -34,18 +34,22 @@ public class AutoTotemB extends Check implements Listener {
                 return;
             }
 
-            Component details = Component.text()
-                    .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSpring, isSpring ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                    .append(Component.newline())
-                    .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                    .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                    .build();
+            Component details = createDetails(isSpring, isSneaking, isBlocking);
 
             flag(player, details);
         }
+    }
+
+    private Component createDetails(boolean isSpring, boolean isSneaking, boolean isBlocking) {
+        return Component.text()
+                .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
+                .append(Component.text(isSpring, isSpring ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
+                .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Blocking: ", NamedTextColor.GRAY))
+                .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .build();
     }
 }
