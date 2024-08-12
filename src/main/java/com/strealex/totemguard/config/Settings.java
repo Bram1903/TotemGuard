@@ -112,6 +112,9 @@ public final class Settings {
 
             @Comment("\nTrigger amount: The flag is only triggered if this value (in ms) is reached. (Advanced System Check)")
             private int triggerAmountMs = 75;
+
+            @Comment("\nClick Time Difference Value: The value (in ms) that the click time difference should be less than to trigger the flag. (Click Time Difference)")
+            private int clickTimeDifferenceValue = 75;
         }
 
         @Configuration
