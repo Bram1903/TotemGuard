@@ -26,7 +26,7 @@ public class AutoTotemA extends Check implements Listener {
     private final ConcurrentHashMap<Player, Integer> clickTimes;
 
     public AutoTotemA(TotemGuard plugin) {
-        super(plugin, "AutoTotemA", "Player is too quickly replacing their totem!");
+        super(plugin, "AutoTotemA", "Player is replacing their totem too fast!");
 
         this.plugin = plugin;
 

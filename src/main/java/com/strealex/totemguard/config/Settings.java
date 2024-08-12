@@ -4,6 +4,7 @@ import com.strealex.totemguard.checks.ICheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 
 @Configuration
 @Getter
@@ -54,13 +55,11 @@ public final class Settings {
         @Comment("\nEdit the message that contains the information about the report, you can use placeholders such as %player%, %ping%, and more. Supports Markdown.")
         private String[] description = {
                 "**Player:** %player%",
-                "**Ping:** %ping%",
-                "**Retotemed in:** %retotem_time%",
-                "**Real Time: %real_retotem_time%",
-                "**Extra Flags:** %moving_status%",
+                "**Check:** %check%",
+                "**Violations:** %violations%",
                 "",
-                "**Client Brand:** %brand%",
-                "**Flags:** %flag_count%/%punish_after%",
+                "**Client Brand:** %client_brand%",
+                "**Ping:** %ping%",
                 "**TPS:** %tps%"
         };
 

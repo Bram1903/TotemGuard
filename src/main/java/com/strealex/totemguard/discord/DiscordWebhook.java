@@ -60,10 +60,16 @@ public class DiscordWebhook {
             embed.put("timestamp", Instant.now().toString());
         }
 
-        json.put("embeds", new JSONArray().add(embed));
+        // Create a JSONArray and use add method
+        JSONArray embedsArray = new JSONArray();
+        embedsArray.add(embed); // Correctly use add to add the embed object to the JSONArray
+
+        json.put("embeds", embedsArray); // Add the array to the JSON payload
 
         return json;
     }
+
+
 
     private static int parseColor(String color) {
         return Integer.parseInt(color.replace("#", ""), 16);

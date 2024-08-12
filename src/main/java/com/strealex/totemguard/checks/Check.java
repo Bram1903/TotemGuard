@@ -90,7 +90,6 @@ public abstract class Check {
             placeholders.put("player", player.getName());
             placeholders.put("check", checkName);
             placeholders.put("violations", String.valueOf(getViolations(player.getUniqueId())));
-            placeholders.put("max_violations", String.valueOf(settings.getMaxViolations()));
             placeholders.put("client_brand", player.getClientBrandName());
             placeholders.put("ping", String.valueOf(player.getPing()));
             placeholders.put("tps", String.valueOf((int) Bukkit.getTPS()[0]));
