@@ -63,7 +63,7 @@ public abstract class Check {
         Component message = createAlertComponent(tps, user, clientBrand, player, gamemode, ping, details, settings);
 
         alertManager.sendAlert(message);
-        sendWebhookMessage(player, details, settings);
+        sendWebhookMessage(player, details, tps);
         punishPlayer(player, settings);
 
     }
@@ -81,7 +81,7 @@ public abstract class Check {
         return violations.getOrDefault(player, 0);
     }
 
-    private void sendWebhookMessage(Player player, Component details, ICheckSettings settings) {
+    private void sendWebhookMessage(Player player, Component details, int tps) {
         final Settings globalSettings = plugin.getConfigManager().getSettings();
 
         if (!globalSettings.getWebhook().isEnabled()) return;
@@ -93,7 +93,7 @@ public abstract class Check {
             placeholders.put("violations", String.valueOf(getViolations(player.getUniqueId())));
             placeholders.put("client_brand", player.getClientBrandName());
             placeholders.put("ping", String.valueOf(player.getPing()));
-            placeholders.put("tps", String.valueOf((int) Bukkit.getTPS()[0]));
+            placeholders.put("tps", String.valueOf(tps));
 
             DiscordWebhook.sendWebhook(placeholders, PlainTextComponentSerializer.plainText().serialize(details));
         });

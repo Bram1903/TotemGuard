@@ -63,7 +63,7 @@ public final class Settings {
         };
 
         @Comment("\nWebhook Image: Sets the image that is displayed in the embed.")
-        private String image = "https://minotar.net/avatar/user/%player%.png";
+        private String image = "http://cravatar.eu/avatar/%player%/64.png";
 
         @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
         private String profileImage = "https://i.imgur.com/hqaGO5H.png";

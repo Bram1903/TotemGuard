@@ -55,7 +55,10 @@ public class DiscordWebhook {
         embed.put("title", webhookConfig.getTitle());
         embed.put("description", description);
         embed.put("color", parseColor(webhookConfig.getColor()));
-        embed.put("thumbnail", new JSONObject().put("url", imageUrl));
+
+        JSONObject thumbnailObject = new JSONObject();
+        thumbnailObject.put("url", imageUrl);
+        embed.put("thumbnail", thumbnailObject);
 
         if (webhookConfig.isTimestamp()) {
             embed.put("timestamp", Instant.now().toString());
@@ -76,10 +79,8 @@ public class DiscordWebhook {
         embedsArray.add(embed); // Correctly use add to add the embed object to the JSONArray
 
         json.put("embeds", embedsArray); // Add the array to the JSON payload
-
         return json;
     }
-
 
     private static int parseColor(String color) {
         return Integer.parseInt(color.replace("#", ""), 16);
@@ -94,6 +95,7 @@ public class DiscordWebhook {
     }
 
     private static HttpResponse<String> sendHttpRequest(HttpRequest request) {
+
         try {
             return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (InterruptedException | IOException e) {
