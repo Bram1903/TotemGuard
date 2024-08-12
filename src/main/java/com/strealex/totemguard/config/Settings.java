@@ -1,5 +1,6 @@
 package com.strealex.totemguard.config;
 
+import com.strealex.totemguard.checks.ICheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
@@ -11,32 +12,14 @@ public final class Settings {
     @Comment("Prefix: Sets the command prefix for the plugin.")
     private String prefix = "&e&lAUTOTOTEM &8➟ ";
 
-    @Comment("\nCheck Prefix: Sets the prefix for the /check command.")
-    private String checkPrefix = "&6&lCHECK &8➟ ";
+    @Comment("\nThe time in minutes at which the plugin should reset the violations.")
+    private int resetViolationsInterval = 30;
 
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();
 
-    @Comment("\nExtra Flags: Toggles the checks for S: Sneaking, B: Blocking, M: sprinting, swimming, climbing (SBM).")
-    private boolean toggleExtraFlags = true;
-
-    @Comment("\nAutomatic Normal Checks: Toggles automatic normal checks.")
-    private boolean toggleAutomaticNormalChecks = true;
-
     @Comment("\nCheck Time: Amount of time the /check command waits for a retotem. (in ticks)")
     private int checkTime = 5;
-
-    @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-    private int normalCheckTimeMs = 300;
-
-    @Comment("\nClick Time Difference [Experimental]: Measures the amount of time the hacked client takes to move a totem from the inventory slot to the offhand. \nRecommended value: true ")
-    private boolean clickTimeDifference = true;
-
-    @Comment("\nAdvanced System Check: Enables an advanced system check that calculates the real totem time making the flag more accurate. \nRecommended value: false")
-    private boolean advancedSystemCheck = false;
-
-    @Comment("\nTrigger amount: The flag is only triggered if this value (in ms) is reached. (Advanced System Check)")
-    private int triggerAmountMs = 75;
 
     @Comment("\nDamage on /check: Toggles damage on /check command to ensure a more accurate result.")
     private boolean toggleDamageOnCheck = true;
@@ -47,8 +30,8 @@ public final class Settings {
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
-    @Comment("\nA system that automatically punishes a player after they reach a specific number of AutoTotem flags.")
-    private Punish punish = new Punish();
+    @Comment("\nChecks")
+    private Checks checks = new Checks();
 
     @Configuration
     @Getter
@@ -103,17 +86,45 @@ public final class Settings {
 
     @Configuration
     @Getter
-    public static class Punish {
-        @Comment("Enable or disable punishment system.")
-        private boolean enabled = false;
+    public static class Checks {
+        @Comment("AutoTotemA Settings")
+        private AutoTotemA autoTotemA = new AutoTotemA();
 
-        @Comment("\nPunish After: Determines how many flags a player can accumulate before executing the punishment command.")
-        private int punishAfter = 10;
+        @Comment("AutoTotemB Settings")
+        private AutoTotemB autoTotemB = new AutoTotemB();
 
-        @Comment("\nRemove Flags Min: Interval (in minutes) at which flags are reset globally for all players.")
-        private int removeFlagsMin = 30;
+        @Configuration
+        @Getter
+        public static class AutoTotemA implements ICheckSettings {
+            private boolean enabled = true;
+            private boolean punishable = false;
+            private int maxViolations = 5;
+            private String[] punishmentCommands = {
+                    "ban %player% 1d [TotemGuard] Unfair Advantage"
+            };
 
-        @Comment("\nPunish Command: Command executed when a player reaches the 'punish_after' limit.")
-        private String punishCommand = "ban %player% 1d AutoTotem";
+            @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
+            private int normalCheckTimeMs = 1000;
+
+            @Comment("\nClick Time Difference [Experimental]: Measures the amount of time the hacked client takes to move a totem from the inventory slot to the offhand. \nRecommended value: true ")
+            private boolean clickTimeDifference = true;
+
+            @Comment("\nAdvanced System Check: Enables an advanced system check that calculates the real totem time making the flag more accurate. \nRecommended value: false")
+            private boolean advancedSystemCheck = false;
+
+            @Comment("\nTrigger amount: The flag is only triggered if this value (in ms) is reached. (Advanced System Check)")
+            private int triggerAmountMs = 75;
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemB implements ICheckSettings {
+            private boolean enabled = true;
+            private boolean punishable = false;
+            private int maxViolations = 5;
+            private String[] punishmentCommands = {
+                    "ban %player% 1d [TotemGuard] Unfair Advantage"
+            };
+        }
     }
 }

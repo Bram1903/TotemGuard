@@ -15,10 +15,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Check {
@@ -27,36 +24,33 @@ public abstract class Check {
 
     private final String checkName;
     private final String checkDescription;
-    private final int maxViolations;
     private final boolean experimental;
 
     private final TotemGuard plugin;
-    private final Settings settings;
     private final AlertManager alertManager;
 
-    public Check(TotemGuard plugin, String checkName, String checkDescription, int maxViolations, boolean experimental) {
+    public Check(TotemGuard plugin, String checkName, String checkDescription, boolean experimental) {
         this.plugin = plugin;
         this.checkName = checkName;
         this.checkDescription = checkDescription;
-        this.maxViolations = maxViolations;
         this.experimental = experimental;
 
         this.violations = new ConcurrentHashMap<>();
 
-        this.settings = plugin.getConfigManager().getSettings();
         this.alertManager = plugin.getAlertManager();
 
-        long resetInterval = settings.getPunish().getRemoveFlagsMin() * 60L * 20L; // Convert minutes to ticks (20 ticks = 1 second)
+        // Convert minutes to ticks (20 ticks = 1 second)
+        long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetData, resetInterval, resetInterval);
     }
 
-    public Check(TotemGuard plugin, String checkName, String checkDescription, int maxViolations) {
-        this(plugin, checkName, checkDescription, maxViolations, false);
+    public Check(TotemGuard plugin, String checkName, String checkDescription) {
+        this(plugin, checkName, checkDescription, false);
     }
 
-    public final void flag(Player player, Component details) {
+    public final void flag(Player player, Component details, ICheckSettings settings) {
         UUID uuid = player.getUniqueId();
-        int totalViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
+        violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
         User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
         int ping = player.getPing();
@@ -65,32 +59,38 @@ public abstract class Check {
         String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = Objects.requireNonNullElse(player.getClientBrandName(), "Unknown");
 
-        Component message = createAlertComponent(tps, user, clientBrand, player, gamemode, ping, totalViolations, details);
+        Component message = createAlertComponent(tps, user, clientBrand, player, gamemode, ping, details, settings);
 
-        alertManager.sentAlert(message);
-        sendWebhookMessage(player, totalViolations);
-        punishPlayer(player, totalViolations);
+        alertManager.sendAlert(message);
+        sendWebhookMessage(player, settings);
+        punishPlayer(player, settings);
 
     }
 
     public void resetData() {
         violations.clear();
 
-        alertManager.sentAlert(Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+        alertManager.sendAlert(Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
                 .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
                 .build());
     }
 
-    private void sendWebhookMessage(Player player, int totalViolations) {
-        if (!settings.getWebhook().isEnabled()) return;
+    private int getViolations(UUID player) {
+        return violations.getOrDefault(player, 0);
+    }
+
+    private void sendWebhookMessage(Player player, ICheckSettings settings) {
+        final Settings globalSettings = plugin.getConfigManager().getSettings();
+
+        if (!globalSettings.getWebhook().isEnabled()) return;
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             Map<String, String> placeholders = new HashMap<>();
             placeholders.put("player", player.getName());
             placeholders.put("check", checkName);
-            placeholders.put("violations", String.valueOf(totalViolations));
-            placeholders.put("max_violations", String.valueOf(maxViolations));
+            placeholders.put("violations", String.valueOf(getViolations(player.getUniqueId())));
+            placeholders.put("max_violations", String.valueOf(settings.getMaxViolations()));
             placeholders.put("client_brand", player.getClientBrandName());
             placeholders.put("ping", String.valueOf(player.getPing()));
             placeholders.put("tps", String.valueOf((int) Bukkit.getTPS()[0]));
@@ -99,20 +99,21 @@ public abstract class Check {
         });
     }
 
-    private void punishPlayer(Player player, int totalViolations) {
-        if (!settings.getPunish().isEnabled()) return;
-
-        if (totalViolations >= maxViolations) {
-            String punishCommand = settings.getPunish().getPunishCommand().replace("%player%", player.getName());
+    private void punishPlayer(Player player, ICheckSettings settings) {
+        if (getViolations(player.getUniqueId()) >= settings.getMaxViolations()) {
             violations.remove(player.getUniqueId());
 
             Bukkit.getScheduler().runTask(plugin, () -> {
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand);
+                Arrays.stream(settings.getPunishmentCommands()).iterator().forEachRemaining(punishCommand -> {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand.replace("%player%", player.getName()));
+                });
             });
         }
     }
 
-    private Component createAlertComponent(int tps, User user, String clientBrand, Player player, String gamemode, int ping, int totalViolations, Component details) {
+    private Component createAlertComponent(int tps, User user, String clientBrand, Player player, String gamemode, int ping, Component details, ICheckSettings settings) {
+        final Settings globalSettings = plugin.getConfigManager().getSettings();
+
         Component hoverInfo = Component.text()
                 .append(Component.text("TPS: ", NamedTextColor.GRAY))
                 .append(Component.text(tps, NamedTextColor.GOLD))
@@ -143,7 +144,7 @@ public abstract class Check {
                 .build();
 
         Component message = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(globalSettings.getPrefix()))
                 .append(Component.text(player.getName(), NamedTextColor.YELLOW))
                 .append(Component.text(" failed ", NamedTextColor.GRAY))
                 .append(Component.text(checkName, NamedTextColor.GOLD)
@@ -153,10 +154,12 @@ public abstract class Check {
 
         // Determine the violation format based on whether punishment is enabled
         Component totalViolationsComponent;
-        if (settings.getPunish().isEnabled()) {
+        int totalViolations = getViolations(player.getUniqueId());
+
+        if (settings.isPunishable()) {
             totalViolationsComponent = Component.text()
                     .append(Component.text(" VL[", NamedTextColor.GRAY))
-                    .append(Component.text(totalViolations + "/" + maxViolations, NamedTextColor.GOLD))
+                    .append(Component.text(totalViolations + "/" + settings.getMaxViolations(), NamedTextColor.GOLD))
                     .append(Component.text("]", NamedTextColor.GRAY))
                     .build();
 

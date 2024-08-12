@@ -13,47 +13,38 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class AlertManager implements Listener {
 
-    private final Settings settings;
-
     @Getter
-    private final Set<Player> enabledAlerts = new CopyOnWriteArraySet<>(new HashSet<>());
+    private final Set<Player> enabledAlerts = new CopyOnWriteArraySet<>();
 
-    private Component alertsEnabled;
-    private Component alertsDisabled;
+    private final TotemGuard plugin;
 
     public AlertManager(TotemGuard plugin) {
-        this.settings = plugin.getConfigManager().getSettings();
-
-        initMessages();
-
+        this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    public void sentAlert(Component alert) {
-        for (Player player : enabledAlerts) {
-            player.sendMessage(alert);
-        }
+    public void sendAlert(Component alert) {
+        enabledAlerts.forEach(player -> player.sendMessage(alert));
     }
 
     public void toggleAlerts(Player player) {
-        if (!enabledAlerts.remove(player)) {
-            enabledAlerts.add(player);
-            player.sendMessage(alertsEnabled);
+        if (enabledAlerts.add(player)) {
+            sendAlertStatusMessage(player, "Alerts enabled!", NamedTextColor.GREEN);
         } else {
             enabledAlerts.remove(player);
-            player.sendMessage(alertsDisabled);
+            sendAlertStatusMessage(player, "Alerts disabled!", NamedTextColor.RED);
         }
     }
 
     public void enableAlerts(Player player) {
-        enabledAlerts.add(player);
-        player.sendMessage(alertsEnabled);
+        if (enabledAlerts.add(player)) {
+            sendAlertStatusMessage(player, "Alerts enabled!", NamedTextColor.GREEN);
+        }
     }
 
     public boolean hasAlertsEnabled(Player player) {
@@ -65,15 +56,12 @@ public class AlertManager implements Listener {
         enabledAlerts.remove(event.getPlayer());
     }
 
-    private void initMessages() {
-        this.alertsEnabled = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("Alerts enabled!", NamedTextColor.GREEN))
-                .build();
+    private void sendAlertStatusMessage(Player player, String message, NamedTextColor color) {
+        final Settings settings = plugin.getConfigManager().getSettings();
 
-        this.alertsDisabled = Component.text()
+        player.sendMessage(Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("Alerts disabled!", NamedTextColor.RED))
-                .build();
+                .append(Component.text(message, color))
+                .build());
     }
 }

@@ -1,9 +1,9 @@
 package com.strealex.totemguard.config;
 
+import com.strealex.totemguard.TotemGuard;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
-import com.strealex.totemguard.TotemGuard;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 

@@ -2,6 +2,7 @@ package com.strealex.totemguard.checks.impl;
 
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.checks.Check;
+import com.strealex.totemguard.config.Settings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -13,14 +14,22 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 public class AutoTotemB extends Check implements Listener {
 
-    public AutoTotemB(TotemGuard plugin) {
-        super(plugin, "AutoTotemB", "Player is moving while clicking his totem slot!", plugin.getConfigManager().getSettings().getPunish().getPunishAfter(), true);
+    private final TotemGuard plugin;
 
+    public AutoTotemB(TotemGuard plugin) {
+        super(plugin, "AutoTotemB", "Player is moving while clicking his totem slot!", true);
+
+        this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClick(InventoryClickEvent event) {
+        final Settings.Checks.AutoTotemB settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
+        if (!settings.isEnabled()) {
+            return;
+        }
+
         if (event.getWhoClicked() instanceof Player player) {
             boolean isSpring = player.isSprinting();
             boolean isSneaking = player.isSneaking();
@@ -34,9 +43,8 @@ public class AutoTotemB extends Check implements Listener {
                 return;
             }
 
-            Component details = createDetails(isSpring, isSneaking, isBlocking);
-
-            flag(player, details);
+            Component checkDetails = createDetails(isSpring, isSneaking, isBlocking);
+            flag(player, checkDetails, settings);
         }
     }
 

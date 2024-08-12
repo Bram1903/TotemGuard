@@ -1,7 +1,6 @@
 package com.strealex.totemguard.util;
 
 import com.strealex.totemguard.TotemGuard;
-import com.strealex.totemguard.config.Settings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -10,14 +9,10 @@ import org.bukkit.entity.Player;
 
 public class Util {
 
-    private static TotemGuard plugin = TotemGuard.getInstance();
-    private static Settings settings = plugin.getConfigManager().getSettings();
-    private static String prefix = settings.getPrefix();
+    private static TotemGuard plugin;
 
     public Util(TotemGuard plugin) {
         Util.plugin = plugin;
-        Util.settings = plugin.getConfigManager().getSettings();
-        Util.prefix = settings.getPrefix();
     }
 
     // For now, most of these aren't in use, although, they may be sometime in the future, for now keep them.
@@ -27,6 +22,8 @@ public class Util {
     }
 
     public static void sendMiniMessage(Player player, boolean usePrefix, String message) {
+        final String prefix = plugin.getConfigManager().getSettings().getPrefix();
+
         String finalMessage = usePrefix ? prefix + " " + message : message;
         player.sendMessage(MiniMessage.miniMessage().deserialize(finalMessage));
     }
@@ -36,6 +33,8 @@ public class Util {
     }
 
     public static void sendMiniMessage(CommandSender sender, boolean usePrefix, String message) {
+        final String prefix = plugin.getConfigManager().getSettings().getPrefix();
+
         String finalMessage = usePrefix ? prefix + " " + message : message;
         sender.sendMessage(MiniMessage.miniMessage().deserialize(finalMessage));
     }

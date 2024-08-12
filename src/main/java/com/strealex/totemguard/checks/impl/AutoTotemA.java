@@ -21,16 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AutoTotemA extends Check implements Listener {
 
     private final TotemGuard plugin;
-    private final Settings settings;
 
     private final ConcurrentHashMap<Player, Integer> totemUsage;
     private final ConcurrentHashMap<Player, Integer> clickTimes;
 
     public AutoTotemA(TotemGuard plugin) {
-        super(plugin, "AutoTotemA", "Player is too fast to retotem!", plugin.getConfigManager().getSettings().getPunish().getPunishAfter());
+        super(plugin, "AutoTotemA", "Player is too quickly replacing their totem!");
 
         this.plugin = plugin;
-        this.settings = plugin.getConfigManager().getSettings();
 
         this.totemUsage = new ConcurrentHashMap<>();
         this.clickTimes = new ConcurrentHashMap<>();
@@ -40,7 +38,9 @@ public class AutoTotemA extends Check implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTotemUse(EntityResurrectEvent event) {
-        if (!settings.isToggleAutomaticNormalChecks()) {
+        final Settings settings = plugin.getConfigManager().getSettings();
+
+        if (!settings.getChecks().getAutoTotemA().isEnabled()) {
             return;
         }
 
@@ -62,6 +62,11 @@ public class AutoTotemA extends Check implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClick(InventoryClickEvent event) {
+        final Settings settings = plugin.getConfigManager().getSettings();
+        if (!settings.getChecks().getAutoTotemA().isEnabled()) {
+            return;
+        }
+
         if (event.getWhoClicked() instanceof Player player) {
             if (event.getRawSlot() == 45) {
                 ItemStack cursorItem = event.getCursor(); // Get the item on the cursor that is being placed into the slot
@@ -97,6 +102,8 @@ public class AutoTotemA extends Check implements Listener {
             totemUsage.remove(player);
             clickTimes.remove(player);
 
+            final Settings.Checks.AutoTotemA settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemA();
+
             if (timeDifference > settings.getNormalCheckTimeMs()) {
                 return;
             }
@@ -111,14 +118,14 @@ public class AutoTotemA extends Check implements Listener {
 
             if (settings.isAdvancedSystemCheck()) {
                 if (realTotemTime <= settings.getTriggerAmountMs()) {
-                    flag(player, checkDetails);
+                    flag(player, checkDetails, settings);
                 }
             } else {
                 if (!(settings.isClickTimeDifference())) {
-                    flag(player, checkDetails);
+                    flag(player, checkDetails, settings);
                 } else {
                     if (clickTimeDifference <= 25) {
-                        flag(player, checkDetails);
+                        flag(player, checkDetails, settings);
                     }
                 }
             }

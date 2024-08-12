@@ -16,13 +16,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class CheckCommand extends Check {
 
     private final TotemGuard plugin;
-    private final Settings settings;
 
     public CheckCommand(TotemGuard plugin) {
-        super(plugin, "AutoTotemManuelA", "Takes player's totem to bait their client into retoteming.", plugin.getConfigManager().getSettings().getPunish().getPunishAfter());
+        super(plugin, "AutoTotemManuelA", "Takes player's totem to bait their client into retoteming.");
 
         this.plugin = plugin;
-        this.settings = plugin.getConfigManager().getSettings();
 
         registerCheckCommand();
     }
@@ -40,6 +38,8 @@ public class CheckCommand extends Check {
     }
 
     private void handleCheckCommand(CommandSender sender, Player player) {
+        final Settings settings = plugin.getConfigManager().getSettings();
+
         if (player == null) {
             Util.sendMiniMessage(sender, "<red>Player not found!");
             return;
