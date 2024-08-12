@@ -2,7 +2,7 @@ name: TotemGuard
 version: ${version}
 main: com.strealex.totemguard.TotemGuard
 api-version: '1.20'
-authors: [ OutDev, Asleepp, Bram ]
+authors: [ Bram, OutDev, Asleepp ]
 description: A plugin specifically designed to detect players using the 'AutoTotem' hack.
 load: POSTWORLD
 libraries:

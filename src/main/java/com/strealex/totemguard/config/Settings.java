@@ -98,7 +98,7 @@ public final class Settings {
             private boolean punishable = false;
             private int maxViolations = 5;
             private String[] punishmentCommands = {
-                "ban %player% 1d [TotemGuard] Unfair Advantage"
+                    "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
 
             @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
@@ -124,7 +124,7 @@ public final class Settings {
             private boolean punishable = false;
             private int maxViolations = 5;
             private String[] punishmentCommands = {
-                "ban %player% 1d [TotemGuard] Unfair Advantage"
+                    "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
         }
     }

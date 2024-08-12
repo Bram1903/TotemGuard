@@ -8,7 +8,6 @@ import com.strealex.totemguard.config.ConfigManager;
 import com.strealex.totemguard.listeners.PlayerJoin;
 import com.strealex.totemguard.manager.AlertManager;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
@@ -70,16 +69,4 @@ public final class TotemGuard extends JavaPlugin {
         }
         return true;
     }
-
-    public double getTPS() {
-        try {
-            Object server = Bukkit.getServer().getClass().getDeclaredMethod("getServer").invoke(Bukkit.getServer());
-            double[] tps = (double[]) server.getClass().getField("recentTps").get(server);
-            return tps[0];
-        } catch (Exception e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-
 }

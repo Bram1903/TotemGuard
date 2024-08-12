@@ -55,7 +55,7 @@ public abstract class Check {
 
         User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
         int ping = player.getPing();
-        int tps = (int) Math.round(Bukkit.getTPS()[0]);
+        int tps = getTps();
 
         String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = Objects.requireNonNullElse(player.getClientBrandName(), "Unknown");
@@ -75,6 +75,10 @@ public abstract class Check {
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
                 .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
                 .build());
+    }
+
+    public int getTps() {
+        return (int) Math.round(Bukkit.getTPS()[0]);
     }
 
     private int getViolations(UUID player) {
