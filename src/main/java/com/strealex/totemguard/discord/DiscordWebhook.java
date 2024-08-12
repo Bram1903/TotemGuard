@@ -3,6 +3,7 @@ package com.strealex.totemguard.discord;
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.config.Settings;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -21,14 +22,14 @@ public class DiscordWebhook {
     private static final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Blocking
-    public static void sendWebhook(Map<String, String> placeholders) {
+    public static void sendWebhook(Map<String, String> placeholders, @NotNull String details) {
         Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
         Settings.Webhook webhookConfig = settings.getWebhook();
 
         String replacedDescription = getReplacedDescription(webhookConfig, placeholders);
         String replacedImage = getReplacedImage(webhookConfig, placeholders);
 
-        JSONObject json = createWebhookPayload(webhookConfig, replacedDescription, replacedImage);
+        JSONObject json = createWebhookPayload(webhookConfig, replacedDescription, replacedImage, details);
 
         HttpRequest request = buildHttpRequest(webhookConfig, json);
 
@@ -45,7 +46,7 @@ public class DiscordWebhook {
         return Placeholders.replacePlaceholders(Collections.singletonList(webhookConfig.getImage()), placeholders).get(0);
     }
 
-    private static JSONObject createWebhookPayload(Settings.Webhook webhookConfig, String description, String imageUrl) {
+    private static JSONObject createWebhookPayload(Settings.Webhook webhookConfig, String description, String imageUrl, String details) {
         JSONObject json = new JSONObject();
         json.put("username", webhookConfig.getName());
         json.put("avatar_url", webhookConfig.getProfileImage());
@@ -60,6 +61,16 @@ public class DiscordWebhook {
             embed.put("timestamp", Instant.now().toString());
         }
 
+        // Add a code block with the details string
+        JSONArray fieldsArray = new JSONArray();
+        JSONObject detailsField = new JSONObject();
+        detailsField.put("name", "Details");
+        detailsField.put("value", "```" + details + "```");
+        detailsField.put("inline", false);  // Set to false to make sure it's not inline with other fields
+        fieldsArray.add(detailsField);
+
+        embed.put("fields", fieldsArray);
+
         // Create a JSONArray and use add method
         JSONArray embedsArray = new JSONArray();
         embedsArray.add(embed); // Correctly use add to add the embed object to the JSONArray
@@ -68,7 +79,6 @@ public class DiscordWebhook {
 
         return json;
     }
-
 
 
     private static int parseColor(String color) {

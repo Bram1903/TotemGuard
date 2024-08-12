@@ -12,6 +12,7 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -62,7 +63,7 @@ public abstract class Check {
         Component message = createAlertComponent(tps, user, clientBrand, player, gamemode, ping, details, settings);
 
         alertManager.sendAlert(message);
-        sendWebhookMessage(player, settings);
+        sendWebhookMessage(player, details, settings);
         punishPlayer(player, settings);
 
     }
@@ -80,7 +81,7 @@ public abstract class Check {
         return violations.getOrDefault(player, 0);
     }
 
-    private void sendWebhookMessage(Player player, ICheckSettings settings) {
+    private void sendWebhookMessage(Player player, Component details, ICheckSettings settings) {
         final Settings globalSettings = plugin.getConfigManager().getSettings();
 
         if (!globalSettings.getWebhook().isEnabled()) return;
@@ -94,7 +95,7 @@ public abstract class Check {
             placeholders.put("ping", String.valueOf(player.getPing()));
             placeholders.put("tps", String.valueOf((int) Bukkit.getTPS()[0]));
 
-            DiscordWebhook.sendWebhook(placeholders);
+            DiscordWebhook.sendWebhook(placeholders, PlainTextComponentSerializer.plainText().serialize(details));
         });
     }
 
