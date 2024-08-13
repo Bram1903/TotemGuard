@@ -101,12 +101,12 @@ public abstract class Check {
         embed.setTitle(settings.getTitle());
         embed.setThumbnail("http://cravatar.eu/avatar/" + player.getName() + "/64.png");
         embed.setColor(Color.decode(settings.getColor()));
-        embed.addField("**Player:**", player.getName(), true);
-        embed.addField("**Check:**", checkName, true);
-        embed.addField("**Violations:**", String.valueOf(getViolations(player.getUniqueId())), true);
-        embed.addField("**Client Brand:**", player.getClientBrandName(), true);
-        embed.addField("**Ping:**", String.valueOf(player.getPing()), true);
-        embed.addField("**TPS:**", String.valueOf(tps), true);
+        embed.addField("**Player**", player.getName(), true);
+        embed.addField("**Check**", checkName, true);
+        embed.addField("**Violations**", String.valueOf(getViolations(player.getUniqueId())), true);
+        embed.addField("**Client Brand**", player.getClientBrandName(), true);
+        embed.addField("**Ping**", String.valueOf(player.getPing()), true);
+        embed.addField("**TPS**", String.valueOf(tps), true);
 
         // Serialize details to plain text
         String serializedDetails = PlainTextComponentSerializer.plainText().serialize(details);
