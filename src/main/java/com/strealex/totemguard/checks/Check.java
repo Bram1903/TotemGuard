@@ -134,6 +134,7 @@ public abstract class Check {
     }
 
     private void punishPlayer(Player player, ICheckSettings settings) {
+        if (!(settings.isPunishable())) return;
         if (getViolations(player.getUniqueId()) >= settings.getMaxViolations()) {
             violations.remove(player.getUniqueId());
 
