@@ -70,7 +70,6 @@ public abstract class Check {
         alertManager.sendAlert(message);
         sendWebhookMessage(player, details, tps);
         punishPlayer(player, settings);
-
     }
 
     public void resetData() {
