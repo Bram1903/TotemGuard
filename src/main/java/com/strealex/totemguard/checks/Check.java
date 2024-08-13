@@ -16,7 +16,12 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.awt.*;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Check {
@@ -86,20 +91,45 @@ public abstract class Check {
     }
 
     private void sendWebhookMessage(Player player, Component details, int tps) {
-        final Settings globalSettings = plugin.getConfigManager().getSettings();
+        final Settings.Webhook settings = plugin.getConfigManager().getSettings().getWebhook();
+        if (!settings.isEnabled()) return;
 
-        if (!globalSettings.getWebhook().isEnabled()) return;
+        DiscordWebhook webhook = new DiscordWebhook(settings.getUrl());
+        webhook.setUsername(settings.getName());
+        webhook.setAvatarUrl(settings.getProfileImage());
+
+        DiscordWebhook.EmbedObject embed = new DiscordWebhook.EmbedObject();
+        embed.setTitle(settings.getTitle());
+        embed.setThumbnail("http://cravatar.eu/avatar/" + player.getName() + "/64.png");
+        embed.setColor(Color.decode(settings.getColor()));
+        embed.addField("**Player:**", player.getName(), true);
+        embed.addField("**Check:**", checkName, true);
+        embed.addField("**Violations:**", String.valueOf(getViolations(player.getUniqueId())), true);
+        embed.addField("**Client Brand:**", player.getClientBrandName(), true);
+        embed.addField("**Ping:**", String.valueOf(player.getPing()), true);
+        embed.addField("**TPS:**", String.valueOf(tps), true);
+
+        // Serialize details to plain text
+        String serializedDetails = PlainTextComponentSerializer.plainText().serialize(details);
+        String formattedDetails = "```" + serializedDetails.replace("\\", "\\\\")
+                .replace("`", "\\`")
+                .replace("\n", "\\n") +
+                "```";
+
+        embed.addField("**Details**", formattedDetails, false);
+
+        if (settings.isTimestamp()) {
+            embed.setTimestamp(Instant.now().toString());
+        }
+
+        webhook.addEmbed(embed);
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            Map<String, String> placeholders = new HashMap<>();
-            placeholders.put("player", player.getName());
-            placeholders.put("check", checkName);
-            placeholders.put("violations", String.valueOf(getViolations(player.getUniqueId())));
-            placeholders.put("client_brand", player.getClientBrandName());
-            placeholders.put("ping", String.valueOf(player.getPing()));
-            placeholders.put("tps", String.valueOf(tps));
-
-            DiscordWebhook.sendWebhook(placeholders, PlainTextComponentSerializer.plainText().serialize(details));
+            try {
+                webhook.execute();
+            } catch (IOException e) {
+                plugin.getLogger().warning("Failed to send webhook message: " + e.getMessage());
+            }
         });
     }
 

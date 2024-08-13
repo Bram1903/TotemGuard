@@ -51,20 +51,6 @@ public final class Settings {
         @Comment("\nWebhook Title: Brief description about what the webhook is about.")
         private String title = "TotemGuard";
 
-        @Comment("\nEdit the message that contains the information about the report, you can use placeholders such as %player%, %ping%, and more. Supports Markdown.")
-        private String[] description = {
-                "**Player:** %player%",
-                "**Check:** %check%",
-                "**Violations:** %violations%",
-                "",
-                "**Client Brand:** %client_brand%",
-                "**Ping:** %ping%",
-                "**TPS:** %tps%"
-        };
-
-        @Comment("\nWebhook Image: Sets the image that is displayed in the embed.")
-        private String image = "http://cravatar.eu/avatar/%player%/64.png";
-
         @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
         private String profileImage = "https://i.imgur.com/hqaGO5H.png";
 
@@ -98,7 +84,7 @@ public final class Settings {
             private boolean punishable = false;
             private int maxViolations = 5;
             private String[] punishmentCommands = {
-                    "ban %player% 1d [TotemGuard] Unfair Advantage"
+                "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
 
             @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
@@ -124,7 +110,7 @@ public final class Settings {
             private boolean punishable = false;
             private int maxViolations = 5;
             private String[] punishmentCommands = {
-                    "ban %player% 1d [TotemGuard] Unfair Advantage"
+                "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
         }
     }
