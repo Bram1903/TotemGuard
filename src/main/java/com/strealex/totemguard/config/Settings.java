@@ -65,7 +65,7 @@ public final class Settings {
         private double minTps = 15.0;
 
         @Comment("\nMaximum Ping.")
-        private int maxPing = 250;
+        private int maxPing = 500;
     }
 
     @Configuration
