@@ -64,15 +64,15 @@ public class CheckCommand extends Check implements CommandExecutor, TabExecutor 
         final Settings.Checks.ManualTotemA settings = plugin.getConfigManager().getSettings().getChecks().getManualTotemA();
         applyDamageIfNeeded(target, settings);
 
-        AtomicInteger elapsedTicks = new AtomicInteger(0);
+        AtomicInteger elapsedMs = new AtomicInteger(0);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         Runnable task = () -> {
             if (hasTotemInOffhand(target)) {
                 target.getInventory().setItemInOffHand(originalTotem);
-                flag(target, createDetails(sender, elapsedTicks.get()), settings);
+                flag(target, createDetails(sender, elapsedMs.get()), settings);
                 scheduler.shutdown();
-            } else if (elapsedTicks.getAndIncrement() >= settings.getCheckTime()) {
+            } else if (elapsedMs.getAndIncrement() >= settings.getCheckTime()) {
                 target.getInventory().setItemInOffHand(originalTotem);
                 sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
                 scheduler.shutdown();
@@ -129,13 +129,13 @@ public class CheckCommand extends Check implements CommandExecutor, TabExecutor 
         return Math.min(damage, target.getHealth() - 1);
     }
 
-    private Component createDetails(CommandSender sender, int elapsedTicks) {
+    private Component createDetails(CommandSender sender, int elapsedMs) {
         return Component.text()
                 .append(Component.text("Staff: ", NamedTextColor.GRAY))
                 .append(Component.text(sender.getName(), NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.text("Elapsed Ticks: ", NamedTextColor.GRAY))
-                .append(Component.text(elapsedTicks, NamedTextColor.GOLD))
+                .append(Component.text("Elapsed Ms: ", NamedTextColor.GRAY))
+                .append(Component.text(elapsedMs, NamedTextColor.GOLD))
                 .build();
     }
 }
