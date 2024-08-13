@@ -18,15 +18,6 @@ public final class Settings {
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();
 
-    @Comment("\nCheck Time: Amount of time the /check command waits for a retotem. (in ticks)")
-    private int checkTime = 5;
-
-    @Comment("\nDamage on /check: Toggles damage on /check command to ensure a more accurate result.")
-    private boolean toggleDamageOnCheck = true;
-
-    @Comment("\nDamage Amount on /check: Amount of damage to inflict on check.")
-    private int damageAmountOnCheck = 0;
-
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
@@ -77,6 +68,9 @@ public final class Settings {
         @Comment("AutoTotemB Settings")
         private AutoTotemB autoTotemB = new AutoTotemB();
 
+        @Comment("ManualTotemA Settings")
+        private ManualTotemA manualTotemA = new ManualTotemA();
+
         @Configuration
         @Getter
         public static class AutoTotemA implements ICheckSettings {
@@ -112,6 +106,26 @@ public final class Settings {
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
+        }
+
+        @Configuration
+        @Getter
+        public static class ManualTotemA implements ICheckSettings {
+            private boolean enabled = true;
+            private boolean punishable = false;
+            private int maxViolations = 5;
+            private String[] punishmentCommands = {
+                "ban %player% 1d [TotemGuard] Unfair Advantage"
+            };
+
+            @Comment("\nCheck Time: Amount of time the /check command waits for a retotem. (in ticks)")
+            private int checkTime = 1000;
+
+            @Comment("\nDamage on /check: Toggles damage on /check command to ensure a more accurate result.")
+            private boolean toggleDamageOnCheck = true;
+
+            @Comment("\nDamage Amount on /check: Amount of damage to inflict on check.")
+            private int damageAmountOnCheck = 0;
         }
     }
 }

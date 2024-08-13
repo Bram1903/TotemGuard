@@ -3,88 +3,139 @@ package com.strealex.totemguard.commands;
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.checks.Check;
 import com.strealex.totemguard.config.Settings;
-import com.strealex.totemguard.util.Util;
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.PlayerArgument;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.NotNull;
 
-public class CheckCommand extends Check {
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class CheckCommand extends Check implements CommandExecutor, TabExecutor {
 
     private final TotemGuard plugin;
 
     public CheckCommand(TotemGuard plugin) {
-        super(plugin, "AutoTotemManuelA", "Takes player's totem to bait their client into retoteming.");
+        super(plugin, "ManualTotemA", "Attempts to bait the player into replacing their totem.");
 
         this.plugin = plugin;
-
-        registerCheckCommand();
+        plugin.getCommand("check").setExecutor(this);
     }
 
-    private void registerCheckCommand() {
-        new CommandAPICommand("check")
-                .withPermission("TotemGuard.Check")
-                .withAliases("totemcheck", "checktotem")
-                .withArguments(new PlayerArgument("target"))
-                .executes((sender, args) -> {
-                    Player targetPlayer = (Player) args.get(0);
-                    handleCheckCommand(sender, targetPlayer);
-                })
-                .register();
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!sender.hasPermission("TotemGuard.Check")) {
+            sender.sendMessage(Component.text("You do not have permission to use this command.", NamedTextColor.RED));
+            return false;
+        }
+
+        if (args.length == 0) {
+            sender.sendMessage(Component.text("Usage: /check <player>", NamedTextColor.RED));
+            return false;
+        }
+
+        Player target = Bukkit.getPlayer(args[0]);
+        if (target == null) {
+            sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED));
+            return false;
+        }
+
+        if (target.getGameMode() != org.bukkit.GameMode.SURVIVAL) {
+            sender.sendMessage(Component.text("This player is not in survival mode!", NamedTextColor.RED));
+            return false;
+        }
+
+        if (!hasTotemInOffhand(target)) {
+            sender.sendMessage(Component.text("This player has no totem in their offhand!", NamedTextColor.RED));
+            return false;
+        }
+
+        ItemStack originalTotem = removeTotemFromOffhand(target);
+        final Settings.Checks.ManualTotemA settings = plugin.getConfigManager().getSettings().getChecks().getManualTotemA();
+        applyDamageIfNeeded(target, settings);
+
+        AtomicInteger elapsedTicks = new AtomicInteger(0);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        Runnable task = () -> {
+            if (hasTotemInOffhand(target)) {
+                target.getInventory().setItemInOffHand(originalTotem);
+                flag(target, createDetails(sender, elapsedTicks.get()), settings);
+                scheduler.shutdown();
+            } else if (elapsedTicks.getAndIncrement() >= settings.getCheckTime()) {
+                target.getInventory().setItemInOffHand(originalTotem);
+                sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
+                scheduler.shutdown();
+            }
+        };
+
+        scheduler.scheduleAtFixedRate(task, 0, 1, TimeUnit.MILLISECONDS);
+
+        return true;
     }
 
-    private void handleCheckCommand(CommandSender sender, Player player) {
-        final Settings settings = plugin.getConfigManager().getSettings();
-
-        if (player == null) {
-            Util.sendMiniMessage(sender, "<red>Player not found!");
-            return;
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!sender.hasPermission("TotemGuard.Check") || args.length != 1) {
+            return List.of();
         }
 
-        if (!hasTotemInOffhand(player)) {
-            Util.sendMiniMessage(sender, "<red>This player has no totem in their offhand!");
-            if (sender instanceof Player) {
-                ((Player) sender).playSound((Player) sender, Sound.ENTITY_ENDERMAN_DEATH, 1, 1);
-            }
-            return;
+        if (sender instanceof Player) {
+            String senderName = sender.getName().toLowerCase();
+            return Bukkit.getOnlinePlayers().stream()
+                    .map(Player::getName)
+                    .filter(name -> !name.toLowerCase().equals(senderName)) // Prevent self-suggestion
+                    .toList();
         }
 
-        ItemStack totem = player.getInventory().getItemInOffHand();
-        player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
-
-        if (settings.isToggleDamageOnCheck()) {
-            double damage = settings.getDamageAmountOnCheck() > 0 ? settings.getDamageAmountOnCheck() : player.getHealth() / 1.25;
-            damage = Math.min(damage, player.getHealth() - 1);
-            if (damage > 0) {
-                player.damage(damage);
-            }
-        }
-
-        new BukkitRunnable() {
-            int elapsedTicks = 0;
-
-            @Override
-            public void run() {
-                if (hasTotemInOffhand(player)) {
-                    //flag(player, Component.text(sender.getName()));
-                    cancel();
-                    player.getInventory().setItemInOffHand(totem); // Restore the totem
-                } else if (elapsedTicks >= settings.getCheckTime()) {
-                    Util.sendMiniMessage(sender, "<green>Concluded check. The player does not have a totem in their offhand. (" + settings.getCheckTime() + " ticks)");
-                    player.getInventory().setItemInOffHand(totem); // Restore the totem
-                    cancel();
-                }
-                elapsedTicks += 1;
-            }
-        }.runTaskTimer(plugin, 0L, 1);
+        return Bukkit.getOnlinePlayers().stream()
+                .map(Player::getName)
+                .toList();
     }
 
     private boolean hasTotemInOffhand(Player player) {
         ItemStack itemInOffHand = player.getInventory().getItemInOffHand();
         return itemInOffHand != null && itemInOffHand.getType() == Material.TOTEM_OF_UNDYING;
+    }
+
+    private ItemStack removeTotemFromOffhand(Player target) {
+        ItemStack totem = target.getInventory().getItemInOffHand();
+        target.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
+        return totem;
+    }
+
+    private void applyDamageIfNeeded(Player target, Settings.Checks.ManualTotemA settings) {
+        if (settings.isToggleDamageOnCheck()) {
+            double damage = calculateDamage(target, settings);
+            if (damage > 0) {
+                target.damage(damage);
+            }
+        }
+    }
+
+    private double calculateDamage(Player target, Settings.Checks.ManualTotemA settings) {
+        double defaultDamage = target.getHealth() / 1.25;
+        double damage = settings.getDamageAmountOnCheck() > 0 ? settings.getDamageAmountOnCheck() : defaultDamage;
+        return Math.min(damage, target.getHealth() - 1);
+    }
+
+    private Component createDetails(CommandSender sender, int elapsedTicks) {
+        return Component.text()
+                .append(Component.text("Staff: ", NamedTextColor.GRAY))
+                .append(Component.text(sender.getName(), NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Elapsed Ticks: ", NamedTextColor.GRAY))
+                .append(Component.text(elapsedTicks, NamedTextColor.GOLD))
+                .build();
     }
 }

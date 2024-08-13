@@ -10,18 +10,20 @@ libraries:
   - de.exlll:configlib-paper:${configlibVersion}
 depend:
   - packetevents
-  - CommandAPI
-commands:
-  Check:
-    description: Checks a player for manually for AutoTotem.
-    permission: TotemGuard.Check
-    permission-message: Unknown command. Type "/help" for help
-    aliases:
-      - totemcheck
-      - checktotem
 permissions:
+  TotemGuard.*:
+    description: Gives access to all TotemGuard permissions.
+    default: op
+    children:
+      TotemGuard.Reload: true
+      TotemGuard.Alerts: true
+      TotemGuard.Alerts.Others: true
+      TotemGuard.Check: true
   TotemGuard.Alerts:
     description: Allows the player to use /totemguard alerts.
+    default: op
+  TotemGuard.Alerts.Others:
+    description: Allows the player to use /totemguard alerts <player>.
     default: op
   TotemGuard.Reload:
     description: Allows the player to use /totemguard reload.
@@ -29,3 +31,13 @@ permissions:
   TotemGuard.Check:
     description: Allows the player to use the /check command.
     default: op
+commands:
+  TotemGuard:
+    description: Base command for TotemGuard.
+    aliases:
+      - tg
+  Check:
+    description: Checks a player for manually for AutoTotem.
+    aliases:
+      - totemcheck
+      - checktotem

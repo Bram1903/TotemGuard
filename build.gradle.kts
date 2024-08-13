@@ -24,7 +24,6 @@ java {
 dependencies {
     compileOnly(libs.paper.api)
     compileOnly(libs.packetevents.spigot)
-    compileOnly(libs.commandapi)
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
