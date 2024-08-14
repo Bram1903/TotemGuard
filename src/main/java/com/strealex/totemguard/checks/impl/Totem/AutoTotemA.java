@@ -1,4 +1,4 @@
-package com.strealex.totemguard.checks.impl;
+package com.strealex.totemguard.checks.impl.Totem;
 
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.checks.Check;

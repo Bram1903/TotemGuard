@@ -71,6 +71,9 @@ public final class Settings {
         @Comment("ManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
+        @Comment("BadPacketA Settings")
+        private BadPacketsA badPacketsA = new BadPacketsA();
+
         @Configuration
         @Getter
         public static class AutoTotemA implements ICheckSettings {
@@ -126,6 +129,17 @@ public final class Settings {
 
             @Comment("\nDamage Amount on /check: Amount of damage to inflict on check.")
             private int damageAmountOnCheck = 0;
+        }
+
+        @Configuration
+        @Getter
+        public static class BadPacketsA implements ICheckSettings {
+            private boolean enabled = true;
+            private boolean punishable = true;
+            private int maxViolations = 0;
+            private String[] punishmentCommands = {
+                "ban %player% 1d [TotemGuard] Unfair Advantage"
+            };
         }
     }
 }

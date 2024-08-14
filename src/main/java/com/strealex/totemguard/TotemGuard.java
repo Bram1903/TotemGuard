@@ -1,7 +1,10 @@
 package com.strealex.totemguard;
 
-import com.strealex.totemguard.checks.impl.AutoTotemA;
-import com.strealex.totemguard.checks.impl.AutoTotemB;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.strealex.totemguard.checks.impl.Totem.AutoTotemA;
+import com.strealex.totemguard.checks.impl.Totem.AutoTotemB;
+import com.strealex.totemguard.checks.impl.BadPackets.BadPacketsA;
 import com.strealex.totemguard.commands.CheckCommand;
 import com.strealex.totemguard.commands.TotemGuardCommand;
 import com.strealex.totemguard.config.ConfigManager;
@@ -54,6 +57,10 @@ public final class TotemGuard extends JavaPlugin {
         new AutoTotemA(this);
         new AutoTotemB(this);
         new PlayerJoin(this);
+        PacketEvents.getAPI().getEventManager().registerListener(
+                new BadPacketsA(this), PacketListenerPriority.NORMAL);
+
+        PacketEvents.getAPI().init();
     }
 
     /**
