@@ -35,7 +35,11 @@ public class BadPacketsA extends Check implements PacketListener {
         String channel = packet.getChannelName();
 
         if (channel.equalsIgnoreCase("minecraft:using_autototem")) {
-            Component checkDetails = Component.text("Channel: " + channel, NamedTextColor.GOLD);
+            Component checkDetails = Component.text()
+                    .append(Component.text("Channel: ", NamedTextColor.GRAY))
+                    .append(Component.text(channel, NamedTextColor.GOLD))
+                    .build();
+
             flag((Player) event.getPlayer(), checkDetails, settings);
         }
     }
