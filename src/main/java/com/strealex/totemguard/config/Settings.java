@@ -135,10 +135,10 @@ public final class Settings {
         @Getter
         public static class BadPacketsA implements ICheckSettings {
             private boolean enabled = true;
-            private boolean punishable = false;
+            private boolean punishable = true;
             private int maxViolations = 0;
             private String[] punishmentCommands = {
-                    "ban %player% 1d [TotemGuard] Unfair Advantage"
+                "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
         }
     }
