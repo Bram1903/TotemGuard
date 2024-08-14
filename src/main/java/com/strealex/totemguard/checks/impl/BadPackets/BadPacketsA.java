@@ -1,21 +1,15 @@
-package com.strealex.totemguard.checks.impl;
+package com.strealex.totemguard.checks.impl.BadPackets;
 
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.checks.Check;
 import com.strealex.totemguard.config.Settings;
-
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-
-import java.sql.BatchUpdateException;
-import java.util.UUID;
 
 public class BadPacketsA extends Check implements PacketListener {
 
@@ -23,7 +17,6 @@ public class BadPacketsA extends Check implements PacketListener {
 
     public BadPacketsA(TotemGuard plugin) {
         super(plugin, "BadPacketsA", "Player is using a suspicious mod!");
-
         this.plugin = plugin;
     }
 
@@ -34,20 +27,16 @@ public class BadPacketsA extends Check implements PacketListener {
             return;
         }
 
-        User user = event.getUser();
-
         if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             return;
         }
 
         WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
+        String channel = packet.getChannelName();
 
-        if (packet.getChannelName().equalsIgnoreCase("minecraft:using_autototem")) {
-            Component checkDetails = Component.text("AutoTotem Mod Packet Detected", NamedTextColor.RED);
-            UUID uuid = user.getUUID();
-            Player player = Bukkit.getPlayer(uuid);
-            assert player != null;
-            flag(player, checkDetails, settings);
+        if (channel.equalsIgnoreCase("minecraft:using_autototem")) {
+            Component checkDetails = Component.text("Channel: " + channel, NamedTextColor.GOLD);
+            flag((Player) event.getPlayer(), checkDetails, settings);
         }
     }
 }
