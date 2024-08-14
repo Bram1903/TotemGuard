@@ -1,7 +1,6 @@
 package com.strealex.totemguard.checks;
 
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.config.Settings;
@@ -61,15 +60,14 @@ public abstract class Check {
 
         User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
         int ping = player.getPing();
-        int tps = getTps();
 
         String gamemode = String.valueOf(player.getGameMode());
         String clientBrand = Objects.requireNonNullElse(player.getClientBrandName(), "Unknown");
 
-        Component message = createAlertComponent(tps, user, clientBrand, player, gamemode, ping, details, settings);
+        Component message = createAlertComponent(user, clientBrand, player, gamemode, ping, details, settings);
 
         alertManager.sendAlert(message);
-        sendWebhookMessage(player, details, tps);
+        sendWebhookMessage(player, details);
         punishPlayer(player, settings);
     }
 
@@ -90,7 +88,7 @@ public abstract class Check {
         return violations.getOrDefault(player, 0);
     }
 
-    private void sendWebhookMessage(Player player, Component details, int tps) {
+    private void sendWebhookMessage(Player player, Component details) {
         final Settings.Webhook settings = plugin.getConfigManager().getSettings().getWebhook();
         if (!settings.isEnabled()) return;
 
@@ -107,7 +105,7 @@ public abstract class Check {
         embed.addField("**Violations**", String.valueOf(getViolations(player.getUniqueId())), true);
         embed.addField("**Client Brand**", player.getClientBrandName(), true);
         embed.addField("**Ping**", String.valueOf(player.getPing()), true);
-        embed.addField("**TPS**", String.valueOf(tps), true);
+        embed.addField("**TPS**", String.valueOf(getTps()), true);
 
         // Serialize details to plain text
         String serializedDetails = PlainTextComponentSerializer.plainText().serialize(details);
@@ -146,12 +144,12 @@ public abstract class Check {
         }
     }
 
-    private Component createAlertComponent(int tps, User user, String clientBrand, Player player, String gamemode, int ping, Component details, ICheckSettings settings) {
+    private Component createAlertComponent(User user, String clientBrand, Player player, String gamemode, int ping, Component details, ICheckSettings settings) {
         final Settings globalSettings = plugin.getConfigManager().getSettings();
 
         Component hoverInfo = Component.text()
                 .append(Component.text("TPS: ", NamedTextColor.GRAY))
-                .append(Component.text(tps, NamedTextColor.GOLD))
+                .append(Component.text(getTps(), NamedTextColor.GOLD))
                 .append(Component.text(" |", NamedTextColor.DARK_GRAY))
                 .append(Component.text(" Client Version: ", NamedTextColor.GRAY))
                 .append(Component.text(user.getClientVersion().getReleaseName(), NamedTextColor.GOLD))
