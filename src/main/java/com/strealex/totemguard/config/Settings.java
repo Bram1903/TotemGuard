@@ -10,7 +10,7 @@ import lombok.Getter;
 public final class Settings {
 
     @Comment("Prefix: Sets the command prefix for the plugin.")
-    private String prefix = "&e&lAUTOTOTEM &8➟ ";
+    private String prefix = "&6⚡ ";
 
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
