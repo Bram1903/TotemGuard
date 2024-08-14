@@ -1,5 +1,6 @@
 package com.strealex.totemguard.commands;
 
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.checks.Check;
 import com.strealex.totemguard.config.Settings;
@@ -138,4 +139,5 @@ public class CheckCommand extends Check implements CommandExecutor, TabExecutor 
                 .append(Component.text(elapsedMs, NamedTextColor.GOLD))
                 .build();
     }
+
 }

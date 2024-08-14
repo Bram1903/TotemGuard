@@ -1,6 +1,7 @@
 package com.strealex.totemguard.checks;
 
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.config.Settings;
