@@ -26,15 +26,15 @@ public class BadPacketsA extends Check implements PacketListener {
             return;
         }
 
+        final Settings.Checks.BadPacketsA settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsA();
+        if (!settings.isEnabled()) {
+            return;
+        }
+
         WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
         String channel = packet.getChannelName();
 
         if (channel.equalsIgnoreCase("minecraft:using_autototem")) {
-            final Settings.Checks.BadPacketsA settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsA();
-            if (!settings.isEnabled()) {
-                return;
-            }
-
             Component checkDetails = Component.text()
                     .append(Component.text("Channel: ", NamedTextColor.GRAY))
                     .append(Component.text(channel, NamedTextColor.GOLD))
