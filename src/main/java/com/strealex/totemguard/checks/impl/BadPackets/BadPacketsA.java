@@ -22,11 +22,6 @@ public class BadPacketsA extends Check implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final Settings.Checks.BadPacketsA settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsA();
-        if (!settings.isEnabled()) {
-            return;
-        }
-
         if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             return;
         }
@@ -35,6 +30,11 @@ public class BadPacketsA extends Check implements PacketListener {
         String channel = packet.getChannelName();
 
         if (channel.equalsIgnoreCase("minecraft:using_autototem")) {
+            final Settings.Checks.BadPacketsA settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsA();
+            if (!settings.isEnabled()) {
+                return;
+            }
+
             Component checkDetails = Component.text()
                     .append(Component.text("Channel: ", NamedTextColor.GRAY))
                     .append(Component.text(channel, NamedTextColor.GOLD))
