@@ -18,9 +18,6 @@ public final class Settings {
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();
 
-    @Comment("\nWebhook settings:")
-    private Webhook.PunishmentWebhook punishmentWebhook = new Webhook.PunishmentWebhook();
-
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
@@ -50,6 +47,9 @@ public final class Settings {
 
         @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
         private boolean timestamp = true;
+
+        @Comment("\nWebhook settings:")
+        private PunishmentWebhook punishmentWebhook = new PunishmentWebhook();
 
         @Configuration
         @Getter

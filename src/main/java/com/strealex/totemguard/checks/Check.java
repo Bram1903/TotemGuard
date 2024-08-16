@@ -90,7 +90,7 @@ public abstract class Check {
 
     private void sendWebhookMessage(Player player, Component details, boolean isPunishment) {
         final Settings.Webhook settings = plugin.getConfigManager().getSettings().getWebhook();
-        final Settings.Webhook.PunishmentWebhook punishmentSettings = plugin.getConfigManager().getSettings().getPunishmentWebhook();
+        final Settings.Webhook.PunishmentWebhook punishmentSettings = plugin.getConfigManager().getSettings().getWebhook().getPunishmentWebhook();
         if (!settings.isEnabled()) return;
 
         DiscordWebhook webhook = new DiscordWebhook(settings.getUrl());
