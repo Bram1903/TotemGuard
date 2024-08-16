@@ -3,7 +3,7 @@ paper-api = "1.20.4-R0.1-SNAPSHOT"
 packetevents = "2.4.0"
 lombok = "1.18.34"
 configlib = "4.5.0"
-shadow = "8.1.8"
+shadow = "8.3.0"
 run-paper = "2.3.0"
 
 [libraries]
@@ -15,4 +15,4 @@ configlib-paper = { group = "de.exlll", name = "configlib-paper", version.ref = 
 
 [plugins]
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
-shadow = { id = "io.github.goooler.shadow", version.ref = "shadow" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
