@@ -134,9 +134,8 @@ public class AutoTotemA extends Check implements Listener {
 
     private String getMainHandItemString(Player player) {
         ItemStack itemInMainHand = player.getInventory().getItemInMainHand();
-        if (itemInMainHand != null && itemInMainHand.getType() != Material.AIR) {
-            ItemMeta itemMeta = itemInMainHand.getItemMeta();
-            return itemMeta.hasDisplayName() ? itemMeta.getDisplayName() : itemInMainHand.getType().name();
+        if (itemInMainHand.getType() != Material.AIR) {
+            return itemInMainHand.toString();
         } else {
             return "Empty Hand";
         }

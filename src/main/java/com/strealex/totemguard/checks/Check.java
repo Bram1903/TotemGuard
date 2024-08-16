@@ -67,7 +67,7 @@ public abstract class Check {
         Component message = createAlertComponent(user, clientBrand, player, gamemode, ping, details, settings);
 
         alertManager.sendAlert(message);
-        sendWebhookMessage(player, details);
+        sendWebhookMessage(player, details, false);
         punishPlayer(player, settings);
     }
 
@@ -88,8 +88,9 @@ public abstract class Check {
         return violations.getOrDefault(player, 0);
     }
 
-    private void sendWebhookMessage(Player player, Component details) {
+    private void sendWebhookMessage(Player player, Component details, boolean isPunishment) {
         final Settings.Webhook settings = plugin.getConfigManager().getSettings().getWebhook();
+        final Settings.Webhook.PunishmentWebhook punishmentSettings = plugin.getConfigManager().getSettings().getPunishmentWebhook();
         if (!settings.isEnabled()) return;
 
         DiscordWebhook webhook = new DiscordWebhook(settings.getUrl());
@@ -97,9 +98,9 @@ public abstract class Check {
         webhook.setAvatarUrl(settings.getProfileImage());
 
         DiscordWebhook.EmbedObject embed = new DiscordWebhook.EmbedObject();
-        embed.setTitle(settings.getTitle());
+        embed.setTitle(isPunishment ? punishmentSettings.getPunishmentTitle() : settings.getTitle());
         embed.setThumbnail("http://cravatar.eu/avatar/" + player.getName() + "/64.png");
-        embed.setColor(Color.decode(settings.getColor()));
+        embed.setColor(Color.decode(isPunishment ? punishmentSettings.getPunishmentTitle() : settings.getColor()));
         embed.addField("**Player**", player.getName(), true);
         embed.addField("**Check**", checkName, true);
         embed.addField("**Violations**", String.valueOf(getViolations(player.getUniqueId())), true);
@@ -141,6 +142,9 @@ public abstract class Check {
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand.replace("%player%", player.getName()));
                 });
             });
+
+            // Send punishment webhook
+            sendWebhookMessage(player, Component.text("Player has been punished for exceeding violation limit."), true);
         }
     }
 
@@ -208,13 +212,10 @@ public abstract class Check {
 
         message = message
                 .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
-                        .hoverEvent(HoverEvent.showText(hoverInfo)));
-
-        // Add a * if the check is experimental
-        if (experimental) {
-            message = message.append(Component.text(" *", NamedTextColor.RED).decorate(TextDecoration.BOLD));
-        }
+                        .hoverEvent(HoverEvent.showText(hoverInfo)))
+                .decoration(TextDecoration.ITALIC, false);
 
         return message;
     }
+
 }

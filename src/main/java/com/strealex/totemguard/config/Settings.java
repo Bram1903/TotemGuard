@@ -18,6 +18,9 @@ public final class Settings {
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();
 
+    @Comment("\nWebhook settings:")
+    private Webhook.PunishmentWebhook punishmentWebhook = new Webhook.PunishmentWebhook();
+
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
@@ -47,6 +50,18 @@ public final class Settings {
 
         @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
         private boolean timestamp = true;
+
+        @Configuration
+        @Getter
+        public static class PunishmentWebhook {
+
+            @Comment("\nPunishment Title")
+            private String punishmentTitle = "TotemGuard Punishment";
+
+            @Comment("\nWebhook Punishment Embed color: Color of the webhook embed (in hex).")
+            private String punishmentColor = "#d60010";
+
+        }
     }
 
     @Configuration
