@@ -1,7 +1,7 @@
-package com.strealex.totemguard.manager;
+package net.strealex.totemguard.manager;
 
-import com.strealex.totemguard.TotemGuard;
-import com.strealex.totemguard.config.Settings;
+import net.strealex.totemguard.TotemGuard;
+import net.strealex.totemguard.config.Settings;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

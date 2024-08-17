@@ -1,4 +1,4 @@
-package com.strealex.totemguard.discord;
+package net.strealex.totemguard.discord;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,9 +1,9 @@
-package com.strealex.totemguard.commands;
+package net.strealex.totemguard.commands;
 
-import com.strealex.totemguard.TotemGuard;
-import com.strealex.totemguard.config.ConfigManager;
-import com.strealex.totemguard.config.Settings;
-import com.strealex.totemguard.manager.AlertManager;
+import net.strealex.totemguard.TotemGuard;
+import net.strealex.totemguard.config.ConfigManager;
+import net.strealex.totemguard.config.Settings;
+import net.strealex.totemguard.manager.AlertManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;

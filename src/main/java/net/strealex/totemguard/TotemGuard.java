@@ -1,15 +1,15 @@
-package com.strealex.totemguard;
+package net.strealex.totemguard;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
-import com.strealex.totemguard.checks.impl.badpackets.BadPacketsA;
-import com.strealex.totemguard.checks.impl.totem.AutoTotemA;
-import com.strealex.totemguard.checks.impl.totem.AutoTotemB;
-import com.strealex.totemguard.commands.CheckCommand;
-import com.strealex.totemguard.commands.TotemGuardCommand;
-import com.strealex.totemguard.config.ConfigManager;
-import com.strealex.totemguard.listeners.UserTracker;
-import com.strealex.totemguard.manager.AlertManager;
+import net.strealex.totemguard.checks.impl.badpackets.BadPacketsA;
+import net.strealex.totemguard.checks.impl.totem.AutoTotemA;
+import net.strealex.totemguard.checks.impl.totem.AutoTotemB;
+import net.strealex.totemguard.commands.CheckCommand;
+import net.strealex.totemguard.commands.TotemGuardCommand;
+import net.strealex.totemguard.config.ConfigManager;
+import net.strealex.totemguard.listeners.UserTracker;
+import net.strealex.totemguard.manager.AlertManager;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 

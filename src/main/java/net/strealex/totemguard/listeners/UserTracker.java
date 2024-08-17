@@ -1,10 +1,10 @@
-package com.strealex.totemguard.listeners;
+package net.strealex.totemguard.listeners;
 
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
-import com.strealex.totemguard.TotemGuard;
-import com.strealex.totemguard.manager.AlertManager;
+import net.strealex.totemguard.TotemGuard;
+import net.strealex.totemguard.manager.AlertManager;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;

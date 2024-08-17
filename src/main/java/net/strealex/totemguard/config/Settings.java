@@ -1,6 +1,6 @@
-package com.strealex.totemguard.config;
+package net.strealex.totemguard.config;
 
-import com.strealex.totemguard.checks.ICheckSettings;
+import net.strealex.totemguard.checks.ICheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;

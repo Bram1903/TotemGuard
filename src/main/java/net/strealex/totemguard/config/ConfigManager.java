@@ -1,6 +1,6 @@
-package com.strealex.totemguard.config;
+package net.strealex.totemguard.config;
 
-import com.strealex.totemguard.TotemGuard;
+import net.strealex.totemguard.TotemGuard;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
