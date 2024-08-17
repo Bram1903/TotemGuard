@@ -149,7 +149,7 @@ public class AutoTotemA extends Check implements Listener {
                 .append(Component.text("Real Totem Time: ", NamedTextColor.GRAY))
                 .append(Component.text(realTotemTime + "ms", NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.text("Click Difference:", NamedTextColor.GRAY))
+                .append(Component.text("Click Difference: ", NamedTextColor.GRAY))
                 .append(Component.text(clickTimeDifference + "ms", NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
