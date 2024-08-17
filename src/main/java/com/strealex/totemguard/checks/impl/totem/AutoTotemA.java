@@ -1,4 +1,4 @@
-package com.strealex.totemguard.checks.impl.Totem;
+package com.strealex.totemguard.checks.impl.totem;
 
 import com.strealex.totemguard.TotemGuard;
 import com.strealex.totemguard.checks.Check;
@@ -14,7 +14,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.concurrent.ConcurrentHashMap;
 

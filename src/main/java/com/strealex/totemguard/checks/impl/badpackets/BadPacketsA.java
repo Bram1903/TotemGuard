@@ -1,4 +1,4 @@
-package com.strealex.totemguard.checks.impl.BadPackets;
+package com.strealex.totemguard.checks.impl.badpackets;
 
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
