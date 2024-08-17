@@ -14,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class AlertManager implements Listener {
@@ -45,6 +46,10 @@ public class AlertManager implements Listener {
         if (enabledAlerts.add(player)) {
             sendAlertStatusMessage(player, "Alerts enabled!", NamedTextColor.GREEN);
         }
+    }
+
+    public void removePlayer(UUID player) {
+        enabledAlerts.removeIf(p -> p.getUniqueId().equals(player));
     }
 
     public boolean hasAlertsEnabled(Player player) {

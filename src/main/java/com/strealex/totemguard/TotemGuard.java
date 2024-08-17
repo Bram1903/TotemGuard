@@ -8,7 +8,7 @@ import com.strealex.totemguard.checks.impl.totem.AutoTotemB;
 import com.strealex.totemguard.commands.CheckCommand;
 import com.strealex.totemguard.commands.TotemGuardCommand;
 import com.strealex.totemguard.config.ConfigManager;
-import com.strealex.totemguard.listeners.PlayerJoin;
+import com.strealex.totemguard.listeners.UserTracker;
 import com.strealex.totemguard.manager.AlertManager;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -38,6 +38,7 @@ public final class TotemGuard extends JavaPlugin {
 
         alertManager = new AlertManager(this);
 
+        registerPacketListeners();
         registerCommands();
         registerListeners();
     }
@@ -48,6 +49,11 @@ public final class TotemGuard extends JavaPlugin {
         saveDefaultConfig();
     }
 
+    private void registerPacketListeners() {
+        PacketEvents.getAPI().getEventManager().registerListener(new UserTracker(this), PacketListenerPriority.LOW);
+        PacketEvents.getAPI().getEventManager().registerListener(new BadPacketsA(this), PacketListenerPriority.NORMAL);
+    }
+
     private void registerCommands() {
         new TotemGuardCommand(this);
         new CheckCommand(this);
@@ -56,11 +62,7 @@ public final class TotemGuard extends JavaPlugin {
     private void registerListeners() {
         new AutoTotemA(this);
         new AutoTotemB(this);
-        new PlayerJoin(this);
-        PacketEvents.getAPI().getEventManager().registerListener(
-                new BadPacketsA(this), PacketListenerPriority.NORMAL);
-
-        PacketEvents.getAPI().init();
+        new UserTracker(this);
     }
 
     /**
