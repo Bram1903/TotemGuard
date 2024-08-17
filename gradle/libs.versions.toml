@@ -5,6 +5,7 @@ lombok = "1.18.34"
 configlib = "4.5.0"
 shadow = "8.3.0"
 run-paper = "2.3.0"
+discord-webhooks = "0.8.4"
 
 [libraries]
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
@@ -12,6 +13,7 @@ lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" 
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
 configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
 configlib-paper = { group = "de.exlll", name = "configlib-paper", version.ref = "configlib" }
+discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.ref = "discord-webhooks" }
 
 [plugins]
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }

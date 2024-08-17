@@ -11,19 +11,19 @@ import net.strealex.totemguard.config.ConfigManager;
 import net.strealex.totemguard.listeners.UserTracker;
 import net.strealex.totemguard.manager.AlertManager;
 import lombok.Getter;
+import net.strealex.totemguard.manager.DiscordManager;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
 
 public final class TotemGuard extends JavaPlugin {
 
-    @Getter
-    private static TotemGuard instance;
-
-    @Getter
-    private ConfigManager configManager;
-    @Getter
-    private AlertManager alertManager;
+    @Getter private static TotemGuard instance;
+    @Getter private ConfigManager configManager;
+    @Getter private UserTracker userTracker;
+    @Getter private AlertManager alertManager;
+    @Getter private DiscordManager discordManager;
 
     @Override
     public void onEnable() {
@@ -36,7 +36,9 @@ public final class TotemGuard extends JavaPlugin {
             return;
         }
 
+        userTracker = new UserTracker(this);
         alertManager = new AlertManager(this);
+        discordManager = new DiscordManager(this);
 
         registerPacketListeners();
         registerCommands();
@@ -50,7 +52,7 @@ public final class TotemGuard extends JavaPlugin {
     }
 
     private void registerPacketListeners() {
-        PacketEvents.getAPI().getEventManager().registerListener(new UserTracker(this), PacketListenerPriority.LOW);
+        PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
         PacketEvents.getAPI().getEventManager().registerListener(new BadPacketsA(this), PacketListenerPriority.NORMAL);
     }
 
@@ -77,5 +79,9 @@ public final class TotemGuard extends JavaPlugin {
             return false;
         }
         return true;
+    }
+
+    public int getTps() {
+        return (int) Math.round(Bukkit.getTPS()[0]);
     }
 }

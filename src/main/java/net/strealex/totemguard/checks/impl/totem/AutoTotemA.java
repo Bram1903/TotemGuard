@@ -43,7 +43,7 @@ public class AutoTotemA extends Check implements Listener {
             return;
         }
 
-        if (getTps() < settings.getDetermine().getMinTps()) {
+        if (plugin.getTps() < settings.getDetermine().getMinTps()) {
             return;
         }
 
