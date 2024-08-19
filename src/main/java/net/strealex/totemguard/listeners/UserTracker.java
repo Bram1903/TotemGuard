@@ -40,7 +40,6 @@ public class UserTracker implements PacketListener {
         totemPlayer.setUsername(player.getName());
         totemPlayer.setClientBrandName(Objects.requireNonNullElse(player.getClientBrandName(), "Unknown"));
         totemPlayer.setClientVersion(user.getClientVersion());
-        totemPlayer.setPing(player.getPing());
 
         totemPlayers.put(userUUID, totemPlayer);
     }

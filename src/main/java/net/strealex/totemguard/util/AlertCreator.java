@@ -29,7 +29,7 @@ public class AlertCreator {
                 .append(Component.text(checkDetails.getGamemode(), NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Ping: ", NamedTextColor.GRAY))
-                .append(Component.text(player.getPing() + "ms", NamedTextColor.GOLD))
+                .append(Component.text(checkDetails.getPing() + "ms", NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.newline())
                 .append(details)
@@ -57,7 +57,6 @@ public class AlertCreator {
                     .append(Component.text(checkDetails.getViolations() + "/" + checkDetails.getMaxViolations(), NamedTextColor.GOLD))
                     .append(Component.text("]", NamedTextColor.GRAY))
                     .build();
-
         } else {
             totalViolationsComponent = Component.text()
                     .append(Component.text(" VL[", NamedTextColor.GRAY))
