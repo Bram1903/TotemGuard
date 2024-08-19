@@ -27,40 +27,35 @@ public final class Settings {
     @Configuration
     @Getter
     public static class Webhook {
-        @Comment("Enable and/or disable the webhook implementation.")
-        private boolean enabled = false;
+        @Comment("Webhook Alert Settings")
+        private WebhookSettings alert = new WebhookSettings();
 
-        @Comment("\nWebhook URL: The URL of the webhook to send notifications to.")
-        private String url = "https://discord.com/api/webhooks/your_webhook_url";
-
-        @Comment("\nWebhook Name: Name of webhook.")
-        private String name = "TotemGuard";
-
-        @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
-        private String color = "#d9b61a";
-
-        @Comment("\nWebhook Title: Brief description about what the webhook is about.")
-        private String title = "TotemGuard";
-
-        @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
-        private String profileImage = "https://i.imgur.com/hqaGO5H.png";
-
-        @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
-        private boolean timestamp = true;
-
-        @Comment("\nWebhook settings:")
-        private PunishmentWebhook punishmentWebhook = new PunishmentWebhook();
+        @Comment("\nWebhook Punishment Settings")
+        private WebhookSettings punishment = new WebhookSettings();
 
         @Configuration
         @Getter
-        public static class PunishmentWebhook {
+        public static class WebhookSettings {
+            @Comment("Enable and/or disable the webhook implementation.")
+            private boolean enabled = false;
 
-            @Comment("\nPunishment Title")
-            private String punishmentTitle = "TotemGuard Punishment";
+            @Comment("\nWebhook URL: The URL of the webhook to send notifications to.")
+            private String url = "https://discord.com/api/webhooks/your_webhook_url";
 
-            @Comment("\nWebhook Punishment Embed color: Color of the webhook embed (in hex).")
-            private String punishmentColor = "#d60010";
+            @Comment("\nClient Name: Name of the client.")
+            private String name = "TotemGuard";
 
+            @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
+            private String color = "#d9b61a";
+
+            @Comment("\nWebhook Title: Brief description about what the webhook is about. (Like Alert, Punishment, etc.)")
+            private String title = "TotemGuard";
+
+            @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
+            private String profileImage = "https://i.imgur.com/hqaGO5H.png";
+
+            @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
+            private boolean timestamp = true;
         }
     }
 
@@ -80,20 +75,20 @@ public final class Settings {
         @Comment("AutoTotemA Settings")
         private AutoTotemA autoTotemA = new AutoTotemA();
 
-        @Comment("AutoTotemB Settings")
+        @Comment("\nAutoTotemB Settings")
         private AutoTotemB autoTotemB = new AutoTotemB();
 
-        @Comment("ManualTotemA Settings")
+        @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
-        @Comment("BadPacketA Settings")
+        @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
 
         @Configuration
         @Getter
         public static class AutoTotemA implements ICheckSettings {
             private boolean enabled = true;
-            private boolean punishable = false;
+            private boolean punishable = true;
             private int maxViolations = 5;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
@@ -119,8 +114,8 @@ public final class Settings {
         @Getter
         public static class AutoTotemB implements ICheckSettings {
             private boolean enabled = true;
-            private boolean punishable = false;
-            private int maxViolations = 5;
+            private boolean punishable = true;
+            private int maxViolations = 15;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
@@ -130,8 +125,8 @@ public final class Settings {
         @Getter
         public static class ManualTotemA implements ICheckSettings {
             private boolean enabled = true;
-            private boolean punishable = false;
-            private int maxViolations = 5;
+            private boolean punishable = true;
+            private int maxViolations = 0;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
             };

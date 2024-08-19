@@ -1,12 +1,12 @@
 package net.strealex.totemguard.commands;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.config.ConfigManager;
 import net.strealex.totemguard.config.Settings;
 import net.strealex.totemguard.manager.AlertManager;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

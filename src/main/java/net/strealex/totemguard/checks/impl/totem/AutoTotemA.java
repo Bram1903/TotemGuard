@@ -1,10 +1,10 @@
 package net.strealex.totemguard.checks.impl.totem;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.checks.Check;
 import net.strealex.totemguard.config.Settings;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -43,7 +43,7 @@ public class AutoTotemA extends Check implements Listener {
             return;
         }
 
-        if (getTps() < settings.getDetermine().getMinTps()) {
+        if (plugin.getTps() < settings.getDetermine().getMinTps()) {
             return;
         }
 
@@ -134,7 +134,7 @@ public class AutoTotemA extends Check implements Listener {
     private String getMainHandItemString(Player player) {
         ItemStack itemInMainHand = player.getInventory().getItemInMainHand();
         if (itemInMainHand.getType() != Material.AIR) {
-            return itemInMainHand.toString();
+            return itemInMainHand.getType().toString();
         } else {
             return "Empty Hand";
         }

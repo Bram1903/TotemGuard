@@ -18,7 +18,7 @@ repositories {
 
 java {
     disableAutoTargetJvm()
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
 dependencies {
@@ -28,6 +28,9 @@ dependencies {
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+    implementation(libs.discord.webhooks) {
+        exclude(group = "org.jetbrains.kotlin")
+    }
 }
 
 group = "de.outdev.totemguard"
@@ -42,6 +45,15 @@ tasks {
     shadowJar {
         archiveFileName = "${rootProject.name}-${project.version}.jar"
         archiveClassifier = null
+
+        relocate("club.minnced", "net.strealex.totemguard.shaded.discord-webhooks")
+        relocate("okhttp3", "net.strealex.totemguard.shaded.okhttp3")
+        relocate("okio", "net.strealex.totemguard.shaded.okio")
+        relocate("org.yaml.snakeyaml", "net.strealex.totemguard.shaded.snakeyaml")
+        relocate("org.json", "net.strealex.totemguard.shaded.json")
+        relocate("org.intellij", "net.strealex.totemguard.shaded.intellij")
+        relocate("org.jetbrains", "net.strealex.totemguard.shaded.jetbrains")
+        relocate("org.slf4j", "net.strealex.totemguard.shaded.slf4j")
 
         manifest {
             attributes["Implementation-Version"] = rootProject.version
@@ -68,7 +80,8 @@ tasks {
         filesMatching("plugin.yml") {
             expand(
                 "version" to rootProject.version,
-                "configlibVersion" to libs.versions.configlib.get()
+                "configlibVersion" to libs.versions.configlib.get(),
+                "kotlinStdlibVersion" to libs.versions.kotlin.stdlib.get()
             )
         }
     }
@@ -96,7 +109,6 @@ tasks {
 
         downloadPlugins {
             url("https://ci.codemc.io/job/retrooper/job/packetevents/lastSuccessfulBuild/artifact/spigot/build/libs/packetevents-spigot-2.5.0-SNAPSHOT.jar")
-            url("https://github.com/JorelAli/CommandAPI/releases/download/9.5.1/CommandAPI-9.5.1.jar")
             url("https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsX-2.20.1.jar")
             url("https://download.luckperms.net/1552/bukkit/loader/LuckPerms-Bukkit-5.4.137.jar")
             url("https://ci.lucko.me/job/spark/439/artifact/spark-bukkit/build/libs/spark-1.10.93-bukkit.jar")

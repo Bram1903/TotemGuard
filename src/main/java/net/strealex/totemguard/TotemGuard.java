@@ -2,6 +2,7 @@ package net.strealex.totemguard;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import lombok.Getter;
 import net.strealex.totemguard.checks.impl.badpackets.BadPacketsA;
 import net.strealex.totemguard.checks.impl.totem.AutoTotemA;
 import net.strealex.totemguard.checks.impl.totem.AutoTotemB;
@@ -10,7 +11,9 @@ import net.strealex.totemguard.commands.TotemGuardCommand;
 import net.strealex.totemguard.config.ConfigManager;
 import net.strealex.totemguard.listeners.UserTracker;
 import net.strealex.totemguard.manager.AlertManager;
-import lombok.Getter;
+import net.strealex.totemguard.manager.DiscordManager;
+import net.strealex.totemguard.manager.PunishmentManager;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
@@ -19,15 +22,19 @@ public final class TotemGuard extends JavaPlugin {
 
     @Getter
     private static TotemGuard instance;
-
     @Getter
     private ConfigManager configManager;
     @Getter
     private AlertManager alertManager;
+    @Getter
+    private UserTracker userTracker;
+    @Getter
+    private DiscordManager discordManager;
+    @Getter
+    private PunishmentManager punishmentManager;
 
     @Override
     public void onEnable() {
-
         instance = this;
         configManager = new ConfigManager(this);
 
@@ -37,6 +44,9 @@ public final class TotemGuard extends JavaPlugin {
         }
 
         alertManager = new AlertManager(this);
+        userTracker = new UserTracker(this);
+        discordManager = new DiscordManager(this);
+        punishmentManager = new PunishmentManager(this);
 
         registerPacketListeners();
         registerCommands();
@@ -50,7 +60,7 @@ public final class TotemGuard extends JavaPlugin {
     }
 
     private void registerPacketListeners() {
-        PacketEvents.getAPI().getEventManager().registerListener(new UserTracker(this), PacketListenerPriority.LOW);
+        PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
         PacketEvents.getAPI().getEventManager().registerListener(new BadPacketsA(this), PacketListenerPriority.NORMAL);
     }
 
@@ -62,7 +72,6 @@ public final class TotemGuard extends JavaPlugin {
     private void registerListeners() {
         new AutoTotemA(this);
         new AutoTotemB(this);
-        new UserTracker(this);
     }
 
     /**
@@ -77,5 +86,9 @@ public final class TotemGuard extends JavaPlugin {
             return false;
         }
         return true;
+    }
+
+    public int getTps() {
+        return (int) Math.round(Bukkit.getTPS()[0]);
     }
 }
