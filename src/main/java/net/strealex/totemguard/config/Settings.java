@@ -80,13 +80,13 @@ public final class Settings {
         @Comment("AutoTotemA Settings")
         private AutoTotemA autoTotemA = new AutoTotemA();
 
-        @Comment("AutoTotemB Settings")
+        @Comment("\nAutoTotemB Settings")
         private AutoTotemB autoTotemB = new AutoTotemB();
 
-        @Comment("ManualTotemA Settings")
+        @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
-        @Comment("BadPacketA Settings")
+        @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
 
         @Configuration
