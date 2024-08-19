@@ -1,10 +1,10 @@
 package net.strealex.totemguard.checks.impl.totem;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.checks.Check;
 import net.strealex.totemguard.config.Settings;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
