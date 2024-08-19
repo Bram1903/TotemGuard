@@ -1,17 +1,16 @@
 package net.strealex.totemguard.data;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
 
 @Getter
 @Setter
-@Builder
 public class CheckDetails {
     private String checkName;
     private String checkDescription;
     private Component alert;
+    private Component details;
     private int violations;
     private int tps;
     private int ping;

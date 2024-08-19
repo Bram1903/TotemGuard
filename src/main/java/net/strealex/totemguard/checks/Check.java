@@ -1,18 +1,16 @@
 package net.strealex.totemguard.checks;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.data.CheckDetails;
 import net.strealex.totemguard.data.TotemPlayer;
 import net.strealex.totemguard.manager.AlertManager;
 import net.strealex.totemguard.manager.DiscordManager;
+import net.strealex.totemguard.manager.PunishmentManager;
 import net.strealex.totemguard.util.AlertCreator;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,6 +24,7 @@ public abstract class Check {
 
     private final TotemGuard plugin;
     private final AlertManager alertManager;
+    private final PunishmentManager punishmentManager;
     private final DiscordManager discordManager;
 
     public Check(TotemGuard plugin, String checkName, String checkDescription, boolean experimental) {
@@ -37,9 +36,9 @@ public abstract class Check {
         this.violations = new ConcurrentHashMap<>();
 
         this.alertManager = plugin.getAlertManager();
+        this.punishmentManager = plugin.getPunishmentManager();
         this.discordManager = plugin.getDiscordManager();
 
-        // Convert minutes to ticks (20 ticks = 1 second)
         long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetData, resetInterval, resetInterval);
     }
@@ -53,53 +52,38 @@ public abstract class Check {
         int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
         TotemPlayer totemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
-        CheckDetails checkDetails = CheckDetails.builder()
-                .checkName(checkName)
-                .checkDescription(checkDescription)
-                .violations(currentViolations)
-                .tps(plugin.getTps())
-                .ping(player.getPing())
-                .gamemode(String.valueOf(player.getGameMode()))
-                .experimental(experimental)
-                .enabled(settings.isEnabled())
-                .punishable(settings.isPunishable())
-                .maxViolations(settings.getMaxViolations())
-                .punishmentCommands(settings.getPunishmentCommands())
-                .build();
-
-        checkDetails.setAlert(AlertCreator.createAlertComponent(totemPlayer, checkDetails, details, plugin.getConfigManager().getSettings().getPrefix()));
+        CheckDetails checkDetails = createCheckDetails(player, details, settings, currentViolations);
 
         alertManager.sendAlert(checkDetails.getAlert());
         discordManager.sendAlert(totemPlayer, checkDetails);
-        punishPlayer(player, settings);
+        if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {
+            violations.remove(uuid);
+        }
     }
 
     public void resetData() {
         violations.clear();
-
-        alertManager.sendAlert(Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
-                .build());
     }
 
-    private int getViolations(UUID player) {
-        return violations.getOrDefault(player, 0);
-    }
+    private CheckDetails createCheckDetails(Player player, Component details, ICheckSettings settings, int currentViolations) {
+        UUID uuid = player.getUniqueId();
 
-    private void punishPlayer(Player player, ICheckSettings settings) {
-        if (!(settings.isPunishable())) return;
-        if (getViolations(player.getUniqueId()) >= settings.getMaxViolations()) {
-            violations.remove(player.getUniqueId());
+        TotemPlayer totemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
+        CheckDetails checkDetails = new CheckDetails();
+        checkDetails.setCheckName(checkName);
+        checkDetails.setCheckDescription(checkDescription);
+        checkDetails.setViolations(currentViolations);
+        checkDetails.setTps(plugin.getTps());
+        checkDetails.setPing(player.getPing());
+        checkDetails.setGamemode(String.valueOf(player.getGameMode()));
+        checkDetails.setExperimental(experimental);
+        checkDetails.setEnabled(settings.isEnabled());
+        checkDetails.setPunishable(settings.isPunishable());
+        checkDetails.setMaxViolations(settings.getMaxViolations());
+        checkDetails.setPunishmentCommands(settings.getPunishmentCommands());
+        checkDetails.setAlert(AlertCreator.createAlertComponent(totemPlayer, checkDetails, details, plugin.getConfigManager().getSettings().getPrefix()));
+        checkDetails.setDetails(details);
 
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                Arrays.stream(settings.getPunishmentCommands()).iterator().forEachRemaining(punishCommand -> {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), punishCommand.replace("%player%", player.getName()));
-                });
-            });
-
-            // Send punishment webhook
-            //sendWebhookMessage(player, Component.text("Player has been punished for exceeding violation limit."), true);
-        }
+        return checkDetails;
     }
 }

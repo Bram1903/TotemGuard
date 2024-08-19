@@ -12,6 +12,7 @@ import net.strealex.totemguard.config.ConfigManager;
 import net.strealex.totemguard.listeners.UserTracker;
 import net.strealex.totemguard.manager.AlertManager;
 import net.strealex.totemguard.manager.DiscordManager;
+import net.strealex.totemguard.manager.PunishmentManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -24,15 +25,16 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private ConfigManager configManager;
     @Getter
-    private UserTracker userTracker;
-    @Getter
     private AlertManager alertManager;
     @Getter
+    private UserTracker userTracker;
+    @Getter
     private DiscordManager discordManager;
+    @Getter
+    private PunishmentManager punishmentManager;
 
     @Override
     public void onEnable() {
-
         instance = this;
         configManager = new ConfigManager(this);
 
@@ -41,9 +43,10 @@ public final class TotemGuard extends JavaPlugin {
             return;
         }
 
-        userTracker = new UserTracker(this);
         alertManager = new AlertManager(this);
+        userTracker = new UserTracker(this);
         discordManager = new DiscordManager(this);
+        punishmentManager = new PunishmentManager(this);
 
         registerPacketListeners();
         registerCommands();
@@ -69,7 +72,6 @@ public final class TotemGuard extends JavaPlugin {
     private void registerListeners() {
         new AutoTotemA(this);
         new AutoTotemB(this);
-        new UserTracker(this);
     }
 
     /**

@@ -6,6 +6,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.config.Settings;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.Set;
@@ -21,6 +22,9 @@ public class AlertManager {
 
     public AlertManager(TotemGuard plugin) {
         this.plugin = plugin;
+
+        long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
+        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::violationsCleared, resetInterval, resetInterval);
     }
 
     public void sendAlert(Component alert) {
@@ -57,5 +61,15 @@ public class AlertManager {
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
                 .append(Component.text(message, color))
                 .build());
+    }
+
+    private void violationsCleared() {
+        final Settings settings = plugin.getConfigManager().getSettings();
+        Component resetComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
+                .build();
+
+        sendAlert(resetComponent);
     }
 }

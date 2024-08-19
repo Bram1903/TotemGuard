@@ -34,7 +34,7 @@ public final class Settings {
         private String url = "https://discord.com/api/webhooks/your_webhook_url";
 
         @Comment("\nWebhook Name: Name of webhook.")
-        private String name = "TotemGuard";
+        private String name = "TotemGuard Alert";
 
         @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
         private String color = "#d9b61a";
@@ -93,7 +93,7 @@ public final class Settings {
         @Getter
         public static class AutoTotemA implements ICheckSettings {
             private boolean enabled = true;
-            private boolean punishable = false;
+            private boolean punishable = true;
             private int maxViolations = 5;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
@@ -119,8 +119,8 @@ public final class Settings {
         @Getter
         public static class AutoTotemB implements ICheckSettings {
             private boolean enabled = true;
-            private boolean punishable = false;
-            private int maxViolations = 5;
+            private boolean punishable = true;
+            private int maxViolations = 15;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
@@ -130,8 +130,8 @@ public final class Settings {
         @Getter
         public static class ManualTotemA implements ICheckSettings {
             private boolean enabled = true;
-            private boolean punishable = false;
-            private int maxViolations = 5;
+            private boolean punishable = true;
+            private int maxViolations = 0;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
