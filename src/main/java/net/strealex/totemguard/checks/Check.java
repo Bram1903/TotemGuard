@@ -48,17 +48,19 @@ public abstract class Check {
     }
 
     public final void flag(Player player, Component details, ICheckSettings settings) {
-        UUID uuid = player.getUniqueId();
-        int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            UUID uuid = player.getUniqueId();
+            int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
-        TotemPlayer totemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
-        CheckDetails checkDetails = createCheckDetails(player, details, settings, currentViolations);
+            TotemPlayer totemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
+            CheckDetails checkDetails = createCheckDetails(player, details, settings, currentViolations);
 
-        alertManager.sendAlert(checkDetails.getAlert());
-        discordManager.sendAlert(totemPlayer, checkDetails);
-        if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {
-            violations.remove(uuid);
-        }
+            alertManager.sendAlert(checkDetails.getAlert());
+            discordManager.sendAlert(totemPlayer, checkDetails);
+            if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {
+                violations.remove(uuid);
+            }
+        });
     }
 
     public void resetData() {

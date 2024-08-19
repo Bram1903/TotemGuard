@@ -126,7 +126,7 @@ public final class Settings {
         public static class ManualTotemA implements ICheckSettings {
             private boolean enabled = true;
             private boolean punishable = true;
-            private int maxViolations = 0;
+            private int maxViolations = 1;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
@@ -146,7 +146,7 @@ public final class Settings {
         public static class BadPacketsA implements ICheckSettings {
             private boolean enabled = true;
             private boolean punishable = true;
-            private int maxViolations = 0;
+            private int maxViolations = 1;
             private String[] punishmentCommands = {
                 "ban %player% 1d [TotemGuard] Unfair Advantage"
             };

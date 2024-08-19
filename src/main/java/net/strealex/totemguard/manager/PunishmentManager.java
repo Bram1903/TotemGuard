@@ -3,6 +3,7 @@ package net.strealex.totemguard.manager;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.data.CheckDetails;
 import net.strealex.totemguard.data.TotemPlayer;
+import org.bukkit.Bukkit;
 
 public class PunishmentManager {
     private final TotemGuard plugin;
@@ -18,9 +19,12 @@ public class PunishmentManager {
 
         if (checkDetails.getViolations() >= checkDetails.getMaxViolations()) {
             String[] punishmentCommands = checkDetails.getPunishmentCommands();
-            for (String command : punishmentCommands) {
-                plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command.replace("%player%", totemPlayer.getUsername()));
-            }
+
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                for (String command : punishmentCommands) {
+                    plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command.replace("%player%", totemPlayer.getUsername()));
+                }
+            });
 
             discordManager.sendPunishment(totemPlayer, checkDetails);
             return true;

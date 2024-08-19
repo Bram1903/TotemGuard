@@ -50,7 +50,7 @@ public class CheckCommand extends Check implements CommandExecutor, TabExecutor 
             return false;
         }
 
-        if (target.getGameMode() != org.bukkit.GameMode.SURVIVAL) {
+        if (target.getGameMode() != org.bukkit.GameMode.SURVIVAL && target.getGameMode() != org.bukkit.GameMode.ADVENTURE) {
             sender.sendMessage(Component.text("This player is not in survival mode!", NamedTextColor.RED));
             return false;
         }
@@ -60,8 +60,13 @@ public class CheckCommand extends Check implements CommandExecutor, TabExecutor 
             return false;
         }
 
-        ItemStack originalTotem = removeTotemFromOffhand(target);
         final Settings.Checks.ManualTotemA settings = plugin.getConfigManager().getSettings().getChecks().getManualTotemA();
+        if (target.isInvulnerable() && settings.isToggleDamageOnCheck()) {
+            sender.sendMessage(Component.text("This player is invulnerable and cannot take any damage!", NamedTextColor.RED));
+            return false;
+        }
+
+        ItemStack originalTotem = removeTotemFromOffhand(target);
         applyDamageIfNeeded(target, settings);
 
         AtomicInteger elapsedMs = new AtomicInteger(0);
