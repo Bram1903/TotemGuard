@@ -28,7 +28,9 @@ dependencies {
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
-    implementation(libs.discord.webhooks)
+    implementation(libs.discord.webhooks) {
+        exclude(group = "org.jetbrains.kotlin")
+    }
 }
 
 group = "de.outdev.totemguard"
@@ -47,7 +49,6 @@ tasks {
         relocate("club.minnced", "net.strealex.totemguard.shaded.discord-webhooks")
         relocate("okhttp3", "net.strealex.totemguard.shaded.okhttp3")
         relocate("okio", "net.strealex.totemguard.shaded.okio")
-        relocate("kotlin", "net.strealex.totemguard.shaded.kotlin")
         relocate("org.yaml.snakeyaml", "net.strealex.totemguard.shaded.snakeyaml")
         relocate("org.json", "net.strealex.totemguard.shaded.json")
         relocate("org.intellij", "net.strealex.totemguard.shaded.intellij")
@@ -79,7 +80,8 @@ tasks {
         filesMatching("plugin.yml") {
             expand(
                 "version" to rootProject.version,
-                "configlibVersion" to libs.versions.configlib.get()
+                "configlibVersion" to libs.versions.configlib.get(),
+                "kotlinStdlibVersion" to libs.versions.kotlin.stdlib.get()
             )
         }
     }

@@ -6,6 +6,7 @@ authors: [ Bram, OutDev, Asleepp ]
 description: A plugin specifically designed to detect players using the 'AutoTotem' hack.
 load: POSTWORLD
 libraries:
+  - org.jetbrains.kotlin:kotlin-stdlib:${kotlinStdlibVersion}
   - de.exlll:configlib-yaml:${configlibVersion}
   - de.exlll:configlib-paper:${configlibVersion}
 depend:

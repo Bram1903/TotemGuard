@@ -1,5 +1,7 @@
 package net.strealex.totemguard;
 
+import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.WebhookClientBuilder;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import net.strealex.totemguard.checks.impl.badpackets.BadPacketsA;
@@ -16,6 +18,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
+import java.util.Random;
 
 public final class TotemGuard extends JavaPlugin {
 
@@ -43,6 +46,11 @@ public final class TotemGuard extends JavaPlugin {
         registerPacketListeners();
         registerCommands();
         registerListeners();
+
+        WebhookClient client = new WebhookClientBuilder("https://discord.com/api/webhooks/1275099069731045538/z9fS7yeXAevR6cDLHiQ1T3CIrXeRLyCT70kW86KQM9TRPPiyyNuyTFMKbc0xY8cpai-I")
+                .build();
+
+        client.send("Hello");
     }
 
     @Override
