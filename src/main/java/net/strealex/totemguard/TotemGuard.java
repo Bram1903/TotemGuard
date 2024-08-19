@@ -1,9 +1,8 @@
 package net.strealex.totemguard;
 
-import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.WebhookClientBuilder;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import lombok.Getter;
 import net.strealex.totemguard.checks.impl.badpackets.BadPacketsA;
 import net.strealex.totemguard.checks.impl.totem.AutoTotemA;
 import net.strealex.totemguard.checks.impl.totem.AutoTotemB;
@@ -12,21 +11,24 @@ import net.strealex.totemguard.commands.TotemGuardCommand;
 import net.strealex.totemguard.config.ConfigManager;
 import net.strealex.totemguard.listeners.UserTracker;
 import net.strealex.totemguard.manager.AlertManager;
-import lombok.Getter;
 import net.strealex.totemguard.manager.DiscordManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
-import java.util.Random;
 
 public final class TotemGuard extends JavaPlugin {
 
-    @Getter private static TotemGuard instance;
-    @Getter private ConfigManager configManager;
-    @Getter private UserTracker userTracker;
-    @Getter private AlertManager alertManager;
-    @Getter private DiscordManager discordManager;
+    @Getter
+    private static TotemGuard instance;
+    @Getter
+    private ConfigManager configManager;
+    @Getter
+    private UserTracker userTracker;
+    @Getter
+    private AlertManager alertManager;
+    @Getter
+    private DiscordManager discordManager;
 
     @Override
     public void onEnable() {
@@ -46,11 +48,6 @@ public final class TotemGuard extends JavaPlugin {
         registerPacketListeners();
         registerCommands();
         registerListeners();
-
-        WebhookClient client = new WebhookClientBuilder("https://discord.com/api/webhooks/1275099069731045538/z9fS7yeXAevR6cDLHiQ1T3CIrXeRLyCT70kW86KQM9TRPPiyyNuyTFMKbc0xY8cpai-I")
-                .build();
-
-        client.send("Hello");
     }
 
     @Override
