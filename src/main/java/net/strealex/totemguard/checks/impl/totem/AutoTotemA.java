@@ -4,7 +4,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.checks.Check;
-import net.strealex.totemguard.config.Settings;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,20 +14,19 @@ import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AutoTotemA extends Check implements Listener {
 
     private final TotemGuard plugin;
-
-    private final ConcurrentHashMap<Player, Integer> totemUsage;
-    private final ConcurrentHashMap<Player, Integer> clickTimes;
+    private final ConcurrentHashMap<UUID, Long> totemUsage;
+    private final ConcurrentHashMap<UUID, Long> clickTimes;
 
     public AutoTotemA(TotemGuard plugin) {
         super(plugin, "AutoTotemA", "Player is replacing their totem too fast!");
 
         this.plugin = plugin;
-
         this.totemUsage = new ConcurrentHashMap<>();
         this.clickTimes = new ConcurrentHashMap<>();
 
@@ -37,50 +35,33 @@ public class AutoTotemA extends Check implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTotemUse(EntityResurrectEvent event) {
-        final Settings settings = plugin.getConfigManager().getSettings();
-
-        if (!settings.getChecks().getAutoTotemA().isEnabled()) {
+        if (!(event.getEntity() instanceof Player player) || StopCheck(player)) {
             return;
         }
 
-        if (plugin.getTps() < settings.getDetermine().getMinTps()) {
-            return;
-        }
-
-        if (event.getEntity() instanceof Player player) {
-            if (player.getPing() > settings.getDetermine().getMaxPing()) {
-                return;
-            }
-
-            int currentTime = (int) System.currentTimeMillis();
-            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
-            if (mainHandItem.getType() == Material.TOTEM_OF_UNDYING) return;
-            totemUsage.put(player, currentTime);
+        ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+        if (mainHandItem.getType() != Material.TOTEM_OF_UNDYING) {
+            totemUsage.put(player.getUniqueId(), System.nanoTime());
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClick(InventoryClickEvent event) {
-        final Settings settings = plugin.getConfigManager().getSettings();
-        if (!settings.getChecks().getAutoTotemA().isEnabled()) {
+        if (!(event.getWhoClicked() instanceof Player player) || StopCheck(player)) {
             return;
         }
 
-        if (event.getWhoClicked() instanceof Player player) {
-            if (event.getRawSlot() == 45) {
-                ItemStack cursorItem = event.getCursor(); // Get the item on the cursor that is being placed into the slot
-                if (cursorItem != null && cursorItem.getType() == Material.TOTEM_OF_UNDYING) {
-                    Integer clickTime = clickTimes.get(player);
-                    if (clickTime != null) {
-                        checkSuspiciousActivity(player, clickTime);
-                    }
-                }
-            } else {
-                if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
-                    int clickTime = (int) System.currentTimeMillis();
-                    clickTimes.put(player, clickTime);
-                }
-            }
+        if (event.getRawSlot() == 45 && event.getCursor().getType() == Material.TOTEM_OF_UNDYING) {
+            clickTimes.computeIfPresent(player.getUniqueId(), (uuid, clickTime) -> {
+                checkSuspiciousActivity(player, clickTime);
+                return clickTime;
+            });
+
+            return;
+        }
+
+        if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
+            clickTimes.put(player.getUniqueId(), System.nanoTime());
         }
     }
 
@@ -90,57 +71,45 @@ public class AutoTotemA extends Check implements Listener {
         clickTimes.clear();
     }
 
-    private void checkSuspiciousActivity(Player player, int clickTime) {
-        Integer usageTime = totemUsage.get(player);
-
-        if (usageTime != null) {
-            int currentTime = (int) System.currentTimeMillis();
-            int timeDifference = currentTime - usageTime;
-            int clickTimeDifference = currentTime - clickTime;
-
-            totemUsage.remove(player);
-            clickTimes.remove(player);
-
-            final Settings.Checks.AutoTotemA settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemA();
-
-            if (timeDifference > settings.getNormalCheckTimeMs()) {
-                return;
-            }
-
-            int realTotemTime = timeDifference - player.getPing();
-
-            boolean isSprinting = player.isSprinting();
-            boolean isSneaking = player.isSneaking();
-            boolean isBlocking = player.isBlocking();
-
-            Component checkDetails = createDetails(timeDifference, realTotemTime, clickTimeDifference, player, isSprinting, isSneaking, isBlocking);
-
-            if (settings.isAdvancedSystemCheck()) {
-                if (realTotemTime <= settings.getTriggerAmountMs()) {
-                    flag(player, checkDetails, settings);
-                }
-            } else {
-                if (!(settings.isClickTimeDifference())) {
-                    flag(player, checkDetails, settings);
-                } else {
-                    if (clickTimeDifference <= settings.getClickTimeDifferenceValue()) {
-                        flag(player, checkDetails, settings);
-                    }
-                }
-            }
+    private void checkSuspiciousActivity(Player player, long clickTime) {
+        Long usageTime = totemUsage.remove(player.getUniqueId());
+        if (usageTime == null) {
+            return;
         }
+
+        long currentTime = System.nanoTime();
+        long timeDifference = (currentTime - usageTime) / 1_000_000; // Convert to milliseconds
+        long clickTimeDifference = (currentTime - clickTime) / 1_000_000; // Convert to milliseconds
+        long realTotemTime = timeDifference - player.getPing();
+
+        var checkSettings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemA();
+
+        if (timeDifference > checkSettings.getNormalCheckTimeMs()) {
+            return;
+        }
+
+        boolean advancedCheck = checkSettings.isAdvancedSystemCheck() && realTotemTime <= checkSettings.getTriggerAmountMs();
+        boolean simpleCheck = !checkSettings.isClickTimeDifference() || clickTimeDifference <= checkSettings.getClickTimeDifferenceValue();
+
+        if (advancedCheck || simpleCheck) {
+            flag(player, createDetails(timeDifference, realTotemTime, clickTimeDifference, player), checkSettings);
+        }
+    }
+
+    private boolean StopCheck(Player player) {
+        var settings = plugin.getConfigManager().getSettings();
+        return !settings.getChecks().getAutoTotemA().isEnabled()
+                || !(plugin.getTps() >= settings.getDetermine().getMinTps())
+                || player.getPing() > settings.getDetermine().getMaxPing();
     }
 
     private String getMainHandItemString(Player player) {
-        ItemStack itemInMainHand = player.getInventory().getItemInMainHand();
-        if (itemInMainHand.getType() != Material.AIR) {
-            return itemInMainHand.getType().toString();
-        } else {
-            return "Empty Hand";
-        }
+        return player.getInventory().getItemInMainHand().getType() == Material.AIR
+                ? "Empty Hand"
+                : player.getInventory().getItemInMainHand().getType().toString();
     }
 
-    private Component createDetails(int timeDifference, int realTotemTime, int clickTimeDifference, Player player, boolean isSprinting, boolean isSneaking, boolean isBlocking) {
+    private Component createDetails(long timeDifference, long realTotemTime, long clickTimeDifference, Player player) {
         return Component.text()
                 .append(Component.text("Totem Time: ", NamedTextColor.GRAY))
                 .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
@@ -156,13 +125,13 @@ public class AutoTotemA extends Check implements Listener {
                 .append(Component.newline())
                 .append(Component.newline())
                 .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                .append(Component.text(isSprinting, isSprinting ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .append(Component.text(player.isSprinting(), player.isSprinting() ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                .append(Component.text(isSneaking, isSneaking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .append(Component.text(player.isSneaking(), player.isSneaking() ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                .append(Component.text(isBlocking, isBlocking ? NamedTextColor.GREEN : NamedTextColor.GOLD))
+                .append(Component.text(player.isBlocking(), player.isBlocking() ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                 .build();
     }
 }
