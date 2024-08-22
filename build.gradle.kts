@@ -47,7 +47,6 @@ tasks {
         relocate("club.minnced", "net.strealex.totemguard.shaded.discord-webhooks")
         relocate("okhttp3", "net.strealex.totemguard.shaded.okhttp3")
         relocate("okio", "net.strealex.totemguard.shaded.okio")
-        relocate("org.yaml.snakeyaml", "net.strealex.totemguard.shaded.snakeyaml")
         relocate("org.json", "net.strealex.totemguard.shaded.json")
         relocate("org.intellij", "net.strealex.totemguard.shaded.intellij")
         relocate("org.jetbrains", "net.strealex.totemguard.shaded.jetbrains")
