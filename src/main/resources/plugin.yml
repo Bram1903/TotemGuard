@@ -8,6 +8,7 @@ load: POSTWORLD
 libraries:
   - de.exlll:configlib-yaml:${configlibVersion}
   - de.exlll:configlib-paper:${configlibVersion}
+  - club.minnced:discord-webhooks:${discordWebhooksVersion}
 depend:
   - packetevents
 permissions:

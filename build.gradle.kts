@@ -26,9 +26,9 @@ dependencies {
     compileOnly(libs.packetevents.spigot)
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.configlib.paper)
+    compileOnly(libs.discord.webhooks)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
-    implementation(libs.discord.webhooks)
 }
 
 group = "net.strealex.totemguard"
@@ -43,14 +43,6 @@ tasks {
     shadowJar {
         archiveFileName = "${rootProject.name}-${project.version}.jar"
         archiveClassifier = null
-
-        relocate("club.minnced", "net.strealex.totemguard.shaded.discord-webhooks")
-        relocate("okhttp3", "net.strealex.totemguard.shaded.okhttp3")
-        relocate("okio", "net.strealex.totemguard.shaded.okio")
-        relocate("org.json", "net.strealex.totemguard.shaded.json")
-        relocate("org.intellij", "net.strealex.totemguard.shaded.intellij")
-        relocate("org.jetbrains", "net.strealex.totemguard.shaded.jetbrains")
-        relocate("org.slf4j", "net.strealex.totemguard.shaded.slf4j")
 
         manifest {
             attributes["Implementation-Version"] = rootProject.version
@@ -73,11 +65,13 @@ tasks {
     processResources {
         inputs.property("version", project.version)
         inputs.property("configlibVersion", libs.versions.configlib.get())
+        inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
 
         filesMatching("plugin.yml") {
             expand(
                 "version" to rootProject.version,
                 "configlibVersion" to libs.versions.configlib.get(),
+                "discordWebhooksVersion" to libs.versions.discord.webhooks.get()
             )
         }
     }
