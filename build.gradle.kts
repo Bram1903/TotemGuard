@@ -104,6 +104,8 @@ tasks {
             url("https://ci.lucko.me/job/spark/439/artifact/spark-bukkit/build/libs/spark-1.10.93-bukkit.jar")
             url("https://github.com/ViaVersion/ViaVersion/releases/download/5.0.3/ViaVersion-5.0.3.jar")
             url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.0.3/ViaBackwards-5.0.3.jar")
+            url("https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot")
+            url("https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot")
         }
 
         jvmArgs = jvmArgsExternal
