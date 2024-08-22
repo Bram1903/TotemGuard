@@ -1,6 +1,7 @@
 [versions]
 paper-api = "1.20.4-R0.1-SNAPSHOT"
 packetevents = "2.4.0"
+floodgate = "2.2.3-SNAPSHOT"
 lombok = "1.18.34"
 configlib = "4.5.0"
 shadow = "8.3.0"
@@ -11,6 +12,7 @@ discord-webhooks = "0.8.0"
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
+floodgate = { group = "org.geysermc.floodgate", name = "api", version.ref = "floodgate" }
 configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
 configlib-paper = { group = "de.exlll", name = "configlib-paper", version.ref = "configlib" }
 discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.ref = "discord-webhooks" }

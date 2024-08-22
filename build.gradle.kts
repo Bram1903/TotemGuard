@@ -14,6 +14,11 @@ repositories {
     maven {
         url = uri("https://repo.codemc.io/repository/maven-releases/")
     }
+    repositories {
+        maven {
+            url = uri("https://repo.opencollab.dev/main/")
+        }
+    }
 }
 
 java {
@@ -24,9 +29,10 @@ java {
 dependencies {
     compileOnly(libs.paper.api)
     compileOnly(libs.packetevents.spigot)
+    compileOnly(libs.floodgate)
+    compileOnly(libs.discord.webhooks)
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.configlib.paper)
-    compileOnly(libs.discord.webhooks)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 }
