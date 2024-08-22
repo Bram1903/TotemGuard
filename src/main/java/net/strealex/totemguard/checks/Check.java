@@ -12,6 +12,7 @@ import net.strealex.totemguard.util.AlertCreator;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -53,16 +54,24 @@ public abstract class Check {
             UUID uuid = player.getUniqueId();
             int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
-            TotemPlayer totemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
-            CheckDetails checkDetails = createCheckDetails(player, details, settings, currentViolations);
+            Optional<TotemPlayer> optionalTotemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
+            if (optionalTotemPlayer.isEmpty()) {
+                plugin.getLogger().severe("Failed to get data for player: " + player.getName() + " during check: " + checkName);
+                return;
+            }
 
+            TotemPlayer totemPlayer = optionalTotemPlayer.get();
             if (totemPlayer.isBedrockPlayer()) return;
+
+            CheckDetails checkDetails = createCheckDetails(player, totemPlayer, details, settings, currentViolations);
 
             alertManager.sendAlert(checkDetails.getAlert());
             discordManager.sendAlert(totemPlayer, checkDetails);
+
             if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {
                 violations.remove(uuid);
             }
+
         });
     }
 
@@ -70,10 +79,7 @@ public abstract class Check {
         violations.clear();
     }
 
-    private CheckDetails createCheckDetails(Player player, Component details, ICheckSettings settings, int currentViolations) {
-        UUID uuid = player.getUniqueId();
-
-        TotemPlayer totemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
+    private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, ICheckSettings settings, int currentViolations) {
         CheckDetails checkDetails = new CheckDetails();
         checkDetails.setCheckName(checkName);
         checkDetails.setCheckDescription(checkDescription);

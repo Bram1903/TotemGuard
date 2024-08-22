@@ -4,13 +4,13 @@ import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
-import io.github.retrooper.packetevents.util.GeyserUtil;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.data.TotemPlayer;
 import net.strealex.totemguard.manager.AlertManager;
 import org.bukkit.entity.Player;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,7 +55,7 @@ public class UserTracker implements PacketListener {
         totemPlayers.remove(userUUID);
     }
 
-    public TotemPlayer getTotemPlayer(UUID uuid) {
-        return totemPlayers.get(uuid);
+    public Optional<TotemPlayer> getTotemPlayer(UUID uuid) {
+        return Optional.ofNullable(totemPlayers.get(uuid));
     }
 }
