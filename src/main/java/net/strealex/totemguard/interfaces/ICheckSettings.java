@@ -1,4 +1,4 @@
-package net.strealex.totemguard.checks;
+package net.strealex.totemguard.interfaces;
 
 public interface ICheckSettings {
     boolean isEnabled();

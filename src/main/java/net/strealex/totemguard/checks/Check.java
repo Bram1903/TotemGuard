@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.data.CheckDetails;
 import net.strealex.totemguard.data.TotemPlayer;
+import net.strealex.totemguard.interfaces.ICheckSettings;
 import net.strealex.totemguard.manager.AlertManager;
 import net.strealex.totemguard.manager.DiscordManager;
 import net.strealex.totemguard.manager.PunishmentManager;

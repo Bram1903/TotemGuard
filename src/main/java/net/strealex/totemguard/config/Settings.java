@@ -1,9 +1,10 @@
 package net.strealex.totemguard.config;
 
-import net.strealex.totemguard.checks.ICheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
+import net.strealex.totemguard.interfaces.ICheckSettings;
+import net.strealex.totemguard.interfaces.IWebhookSettings;
 
 @Configuration
 @Getter
@@ -28,14 +29,14 @@ public final class Settings {
     @Getter
     public static class Webhook {
         @Comment("Webhook Alert Settings")
-        private WebhookSettings alert = new WebhookSettings();
+        private AlertSettings alert = new AlertSettings();
 
         @Comment("\nWebhook Punishment Settings")
-        private WebhookSettings punishment = new WebhookSettings();
+        private PunishmentSettings punishment = new PunishmentSettings();
 
         @Configuration
         @Getter
-        public static class WebhookSettings {
+        public static class AlertSettings implements IWebhookSettings {
             @Comment("Enable and/or disable the webhook implementation.")
             private boolean enabled = false;
 
@@ -49,7 +50,32 @@ public final class Settings {
             private String color = "#d9b61a";
 
             @Comment("\nWebhook Title: Brief description about what the webhook is about. (Like Alert, Punishment, etc.)")
-            private String title = "TotemGuard";
+            private String title = "TotemGuard Alert";
+
+            @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
+            private String profileImage = "https://i.imgur.com/hqaGO5H.png";
+
+            @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
+            private boolean timestamp = true;
+        }
+
+        @Configuration
+        @Getter
+        public static class PunishmentSettings implements IWebhookSettings {
+            @Comment("Enable and/or disable the webhook implementation.")
+            private boolean enabled = false;
+
+            @Comment("\nWebhook URL: The URL of the webhook to send notifications to.")
+            private String url = "https://discord.com/api/webhooks/your_webhook_url";
+
+            @Comment("\nClient Name: Name of the client.")
+            private String name = "TotemGuard";
+
+            @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
+            private String color = "#d60010";
+
+            @Comment("\nWebhook Title: Brief description about what the webhook is about. (Like Alert, Punishment, etc.)")
+            private String title = "TotemGuard Punishment";
 
             @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
             private String profileImage = "https://i.imgur.com/hqaGO5H.png";

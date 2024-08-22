@@ -7,9 +7,9 @@ import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.strealex.totemguard.TotemGuard;
-import net.strealex.totemguard.config.Settings;
 import net.strealex.totemguard.data.CheckDetails;
 import net.strealex.totemguard.data.TotemPlayer;
+import net.strealex.totemguard.interfaces.IWebhookSettings;
 
 import java.awt.*;
 import java.time.Instant;
@@ -25,16 +25,16 @@ public class DiscordManager {
     }
 
     public void sendAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        final Settings.Webhook.WebhookSettings settings = plugin.getConfigManager().getSettings().getWebhook().getAlert();
+        final IWebhookSettings settings = plugin.getConfigManager().getSettings().getWebhook().getAlert();
         sendWebhook(totemPlayer, checkDetails, settings, false);
     }
 
     public void sendPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        final Settings.Webhook.WebhookSettings settings = plugin.getConfigManager().getSettings().getWebhook().getPunishment();
+        final IWebhookSettings settings = plugin.getConfigManager().getSettings().getWebhook().getPunishment();
         sendWebhook(totemPlayer, checkDetails, settings, true);
     }
 
-    private void sendWebhook(TotemPlayer totemPlayer, CheckDetails checkDetails, Settings.Webhook.WebhookSettings settings, boolean isPunishment) {
+    private void sendWebhook(TotemPlayer totemPlayer, CheckDetails checkDetails, IWebhookSettings settings, boolean isPunishment) {
         if (!settings.isEnabled()) {
             return;
         }
