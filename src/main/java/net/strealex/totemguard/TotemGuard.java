@@ -13,6 +13,7 @@ import net.strealex.totemguard.listeners.UserTracker;
 import net.strealex.totemguard.manager.AlertManager;
 import net.strealex.totemguard.manager.DiscordManager;
 import net.strealex.totemguard.manager.PunishmentManager;
+import net.strealex.totemguard.util.TGVersion;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -22,6 +23,10 @@ public final class TotemGuard extends JavaPlugin {
 
     @Getter
     private static TotemGuard instance;
+
+    @Getter
+    private TGVersion version;
+
     @Getter
     private ConfigManager configManager;
     @Getter
@@ -36,6 +41,8 @@ public final class TotemGuard extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        version = TGVersion.createFromPackageVersion();
+
         configManager = new ConfigManager(this);
 
         if (!loadConfig()) {

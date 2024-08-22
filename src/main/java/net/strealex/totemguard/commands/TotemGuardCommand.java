@@ -1,7 +1,10 @@
 package net.strealex.totemguard.commands;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.strealex.totemguard.TotemGuard;
 import net.strealex.totemguard.config.ConfigManager;
@@ -24,23 +27,31 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     private final ConfigManager configManager;
     private final AlertManager alertManager;
 
+    private Component versionComponent;
+
     public TotemGuardCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
         this.alertManager = plugin.getAlertManager();
 
         plugin.getCommand("totemguard").setExecutor(this);
+        loadVersionComponent();
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length == 0 && !hasRequiredPermissions(sender) || args.length == 1 && args[0].equalsIgnoreCase("info")) {
+            sender.sendMessage(versionComponent);
+            return true;
+        }
+
         if (!hasRequiredPermissions(sender)) {
             sender.sendMessage(Component.text("You do not have permission to use this command.", NamedTextColor.RED));
             return false;
         }
 
         if (args.length == 0) {
-            sendPrefixMessage(sender, Component.text("Usage: /totemguard <alerts|reload>", NamedTextColor.RED));
+            sendPrefixMessage(sender, Component.text("Usage: /totemguard <alerts|reload|info>", NamedTextColor.RED));
             return false;
         }
 
@@ -48,10 +59,43 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
             case "alerts" -> handleAlertsCommand(sender, args);
             case "reload" -> handleReloadCommand(sender);
             default -> {
-                sendPrefixMessage(sender, Component.text("Usage: /totemguard <alerts|reload>", NamedTextColor.RED));
+                sendPrefixMessage(sender, Component.text("Usage: /totemguard <alerts|reload|info>", NamedTextColor.RED));
                 yield false;
             }
         };
+    }
+
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!hasRequiredPermissions(sender)) {
+            return List.of("info");
+        }
+
+        if (args.length == 1) {
+            return Stream.of("alerts", "reload", "info")
+                    .filter(option -> option.startsWith(args[0].toLowerCase()))
+                    .toList();
+        }
+
+        if (args.length == 2 && args[0].equalsIgnoreCase("alerts") && sender.hasPermission("TotemGuard.Alerts.Others")) {
+            String argsLowerCase = args[1].toLowerCase();
+
+            if (sender instanceof Player) {
+                String senderName = sender.getName().toLowerCase();
+                return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(name -> !name.toLowerCase().equals(senderName)) // Prevent self-suggestion
+                        .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
+                        .toList();
+            }
+
+            return Bukkit.getOnlinePlayers().stream()
+                    .map(Player::getName)
+                    .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
+                    .toList();
+        }
+
+        return List.of();
     }
 
     private boolean hasRequiredPermissions(CommandSender sender) {
@@ -117,37 +161,29 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         sender.sendMessage(prefixMessage);
     }
 
-    @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!hasRequiredPermissions(sender)) {
-            return List.of();
-        }
-
-        if (args.length == 1) {
-            return Stream.of("alerts", "reload")
-                    .filter(option -> option.startsWith(args[0].toLowerCase()))
-                    .toList();
-        }
-
-        if (args.length == 2 && args[0].equalsIgnoreCase("alerts") && sender.hasPermission("TotemGuard.Alerts.Others")) {
-            String argsLowerCase = args[1].toLowerCase();
-
-            if (sender instanceof Player) {
-                String senderName = sender.getName().toLowerCase();
-                return Bukkit.getOnlinePlayers().stream()
-                        .map(Player::getName)
-                        .filter(name -> !name.toLowerCase().equals(senderName)) // Prevent self-suggestion
-                        .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
-                        .toList();
-            }
-
-            return Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
-                    .toList();
-        }
-
-        return List.of();
+    private void loadVersionComponent() {
+        versionComponent = Component.text()
+                .append(Component.text("⚡", NamedTextColor.GOLD).decorate(TextDecoration.BOLD))
+                .append(Component.text(" Running ", NamedTextColor.GRAY))
+                .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
+                .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
+                .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
+                .append(Component.text("Bram", NamedTextColor.GREEN)
+                        .decorate(TextDecoration.BOLD)
+                        .decorate(TextDecoration.UNDERLINED)
+                        .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
+                                .decorate(TextDecoration.BOLD)
+                                .decorate(TextDecoration.UNDERLINED)))
+                        .clickEvent(ClickEvent.openUrl("https://github.com/Bram1903")))
+                .append(Component.text(" and ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
+                .append(Component.text("OutDev", NamedTextColor.GREEN)
+                        .decorate(TextDecoration.BOLD)
+                        .decorate(TextDecoration.UNDERLINED)
+                        .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
+                                .decorate(TextDecoration.BOLD)
+                                .decorate(TextDecoration.UNDERLINED)))
+                        .clickEvent(ClickEvent.openUrl("https://github.com/OutDev0")))
+                .build();
     }
 
 }

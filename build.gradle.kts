@@ -28,14 +28,12 @@ dependencies {
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
-    implementation(libs.discord.webhooks) {
-        exclude(group = "org.jetbrains.kotlin")
-    }
+    implementation(libs.discord.webhooks)
 }
 
-group = "de.outdev.totemguard"
+group = "net.strealex.totemguard"
 version = "0.0.1-SNAPSHOT"
-description = "TotemGuardV2"
+description = "TotemGuard"
 
 tasks {
     jar {
@@ -81,7 +79,6 @@ tasks {
             expand(
                 "version" to rootProject.version,
                 "configlibVersion" to libs.versions.configlib.get(),
-                "kotlinStdlibVersion" to libs.versions.kotlin.stdlib.get()
             )
         }
     }
