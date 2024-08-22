@@ -3,8 +3,6 @@ package net.strealex.totemguard.config;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
-import net.strealex.totemguard.interfaces.ICheckSettings;
-import net.strealex.totemguard.interfaces.IWebhookSettings;
 
 @Configuration
 @Getter
@@ -16,11 +14,11 @@ public final class Settings {
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
 
-    @Comment("\nWebhook settings:")
-    private Webhook webhook = new Webhook();
-
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
+
+    @Comment("\nWebhook settings:")
+    private Webhook webhook = new Webhook();
 
     @Comment("\nChecks")
     private Checks checks = new Checks();
@@ -36,7 +34,7 @@ public final class Settings {
 
         @Configuration
         @Getter
-        public static class AlertSettings implements IWebhookSettings {
+        public abstract static class WebhookSettings {
             @Comment("Enable and/or disable the webhook implementation.")
             private boolean enabled = false;
 
@@ -47,41 +45,37 @@ public final class Settings {
             private String name = "TotemGuard";
 
             @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
-            private String color = "#d9b61a";
+            private String color;
 
             @Comment("\nWebhook Title: Brief description about what the webhook is about. (Like Alert, Punishment, etc.)")
-            private String title = "TotemGuard Alert";
+            private String title;
 
             @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
             private String profileImage = "https://i.imgur.com/hqaGO5H.png";
 
             @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
             private boolean timestamp = true;
+
+            public WebhookSettings(String title, String color) {
+                this.title = title;
+                this.color = color;
+            }
         }
 
         @Configuration
         @Getter
-        public static class PunishmentSettings implements IWebhookSettings {
-            @Comment("Enable and/or disable the webhook implementation.")
-            private boolean enabled = false;
+        public static class AlertSettings extends WebhookSettings {
+            public AlertSettings() {
+                super("TotemGuard Alert", "#d9b61a");
+            }
+        }
 
-            @Comment("\nWebhook URL: The URL of the webhook to send notifications to.")
-            private String url = "https://discord.com/api/webhooks/your_webhook_url";
-
-            @Comment("\nClient Name: Name of the client.")
-            private String name = "TotemGuard";
-
-            @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
-            private String color = "#d60010";
-
-            @Comment("\nWebhook Title: Brief description about what the webhook is about. (Like Alert, Punishment, etc.)")
-            private String title = "TotemGuard Punishment";
-
-            @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
-            private String profileImage = "https://i.imgur.com/hqaGO5H.png";
-
-            @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
-            private boolean timestamp = true;
+        @Configuration
+        @Getter
+        public static class PunishmentSettings extends WebhookSettings {
+            public PunishmentSettings() {
+                super("TotemGuard Punishment", "#d60010");
+            }
         }
     }
 
@@ -112,14 +106,22 @@ public final class Settings {
 
         @Configuration
         @Getter
-        public static class AutoTotemA implements ICheckSettings {
+        public abstract static class CheckSettings {
             private boolean enabled = true;
             private boolean punishable = true;
-            private int maxViolations = 5;
+            private int maxViolations;
             private String[] punishmentCommands = {
-                "ban %player% 1d [TotemGuard] Unfair Advantage"
+                    "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
 
+            public CheckSettings(int maxViolations) {
+                this.maxViolations = maxViolations;
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemA extends CheckSettings {
             @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
             private int normalCheckTimeMs = 1000;
 
@@ -134,29 +136,23 @@ public final class Settings {
 
             @Comment("\nClick Time Difference Value: The value (in ms) which anything below will trigger the flag. (Click Time Difference)")
             private int clickTimeDifferenceValue = 75;
+
+            public AutoTotemA() {
+                super(5);
+            }
         }
 
         @Configuration
         @Getter
-        public static class AutoTotemB implements ICheckSettings {
-            private boolean enabled = true;
-            private boolean punishable = true;
-            private int maxViolations = 15;
-            private String[] punishmentCommands = {
-                "ban %player% 1d [TotemGuard] Unfair Advantage"
-            };
+        public static class AutoTotemB extends CheckSettings {
+            public AutoTotemB() {
+                super(15);
+            }
         }
 
         @Configuration
         @Getter
-        public static class ManualTotemA implements ICheckSettings {
-            private boolean enabled = true;
-            private boolean punishable = true;
-            private int maxViolations = 1;
-            private String[] punishmentCommands = {
-                "ban %player% 1d [TotemGuard] Unfair Advantage"
-            };
-
+        public static class ManualTotemA extends CheckSettings {
             @Comment("\nCheck Time: Amount of time the /check command waits for a retotem. (in ticks)")
             private int checkTime = 1000;
 
@@ -165,17 +161,18 @@ public final class Settings {
 
             @Comment("\nDamage Amount on /check: Amount of damage to inflict on check.")
             private int damageAmountOnCheck = 0;
+
+            public ManualTotemA() {
+                super(1);
+            }
         }
 
         @Configuration
         @Getter
-        public static class BadPacketsA implements ICheckSettings {
-            private boolean enabled = true;
-            private boolean punishable = true;
-            private int maxViolations = 1;
-            private String[] punishmentCommands = {
-                "ban %player% 1d [TotemGuard] Unfair Advantage"
-            };
+        public static class BadPacketsA extends CheckSettings {
+            public BadPacketsA() {
+                super(1);
+            }
         }
     }
 }

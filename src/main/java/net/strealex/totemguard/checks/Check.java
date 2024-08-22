@@ -2,9 +2,9 @@ package net.strealex.totemguard.checks;
 
 import net.kyori.adventure.text.Component;
 import net.strealex.totemguard.TotemGuard;
+import net.strealex.totemguard.config.Settings;
 import net.strealex.totemguard.data.CheckDetails;
 import net.strealex.totemguard.data.TotemPlayer;
-import net.strealex.totemguard.interfaces.ICheckSettings;
 import net.strealex.totemguard.manager.AlertManager;
 import net.strealex.totemguard.manager.DiscordManager;
 import net.strealex.totemguard.manager.PunishmentManager;
@@ -49,7 +49,7 @@ public abstract class Check {
         this(plugin, checkName, checkDescription, false);
     }
 
-    public final void flag(Player player, Component details, ICheckSettings settings) {
+    public final void flag(Player player, Component details, Settings.Checks.CheckSettings settings) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             UUID uuid = player.getUniqueId();
             int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
@@ -79,7 +79,7 @@ public abstract class Check {
         violations.clear();
     }
 
-    private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, ICheckSettings settings, int currentViolations) {
+    private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, Settings.Checks.CheckSettings settings, int currentViolations) {
         CheckDetails checkDetails = new CheckDetails();
         checkDetails.setCheckName(checkName);
         checkDetails.setCheckDescription(checkDescription);
