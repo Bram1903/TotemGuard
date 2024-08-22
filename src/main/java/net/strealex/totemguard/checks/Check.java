@@ -56,6 +56,8 @@ public abstract class Check {
             TotemPlayer totemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
             CheckDetails checkDetails = createCheckDetails(player, details, settings, currentViolations);
 
+            if (totemPlayer.isBedrockPlayer()) return;
+
             alertManager.sendAlert(checkDetails.getAlert());
             discordManager.sendAlert(totemPlayer, checkDetails);
             if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {

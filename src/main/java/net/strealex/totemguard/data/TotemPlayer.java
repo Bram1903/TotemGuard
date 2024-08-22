@@ -13,4 +13,5 @@ public class TotemPlayer {
     private String username;
     private String clientBrandName;
     private ClientVersion clientVersion;
+    private boolean bedrockPlayer;
 }
