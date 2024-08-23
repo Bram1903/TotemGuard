@@ -17,20 +17,24 @@ permissions:
     default: op
     children:
       TotemGuard.Reload: true
+      TotemGuard.Check: true
       TotemGuard.Alerts: true
       TotemGuard.Alerts.Others: true
-      TotemGuard.Check: true
+      TotemGuard.Bypass: true
+  TotemGuard.Reload:
+    description: Allows the player to use /totemguard reload.
+    default: op
+  TotemGuard.Check:
+    description: Allows the player to use the /check command.
+    default: op
   TotemGuard.Alerts:
     description: Allows the player to use /totemguard alerts.
     default: op
   TotemGuard.Alerts.Others:
     description: Allows the player to use /totemguard alerts <player>.
     default: op
-  TotemGuard.Reload:
-    description: Allows the player to use /totemguard reload.
-    default: op
-  TotemGuard.Check:
-    description: Allows the player to use the /check command.
+  TotemGuard.Bypass:
+    description: Allows the player to bypass the checks.
     default: op
 commands:
   TotemGuard:

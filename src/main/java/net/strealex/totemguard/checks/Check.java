@@ -52,7 +52,6 @@ public abstract class Check {
     public final void flag(Player player, Component details, Settings.Checks.CheckSettings settings) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             UUID uuid = player.getUniqueId();
-            int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
 
             Optional<TotemPlayer> optionalTotemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
             if (optionalTotemPlayer.isEmpty()) {
@@ -61,8 +60,9 @@ public abstract class Check {
             }
 
             TotemPlayer totemPlayer = optionalTotemPlayer.get();
-            if (totemPlayer.isBedrockPlayer()) return;
+            if (!shouldCheck(player, totemPlayer.isBedrockPlayer(), settings)) return;
 
+            int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
             CheckDetails checkDetails = createCheckDetails(player, totemPlayer, details, settings, currentViolations);
 
             alertManager.sendAlert(checkDetails.getAlert());
@@ -71,12 +71,24 @@ public abstract class Check {
             if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {
                 violations.remove(uuid);
             }
-
         });
     }
 
     public void resetData() {
         violations.clear();
+    }
+
+    private boolean shouldCheck(Player player, boolean bedrockPlayer, Settings.Checks.CheckSettings checkSettings) {
+        if (!checkSettings.isEnabled()) return false;
+        if (bedrockPlayer) return false;
+
+        var settings = plugin.getConfigManager().getSettings();
+
+        if (player.getPing() > settings.getDetermine().getMaxPing() || plugin.getTps() < settings.getDetermine().getMinTps()) {
+            return false;
+        }
+
+        return !settings.getChecks().isBypass() || !player.hasPermission("TotemGuard.Bypass");
     }
 
     private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, Settings.Checks.CheckSettings settings, int currentViolations) {

@@ -92,7 +92,10 @@ public final class Settings {
     @Configuration
     @Getter
     public static class Checks {
-        @Comment("AutoTotemA Settings")
+        @Comment("When enabled, players with the bypass permission will not be flagged.")
+        private boolean bypass = false;
+
+        @Comment("\nAutoTotemA Settings")
         private AutoTotemA autoTotemA = new AutoTotemA();
 
         @Comment("\nAutoTotemB Settings")
@@ -108,13 +111,14 @@ public final class Settings {
         @Getter
         public abstract static class CheckSettings {
             private boolean enabled = true;
-            private boolean punishable = true;
+            private boolean punishable;
             private int maxViolations;
             private String[] punishmentCommands = {
                     "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
 
-            public CheckSettings(int maxViolations) {
+            public CheckSettings(boolean punishable, int maxViolations) {
+                this.punishable = punishable;
                 this.maxViolations = maxViolations;
             }
         }
@@ -138,7 +142,7 @@ public final class Settings {
             private int clickTimeDifferenceValue = 75;
 
             public AutoTotemA() {
-                super(5);
+                super(true, 5);
             }
         }
 
@@ -146,7 +150,7 @@ public final class Settings {
         @Getter
         public static class AutoTotemB extends CheckSettings {
             public AutoTotemB() {
-                super(15);
+                super(false, 15);
             }
         }
 
@@ -163,7 +167,7 @@ public final class Settings {
             private int damageAmountOnCheck = 0;
 
             public ManualTotemA() {
-                super(1);
+                super(false,1);
             }
         }
 
@@ -171,7 +175,7 @@ public final class Settings {
         @Getter
         public static class BadPacketsA extends CheckSettings {
             public BadPacketsA() {
-                super(1);
+                super(true,1);
             }
         }
     }

@@ -47,11 +47,6 @@ public class AutoTotemB extends Check implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClick(InventoryClickEvent event) {
-        final Settings.Checks.AutoTotemB settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
-        if (!settings.isEnabled()) {
-            return;
-        }
-
         if (event.getWhoClicked() instanceof Player player) {
             boolean isSpring = player.isSprinting();
             boolean isSneaking = player.isSneaking();
@@ -65,6 +60,7 @@ public class AutoTotemB extends Check implements Listener {
                 return;
             }
 
+            final Settings.Checks.AutoTotemB settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
             Component checkDetails = createDetails(isSpring, isSneaking, isBlocking);
             flag(player, checkDetails, settings);
         }

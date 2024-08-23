@@ -33,9 +33,9 @@ public class AutoTotemA extends Check implements Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTotemUse(EntityResurrectEvent event) {
-        if (!(event.getEntity() instanceof Player player) || StopCheck(player)) {
+        if (!(event.getEntity() instanceof Player player)) {
             return;
         }
 
@@ -45,9 +45,9 @@ public class AutoTotemA extends Check implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player) || StopCheck(player)) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
 
@@ -94,13 +94,6 @@ public class AutoTotemA extends Check implements Listener {
         if (advancedCheck || simpleCheck) {
             flag(player, createDetails(timeDifference, realTotemTime, clickTimeDifference, player), checkSettings);
         }
-    }
-
-    private boolean StopCheck(Player player) {
-        var settings = plugin.getConfigManager().getSettings();
-        return !settings.getChecks().getAutoTotemA().isEnabled()
-                || !(plugin.getTps() >= settings.getDetermine().getMinTps())
-                || player.getPing() > settings.getDetermine().getMaxPing();
     }
 
     private String getMainHandItemString(Player player) {
