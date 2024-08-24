@@ -2,11 +2,11 @@ package net.strealex.totemguard;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import io.github.retrooper.packetevents.bstats.Metrics;
 import lombok.Getter;
 import net.strealex.totemguard.checks.impl.badpackets.BadPacketsA;
+import net.strealex.totemguard.checks.impl.manual.ManualTotemA;
 import net.strealex.totemguard.checks.impl.totem.AutoTotemA;
-import net.strealex.totemguard.checks.impl.totem.AutoTotemB;
-import net.strealex.totemguard.commands.CheckCommand;
 import net.strealex.totemguard.commands.TotemGuardCommand;
 import net.strealex.totemguard.config.ConfigManager;
 import net.strealex.totemguard.listeners.UserTracker;
@@ -56,29 +56,28 @@ public final class TotemGuard extends JavaPlugin {
         punishmentManager = new PunishmentManager(this);
 
         registerPacketListeners();
+        registerChecks();
         registerCommands();
-        registerListeners();
+        enableBStats();
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("Disabling plugin 'TotemGuard'...");
-        saveDefaultConfig();
+        getLogger().info("Disabling TotemGuard...");
     }
 
     private void registerPacketListeners() {
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
+    }
+
+    private void registerChecks() {
+        new AutoTotemA(this);
+        new ManualTotemA(this);
         PacketEvents.getAPI().getEventManager().registerListener(new BadPacketsA(this), PacketListenerPriority.NORMAL);
     }
 
     private void registerCommands() {
         new TotemGuardCommand(this);
-        new CheckCommand(this);
-    }
-
-    private void registerListeners() {
-        new AutoTotemA(this);
-        new AutoTotemB(this);
     }
 
     /**
@@ -97,5 +96,13 @@ public final class TotemGuard extends JavaPlugin {
 
     public int getTps() {
         return (int) Math.round(Bukkit.getTPS()[0]);
+    }
+
+    private void enableBStats() {
+        try {
+            new Metrics(this, 23179);
+        } catch (Exception e) {
+            this.getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
+        }
     }
 }

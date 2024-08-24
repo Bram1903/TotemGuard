@@ -1,4 +1,4 @@
-package net.strealex.totemguard.commands;
+package net.strealex.totemguard.checks.impl.manual;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -21,11 +21,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class CheckCommand extends Check implements CommandExecutor, TabExecutor {
+public class ManualTotemA extends Check implements CommandExecutor, TabExecutor {
 
     private final TotemGuard plugin;
 
-    public CheckCommand(TotemGuard plugin) {
+    public ManualTotemA(TotemGuard plugin) {
         super(plugin, "ManualTotemA", "Attempts to bait the player into replacing their totem.");
 
         this.plugin = plugin;
