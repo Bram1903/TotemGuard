@@ -13,12 +13,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ManualTotemA extends Check implements CommandExecutor, TabExecutor {
@@ -69,22 +68,35 @@ public class ManualTotemA extends Check implements CommandExecutor, TabExecutor 
         ItemStack originalTotem = removeTotemFromOffhand(target);
         applyDamageIfNeeded(target, settings);
 
-        AtomicInteger elapsedMs = new AtomicInteger(0);
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        final long startTime = System.nanoTime();
+        final AtomicBoolean checkCompleted = new AtomicBoolean(false);
 
-        Runnable task = () -> {
-            if (hasTotemInOffhand(target)) {
-                target.getInventory().setItemInOffHand(originalTotem);
-                flag(target, createDetails(sender, elapsedMs.get()), settings);
-                scheduler.shutdown();
-            } else if (elapsedMs.getAndIncrement() >= settings.getCheckTime()) {
-                target.getInventory().setItemInOffHand(originalTotem);
-                sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
-                scheduler.shutdown();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Schedule the check to run on the main server thread
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (checkCompleted.get()) {
+                        return; // Exit early if check has been completed
+                    }
+
+                    long currentElapsedNanos = System.nanoTime() - startTime;
+                    int currentElapsedMillis = (int) (currentElapsedNanos / 1_000_000); // Convert nanoseconds to milliseconds
+
+                    if (hasTotemInOffhand(target)) {
+                        target.getInventory().setItemInOffHand(originalTotem);
+                        flag(target, createDetails(sender, currentElapsedMillis), settings);
+                        checkCompleted.set(true);
+                        this.cancel();
+                    } else if (currentElapsedMillis >= settings.getCheckTime()) {
+                        target.getInventory().setItemInOffHand(originalTotem);
+                        sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
+                        checkCompleted.set(true);
+                        this.cancel();
+                    }
+                });
             }
-        };
-
-        scheduler.scheduleAtFixedRate(task, 0, 1, TimeUnit.MILLISECONDS);
+        }.runTaskTimerAsynchronously(plugin, 0L, 1L);
 
         return true;
     }
@@ -95,22 +107,25 @@ public class ManualTotemA extends Check implements CommandExecutor, TabExecutor 
             return List.of();
         }
 
+        String argsLowerCase = args[0].toLowerCase();
+
         if (sender instanceof Player) {
             String senderName = sender.getName().toLowerCase();
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
                     .filter(name -> !name.toLowerCase().equals(senderName)) // Prevent self-suggestion
+                    .filter(name -> name.toLowerCase().startsWith(argsLowerCase)) // Filter based on current input
                     .toList();
         }
 
         return Bukkit.getOnlinePlayers().stream()
                 .map(Player::getName)
+                .filter(name -> name.toLowerCase().startsWith(argsLowerCase)) // Filter based on current input
                 .toList();
     }
 
     private boolean hasTotemInOffhand(Player player) {
-        ItemStack itemInOffHand = player.getInventory().getItemInOffHand();
-        return itemInOffHand != null && itemInOffHand.getType() == Material.TOTEM_OF_UNDYING;
+        return player.getInventory().getItemInOffHand().getType() == Material.TOTEM_OF_UNDYING;
     }
 
     private ItemStack removeTotemFromOffhand(Player target) {
