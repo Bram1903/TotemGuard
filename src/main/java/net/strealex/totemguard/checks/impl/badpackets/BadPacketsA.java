@@ -27,9 +27,9 @@ public class BadPacketsA extends Check implements PacketListener {
         }
 
         WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
-        String channel = packet.getChannelName();
+        String channel = packet.getChannelName().toLowerCase();
 
-        if (channel.equalsIgnoreCase("minecraft:using_autototem")) {
+        if (channel.contains("autototem")) {
             final Settings.Checks.BadPacketsA settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsA();
 
             Component checkDetails = Component.text()
