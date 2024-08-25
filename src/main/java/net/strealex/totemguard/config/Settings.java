@@ -126,17 +126,8 @@ public final class Settings {
             @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
             private int normalCheckTimeMs = 1000;
 
-            @Comment("\nClick Time Difference [Experimental]: Measures the amount of time the hacked client takes to move a totem from the inventory slot to the offhand. \nRecommended value: true ")
-            private boolean clickTimeDifference = true;
-
-            @Comment("\nAdvanced System Check: Enables an advanced system check that calculates the real totem time making the flag more accurate. \nRecommended value: false")
-            private boolean advancedSystemCheck = false;
-
-            @Comment("\nTrigger amount: The flag is only triggered if this value (in ms) is reached. (Advanced System Check)")
-            private int triggerAmountMs = 75;
-
-            @Comment("\nClick Time Difference Value: The value (in ms) which anything below will trigger the flag. (Click Time Difference)")
-            private int clickTimeDifferenceValue = 75;
+            @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
+            private int clickTimeDifference = 75;
 
             public AutoTotemA() {
                 super(true, 5);
