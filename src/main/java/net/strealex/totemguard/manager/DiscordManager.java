@@ -56,7 +56,7 @@ public class DiscordManager {
                 .setThumbnailUrl("http://cravatar.eu/avatar/" + totemPlayer.getUsername() + "/64.png")
                 .setColor(Color.decode(settings.getColor()).getRGB())
                 .setTitle(new WebhookEmbed.EmbedTitle(settings.getTitle(), null))
-                .addField(new WebhookEmbed.EmbedField(true, "**Player**", totemPlayer.getUsername()))
+                .addField(new WebhookEmbed.EmbedField(true, "**Player**", "`" + totemPlayer.getUsername() + "`"))
                 .addField(new WebhookEmbed.EmbedField(true, "**Check**", checkDetails.getCheckName()));
 
         if (!isPunishment) {
