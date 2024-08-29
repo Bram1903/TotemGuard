@@ -55,7 +55,7 @@ public class UpdateNotifier extends PacketListenerAbstract {
         Player player = (Player) event.getPlayer();
 
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-            if (player.hasPermission("TotemGuard.Notify")) {
+            if (player.hasPermission("TotemGuard.Update")) {
                 player.sendMessage(updateComponent);
             }
         }, 2 * 20);

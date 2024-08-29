@@ -244,6 +244,6 @@ public class TGVersion implements Comparable<TGVersion> {
      */
     @Override
     public String toString() {
-        return major + "." + minor + "." + patch + (snapshot && snapshotCommit != null ? ("+" + snapshotCommit + "-SNAPSHOT") : "");
+        return major + "." + minor + "." + patch + (snapshot ? "-SNAPSHOT" : "");
     }
 }
