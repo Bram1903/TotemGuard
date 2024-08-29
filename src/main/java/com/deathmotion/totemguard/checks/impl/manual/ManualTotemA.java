@@ -1,10 +1,12 @@
 package com.deathmotion.totemguard.checks.impl.manual;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import io.github.retrooper.packetevents.util.folia.TaskWrapper;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -13,10 +15,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ManualTotemA extends Check implements CommandExecutor, TabExecutor {
@@ -70,32 +72,31 @@ public class ManualTotemA extends Check implements CommandExecutor, TabExecutor 
         final long startTime = System.nanoTime();
         final AtomicBoolean checkCompleted = new AtomicBoolean(false);
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                // Schedule the check to run on the main server thread
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (checkCompleted.get()) {
-                        return; // Exit early if check has been completed
-                    }
+        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (task) -> {
+            TaskWrapper currentTask = (TaskWrapper) task; // Cast to TaskWrapper
 
-                    long currentElapsedNanos = System.nanoTime() - startTime;
-                    int currentElapsedMillis = (int) (currentElapsedNanos / 1_000_000); // Convert nanoseconds to milliseconds
+            // Schedule the check to run on the main server thread
+            FoliaScheduler.getEntityScheduler().run(target, plugin, (o) -> {
+                if (checkCompleted.get()) {
+                    return; // Exit early if check has been completed
+                }
 
-                    if (hasTotemInOffhand(target)) {
-                        target.getInventory().setItemInOffHand(originalTotem);
-                        flag(target, createDetails(sender, currentElapsedMillis), settings);
-                        checkCompleted.set(true);
-                        this.cancel();
-                    } else if (currentElapsedMillis >= settings.getCheckTime()) {
-                        target.getInventory().setItemInOffHand(originalTotem);
-                        sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
-                        checkCompleted.set(true);
-                        this.cancel();
-                    }
-                });
-            }
-        }.runTaskTimerAsynchronously(plugin, 0L, 1L);
+                long currentElapsedNanos = System.nanoTime() - startTime;
+                int currentElapsedMillis = (int) (currentElapsedNanos / 1_000_000); // Convert nanoseconds to milliseconds
+
+                if (hasTotemInOffhand(target)) {
+                    target.getInventory().setItemInOffHand(originalTotem);
+                    flag(target, createDetails(sender, currentElapsedMillis), settings);
+                    checkCompleted.set(true);
+                    currentTask.cancel(); // Cancel the task using the TaskWrapper
+                } else if (currentElapsedMillis >= settings.getCheckTime()) {
+                    target.getInventory().setItemInOffHand(originalTotem);
+                    sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
+                    checkCompleted.set(true);
+                    currentTask.cancel(); // Cancel the task using the TaskWrapper
+                }
+            }, null);
+        }, 0, 50L, TimeUnit.MILLISECONDS);
 
         return true;
     }

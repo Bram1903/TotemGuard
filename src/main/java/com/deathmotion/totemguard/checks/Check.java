@@ -1,6 +1,5 @@
 package com.deathmotion.totemguard.checks;
 
-import net.kyori.adventure.text.Component;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.data.CheckDetails;
@@ -9,12 +8,15 @@ import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.util.AlertCreator;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public abstract class Check {
 
@@ -41,8 +43,14 @@ public abstract class Check {
         this.punishmentManager = plugin.getPunishmentManager();
         this.discordManager = plugin.getDiscordManager();
 
-        long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::resetData, resetInterval, resetInterval);
+        long resetIntervalMinutes = plugin.getConfigManager().getSettings().getResetViolationsInterval();
+        long resetIntervalTicks = resetIntervalMinutes * 60L * 20L;
+        long resetIntervalMillis = resetIntervalMinutes * 60L * 1000L;
+        if (!FoliaScheduler.isFolia()) {
+            FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> resetData(), resetIntervalTicks, resetIntervalTicks);
+        } else {
+            FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> resetData(), resetIntervalMillis, resetIntervalMillis, TimeUnit.MILLISECONDS);
+        }
     }
 
     public Check(TotemGuard plugin, String checkName, String checkDescription) {
@@ -50,7 +58,7 @@ public abstract class Check {
     }
 
     public final void flag(Player player, Component details, Settings.Checks.CheckSettings settings) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             UUID uuid = player.getUniqueId();
 
             Optional<TotemPlayer> optionalTotemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
@@ -75,7 +83,9 @@ public abstract class Check {
     }
 
     public void resetData() {
+        plugin.getLogger().info("Resetting violations...");
         violations.clear();
+        plugin.getLogger().info("Violations after reset: " + violations.size());
     }
 
     private boolean shouldCheck(Player player, boolean bedrockPlayer, Settings.Checks.CheckSettings checkSettings) {

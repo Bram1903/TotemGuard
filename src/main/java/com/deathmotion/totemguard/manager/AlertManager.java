@@ -1,5 +1,6 @@
 package com.deathmotion.totemguard.manager;
 
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -24,7 +25,7 @@ public class AlertManager {
         this.plugin = plugin;
 
         long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::violationsCleared, resetInterval, resetInterval);
+        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> violationsCleared(), resetInterval, resetInterval);
     }
 
     public void sendAlert(Component alert) {

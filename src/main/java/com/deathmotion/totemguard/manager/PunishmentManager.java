@@ -3,6 +3,7 @@ package com.deathmotion.totemguard.manager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Blocking;
 
@@ -32,7 +33,7 @@ public class PunishmentManager {
     }
 
     private void executePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
             runPunishmentCommands(totemPlayer, checkDetails);
             discordManager.sendPunishment(totemPlayer, checkDetails);
         });
@@ -41,7 +42,7 @@ public class PunishmentManager {
     private boolean scheduleAndWaitPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, long delay) {
         CountDownLatch latch = new CountDownLatch(1);
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        FoliaScheduler.getGlobalRegionScheduler().runDelayed(plugin, (o) -> {
             runPunishmentCommands(totemPlayer, checkDetails);
             discordManager.sendPunishment(totemPlayer, checkDetails);
             latch.countDown(); // Signal that the task is complete

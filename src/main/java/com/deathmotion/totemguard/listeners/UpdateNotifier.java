@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.listeners;
 
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -30,6 +31,8 @@ import com.deathmotion.totemguard.data.Constants;
 import com.deathmotion.totemguard.util.TGVersion;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
+import java.util.concurrent.TimeUnit;
 
 public class UpdateNotifier extends PacketListenerAbstract {
     private final TotemGuard plugin;
@@ -54,10 +57,10 @@ public class UpdateNotifier extends PacketListenerAbstract {
     public void onUserLogin(UserLoginEvent event) {
         Player player = (Player) event.getPlayer();
 
-        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+        FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
             if (player.hasPermission("TotemGuard.Update")) {
                 player.sendMessage(updateComponent);
             }
-        }, 2 * 20);
+        }, 2, TimeUnit.SECONDS);
     }
 }
