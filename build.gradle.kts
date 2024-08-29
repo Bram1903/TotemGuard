@@ -31,7 +31,7 @@ dependencies {
     annotationProcessor(libs.lombok)
 }
 
-group = "net.strealex.totemguard"
+group = "com.deathmotion.totemguard"
 version = "0.0.1-SNAPSHOT"
 description = "TotemGuard"
 
