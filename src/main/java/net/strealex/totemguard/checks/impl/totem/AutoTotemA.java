@@ -96,7 +96,7 @@ public class AutoTotemA extends Check implements Listener {
     }
 
     private Component createDetails(long timeDifference, long realTotemTime, long clickTimeDifference, Player player) {
-        return Component.text()
+        Component component = Component.text()
                 .append(Component.text("Totem Time: ", NamedTextColor.GRAY))
                 .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
                 .append(Component.newline())
@@ -109,15 +109,27 @@ public class AutoTotemA extends Check implements Listener {
                 .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
                 .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.newline())
-                .append(Component.text("Sprinting: ", NamedTextColor.GRAY))
-                .append(Component.text(player.isSprinting(), player.isSprinting() ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Sneaking: ", NamedTextColor.GRAY))
-                .append(Component.text(player.isSneaking(), player.isSneaking() ? NamedTextColor.GREEN : NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Blocking: ", NamedTextColor.GRAY))
-                .append(Component.text(player.isBlocking(), player.isBlocking() ? NamedTextColor.GREEN : NamedTextColor.GOLD))
                 .build();
+
+        StringBuilder states = new StringBuilder();
+        if (player.isSprinting()) {
+            states.append("Sprinting, ");
+        }
+        if (player.isSneaking()) {
+            states.append("Sneaking, ");
+        }
+        if (player.isBlocking()) {
+            states.append("Blocking, ");
+        }
+
+        // If any states are active, add them to the component
+        if (!states.isEmpty()) {
+            states.setLength(states.length() - 2);
+            component = component.append(Component.text("States: ", NamedTextColor.GRAY))
+                    .append(Component.text(states.toString(), NamedTextColor.GOLD));
+        }
+
+        return component;
     }
+
 }
