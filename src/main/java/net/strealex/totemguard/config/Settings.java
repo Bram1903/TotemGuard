@@ -109,10 +109,17 @@ public final class Settings {
         public abstract static class CheckSettings {
             private boolean enabled = true;
             private boolean punishable;
+            private int punishmentDelayInSeconds = 0;
             private int maxViolations;
             private String[] punishmentCommands = {
                     "ban %player% 1d [TotemGuard] Unfair Advantage"
             };
+
+            public CheckSettings(boolean punishable, int punishmentDelay, int maxViolations) {
+                this.punishable = punishable;
+                this.punishmentDelayInSeconds = punishmentDelay;
+                this.maxViolations = maxViolations;
+            }
 
             public CheckSettings(boolean punishable, int maxViolations) {
                 this.punishable = punishable;
@@ -147,7 +154,7 @@ public final class Settings {
             private int damageAmountOnCheck = 0;
 
             public ManualTotemA() {
-                super(false,1);
+                super(false, 1);
             }
         }
 
@@ -155,7 +162,7 @@ public final class Settings {
         @Getter
         public static class BadPacketsA extends CheckSettings {
             public BadPacketsA() {
-                super(true,1);
+                super(true, 60, 1);
             }
         }
     }

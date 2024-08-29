@@ -18,6 +18,7 @@ public class CheckDetails {
     private boolean experimental;
     private boolean enabled;
     private boolean punishable;
+    private int punishmentDelay;
     private int maxViolations;
     private String[] punishmentCommands;
 }

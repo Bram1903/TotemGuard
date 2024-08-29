@@ -102,6 +102,7 @@ public abstract class Check {
         checkDetails.setExperimental(experimental);
         checkDetails.setEnabled(settings.isEnabled());
         checkDetails.setPunishable(settings.isPunishable());
+        checkDetails.setPunishmentDelay(settings.getPunishmentDelayInSeconds());
         checkDetails.setMaxViolations(settings.getMaxViolations());
         checkDetails.setPunishmentCommands(settings.getPunishmentCommands());
         checkDetails.setAlert(AlertCreator.createAlertComponent(totemPlayer, checkDetails, details, plugin.getConfigManager().getSettings().getPrefix()));
