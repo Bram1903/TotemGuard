@@ -14,6 +14,7 @@ import net.strealex.totemguard.manager.AlertManager;
 import net.strealex.totemguard.manager.DiscordManager;
 import net.strealex.totemguard.manager.PunishmentManager;
 import net.strealex.totemguard.util.TGVersion;
+import net.strealex.totemguard.util.UpdateChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -54,6 +55,8 @@ public final class TotemGuard extends JavaPlugin {
         userTracker = new UserTracker(this);
         discordManager = new DiscordManager(this);
         punishmentManager = new PunishmentManager(this);
+
+        new UpdateChecker(this);
 
         registerPacketListeners();
         registerChecks();

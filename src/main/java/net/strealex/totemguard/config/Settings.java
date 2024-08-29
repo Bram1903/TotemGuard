@@ -14,6 +14,9 @@ public final class Settings {
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
 
+    @Comment("\nUpdate Checker Settings:")
+    private UpdateChecker updateChecker = new UpdateChecker();
+
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
@@ -77,6 +80,19 @@ public final class Settings {
                 super("TotemGuard Punishment", "#d60010");
             }
         }
+    }
+
+    @Configuration
+    @Getter
+    public static class UpdateChecker {
+        @Comment("Enable and/or disable the update checker.")
+        private boolean enabled = true;
+
+        @Comment("\nPrint to Console: Prints the update message to the console.")
+        private boolean printToConsole = true;
+
+        @Comment("\nNotify In-Game: Notifies players with the permission in-game.")
+        private boolean notifyInGame = true;
     }
 
     @Configuration

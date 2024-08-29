@@ -2,7 +2,7 @@ name: TotemGuard
 version: ${version}
 main: net.strealex.totemguard.TotemGuard
 api-version: '1.20'
-authors: [ Bram, OutDev, Asleepp ]
+authors: [ Bram, OutDev ]
 description: A plugin specifically designed to detect players using the 'AutoTotem' hack.
 load: POSTWORLD
 libraries:
@@ -21,6 +21,7 @@ permissions:
       TotemGuard.Alerts: true
       TotemGuard.Alerts.Others: true
       TotemGuard.Bypass: true
+      TotemGuard.Update: true
   TotemGuard.Reload:
     description: Allows the player to use /totemguard reload.
     default: op
@@ -36,6 +37,9 @@ permissions:
   TotemGuard.Bypass:
     description: Allows the player to bypass the checks.
     default: op
+  TotemGuard.Update:
+    description: Allows the player to receive update notifications.
+    default: true
 commands:
   TotemGuard:
     description: Base command for TotemGuard.
