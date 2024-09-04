@@ -185,7 +185,7 @@ public final class Settings {
         @Getter
         public static class AutoTotemB extends CheckSettings {
             @Comment("\n(Advanced Users Only) Standard Deviation Threshold: The threshold for the standard deviation.")
-            private double standardDeviationThreshold = 10.0;
+            private double standardDeviationThreshold = 30.0;
 
             @Comment("\n(Advanced Users Only) Violation Threshold: The threshold for the violation.")
             private double violationThreshold = 3;

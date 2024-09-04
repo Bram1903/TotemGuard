@@ -74,18 +74,21 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
-            WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
-            Player player = (Player) event.getPlayer();
+        if (event.getPacketType() != PacketType.Play.Client.PLAYER_DIGGING) return;
 
-            if (packet.getAction().equals(DiggingAction.SWAP_ITEM_WITH_OFFHAND) && player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) {
-                if (expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
-                    recordTotemEvent(totemReEquipTimes, player.getUniqueId());
-                    expectingReEquip.put(player.getUniqueId(), false);
-                    checkPlayerConsistency(player);
-                }
-            }
-        }
+        WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
+        if (!(packet.getAction().equals(DiggingAction.SWAP_ITEM_WITH_OFFHAND))) return;
+
+        Player player = (Player) event.getPlayer();
+
+        FoliaScheduler.getEntityScheduler().runDelayed(player, plugin, (o) -> {
+            if (player.getInventory().getItemInOffHand().getType() != Material.TOTEM_OF_UNDYING) return;
+            if (!expectingReEquip.getOrDefault(player.getUniqueId(), false)) return;
+
+            recordTotemEvent(totemReEquipTimes, player.getUniqueId());
+            expectingReEquip.put(player.getUniqueId(), false);
+            checkPlayerConsistency(player);
+        }, null, 1);
     }
 
     @Override
