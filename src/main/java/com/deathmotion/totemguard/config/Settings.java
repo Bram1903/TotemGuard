@@ -132,6 +132,9 @@ public final class Settings {
         @Comment("\nAutoTotemA Settings")
         private AutoTotemA autoTotemA = new AutoTotemA();
 
+        @Comment("\nAutoTotemB Settings")
+        private AutoTotemB autoTotemB = new AutoTotemB();
+
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -172,6 +175,17 @@ public final class Settings {
 
             public AutoTotemA() {
                 super(true, 5);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemB extends CheckSettings {
+            @Comment("\nConsistency Threshold: The threshold (in ms) for the consistency check.")
+            private int consistencyThreshold = 50;
+
+            public AutoTotemB() {
+                super(false, 10);
             }
         }
 

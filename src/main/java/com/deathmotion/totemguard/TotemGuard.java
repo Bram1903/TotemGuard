@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard;
 
+import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import io.github.retrooper.packetevents.bstats.Metrics;
@@ -92,7 +93,8 @@ public final class TotemGuard extends JavaPlugin {
     }
 
     private void registerChecks() {
-        new AutoTotemA(this);
+        PacketEvents.getAPI().getEventManager().registerListener(new AutoTotemA(this), PacketListenerPriority.NORMAL);
+        PacketEvents.getAPI().getEventManager().registerListener(new AutoTotemB(this), PacketListenerPriority.NORMAL);
         new ManualTotemA(this);
         PacketEvents.getAPI().getEventManager().registerListener(new BadPacketsA(this), PacketListenerPriority.NORMAL);
     }
