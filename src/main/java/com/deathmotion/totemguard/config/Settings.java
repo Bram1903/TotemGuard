@@ -29,6 +29,9 @@ public final class Settings {
     @Comment("Prefix: Sets the command prefix for the plugin.")
     private String prefix = "&6⚡ ";
 
+    @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
+    private boolean debug = false;
+
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
 

@@ -81,8 +81,11 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
             Player player = (Player) event.getPlayer();
 
             if (packet.getAction().equals(DiggingAction.SWAP_ITEM_WITH_OFFHAND) && player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) {
-                recordTotemEvent(totemReEquipTimes, player.getUniqueId());
-                checkPlayerConsistency(player);
+                if (expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
+                    recordTotemEvent(totemReEquipTimes, player.getUniqueId());
+                    expectingReEquip.put(player.getUniqueId(), false);
+                    checkPlayerConsistency(player);
+                }
             }
         }
     }
@@ -113,13 +116,13 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
             ConcurrentLinkedDeque<Long> useTimes = totemUseTimes.get(playerId);
             ConcurrentLinkedDeque<Long> reEquipTimes = totemReEquipTimes.get(playerId);
 
-            plugin.getLogger().info("Checking player " + player.getName() + ": useTimes size = " +
+            plugin.debug("Checking player " + player.getName() + ": useTimes size = " +
                     (useTimes != null ? useTimes.size() : "null") +
                     ", reEquipTimes size = " +
                     (reEquipTimes != null ? reEquipTimes.size() : "null"));
 
             if (useTimes == null || reEquipTimes == null || useTimes.size() < 10 || reEquipTimes.size() < 10) {
-                plugin.getLogger().info("Early exit: Not enough data for player " + player.getName());
+                plugin.debug("Early exit: Not enough data for player " + player.getName());
                 return;
             }
 
@@ -130,7 +133,7 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
                 Long reEquipTime = reEquipTimes.toArray(new Long[0])[i];
 
                 if (useTime == null || reEquipTime == null) {
-                    plugin.getLogger().info("Early exit: Null value found in pairs for player " + player.getName());
+                    plugin.debug("Early exit: Null value found in pairs for player " + player.getName());
                     return;
                 }
 
@@ -143,10 +146,9 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
             double meanInMs = mean / 1_000_000.0;
             double standardDeviationInMs = standardDeviation / 1_000_000.0;
 
-            plugin.getLogger().info("Player " + player.getName() + " - Mean: " + meanInMs + " ms");
-            plugin.getLogger().info("Player " + player.getName() + " - Standard deviation: " + standardDeviationInMs + " ms");
+            plugin.debug("Player " + player.getName() + " - Mean: " + meanInMs + " ms");
+            plugin.debug("Player " + player.getName() + " - Standard deviation: " + standardDeviationInMs + " ms");
 
-            // Check if the player's standard deviation is below the threshold for consistency
             if (standardDeviationInMs < STANDARD_DEVIATION_THRESHOLD) {
                 int violations = consistencyViolations.getOrDefault(playerId, 0) + 1;
                 consistencyViolations.put(playerId, violations);

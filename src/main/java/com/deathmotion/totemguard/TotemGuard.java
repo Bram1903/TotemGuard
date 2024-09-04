@@ -121,6 +121,12 @@ public final class TotemGuard extends JavaPlugin {
         return (int) Math.round(Bukkit.getTPS()[0]);
     }
 
+    public void debug(String message) {
+        if (configManager.getSettings().isDebug()) {
+            getLogger().info("[DEBUG] " + message);
+        }
+    }
+
     private void enableBStats() {
         try {
             new Metrics(this, 23179);
