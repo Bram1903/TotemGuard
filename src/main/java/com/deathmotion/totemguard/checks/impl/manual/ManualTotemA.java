@@ -69,31 +69,32 @@ public class ManualTotemA extends Check implements CommandExecutor, TabExecutor 
         ItemStack originalTotem = removeTotemFromOffhand(target);
         applyDamageIfNeeded(target, settings);
 
-        final long startTime = System.nanoTime();
+        // This is not the most elegant solution,
+        // but it's necessary in this case to allow for cancelling the outer task.
+        // If anyone knows a better way to handle this, please let me know.
+        final TaskWrapper[] taskWrapper = new TaskWrapper[1];
         final AtomicBoolean checkCompleted = new AtomicBoolean(false);
+        final long startTime = System.nanoTime();
 
-        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (task) -> {
-            TaskWrapper currentTask = (TaskWrapper) task; // Cast to TaskWrapper
-
-            // Schedule the check to run on the main server thread
+        taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (t) -> {
             FoliaScheduler.getEntityScheduler().run(target, plugin, (o) -> {
                 if (checkCompleted.get()) {
-                    return; // Exit early if check has been completed
+                    return;
                 }
 
                 long currentElapsedNanos = System.nanoTime() - startTime;
-                int currentElapsedMillis = (int) (currentElapsedNanos / 1_000_000); // Convert nanoseconds to milliseconds
+                int currentElapsedMillis = (int) (currentElapsedNanos / 1_000_000);
 
                 if (hasTotemInOffhand(target)) {
                     target.getInventory().setItemInOffHand(originalTotem);
                     flag(target, createDetails(sender, currentElapsedMillis), settings);
                     checkCompleted.set(true);
-                    currentTask.cancel(); // Cancel the task using the TaskWrapper
+                    taskWrapper[0].cancel();
                 } else if (currentElapsedMillis >= settings.getCheckTime()) {
                     target.getInventory().setItemInOffHand(originalTotem);
                     sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
                     checkCompleted.set(true);
-                    currentTask.cancel(); // Cancel the task using the TaskWrapper
+                    taskWrapper[0].cancel();
                 }
             }, null);
         }, 0, 50L, TimeUnit.MILLISECONDS);
@@ -113,14 +114,14 @@ public class ManualTotemA extends Check implements CommandExecutor, TabExecutor 
             String senderName = sender.getName().toLowerCase();
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
-                    .filter(name -> !name.toLowerCase().equals(senderName)) // Prevent self-suggestion
-                    .filter(name -> name.toLowerCase().startsWith(argsLowerCase)) // Filter based on current input
+                    .filter(name -> !name.toLowerCase().equals(senderName))
+                    .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
                     .toList();
         }
 
         return Bukkit.getOnlinePlayers().stream()
                 .map(Player::getName)
-                .filter(name -> name.toLowerCase().startsWith(argsLowerCase)) // Filter based on current input
+                .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
                 .toList();
     }
 
@@ -135,19 +136,20 @@ public class ManualTotemA extends Check implements CommandExecutor, TabExecutor 
     }
 
     private void applyDamageIfNeeded(Player target, Settings.Checks.ManualTotemA settings) {
-        if (settings.isToggleDamageOnCheck()) {
-            double damage = calculateDamage(target, settings);
-            if (damage > 0) {
-                target.damage(damage);
-            }
+        if (!settings.isToggleDamageOnCheck()) {
+            return;
         }
+
+        double currentHealth = target.getHealth();
+        double damage = Math.min(currentHealth / 1.25, currentHealth - 1);
+
+        if (damage <= 0) {
+            return;
+        }
+
+        target.damage(damage);
     }
 
-    private double calculateDamage(Player target, Settings.Checks.ManualTotemA settings) {
-        double defaultDamage = target.getHealth() / 1.25;
-        double damage = settings.getDamageAmountOnCheck() > 0 ? settings.getDamageAmountOnCheck() : defaultDamage;
-        return Math.min(damage, target.getHealth() - 1);
-    }
 
     private Component createDetails(CommandSender sender, int elapsedMs) {
         return Component.text()

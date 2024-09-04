@@ -82,8 +82,8 @@ tasks {
     // 1.17           = Java 16
     // 1.18 - 1.20.4  = Java 17
     // 1-20.5+        = Java 21
-    val version = "1.20.4"
-    val javaVersion = JavaLanguageVersion.of(17)
+    val version = "1.21.1"
+    val javaVersion = JavaLanguageVersion.of(21)
 
     val jvmArgsExternal = listOf(
         "-Dcom.mojang.eula.agree=true"
@@ -109,7 +109,7 @@ tasks {
             from(sharedPlugins)
             url("https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsX-2.20.1.jar")
             url("https://download.luckperms.net/1552/bukkit/loader/LuckPerms-Bukkit-5.4.137.jar")
-            url("https://ci.lucko.me/job/spark/439/artifact/spark-bukkit/build/libs/spark-1.10.93-bukkit.jar")
+            url("https://ci.lucko.me/job/spark/449/artifact/spark-bukkit/build/libs/spark-1.10.103-bukkit.jar")
         }
 
         jvmArgs = jvmArgsExternal

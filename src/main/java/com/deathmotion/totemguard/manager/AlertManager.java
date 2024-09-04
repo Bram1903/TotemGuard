@@ -7,7 +7,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.Set;

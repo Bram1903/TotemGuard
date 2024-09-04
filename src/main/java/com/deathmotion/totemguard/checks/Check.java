@@ -43,14 +43,8 @@ public abstract class Check {
         this.punishmentManager = plugin.getPunishmentManager();
         this.discordManager = plugin.getDiscordManager();
 
-        long resetIntervalMinutes = plugin.getConfigManager().getSettings().getResetViolationsInterval();
-        long resetIntervalTicks = resetIntervalMinutes * 60L * 20L;
-        long resetIntervalMillis = resetIntervalMinutes * 60L * 1000L;
-        if (!FoliaScheduler.isFolia()) {
-            FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> resetData(), resetIntervalTicks, resetIntervalTicks);
-        } else {
-            FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> resetData(), resetIntervalMillis, resetIntervalMillis, TimeUnit.MILLISECONDS);
-        }
+        long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
+        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> resetData(), resetInterval, resetInterval);
     }
 
     public Check(TotemGuard plugin, String checkName, String checkDescription) {
