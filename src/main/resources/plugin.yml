@@ -4,7 +4,7 @@ main: com.deathmotion.totemguard.TotemGuard
 api-version: '1.20'
 folia-supported: true
 authors: [ Bram, OutDev ]
-description: A plugin specifically designed to detect players using the 'AutoTotem' hack.
+description: TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
 load: POSTWORLD
 libraries:
   - de.exlll:configlib-yaml:${configlibVersion}
