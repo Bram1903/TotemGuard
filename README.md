@@ -4,7 +4,7 @@
   <img alt="CodeQL" src="https://github.com/Bram1903/TotemGuard/actions/workflows/codeql.yml/badge.svg">
   <img alt="GitHub Release" src="https://img.shields.io/github/release/Bram1903/TotemGuard.svg">
   <br>
-  <a href="https://www.spigotmc.org/resources/totemguard.114851/"><img alt="SpigotMC" src="https://img.shields.io/badge/-SpigotMC-blue?style=for-the-badge&logo=SpigotMC"></a>
+  <a href="https://www.spigotmc.org/resources/totemguard.119385/"><img alt="SpigotMC" src="https://img.shields.io/badge/-SpigotMC-blue?style=for-the-badge&logo=SpigotMC"></a>
   <a href="https://modrinth.com/plugin/totemguard"><img alt="TotemGuard" src="https://img.shields.io/badge/-Modrinth-green?style=for-the-badge&logo=Modrinth"></a>
   <br>
   <a href="https://discord.deathmotion.com"><img alt="Discord" src="https://img.shields.io/badge/-Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
@@ -12,8 +12,8 @@
 
 ## Overview
 
-TotemGuard is a rather simple anti-cheat plugin that tries to detect players who are using the so-called 'AutoTotem' cheat.
-This plugin is designed to be as lightweight as possible and for the most parts operates asynchronously. 
+TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
+This plugin is designed to be as lightweight as possible and for the most parts operates asynchronously.
 It is also designed to be as configurable as possible, allowing server owners to adjust the plugin to their needs.
 
 ### Requires PacketEvents
@@ -37,9 +37,9 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 
 ## Supported Platforms & Versions
 
-| Platform                   | Supported Versions |
-|----------------------------|--------------------|
-| Bukkit (Paper, Folia etc.) | 1.18 - 1.21.1      |
+| Platform                        | Supported Versions |
+|---------------------------------|--------------------|
+| Paper, Folia, and related forks | 1.18 - 1.21.1      |
 
 ## Features
 
@@ -58,7 +58,8 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 - `/totemguard` or `/tg` - Base Command
 - `/totemguard alerts` - Toggles alerts on/off.
 - `/totemguard reload` - Reloads the configuration file (every single setting supports reloading on runtime).
-- `/totemguard check` or `/totemcheck`, `/checktotem` - Removes a totem from a player's inventory and checks if they are being quickly replaced.
+- `/totemguard check` or `/totemcheck`, `/checktotem` - Removes a totem from a player's inventory and checks if they are
+  being quickly replaced.
 
 ## Permission Nodes
 
