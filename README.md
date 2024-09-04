@@ -43,19 +43,20 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 
 ## Features
 
-- **Asynchronous** - The plugin is designed to be as lightweight as possible.
-  Almost all operations are done
-  asynchronously.
-  This ensures that the server performance is not affected.
+- **Performance** - The plugin is designed to be as lightweight as possible.
 - **Folia Support** - The plugin integrates with [Folia](https://papermc.io/software/folia), which is a Paper fork that
   adds regionised multithreading to the server.
-- **Configurable** - The plugin is highly configurable, allowing you to adjust the settings to your liking.
+- **Webhooks** - The plugin can send alerts and punishments to a Discord webhook.
+- **Configurable** - The plugin is highly configurable, every setting can be adjusted during runtime.
 - **Update Checker** - The plugin automatically checks for updates on startup.
-  If a new version is available, a message will be sent to the console.
+- **Bypass** - The plugin allows players to bypass the checks if they have the `TotemGuard.Bypass` permission and the
+  bypass setting is enabled.
+- **Bedrock Exception** - The plugin doesn't check players who are using Bedrock Edition, preventing false positives.
 
 ## Commands
 
 - `/totemguard` or `/tg` - Base Command
+- `/totemguard info` - Displays information about the plugin.
 - `/totemguard alerts` - Toggles alerts on/off.
 - `/totemguard reload` - Reloads the configuration file (every single setting supports reloading on runtime).
 - `/totemguard check` or `/totemcheck`, `/checktotem` - Removes a totem from a player's inventory and checks if they are
