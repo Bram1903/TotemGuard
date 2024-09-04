@@ -184,8 +184,11 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemB extends CheckSettings {
-            @Comment("\nConsistency Threshold: The threshold (in ms) for the consistency check.")
-            private int consistencyThreshold = 50;
+            @Comment("\n(Advanced Users Only) Standard Deviation Threshold: The threshold for the standard deviation.")
+            private double standardDeviationThreshold = 10.0;
+
+            @Comment("\n(Advanced Users Only) Violation Threshold: The threshold for the violation.")
+            private double violationThreshold = 3;
 
             public AutoTotemB() {
                 super(false, 10);

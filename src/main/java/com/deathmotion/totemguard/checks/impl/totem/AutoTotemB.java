@@ -2,6 +2,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
+import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -30,9 +31,6 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemReEquipTimes;
     private final ConcurrentHashMap<UUID, Boolean> expectingReEquip;
     private final ConcurrentHashMap<UUID, Integer> consistencyViolations;
-
-    private static final int VIOLATION_THRESHOLD = 3;
-    private static final double STANDARD_DEVIATION_THRESHOLD = 10.0;
 
     public AutoTotemB(TotemGuard plugin) {
         super(plugin, "AutoTotemB", "Re-toteming too consistently", true);
@@ -149,11 +147,13 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
             plugin.debug("Player " + player.getName() + " - Mean: " + meanInMs + " ms");
             plugin.debug("Player " + player.getName() + " - Standard deviation: " + standardDeviationInMs + " ms");
 
-            if (standardDeviationInMs < STANDARD_DEVIATION_THRESHOLD) {
+            final Settings.Checks.AutoTotemB settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
+
+            if (standardDeviationInMs < settings.getStandardDeviationThreshold()) {
                 int violations = consistencyViolations.getOrDefault(playerId, 0) + 1;
                 consistencyViolations.put(playerId, violations);
 
-                if (violations >= VIOLATION_THRESHOLD) {
+                if (violations >= settings.getViolationThreshold()) {
                     Component details = Component.text()
                             .append(Component.text("Standard deviation: ", NamedTextColor.GOLD))
                             .append(Component.text(String.format("%.2f ms", standardDeviationInMs), NamedTextColor.GRAY))
