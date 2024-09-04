@@ -18,16 +18,17 @@
 
 package com.deathmotion.totemguard.commands;
 
+import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.config.ConfigManager;
+import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.data.Constants;
+import com.deathmotion.totemguard.manager.AlertManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.config.ConfigManager;
-import com.deathmotion.totemguard.config.Settings;
-import com.deathmotion.totemguard.manager.AlertManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -186,21 +187,13 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                 .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("Bram", NamedTextColor.GREEN)
-                        .decorate(TextDecoration.BOLD)
-                        .decorate(TextDecoration.UNDERLINED)
-                        .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
-                                .decorate(TextDecoration.BOLD)
-                                .decorate(TextDecoration.UNDERLINED)))
-                        .clickEvent(ClickEvent.openUrl("https://github.com/Bram1903")))
+                .append(Component.text("Bram", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" and ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("OutDev", NamedTextColor.GREEN)
+                .append(Component.text("OutDev", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
+                .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
                         .decorate(TextDecoration.BOLD)
-                        .decorate(TextDecoration.UNDERLINED)
-                        .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
-                                .decorate(TextDecoration.BOLD)
-                                .decorate(TextDecoration.UNDERLINED)))
-                        .clickEvent(ClickEvent.openUrl("https://github.com/OutDev0")))
+                        .decorate(TextDecoration.UNDERLINED)))
+                .clickEvent(ClickEvent.openUrl(Constants.GITHUB_URL))
                 .build();
     }
 
