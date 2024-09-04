@@ -120,7 +120,6 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
                     (reEquipTimes != null ? reEquipTimes.size() : "null"));
 
             if (useTimes == null || reEquipTimes == null || useTimes.size() < 10 || reEquipTimes.size() < 10) {
-                plugin.debug("Early exit: Not enough data for player " + player.getName());
                 return;
             }
 
