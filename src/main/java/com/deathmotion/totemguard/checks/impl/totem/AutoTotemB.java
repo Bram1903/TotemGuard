@@ -2,11 +2,11 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import com.github.retrooper.packetevents.protocol.player.DiggingAction;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -76,7 +76,15 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        // TODO: Implement packet listener
+        if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
+            WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
+            Player player = (Player) event.getPlayer();
+
+            if (packet.getAction().equals(DiggingAction.SWAP_ITEM_WITH_OFFHAND) && player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) {
+                recordTotemEvent(totemReEquipTimes, player.getUniqueId());
+                checkPlayerConsistency(player);
+            }
+        }
     }
 
     @Override

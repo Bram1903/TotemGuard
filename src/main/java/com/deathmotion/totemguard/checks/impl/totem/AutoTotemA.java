@@ -18,8 +18,6 @@
 
 package com.deathmotion.totemguard.checks.impl.totem;
 
-import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import com.deathmotion.totemguard.TotemGuard;
@@ -37,7 +35,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AutoTotemA extends Check implements PacketListener, Listener {
+public class AutoTotemA extends Check implements Listener {
 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, Long> totemUsage;
@@ -83,11 +81,6 @@ public class AutoTotemA extends Check implements PacketListener, Listener {
         if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
             clickTimes.put(player.getUniqueId(), System.nanoTime());
         }
-    }
-
-    @Override
-    public void onPacketReceive(PacketReceiveEvent event) {
-        // TODO: Implement packet listener
     }
 
     @Override

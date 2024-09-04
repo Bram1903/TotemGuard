@@ -93,7 +93,7 @@ public final class TotemGuard extends JavaPlugin {
     }
 
     private void registerChecks() {
-        PacketEvents.getAPI().getEventManager().registerListener(new AutoTotemA(this), PacketListenerPriority.NORMAL);
+        new AutoTotemA(this);
         PacketEvents.getAPI().getEventManager().registerListener(new AutoTotemB(this), PacketListenerPriority.NORMAL);
         new ManualTotemA(this);
         PacketEvents.getAPI().getEventManager().registerListener(new BadPacketsA(this), PacketListenerPriority.NORMAL);
