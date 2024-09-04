@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.checks.impl.totem;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -87,6 +87,12 @@ public class AutoTotemA extends Check implements Listener {
     public void resetData() {
         totemUsage.clear();
         clickTimes.clear();
+    }
+
+    @Override
+    public void resetPlayerData(UUID uuid) {
+        totemUsage.remove(uuid);
+        clickTimes.remove(uuid);
     }
 
     private void checkSuspiciousActivity(Player player, long clickTime) {

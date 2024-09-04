@@ -18,13 +18,13 @@
 
 package com.deathmotion.totemguard.listeners;
 
+import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.manager.AlertManager;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
-import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.data.TotemPlayer;
-import com.deathmotion.totemguard.manager.AlertManager;
 import org.bukkit.entity.Player;
 
 import java.util.Objects;

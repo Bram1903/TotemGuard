@@ -18,13 +18,13 @@
 
 package com.deathmotion.totemguard.manager;
 
+import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.config.Settings;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.config.Settings;
 import org.bukkit.entity.Player;
 
 import java.util.Set;

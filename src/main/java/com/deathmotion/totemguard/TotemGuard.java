@@ -18,14 +18,10 @@
 
 package com.deathmotion.totemguard;
 
-import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.PacketListenerPriority;
-import io.github.retrooper.packetevents.bstats.Metrics;
-import lombok.Getter;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemA;
+import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
 import com.deathmotion.totemguard.listeners.UserTracker;
@@ -34,6 +30,10 @@ import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.util.TGVersion;
 import com.deathmotion.totemguard.util.UpdateChecker;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import io.github.retrooper.packetevents.bstats.Metrics;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 

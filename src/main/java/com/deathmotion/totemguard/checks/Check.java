@@ -26,17 +26,19 @@ import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.util.AlertCreator;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListener;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
-public abstract class Check {
+public abstract class Check implements PacketListener {
 
     private final ConcurrentHashMap<UUID, Integer> violations;
 
@@ -56,6 +58,7 @@ public abstract class Check {
         this.experimental = experimental;
 
         this.violations = new ConcurrentHashMap<>();
+        PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.LOW);
 
         this.alertManager = plugin.getAlertManager();
         this.punishmentManager = plugin.getPunishmentManager();
@@ -94,10 +97,20 @@ public abstract class Check {
         });
     }
 
+    @Override
+    public void onUserDisconnect(UserDisconnectEvent event) {
+        UUID userUUID = event.getUser().getUUID();
+        if (userUUID == null) return;
+
+        resetPlayerData(userUUID);
+    }
+
     public void resetData() {
-        plugin.getLogger().info("Resetting violations...");
         violations.clear();
-        plugin.getLogger().info("Violations after reset: " + violations.size());
+    }
+
+    public void resetPlayerData(UUID uuid) {
+        violations.remove(uuid);
     }
 
     private boolean shouldCheck(Player player, boolean bedrockPlayer, Settings.Checks.CheckSettings checkSettings) {

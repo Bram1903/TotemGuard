@@ -18,14 +18,14 @@
 
 package com.deathmotion.totemguard.util;
 
+import com.deathmotion.totemguard.data.CheckDetails;
+import com.deathmotion.totemguard.data.TotemPlayer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import com.deathmotion.totemguard.data.CheckDetails;
-import com.deathmotion.totemguard.data.TotemPlayer;
 
 public class AlertCreator {
     public static Component createAlertComponent(TotemPlayer player, CheckDetails checkDetails, Component details, String prefix) {

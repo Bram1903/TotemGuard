@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Blocking;
 
 import java.util.concurrent.CountDownLatch;

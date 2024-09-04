@@ -23,11 +23,11 @@ import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.awt.*;
 import java.time.Instant;

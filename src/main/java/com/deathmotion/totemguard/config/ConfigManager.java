@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.config;
 
+import com.deathmotion.totemguard.TotemGuard;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import lombok.Getter;
-import com.deathmotion.totemguard.TotemGuard;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

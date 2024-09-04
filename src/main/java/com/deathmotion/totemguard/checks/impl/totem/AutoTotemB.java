@@ -96,6 +96,14 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
         consistencyViolations.clear();
     }
 
+    @Override
+    public void resetPlayerData(UUID uuid) {
+        totemUseTimes.remove(uuid);
+        totemReEquipTimes.remove(uuid);
+        expectingReEquip.remove(uuid);
+        consistencyViolations.remove(uuid);
+    }
+
     private void recordTotemEvent(ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> map, UUID playerId) {
         ConcurrentLinkedDeque<Long> deque = map.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
 

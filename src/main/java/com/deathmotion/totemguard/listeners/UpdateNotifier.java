@@ -18,6 +18,9 @@
 
 package com.deathmotion.totemguard.listeners;
 
+import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.data.Constants;
+import com.deathmotion.totemguard.util.TGVersion;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -26,10 +29,6 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.data.Constants;
-import com.deathmotion.totemguard.util.TGVersion;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.concurrent.TimeUnit;
