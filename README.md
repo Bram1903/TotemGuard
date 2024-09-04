@@ -12,7 +12,7 @@
 
 ## Overview
 
-TotemGuard is a rather simple 'anticheat' plugin that tries to detect players who are using a so-called 'AutoTotem' cheat.
+TotemGuard is a rather simple anti-cheat plugin that tries to detect players who are using the so-called 'AutoTotem' cheat.
 This plugin is designed to be as lightweight as possible and for the most parts operates asynchronously. 
 It is also designed to be as configurable as possible, allowing server owners to adjust the plugin to their needs.
 
@@ -39,7 +39,7 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 
 | Platform                   | Supported Versions |
 |----------------------------|--------------------|
-| Bukkit (Paper, Folia etc.) | 1.18 - 1.21        |
+| Bukkit (Paper, Folia etc.) | 1.18 - 1.21.1      |
 
 ## Features
 
