@@ -34,12 +34,9 @@ import java.util.List;
 import java.util.UUID;
 
 public class CheckManager implements PacketListener {
-    private final TotemGuard plugin;
     private final List<ICheck> checks;
 
     public CheckManager(TotemGuard plugin) {
-        this.plugin = plugin;
-
         this.checks = List.of(
                 new AutoTotemA(plugin),
                 new AutoTotemB(plugin),
@@ -77,11 +74,7 @@ public class CheckManager implements PacketListener {
     private void registerPacketListeners() {
         for (ICheck check : checks) {
             if (check instanceof PacketListener) {
-                plugin.debug("Registering packet listener");
                 PacketEvents.getAPI().getEventManager().registerListener((PacketListener) check, PacketListenerPriority.NORMAL);
-            }
-            else {
-                plugin.debug("Check does not implement PacketListenerCommon");
             }
         }
     }
