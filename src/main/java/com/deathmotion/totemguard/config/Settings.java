@@ -187,8 +187,8 @@ public final class Settings {
             @Comment("\n(Advanced Users Only) Standard Deviation Threshold: The threshold for the standard deviation.")
             private double standardDeviationThreshold = 30.0;
 
-            @Comment("\n(Advanced Users Only) Violation Threshold: The threshold for the violation.")
-            private double violationThreshold = 3;
+            @Comment("\n(Advanced Users Only) Confidence threshold (0 to 1, e.g., 80% confidence)")
+            private double confidenceThreshold = 0.8;
 
             public AutoTotemB() {
                 super(false, 10);
