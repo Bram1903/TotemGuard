@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -40,9 +39,6 @@ public class AlertManager {
 
     public AlertManager(TotemGuard plugin) {
         this.plugin = plugin;
-
-        long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
-        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> violationsCleared(), resetInterval, resetInterval);
     }
 
     public void sendAlert(Component alert) {
@@ -79,15 +75,5 @@ public class AlertManager {
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
                 .append(Component.text(message, color))
                 .build());
-    }
-
-    private void violationsCleared() {
-        final Settings settings = plugin.getConfigManager().getSettings();
-        Component resetComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
-                .build();
-
-        sendAlert(resetComponent);
     }
 }

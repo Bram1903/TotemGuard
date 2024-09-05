@@ -24,19 +24,27 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
+import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.List;
 import java.util.UUID;
 
 public class CheckManager implements PacketListener {
+    private final TotemGuard plugin;
+    private final AlertManager alertManager;
     private final List<ICheck> checks;
 
     public CheckManager(TotemGuard plugin) {
+        this.plugin = plugin;
+        this.alertManager = plugin.getAlertManager();
         this.checks = List.of(
                 new AutoTotemA(plugin),
                 new AutoTotemB(plugin),
@@ -63,6 +71,14 @@ public class CheckManager implements PacketListener {
         for (ICheck check : checks) {
             check.resetData();
         }
+
+        final Settings settings = plugin.getConfigManager().getSettings();
+        Component resetComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
+                .build();
+
+        alertManager.sendAlert(resetComponent);
     }
 
     public void resetData(UUID uuid) {
