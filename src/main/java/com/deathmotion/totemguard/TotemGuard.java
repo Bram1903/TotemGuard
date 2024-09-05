@@ -76,8 +76,8 @@ public final class TotemGuard extends JavaPlugin {
         checkManager = new CheckManager(this);
 
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
-        new TotemGuardCommand(this);
 
+        new TotemGuardCommand(this);
         new UpdateChecker(this);
         enableBStats();
     }
