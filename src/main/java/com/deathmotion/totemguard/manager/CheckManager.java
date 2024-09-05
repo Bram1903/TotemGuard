@@ -29,12 +29,14 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
+import com.google.common.collect.ImmutableList;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class CheckManager implements PacketListener {
@@ -45,7 +47,7 @@ public class CheckManager implements PacketListener {
     public CheckManager(TotemGuard plugin) {
         this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
-        this.checks = List.of(
+        this.checks = ImmutableList.of(
                 new AutoTotemA(plugin),
                 new AutoTotemB(plugin),
                 new BadPacketsA(plugin),
@@ -55,22 +57,21 @@ public class CheckManager implements PacketListener {
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.LOW);
         registerPacketListeners();
 
-        long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
+        long resetInterval = calculateResetInterval();
         FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> resetData(), resetInterval, resetInterval);
+    }
+
+    private long calculateResetInterval() {
+        return plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
     }
 
     @Override
     public void onUserDisconnect(UserDisconnectEvent event) {
-        UUID userUUID = event.getUser().getUUID();
-        if (userUUID == null) return;
-
-        resetData(userUUID);
+        Optional.ofNullable(event.getUser().getUUID()).ifPresent(this::resetData);
     }
 
     public void resetData() {
-        for (ICheck check : checks) {
-            check.resetData();
-        }
+        checks.forEach(ICheck::resetData);
 
         final Settings settings = plugin.getConfigManager().getSettings();
         Component resetComponent = Component.text()
@@ -82,16 +83,13 @@ public class CheckManager implements PacketListener {
     }
 
     public void resetData(UUID uuid) {
-        for (ICheck check : checks) {
-            check.resetData(uuid);
-        }
+        checks.forEach(check -> check.resetData(uuid));
     }
 
     private void registerPacketListeners() {
-        for (ICheck check : checks) {
-            if (check instanceof PacketListener) {
-                PacketEvents.getAPI().getEventManager().registerListener((PacketListener) check, PacketListenerPriority.NORMAL);
-            }
-        }
+        checks.stream()
+                .filter(check -> check instanceof PacketListener)
+                .map(PacketListener.class::cast)
+                .forEach(listener -> PacketEvents.getAPI().getEventManager().registerListener(listener, PacketListenerPriority.NORMAL));
     }
 }
