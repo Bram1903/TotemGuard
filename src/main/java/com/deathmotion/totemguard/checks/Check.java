@@ -26,10 +26,6 @@ import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.util.AlertCreator;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.PacketListenerPriority;
-import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
@@ -38,7 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class Check implements PacketListener {
+public abstract class Check implements ICheck {
 
     private final ConcurrentHashMap<UUID, Integer> violations;
 
@@ -58,14 +54,10 @@ public abstract class Check implements PacketListener {
         this.experimental = experimental;
 
         this.violations = new ConcurrentHashMap<>();
-        PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.LOW);
 
         this.alertManager = plugin.getAlertManager();
         this.punishmentManager = plugin.getPunishmentManager();
         this.discordManager = plugin.getDiscordManager();
-
-        long resetInterval = plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
-        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> resetData(), resetInterval, resetInterval);
     }
 
     public Check(TotemGuard plugin, String checkName, String checkDescription) {
@@ -97,19 +89,11 @@ public abstract class Check implements PacketListener {
         });
     }
 
-    @Override
-    public void onUserDisconnect(UserDisconnectEvent event) {
-        UUID userUUID = event.getUser().getUUID();
-        if (userUUID == null) return;
-
-        resetPlayerData(userUUID);
-    }
-
     public void resetData() {
         violations.clear();
     }
 
-    public void resetPlayerData(UUID uuid) {
+    public void resetData(UUID uuid) {
         violations.remove(uuid);
     }
 

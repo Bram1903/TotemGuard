@@ -18,14 +18,11 @@
 
 package com.deathmotion.totemguard;
 
-import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
-import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
-import com.deathmotion.totemguard.checks.impl.totem.AutoTotemA;
-import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
 import com.deathmotion.totemguard.listeners.UserTracker;
 import com.deathmotion.totemguard.manager.AlertManager;
+import com.deathmotion.totemguard.manager.CheckManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.util.TGVersion;
@@ -57,6 +54,8 @@ public final class TotemGuard extends JavaPlugin {
     private DiscordManager discordManager;
     @Getter
     private PunishmentManager punishmentManager;
+    @Getter
+    private CheckManager checkManager;
 
     @Override
     public void onEnable() {
@@ -74,33 +73,18 @@ public final class TotemGuard extends JavaPlugin {
         userTracker = new UserTracker(this);
         discordManager = new DiscordManager(this);
         punishmentManager = new PunishmentManager(this);
+        checkManager = new CheckManager(this);
+
+        PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
+        new TotemGuardCommand(this);
 
         new UpdateChecker(this);
-
-        registerPacketListeners();
-        registerChecks();
-        registerCommands();
         enableBStats();
     }
 
     @Override
     public void onDisable() {
         getLogger().info("Disabling TotemGuard...");
-    }
-
-    private void registerPacketListeners() {
-        PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
-    }
-
-    private void registerChecks() {
-        new AutoTotemA(this);
-        PacketEvents.getAPI().getEventManager().registerListener(new AutoTotemB(this), PacketListenerPriority.NORMAL);
-        new ManualTotemA(this);
-        PacketEvents.getAPI().getEventManager().registerListener(new BadPacketsA(this), PacketListenerPriority.NORMAL);
-    }
-
-    private void registerCommands() {
-        new TotemGuardCommand(this);
     }
 
     /**

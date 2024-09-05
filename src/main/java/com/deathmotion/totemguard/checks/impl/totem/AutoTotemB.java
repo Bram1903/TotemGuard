@@ -2,6 +2,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
+import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -24,7 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-public class AutoTotemB extends Check implements PacketListener, Listener {
+public class AutoTotemB extends Check implements ICheck, PacketListener, Listener {
 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemUseTimes;
@@ -100,7 +101,6 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
         }, null, 1);
     }
 
-    @Override
     public void resetData() {
         totemUseTimes.clear();
         totemReEquipTimes.clear();
@@ -109,8 +109,7 @@ public class AutoTotemB extends Check implements PacketListener, Listener {
         consistencyViolations.clear();
     }
 
-    @Override
-    public void resetPlayerData(UUID uuid) {
+    public void resetData(UUID uuid) {
         totemUseTimes.remove(uuid);
         totemReEquipTimes.remove(uuid);
         expectingReEquip.remove(uuid);

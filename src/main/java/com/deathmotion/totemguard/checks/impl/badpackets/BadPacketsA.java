@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.checks.impl.badpackets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
+import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -29,7 +30,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
-public class BadPacketsA extends Check implements PacketListener {
+public class BadPacketsA extends Check implements ICheck, PacketListener {
 
     private final TotemGuard plugin;
 

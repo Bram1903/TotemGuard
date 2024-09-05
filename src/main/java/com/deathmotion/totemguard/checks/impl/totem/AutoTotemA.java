@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
+import com.deathmotion.totemguard.checks.ICheck;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -35,7 +36,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AutoTotemA extends Check implements Listener {
+public class AutoTotemA extends Check implements ICheck, Listener {
 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, Long> totemUsage;
@@ -83,14 +84,12 @@ public class AutoTotemA extends Check implements Listener {
         }
     }
 
-    @Override
     public void resetData() {
         totemUsage.clear();
         clickTimes.clear();
     }
 
-    @Override
-    public void resetPlayerData(UUID uuid) {
+    public void resetData(UUID uuid) {
         totemUsage.remove(uuid);
         clickTimes.remove(uuid);
     }
