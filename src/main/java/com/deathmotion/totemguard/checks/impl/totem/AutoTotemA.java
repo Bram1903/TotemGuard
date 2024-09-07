@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.checks.ICheck;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -36,14 +35,14 @@ import org.bukkit.inventory.ItemStack;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AutoTotemA extends Check implements ICheck, Listener {
+public final class AutoTotemA extends Check implements Listener {
 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, Long> totemUsage;
     private final ConcurrentHashMap<UUID, Long> clickTimes;
 
     public AutoTotemA(TotemGuard plugin) {
-        super(plugin, "AutoTotemA", "Player is replacing their totem too fast!");
+        super(plugin, "AutoTotemA", "Impossible re-totem time");
 
         this.plugin = plugin;
         this.totemUsage = new ConcurrentHashMap<>();
@@ -84,11 +83,13 @@ public class AutoTotemA extends Check implements ICheck, Listener {
         }
     }
 
+    @Override
     public void resetData() {
         totemUsage.clear();
         clickTimes.clear();
     }
 
+    @Override
     public void resetData(UUID uuid) {
         totemUsage.remove(uuid);
         clickTimes.remove(uuid);

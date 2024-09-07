@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
+import com.deathmotion.totemguard.checks.impl.totem.AutoTotemC;
 import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
@@ -50,6 +51,7 @@ public class CheckManager implements PacketListener {
         this.checks = ImmutableList.of(
                 new AutoTotemA(plugin),
                 new AutoTotemB(plugin),
+                new AutoTotemC(plugin),
                 new BadPacketsA(plugin),
                 new ManualTotemA(plugin)
         );

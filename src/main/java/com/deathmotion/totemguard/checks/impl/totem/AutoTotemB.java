@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.config.Settings;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
@@ -39,7 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-public class AutoTotemB extends Check implements ICheck, Listener {
+public final class AutoTotemB extends Check implements Listener {
 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemUseTimes;
@@ -108,6 +107,7 @@ public class AutoTotemB extends Check implements ICheck, Listener {
         checkPlayerConsistency(player);
     }
 
+    @Override
     public void resetData() {
         totemUseTimes.clear();
         totemReEquipTimes.clear();
@@ -116,6 +116,7 @@ public class AutoTotemB extends Check implements ICheck, Listener {
         consistencyViolations.clear();
     }
 
+    @Override
     public void resetData(UUID uuid) {
         totemUseTimes.remove(uuid);
         totemReEquipTimes.remove(uuid);
@@ -191,14 +192,14 @@ public class AutoTotemB extends Check implements ICheck, Listener {
                 // Flag the player if confidence exceeds the threshold
                 if (smoothedValue > settings.getConfidenceThreshold()) {
                     Component details = Component.text()
-                            .append(Component.text("Standard deviation: ", NamedTextColor.GOLD))
-                            .append(Component.text(String.format("%.2fms", standardDeviationInMs), NamedTextColor.GRAY))
+                            .append(Component.text("Standard deviation: ", NamedTextColor.GRAY))
+                            .append(Component.text(String.format("%.2fms", standardDeviationInMs), NamedTextColor.GOLD))
                             .append(Component.newline())
-                            .append(Component.text("Confidence: ", NamedTextColor.GOLD))
-                            .append(Component.text(String.format("%.2f", smoothedValue), NamedTextColor.GRAY))
+                            .append(Component.text("Confidence: ", NamedTextColor.GRAY))
+                            .append(Component.text(String.format("%.2f", smoothedValue), NamedTextColor.GOLD))
                             .append(Component.newline())
-                            .append(Component.text("Mean: ", NamedTextColor.GOLD))
-                            .append(Component.text(String.format("%.2fms", meanInMs), NamedTextColor.GRAY))
+                            .append(Component.text("Mean: ", NamedTextColor.GRAY))
+                            .append(Component.text(String.format("%.2fms", meanInMs), NamedTextColor.GOLD))
                             .build();
 
                     consistencyViolations.put(playerId, 0); // Reset violations

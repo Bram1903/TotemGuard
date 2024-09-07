@@ -138,6 +138,9 @@ public final class Settings {
         @Comment("\nAutoTotemB Settings")
         private AutoTotemB autoTotemB = new AutoTotemB();
 
+        @Comment("\nAutoTotemC Settings")
+        private AutoTotemC autoTotemC = new AutoTotemC();
+
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -192,6 +195,17 @@ public final class Settings {
 
             public AutoTotemB() {
                 super(false, 10);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemC extends CheckSettings {
+            @Comment("\nPacket Time Threshold: The threshold for the packet sequence.")
+            private double packetTimeThreshold = 250;
+
+            public AutoTotemC() {
+                super(false, 1);
             }
         }
 

@@ -89,11 +89,14 @@ public abstract class Check implements ICheck {
         });
     }
 
+    @Override
     public void resetData() {
         violations.clear();
     }
 
+    @Override
     public void resetData(UUID uuid) {
+        plugin.getLogger().info("Removing data for: " + uuid);
         violations.remove(uuid);
     }
 

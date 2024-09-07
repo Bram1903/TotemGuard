@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.checks.impl.manual;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.config.Settings;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import io.github.retrooper.packetevents.util.folia.TaskWrapper;
@@ -40,7 +39,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ManualTotemA extends Check implements ICheck, CommandExecutor, TabExecutor {
+public final class ManualTotemA extends Check implements CommandExecutor, TabExecutor {
 
     private final TotemGuard plugin;
 
