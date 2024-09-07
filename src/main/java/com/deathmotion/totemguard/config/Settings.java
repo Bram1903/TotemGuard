@@ -180,7 +180,7 @@ public final class Settings {
             private int clickTimeDifference = 75;
 
             public AutoTotemA() {
-                super(true, 5);
+                super(true, 2);
             }
         }
 
@@ -194,7 +194,7 @@ public final class Settings {
             private double confidenceThreshold = 0.8;
 
             public AutoTotemB() {
-                super(false, 10);
+                super(false, 2);
             }
         }
 
