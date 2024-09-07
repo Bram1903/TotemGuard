@@ -204,11 +204,11 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemC extends CheckSettings {
-            @Comment("\nHigh SD Threshold: The threshold for the standard deviation.")
-            private int consistentSDThreshold = 3;
-
             @Comment("\nConsistent SD Range: The range for the standard average deviation.")
             private double consistentSDRange = 5.0;
+
+            @Comment("\nHigh SD Threshold: The threshold for the average deviation.")
+            private int consistentSDThreshold = 3;
 
             public AutoTotemC() {
                 super(false, 4);
