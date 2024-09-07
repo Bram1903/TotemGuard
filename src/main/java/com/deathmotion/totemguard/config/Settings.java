@@ -205,7 +205,7 @@ public final class Settings {
             private double packetTimeThreshold = 250;
 
             public AutoTotemC() {
-                super(false, 1);
+                super(false, 2);
             }
         }
 
@@ -219,7 +219,7 @@ public final class Settings {
             private boolean toggleDamageOnCheck = true;
 
             public ManualTotemA() {
-                super(false, 1);
+                super(false, 2);
             }
         }
 
