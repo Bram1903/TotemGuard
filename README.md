@@ -24,6 +24,7 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 
 - [Overview](#overview)
     - [Requires PacketEvents](#requires-packetevents)
+- [Showcase](#showcase)
 - [Supported Platforms & Versions](#supported-platforms--versions)
 - [Features](#features)
 - [Commands](#commands)
@@ -34,6 +35,10 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
     - [Steps](#steps)
 - [Credits](#credits)
 - [License](#license)
+
+## Showcase
+
+![Demo](docs/showcase/showcase.png)
 
 ## Supported Platforms & Versions
 
