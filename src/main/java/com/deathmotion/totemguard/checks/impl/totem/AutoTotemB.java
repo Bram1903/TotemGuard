@@ -22,11 +22,6 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.config.Settings;
-import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -38,12 +33,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-public class AutoTotemB extends Check implements ICheck, PacketListener, Listener {
+public class AutoTotemB extends Check implements ICheck, Listener {
 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemUseTimes;
@@ -97,26 +93,19 @@ public class AutoTotemB extends Check implements ICheck, PacketListener, Listene
         }
     }
 
-    // Packet listener for offhand item swap
-    @Override
-    public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.PLAYER_DIGGING) return;
+    // Event handler for when a player swaps their offhand item
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
+        if (event.getOffHandItem().getType() != Material.TOTEM_OF_UNDYING) return;
 
-        WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
-        if (!(packet.getAction().equals(DiggingAction.SWAP_ITEM_WITH_OFFHAND))) return;
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
 
-        Player player = (Player) event.getPlayer();
+        if (!expectingReEquip.getOrDefault(playerId, false)) return;
 
-        // Delayed check to see if the player re-equipped the totem in the offhand
-        // We need to do this because Bukkit only handles packets a tick later
-        FoliaScheduler.getEntityScheduler().runDelayed(player, plugin, (o) -> {
-            if (player.getInventory().getItemInOffHand().getType() != Material.TOTEM_OF_UNDYING) return;
-            if (!expectingReEquip.getOrDefault(player.getUniqueId(), false)) return;
-
-            recordTotemEvent(totemReEquipTimes, player.getUniqueId());
-            expectingReEquip.put(player.getUniqueId(), false);
-            checkPlayerConsistency(player);
-        }, null, 1);
+        recordTotemEvent(totemReEquipTimes, playerId);
+        expectingReEquip.put(playerId, false);
+        checkPlayerConsistency(player);
     }
 
     public void resetData() {
