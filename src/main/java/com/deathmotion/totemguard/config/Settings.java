@@ -187,14 +187,17 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemB extends CheckSettings {
-            @Comment("\n(Advanced Users Only) Standard Deviation Threshold: The threshold for the standard deviation.")
-            private double standardDeviationThreshold = 30.0;
+            @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
+            private double lowSDThreshold  = 30.0;
 
-            @Comment("\n(Advanced Users Only) Confidence threshold (0 to 1, e.g., 80% confidence)")
-            private double confidenceThreshold = 0.8;
+            @Comment("\nHigh SD Threshold: The threshold for the standard deviation.")
+            private int consistentSDThreshold = 3;
+
+            @Comment("\nConsistent SD Range: The range for the standard average deviation.")
+            private double consistentSDRange = 25.0;
 
             public AutoTotemB() {
-                super(false, 2);
+                super(false, 4);
             }
         }
 

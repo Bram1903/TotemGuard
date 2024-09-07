@@ -34,6 +34,7 @@ import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -41,67 +42,51 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public final class AutoTotemB extends Check implements Listener {
 
     private final TotemGuard plugin;
-    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemUseTimes;
-    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemReEquipTimes;
-    private final ConcurrentHashMap<UUID, Boolean> expectingReEquip;
-    private final ConcurrentHashMap<UUID, Double> smoothedConfidence;
-    private final ConcurrentHashMap<UUID, Integer> consistencyViolations;
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemUseTimes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemReEquipTimes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Boolean> expectingReEquip = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Integer> lowSDCountMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Integer> consistentSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemB(TotemGuard plugin) {
-        super(plugin, "AutoTotemB", "Re-toteming too consistently", true);
-
+        super(plugin, "AutoTotemB", "Impossible re-totem timing", true);
         this.plugin = plugin;
-        this.totemUseTimes = new ConcurrentHashMap<>();
-        this.totemReEquipTimes = new ConcurrentHashMap<>();
-        this.expectingReEquip = new ConcurrentHashMap<>();
-        this.smoothedConfidence = new ConcurrentHashMap<>();
-        this.consistencyViolations = new ConcurrentHashMap<>();
-
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    // Event handler for when a totem is used
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTotemUse(EntityResurrectEvent event) {
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
+        if (event.getEntity() instanceof Player player &&
+                player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING) {
 
-        // Check if the player used a totem and start tracking re-equip
-        if (player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING) {
             recordTotemEvent(totemUseTimes, player.getUniqueId());
             expectingReEquip.put(player.getUniqueId(), true);
         }
     }
 
-    // Event handler for when a player interacts with their inventory
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
+        if (event.getWhoClicked() instanceof Player player &&
+                event.getCurrentItem() != null &&
+                event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING &&
+                expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
 
-        UUID playerId = player.getUniqueId();
-        boolean isExpectingReEquip = expectingReEquip.getOrDefault(playerId, false);
-
-        // Track re-equip if a totem is moved into the player's inventory
-        if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING && isExpectingReEquip) {
-            recordTotemEvent(totemReEquipTimes, playerId);
-            expectingReEquip.put(playerId, false);
-            checkPlayerConsistency(player);
+            handleReEquip(player);
         }
     }
 
-    // Event handler for when a player swaps their offhand item
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
-        if (event.getOffHandItem().getType() != Material.TOTEM_OF_UNDYING) return;
-
         Player player = event.getPlayer();
+        if (event.getOffHandItem().getType() == Material.TOTEM_OF_UNDYING &&
+                expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
+
+            handleReEquip(player);
+        }
+    }
+
+    private void handleReEquip(Player player) {
         UUID playerId = player.getUniqueId();
-
-        if (!expectingReEquip.getOrDefault(playerId, false)) return;
-
         recordTotemEvent(totemReEquipTimes, playerId);
         expectingReEquip.put(playerId, false);
         checkPlayerConsistency(player);
@@ -112,8 +97,8 @@ public final class AutoTotemB extends Check implements Listener {
         totemUseTimes.clear();
         totemReEquipTimes.clear();
         expectingReEquip.clear();
-        smoothedConfidence.clear();
-        consistencyViolations.clear();
+        lowSDCountMap.clear();
+        consistentSDCountMap.clear();
     }
 
     @Override
@@ -121,96 +106,107 @@ public final class AutoTotemB extends Check implements Listener {
         totemUseTimes.remove(uuid);
         totemReEquipTimes.remove(uuid);
         expectingReEquip.remove(uuid);
-        smoothedConfidence.remove(uuid);
-        consistencyViolations.remove(uuid);
+        lowSDCountMap.remove(uuid);
+        consistentSDCountMap.remove(uuid);
     }
 
-    // Record a totem event (use or re-equip) and maintain a maximum of 10 events
-    private void recordTotemEvent(ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> map, UUID playerId) {
+    private void recordTotemEvent(Map<UUID, ConcurrentLinkedDeque<Long>> map, UUID playerId) {
         ConcurrentLinkedDeque<Long> deque = map.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
         deque.addLast(System.nanoTime());
-
         if (deque.size() > 10) {
-            deque.pollFirst();  // Keep only the last 10 events
+            deque.pollFirst();  // Limit to 10 events
         }
     }
 
-    // Check the player's consistency in re-equipping totems
     private void checkPlayerConsistency(Player player) {
         UUID playerId = player.getUniqueId();
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            ConcurrentLinkedDeque<Long> useTimes = totemUseTimes.get(playerId);
-            ConcurrentLinkedDeque<Long> reEquipTimes = totemReEquipTimes.get(playerId);
+            var useTimes = totemUseTimes.get(playerId);
+            var reEquipTimes = totemReEquipTimes.get(playerId);
 
-            // Require at least 3 use and re-equip events to perform the check
-            if (useTimes == null || reEquipTimes == null || useTimes.size() < 3 || reEquipTimes.size() < 3) {
+            if (useTimes == null || reEquipTimes == null || useTimes.size() < 2 || reEquipTimes.size() < 2) {
                 return;
             }
 
-            long[] intervals = new long[useTimes.size()];
-            int i = 0;
-
-            // Calculate intervals between totem use and re-equip events
-            for (Long useTime : useTimes) {
-                Long reEquipTime = reEquipTimes.toArray(new Long[0])[i];
-
-                if (useTime == null || reEquipTime == null) {
-                    return;
-                }
-
-                intervals[i++] = reEquipTime - useTime;
-            }
+            long[] intervals = calculateIntervals(useTimes, reEquipTimes);
 
             double mean = calculateMean(intervals);
             double standardDeviation = calculateStandardDeviation(intervals, mean);
 
-            final Settings.Checks.AutoTotemB settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
+            double meanMs = Math.round((mean / 1_000_000.0) * 100.0) / 100.0;
+            double sdMs = Math.round((standardDeviation / 1_000_000.0) * 100.0) / 100.0;
 
-            // Calculate an adaptive threshold for standard deviation
-            double adaptiveThreshold = settings.getStandardDeviationThreshold() * 1_000_000L * (1 + (10 - useTimes.size()) * 0.1);
+            plugin.debug(player.getName() + " - SD: " + sdMs + "ms, Mean: " + meanMs + "ms");
 
-            if (standardDeviation < adaptiveThreshold) {
-                // Increment violations based on consistency
-                double violationWeight = standardDeviation < settings.getStandardDeviationThreshold() * 500_000L ? 2.0 : 1.0;
-                int violations = consistencyViolations.getOrDefault(playerId, 0) + (int) violationWeight;
-                consistencyViolations.put(playerId, violations);
+            var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
 
-                // Exponentially weighted smoothing of confidence
-                double previousConfidence = smoothedConfidence.getOrDefault(playerId, 0.0);
-                double currentConfidence = (double) violations / useTimes.size();
-                double alpha = 0.7;  // Smoothing factor
-                double smoothedValue = alpha * currentConfidence + (1 - alpha) * previousConfidence;
-
-                smoothedConfidence.put(playerId, smoothedValue);
-
-                double meanInMs = mean / 1_000_000.0;
-                double standardDeviationInMs = standardDeviation / 1_000_000.0;
-
-                plugin.debug(player.getName() + " - Standard Deviation: " + standardDeviationInMs + " ms - Confidence: " + smoothedValue + " - Mean: " + meanInMs + " ms");
-
-                // Flag the player if confidence exceeds the threshold
-                if (smoothedValue > settings.getConfidenceThreshold()) {
-                    Component details = Component.text()
-                            .append(Component.text("Standard deviation: ", NamedTextColor.GRAY))
-                            .append(Component.text(String.format("%.2fms", standardDeviationInMs), NamedTextColor.GOLD))
-                            .append(Component.newline())
-                            .append(Component.text("Confidence: ", NamedTextColor.GRAY))
-                            .append(Component.text(String.format("%.2f", smoothedValue), NamedTextColor.GOLD))
-                            .append(Component.newline())
-                            .append(Component.text("Mean: ", NamedTextColor.GRAY))
-                            .append(Component.text(String.format("%.2fms", meanInMs), NamedTextColor.GOLD))
-                            .build();
-
-                    consistencyViolations.put(playerId, 0); // Reset violations
-                    flag(player, details, plugin.getConfigManager().getSettings().getChecks().getAutoTotemB());
-                }
-            } else {
-                // Decrease violation count if behavior becomes inconsistent
-                int currentViolations = consistencyViolations.getOrDefault(playerId, 0);
-                consistencyViolations.put(playerId, Math.max(0, currentViolations - 1));
+            if (sdMs < settings.getLowSDThreshold()) {
+                handleLowSD(player, playerId, sdMs, meanMs, settings);
             }
+
+            handleConsistentSD(player, playerId, intervals, settings);
         });
+    }
+
+    private long[] calculateIntervals(ConcurrentLinkedDeque<Long> useTimes, ConcurrentLinkedDeque<Long> reEquipTimes) {
+        int size = Math.min(useTimes.size(), reEquipTimes.size());
+        long[] intervals = new long[size];
+        int i = 0;
+
+        for (Long useTime : useTimes) {
+            Long reEquipTime = reEquipTimes.toArray(new Long[0])[i];
+            if (useTime != null && reEquipTime != null) {
+                intervals[i++] = reEquipTime - useTime;
+            }
+        }
+
+        return intervals;
+    }
+
+    private void handleLowSD(Player player, UUID playerId, double sdMs, double meanMs, Settings.Checks.AutoTotemB settings) {
+        int consecutiveLowSDCount = lowSDCountMap.getOrDefault(playerId, 0) + 1;
+        lowSDCountMap.put(playerId, consecutiveLowSDCount);
+
+        if (consecutiveLowSDCount >= settings.getConsistentSDThreshold()) {
+            lowSDCountMap.remove(playerId);
+            flag(player, createComponent(sdMs, meanMs), settings);
+        }
+    }
+
+    private void handleConsistentSD(Player player, UUID playerId, long[] intervals, Settings.Checks.AutoTotemB settings) {
+        double sdDifferenceMs = Math.round((calculateStandardDeviationOfIntervals(intervals) / 1_000_000.0) * 100.0) / 100.0;
+
+        plugin.debug(player.getName() + " - Average SD Difference: " + sdDifferenceMs + "ms");
+
+        if (sdDifferenceMs < settings.getConsistentSDRange()) {
+            int consecutiveConsistentSDCount = consistentSDCountMap.getOrDefault(playerId, 0) + 1;
+            consistentSDCountMap.put(playerId, consecutiveConsistentSDCount);
+
+            if (consecutiveConsistentSDCount >= settings.getConsistentSDThreshold()) {
+                consistentSDCountMap.remove(playerId);
+                flag(player, createComponent(sdDifferenceMs), settings);
+            }
+        } else {
+            consistentSDCountMap.put(playerId, 0);
+        }
+    }
+
+    private Component createComponent(double sd, double mean) {
+        return Component.text()
+                .append(Component.text("SD" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(sd + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Mean" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(mean + "ms", NamedTextColor.GOLD))
+                .build();
+    }
+
+    private Component createComponent(double averageSDDifference) {
+        return Component.text()
+                .append(Component.text("Average SD Difference" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(averageSDDifference + "ms", NamedTextColor.GOLD))
+                .build();
     }
 
     private double calculateMean(long[] intervals) {
@@ -226,7 +222,10 @@ public final class AutoTotemB extends Check implements Listener {
         for (long interval : intervals) {
             varianceSum += Math.pow(interval - mean, 2);
         }
-        double variance = varianceSum / intervals.length;
-        return Math.sqrt(variance);
+        return Math.sqrt(varianceSum / intervals.length);
+    }
+
+    private long calculateStandardDeviationOfIntervals(long[] intervals) {
+        return Math.round(calculateStandardDeviation(intervals, calculateMean(intervals)));
     }
 }
