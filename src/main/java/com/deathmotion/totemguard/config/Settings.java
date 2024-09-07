@@ -201,8 +201,14 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemC extends CheckSettings {
-            @Comment("\nPacket Time Threshold: The threshold for the packet sequence.")
-            private double packetTimeThreshold = 250;
+            @Comment("\nTotal Sequence: The total sequence timing under which the player will be flagged.")
+            private int totalSequence = 160;
+
+            @Comment("\nTime average Difference between packets: The time difference between packets.")
+            private int baseTimeDifference = 50;
+
+            @Comment("\nTime Tolerance: The tolerance for the time difference.")
+            private int tolerance = 5;
 
             public AutoTotemC() {
                 super(false, 2);

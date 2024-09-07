@@ -1,3 +1,21 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2024 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
@@ -25,6 +43,9 @@ public final class AutoTotemC extends Check implements PacketListener, Listener 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, Long> totemUsage;
     private final ConcurrentHashMap<UUID, PacketState> playerPacketState;
+
+    private static final long EXPECTED_AVERAGE_TIME = 50; // Expected average time in ms
+    private static final long ACCEPTABLE_VARIATION = 20; // Allowable deviation in ms (e.g., ±20ms)
 
     public AutoTotemC(TotemGuard plugin) {
         super(plugin, "AutoTotemC", "Suspicious re-totem packet sequence", true);
@@ -81,22 +102,33 @@ public final class AutoTotemC extends Check implements PacketListener, Listener 
         if (state.sequence == 3) {
             // Third Digging Packet → run the validation
             long totemPopTime = totemUsage.getOrDefault(playerId, 0L);
-            long totalPacketTime = currentTime - totemPopTime;
-            long timeFromFirstDigging = currentTime - state.firstPacketTime;
+            long totalPacketTime = currentTime - totemPopTime; // Total time from totem use to last packet
+            long averageTimePerPacket = totalPacketTime / 3; // Average time per packet
+
+            long timeToFirstDigging = state.firstPacketTime - totemPopTime;
+            long timeToPickItem = state.timeToPickItem;
+            long timeFromPickToLastDigging = currentTime - state.pickItemPacketTime;
 
             final Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
 
-            // Check the timing and flag the player if needed
-            if (totalPacketTime <= settings.getPacketTimeThreshold()) {
+            // Check if the average time per packet is within the expected range
+            if (isWithinExpectedRange(averageTimePerPacket)) {
+                // Show individual packet timings as well as the average time
                 Component details = Component.text()
                         .append(Component.text("Total time: ", NamedTextColor.GRAY))
-                        .append(Component.text(totalPacketTime + " ms", NamedTextColor.GOLD))
+                        .append(Component.text(totalPacketTime + "ms", NamedTextColor.GOLD))
                         .append(Component.newline())
-                        .append(Component.text("Digging to PickItem: ", NamedTextColor.GRAY))
-                        .append(Component.text(state.timeToPickItem + " ms", NamedTextColor.GOLD))
+                        .append(Component.text("Average time per packet: ", NamedTextColor.GRAY))
+                        .append(Component.text(averageTimePerPacket + "ms", NamedTextColor.GOLD))
                         .append(Component.newline())
-                        .append(Component.text("PickItem to Digging: ", NamedTextColor.GRAY))
-                        .append(Component.text(timeFromFirstDigging + " ms", NamedTextColor.GOLD))
+                        .append(Component.text("Time to first swap packet: ", NamedTextColor.GRAY))
+                        .append(Component.text(timeToFirstDigging + "ms", NamedTextColor.GOLD))
+                        .append(Component.newline())
+                        .append(Component.text("Time from swap -> pick up: ", NamedTextColor.GRAY))
+                        .append(Component.text(timeToPickItem + "ms", NamedTextColor.GOLD))
+                        .append(Component.newline())
+                        .append(Component.text("Time from pick up -> digging: ", NamedTextColor.GRAY))
+                        .append(Component.text(timeFromPickToLastDigging + "ms", NamedTextColor.GOLD))
                         .build();
 
                 flag(player, details, settings);
@@ -128,6 +160,11 @@ public final class AutoTotemC extends Check implements PacketListener, Listener 
         }
     }
 
+    // Helper method to check if a time difference is within the expected range
+    private boolean isWithinExpectedRange(long averageTime) {
+        return Math.abs(averageTime - EXPECTED_AVERAGE_TIME) <= ACCEPTABLE_VARIATION;
+    }
+
     @Override
     public void resetData() {
         totemUsage.clear();
@@ -149,5 +186,3 @@ public final class AutoTotemC extends Check implements PacketListener, Listener 
         long timeToPickItem = 0;
     }
 }
-
-
