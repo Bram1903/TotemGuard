@@ -46,10 +46,9 @@ public final class AutoTotemB extends Check implements Listener {
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemReEquipTimes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Boolean> expectingReEquip = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Integer> lowSDCountMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, Integer> consistentSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemB(TotemGuard plugin) {
-        super(plugin, "AutoTotemB", "Impossible re-totem timing", true);
+        super(plugin, "AutoTotemB", "Impossible re-totem speed", true);
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -98,7 +97,6 @@ public final class AutoTotemB extends Check implements Listener {
         totemReEquipTimes.clear();
         expectingReEquip.clear();
         lowSDCountMap.clear();
-        consistentSDCountMap.clear();
     }
 
     @Override
@@ -107,7 +105,6 @@ public final class AutoTotemB extends Check implements Listener {
         totemReEquipTimes.remove(uuid);
         expectingReEquip.remove(uuid);
         lowSDCountMap.remove(uuid);
-        consistentSDCountMap.remove(uuid);
     }
 
     private void recordTotemEvent(Map<UUID, ConcurrentLinkedDeque<Long>> map, UUID playerId) {
@@ -119,9 +116,9 @@ public final class AutoTotemB extends Check implements Listener {
     }
 
     private void checkPlayerConsistency(Player player) {
-        UUID playerId = player.getUniqueId();
-
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            UUID playerId = player.getUniqueId();
+
             var useTimes = totemUseTimes.get(playerId);
             var reEquipTimes = totemReEquipTimes.get(playerId);
 
@@ -144,8 +141,6 @@ public final class AutoTotemB extends Check implements Listener {
             if (sdMs < settings.getLowSDThreshold()) {
                 handleLowSD(player, playerId, sdMs, meanMs, settings);
             }
-
-            handleConsistentSD(player, playerId, intervals, settings);
         });
     }
 
@@ -174,24 +169,6 @@ public final class AutoTotemB extends Check implements Listener {
         }
     }
 
-    private void handleConsistentSD(Player player, UUID playerId, long[] intervals, Settings.Checks.AutoTotemB settings) {
-        double sdDifferenceMs = Math.round((calculateStandardDeviationOfIntervals(intervals) / 1_000_000.0) * 100.0) / 100.0;
-
-        plugin.debug(player.getName() + " - Average SD Difference: " + sdDifferenceMs + "ms");
-
-        if (sdDifferenceMs < settings.getConsistentSDRange()) {
-            int consecutiveConsistentSDCount = consistentSDCountMap.getOrDefault(playerId, 0) + 1;
-            consistentSDCountMap.put(playerId, consecutiveConsistentSDCount);
-
-            if (consecutiveConsistentSDCount >= settings.getConsistentSDThreshold()) {
-                consistentSDCountMap.remove(playerId);
-                flag(player, createComponent(sdDifferenceMs), settings);
-            }
-        } else {
-            consistentSDCountMap.put(playerId, 0);
-        }
-    }
-
     private Component createComponent(double sd, double mean) {
         return Component.text()
                 .append(Component.text("SD" + ": ", NamedTextColor.GRAY))
@@ -199,13 +176,6 @@ public final class AutoTotemB extends Check implements Listener {
                 .append(Component.newline())
                 .append(Component.text("Mean" + ": ", NamedTextColor.GRAY))
                 .append(Component.text(mean + "ms", NamedTextColor.GOLD))
-                .build();
-    }
-
-    private Component createComponent(double averageSDDifference) {
-        return Component.text()
-                .append(Component.text("Average SD Difference" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(averageSDDifference + "ms", NamedTextColor.GOLD))
                 .build();
     }
 
@@ -223,9 +193,5 @@ public final class AutoTotemB extends Check implements Listener {
             varianceSum += Math.pow(interval - mean, 2);
         }
         return Math.sqrt(varianceSum / intervals.length);
-    }
-
-    private long calculateStandardDeviationOfIntervals(long[] intervals) {
-        return Math.round(calculateStandardDeviation(intervals, calculateMean(intervals)));
     }
 }

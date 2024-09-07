@@ -21,168 +21,211 @@ package com.deathmotion.totemguard.checks.impl.totem;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
-import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
-public final class AutoTotemC extends Check implements PacketListener, Listener {
+public final class AutoTotemC extends Check implements Listener {
 
     private final TotemGuard plugin;
-    private final ConcurrentHashMap<UUID, Long> totemUsage;
-    private final ConcurrentHashMap<UUID, PacketState> playerPacketState;
-
-    private static final long EXPECTED_AVERAGE_TIME = 50; // Expected average time in ms
-    private static final long ACCEPTABLE_VARIATION = 20; // Allowable deviation in ms (e.g., ±20ms)
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemUseTimes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Long>> totemReEquipTimes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Boolean> expectingReEquip = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Integer> consistentSDCountMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> sdHistoryMap = new ConcurrentHashMap<>();
 
     public AutoTotemC(TotemGuard plugin) {
-        super(plugin, "AutoTotemC", "Suspicious re-totem packet sequence", true);
-
+        super(plugin, "AutoTotemC", "Impossible re-totem consistency", true);
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
-
-        this.totemUsage = new ConcurrentHashMap<>();
-        this.playerPacketState = new ConcurrentHashMap<>();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTotemUse(EntityResurrectEvent event) {
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
+        if (event.getEntity() instanceof Player player &&
+                player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING) {
 
-        // Record the time of the totem usage
-        long totemPopTime = System.currentTimeMillis();
-        totemUsage.put(player.getUniqueId(), totemPopTime);
-        playerPacketState.remove(player.getUniqueId());
-    }
-
-    @Override
-    public void onPacketReceive(PacketReceiveEvent event) {
-        // Handle Digging Packet
-        if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
-            Player player = (Player) event.getPlayer();
-            // Check if a totem has recently been used
-            if (!totemUsage.containsKey(player.getUniqueId())) return;
-
-            WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
-            if (packet.getAction() == DiggingAction.SWAP_ITEM_WITH_OFFHAND) {
-                handleDiggingPacket(player, System.currentTimeMillis());
-            }
-        }
-
-        // Handle Pick Item Packet
-        if (event.getPacketType() == PacketType.Play.Client.PICK_ITEM) {
-            handlePickItemPacket((Player) event.getPlayer(), System.currentTimeMillis());
+            recordTotemEvent(totemUseTimes, player.getUniqueId());
+            expectingReEquip.put(player.getUniqueId(), true);
         }
     }
 
-    // Handle the Digging Packet (we expect this to be called twice)
-    private void handleDiggingPacket(Player player, long currentTime) {
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getWhoClicked() instanceof Player player &&
+                event.getCurrentItem() != null &&
+                event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING &&
+                expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
+
+            handleReEquip(player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        if (event.getOffHandItem().getType() == Material.TOTEM_OF_UNDYING &&
+                expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
+
+            handleReEquip(player);
+        }
+    }
+
+    private void handleReEquip(Player player) {
         UUID playerId = player.getUniqueId();
-        PacketState state = playerPacketState.getOrDefault(playerId, new PacketState());
-
-        if (state.sequence == 0 || state.sequence == 2) {
-            state.sequence++;
-            state.lastDiggingPacketTime = currentTime;
-        }
-
-        if (state.sequence == 3) {
-            // Third Digging Packet → run the validation
-            long totemPopTime = totemUsage.getOrDefault(playerId, 0L);
-            long totalPacketTime = currentTime - totemPopTime; // Total time from totem use to last packet
-            long averageTimePerPacket = totalPacketTime / 3; // Average time per packet
-
-            long timeToFirstDigging = state.firstPacketTime - totemPopTime;
-            long timeToPickItem = state.timeToPickItem;
-            long timeFromPickToLastDigging = currentTime - state.pickItemPacketTime;
-
-            final Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
-
-            // Check if the average time per packet is within the expected range
-            if (isWithinExpectedRange(averageTimePerPacket)) {
-                // Show individual packet timings as well as the average time
-                Component details = Component.text()
-                        .append(Component.text("Total time: ", NamedTextColor.GRAY))
-                        .append(Component.text(totalPacketTime + "ms", NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(Component.text("Average time per packet: ", NamedTextColor.GRAY))
-                        .append(Component.text(averageTimePerPacket + "ms", NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(Component.text("Time to first swap packet: ", NamedTextColor.GRAY))
-                        .append(Component.text(timeToFirstDigging + "ms", NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(Component.text("Time from swap -> pick up: ", NamedTextColor.GRAY))
-                        .append(Component.text(timeToPickItem + "ms", NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(Component.text("Time from pick up -> digging: ", NamedTextColor.GRAY))
-                        .append(Component.text(timeFromPickToLastDigging + "ms", NamedTextColor.GOLD))
-                        .build();
-
-                flag(player, details, settings);
-            }
-
-            // Reset state after validation
-            playerPacketState.remove(playerId);
-        } else {
-            // Update the state and store it
-            if (state.sequence == 1) {
-                state.firstPacketTime = currentTime;
-            }
-            playerPacketState.put(playerId, state);
-        }
-    }
-
-    // Handle the PickItem Packet (this should be called once)
-    private void handlePickItemPacket(Player player, long currentTime) {
-        UUID playerId = player.getUniqueId();
-        PacketState state = playerPacketState.getOrDefault(playerId, new PacketState());
-
-        if (state.sequence == 1) {
-            state.sequence++;
-            state.pickItemPacketTime = currentTime;
-            state.timeToPickItem = currentTime - state.firstPacketTime;
-
-            // Update the state
-            playerPacketState.put(playerId, state);
-        }
-    }
-
-    // Helper method to check if a time difference is within the expected range
-    private boolean isWithinExpectedRange(long averageTime) {
-        return Math.abs(averageTime - EXPECTED_AVERAGE_TIME) <= ACCEPTABLE_VARIATION;
+        recordTotemEvent(totemReEquipTimes, playerId);
+        expectingReEquip.put(playerId, false);
+        checkPlayerConsistency(player);
     }
 
     @Override
     public void resetData() {
-        totemUsage.clear();
-        playerPacketState.clear();
+        totemUseTimes.clear();
+        totemReEquipTimes.clear();
+        expectingReEquip.clear();
+        consistentSDCountMap.clear();
+        sdHistoryMap.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
-        totemUsage.remove(uuid);
-        playerPacketState.remove(uuid);
+        totemUseTimes.remove(uuid);
+        totemReEquipTimes.remove(uuid);
+        expectingReEquip.remove(uuid);
+        consistentSDCountMap.remove(uuid);
+        sdHistoryMap.remove(uuid);
     }
 
-    // Inner class to store packet states for each player
-    private static class PacketState {
-        int sequence = 0; // Sequence: 0 (none), 1 (Digging), 2 (PickItem), 3 (Digging)
-        long firstPacketTime = 0;
-        long lastDiggingPacketTime = 0;
-        long pickItemPacketTime = 0;
-        long timeToPickItem = 0;
+    private void recordTotemEvent(Map<UUID, ConcurrentLinkedDeque<Long>> map, UUID playerId) {
+        ConcurrentLinkedDeque<Long> deque = map.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
+        deque.addLast(System.nanoTime());
+        if (deque.size() > 10) {
+            deque.pollFirst();  // Limit to 10 events
+        }
+    }
+
+    private void checkPlayerConsistency(Player player) {
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            UUID playerId = player.getUniqueId();
+
+            var useTimes = totemUseTimes.get(playerId);
+            var reEquipTimes = totemReEquipTimes.get(playerId);
+
+            if (useTimes == null || reEquipTimes == null || useTimes.size() < 2 || reEquipTimes.size() < 2) {
+                return;
+            }
+
+            long[] intervals = calculateIntervals(useTimes, reEquipTimes);
+            var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
+
+
+            handleConsistentSD(player, playerId, intervals, settings);
+        });
+    }
+
+    private long[] calculateIntervals(ConcurrentLinkedDeque<Long> useTimes, ConcurrentLinkedDeque<Long> reEquipTimes) {
+        int size = Math.min(useTimes.size(), reEquipTimes.size());
+        long[] intervals = new long[size];
+        int i = 0;
+
+        for (Long useTime : useTimes) {
+            Long reEquipTime = reEquipTimes.toArray(new Long[0])[i];
+            if (useTime != null && reEquipTime != null) {
+                intervals[i++] = reEquipTime - useTime;
+            }
+        }
+
+        return intervals;
+    }
+
+    private void handleConsistentSD(Player player, UUID playerId, long[] intervals, Settings.Checks.AutoTotemC settings) {
+        double currentSD = calculateStandardDeviationOfIntervals(intervals) / 1_000_000.0;  // Convert to ms
+
+        // Get the player's SD history or create a new one
+        ConcurrentLinkedDeque<Double> sdHistory = sdHistoryMap.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
+
+        // Add the current SD to the history
+        sdHistory.addLast(currentSD);
+        if (sdHistory.size() > 5) {
+            sdHistory.pollFirst();  // Keep the history size limited to 5
+        }
+
+        // Only proceed if we have at least two SDs to compare
+        if (sdHistory.size() > 1) {
+            double averageSDDifference = calculateAverageDifference(sdHistory);
+            double roundedDifference = Math.round(averageSDDifference * 100.0) / 100.0;  // Round to 2 decimal places
+
+            plugin.debug(player.getName() + " - Average SD Difference: " + roundedDifference + "ms");
+
+            // Check if the average SD difference is below the threshold
+            if (roundedDifference < settings.getConsistentSDRange()) {
+                int consecutiveConsistentSDCount = consistentSDCountMap.getOrDefault(playerId, 0) + 1;
+                consistentSDCountMap.put(playerId, consecutiveConsistentSDCount);
+
+                if (consecutiveConsistentSDCount >= settings.getConsistentSDThreshold()) {
+                    consistentSDCountMap.remove(playerId);
+                    sdHistoryMap.remove(playerId);  // Reset history after flagging
+                    flag(player, createComponent(roundedDifference), settings);
+                }
+            } else {
+                // Reset the count if the average SD difference is above the range
+                consistentSDCountMap.put(playerId, 0);
+            }
+        }
+    }
+
+    private double calculateAverageDifference(ConcurrentLinkedDeque<Double> sdHistory) {
+        double totalDifference = 0;
+        Double previousSD = null;
+
+        for (Double sd : sdHistory) {
+            if (previousSD != null) {
+                totalDifference += Math.abs(sd - previousSD);  // Sum the absolute differences
+            }
+            previousSD = sd;
+        }
+
+        return totalDifference / (sdHistory.size() - 1);  // Average of the differences
+    }
+
+    private Component createComponent(double averageSDDifference) {
+        return Component.text()
+                .append(Component.text("Average SD Difference" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(averageSDDifference + "ms", NamedTextColor.GOLD))
+                .build();
+    }
+
+    private double calculateMean(long[] intervals) {
+        long sum = 0;
+        for (long interval : intervals) {
+            sum += interval;
+        }
+        return (double) sum / intervals.length;
+    }
+
+    private double calculateStandardDeviation(long[] intervals, double mean) {
+        double varianceSum = 0;
+        for (long interval : intervals) {
+            varianceSum += Math.pow(interval - mean, 2);
+        }
+        return Math.sqrt(varianceSum / intervals.length);
+    }
+
+    private long calculateStandardDeviationOfIntervals(long[] intervals) {
+        return Math.round(calculateStandardDeviation(intervals, calculateMean(intervals)));
     }
 }

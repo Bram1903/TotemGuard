@@ -141,6 +141,9 @@ public final class Settings {
         @Comment("\nAutoTotemC Settings")
         private AutoTotemC autoTotemC = new AutoTotemC();
 
+        @Comment("\nAutoTotemD Settings")
+        private AutoTotemD autoTotemD = new AutoTotemD();
+
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -193,9 +196,6 @@ public final class Settings {
             @Comment("\nHigh SD Threshold: The threshold for the standard deviation.")
             private int consistentSDThreshold = 3;
 
-            @Comment("\nConsistent SD Range: The range for the standard average deviation.")
-            private double consistentSDRange = 25.0;
-
             public AutoTotemB() {
                 super(false, 4);
             }
@@ -204,6 +204,20 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemC extends CheckSettings {
+            @Comment("\nHigh SD Threshold: The threshold for the standard deviation.")
+            private int consistentSDThreshold = 3;
+
+            @Comment("\nConsistent SD Range: The range for the standard average deviation.")
+            private double consistentSDRange = 5.0;
+
+            public AutoTotemC() {
+                super(false, 4);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemD extends CheckSettings {
             @Comment("\nTotal Sequence: The total sequence timing under which the player will be flagged.")
             private int totalSequence = 160;
 
@@ -213,7 +227,7 @@ public final class Settings {
             @Comment("\nTime Tolerance: The tolerance for the time difference.")
             private int tolerance = 5;
 
-            public AutoTotemC() {
+            public AutoTotemD() {
                 super(false, 2);
             }
         }
