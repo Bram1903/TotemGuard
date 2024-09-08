@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.util.MathUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -126,7 +127,7 @@ public final class AutoTotemB extends Check implements Listener {
                 return;
             }
 
-            long[] intervals = calculateIntervals(useTimes, reEquipTimes);
+            long[] intervals = MathUtil.calculateIntervals(useTimes, reEquipTimes);
 
             double mean = calculateMean(intervals);
             double standardDeviation = calculateStandardDeviation(intervals, mean);
@@ -142,21 +143,6 @@ public final class AutoTotemB extends Check implements Listener {
                 handleLowSD(player, playerId, sdMs, meanMs, settings);
             }
         });
-    }
-
-    private long[] calculateIntervals(ConcurrentLinkedDeque<Long> useTimes, ConcurrentLinkedDeque<Long> reEquipTimes) {
-        int size = Math.min(useTimes.size(), reEquipTimes.size());
-        long[] intervals = new long[size];
-        int i = 0;
-
-        for (Long useTime : useTimes) {
-            Long reEquipTime = reEquipTimes.toArray(new Long[0])[i];
-            if (useTime != null && reEquipTime != null) {
-                intervals[i++] = reEquipTime - useTime;
-            }
-        }
-
-        return intervals;
     }
 
     private void handleLowSD(Player player, UUID playerId, double sdMs, double meanMs, Settings.Checks.AutoTotemB settings) {
