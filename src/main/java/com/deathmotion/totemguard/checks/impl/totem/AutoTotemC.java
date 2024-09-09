@@ -34,6 +34,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
 import java.util.UUID;
@@ -57,33 +58,31 @@ public final class AutoTotemC extends Check implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTotemUse(EntityResurrectEvent event) {
-        if (event.getEntity() instanceof Player player &&
-                player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
 
-            recordTotemEvent(totemUseTimes, player.getUniqueId());
-            expectingReEquip.put(player.getUniqueId(), true);
-        }
+        recordTotemEvent(totemUseTimes, player.getUniqueId());
+        expectingReEquip.put(player.getUniqueId(), true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getWhoClicked() instanceof Player player &&
-                event.getCurrentItem() != null &&
-                event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING &&
-                expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (!expectingReEquip.getOrDefault(player.getUniqueId(), false)) return;
 
-            handleReEquip(player);
-        }
+        ItemStack currentItem = event.getCurrentItem();
+        if (currentItem == null || currentItem.getType() != Material.TOTEM_OF_UNDYING) return;
+
+        handleReEquip(player);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
-        if (event.getOffHandItem().getType() == Material.TOTEM_OF_UNDYING &&
-                expectingReEquip.getOrDefault(player.getUniqueId(), false)) {
+        if (!expectingReEquip.getOrDefault(player.getUniqueId(), false)) return;
+        if (event.getOffHandItem().getType() != Material.TOTEM_OF_UNDYING) return;
 
-            handleReEquip(player);
-        }
+        handleReEquip(player);
     }
 
     private void handleReEquip(Player player) {

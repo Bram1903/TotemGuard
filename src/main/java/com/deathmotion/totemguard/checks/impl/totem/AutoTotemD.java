@@ -29,6 +29,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -40,12 +41,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class AutoTotemD extends Check implements PacketListener, Listener {
 
+    private static final long EXPECTED_AVERAGE_TIME = 50; // Expected average time in ms
+    private static final long ACCEPTABLE_VARIATION = 20; // Allowable deviation in ms (e.g., ±20ms)
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, Long> totemUsage;
     private final ConcurrentHashMap<UUID, PacketState> playerPacketState;
-
-    private static final long EXPECTED_AVERAGE_TIME = 50; // Expected average time in ms
-    private static final long ACCEPTABLE_VARIATION = 20; // Allowable deviation in ms (e.g., ±20ms)
 
     public AutoTotemD(TotemGuard plugin) {
         super(plugin, "AutoTotemD", "Suspicious re-totem packet sequence", true);
@@ -59,13 +59,10 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTotemUse(EntityResurrectEvent event) {
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
 
-        // Record the time of the totem usage
-        long totemPopTime = System.currentTimeMillis();
-        totemUsage.put(player.getUniqueId(), totemPopTime);
+        totemUsage.put(player.getUniqueId(), System.currentTimeMillis());
         playerPacketState.remove(player.getUniqueId());
     }
 

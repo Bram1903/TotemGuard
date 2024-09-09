@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -30,7 +31,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,14 +53,10 @@ public final class AutoTotemA extends Check implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTotemUse(EntityResurrectEvent event) {
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
 
-        ItemStack mainHandItem = player.getInventory().getItemInMainHand();
-        if (mainHandItem.getType() != Material.TOTEM_OF_UNDYING) {
-            totemUsage.put(player.getUniqueId(), System.nanoTime());
-        }
+        totemUsage.put(player.getUniqueId(), System.nanoTime());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -96,21 +92,23 @@ public final class AutoTotemA extends Check implements Listener {
     }
 
     private void checkSuspiciousActivity(Player player, long clickTime) {
-        Long usageTime = totemUsage.remove(player.getUniqueId());
-        if (usageTime == null) {
-            return;
-        }
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            Long usageTime = totemUsage.remove(player.getUniqueId());
+            if (usageTime == null) {
+                return;
+            }
 
-        long currentTime = System.nanoTime();
-        long timeDifference = (currentTime - usageTime) / 1_000_000; // Convert to milliseconds
-        long clickTimeDifference = (currentTime - clickTime) / 1_000_000; // Convert to milliseconds
-        long realTotemTime = timeDifference - player.getPing();
+            long currentTime = System.nanoTime();
+            long timeDifference = (currentTime - usageTime) / 1_000_000; // Convert to milliseconds
+            long clickTimeDifference = (currentTime - clickTime) / 1_000_000; // Convert to milliseconds
+            long realTotemTime = timeDifference - player.getPing();
 
-        var checkSettings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemA();
+            var checkSettings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemA();
 
-        if (clickTimeDifference <= checkSettings.getClickTimeDifference() && timeDifference <= checkSettings.getNormalCheckTimeMs()) {
-            flag(player, createDetails(timeDifference, realTotemTime, clickTimeDifference, player), checkSettings);
-        }
+            if (clickTimeDifference <= checkSettings.getClickTimeDifference() && timeDifference <= checkSettings.getNormalCheckTimeMs()) {
+                flag(player, createDetails(timeDifference, realTotemTime, clickTimeDifference, player), checkSettings);
+            }
+        });
     }
 
     private String getMainHandItemString(Player player) {

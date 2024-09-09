@@ -32,10 +32,10 @@ public class MathUtil {
      * differences between corresponding use and re-equip events. The returned array contains the time intervals
      * for each matched pair.
      *
-     * @param useTimes A deque containing timestamps (in nanoseconds) of totem use events.
+     * @param useTimes     A deque containing timestamps (in nanoseconds) of totem use events.
      * @param reEquipTimes A deque containing timestamps (in nanoseconds) of totem re-equip events.
      * @return A long array containing the time intervals between corresponding totem use and re-equip events.
-     *         The size of the array is the minimum of the sizes of the two-input dequeue.
+     * The size of the array is the minimum of the sizes of the two-input dequeue.
      */
     public static long[] calculateIntervals(ConcurrentLinkedDeque<Long> useTimes, ConcurrentLinkedDeque<Long> reEquipTimes) {
         int size = Math.min(useTimes.size(), reEquipTimes.size());
