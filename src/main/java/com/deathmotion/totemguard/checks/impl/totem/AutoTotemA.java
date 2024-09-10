@@ -75,7 +75,7 @@ public final class AutoTotemA extends Check implements Listener {
         }
 
         if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
-            clickTimes.put(player.getUniqueId(), System.nanoTime());
+            clickTimes.put(player.getUniqueId(), System.currentTimeMillis());
         }
     }
 
@@ -98,9 +98,9 @@ public final class AutoTotemA extends Check implements Listener {
                 return;
             }
 
-            long currentTime = System.nanoTime();
-            long timeDifference = (currentTime - usageTime) / 1_000_000; // Convert to milliseconds
-            long clickTimeDifference = (currentTime - clickTime) / 1_000_000; // Convert to milliseconds
+            long currentTime = System.currentTimeMillis();
+            long timeDifference = currentTime - usageTime;
+            long clickTimeDifference = currentTime - clickTime;
             long realTotemTime = timeDifference - player.getPing();
 
             var checkSettings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemA();

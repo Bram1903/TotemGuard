@@ -36,8 +36,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -112,7 +111,7 @@ public final class AutoTotemC extends Check implements Listener {
 
     private void recordTotemEvent(Map<UUID, ConcurrentLinkedDeque<Long>> map, UUID playerId) {
         ConcurrentLinkedDeque<Long> deque = map.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
-        deque.addLast(System.nanoTime());
+        deque.addLast(System.currentTimeMillis());
         if (deque.size() > 10) {
             deque.pollFirst();  // Limit to 10 events
         }
@@ -129,41 +128,46 @@ public final class AutoTotemC extends Check implements Listener {
                 return;
             }
 
-            long[] intervals = MathUtil.calculateIntervals(useTimes, reEquipTimes);
-            var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
-
-            handleConsistentSD(player, playerId, intervals, settings);
+            Collection<? extends Number> intervals = MathUtil.calculateIntervals(useTimes, reEquipTimes);
+            handleConsistentSD(player, playerId, intervals);
         });
     }
 
-    private void handleConsistentSD(Player player, UUID playerId, long[] intervals, Settings.Checks.AutoTotemC settings) {
-        double currentSD = calculateStandardDeviationOfIntervals(intervals) / 1_000_000.0;  // Convert to ms
+    private void handleConsistentSD(Player player, UUID playerId, Collection<? extends Number> intervals) {
+        double standardDeviation = MathUtil.getStandardDeviation(intervals);
 
         // Get the player's SD history or create a new one
         ConcurrentLinkedDeque<Double> sdHistory = sdHistoryMap.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
 
         // Add the current SD to the history
-        sdHistory.addLast(currentSD);
+        sdHistory.addLast(standardDeviation);
         if (sdHistory.size() > 5) {
             sdHistory.pollFirst();  // Keep the history size limited to 5
         }
 
         // Only proceed if we have at least two SDs to compare
         if (sdHistory.size() > 1) {
-            double averageSDDifference = calculateAverageDifference(sdHistory);
-            double roundedDifference = Math.round(averageSDDifference * 100.0) / 100.0;  // Round to 2 decimal places
+            // Calculate the total difference between consecutive SDs
+            List<Double> sdList = new ArrayList<>(sdHistory);
+            List<Double> differences = new ArrayList<>();
+            for (int i = 1; i < sdList.size(); i++) {
+                differences.add(MathUtil.differenceBetween(sdList.get(i), sdList.get(i - 1)));
+            }
 
-            plugin.debug(player.getName() + " - Average SD Difference: " + roundedDifference + "ms");
+            double averageSDDifference = MathUtil.trim(2, MathUtil.getMean(differences));
+
+            plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
+            Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
 
             // Check if the average SD difference is below the threshold
-            if (roundedDifference < settings.getConsistentSDRange()) {
+            if (averageSDDifference < settings.getConsistentSDRange()) {
                 int consecutiveConsistentSDCount = consistentSDCountMap.getOrDefault(playerId, 0) + 1;
                 consistentSDCountMap.put(playerId, consecutiveConsistentSDCount);
 
                 if (consecutiveConsistentSDCount >= settings.getConsistentSDThreshold()) {
                     consistentSDCountMap.remove(playerId);
                     sdHistoryMap.remove(playerId);  // Reset history after flagging
-                    flag(player, createComponent(roundedDifference), settings);
+                    flag(player, createComponent(averageSDDifference), settings);
                 }
             } else {
                 // Reset the count if the average SD difference is above the range
@@ -172,44 +176,11 @@ public final class AutoTotemC extends Check implements Listener {
         }
     }
 
-    private double calculateAverageDifference(ConcurrentLinkedDeque<Double> sdHistory) {
-        double totalDifference = 0;
-        Double previousSD = null;
-
-        for (Double sd : sdHistory) {
-            if (previousSD != null) {
-                totalDifference += Math.abs(sd - previousSD);  // Sum the absolute differences
-            }
-            previousSD = sd;
-        }
-
-        return totalDifference / (sdHistory.size() - 1);  // Average of the differences
-    }
 
     private Component createComponent(double averageSDDifference) {
         return Component.text()
                 .append(Component.text("Average SD Difference" + ": ", NamedTextColor.GRAY))
                 .append(Component.text(averageSDDifference + "ms", NamedTextColor.GOLD))
                 .build();
-    }
-
-    private double calculateMean(long[] intervals) {
-        long sum = 0;
-        for (long interval : intervals) {
-            sum += interval;
-        }
-        return (double) sum / intervals.length;
-    }
-
-    private double calculateStandardDeviation(long[] intervals, double mean) {
-        double varianceSum = 0;
-        for (long interval : intervals) {
-            varianceSum += Math.pow(interval - mean, 2);
-        }
-        return Math.sqrt(varianceSum / intervals.length);
-    }
-
-    private long calculateStandardDeviationOfIntervals(long[] intervals) {
-        return Math.round(calculateStandardDeviation(intervals, calculateMean(intervals)));
     }
 }

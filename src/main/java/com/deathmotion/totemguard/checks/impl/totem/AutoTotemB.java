@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.util.MathUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
@@ -36,6 +35,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,11 +109,12 @@ public final class AutoTotemB extends Check implements Listener {
 
     private void recordTotemEvent(Map<UUID, ConcurrentLinkedDeque<Long>> map, UUID playerId) {
         ConcurrentLinkedDeque<Long> deque = map.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
-        deque.addLast(System.nanoTime());
+        deque.addLast(System.currentTimeMillis());
         if (deque.size() > 10) {
             deque.pollFirst();  // Limit to 10 events
         }
     }
+
 
     private void checkPlayerConsistency(Player player) {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
@@ -126,57 +127,29 @@ public final class AutoTotemB extends Check implements Listener {
                 return;
             }
 
-            long[] intervals = MathUtil.calculateIntervals(useTimes, reEquipTimes);
+            Collection<? extends Number> intervals = MathUtil.calculateIntervals(useTimes, reEquipTimes);
+            double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(intervals));
 
-            double mean = calculateMean(intervals);
-            double standardDeviation = calculateStandardDeviation(intervals, mean);
-
-            double meanMs = Math.round((mean / 1_000_000.0) * 100.0) / 100.0;
-            double sdMs = Math.round((standardDeviation / 1_000_000.0) * 100.0) / 100.0;
-
-            plugin.debug(player.getName() + " - SD: " + sdMs + "ms, Mean: " + meanMs + "ms");
+            plugin.debug(player.getName() + " - SD: " + standardDeviation);
 
             var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
 
-            if (sdMs < settings.getLowSDThreshold()) {
-                handleLowSD(player, playerId, sdMs, meanMs, settings);
+            if (standardDeviation < settings.getLowSDThreshold()) {
+                int consecutiveLowSDCount = lowSDCountMap.getOrDefault(playerId, 0) + 1;
+                lowSDCountMap.put(playerId, consecutiveLowSDCount);
+
+                if (consecutiveLowSDCount >= settings.getConsistentSDThreshold()) {
+                    lowSDCountMap.remove(playerId);
+                    flag(player, createComponent(standardDeviation), settings);
+                }
             }
         });
     }
 
-    private void handleLowSD(Player player, UUID playerId, double sdMs, double meanMs, Settings.Checks.AutoTotemB settings) {
-        int consecutiveLowSDCount = lowSDCountMap.getOrDefault(playerId, 0) + 1;
-        lowSDCountMap.put(playerId, consecutiveLowSDCount);
-
-        if (consecutiveLowSDCount >= settings.getConsistentSDThreshold()) {
-            lowSDCountMap.remove(playerId);
-            flag(player, createComponent(sdMs, meanMs), settings);
-        }
-    }
-
-    private Component createComponent(double sd, double mean) {
+    private Component createComponent(double sd) {
         return Component.text()
                 .append(Component.text("SD" + ": ", NamedTextColor.GRAY))
                 .append(Component.text(sd + "ms", NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Mean" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(mean + "ms", NamedTextColor.GOLD))
                 .build();
-    }
-
-    private double calculateMean(long[] intervals) {
-        long sum = 0;
-        for (long interval : intervals) {
-            sum += interval;
-        }
-        return (double) sum / intervals.length;
-    }
-
-    private double calculateStandardDeviation(long[] intervals, double mean) {
-        double varianceSum = 0;
-        for (long interval : intervals) {
-            varianceSum += Math.pow(interval - mean, 2);
-        }
-        return Math.sqrt(varianceSum / intervals.length);
     }
 }
