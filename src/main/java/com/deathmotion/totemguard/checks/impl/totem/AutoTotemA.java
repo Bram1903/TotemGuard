@@ -105,7 +105,7 @@ public final class AutoTotemA extends Check implements Listener {
 
             var checkSettings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemA();
 
-            if (clickTimeDifference <= checkSettings.getClickTimeDifference() && timeDifference <= checkSettings.getNormalCheckTimeMs()) {
+            if (clickTimeDifference <= checkSettings.getClickTimeDifference()) {
                 flag(player, createDetails(timeDifference, realTotemTime, clickTimeDifference, player), checkSettings);
             }
         });

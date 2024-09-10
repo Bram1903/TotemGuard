@@ -54,7 +54,7 @@ public class MathUtil {
                 .sum();
     }
 
-    public Collection<? extends Number> calculateIntervals(final Collection<? extends Number> collectionOne, final Collection<? extends Number> collectionTwo) {
+    public Collection<Long> calculateIntervals(final Collection<Long> collectionOne, final Collection<Long> collectionTwo) {
         int size = Math.min(collectionOne.size(), collectionTwo.size());
         List<Long> intervals = new ArrayList<>(size);
 
@@ -62,11 +62,12 @@ public class MathUtil {
         var collectionTwoIter = collectionTwo.iterator();
 
         while (collectionOneIter.hasNext() && collectionTwoIter.hasNext()) {
-            Long collectionOneTime = (Long) collectionOneIter.next();
-            Long collectionTwoTime = (Long) collectionTwoIter.next();
+            Long collectionOneTime = collectionOneIter.next();
+            Long collectionTwoTime = collectionTwoIter.next();
 
             if (collectionOneTime != null && collectionTwoTime != null) {
-                intervals.add(collectionTwoTime - collectionOneTime);
+                long interval = collectionTwoTime - collectionOneTime;
+                intervals.add(interval);
             }
         }
 

@@ -176,9 +176,6 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemA extends CheckSettings {
-            @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-            private int normalCheckTimeMs = 1000;
-
             @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
             private int clickTimeDifference = 75;
 
@@ -193,9 +190,6 @@ public final class Settings {
             @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
             private double lowSDThreshold  = 30.0;
 
-            @Comment("\nHigh SD Threshold: The threshold for the standard deviation.")
-            private int consistentSDThreshold = 3;
-
             public AutoTotemB() {
                 super(false, 3);
             }
@@ -206,9 +200,6 @@ public final class Settings {
         public static class AutoTotemC extends CheckSettings {
             @Comment("\nConsistent SD Range: The range for the standard average deviation.")
             private double consistentSDRange = 1.0;
-
-            @Comment("\nHigh SD Threshold: The threshold for the average deviation.")
-            private int consistentSDThreshold = 3;
 
             public AutoTotemC() {
                 super(false, 5);

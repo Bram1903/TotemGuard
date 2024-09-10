@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.checks.impl.totem.AutoTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemC;
 import com.deathmotion.totemguard.checks.impl.totem.AutoTotemD;
+import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
@@ -49,6 +50,9 @@ public class CheckManager implements PacketListener {
     public CheckManager(TotemGuard plugin) {
         this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
+
+        TotemProcessor.init(plugin);
+
         this.checks = ImmutableList.of(
                 new AutoTotemA(plugin),
                 new AutoTotemB(plugin),
@@ -88,6 +92,7 @@ public class CheckManager implements PacketListener {
 
     public void resetData(UUID uuid) {
         checks.forEach(check -> check.resetData(uuid));
+        plugin.debug("Reset data for " + uuid);
     }
 
     private void registerPacketListeners() {
