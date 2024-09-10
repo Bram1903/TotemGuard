@@ -176,6 +176,9 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemA extends CheckSettings {
+            @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
+            private int normalCheckTimeMs = 1000;
+
             @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
             private int clickTimeDifference = 75;
 
