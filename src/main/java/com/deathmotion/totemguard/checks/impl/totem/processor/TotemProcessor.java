@@ -108,10 +108,8 @@ public final class TotemProcessor extends Check implements Listener {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             UUID playerId = player.getUniqueId();
 
-            synchronized (totemReEquipTimes) {
-                recordTotemEvent(totemReEquipTimes, playerId);
-                expectingReEquip.put(playerId, false);
-            }
+            recordTotemEvent(totemReEquipTimes, playerId);
+            expectingReEquip.put(playerId, false);
 
             Collection<Long> intervals = MathUtil.calculateIntervals(totemUseTimes.get(playerId), totemReEquipTimes.get(playerId));
             if (intervals.size() < 2) {
