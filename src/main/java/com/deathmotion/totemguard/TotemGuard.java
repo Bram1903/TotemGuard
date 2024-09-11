@@ -31,6 +31,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import io.github.retrooper.packetevents.bstats.Metrics;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -107,7 +108,9 @@ public final class TotemGuard extends JavaPlugin {
 
     public void debug(String message) {
         if (configManager.getSettings().isDebug()) {
-            getLogger().info("[DEBUG] " + message);
+            String debugMessage = "[DEBUG] " + message;
+            getLogger().info(debugMessage);
+            Bukkit.broadcast(Component.text(debugMessage), "TotemGuard.Debug");
         }
     }
 

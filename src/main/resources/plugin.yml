@@ -23,6 +23,7 @@ permissions:
       TotemGuard.Alerts.Others: true
       TotemGuard.Bypass: true
       TotemGuard.Update: true
+      TotemGuard.Debug: true
   TotemGuard.Reload:
     description: Allows the player to use /totemguard reload.
     default: op
@@ -41,6 +42,9 @@ permissions:
   TotemGuard.Update:
     description: Allows the player to receive update notifications.
     default: true
+  TotemGuard.Debug:
+    description: Allows the player to see debug messages.
+    default: op
 commands:
   TotemGuard:
     description: Base command for TotemGuard.
