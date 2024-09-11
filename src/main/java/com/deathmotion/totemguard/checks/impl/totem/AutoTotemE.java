@@ -39,7 +39,7 @@ public final class AutoTotemE extends Check implements TotemEventListener {
     private final ConcurrentHashMap<UUID, Integer> lowSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemE(TotemGuard plugin) {
-        super(plugin, "AutoTotemE", "Impossible re-totem speed without outliers", true);
+        super(plugin, "AutoTotemE", "Impossible consistency without outliers", true);
         this.plugin = plugin;
 
         TotemProcessor.getInstance().registerListener(this);

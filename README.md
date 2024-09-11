@@ -26,6 +26,7 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
     - [Requires PacketEvents](#requires-packetevents)
 - [Showcase](#showcase)
 - [Supported Platforms & Versions](#supported-platforms--versions)
+- [Checks](#checks)
 - [Features](#features)
 - [Commands](#commands)
 - [Permission Nodes](#permission-nodes)
@@ -45,6 +46,24 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 | Platform                        | Supported Versions |
 |---------------------------------|--------------------|
 | Paper, Folia, and related forks | 1.18 - 1.21.1      |
+
+## Checks
+
+### AutoTotem
+
+- **AutoTotemA** - Click time difference between moving the totem to the offhand.
+- **AutoTotemB** - Consistency of totem replacements
+- **AutoTotemC** - Difference between consistency of totem replacements
+- **AutoTotemD** - Packet sequence of totem replacement
+- **AutoTotemE** - Consistency of totem replacements (alternative)
+
+### BadPackets
+
+- **BadPacketsA** - Opt-out message in a mod configuration channel
+
+### ManualTotem
+
+- **ManualTotemA** - Time difference between replacement after totem removal
 
 ## Features
 

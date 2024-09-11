@@ -38,7 +38,7 @@ public final class AutoTotemB extends Check implements TotemEventListener {
     private final ConcurrentHashMap<UUID, Integer> lowSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemB(TotemGuard plugin) {
-        super(plugin, "AutoTotemB", "Impossible re-totem speed", true);
+        super(plugin, "AutoTotemB", "Impossible consistency", true);
         this.plugin = plugin;
 
         TotemProcessor.getInstance().registerListener(this);

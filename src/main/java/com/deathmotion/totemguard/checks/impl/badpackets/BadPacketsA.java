@@ -34,7 +34,7 @@ public final class BadPacketsA extends Check implements PacketListener {
     private final TotemGuard plugin;
 
     public BadPacketsA(TotemGuard plugin) {
-        super(plugin, "BadPacketsA", "Player is using a suspicious mod!");
+        super(plugin, "BadPacketsA", "Suspicious mod message");
         this.plugin = plugin;
     }
 

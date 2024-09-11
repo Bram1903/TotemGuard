@@ -43,7 +43,7 @@ public final class AutoTotemA extends Check implements Listener {
     private final ConcurrentHashMap<UUID, Long> clickTimes;
 
     public AutoTotemA(TotemGuard plugin) {
-        super(plugin, "AutoTotemA", "Impossible re-totem time");
+        super(plugin, "AutoTotemA", "Click time difference");
 
         this.plugin = plugin;
         this.totemUsage = new ConcurrentHashMap<>();

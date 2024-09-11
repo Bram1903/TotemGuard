@@ -44,7 +44,7 @@ public final class ManualTotemA extends Check implements CommandExecutor, TabExe
     private final TotemGuard plugin;
 
     public ManualTotemA(TotemGuard plugin) {
-        super(plugin, "ManualTotemA", "Attempts to bait the player into replacing their totem.");
+        super(plugin, "ManualTotemA", "Manual totem removal");
 
         this.plugin = plugin;
         plugin.getCommand("check").setExecutor(this);

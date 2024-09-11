@@ -23,7 +23,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
     private final ConcurrentHashMap<UUID, Integer> consistentSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemC(TotemGuard plugin) {
-        super(plugin, "AutoTotemC", "Impossible re-totem consistency", true);
+        super(plugin, "AutoTotemC", "Impossible consistency difference", true);
         this.plugin = plugin;
         TotemProcessor.getInstance().registerListener(this);
     }
