@@ -240,7 +240,6 @@ public final class Settings {
             }
         }
 
-
         @Configuration
         @Getter
         public static class ManualTotemA extends CheckSettings {
