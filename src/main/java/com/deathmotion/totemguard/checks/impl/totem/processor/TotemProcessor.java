@@ -32,6 +32,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
@@ -74,6 +75,10 @@ public final class TotemProcessor extends Check implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
 
+        if (!player.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
+            return;
+        }
+
         totemUsage.put(player.getUniqueId(), System.currentTimeMillis());
         expectingReEquip.put(player.getUniqueId(), true);
     }
@@ -98,6 +103,14 @@ public final class TotemProcessor extends Check implements Listener {
         handleTotemEvent(player);
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+
+        expectingReEquip.remove(playerId);
+        totemUsage.remove(playerId);
+    }
+
     private void handleTotemEvent(Player player) {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             UUID playerId = player.getUniqueId();
@@ -110,10 +123,7 @@ public final class TotemProcessor extends Check implements Listener {
             if (totemPlayer == null) return;
 
             long interval = Math.abs(currentTime - totemUseTime);
-            totemPlayer.addInterval(interval);
-
-            plugin.debug(player.getName() + " - Latest Interval: " + interval);
-            //plugin.debug(player.getName() + " - Latest SD (Based on all Intervals): " + totemPlayer.getLatestStandardDeviation());
+            totemPlayer.getTotemData().addInterval(interval);
 
             for (TotemEventListener listener : totemEventListener) {
                 listener.onTotemEvent(player, totemPlayer);

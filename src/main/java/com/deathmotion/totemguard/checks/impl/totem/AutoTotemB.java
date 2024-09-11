@@ -48,15 +48,16 @@ public final class AutoTotemB extends Check implements TotemEventListener {
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
 
-        List<Long> recentIntervals = totemPlayer.getLatestIntervals(4);
+        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(4);
         if (recentIntervals.size() < 2) {
             plugin.debug(player.getName() + " - Not enough intervals for SD calculation.");
             return;
         }
 
-        //plugin.debug(player.getName() + " - Recent intervals: " + recentIntervals);
-
+        plugin.debug(player.getName() + " - Recent intervals: " + recentIntervals);
         double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(recentIntervals));
+        plugin.debug(player.getName() + " - Standard deviation: " + standardDeviation);
+
         if (standardDeviation >= settings.getLowSDThreshold()) return;
 
         int consecutiveLowSDCount = lowSDCountMap.getOrDefault(player.getUniqueId(), 0) + 1;

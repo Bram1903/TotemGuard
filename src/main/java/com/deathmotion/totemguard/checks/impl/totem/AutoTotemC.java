@@ -33,7 +33,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
         // Get the player's SD history or create a new one
         ConcurrentLinkedDeque<Double> sdHistory = sdHistoryMap.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentLinkedDeque<>());
 
-        List<Long> recentIntervals = totemPlayer.getLatestIntervals(4);
+        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(4);
         double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(recentIntervals));
 
         // Add the current SD to the history
@@ -53,6 +53,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
             }
 
             double averageSDDifference = MathUtil.trim(2, MathUtil.getMean(differences));
+            plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
 
             //plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
             Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
