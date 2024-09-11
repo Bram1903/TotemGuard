@@ -37,14 +37,8 @@ public class UserTracker implements PacketListener {
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, TotemPlayer> totemPlayers = new ConcurrentHashMap<>();
 
-    private final AlertManager alertManager;
-    private final CheckManager checkManager;
-
     public UserTracker(TotemGuard plugin) {
         this.plugin = plugin;
-
-        this.alertManager = plugin.getAlertManager();
-        this.checkManager = plugin.getCheckManager();
     }
 
     @Override
@@ -57,7 +51,7 @@ public class UserTracker implements PacketListener {
         Player player = (Player) event.getPlayer();
 
         if (player.hasPermission("TotemGuard.Alerts")) {
-            alertManager.enableAlerts(player);
+            plugin.getAlertManager().enableAlerts(player);
         }
 
         TotemPlayer totemPlayer = new TotemPlayer();
@@ -77,8 +71,8 @@ public class UserTracker implements PacketListener {
 
         plugin.debug("Removing data for: " + userUUID);
 
-        alertManager.removePlayer(userUUID);
-        checkManager.resetData(userUUID);
+        plugin.getAlertManager().removePlayer(userUUID);
+        plugin.getCheckManager().resetData(userUUID);
         totemPlayers.remove(userUUID);
     }
 

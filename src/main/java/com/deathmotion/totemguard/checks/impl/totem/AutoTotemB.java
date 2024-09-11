@@ -22,10 +22,13 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
+import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.util.MathUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -42,8 +45,18 @@ public final class AutoTotemB extends Check implements TotemEventListener {
     }
 
     @Override
-    public void onTotemEvent(Player player, double standardDeviation) {
+    public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
+
+        List<Long> recentIntervals = totemPlayer.getLatestIntervals(4);
+        if (recentIntervals.size() < 2) {
+            plugin.debug(player.getName() + " - Not enough intervals for SD calculation.");
+            return;
+        }
+
+        //plugin.debug(player.getName() + " - Recent intervals: " + recentIntervals);
+
+        double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(recentIntervals));
         if (standardDeviation >= settings.getLowSDThreshold()) return;
 
         int consecutiveLowSDCount = lowSDCountMap.getOrDefault(player.getUniqueId(), 0) + 1;

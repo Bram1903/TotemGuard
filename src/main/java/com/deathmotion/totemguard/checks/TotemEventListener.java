@@ -18,8 +18,9 @@
 
 package com.deathmotion.totemguard.checks;
 
+import com.deathmotion.totemguard.data.TotemPlayer;
 import org.bukkit.entity.Player;
 
 public interface TotemEventListener {
-    void onTotemEvent(Player player, double standardDeviation);
+    void onTotemEvent(Player player, TotemPlayer totemPlayer);
 }

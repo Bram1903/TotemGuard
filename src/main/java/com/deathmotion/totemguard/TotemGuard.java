@@ -70,11 +70,11 @@ public final class TotemGuard extends JavaPlugin {
             return;
         }
 
+        userTracker = new UserTracker(this);
         alertManager = new AlertManager(this);
         discordManager = new DiscordManager(this);
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
-        userTracker = new UserTracker(this);
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
 
         new TotemGuardCommand(this);

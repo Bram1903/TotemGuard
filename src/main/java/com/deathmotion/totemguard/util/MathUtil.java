@@ -66,7 +66,7 @@ public class MathUtil {
             Long collectionTwoTime = collectionTwoIter.next();
 
             if (collectionOneTime != null && collectionTwoTime != null) {
-                long interval = collectionTwoTime - collectionOneTime;
+                long interval = Math.abs(collectionTwoTime - collectionOneTime);
                 intervals.add(interval);
             }
         }

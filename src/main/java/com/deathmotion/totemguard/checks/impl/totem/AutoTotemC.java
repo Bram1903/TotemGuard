@@ -5,6 +5,7 @@ import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.data.TotemPlayer;
 import com.deathmotion.totemguard.util.MathUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -28,9 +29,12 @@ public final class AutoTotemC extends Check implements TotemEventListener {
     }
 
     @Override
-    public void onTotemEvent(Player player, double standardDeviation) {
+    public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         // Get the player's SD history or create a new one
         ConcurrentLinkedDeque<Double> sdHistory = sdHistoryMap.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentLinkedDeque<>());
+
+        List<Long> recentIntervals = totemPlayer.getLatestIntervals(4);
+        double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(recentIntervals));
 
         // Add the current SD to the history
         sdHistory.addLast(standardDeviation);
@@ -50,7 +54,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
 
             double averageSDDifference = MathUtil.trim(2, MathUtil.getMean(differences));
 
-            plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
+            //plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
             Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
 
             // Check if the average SD difference is below the threshold

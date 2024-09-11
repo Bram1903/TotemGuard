@@ -21,8 +21,8 @@ package com.deathmotion.totemguard.checks.impl.totem.processor;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.TotemEventListener;
-import com.deathmotion.totemguard.data.TotemEvent;
-import com.deathmotion.totemguard.util.MathUtil;
+import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.listeners.UserTracker;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -38,22 +38,23 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 public final class TotemProcessor extends Check implements Listener {
     @Getter
     private static TotemProcessor instance;
+
     private final TotemGuard plugin;
+    private final UserTracker userTracker;
 
     private final List<TotemEventListener> totemEventListener = new ArrayList<>();
 
-    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<TotemEvent>> totemUseTimes = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<TotemEvent>> totemReEquipTimes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Long> totemUsage = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Boolean> expectingReEquip = new ConcurrentHashMap<>();
 
     private TotemProcessor(TotemGuard plugin) {
         super(plugin, null, null);
         this.plugin = plugin;
+        this.userTracker = plugin.getUserTracker();
 
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -73,8 +74,7 @@ public final class TotemProcessor extends Check implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
 
-        UUID pairingId = UUID.randomUUID(); // Generate unique ID for this totem use
-        recordTotemEvent(totemUseTimes, player.getUniqueId(), pairingId);
+        totemUsage.put(player.getUniqueId(), System.currentTimeMillis());
         expectingReEquip.put(player.getUniqueId(), true);
     }
 
@@ -98,58 +98,25 @@ public final class TotemProcessor extends Check implements Listener {
         handleTotemEvent(player);
     }
 
-    private void recordTotemEvent(Map<UUID, ConcurrentLinkedDeque<TotemEvent>> map, UUID playerId, UUID pairingId) {
-        ConcurrentLinkedDeque<TotemEvent> deque = map.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
-        TotemEvent event = new TotemEvent(System.currentTimeMillis(), pairingId);
-        deque.addLast(event);
-        if (deque.size() > 4) {
-            deque.pollFirst();  // Limit to 4 events
-        }
-    }
-
     private void handleTotemEvent(Player player) {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             UUID playerId = player.getUniqueId();
 
-            // Find the most recent totem use event
-            TotemEvent totemUseEvent = totemUseTimes.get(playerId).peekLast(); // Get the most recent use event
-
-            if (totemUseEvent == null) {
-                plugin.debug(player.getName() + " - No recent totem use event found for re-equip.");
-                return;
-            }
-
-            UUID pairingId = totemUseEvent.pairingId(); // Get the pairing ID from the totem use
-
-            // Record the re-equip event with the same pairing ID
-            TotemEvent reEquipEvent = new TotemEvent(System.currentTimeMillis(), pairingId);
-            recordTotemEvent(totemReEquipTimes, playerId, pairingId);
-
-            // Check if the re-equip event matches the expected pairing ID
-            if (!reEquipEvent.pairingId().equals(totemUseEvent.pairingId())) {
-                plugin.debug(player.getName() + " - Totem re-equip event did not match the expected pairing ID. Possible desynchronization.");
-            }
-
+            long currentTime = System.currentTimeMillis();
+            Long totemUseTime = totemUsage.get(playerId);
             expectingReEquip.put(playerId, false);
 
-            // Proceed to calculate intervals as before
-            Collection<Long> intervals = MathUtil.calculateIntervals(
-                    totemUseTimes.get(playerId).stream().map(TotemEvent::timestamp).toList(),
-                    totemReEquipTimes.get(playerId).stream().map(TotemEvent::timestamp).toList()
-            );
+            TotemPlayer totemPlayer = userTracker.getTotemPlayer(playerId).orElse(null);
+            if (totemPlayer == null) return;
 
-            if (intervals.size() < 2) {
-                plugin.debug(player.getName() + " - Not enough intervals for SD calculation.");
-                return;
-            }
+            long interval = Math.abs(currentTime - totemUseTime);
+            totemPlayer.addInterval(interval);
 
-            plugin.debug(player.getName() + " - Intervals: " + intervals);
-
-            double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(intervals));
-            plugin.debug(player.getName() + " - SD: " + standardDeviation);
+            plugin.debug(player.getName() + " - Latest Interval: " + interval);
+            //plugin.debug(player.getName() + " - Latest SD (Based on all Intervals): " + totemPlayer.getLatestStandardDeviation());
 
             for (TotemEventListener listener : totemEventListener) {
-                listener.onTotemEvent(player, standardDeviation);
+                listener.onTotemEvent(player, totemPlayer);
             }
         });
     }
@@ -157,15 +124,11 @@ public final class TotemProcessor extends Check implements Listener {
 
     @Override
     public void resetData() {
-        totemUseTimes.clear();
-        totemReEquipTimes.clear();
         expectingReEquip.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
-        totemUseTimes.remove(uuid);
-        totemReEquipTimes.remove(uuid);
         expectingReEquip.remove(uuid);
     }
 }
