@@ -124,10 +124,7 @@ public final class TotemProcessor extends Check implements Listener {
             if (totemPlayer == null) return;
 
             long interval = Math.abs(currentTime - totemUseTime);
-            totemPlayer.addInterval(interval);
-
-            plugin.debug(player.getName() + " - Latest Interval: " + interval);
-            //plugin.debug(player.getName() + " - Latest SD (Based on all Intervals): " + totemPlayer.getLatestStandardDeviation());
+            totemPlayer.getTotemData().addInterval(interval);
 
             for (TotemEventListener listener : totemEventListener) {
                 listener.onTotemEvent(player, totemPlayer);
