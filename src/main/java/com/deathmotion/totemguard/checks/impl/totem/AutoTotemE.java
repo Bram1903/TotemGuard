@@ -55,8 +55,6 @@ public final class AutoTotemE extends Check implements TotemEventListener {
 
         Collection<Long> mellowedIntervals = MathUtil.removeOutliers(recentIntervals);
         double modifiedDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(mellowedIntervals));
-        plugin.debug("AutoTotemE: " + player.getName() + " has a low standard deviation of " + modifiedDeviation + "ms");
-        plugin.debug("AutoTotemE: " + mellowedIntervals);
 
         if (mellowedIntervals.size() < 5 || modifiedDeviation >= settings.getLowSDThreshold()) {
             return;
