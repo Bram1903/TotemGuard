@@ -22,10 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
-import com.deathmotion.totemguard.checks.impl.totem.AutoTotemA;
-import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
-import com.deathmotion.totemguard.checks.impl.totem.AutoTotemC;
-import com.deathmotion.totemguard.checks.impl.totem.AutoTotemD;
+import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -57,6 +54,7 @@ public class CheckManager {
                 new AutoTotemB(plugin),
                 new AutoTotemC(plugin),
                 new AutoTotemD(plugin),
+                new AutoTotemE(plugin),
                 new BadPacketsA(plugin),
                 new ManualTotemA(plugin)
         );
