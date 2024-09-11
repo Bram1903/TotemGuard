@@ -76,7 +76,6 @@ public final class TotemProcessor extends Check implements Listener {
         if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
 
         if (!player.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
-            plugin.debug(player.getName() + " - Not enough totems to use.");
             return;
         }
 

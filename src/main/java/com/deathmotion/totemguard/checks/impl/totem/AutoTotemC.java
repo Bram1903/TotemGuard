@@ -53,6 +53,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
             }
 
             double averageSDDifference = MathUtil.trim(2, MathUtil.getMean(differences));
+            plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
 
             //plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
             Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
