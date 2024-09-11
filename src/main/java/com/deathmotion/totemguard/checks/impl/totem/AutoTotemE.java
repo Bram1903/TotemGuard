@@ -49,7 +49,7 @@ public final class AutoTotemE extends Check implements TotemEventListener {
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemE();
 
-        List<Long> recentIntervals = totemPlayer.getLatestIntervals(20);
+        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(20);
 
         if (recentIntervals.size() < 4) return;
 
@@ -65,7 +65,7 @@ public final class AutoTotemE extends Check implements TotemEventListener {
 
         if (consecutiveLowSDCount >= 1) {
             lowSDCountMap.remove(player.getUniqueId());
-            flag(player, createComponent(modifiedDeviation, totemPlayer.getLatestStandardDeviation(), recentIntervals.size(), mellowedIntervals.size()), settings);
+            flag(player, createComponent(modifiedDeviation, totemPlayer.getTotemData().getLatestStandardDeviation(), recentIntervals.size(), mellowedIntervals.size()), settings);
         }
     }
 
