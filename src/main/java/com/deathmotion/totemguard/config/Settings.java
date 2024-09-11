@@ -233,7 +233,7 @@ public final class Settings {
         @Getter
         public static class AutoTotemE extends CheckSettings {
             @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
-            private double lowSDThreshold  = 40.0;
+            private double lowSDThreshold  = 80.0;
 
             public AutoTotemE() {
                 super(false, 3);
