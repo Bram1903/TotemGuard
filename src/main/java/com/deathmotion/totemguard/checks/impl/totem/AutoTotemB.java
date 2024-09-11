@@ -65,14 +65,17 @@ public final class AutoTotemB extends Check implements TotemEventListener {
 
         if (consecutiveLowSDCount >= 1) {
             lowSDCountMap.remove(player.getUniqueId());
-            flag(player, createComponent(standardDeviation), settings);
+            flag(player, createComponent(standardDeviation, recentIntervals), settings);
         }
     }
 
-    private Component createComponent(double sd) {
+    private Component createComponent(double sd, List<Long> intervals) {
         return Component.text()
                 .append(Component.text("SD" + ": ", NamedTextColor.GRAY))
                 .append(Component.text(sd + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Intervals" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(intervals.toString(), NamedTextColor.GOLD))
                 .build();
     }
 
