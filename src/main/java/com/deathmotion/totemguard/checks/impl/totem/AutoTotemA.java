@@ -31,6 +31,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,6 +56,10 @@ public final class AutoTotemA extends Check implements Listener {
     public void onTotemUse(EntityResurrectEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
         if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
+
+        if (!player.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
+            return;
+        }
 
         totemUsage.put(player.getUniqueId(), System.currentTimeMillis());
     }
