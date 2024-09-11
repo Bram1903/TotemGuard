@@ -83,12 +83,12 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 - `/totemguard info` - Displays information about the plugin.
 - `/totemguard alerts` - Toggles alerts on/off.
 - `/totemguard reload` - Reloads the configuration file (every single setting supports reloading on runtime).
-- `/totemguard check` or `/totemcheck`, `/checktotem` - Removes a totem from a player's inventory and checks if they are
+- `/totemcheck` or `/checktotem` - Removes a totem from a player's inventory and checks if they are
   being quickly replaced.
 
 ## Permission Nodes
 
-Operators (OPs) have these permissions by default:
+Operators (OPs) have these permissions by default (except the `TotemGuard.Debug` permission):
 
 - `TotemGuard.*` - Grants access to all TotemGuard permissions.
 - `TotemGuard.Alerts` - Allows the player to toggle alerts.
@@ -97,6 +97,7 @@ Operators (OPs) have these permissions by default:
 - `TotemGuard.Reload` - Allows the player to reload the configuration file.
 - `TotemGuard.Bypass` - Allows the player to bypass the plugin's checks (if enabled in the configuration).
 - `TotemGuard.Update` - Allows the player to get notified about updates.
+- `TotemGuard.Debug` - Allows the player to see debug messages.
 
 ## Installation
 
