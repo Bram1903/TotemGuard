@@ -74,7 +74,6 @@ public class MathUtil {
         return intervals;
     }
 
-
     /**
      * Finds the outliers in a dataset based on the Interquartile Range (IQR).
      *
