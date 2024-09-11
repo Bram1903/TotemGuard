@@ -51,19 +51,25 @@ public final class AutoTotemE extends Check implements TotemEventListener {
 
         List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(20);
 
-        if (recentIntervals.size() < 4) return;
+        if (recentIntervals.size() <= 4) return;
 
         Collection<Long> mellowedIntervals = MathUtil.removeOutliers(recentIntervals);
         double modifiedDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(mellowedIntervals));
+        if (mellowedIntervals.size() > 5) return;
 
-        if (mellowedIntervals.size() < 5 || modifiedDeviation >= settings.getLowSDThreshold()) {
+        //plugin.debug("[AutoTotemE] " + player.getName() + " - Modified deviation: " + modifiedDeviation);
+
+        int consecutiveLowSDCount = lowSDCountMap.getOrDefault(player.getUniqueId(), 0);
+        if (modifiedDeviation >= settings.getLowSDThreshold()) {
+            consecutiveLowSDCount = Math.max(0, consecutiveLowSDCount - 1);
+            lowSDCountMap.put(player.getUniqueId(), consecutiveLowSDCount);
             return;
         }
 
-        int consecutiveLowSDCount = lowSDCountMap.getOrDefault(player.getUniqueId(), 0) + 1;
+        consecutiveLowSDCount++;
         lowSDCountMap.put(player.getUniqueId(), consecutiveLowSDCount);
 
-        if (consecutiveLowSDCount >= 1) {
+        if (consecutiveLowSDCount >= 2) {
             lowSDCountMap.remove(player.getUniqueId());
             flag(player, createComponent(modifiedDeviation, totemPlayer.getTotemData().getLatestStandardDeviation(), recentIntervals.size(), mellowedIntervals.size()), settings);
         }

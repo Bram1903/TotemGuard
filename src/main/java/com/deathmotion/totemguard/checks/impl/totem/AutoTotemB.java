@@ -48,34 +48,79 @@ public final class AutoTotemB extends Check implements TotemEventListener {
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
 
-        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(4);
-        if (recentIntervals.size() < 2) {
-            plugin.debug(player.getName() + " - Not enough intervals for SD calculation.");
+        // Fetch a larger sample of recent intervals (e.g., 8 or more) for better analysis.
+        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(8);
+        if (recentIntervals.size() < 5) return;
+
+        // Remove outliers to improve accuracy
+        recentIntervals = MathUtil.removeOutliers(recentIntervals);
+
+        // Calculate mean, median, and standard deviation
+        double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(recentIntervals));
+        double mean = MathUtil.getMean(recentIntervals);
+        double median = MathUtil.getMedian(recentIntervals.stream().map(Long::doubleValue).toList());
+
+        // Use rolling windows to look for inconsistencies
+        List<Long> recentSubset = recentIntervals.subList(Math.max(recentIntervals.size() - 5, 0), recentIntervals.size());
+        double recentSD = MathUtil.getStandardDeviation(recentSubset);
+        double recentMean = MathUtil.getMean(recentSubset);
+
+        plugin.debug(player.getName() + " - Recent intervals (filtered): " + recentIntervals);
+        plugin.debug(player.getName() + " - Standard deviation: " + standardDeviation);
+        plugin.debug(player.getName() + " - Mean: " + mean + ", Median: " + median);
+
+        plugin.debug(player.getName() + " - Recent subset intervals: " + recentSubset);
+        plugin.debug(player.getName() + " - Recent subset SD: " + recentSD + ", Mean: " + recentMean);
+
+        int consecutiveLowSDCount = lowSDCountMap.getOrDefault(player.getUniqueId(), 0);
+
+        // Dynamic threshold based on recent behavior
+        double adjustedSDThreshold = settings.getLowSDThreshold() * (1 + (consecutiveLowSDCount * 0.1));
+
+        if (standardDeviation >= adjustedSDThreshold && recentSD >= adjustedSDThreshold) {
+            // Gradually decrease violation counts instead of decrementing by 1
+            consecutiveLowSDCount = Math.max(0, consecutiveLowSDCount - 1);
+            lowSDCountMap.put(player.getUniqueId(), consecutiveLowSDCount);
             return;
         }
 
-        plugin.debug(player.getName() + " - Recent intervals: " + recentIntervals);
-        double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(recentIntervals));
-        plugin.debug(player.getName() + " - Standard deviation: " + standardDeviation);
+        // Penalty for mixed consistency: flag if there's a large discrepancy between recent SD and overall SD
+        double difference = MathUtil.differenceBetween(standardDeviation, recentSD);
+        plugin.debug(player.getName() + " - Difference between SDs: " + difference);
 
-        if (standardDeviation >= settings.getLowSDThreshold()) return;
+        if (difference > 3) {
+            plugin.debug(player.getName() + " - Mixed consistency detected, adding penalty.");
+            consecutiveLowSDCount++;
+        }
 
-        int consecutiveLowSDCount = lowSDCountMap.getOrDefault(player.getUniqueId(), 0) + 1;
+        // Increment consecutive low SD count if suspicious
+        consecutiveLowSDCount++;
         lowSDCountMap.put(player.getUniqueId(), consecutiveLowSDCount);
+        plugin.debug(player.getName() + " - Consecutive low SD count: " + consecutiveLowSDCount);
 
-        if (consecutiveLowSDCount >= 1) {
+        // Flagging the player after low SD count exceeds the threshold
+        if (consecutiveLowSDCount >= 5) {
             lowSDCountMap.remove(player.getUniqueId());
-            flag(player, createComponent(standardDeviation, recentIntervals), settings);
+            flag(player, createComponent(standardDeviation, mean, median, recentSD, recentMean), settings);
         }
     }
 
-    private Component createComponent(double sd, List<Long> intervals) {
+    private Component createComponent(double sd, double mean, double median, double recentSD, double recentMean) {
         return Component.text()
                 .append(Component.text("SD" + ": ", NamedTextColor.GRAY))
                 .append(Component.text(sd + "ms", NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.text("Intervals" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(intervals.toString(), NamedTextColor.GOLD))
+                .append(Component.text("Mean" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(mean + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Median" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(median + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Recent SD" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(recentSD + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Recent Mean" + ": ", NamedTextColor.GRAY))
+                .append(Component.text(recentMean + "ms", NamedTextColor.GOLD))
                 .build();
     }
 

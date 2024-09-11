@@ -174,6 +174,10 @@ public final class Settings {
                 this.punishable = punishable;
                 this.maxViolations = maxViolations;
             }
+
+            public CheckSettings(boolean enabled) {
+                this.enabled = enabled;
+            }
         }
 
         @Configuration
@@ -236,7 +240,7 @@ public final class Settings {
             private double lowSDThreshold  = 80.0;
 
             public AutoTotemE() {
-                super(false, 3);
+                super(false);
             }
         }
 
