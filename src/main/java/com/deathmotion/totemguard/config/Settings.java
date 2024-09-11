@@ -144,6 +144,9 @@ public final class Settings {
         @Comment("\nAutoTotemD Settings")
         private AutoTotemD autoTotemD = new AutoTotemD();
 
+        @Comment("\nAutoTotemE Settings")
+        private AutoTotemE autoTotemE = new AutoTotemE();
+
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -223,6 +226,17 @@ public final class Settings {
 
             public AutoTotemD() {
                 super(false, 2);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemE extends CheckSettings {
+            @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
+            private double lowSDThreshold  = 80.0;
+
+            public AutoTotemE() {
+                super(false, 3);
             }
         }
 

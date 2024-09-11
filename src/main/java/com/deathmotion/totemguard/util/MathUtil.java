@@ -74,7 +74,6 @@ public class MathUtil {
         return intervals;
     }
 
-
     /**
      * Finds the outliers in a dataset based on the Interquartile Range (IQR).
      *
@@ -106,6 +105,36 @@ public class MathUtil {
 
         return tuple;
     }
+
+    /**
+     * Removes the outliers in a dataset based on the Interquartile Range (IQR),
+     * by reusing the getOutliers method and returning a list of Longs.
+     *
+     * @param collection The dataset from which outliers should be removed.
+     * @return A list containing the values with outliers removed, cast to Long.
+     */
+    public List<Long> removeOutliers(final Collection<? extends Number> collection) {
+        // Get the outliers (both low and high) using the existing method
+        Pair<List<Double>, List<Double>> outliers = getOutliers(collection);
+
+        // Convert the collection to a list of doubles
+        final List<Double> values = new ArrayList<>();
+        for (final Number number : collection) {
+            values.add(number.doubleValue());
+        }
+
+        // Remove both low and high outliers from the values list
+        values.removeAll(outliers.getY()); // Remove high outliers
+
+        // Convert the remaining values to Long and return the list
+        List<Long> filteredValues = new ArrayList<>();
+        for (Double value : values) {
+            filteredValues.add(value.longValue());
+        }
+
+        return filteredValues;
+    }
+
 
     /**
      * Calculates the variance of a dataset.
