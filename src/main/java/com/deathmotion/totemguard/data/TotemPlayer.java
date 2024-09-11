@@ -46,11 +46,11 @@ public class TotemPlayer {
     private final ConcurrentLinkedDeque<Long> intervals = new ConcurrentLinkedDeque<>();
 
     public void addInterval(long interval) {
+        intervals.addLast(interval);
+
         if (intervals.size() >= 50) {
             intervals.poll();
         }
-
-        intervals.add(interval);
 
         latestStandardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(intervals));
     }
