@@ -56,7 +56,7 @@ public final class AutoTotemA extends Check implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
 
-        totemUsage.put(player.getUniqueId(), System.nanoTime());
+        totemUsage.put(player.getUniqueId(), System.currentTimeMillis());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
