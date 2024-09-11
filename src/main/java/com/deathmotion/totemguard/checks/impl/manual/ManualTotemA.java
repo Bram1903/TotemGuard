@@ -92,7 +92,7 @@ public final class ManualTotemA extends Check implements CommandExecutor, TabExe
         // If anyone knows a better way to handle this, please let me know.
         final TaskWrapper[] taskWrapper = new TaskWrapper[1];
         final AtomicBoolean checkCompleted = new AtomicBoolean(false);
-        final long startTime = System.nanoTime();
+        final long startTime = System.currentTimeMillis();
 
         taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (t) -> {
             FoliaScheduler.getEntityScheduler().run(target, plugin, (o) -> {
@@ -100,15 +100,14 @@ public final class ManualTotemA extends Check implements CommandExecutor, TabExe
                     return;
                 }
 
-                long currentElapsedNanos = System.nanoTime() - startTime;
-                int currentElapsedMillis = (int) (currentElapsedNanos / 1_000_000);
+                long currentElapsedTime = System.currentTimeMillis() - startTime;
 
                 if (hasTotemInOffhand(target)) {
                     target.getInventory().setItemInOffHand(originalTotem);
-                    flag(target, createDetails(sender, currentElapsedMillis), settings);
+                    flag(target, createDetails(sender, (int) currentElapsedTime), settings);
                     checkCompleted.set(true);
                     taskWrapper[0].cancel();
-                } else if (currentElapsedMillis >= settings.getCheckTime()) {
+                } else if (currentElapsedTime >= settings.getCheckTime()) {
                     target.getInventory().setItemInOffHand(originalTotem);
                     sender.sendMessage(Component.text(target.getName() + " has passed the check successfully!", NamedTextColor.GREEN));
                     checkCompleted.set(true);

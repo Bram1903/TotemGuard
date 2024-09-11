@@ -71,11 +71,10 @@ public final class TotemGuard extends JavaPlugin {
         }
 
         alertManager = new AlertManager(this);
-        userTracker = new UserTracker(this);
         discordManager = new DiscordManager(this);
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
-
+        userTracker = new UserTracker(this);
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
 
         new TotemGuardCommand(this);
@@ -108,7 +107,7 @@ public final class TotemGuard extends JavaPlugin {
 
     public void debug(String message) {
         if (configManager.getSettings().isDebug()) {
-            String debugMessage = "[DEBUG] " + message;
+            String debugMessage = "[TG DEBUG] " + message;
             getLogger().info(debugMessage);
             Bukkit.broadcast(Component.text(debugMessage), "TotemGuard.Debug");
         }

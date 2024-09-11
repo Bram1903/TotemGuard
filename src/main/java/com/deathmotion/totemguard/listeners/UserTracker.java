@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.listeners;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.TotemPlayer;
 import com.deathmotion.totemguard.manager.AlertManager;
+import com.deathmotion.totemguard.manager.CheckManager;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
@@ -33,12 +34,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class UserTracker implements PacketListener {
+    private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, TotemPlayer> totemPlayers = new ConcurrentHashMap<>();
 
     private final AlertManager alertManager;
+    private final CheckManager checkManager;
 
     public UserTracker(TotemGuard plugin) {
+        this.plugin = plugin;
+
         this.alertManager = plugin.getAlertManager();
+        this.checkManager = plugin.getCheckManager();
     }
 
     @Override
@@ -69,7 +75,10 @@ public class UserTracker implements PacketListener {
         UUID userUUID = event.getUser().getUUID();
         if (userUUID == null) return;
 
+        plugin.debug("Removing data for: " + userUUID);
+
         alertManager.removePlayer(userUUID);
+        checkManager.resetData(userUUID);
         totemPlayers.remove(userUUID);
     }
 

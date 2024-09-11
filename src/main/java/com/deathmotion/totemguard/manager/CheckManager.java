@@ -31,7 +31,6 @@ import com.deathmotion.totemguard.config.Settings;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
-import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import com.google.common.collect.ImmutableList;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
@@ -39,10 +38,9 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-public class CheckManager implements PacketListener {
+public class CheckManager {
     private final TotemGuard plugin;
     private final AlertManager alertManager;
     private final List<ICheck> checks;
@@ -54,6 +52,7 @@ public class CheckManager implements PacketListener {
         TotemProcessor.init(plugin);
 
         this.checks = ImmutableList.of(
+                TotemProcessor.getInstance(),
                 new AutoTotemA(plugin),
                 new AutoTotemB(plugin),
                 new AutoTotemC(plugin),
@@ -62,7 +61,6 @@ public class CheckManager implements PacketListener {
                 new ManualTotemA(plugin)
         );
 
-        PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.LOW);
         registerPacketListeners();
 
         long resetInterval = calculateResetInterval();
@@ -71,11 +69,6 @@ public class CheckManager implements PacketListener {
 
     private long calculateResetInterval() {
         return plugin.getConfigManager().getSettings().getResetViolationsInterval() * 60L * 20L;
-    }
-
-    @Override
-    public void onUserDisconnect(UserDisconnectEvent event) {
-        Optional.ofNullable(event.getUser().getUUID()).ifPresent(this::resetData);
     }
 
     public void resetData() {
@@ -92,7 +85,6 @@ public class CheckManager implements PacketListener {
 
     public void resetData(UUID uuid) {
         checks.forEach(check -> check.resetData(uuid));
-        plugin.debug("Reset data for " + uuid);
     }
 
     private void registerPacketListeners() {
