@@ -190,12 +190,6 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemB extends CheckSettings {
-            @Comment("\nSD Threshold: The threshold for the standard deviation.")
-            private double SDThreshold  = 30.0;
-
-            @Comment("\nLow SD Violations: The amount of low SD violations before flagging.")
-            private int lowSDViolations = 3;
-
             public AutoTotemB() {
                 super(false, 3);
             }
