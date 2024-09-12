@@ -119,11 +119,13 @@ public final class CrystalAuraA extends Check implements PacketListener, Listene
     public void resetData() {
         lastAttack.clear();
         attackTimesList.clear();
+        standardDeviations.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
         lastAttack.remove(uuid);
         attackTimesList.remove(uuid);
+        standardDeviations.remove(uuid);
     }
 }
