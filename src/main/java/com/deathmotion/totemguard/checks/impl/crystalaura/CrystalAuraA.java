@@ -76,8 +76,6 @@ public final class CrystalAuraA extends Check implements PacketListener, Listene
         plugin.debug("Player: " + player.getName());
         plugin.debug("Standard Deviation: " + stdev);
 
-        var settings = plugin.getConfigManager().getSettings().getChecks().getCrystalAuraA();
-
         // Add the standard deviation to the deque for this player
         ConcurrentLinkedDeque<Double> stdDevs = standardDeviations.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentLinkedDeque<>());
         stdDevs.addLast(stdev);
@@ -92,7 +90,8 @@ public final class CrystalAuraA extends Check implements PacketListener, Listene
         double mean = MathUtil.getMean(stdDevs);
         plugin.debug("Mean: " + mean);
 
-        if (mean <= 1) {
+        var settings = plugin.getConfigManager().getSettings().getChecks().getCrystalAuraA();
+        if (mean <= settings.getMeanThreshold()) {
             flag(player, createComponent(mean), settings);
         }
     }

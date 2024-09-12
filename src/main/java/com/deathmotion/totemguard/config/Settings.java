@@ -204,6 +204,7 @@ public final class Settings {
             @Comment("\nConsistent SD Range: The range for the standard average deviation.")
             private double consistentSDRange = 1.0;
 
+            @Comment("\nConsecutive Violations: The amount of consecutive violations before flagging.")
             private int consecutiveViolations = 3;
 
             public AutoTotemC() {
@@ -231,8 +232,8 @@ public final class Settings {
         @Configuration
         @Getter
         public static class CrystalAuraA extends CheckSettings {
-            @Comment("\nStdev Threshold: The threshold for the standard deviation.")
-            private int stdevThreshold = 1;
+            @Comment("\nMean Threshold: The mean threshold for the standard deviation.")
+            private int meanThreshold = 1;
 
             public CrystalAuraA() {
                 super(false, 5);
