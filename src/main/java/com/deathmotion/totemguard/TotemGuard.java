@@ -20,11 +20,9 @@ package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
-import com.deathmotion.totemguard.listeners.UserTracker;
-import com.deathmotion.totemguard.manager.AlertManager;
-import com.deathmotion.totemguard.manager.CheckManager;
-import com.deathmotion.totemguard.manager.DiscordManager;
-import com.deathmotion.totemguard.manager.PunishmentManager;
+import com.deathmotion.totemguard.manager.*;
+import com.deathmotion.totemguard.packetlisteners.EntityTracker;
+import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.TGVersion;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -52,6 +50,10 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private UserTracker userTracker;
     @Getter
+    private EntityCacheManager entityCacheManager;
+    @Getter
+    private EntityTracker entityTracker;
+    @Getter
     private DiscordManager discordManager;
     @Getter
     private PunishmentManager punishmentManager;
@@ -72,10 +74,14 @@ public final class TotemGuard extends JavaPlugin {
 
         userTracker = new UserTracker(this);
         alertManager = new AlertManager(this);
+        entityCacheManager = new EntityCacheManager(this);
+        entityTracker = new EntityTracker(this);
         discordManager = new DiscordManager(this);
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
+
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
+        PacketEvents.getAPI().getEventManager().registerListener(entityTracker, PacketListenerPriority.LOW);
 
         new TotemGuardCommand(this);
         new UpdateChecker(this);

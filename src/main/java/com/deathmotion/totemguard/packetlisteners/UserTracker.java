@@ -16,12 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.listeners;
+package com.deathmotion.totemguard.packetlisteners;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.TotemPlayer;
-import com.deathmotion.totemguard.manager.AlertManager;
-import com.deathmotion.totemguard.manager.CheckManager;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
@@ -73,6 +71,7 @@ public class UserTracker implements PacketListener {
 
         plugin.getAlertManager().removePlayer(userUUID);
         plugin.getCheckManager().resetData(userUUID);
+        plugin.getEntityCacheManager().removeUserCache(userUUID);
         totemPlayers.remove(userUUID);
     }
 

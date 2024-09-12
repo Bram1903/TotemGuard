@@ -144,11 +144,14 @@ public final class Settings {
         @Comment("\nAutoTotemD Settings")
         private AutoTotemD autoTotemD = new AutoTotemD();
 
-        @Comment("\nManualTotemA Settings")
-        private ManualTotemA manualTotemA = new ManualTotemA();
+        @Comment("\nCrystalAuraA Settings")
+        private CrystalAuraA crystalAuraA = new CrystalAuraA();
 
         @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
+
+        @Comment("\nManualTotemA Settings")
+        private ManualTotemA manualTotemA = new ManualTotemA();
 
         @Configuration
         @Getter
@@ -227,6 +230,25 @@ public final class Settings {
 
         @Configuration
         @Getter
+        public static class CrystalAuraA extends CheckSettings {
+            @Comment("\nStdev Threshold: The threshold for the standard deviation.")
+            private int stdevThreshold = 1;
+
+            public CrystalAuraA() {
+                super(false, 5);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class BadPacketsA extends CheckSettings {
+            public BadPacketsA() {
+                super(true, 60, 1);
+            }
+        }
+
+        @Configuration
+        @Getter
         public static class ManualTotemA extends CheckSettings {
             @Comment("\nCheck Time: Amount of time the /check command waits for a retotem. (in ms)")
             private int checkTime = 250;
@@ -236,14 +258,6 @@ public final class Settings {
 
             public ManualTotemA() {
                 super(false, 2);
-            }
-        }
-
-        @Configuration
-        @Getter
-        public static class BadPacketsA extends CheckSettings {
-            public BadPacketsA() {
-                super(true, 60, 1);
             }
         }
     }
