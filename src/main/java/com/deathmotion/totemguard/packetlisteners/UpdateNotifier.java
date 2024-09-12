@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.listeners;
+package com.deathmotion.totemguard.packetlisteners;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.Constants;

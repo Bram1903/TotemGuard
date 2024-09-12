@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.data.TotemPlayer;
-import com.deathmotion.totemguard.listeners.UserTracker;
+import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import org.bukkit.Bukkit;

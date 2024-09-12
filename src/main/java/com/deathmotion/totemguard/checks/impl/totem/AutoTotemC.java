@@ -62,7 +62,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
                 int consecutiveConsistentSDCount = consistentSDCountMap.getOrDefault(player.getUniqueId(), 0) + 1;
                 consistentSDCountMap.put(player.getUniqueId(), consecutiveConsistentSDCount);
 
-                if (consecutiveConsistentSDCount >= 1) {
+                if (consecutiveConsistentSDCount >= settings.getConsecutiveViolations()) {
                     consistentSDCountMap.remove(player.getUniqueId());
                     sdHistoryMap.remove(player.getUniqueId());  // Reset history after flagging
                     flag(player, createComponent(averageSDDifference), settings);

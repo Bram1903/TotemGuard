@@ -106,7 +106,7 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
             long timeToPickItem = state.timeToPickItem;
             long timeFromPickToLastDigging = currentTime - state.pickItemPacketTime;
 
-            final Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
+            final Settings.Checks.AutoTotemD settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemD();
 
             // Check if the average time per packet is within the expected range
             if (isWithinExpectedRange(averageTimePerPacket)) {

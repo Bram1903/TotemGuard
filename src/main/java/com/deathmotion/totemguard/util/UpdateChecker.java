@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.util;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.data.Constants;
-import com.deathmotion.totemguard.listeners.UpdateNotifier;
+import com.deathmotion.totemguard.packetlisteners.UpdateNotifier;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
