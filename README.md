@@ -55,7 +55,6 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 - **AutoTotemB** - Consistency of totem replacements
 - **AutoTotemC** - Difference between consistency of totem replacements
 - **AutoTotemD** - Packet sequence of totem replacement
-- **AutoTotemE** - Consistency of totem replacements (alternative)
 
 ### BadPackets
 
