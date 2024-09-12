@@ -79,4 +79,8 @@ public class UserTracker implements PacketListener {
     public Optional<TotemPlayer> getTotemPlayer(UUID uuid) {
         return Optional.ofNullable(totemPlayers.get(uuid));
     }
+
+    public void clearTotemData() {
+        totemPlayers.values().forEach(x -> x.getTotemData().clear());
+    }
 }

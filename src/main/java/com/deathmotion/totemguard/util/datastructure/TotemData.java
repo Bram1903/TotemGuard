@@ -49,7 +49,8 @@ public class TotemData {
                 .toList();
     }
 
-    public double getLatestStandardDeviation(int amount) {
-        return MathUtil.trim(2, MathUtil.getStandardDeviation(getLatestIntervals(amount)));
+    public void clear() {
+        latestStandardDeviation = 0;
+        intervals.clear();
     }
 }

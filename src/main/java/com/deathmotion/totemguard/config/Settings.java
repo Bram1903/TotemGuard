@@ -144,9 +144,6 @@ public final class Settings {
         @Comment("\nAutoTotemD Settings")
         private AutoTotemD autoTotemD = new AutoTotemD();
 
-        @Comment("\nAutoTotemE Settings")
-        private AutoTotemE autoTotemE = new AutoTotemE();
-
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -174,10 +171,6 @@ public final class Settings {
                 this.punishable = punishable;
                 this.maxViolations = maxViolations;
             }
-
-            public CheckSettings(boolean enabled) {
-                this.enabled = enabled;
-            }
         }
 
         @Configuration
@@ -197,8 +190,11 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemB extends CheckSettings {
-            @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
-            private double lowSDThreshold  = 30.0;
+            @Comment("\nSD Threshold: The threshold for the standard deviation.")
+            private double SDThreshold  = 30.0;
+
+            @Comment("\nLow SD Violations: The amount of low SD violations before flagging.")
+            private int lowSDViolations = 3;
 
             public AutoTotemB() {
                 super(false, 3);
@@ -230,17 +226,6 @@ public final class Settings {
 
             public AutoTotemD() {
                 super(false, 2);
-            }
-        }
-
-        @Configuration
-        @Getter
-        public static class AutoTotemE extends CheckSettings {
-            @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
-            private double lowSDThreshold  = 80.0;
-
-            public AutoTotemE() {
-                super(false);
             }
         }
 
