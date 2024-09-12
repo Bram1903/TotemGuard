@@ -14,6 +14,9 @@ repositories {
     maven {
         url = uri("https://repo.codemc.io/repository/maven-releases/")
     }
+    maven {
+        url = uri("https://jitpack.io")
+    }
 }
 
 java {
@@ -28,6 +31,7 @@ dependencies {
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
+    compileOnly(libs.betterreload.api)
     annotationProcessor(libs.lombok)
 }
 

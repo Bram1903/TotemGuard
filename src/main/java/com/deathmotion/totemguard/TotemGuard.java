@@ -20,6 +20,11 @@ package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
+import com.deathmotion.totemguard.listeners.ReloadListener;
+import com.deathmotion.totemguard.manager.AlertManager;
+import com.deathmotion.totemguard.manager.CheckManager;
+import com.deathmotion.totemguard.manager.DiscordManager;
+import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.packetlisteners.EntityTracker;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
@@ -82,6 +87,9 @@ public final class TotemGuard extends JavaPlugin {
 
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
         PacketEvents.getAPI().getEventManager().registerListener(entityTracker, PacketListenerPriority.LOW);
+
+        if (Bukkit.getPluginManager().getPlugin("BetterReload") != null)
+            Bukkit.getPluginManager().registerEvents(new ReloadListener(this), this);
 
         new TotemGuardCommand(this);
         new UpdateChecker(this);
