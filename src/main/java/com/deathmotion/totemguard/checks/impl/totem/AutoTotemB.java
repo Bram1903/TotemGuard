@@ -83,16 +83,14 @@ public final class AutoTotemB extends Check implements TotemEventListener {
 
         // Dynamic thresholds based on standard deviation and mean
         double dynamicLowThreshold = Math.max(50, mean - standardDeviation * 1.5);
-        double dynamicHighThreshold = Math.min(350, mean + standardDeviation * 1.5);
 
         // Add more tolerance to higher deviations for legit players
         if (standardDeviation > 60) {
             dynamicLowThreshold *= 1.2;
-            dynamicHighThreshold *= 1.2;
         }
 
         // Adjust detection logic based on more refined thresholds
-        if (isSuspiciousBehavior(standardDeviation, skewness, lowOutliers, highOutliers, dynamicLowThreshold, dynamicHighThreshold)) {
+        if (isSuspiciousBehavior(standardDeviation, skewness, lowOutliers, highOutliers, dynamicLowThreshold)) {
             flag(player, createComponent(standardDeviation, mean, skewness, lowOutliers.size(), highOutliers.size()), plugin.getConfigManager().getSettings().getChecks().getAutoTotemB());
         }
 
@@ -100,7 +98,7 @@ public final class AutoTotemB extends Check implements TotemEventListener {
         data.trimToSize(10);
     }
 
-    private boolean isSuspiciousBehavior(double standardDeviation, double skewness, List<Double> lowOutliers, List<Double> highOutliers, double lowThreshold, double highThreshold) {
+    private boolean isSuspiciousBehavior(double standardDeviation, double skewness, List<Double> lowOutliers, List<Double> highOutliers, double lowThreshold) {
         // Cheaters will have more consistent low outliers and narrow deviations
         boolean lowStdDev = standardDeviation < 40; // Tightened threshold for faster detection
         boolean abnormalSkewness = Math.abs(skewness) > 1.0 || skewness < -1.0; // Stricter skewness threshold

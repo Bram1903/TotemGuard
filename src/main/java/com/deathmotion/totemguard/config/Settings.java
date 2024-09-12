@@ -201,6 +201,8 @@ public final class Settings {
             @Comment("\nConsistent SD Range: The range for the standard average deviation.")
             private double consistentSDRange = 1.0;
 
+            private int consecutiveViolations = 3;
+
             public AutoTotemC() {
                 super(false, 5);
             }
