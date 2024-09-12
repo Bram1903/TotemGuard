@@ -45,39 +45,24 @@ public final class AutoTotemB extends Check implements TotemEventListener {
 
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
-        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(10);
-        if (intervals.size() < 2) return;
+        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(15);
+        if (intervals.size() < 4) return;
 
+        // Calculate standard deviation, mean, skewness, and outliers
         double standardDeviation = MathUtil.getStandardDeviation(intervals);
         double mean = MathUtil.getMean(intervals);
         double skewness = MathUtil.getSkewness(intervals);
-        Pair<List<Double>, List<Double>> outliers = MathUtil.getOutliers(intervals);
+        List<Double> lowOutliers = MathUtil.getOutliers(intervals).getX();
 
-        boolean lowStandardDeviation = standardDeviation < 50;
-        boolean lowMean = mean < 150;
-        boolean lowSkewness = Math.abs(skewness) > 0.2;
-        boolean outliersXSize = !outliers.getX().isEmpty();
-
-        plugin.debug("=====================================");
+        plugin.debug("===================");
         plugin.debug("Player: " + player.getName());
         plugin.debug("Standard Deviation: " + standardDeviation);
         plugin.debug("Mean: " + mean);
         plugin.debug("Skewness: " + skewness);
-        plugin.debug("Outliers X: " + outliers.getX().toString());
-
-        plugin.debug("Low Standard Deviation: " + lowStandardDeviation);
-        plugin.debug("Low Mean: " + lowMean);
-        plugin.debug("Low Skewness: " + lowSkewness);
-        plugin.debug("Outliers X Size: " + outliersXSize);
-
-        // More flexible flagging logic
-        if ((lowStandardDeviation && lowMean) || (lowStandardDeviation && lowSkewness) || (lowMean && outliersXSize)) {
-            var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
-            flag(player, createComponent(standardDeviation, mean, skewness, outliers.getX().size()), settings);
-        }
+        plugin.debug("Low Outliers: " + lowOutliers);
     }
 
-    private Component createComponent(double sd, double mean, double skewness, int outliersXSize) {
+    private Component createComponent(double sd, double mean, double skewness) {
         return Component.text()
                 .append(Component.text("SD" + ": ", NamedTextColor.GRAY))
                 .append(Component.text(sd + "ms", NamedTextColor.GOLD))
@@ -87,9 +72,6 @@ public final class AutoTotemB extends Check implements TotemEventListener {
                 .append(Component.newline())
                 .append(Component.text("Skewness" + ": ", NamedTextColor.GRAY))
                 .append(Component.text(skewness, NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Outliers X Size" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(outliersXSize, NamedTextColor.GOLD))
                 .build();
     }
 

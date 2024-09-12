@@ -54,26 +54,6 @@ public class MathUtil {
                 .sum();
     }
 
-    public Collection<Long> calculateIntervals(final Collection<Long> collectionOne, final Collection<Long> collectionTwo) {
-        int size = Math.min(collectionOne.size(), collectionTwo.size());
-        List<Long> intervals = new ArrayList<>(size);
-
-        var collectionOneIter = collectionOne.iterator();
-        var collectionTwoIter = collectionTwo.iterator();
-
-        while (collectionOneIter.hasNext() && collectionTwoIter.hasNext()) {
-            Long collectionOneTime = collectionOneIter.next();
-            Long collectionTwoTime = collectionTwoIter.next();
-
-            if (collectionOneTime != null && collectionTwoTime != null) {
-                long interval = Math.abs(collectionTwoTime - collectionOneTime);
-                intervals.add(interval);
-            }
-        }
-
-        return intervals;
-    }
-
     /**
      * Finds the outliers in a dataset based on the Interquartile Range (IQR).
      *
