@@ -76,6 +76,7 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 - **Bypass** - The plugin allows players to bypass the checks if they have the `TotemGuard.Bypass` permission and the
   bypass setting is enabled.
 - **Bedrock Exception** - The plugin doesn't check players who are using Bedrock Edition, preventing false positives.
+- **Supports BetterReload** - This plugin integrates with the [BetterReload](https://modrinth.com/plugin/betterreload) plugin.
 
 ## Commands
 
