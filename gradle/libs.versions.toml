@@ -6,6 +6,7 @@ configlib = "4.5.0"
 shadow = "8.3.0"
 run-paper = "2.3.0"
 discord-webhooks = "0.8.0"
+betterreload = "v1.0.0"
 
 [libraries]
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
@@ -14,6 +15,7 @@ packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spi
 configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
 configlib-paper = { group = "de.exlll", name = "configlib-paper", version.ref = "configlib" }
 discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.ref = "discord-webhooks" }
+betterreload-api = { group = "com.github.amnoah.betterreload", name = "api", version.ref = "betterreload" }
 
 [plugins]
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }

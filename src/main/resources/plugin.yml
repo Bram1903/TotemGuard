@@ -12,6 +12,8 @@ libraries:
   - club.minnced:discord-webhooks:${discordWebhooksVersion}
 depend:
   - packetevents
+softdepend:
+  - BetterReload
 permissions:
   TotemGuard.*:
     description: Gives access to all TotemGuard permissions.

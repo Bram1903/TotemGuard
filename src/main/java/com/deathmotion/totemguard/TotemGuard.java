@@ -20,6 +20,7 @@ package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
+import com.deathmotion.totemguard.listeners.ReloadListener;
 import com.deathmotion.totemguard.listeners.UserTracker;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.CheckManager;
@@ -76,6 +77,8 @@ public final class TotemGuard extends JavaPlugin {
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
+        if (Bukkit.getPluginManager().getPlugin("BetterReload") != null)
+            Bukkit.getPluginManager().registerEvents(new ReloadListener(this), this);
 
         new TotemGuardCommand(this);
         new UpdateChecker(this);
