@@ -38,7 +38,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
 
         // Add the current SD to the history
         sdHistory.addLast(standardDeviation);
-        if (sdHistory.size() > 4) {
+        while (sdHistory.size() > 4) {
             sdHistory.pollFirst();
         }
 

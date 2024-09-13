@@ -147,6 +147,9 @@ public final class Settings {
         @Comment("\nAutoTotemE Settings")
         private AutoTotemE autoTotemE = new AutoTotemE();
 
+        @Comment("\nAutoTotemF Settings")
+        private AutoTotemF autoTotemF = new AutoTotemF();
+
         @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -242,6 +245,16 @@ public final class Settings {
         @Getter
         public static class AutoTotemE extends CheckSettings {
             public AutoTotemE() {
+                super(false, 3);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemF extends CheckSettings {
+
+
+            public AutoTotemF() {
                 super(false, 3);
             }
         }

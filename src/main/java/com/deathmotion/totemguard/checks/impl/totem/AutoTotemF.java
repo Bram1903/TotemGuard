@@ -24,6 +24,8 @@ import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.data.TotemPlayer;
 import com.deathmotion.totemguard.util.MathUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -35,7 +37,7 @@ public final class AutoTotemF extends Check implements TotemEventListener {
 
     private final TotemGuard plugin;
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> lowOutliersTracker = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, Integer> eventCountTracker = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> averageStDev = new ConcurrentHashMap<>();
 
     public AutoTotemF(TotemGuard plugin) {
         super(plugin, "AutoTotemF", "Impossible low outliers", true);
@@ -47,39 +49,69 @@ public final class AutoTotemF extends Check implements TotemEventListener {
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         UUID playerId = player.getUniqueId();
-        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(5);
-        if (intervals.size() < 5) return;
-
-        int currentEvent = this.eventCountTracker.getOrDefault(player.getUniqueId(), 0) + 1;
-        this.eventCountTracker.put(player.getUniqueId(), currentEvent);
-        if (currentEvent <= 5) return;
-
-        eventCountTracker.put(playerId, 0);
+        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(15);
+        if (intervals.size() < 4) return;
 
         // Get the low outliers from the intervals
         List<Double> lowOutliers = MathUtil.getOutliers(intervals).getX();
-        plugin.debug("== AutoTotemF ==");
-        plugin.debug("Low Outliers: " + lowOutliers);
 
         // Add the current low outliers to the tracker
-        lowOutliersTracker.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>()).addAll(lowOutliers);
+        ConcurrentLinkedDeque<Double> playerOutliers = lowOutliersTracker.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
+        playerOutliers.addAll(lowOutliers);
 
-        ConcurrentLinkedDeque<Double> allOutliers = lowOutliersTracker.get(playerId);
-        while (allOutliers.size() > 10) {
-            allOutliers.pollFirst();
+        // Limit the stored outliers to the last 30 entries
+        while (playerOutliers.size() > 30) {
+            playerOutliers.poll();
         }
 
-        // Perform calculations if the size is exactly 30
-        if (allOutliers.size() == 10) {
-            double standardDeviation = MathUtil.getStandardDeviation(allOutliers);
-            double mean = MathUtil.getMean(allOutliers);
+        // Perform calculations if there are enough outliers
+        if (playerOutliers.size() >= 15) {
+            double standardDeviation = MathUtil.getStandardDeviation(playerOutliers);
 
-            plugin.debug("== AutoTotemF (15 Outliers) ==");
+            // Store standard deviations for consistency check
+            ConcurrentLinkedDeque<Double> stDevHistory = averageStDev.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
+            stDevHistory.addLast(standardDeviation);
+
+            // Limit the stored standard deviations to the last 10 entries
+            while (stDevHistory.size() > 10) {
+                stDevHistory.poll();
+            }
+
+            // Calculate average standard deviation to find consistency
+            double averageStDeviation = MathUtil.getMean(stDevHistory);
+            plugin.debug("== AutoTotemF (Consistency Check) ==");
             plugin.debug("Standard Deviation: " + MathUtil.trim(2, standardDeviation));
-            plugin.debug("Mean: " + MathUtil.trim(2, mean) + "ms");
+            plugin.debug("Average Standard Deviation: " + MathUtil.trim(2, averageStDeviation) + "ms");
+
+            // Check if both the mean and standard deviation are consistently low
+            if (standardDeviation < 2.0 && averageStDeviation < 2.0) {
+                flag(player, createComponent(standardDeviation, averageStDeviation), plugin.getConfigManager().getSettings().getChecks().getAutoTotemF());
+            }
         } else {
             plugin.debug("== AutoTotemF ==");
-            plugin.debug("Added low outliers for player " + player.getName() + ". Current outliers count: " + allOutliers.size());
+            plugin.debug("Added low outliers for player " + player.getName() + ". Current outliers count: " + playerOutliers.size());
         }
+    }
+
+    private Component createComponent(double standardDeviation, double averageStDeviation) {
+        return Component.text()
+                .append(Component.text("Standard Deviation: ", NamedTextColor.GRAY))
+                .append(Component.text(MathUtil.trim(2, standardDeviation) + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Average Stdev Mean: ", NamedTextColor.GRAY))
+                .append(Component.text(MathUtil.trim(2, averageStDeviation), NamedTextColor.GOLD))
+                .build();
+    }
+
+    @Override
+    public void resetData() {
+        lowOutliersTracker.clear();
+        averageStDev.clear();
+    }
+
+    @Override
+    public void resetData(UUID uuid) {
+        lowOutliersTracker.remove(uuid);
+        averageStDev.remove(uuid);
     }
 }
