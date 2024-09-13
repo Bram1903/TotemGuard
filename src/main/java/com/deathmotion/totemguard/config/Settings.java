@@ -144,9 +144,6 @@ public final class Settings {
         @Comment("\nAutoTotemD Settings")
         private AutoTotemD autoTotemD = new AutoTotemD();
 
-        @Comment("\nCrystalAuraA Settings")
-        private CrystalAuraA crystalAuraA = new CrystalAuraA();
-
         @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -226,17 +223,6 @@ public final class Settings {
 
             public AutoTotemD() {
                 super(false, 2);
-            }
-        }
-
-        @Configuration
-        @Getter
-        public static class CrystalAuraA extends CheckSettings {
-            @Comment("\nMean Threshold: The mean threshold for the standard deviation.")
-            private int meanThreshold = 1;
-
-            public CrystalAuraA() {
-                super(false, 5);
             }
         }
 

@@ -71,7 +71,6 @@ public class UserTracker implements PacketListener {
 
         plugin.getAlertManager().removePlayer(userUUID);
         plugin.getCheckManager().resetData(userUUID);
-        plugin.getEntityCacheManager().removeUserCache(userUUID);
         totemPlayers.remove(userUUID);
     }
 
