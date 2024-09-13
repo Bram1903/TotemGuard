@@ -50,7 +50,7 @@ public final class AutoTotemB extends Check implements TotemEventListener {
         List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(2);
         if (intervals.size() < 2) return;
 
-        double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(intervals));
+        double standardDeviation = MathUtil.getStandardDeviation(intervals);
         double mean = MathUtil.getMean(intervals);
 
         //plugin.debug("== AutoTotemB ==");
@@ -73,10 +73,10 @@ public final class AutoTotemB extends Check implements TotemEventListener {
     private Component createComponent(double standardDeviation, double mean) {
         return Component.text()
                 .append(Component.text("Standard Deviation: ", NamedTextColor.GRAY))
-                .append(Component.text(standardDeviation, NamedTextColor.GOLD))
+                .append(Component.text(MathUtil.trim(2, standardDeviation), NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Mean: ", NamedTextColor.GRAY))
-                .append(Component.text(mean + "ms", NamedTextColor.GOLD))
+                .append(Component.text(MathUtil.trim(2, mean) + "ms", NamedTextColor.GOLD))
                 .build();
     }
 }

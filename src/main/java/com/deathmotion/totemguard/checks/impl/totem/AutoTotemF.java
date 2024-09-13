@@ -27,10 +27,15 @@ import com.deathmotion.totemguard.util.MathUtil;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public final class AutoTotemF extends Check implements TotemEventListener {
 
     private final TotemGuard plugin;
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> lowOutliersTracker = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Integer> eventCountTracker = new ConcurrentHashMap<>();
 
     public AutoTotemF(TotemGuard plugin) {
         super(plugin, "AutoTotemF", "Impossible low outliers", true);
@@ -41,16 +46,40 @@ public final class AutoTotemF extends Check implements TotemEventListener {
 
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
-        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(30);
-        if (intervals.size() < 30) return;
+        UUID playerId = player.getUniqueId();
+        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(5);
+        if (intervals.size() < 5) return;
 
+        int currentEvent = this.eventCountTracker.getOrDefault(player.getUniqueId(), 0) + 1;
+        this.eventCountTracker.put(player.getUniqueId(), currentEvent);
+        if (currentEvent <= 5) return;
+
+        eventCountTracker.put(playerId, 0);
+
+        // Get the low outliers from the intervals
         List<Double> lowOutliers = MathUtil.getOutliers(intervals).getX();
-        double standardDeviation = MathUtil.getStandardDeviation(lowOutliers);
-        double mean = MathUtil.getMean(lowOutliers);
-
         plugin.debug("== AutoTotemF ==");
-        plugin.debug("Standard Deviation: " + standardDeviation);
-        plugin.debug("Mean: " + mean + "ms");
         plugin.debug("Low Outliers: " + lowOutliers);
+
+        // Add the current low outliers to the tracker
+        lowOutliersTracker.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>()).addAll(lowOutliers);
+
+        ConcurrentLinkedDeque<Double> allOutliers = lowOutliersTracker.get(playerId);
+        while (allOutliers.size() > 10) {
+            allOutliers.pollFirst();
+        }
+
+        // Perform calculations if the size is exactly 30
+        if (allOutliers.size() == 10) {
+            double standardDeviation = MathUtil.getStandardDeviation(allOutliers);
+            double mean = MathUtil.getMean(allOutliers);
+
+            plugin.debug("== AutoTotemF (15 Outliers) ==");
+            plugin.debug("Standard Deviation: " + MathUtil.trim(2, standardDeviation));
+            plugin.debug("Mean: " + MathUtil.trim(2, mean) + "ms");
+        } else {
+            plugin.debug("== AutoTotemF ==");
+            plugin.debug("Added low outliers for player " + player.getName() + ". Current outliers count: " + allOutliers.size());
+        }
     }
 }
