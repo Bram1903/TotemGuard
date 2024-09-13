@@ -144,6 +144,9 @@ public final class Settings {
         @Comment("\nAutoTotemD Settings")
         private AutoTotemD autoTotemD = new AutoTotemD();
 
+        @Comment("\nAutoTotemE Settings")
+        private AutoTotemE autoTotemE = new AutoTotemE();
+
         @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -190,6 +193,15 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemB extends CheckSettings {
+            @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
+            private double standardDeviationThreshold = 30.0;
+
+            @Comment("\nMean Threshold: The threshold for the mean.")
+            private double meanThreshold = 500.0;
+
+            @Comment("\nConsecutive Low SD Count: The amount of consecutive low standard deviations before flagging.")
+            private int consecutiveLowSDCount = 3;
+
             public AutoTotemB() {
                 super(false, 3);
             }
@@ -223,6 +235,14 @@ public final class Settings {
 
             public AutoTotemD() {
                 super(false, 2);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemE extends CheckSettings {
+            public AutoTotemE() {
+                super(false, 3);
             }
         }
 

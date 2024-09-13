@@ -58,6 +58,8 @@ public class CheckManager {
                 new AutoTotemB(plugin),
                 new AutoTotemC(plugin),
                 new AutoTotemD(plugin),
+                new AutoTotemE(plugin),
+                new AutoTotemF(plugin),
                 new BadPacketsA(plugin),
                 new ManualTotemA(plugin)
         );
