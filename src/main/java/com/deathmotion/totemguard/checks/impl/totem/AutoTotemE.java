@@ -42,7 +42,7 @@ public final class AutoTotemE extends Check implements TotemEventListener {
     private final ConcurrentHashMap<UUID, CheckData> playerDataMap = new ConcurrentHashMap<>();
 
     public AutoTotemE(TotemGuard plugin) {
-        super(plugin, "AutoTotemB", "Impossible consistency", true);
+        super(plugin, "AutoTotemE", "Impossible consistency", true);
         this.plugin = plugin;
 
         TotemProcessor.getInstance().registerListener(this);
@@ -64,13 +64,13 @@ public final class AutoTotemE extends Check implements TotemEventListener {
         List<Double> lowOutliers = outliers.getX();  // Low outliers (fast actions)
         List<Double> highOutliers = outliers.getY(); // High outliers (slow actions)
 
-        plugin.debug("===================");
-        plugin.debug("Player: " + player.getName());
-        plugin.debug("Standard Deviation: " + standardDeviation);
-        plugin.debug("Mean: " + mean);
-        plugin.debug("Skewness: " + skewness);
-        plugin.debug("Low Outliers: " + lowOutliers);
-        plugin.debug("High Outliers: " + highOutliers);
+        //plugin.debug("===================");
+        //plugin.debug("Player: " + player.getName());
+        //plugin.debug("Standard Deviation: " + standardDeviation);
+        //plugin.debug("Mean: " + mean);
+        //plugin.debug("Skewness: " + skewness);
+        //plugin.debug("Low Outliers: " + lowOutliers);
+        //plugin.debug("High Outliers: " + highOutliers);
 
         // Retrieve or create player data
         CheckData data = playerDataMap.computeIfAbsent(playerUUID, uuid -> new CheckData());
