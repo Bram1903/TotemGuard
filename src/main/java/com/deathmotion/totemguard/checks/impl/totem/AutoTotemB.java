@@ -73,7 +73,7 @@ public final class AutoTotemB extends Check implements TotemEventListener {
     private Component createComponent(double standardDeviation, double mean) {
         return Component.text()
                 .append(Component.text("Standard Deviation: ", NamedTextColor.GRAY))
-                .append(Component.text(standardDeviation + "ms", NamedTextColor.GOLD))
+                .append(Component.text(standardDeviation, NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Mean: ", NamedTextColor.GRAY))
                 .append(Component.text(mean + "ms", NamedTextColor.GOLD))

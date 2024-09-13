@@ -89,7 +89,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
     private Component createComponent(double averageSDDifference) {
         return Component.text()
                 .append(Component.text("Average SD Difference: ", NamedTextColor.GRAY))
-                .append(Component.text(averageSDDifference + "ms", NamedTextColor.GOLD))
+                .append(Component.text(averageSDDifference, NamedTextColor.GOLD))
                 .build();
     }
 }

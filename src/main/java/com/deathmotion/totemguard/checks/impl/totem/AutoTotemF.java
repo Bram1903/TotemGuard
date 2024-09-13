@@ -49,7 +49,7 @@ public final class AutoTotemF extends Check implements TotemEventListener {
         double mean = MathUtil.getMean(lowOutliers);
 
         plugin.debug("== AutoTotemF ==");
-        plugin.debug("Standard Deviation: " + standardDeviation + "ms");
+        plugin.debug("Standard Deviation: " + standardDeviation);
         plugin.debug("Mean: " + mean + "ms");
         plugin.debug("Low Outliers: " + lowOutliers);
     }

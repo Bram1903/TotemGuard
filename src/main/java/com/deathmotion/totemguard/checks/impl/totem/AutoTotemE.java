@@ -37,8 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AutoTotemE extends Check implements TotemEventListener {
 
     private final TotemGuard plugin;
-
-    // Store player-specific previous data using ConcurrentHashMap for thread safety
     private final ConcurrentHashMap<UUID, CheckData> playerDataMap = new ConcurrentHashMap<>();
 
     public AutoTotemE(TotemGuard plugin) {
@@ -116,7 +114,7 @@ public final class AutoTotemE extends Check implements TotemEventListener {
     private Component createComponent(double sd, double mean, double skewness, int lowOutlierCount, int highOutlierCount) {
         return Component.text()
                 .append(Component.text("SD: ", NamedTextColor.GRAY))
-                .append(Component.text(sd + "ms", NamedTextColor.GOLD))
+                .append(Component.text(sd, NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Mean: ", NamedTextColor.GRAY))
                 .append(Component.text(mean + "ms", NamedTextColor.GOLD))
