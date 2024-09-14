@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
-import com.deathmotion.totemguard.database.AlertService;
+import com.deathmotion.totemguard.database.DatabaseService;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -39,11 +39,11 @@ public class AlertManager {
     private final Set<Player> enabledAlerts = new CopyOnWriteArraySet<>();
 
     private final TotemGuard plugin;
-    private final AlertService alertService;
+    private final DatabaseService alertService;
 
     public AlertManager(TotemGuard plugin) {
         this.plugin = plugin;
-        this.alertService = plugin.getAlertService();
+        this.alertService = plugin.getDatabaseService();
     }
 
     public void sendAlert(TotemPlayer totemPlayer, CheckDetails alert) {

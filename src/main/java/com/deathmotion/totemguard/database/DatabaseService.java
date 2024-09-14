@@ -22,17 +22,18 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
+import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import io.ebean.Database;
 
 import java.util.List;
 import java.util.UUID;
 
-public class AlertService {
+public class DatabaseService {
 
     private final TotemGuard plugin;
     private final Database database;
 
-    public AlertService(TotemGuard plugin) {
+    public DatabaseService(TotemGuard plugin) {
         this.plugin = plugin;
         this.database = plugin.getDatabaseManager().getDatabase();
     }
@@ -48,6 +49,10 @@ public class AlertService {
 
     public List<Alert> getAlerts(UUID uuid) {
         return database.find(Alert.class).where().eq("uuid", uuid).findList();
+    }
+
+    public List<Punishment> getPunishments(UUID uuid) {
+        return database.find(Punishment.class).where().eq("uuid", uuid).findList();
     }
 
     public int deleteAlerts(UUID uuid) {

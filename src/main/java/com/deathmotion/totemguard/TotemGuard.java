@@ -20,7 +20,7 @@ package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
-import com.deathmotion.totemguard.database.AlertService;
+import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.listeners.ReloadListener;
 import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
@@ -49,7 +49,7 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private DatabaseManager databaseManager;
     @Getter
-    private AlertService alertService;
+    private DatabaseService databaseService;
 
     @Getter
     private AlertManager alertManager;
@@ -75,7 +75,7 @@ public final class TotemGuard extends JavaPlugin {
         }
 
         databaseManager = new DatabaseManager(this);
-        alertService = new AlertService(this);
+        databaseService = new DatabaseService(this);
 
         userTracker = new UserTracker(this);
         alertManager = new AlertManager(this);
