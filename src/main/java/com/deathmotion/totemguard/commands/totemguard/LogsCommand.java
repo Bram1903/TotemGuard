@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
+import com.deathmotion.totemguard.data.SafetyStatus;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
@@ -65,7 +66,8 @@ public class LogsCommand implements SubCommand {
             List<Punishment> punishments = alertService.getPunishments(target.getUniqueId());
 
             long loadTime = System.currentTimeMillis() - startTime;
-            Component logsComponent = AlertCreator.createLogsComponent(target, alerts, punishments, loadTime);
+            SafetyStatus safetyStatus = getSafetyStatus(alerts.size(), punishments.size());
+            Component logsComponent = AlertCreator.createLogsComponent(target, alerts, punishments, loadTime, safetyStatus);
             sender.sendMessage(logsComponent);
         });
 
@@ -74,7 +76,7 @@ public class LogsCommand implements SubCommand {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, String[] args) {
-        if (args.length == 2 && sender.hasPermission("TotemGuard.Logs")) {
+        if (args.length == 2) {
             String argsLowerCase = args[1].toLowerCase();
 
             return Bukkit.getOnlinePlayers().stream()
@@ -84,4 +86,42 @@ public class LogsCommand implements SubCommand {
         }
         return List.of();
     }
+
+    private SafetyStatus getSafetyStatus(int alerts, int punishments) {
+        if (alerts == 0 && punishments == 0) {
+            return SafetyStatus.SAFE;
+        }
+
+        // Multiple punishments with high alerts indicate a critical state
+        if (punishments > 2) {
+            if (alerts > 7) {
+                return SafetyStatus.DIABOLICAL;
+            } else if (alerts > 4) {
+                return SafetyStatus.DANGEROUS;
+            } else {
+                return SafetyStatus.SUSPICIOUS;
+            }
+        }
+
+        // Some punishments and varying alert levels
+        if (punishments > 0) {
+            if (alerts > 8) {
+                return SafetyStatus.DIABOLICAL;
+            } else if (alerts > 5) {
+                return SafetyStatus.DANGEROUS;
+            } else if (alerts > 2) {
+                return SafetyStatus.SUSPICIOUS;
+            } else {
+                return SafetyStatus.ALERTED;
+            }
+        }
+
+        // No punishments but alerts are present
+        if (alerts > 10) {
+            return SafetyStatus.SUSPICIOUS;
+        } else {
+            return SafetyStatus.ALERTED;
+        }
+    }
+
 }
