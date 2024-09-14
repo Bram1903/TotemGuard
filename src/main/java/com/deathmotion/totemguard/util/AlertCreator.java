@@ -20,12 +20,20 @@ package com.deathmotion.totemguard.util;
 
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.database.entities.impl.Alert;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.OfflinePlayer;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class AlertCreator {
     public static Component createAlertComponent(TotemPlayer player, CheckDetails checkDetails, Component details, String prefix) {
@@ -95,5 +103,50 @@ public class AlertCreator {
         }
 
         return message;
+    }
+
+    public static Component createLogsComponent(OfflinePlayer player, List<Alert> alerts, long loadTime) {
+        // Group alerts by check name and count them
+        Map<String, Long> checkCounts = alerts.stream()
+                .collect(Collectors.groupingBy(Alert::getCheckName, Collectors.counting()));
+
+        // Sort the map entries by count in descending order
+        List<Map.Entry<String, Long>> sortedCheckCounts = checkCounts.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .toList();
+
+        // Start building the component using a builder
+        TextComponent.Builder componentBuilder = Component.text()
+                .append(Component.text("TotemGuard Logs ", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.newline())
+                .append(Component.text("Player: ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                .append(Component.text(player.getName() != null ? player.getName() : "Unknown", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.text("Load Time: ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                .append(Component.text(loadTime + "ms", NamedTextColor.GOLD))
+                .append(Component.newline())
+                .append(Component.newline())
+                .append(Component.text("> Alert Summary <", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.newline());
+
+        if (sortedCheckCounts.isEmpty()) {
+            componentBuilder.append(Component.text(" No logs found.", NamedTextColor.GRAY, TextDecoration.ITALIC));
+        } else {
+            sortedCheckCounts.forEach(entry -> {
+                String checkName = entry.getKey();
+                Long count = entry.getValue();
+                componentBuilder.append(
+                        Component.text("- ", NamedTextColor.DARK_GRAY)
+                ).append(
+                        Component.text(checkName + ": ", NamedTextColor.GRAY, TextDecoration.BOLD)
+                ).append(
+                        Component.text(count + "x", NamedTextColor.GOLD)
+                ).append(
+                        Component.newline()
+                );
+            });
+        }
+
+        return componentBuilder.build();
     }
 }

@@ -22,14 +22,20 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.ConfigManager;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.data.Constants;
+import com.deathmotion.totemguard.database.AlertService;
+import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.manager.AlertManager;
+import com.deathmotion.totemguard.util.AlertCreator;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -37,7 +43,10 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TotemGuardCommand implements CommandExecutor, TabExecutor {
@@ -45,6 +54,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     private final TotemGuard plugin;
     private final ConfigManager configManager;
     private final AlertManager alertManager;
+    private final AlertService alertService;
 
     private Component versionComponent;
 
@@ -52,6 +62,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
         this.alertManager = plugin.getAlertManager();
+        this.alertService = plugin.getAlertService();
 
         plugin.getCommand("totemguard").setExecutor(this);
         loadVersionComponent();
@@ -77,6 +88,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         return switch (args[0].toLowerCase()) {
             case "alerts" -> handleAlertsCommand(sender, args);
             case "reload" -> handleReloadCommand(sender);
+            case "logs" -> handleLogsCommand(sender, args);
             default -> {
                 sendPrefixMessage(sender, Component.text("Usage: /totemguard <alerts|reload|info>", NamedTextColor.RED));
                 yield false;
@@ -118,13 +130,20 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     }
 
     private boolean hasRequiredPermissions(CommandSender sender) {
-        return sender.hasPermission("TotemGuard.Alerts") || sender.hasPermission("TotemGuard.Reload");
+        return sender.hasPermission("TotemGuard.Alerts") || sender.hasPermission("TotemGuard.Reload") || sender.hasPermission("TotemGuard.Logs");
     }
 
     private boolean handleAlertsCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("TotemGuard.Alerts")) {
+            sender.sendMessage(Component.text("You do not have permission to toggle alerts!", NamedTextColor.RED));
+            return false;
+        }
+
         if (args.length == 1) {
+            // Toggle alerts for the sender if they have the correct permission
             return toggleAlertsForSender(sender);
         } else if (sender.hasPermission("TotemGuard.Alerts.Others")) {
+            // Toggle alerts for another player if the sender has the permission to do so
             return toggleAlertsForOther(sender, args[1]);
         } else {
             sender.sendMessage(Component.text("You do not have permission to toggle alerts for other players!", NamedTextColor.RED));
@@ -164,8 +183,44 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     }
 
     private boolean handleReloadCommand(CommandSender sender) {
+        if (!sender.hasPermission("TotemGuard.Reload")) {
+            sender.sendMessage(Component.text("You do not have permission to reload the configuration!", NamedTextColor.RED));
+            return false;
+        }
+
         configManager.reload();
         sendPrefixMessage(sender, Component.text("The configuration has been reloaded!", NamedTextColor.GREEN));
+        return true;
+    }
+
+    private boolean handleLogsCommand(CommandSender sender, @NotNull String[] args) {
+        if (!sender.hasPermission("TotemGuard.Logs")) {
+            sender.sendMessage(Component.text("You do not have permission to view logs!", NamedTextColor.RED));
+            return false;
+        }
+
+        if (args.length != 2) {
+            sendPrefixMessage(sender, Component.text("Usage: /totemguard logs <player>", NamedTextColor.RED));
+            return false;
+        }
+
+        OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
+        if (!target.hasPlayedBefore()) {
+            sendPrefixMessage(sender, Component.text("Player not found!", NamedTextColor.RED));
+            return false;
+        }
+
+        sender.sendMessage(Component.text("Retrieving database logs..", NamedTextColor.WHITE));
+        long startTime = System.currentTimeMillis();
+
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            List<Alert> alerts = alertService.getAlerts(target.getUniqueId());
+
+            long loadTime = System.currentTimeMillis() - startTime;
+            Component logsComponent = AlertCreator.createLogsComponent(target, alerts, loadTime);
+            sender.sendMessage(logsComponent);
+        });
+
         return true;
     }
 

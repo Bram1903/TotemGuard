@@ -26,6 +26,7 @@ permissions:
       TotemGuard.Check: true
       TotemGuard.Alerts: true
       TotemGuard.Alerts.Others: true
+      TotemGuard.Logs: true
       TotemGuard.Bypass: true
       TotemGuard.Update: true
   TotemGuard.Reload:
@@ -39,6 +40,9 @@ permissions:
     default: op
   TotemGuard.Alerts.Others:
     description: Allows the player to use /totemguard alerts <player>.
+    default: op
+  TotemGuard.Logs:
+    description: Allows the player to use /totemguard logs.
     default: op
   TotemGuard.Bypass:
     description: Allows the player to bypass the checks.
