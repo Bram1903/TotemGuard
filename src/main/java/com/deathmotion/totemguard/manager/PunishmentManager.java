@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.manager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.database.DatabaseService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.jetbrains.annotations.Blocking;
 
@@ -29,10 +30,12 @@ import java.util.concurrent.CountDownLatch;
 public class PunishmentManager {
     private final TotemGuard plugin;
     private final DiscordManager discordManager;
+    private final DatabaseService databaseService;
 
     public PunishmentManager(TotemGuard plugin) {
         this.plugin = plugin;
         this.discordManager = plugin.getDiscordManager();
+        this.databaseService = plugin.getDatabaseService();
     }
 
     @Blocking
@@ -51,6 +54,7 @@ public class PunishmentManager {
 
     private void executePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
         FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
+            databaseService.savePunishment(totemPlayer, checkDetails);
             runPunishmentCommands(totemPlayer, checkDetails);
             discordManager.sendPunishment(totemPlayer, checkDetails);
         });

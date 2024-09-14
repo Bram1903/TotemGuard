@@ -32,12 +32,21 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.OfflinePlayer;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AlertCreator {
+    public static DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+    public static ZoneId zoneId = ZoneId.systemDefault();
+
     public static Component createAlertComponent(TotemPlayer player, CheckDetails checkDetails, Component details, String prefix) {
         Component hoverInfo = Component.text()
                 .append(Component.text("TPS: ", NamedTextColor.GRAY))
@@ -146,15 +155,10 @@ public class AlertCreator {
             sortedCheckCounts.forEach(entry -> {
                 String checkName = entry.getKey();
                 Long count = entry.getValue();
-                componentBuilder.append(
-                        Component.text("- ", NamedTextColor.DARK_GRAY)
-                ).append(
-                        Component.text(checkName + ": ", NamedTextColor.GRAY, TextDecoration.BOLD)
-                ).append(
-                        Component.text(count + "x", NamedTextColor.GOLD)
-                ).append(
-                        Component.newline()
-                );
+                componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text(checkName + ": ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                        .append(Component.text(count + "x", NamedTextColor.GOLD))
+                        .append(Component.newline());
             });
         }
 
@@ -162,22 +166,57 @@ public class AlertCreator {
                 .append(Component.text("> Punishments <", NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.newline());
 
-        if (punishments.isEmpty()) {
-            componentBuilder.append(Component.text(" No punishments found.", NamedTextColor.GRAY, TextDecoration.ITALIC));
-        } else {
-            punishments.forEach(punishment -> {
-                componentBuilder.append(
-                        Component.text("- ", NamedTextColor.DARK_GRAY)
-                ).append(
-                        Component.text(punishment.getCheckName() + ": ", NamedTextColor.GRAY, TextDecoration.BOLD)
-                ).append(
-                        Component.text("Punished", NamedTextColor.RED)
-                ).append(
-                        Component.newline()
-                );
-            });
+        if (punishments.size() > 5) {
+            componentBuilder.append(Component.text("Showing the last 5 punishments:", NamedTextColor.GRAY, TextDecoration.ITALIC))
+                    .append(Component.newline());
         }
 
+        // Sort the punishments by whenCreated in descending order (newest first)
+        List<Punishment> sortedPunishments = punishments.stream()
+                .sorted(Comparator.comparing(Punishment::getWhenCreated).reversed())
+                .toList();
+
+        List<Punishment> recentPunishments = sortedPunishments.stream()
+                .limit(5) // Take the first 5 elements (the newest ones)
+                .toList();
+
+        recentPunishments.forEach(punishment -> {
+            ZonedDateTime punishmentTime = ZonedDateTime.ofInstant(punishment.getWhenCreated(), zoneId);
+            String formattedDate = punishmentTime.format(shortFormatter);
+            String relativeTime = getRelativeTime(punishment.getWhenCreated());
+
+            componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text("Punished for ", NamedTextColor.GRAY))
+                    .append(Component.text(punishment.getCheckName(), NamedTextColor.GOLD, TextDecoration.BOLD))
+                    .append(Component.text(" on ", NamedTextColor.GRAY))
+                    .append(Component.text(formattedDate, NamedTextColor.GOLD)
+                            .hoverEvent(HoverEvent.showText(
+                                    Component.text("Occurred " + relativeTime, NamedTextColor.GRAY)
+                            )))
+                    .append(Component.newline());
+        });
+
+        if (punishments.size() > 5) {
+            componentBuilder.append(Component.text("... and more not displayed", NamedTextColor.GRAY, TextDecoration.ITALIC))
+                    .append(Component.newline());
+        }
+
+
         return componentBuilder.build();
+    }
+
+    public static String getRelativeTime(Instant past) {
+        Duration duration = Duration.between(past, Instant.now());
+        long seconds = duration.getSeconds();
+
+        if (seconds < 60) {
+            return "just now";
+        } else if (seconds < 3600) {
+            return seconds / 60 + " minutes ago";
+        } else if (seconds < 86400) {
+            return seconds / 3600 + " hours ago";
+        } else {
+            return seconds / 86400 + " days ago";
+        }
     }
 }

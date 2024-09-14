@@ -47,6 +47,15 @@ public class DatabaseService {
         alert.save();
     }
 
+    public void savePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
+        Punishment punishment = new Punishment();
+        punishment.setUuid(totemPlayer.getUuid());
+        punishment.setUsername(totemPlayer.getUsername());
+        punishment.setCheckName(checkDetails.getCheckName());
+
+        punishment.save();
+    }
+
     public List<Alert> getAlerts(UUID uuid) {
         return database.find(Alert.class).where().eq("uuid", uuid).findList();
     }

@@ -39,16 +39,16 @@ public class AlertManager {
     private final Set<Player> enabledAlerts = new CopyOnWriteArraySet<>();
 
     private final TotemGuard plugin;
-    private final DatabaseService alertService;
+    private final DatabaseService databaseService;
 
     public AlertManager(TotemGuard plugin) {
         this.plugin = plugin;
-        this.alertService = plugin.getDatabaseService();
+        this.databaseService = plugin.getDatabaseService();
     }
 
     public void sendAlert(TotemPlayer totemPlayer, CheckDetails alert) {
         enabledAlerts.forEach(player -> player.sendMessage(alert.getAlert()));
-        alertService.saveAlert(totemPlayer, alert);
+        databaseService.saveAlert(totemPlayer, alert);
     }
 
     public void sendAlert(Component message) {
