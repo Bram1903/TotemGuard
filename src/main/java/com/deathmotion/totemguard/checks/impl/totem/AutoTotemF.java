@@ -83,9 +83,11 @@ public final class AutoTotemF extends Check implements TotemEventListener {
             plugin.debug("Standard Deviation: " + MathUtil.trim(2, standardDeviation));
             plugin.debug("Average Standard Deviation: " + MathUtil.trim(2, averageStDeviation) + "ms");
 
+            var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
+
             // Check if both the mean and standard deviation are consistently low
-            if (standardDeviation < 2.0 && averageStDeviation < 2.0) {
-                flag(player, createComponent(standardDeviation, averageStDeviation), plugin.getConfigManager().getSettings().getChecks().getAutoTotemF());
+            if (standardDeviation < settings.getStandardDeviationThreshold() && averageStDeviation < settings.getAverageStDeviationThreshold()) {
+                flag(player, createComponent(standardDeviation, averageStDeviation), settings);
             }
         } else {
             plugin.debug("== AutoTotemF ==");
