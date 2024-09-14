@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     `maven-publish`
+    alias(libs.plugins.ebean)
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
 }
@@ -32,7 +33,14 @@ dependencies {
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
     compileOnly(libs.betterreload.api)
+    compileOnly(libs.ebean.core)
+    compileOnly(libs.ebean.sqlite)
+    compileOnly(libs.ebean.mysql)
     annotationProcessor(libs.lombok)
+    annotationProcessor(libs.ebean.processor)
+    testImplementation(libs.ebean.test)
+    testImplementation(libs.ebean.sqlite)
+    testImplementation(libs.ebean.mysql)
 }
 
 group = "com.deathmotion.totemguard"
@@ -68,12 +76,14 @@ tasks {
 
     processResources {
         inputs.property("version", project.version)
+        inputs.property("ebeanVersion", libs.versions.ebean.get())
         inputs.property("configlibVersion", libs.versions.configlib.get())
         inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
 
         filesMatching("plugin.yml") {
             expand(
                 "version" to rootProject.version,
+                "ebeanVersion" to libs.versions.ebean.get(),
                 "configlibVersion" to libs.versions.configlib.get(),
                 "discordWebhooksVersion" to libs.versions.discord.webhooks.get()
             )

@@ -20,11 +20,9 @@ package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
+import com.deathmotion.totemguard.database.AlertService;
 import com.deathmotion.totemguard.listeners.ReloadListener;
-import com.deathmotion.totemguard.manager.AlertManager;
-import com.deathmotion.totemguard.manager.CheckManager;
-import com.deathmotion.totemguard.manager.DiscordManager;
-import com.deathmotion.totemguard.manager.PunishmentManager;
+import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.TGVersion;
 import com.deathmotion.totemguard.util.UpdateChecker;
@@ -49,6 +47,11 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private ConfigManager configManager;
     @Getter
+    private DatabaseManager databaseManager;
+    @Getter
+    private AlertService alertService;
+
+    @Getter
     private AlertManager alertManager;
     @Getter
     private UserTracker userTracker;
@@ -70,6 +73,9 @@ public final class TotemGuard extends JavaPlugin {
             instance.getServer().getPluginManager().disablePlugin(instance);
             return;
         }
+
+        databaseManager = new DatabaseManager(this);
+        alertService = new AlertService(this);
 
         userTracker = new UserTracker(this);
         alertManager = new AlertManager(this);

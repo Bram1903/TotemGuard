@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.config;
 
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
+import io.ebean.annotation.Platform;
 import lombok.Getter;
 
 @Configuration
@@ -41,11 +42,36 @@ public final class Settings {
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
+    @Comment("\nDatabase settings:")
+    private Database database = new Database();
+
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();
 
     @Comment("\nChecks")
     private Checks checks = new Checks();
+
+    @Configuration
+    @Getter
+    public static class Database {
+        @Comment("Database Type: The type of database to use. (SQLite, MYSQL)")
+        private Platform type = Platform.SQLITE;
+
+        @Comment("Database Host: The host of the database.")
+        private String host = "localhost";
+
+        @Comment("Database Port: The port of the database.")
+        private int port = 3306;
+
+        @Comment("Database Name: The name of the database.")
+        private String name = "TotemGuard";
+
+        @Comment("Database Username: The username of the database.")
+        private String username = "root";
+
+        @Comment("Database Password: The password of the database.")
+        private String password = "password";
+    }
 
     @Configuration
     @Getter

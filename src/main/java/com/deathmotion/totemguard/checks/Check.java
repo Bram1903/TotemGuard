@@ -80,7 +80,7 @@ public abstract class Check implements ICheck {
             int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
             CheckDetails checkDetails = createCheckDetails(player, totemPlayer, details, settings, currentViolations);
 
-            alertManager.sendAlert(checkDetails.getAlert());
+            alertManager.sendAlert(totemPlayer, checkDetails);
             discordManager.sendAlert(totemPlayer, checkDetails);
 
             if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {
