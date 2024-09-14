@@ -66,6 +66,7 @@ public abstract class Check implements ICheck {
 
     public final void flag(Player player, Component details, Settings.Checks.CheckSettings settings) {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            if (player == null || !player.isOnline()) return;
             UUID uuid = player.getUniqueId();
 
             Optional<TotemPlayer> optionalTotemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
