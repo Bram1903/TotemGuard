@@ -253,10 +253,10 @@ public final class Settings {
         @Getter
         public static class AutoTotemF extends CheckSettings {
             @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
-            private double standardDeviationThreshold = 15.0;
+            private double standardDeviationThreshold = 10.0;
 
             @Comment("\nAverage Standard Deviation Threshold: The threshold for the average standard deviation.")
-            private double averageStDeviationThreshold = 15.0;
+            private double averageStDeviationThreshold = 10.0;
 
             public AutoTotemF() {
                 super(false, 3);
