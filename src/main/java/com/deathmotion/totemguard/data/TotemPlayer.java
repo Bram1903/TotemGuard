@@ -27,6 +27,8 @@ import java.util.UUID;
 
 @Getter
 public class TotemPlayer {
+    @Getter
+    private final TotemData totemData = new TotemData();
     @Setter
     private UUID uuid;
     @Setter
@@ -37,7 +39,4 @@ public class TotemPlayer {
     private ClientVersion clientVersion;
     @Setter
     private boolean bedrockPlayer;
-
-    @Getter
-    private final TotemData totemData = new TotemData();
 }
