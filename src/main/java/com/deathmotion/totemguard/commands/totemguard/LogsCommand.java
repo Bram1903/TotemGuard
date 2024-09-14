@@ -33,16 +33,20 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class LogsCommand implements SubCommand {
     private final TotemGuard plugin;
     private final DatabaseService alertService;
+    private final ZoneId zoneId;
 
     public LogsCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.alertService = plugin.getDatabaseService();
+        zoneId = ZoneId.systemDefault();
     }
 
     @Override
@@ -65,8 +69,15 @@ public class LogsCommand implements SubCommand {
             List<Alert> alerts = alertService.getAlerts(target.getUniqueId());
             List<Punishment> punishments = alertService.getPunishments(target.getUniqueId());
 
+            List<Alert> alertsToday = alerts.stream()
+                    .filter(alert -> alert.getWhenCreated()
+                            .atZone(zoneId)
+                            .toLocalDate()
+                            .equals(LocalDate.now()))
+                    .toList();
+
             long loadTime = System.currentTimeMillis() - startTime;
-            SafetyStatus safetyStatus = getSafetyStatus(alerts.size(), punishments.size());
+            SafetyStatus safetyStatus = getSafetyStatus(alertsToday.size(), punishments.size());
             Component logsComponent = AlertCreator.createLogsComponent(target, alerts, punishments, loadTime, safetyStatus);
             sender.sendMessage(logsComponent);
         });
@@ -117,7 +128,9 @@ public class LogsCommand implements SubCommand {
         }
 
         // No punishments but alerts are present
-        if (alerts > 10) {
+        if (alerts > 7) {
+            return SafetyStatus.DANGEROUS; // Elevated state due to high alerts even without punishments
+        } else if (alerts > 4) {
             return SafetyStatus.SUSPICIOUS;
         } else {
             return SafetyStatus.ALERTED;
