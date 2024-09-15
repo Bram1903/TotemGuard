@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.data.SafetyStatus;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
-import com.deathmotion.totemguard.util.AlertCreator;
+import com.deathmotion.totemguard.util.messages.ProfileCreator;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -38,12 +38,12 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class LogsCommand implements SubCommand {
+public class ProfileCommand implements SubCommand {
     private final TotemGuard plugin;
     private final DatabaseService alertService;
     private final ZoneId zoneId;
 
-    public LogsCommand(TotemGuard plugin) {
+    public ProfileCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.alertService = plugin.getDatabaseService();
         zoneId = ZoneId.systemDefault();
@@ -52,7 +52,7 @@ public class LogsCommand implements SubCommand {
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (args.length != 2) {
-            sender.sendMessage(Component.text("Usage: /totemguard logs <player>", NamedTextColor.RED));
+            sender.sendMessage(Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED));
             return false;
         }
 
@@ -78,7 +78,7 @@ public class LogsCommand implements SubCommand {
 
             long loadTime = System.currentTimeMillis() - startTime;
             SafetyStatus safetyStatus = getSafetyStatus(alertsToday.size(), punishments.size());
-            Component logsComponent = AlertCreator.createLogsComponent(target, alerts, punishments, loadTime, safetyStatus);
+            Component logsComponent = ProfileCreator.createProfileComponent(target, alerts, punishments, loadTime, safetyStatus);
             sender.sendMessage(logsComponent);
         });
 

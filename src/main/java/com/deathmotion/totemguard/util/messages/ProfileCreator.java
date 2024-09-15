@@ -16,20 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.util;
+package com.deathmotion.totemguard.util.messages;
 
-import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.SafetyStatus;
-import com.deathmotion.totemguard.data.TotemPlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.OfflinePlayer;
 
 import java.time.Duration;
@@ -37,86 +33,17 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class AlertCreator {
+public class ProfileCreator {
+
     public static DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
     public static ZoneId zoneId = ZoneId.systemDefault();
 
-    public static Component createAlertComponent(TotemPlayer player, CheckDetails checkDetails, Component details, String prefix) {
-        Component hoverInfo = Component.text()
-                .append(Component.text("TPS: ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getTps(), NamedTextColor.GOLD))
-                .append(Component.text(" |", NamedTextColor.DARK_GRAY))
-                .append(Component.text(" Client Version: ", NamedTextColor.GRAY))
-                .append(Component.text(player.getClientVersion().getReleaseName(), NamedTextColor.GOLD))
-                .append(Component.text(" |", NamedTextColor.DARK_GRAY))
-                .append(Component.text(" Client Brand: ", NamedTextColor.GRAY))
-                .append(Component.text(player.getClientBrandName(), NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.newline())
-                .append(Component.text("Player: ", NamedTextColor.GRAY))
-                .append(Component.text(player.getUsername(), NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Gamemode: ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getGamemode(), NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Ping: ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getPing() + "ms", NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.newline())
-                .append(details)
-                .append(Component.newline())
-                .append(Component.newline())
-                .append(Component.text("Click to ", NamedTextColor.GRAY))
-                .append(Component.text("teleport ", NamedTextColor.GOLD))
-                .append(Component.text("to " + player.getUsername() + ".", NamedTextColor.GRAY))
-                .build();
-
-        Component message = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(prefix))
-                .append(Component.text(player.getUsername(), NamedTextColor.YELLOW))
-                .append(Component.text(" failed ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getCheckName(), NamedTextColor.GOLD)
-                        .hoverEvent(HoverEvent.showText(Component.text(checkDetails.getCheckDescription(), NamedTextColor.GRAY))))
-                .clickEvent(ClickEvent.runCommand("/tp " + player.getUsername()))
-                .build();
-
-        Component totalViolationsComponent;
-
-        if (checkDetails.isPunishable()) {
-            totalViolationsComponent = Component.text()
-                    .append(Component.text(" VL[", NamedTextColor.GRAY))
-                    .append(Component.text(checkDetails.getViolations() + "/" + checkDetails.getMaxViolations(), NamedTextColor.GOLD))
-                    .append(Component.text("]", NamedTextColor.GRAY))
-                    .build();
-        } else {
-            totalViolationsComponent = Component.text()
-                    .append(Component.text(" VL[", NamedTextColor.GRAY))
-                    .append(Component.text(checkDetails.getViolations(), NamedTextColor.GOLD))
-                    .append(Component.text("]", NamedTextColor.GRAY))
-                    .build();
-
-        }
-        message = message.append(totalViolationsComponent);
-
-        message = message
-                .append(Component.text(" [Info]", NamedTextColor.DARK_GRAY)
-                        .hoverEvent(HoverEvent.showText(hoverInfo)))
-                .decoration(TextDecoration.ITALIC, false);
-
-        if (checkDetails.isExperimental()) {
-            message = message.append(Component.text(" *", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
-        }
-
-        return message;
-    }
-
-    public static Component createLogsComponent(OfflinePlayer player, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus) {
+    public static Component createProfileComponent(OfflinePlayer player, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus) {
         // Group alerts by check name and count them
         Map<String, Long> checkCounts = alerts.stream()
                 .collect(Collectors.groupingBy(Alert::getCheckName, Collectors.counting()));
@@ -128,7 +55,7 @@ public class AlertCreator {
 
         // Start building the component using a builder
         TextComponent.Builder componentBuilder = Component.text()
-                .append(Component.text("TotemGuard Logs ", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.text("TotemGuard Profile", NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.newline())
                 .append(Component.text("Player: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(player.getName() != null ? player.getName() : "Unknown", NamedTextColor.GOLD))
@@ -166,8 +93,11 @@ public class AlertCreator {
                 .append(Component.text("> Punishments <", NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.newline());
 
-        if (punishments.size() > 5) {
-            componentBuilder.append(Component.text("Showing the last 5 punishments:", NamedTextColor.GRAY, TextDecoration.ITALIC))
+        if (punishments.isEmpty()) {
+            componentBuilder.append(Component.text(" No punishments found.", NamedTextColor.GRAY, TextDecoration.ITALIC));
+        }
+        if (punishments.size() > 3) {
+            componentBuilder.append(Component.text("Showing the last 3 punishments:", NamedTextColor.GRAY, TextDecoration.ITALIC))
                     .append(Component.newline());
         }
 
@@ -177,7 +107,7 @@ public class AlertCreator {
                 .toList();
 
         List<Punishment> recentPunishments = sortedPunishments.stream()
-                .limit(5) // Take the first 5 elements (the newest ones)
+                .limit(3) // Take the first 3 elements (the newest ones)
                 .toList();
 
         recentPunishments.forEach(punishment -> {

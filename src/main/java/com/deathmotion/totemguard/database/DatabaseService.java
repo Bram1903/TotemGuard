@@ -24,18 +24,22 @@ import com.deathmotion.totemguard.data.TotemPlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import io.ebean.Database;
+import org.jetbrains.annotations.Blocking;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
+@Blocking
 public class DatabaseService {
-
-    private final TotemGuard plugin;
     private final Database database;
+    private final ZoneId zoneId;
 
     public DatabaseService(TotemGuard plugin) {
-        this.plugin = plugin;
         this.database = plugin.getDatabaseManager().getDatabase();
+        this.zoneId = ZoneId.systemDefault();
     }
 
     public void saveAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
@@ -56,15 +60,54 @@ public class DatabaseService {
         punishment.save();
     }
 
+    public List<Alert> getAlerts() {
+        return database.find(Alert.class).findList();
+    }
+
     public List<Alert> getAlerts(UUID uuid) {
         return database.find(Alert.class).where().eq("uuid", uuid).findList();
+    }
+
+    public List<Punishment> getPunishments() {
+        return database.find(Punishment.class).findList();
     }
 
     public List<Punishment> getPunishments(UUID uuid) {
         return database.find(Punishment.class).where().eq("uuid", uuid).findList();
     }
 
-    public int deleteAlerts(UUID uuid) {
+    public int clearAlerts(UUID uuid) {
         return database.find(Alert.class).where().eq("uuid", uuid).delete();
     }
+
+    public int clearPunishments(UUID uuid) {
+        return database.find(Punishment.class).where().eq("uuid", uuid).delete();
+    }
+
+    public int trimDatabase() {
+        // Convert the LocalDateTime to an Instant using the system's default time zone
+        Instant thirtyDaysAgo = LocalDateTime.now().minusDays(30).atZone(zoneId).toInstant();
+
+        // Delete alerts older than 30 days
+        int deletedAlerts = database.find(Alert.class)
+                .where()
+                .lt("whenCreated", thirtyDaysAgo)
+                .delete();
+
+        // Delete punishments older than 30 days
+        int deletedPunishments = database.find(Punishment.class)
+                .where()
+                .lt("whenCreated", thirtyDaysAgo)
+                .delete();
+
+        return deletedAlerts + deletedPunishments;
+    }
+
+    public int clearDatabase() {
+        int deletedAlerts = database.find(Alert.class).delete();
+        int deletedPunishments = database.find(Punishment.class).delete();
+
+        return deletedAlerts + deletedPunishments;
+    }
+
 }

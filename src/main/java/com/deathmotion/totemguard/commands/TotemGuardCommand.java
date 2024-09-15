@@ -19,12 +19,10 @@
 package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.totemguard.AlertsCommand;
-import com.deathmotion.totemguard.commands.totemguard.InfoCommand;
-import com.deathmotion.totemguard.commands.totemguard.LogsCommand;
-import com.deathmotion.totemguard.commands.totemguard.ReloadCommand;
+import com.deathmotion.totemguard.commands.totemguard.*;
 import com.deathmotion.totemguard.data.Constants;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -48,7 +46,10 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         subCommands.put("info", new InfoCommand(plugin));
         subCommands.put("alerts", new AlertsCommand(plugin));
         subCommands.put("reload", new ReloadCommand(plugin.getConfigManager()));
-        subCommands.put("logs", new LogsCommand(plugin));
+        subCommands.put("profile", new ProfileCommand(plugin));
+        subCommands.put("stats", new StatsCommand(plugin));
+        subCommands.put("clearlogs", new ClearLogsCommand(plugin));
+        subCommands.put("database", new DatabaseCommand(plugin));
 
         versionComponent = Component.text()
                 .append(Component.text("⚡", NamedTextColor.GOLD).decorate(TextDecoration.BOLD))
@@ -116,16 +117,60 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
             case "info" -> true;
             case "alerts" -> sender.hasPermission("TotemGuard.Alerts");
             case "reload" -> sender.hasPermission("TotemGuard.Reload");
-            case "logs" -> sender.hasPermission("TotemGuard.Logs");
+            case "profile" -> sender.hasPermission("TotemGuard.Profile");
+            case "stats" -> sender.hasPermission("TotemGuard.Stats");
+            case "clearlogs" -> sender.hasPermission("TotemGuard.ClearLogs");
+            case "database" -> hasAnyDatabasePermissions(sender);
             default -> false;
         };
     }
 
     private Component getAvailableCommandsComponent(CommandSender sender) {
-        String availableCommands = subCommands.keySet().stream()
-                .filter(name -> hasPermissionForSubCommand(sender, name))
-                .collect(Collectors.joining("|"));
+        // Start building the help message
+        TextComponent.Builder componentBuilder = Component.text()
+                .append(Component.text("TotemGuard Commands", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.newline())
+                .append(Component.text("Below are the available subcommands:", NamedTextColor.GRAY))
+                .append(Component.newline())
+                .append(Component.newline());
 
-        return Component.text("Usage: /totemguard <" + availableCommands + ">", NamedTextColor.RED);
+        // Command descriptions
+        Map<String, String> commandDescriptions = Map.of(
+                "info", "Show plugin information.",
+                "alerts", "Toggle alerts on/off.",
+                "reload", "Reload the plugin configuration.",
+                "profile", "View player profiles.",
+                "stats", "View plugin statistics.",
+                "clearlogs", "Clear player logs.",
+                "database", "Database management commands."
+        );
+
+        // Add each command to the message if the sender has permission
+        for (String command : subCommands.keySet()) {
+            if (hasPermissionForSubCommand(sender, command)) {
+                componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("/totemguard " + command, NamedTextColor.GOLD, TextDecoration.BOLD))
+                        .append(Component.text(" - ", NamedTextColor.GRAY))
+                        .append(Component.text(commandDescriptions.get(command), NamedTextColor.GRAY))
+                        .append(Component.newline());
+            }
+        }
+
+        // If no commands are available, provide a different message
+        if (componentBuilder.children().isEmpty()) {
+            return Component.text("You do not have permission to use any commands.", NamedTextColor.RED);
+        }
+
+        return componentBuilder.build();
+    }
+
+    private boolean hasAnyDatabasePermissions(CommandSender sender) {
+        if (sender.hasPermission("TotemGuard.Database")) {
+            return true;
+        } else if (sender.hasPermission("TotemGuard.Database.Trim")) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

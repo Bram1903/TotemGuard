@@ -48,7 +48,7 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
     private final ConcurrentHashMap<UUID, PacketState> playerPacketState;
 
     public AutoTotemD(TotemGuard plugin) {
-        super(plugin, "AutoTotemD", "Suspicious re-totem packet sequence", true);
+        super(plugin, "AutoTotemD", "Suspicious re-totem packet sequence");
 
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);

@@ -26,9 +26,18 @@ permissions:
       TotemGuard.Check: true
       TotemGuard.Alerts: true
       TotemGuard.Alerts.Others: true
-      TotemGuard.Logs: true
+      TotemGuard.Profile: true
+      TotemGuard.Stats: true
+      TotemGuard.ClearLogs: true
       TotemGuard.Bypass: true
       TotemGuard.Update: true
+      TotemGuard.Database.*: true
+  TotemGuard.Database.*:
+    description: Gives access to all TotemGuard Database permissions.
+    default: op
+    children:
+      TotemGuard.Database.Trim: true
+      TotemGuard.Database.Clear: true
   TotemGuard.Reload:
     description: Allows the player to use /totemguard reload.
     default: op
@@ -41,8 +50,14 @@ permissions:
   TotemGuard.Alerts.Others:
     description: Allows the player to use /totemguard alerts <player>.
     default: op
-  TotemGuard.Logs:
-    description: Allows the player to use /totemguard logs.
+  TotemGuard.Profile:
+    description: Allows the player to use /totemguard profile.
+    default: op
+  TotemGuard.Stats:
+    description: Allows the player to use /totemguard stats.
+    default: op
+  TotemGuard.ClearLogs:
+    description: Allows the player to clear the logs of a player.
     default: op
   TotemGuard.Bypass:
     description: Allows the player to bypass the checks.
@@ -50,6 +65,12 @@ permissions:
   TotemGuard.Update:
     description: Allows the player to receive update notifications.
     default: true
+  TotemGuard.Database.Trim:
+    description: Allows the player to trim the database.
+    default: op
+  TotemGuard.Database.Clear:
+    description: Allows the player to clear the database.
+    default: op
   TotemGuard.Debug:
     description: Allows the player to see debug messages.
     default: false
