@@ -28,8 +28,6 @@ public class StatsCreator {
         TextComponent.Builder componentBuilder = Component.text()
                 .append(Component.text("TotemGuard Stats", NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.newline())
-                .append(Component.text("Overall Statistics", NamedTextColor.GOLD, TextDecoration.BOLD))
-                .append(Component.newline())
                 .append(Component.text("Total Punishments: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(punishmentCount, NamedTextColor.GOLD))
                 .append(Component.newline())
@@ -52,7 +50,7 @@ public class StatsCreator {
                     .append(Component.text("Last 7 days: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                     .append(Component.text(punishmentsLast7Days, NamedTextColor.GOLD))
                     .append(Component.newline())
-                    .append(Component.text("Last day: ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                    .append(Component.text("Last 24 hours: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                     .append(Component.text(punishmentsLastDay, NamedTextColor.GOLD))
                     .append(Component.newline());
         }
@@ -73,7 +71,7 @@ public class StatsCreator {
                     .append(Component.text("Last 7 days: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                     .append(Component.text(alertsLast7Days, NamedTextColor.GOLD))
                     .append(Component.newline())
-                    .append(Component.text("Last day: ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                    .append(Component.text("Last 24 hours: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                     .append(Component.text(alertsLastDay, NamedTextColor.GOLD))
                     .append(Component.newline());
         }

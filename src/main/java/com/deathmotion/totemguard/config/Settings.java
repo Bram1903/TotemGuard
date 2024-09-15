@@ -57,19 +57,19 @@ public final class Settings {
         @Comment("Database Type: The type of database to use. (SQLite, MYSQL)")
         private Platform type = Platform.SQLITE;
 
-        @Comment("Database Host: The host of the database.")
+        @Comment("\nDatabase Host: The host of the database.")
         private String host = "localhost";
 
-        @Comment("Database Port: The port of the database.")
+        @Comment("\nDatabase Port: The port of the database.")
         private int port = 3306;
 
-        @Comment("Database Name: The name of the database.")
+        @Comment("\nDatabase Name: The name of the database.")
         private String name = "TotemGuard";
 
-        @Comment("Database Username: The username of the database.")
+        @Comment("\nDatabase Username: The username of the database.")
         private String username = "root";
 
-        @Comment("Database Password: The password of the database.")
+        @Comment("\nDatabase Password: The password of the database.")
         private String password = "password";
     }
 

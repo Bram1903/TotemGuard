@@ -48,5 +48,44 @@ public enum SafetyStatus {
             case DIABOLICAL -> NamedTextColor.DARK_RED;
         };
     }
+
+    public static SafetyStatus getSafetyStatus(int alerts, int punishments) {
+        if (alerts == 0 && punishments == 0) {
+            return SafetyStatus.SAFE;
+        }
+
+        // Multiple punishments with high alerts indicate a critical state
+        if (punishments > 2) {
+            if (alerts > 7) {
+                return SafetyStatus.DIABOLICAL;
+            } else if (alerts > 4) {
+                return SafetyStatus.DANGEROUS;
+            } else {
+                return SafetyStatus.SUSPICIOUS;
+            }
+        }
+
+        // Some punishments and varying alert levels
+        if (punishments > 0) {
+            if (alerts > 8) {
+                return SafetyStatus.DIABOLICAL;
+            } else if (alerts > 5) {
+                return SafetyStatus.DANGEROUS;
+            } else if (alerts > 2) {
+                return SafetyStatus.SUSPICIOUS;
+            } else {
+                return SafetyStatus.ALERTED;
+            }
+        }
+
+        // No punishments but alerts are present
+        if (alerts > 7) {
+            return SafetyStatus.DANGEROUS; // Elevated state due to high alerts even without punishments
+        } else if (alerts > 4) {
+            return SafetyStatus.SUSPICIOUS;
+        } else {
+            return SafetyStatus.ALERTED;
+        }
+    }
 }
 

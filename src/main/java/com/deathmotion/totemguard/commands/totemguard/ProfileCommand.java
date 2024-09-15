@@ -43,29 +43,37 @@ public class ProfileCommand implements SubCommand {
     private final DatabaseService alertService;
     private final ZoneId zoneId;
 
+    private final Component loadingComponent;
+    private final Component playerNotFoundComponent;
+    private final Component retrievingLogsComponent;
+
     public ProfileCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.alertService = plugin.getDatabaseService();
         zoneId = ZoneId.systemDefault();
+
+        loadingComponent = Component.text("Loading profile...", NamedTextColor.GRAY);
+        playerNotFoundComponent = Component.text("Player not found!", NamedTextColor.RED);
+        retrievingLogsComponent = Component.text("Retrieving database logs..", NamedTextColor.GRAY);
     }
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (args.length != 2) {
-            sender.sendMessage(Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED));
+            sender.sendMessage(loadingComponent);
             return false;
         }
 
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
         if (!target.hasPlayedBefore()) {
-            sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED));
+            sender.sendMessage(playerNotFoundComponent);
             return false;
         }
 
-        sender.sendMessage(Component.text("Retrieving database logs..", NamedTextColor.WHITE));
-        long startTime = System.currentTimeMillis();
-
+        sender.sendMessage(retrievingLogsComponent);
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            long startTime = System.currentTimeMillis();
+
             List<Alert> alerts = alertService.getAlerts(target.getUniqueId());
             List<Punishment> punishments = alertService.getPunishments(target.getUniqueId());
 
@@ -77,7 +85,7 @@ public class ProfileCommand implements SubCommand {
                     .toList();
 
             long loadTime = System.currentTimeMillis() - startTime;
-            SafetyStatus safetyStatus = getSafetyStatus(alertsToday.size(), punishments.size());
+            SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
             Component logsComponent = ProfileCreator.createProfileComponent(target, alerts, punishments, loadTime, safetyStatus);
             sender.sendMessage(logsComponent);
         });
@@ -97,44 +105,4 @@ public class ProfileCommand implements SubCommand {
         }
         return List.of();
     }
-
-    private SafetyStatus getSafetyStatus(int alerts, int punishments) {
-        if (alerts == 0 && punishments == 0) {
-            return SafetyStatus.SAFE;
-        }
-
-        // Multiple punishments with high alerts indicate a critical state
-        if (punishments > 2) {
-            if (alerts > 7) {
-                return SafetyStatus.DIABOLICAL;
-            } else if (alerts > 4) {
-                return SafetyStatus.DANGEROUS;
-            } else {
-                return SafetyStatus.SUSPICIOUS;
-            }
-        }
-
-        // Some punishments and varying alert levels
-        if (punishments > 0) {
-            if (alerts > 8) {
-                return SafetyStatus.DIABOLICAL;
-            } else if (alerts > 5) {
-                return SafetyStatus.DANGEROUS;
-            } else if (alerts > 2) {
-                return SafetyStatus.SUSPICIOUS;
-            } else {
-                return SafetyStatus.ALERTED;
-            }
-        }
-
-        // No punishments but alerts are present
-        if (alerts > 7) {
-            return SafetyStatus.DANGEROUS; // Elevated state due to high alerts even without punishments
-        } else if (alerts > 4) {
-            return SafetyStatus.SUSPICIOUS;
-        } else {
-            return SafetyStatus.ALERTED;
-        }
-    }
-
 }
