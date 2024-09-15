@@ -27,28 +27,6 @@ public enum SafetyStatus {
     DANGEROUS,
     DIABOLICAL;
 
-    // Method to get the display name for each status
-    public String getName() {
-        return switch (this) {
-            case SAFE -> "Safe";
-            case ALERTED -> "Alerted";
-            case SUSPICIOUS -> "Suspicious";
-            case DANGEROUS -> "Dangerous";
-            case DIABOLICAL -> "Diabolical";
-        };
-    }
-
-    // Method to get the default NamedTextColor for each status
-    public NamedTextColor getColor() {
-        return switch (this) {
-            case SAFE -> NamedTextColor.GREEN;
-            case ALERTED -> NamedTextColor.YELLOW;
-            case SUSPICIOUS -> NamedTextColor.GOLD;
-            case DANGEROUS -> NamedTextColor.RED;
-            case DIABOLICAL -> NamedTextColor.DARK_RED;
-        };
-    }
-
     public static SafetyStatus getSafetyStatus(int alerts, int punishments) {
         if (alerts == 0 && punishments == 0) {
             return SafetyStatus.SAFE;
@@ -86,6 +64,28 @@ public enum SafetyStatus {
         } else {
             return SafetyStatus.ALERTED;
         }
+    }
+
+    // Method to get the display name for each status
+    public String getName() {
+        return switch (this) {
+            case SAFE -> "Safe";
+            case ALERTED -> "Alerted";
+            case SUSPICIOUS -> "Suspicious";
+            case DANGEROUS -> "Dangerous";
+            case DIABOLICAL -> "Diabolical";
+        };
+    }
+
+    // Method to get the default NamedTextColor for each status
+    public NamedTextColor getColor() {
+        return switch (this) {
+            case SAFE -> NamedTextColor.GREEN;
+            case ALERTED -> NamedTextColor.YELLOW;
+            case SUSPICIOUS -> NamedTextColor.GOLD;
+            case DANGEROUS -> NamedTextColor.RED;
+            case DIABOLICAL -> NamedTextColor.DARK_RED;
+        };
     }
 }
 
