@@ -30,20 +30,29 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class StatsCommand implements SubCommand {
+    private static final long CACHE_DURATION_SECONDS = TimeUnit.MINUTES.toSeconds(10);
+
     private final Plugin plugin;
     private final DatabaseService databaseService;
     private final ZoneId zoneId;
     private final Component loadingComponent;
 
+    // Cache maps to store data and timestamps
+    private final ConcurrentHashMap<String, List<Punishment>> punishmentCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<Alert>> alertCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Instant> cacheTimestamps = new ConcurrentHashMap<>();
+
     public StatsCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseService = plugin.getDatabaseService();
-
         this.zoneId = ZoneId.systemDefault();
         this.loadingComponent = Component.text("Loading stats...", NamedTextColor.GRAY);
     }
@@ -53,8 +62,8 @@ public class StatsCommand implements SubCommand {
         sender.sendMessage(loadingComponent);
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            List<Punishment> punishments = databaseService.getPunishments();
-            List<Alert> alerts = databaseService.getAlerts();
+            List<Punishment> punishments = getCachedPunishments();
+            List<Alert> alerts = getCachedAlerts();
 
             int punishmentCount = punishments.size();
             int alertCount = alerts.size();
@@ -72,6 +81,40 @@ public class StatsCommand implements SubCommand {
         });
 
         return true;
+    }
+
+    private List<Punishment> getCachedPunishments() {
+        String key = "punishments";
+        Instant now = Instant.now();
+
+        if (punishmentCache.containsKey(key) && cacheTimestamps.containsKey(key)) {
+            Instant lastFetched = cacheTimestamps.get(key);
+            if (now.minusSeconds(CACHE_DURATION_SECONDS).isBefore(lastFetched)) {
+                return punishmentCache.get(key);
+            }
+        }
+        // Fetch from database and update cache
+        List<Punishment> punishments = databaseService.getPunishments();
+        punishmentCache.put(key, punishments);
+        cacheTimestamps.put(key, now);
+        return punishments;
+    }
+
+    private List<Alert> getCachedAlerts() {
+        String key = "alerts";
+        Instant now = Instant.now();
+
+        if (alertCache.containsKey(key) && cacheTimestamps.containsKey(key)) {
+            Instant lastFetched = cacheTimestamps.get(key);
+            if (now.minusSeconds(CACHE_DURATION_SECONDS).isBefore(lastFetched)) {
+                return alertCache.get(key);
+            }
+        }
+        // Fetch from database and update cache
+        List<Alert> alerts = databaseService.getAlerts();
+        alertCache.put(key, alerts);
+        cacheTimestamps.put(key, now);
+        return alerts;
     }
 
     private long countPunishmentsSince(List<Punishment> punishments, int days) {
