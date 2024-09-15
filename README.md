@@ -12,18 +12,16 @@
 
 ## Overview
 
-TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
-This plugin is designed to be as lightweight as possible and for the most parts operates asynchronously.
-It is also designed to be as configurable as possible, allowing server owners to adjust the plugin to their needs.
+TotemGuard is a lightweight anti-cheat plugin designed to detect players using AutoTotem. It operates asynchronously to minimize server impact and offers extensive configurability, enabling server owners to tailor the plugin to their specific needs.
 
-### Requires PacketEvents
+### Prerequisites
 
-Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is installed on your server.
+TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents) library to function. Ensure it is installed on your server.
 
 ## Table of Contents
 
 - [Overview](#overview)
-    - [Requires PacketEvents](#requires-packetevents)
+    - [Prerequisites](#prerequisites)
 - [Showcase](#showcase)
 - [Supported Platforms & Versions](#supported-platforms--versions)
 - [Checks](#checks)
@@ -51,10 +49,11 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 
 ### AutoTotem
 
-- **AutoTotemA** - Click time difference between moving the totem to the offhand.
-- **AutoTotemB** - Consistency of totem replacements
-- **AutoTotemC** - Difference between consistency of totem replacements
-- **AutoTotemD** - Packet sequence of totem replacement
+- **AutoTotemA** - Click time difference
+- **AutoTotemB** - Impossible standard deviation
+- **AutoTotemC** - Impossible consistency difference
+- **AutoTotemD** - Suspicious re-totem packet sequence
+- **AutoTotemE** - Impossible low outliers
 
 ### BadPackets
 
@@ -66,53 +65,62 @@ Ensure the [PacketEvents](https://modrinth.com/plugin/packetevents) library is i
 
 ## Features
 
-- **Performance** - The plugin is designed to be as lightweight as possible.
-- **Folia Support** - The plugin integrates with [Folia](https://papermc.io/software/folia), which is a Paper fork that
-  adds regionised multithreading to the server.
-- **Webhooks** - The plugin can send alerts and punishments to a Discord webhook.
-- **Configurable** - The plugin is highly configurable, every setting can be adjusted during runtime.
-- **Update Checker** - The plugin automatically checks for updates on startup.
-- **Bypass** - The plugin allows players to bypass the checks if they have the `TotemGuard.Bypass` permission and the
-  bypass setting is enabled.
-- **Bedrock Exception** - The plugin doesn't check players who are using Bedrock Edition, preventing false positives.
-- **Supports BetterReload** - This plugin integrates with the [BetterReload](https://modrinth.com/plugin/betterreload) plugin.
+- **Performance** - Asynchronous operations ensure minimal impact on server performance.
+- **Database Support** - Compatible with both MySQL and SQLite.
+- **Folia Integration** - Supports [Folia](https://papermc.io/software/folia) for regionized multithreading.
+- **Webhooks** - Send alerts and punishments to a Discord webhook.
+- **Highly Configurable** - Adjust nearly every setting during runtime to fit your server's needs.
+- **Update Checker** - Automatically checks for updates on startup.
+- **Bypass Permission** - Allows players with `TotemGuard.Bypass` to bypass checks.
+- **Bedrock Exception** - Automatically ignores Bedrock Edition players to prevent false positives.
+- **BetterReload Support** - Integrates with [BetterReload](https://modrinth.com/plugin/betterreload) for seamless configuration reloading.
 
 ## Commands
 
-- `/totemguard` or `/tg` - Base Command
-- `/totemguard info` - Displays information about the plugin.
-- `/totemguard alerts` - Toggles alerts on/off.
-- `/totemguard reload` - Reloads the configuration file (every single setting supports reloading on runtime).
-- `/totemcheck` or `/checktotem` - Removes a totem from a player's inventory and checks if they are
-  being quickly replaced.
+- `/totemguard` or `/tg` - Main command for TotemGuard.
+- `/totemguard reload` - Reload the plugin configuration.
+- `/totemguard alerts` - Toggle alerts for the player.
+- `/totemguard alerts <player>` - Toggle alerts for another player.
+- `/totemguard profile` - Display the player's profile.
+- `/totemguard stats` - Show plugin statistics.
+- `/totemguard clearlogs` - Clear the logs.
+- `/totemguard database trim` - Trim the database.
+- `/totemguard database clear` - Clear the database.
+- `/totemcheck <player>` - Check the player for AutoTotem.
 
 ## Permission Nodes
 
-Operators (OPs) have these permissions by default (except the `TotemGuard.Debug` permission):
+Operators (OPs) have these permissions by default, except `TotemGuard.Debug`:
 
-- `TotemGuard.*` - Grants access to all TotemGuard permissions.
-- `TotemGuard.Alerts` - Allows the player to toggle alerts.
-- `TotemGuard.Alerts.Others` - Allows the player to toggle alerts for other players.
-- `TotemGuard.Check` - Allows the player to check if another player is using AutoTotem.
-- `TotemGuard.Reload` - Allows the player to reload the configuration file.
-- `TotemGuard.Bypass` - Allows the player to bypass the plugin's checks (if enabled in the configuration).
-- `TotemGuard.Update` - Allows the player to get notified about updates.
-- `TotemGuard.Debug` - Allows the player to see debug messages.
+- `TotemGuard.*` - Access to all TotemGuard permissions.
+- `TotemGuard.Staff` - Access to `TotemGuard.Check`, `TotemGuard.Alerts`, and `TotemGuard.Profile`.
+- `TotemGuard.Databases.*` - Access to all database-related commands.
+- `TotemGuard.Reload` - Access to the `/totemguard reload` command.
+- `TotemGuard.Check` - Access to the `/totemcheck` command.
+- `TotemGuard.Alerts` - Access to the `/totemguard alerts` command.
+- `TotemGuard.Alerts.Others` - Toggle alerts for other players.
+- `TotemGuard.Profile` - Access to the `/totemguard profile` command.
+- `TotemGuard.Stats` - Access to the `/totemguard stats` command.
+- `TotemGuard.ClearLogs` - Access to the `/totemguard clearlogs` command.
+- `TotemGuard.Bypass` - Bypass the plugin's checks.
+- `TotemGuard.Update` - Receive update notifications.
+- `TotemGuard.Database.Trim` - Access to the `/totemguard database trim` command.
+- `TotemGuard.Database.Clear` - Access to the `/totemguard database clear` command.
+- `TotemGuard.Debug` - View debug messages.
 
 ## Installation
 
-1. **Prerequisites**: Install [PacketEvents](https://modrinth.com/plugin/packetevents).
-2. **Download**: Get the latest release from
-   the [GitHub release page](https://github.com/Bram1903/TotemGuard/releases/latest).
-3. **Installation**: Move the downloaded plugin to your server's plugins directory.
-4. **Configuration**: Customize settings in `config.yml`.
-5. **Reload**: Run `/totemguard reload` to apply the changes.
+1. **Prerequisites**: Ensure [PacketEvents](https://modrinth.com/plugin/packetevents) is installed.
+2. **Download**: Get the latest release from the [GitHub release page](https://github.com/Bram1903/TotemGuard/releases/latest).
+3. **Install**: Place the plugin JAR file in your server's `plugins` directory.
+4. **Configure**: Customize the `config.yml` file as needed.
+5. **Reload**: Apply the changes using `/totemguard reload`.
 
 ## Compiling From Source
 
 ### Prerequisites
 
-- Java Development Kit (JDK) version 21 or higher
+- Java Development Kit (JDK) 21 or higher
 - [Git](https://git-scm.com/downloads)
 
 ### Steps
@@ -121,14 +129,12 @@ Operators (OPs) have these permissions by default (except the `TotemGuard.Debug`
    ```bash
    git clone https://github.com/Bram1903/TotemGuard.git
    ```
-
-2. **Navigate to Project Directory**:
+2. **Navigate to the Project Directory**:
    ```bash
    cd TotemGuard
    ```
-
 3. **Compile the Source Code**:
-   Use the Gradle wrapper to compile and generate the plugin JAR file:
+   Use the Gradle wrapper to build the plugin:
 
    <details>
    <summary><strong>Linux / macOS</strong></summary>

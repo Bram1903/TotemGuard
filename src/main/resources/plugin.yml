@@ -32,6 +32,13 @@ permissions:
       TotemGuard.Bypass: true
       TotemGuard.Update: true
       TotemGuard.Database.*: true
+  TotemGuard.Staff:
+    description: Gives access to all TotemGuard Staff permissions.
+    default: op
+    children:
+      TotemGuard.Check: true
+      TotemGuard.Alerts: true
+      TotemGuard.Profile: true
   TotemGuard.Database.*:
     description: Gives access to all TotemGuard Database permissions.
     default: op
