@@ -35,8 +35,6 @@ public abstract class BaseDomain extends Model {
     @Id
     private long id;
 
-    private String username;
-
     private UUID uuid;
 
     private String checkName;

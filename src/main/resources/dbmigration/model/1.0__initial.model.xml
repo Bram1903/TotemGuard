@@ -3,14 +3,12 @@
     <changeSet type="apply">
         <createTable name="alert" pkName="pk_alert">
             <column name="id" type="bigint" primaryKey="true"/>
-            <column name="username" type="varchar"/>
             <column name="uuid" type="uuid"/>
             <column name="check_name" type="varchar"/>
             <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
         <createTable name="punishment" pkName="pk_punishment">
             <column name="id" type="bigint" primaryKey="true"/>
-            <column name="username" type="varchar"/>
             <column name="uuid" type="uuid"/>
             <column name="check_name" type="varchar"/>
             <column name="when_created" type="timestamp" notnull="true"/>
