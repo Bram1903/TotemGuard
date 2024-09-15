@@ -206,7 +206,7 @@ public final class Settings {
         @Getter
         public static class AutoTotemA extends CheckSettings {
             @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-            private int normalCheckTimeMs = 1000;
+            private int normalCheckTimeMs = 1500;
 
             @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
             private int clickTimeDifference = 75;
@@ -229,7 +229,7 @@ public final class Settings {
             private int consecutiveLowSDCount = 3;
 
             public AutoTotemB() {
-                super(false, 3);
+                super(false, 5);
             }
         }
 
@@ -243,7 +243,7 @@ public final class Settings {
             private int consecutiveViolations = 3;
 
             public AutoTotemC() {
-                super(false, 5);
+                super(true, 3);
             }
         }
 
@@ -260,7 +260,7 @@ public final class Settings {
             private int tolerance = 5;
 
             public AutoTotemD() {
-                super(false, 2);
+                super(true, 2);
             }
         }
 
@@ -274,7 +274,7 @@ public final class Settings {
             private double averageStDeviationThreshold = 10.0;
 
             public AutoTotemE() {
-                super(false, 3);
+                super(false, 5);
             }
         }
 
