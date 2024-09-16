@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.mojang.ApiResponse;
-import com.deathmotion.totemguard.mojang.MojangAPIService;
+import com.deathmotion.totemguard.mojang.MojangService;
 import com.deathmotion.totemguard.mojang.models.BadRequest;
 import com.deathmotion.totemguard.mojang.models.Found;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 public class ClearLogsCommand implements SubCommand {
     private final TotemGuard plugin;
-    private final MojangAPIService mojangAPIService;
+    private final MojangService mojangService;
     private final DatabaseService databaseService;
 
     private final Component usageComponent;
@@ -46,7 +46,7 @@ public class ClearLogsCommand implements SubCommand {
 
     public ClearLogsCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        this.mojangAPIService = plugin.getMojangAPIService();
+        this.mojangService = plugin.getMojangService();
         this.databaseService = plugin.getDatabaseService();
 
         usageComponent = Component.text("Usage: /totemguard clearlogs <player>", NamedTextColor.RED);
@@ -62,7 +62,7 @@ public class ClearLogsCommand implements SubCommand {
 
         sender.sendMessage(clearingStartedComponent);
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            ApiResponse response = mojangAPIService.getUUID(args[1]);
+            ApiResponse response = mojangService.getUUID(args[1]);
             if (!handleApiResponse(sender, response)) {
                 return;
             }

@@ -30,13 +30,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MojangAPIService {
+public class MojangService {
 
     private static final String API_URL = "https://api.mojang.com/users/profiles/minecraft/";
     private final TotemGuard plugin;
     private final Map<String, ApiResponse> cache = new ConcurrentHashMap<>();
 
-    public MojangAPIService(TotemGuard plugin) {
+    public MojangService(TotemGuard plugin) {
         this.plugin = plugin;
     }
 

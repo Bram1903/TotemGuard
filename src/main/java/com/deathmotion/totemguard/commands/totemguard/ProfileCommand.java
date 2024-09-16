@@ -25,7 +25,7 @@ import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.mojang.ApiResponse;
-import com.deathmotion.totemguard.mojang.MojangAPIService;
+import com.deathmotion.totemguard.mojang.MojangService;
 import com.deathmotion.totemguard.mojang.models.BadRequest;
 import com.deathmotion.totemguard.mojang.models.Found;
 import com.deathmotion.totemguard.util.messages.ProfileCreator;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 
 public class ProfileCommand implements SubCommand {
     private final TotemGuard plugin;
-    private final MojangAPIService mojangAPIService;
+    private final MojangService mojangService;
     private final DatabaseService databaseService;
     private final ZoneId zoneId;
 
@@ -53,7 +53,7 @@ public class ProfileCommand implements SubCommand {
 
     public ProfileCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        this.mojangAPIService = plugin.getMojangAPIService();
+        this.mojangService = plugin.getMojangService();
         this.databaseService = plugin.getDatabaseService();
         zoneId = ZoneId.systemDefault();
 
@@ -84,7 +84,7 @@ public class ProfileCommand implements SubCommand {
     private void handleAsyncTask(CommandSender sender, String playerName) {
         long startTime = System.currentTimeMillis();
 
-        ApiResponse response = mojangAPIService.getUUID(playerName);
+        ApiResponse response = mojangService.getUUID(playerName);
         if (!handleApiResponse(sender, response)) {
             return;
         }
