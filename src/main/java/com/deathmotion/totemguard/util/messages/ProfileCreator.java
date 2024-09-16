@@ -43,7 +43,7 @@ public class ProfileCreator {
     public static DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
     public static ZoneId zoneId = ZoneId.systemDefault();
 
-    public static Component createProfileComponent(OfflinePlayer player, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus) {
+    public static Component createProfileComponent(String username, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus) {
         // Group alerts by check name and count them
         Map<String, Long> checkCounts = alerts.stream()
                 .collect(Collectors.groupingBy(Alert::getCheckName, Collectors.counting()));
@@ -58,7 +58,7 @@ public class ProfileCreator {
                 .append(Component.text("TotemGuard Profile", NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.newline())
                 .append(Component.text("Player: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(player.getName() != null ? player.getName() : "Unknown", NamedTextColor.GOLD))
+                .append(Component.text(username, NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Safety Status: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(safetyStatus.getName(), safetyStatus.getColor()))
