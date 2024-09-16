@@ -169,10 +169,6 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
             return true;
         } else if (sender.hasPermission("TotemGuard.Database.Trim")) {
             return true;
-        } else if(sender.hasPermission("TotemGuard.Database.Clear")) {
-            return true;
-        } else {
-            return false;
-        }
+        } else return sender.hasPermission("TotemGuard.Database.Clear");
     }
 }

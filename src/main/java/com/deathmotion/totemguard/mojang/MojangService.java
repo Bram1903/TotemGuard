@@ -19,7 +19,10 @@
 package com.deathmotion.totemguard.mojang;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.mojang.models.*;
+import com.deathmotion.totemguard.mojang.models.BadRequest;
+import com.deathmotion.totemguard.mojang.models.Found;
+import com.deathmotion.totemguard.mojang.models.NoContent;
+import com.deathmotion.totemguard.mojang.models.TooManyRequests;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;

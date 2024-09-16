@@ -19,5 +19,5 @@
 package com.deathmotion.totemguard.mojang;
 
 public interface ApiResponse {
-    public int responseStatus();
+    int responseStatus();
 }

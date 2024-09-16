@@ -27,10 +27,9 @@ import org.bukkit.entity.Player;
 
 public final class BadPacketsB extends Check {
 
-    private final TotemGuard plugin;
-
     @Getter
     private static BadPacketsB instance;
+    private final TotemGuard plugin;
 
     private BadPacketsB(TotemGuard plugin) {
         super(plugin, "BadPacketsB", "Suspicious client brand");
