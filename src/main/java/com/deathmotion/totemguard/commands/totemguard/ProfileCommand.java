@@ -43,24 +43,24 @@ public class ProfileCommand implements SubCommand {
     private final DatabaseService alertService;
     private final ZoneId zoneId;
 
-    private final Component loadingComponent;
+    private final Component noPlayerSpecifiedComponent;
     private final Component playerNotFoundComponent;
-    private final Component retrievingLogsComponent;
+    private final Component loadingComponent;
 
     public ProfileCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.alertService = plugin.getDatabaseService();
         zoneId = ZoneId.systemDefault();
 
-        loadingComponent = Component.text("Loading profile...", NamedTextColor.GRAY);
+        noPlayerSpecifiedComponent = Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED);
         playerNotFoundComponent = Component.text("Player not found!", NamedTextColor.RED);
-        retrievingLogsComponent = Component.text("Retrieving database logs..", NamedTextColor.GRAY);
+        loadingComponent = Component.text("Loading profile...", NamedTextColor.GRAY);
     }
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (args.length != 2) {
-            sender.sendMessage(loadingComponent);
+            sender.sendMessage(noPlayerSpecifiedComponent);
             return false;
         }
 
@@ -70,7 +70,7 @@ public class ProfileCommand implements SubCommand {
             return false;
         }
 
-        sender.sendMessage(retrievingLogsComponent);
+        sender.sendMessage(loadingComponent);
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             long startTime = System.currentTimeMillis();
 
