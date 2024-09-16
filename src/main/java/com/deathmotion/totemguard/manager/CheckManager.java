@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.manager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
@@ -51,6 +52,7 @@ public class CheckManager {
         this.userTracker = plugin.getUserTracker();
 
         TotemProcessor.init(plugin);
+        BadPacketsB.init(plugin);
 
         this.checks = ImmutableList.of(
                 TotemProcessor.getInstance(),
@@ -60,6 +62,7 @@ public class CheckManager {
                 new AutoTotemD(plugin),
                 new AutoTotemE(plugin),
                 new BadPacketsA(plugin),
+                BadPacketsB.getInstance(),
                 new ManualTotemA(plugin)
         );
 

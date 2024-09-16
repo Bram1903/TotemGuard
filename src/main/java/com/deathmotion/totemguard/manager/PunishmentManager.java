@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.database.DatabaseService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.jetbrains.annotations.Blocking;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class PunishmentManager {
@@ -81,7 +82,7 @@ public class PunishmentManager {
     }
 
     private void runPunishmentCommands(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        String[] punishmentCommands = checkDetails.getPunishmentCommands();
+        List<String> punishmentCommands = checkDetails.getPunishmentCommands();
         for (String command : punishmentCommands) {
             plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command.replace("%player%", totemPlayer.getUsername()));
         }

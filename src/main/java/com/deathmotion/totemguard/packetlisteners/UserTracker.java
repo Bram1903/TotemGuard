@@ -19,14 +19,23 @@
 package com.deathmotion.totemguard.packetlisteners;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
+import com.deathmotion.totemguard.checks.impl.totem.AutoTotemB;
+import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.data.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketListener;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,10 +61,35 @@ public class UserTracker implements PacketListener {
             plugin.getAlertManager().enableAlerts(player);
         }
 
+        String playerBrand = totemPlayers.get(userUUID).getClientBrandName();
+        announceClientBrand(player.getName(), playerBrand);
+        BadPacketsB.getInstance().check(player, playerBrand);
+    }
+
+    @Override
+    public void onPacketReceive(PacketReceiveEvent event) {
+        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE)
+            return;
+
+        WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
+
+        String channelName = packet.getChannelName();
+        if (!channelName.equalsIgnoreCase("minecraft:brand") && !channelName.equals("MC|Brand")) return;
+
+        byte[] data = packet.getData();
+        if (data.length > 64 || data.length == 0) return;
+
+        byte[] minusLength = new byte[data.length - 1];
+        System.arraycopy(data, 1, minusLength, 0, minusLength.length);
+        String brand = new String(minusLength).replace(" (Velocity)", "");
+
+        User user = event.getUser();
+        UUID userUUID = user.getUUID();
+
         TotemPlayer totemPlayer = new TotemPlayer();
         totemPlayer.setUuid(userUUID);
-        totemPlayer.setUsername(player.getName());
-        totemPlayer.setClientBrandName(Objects.requireNonNullElse(player.getClientBrandName(), "Unknown"));
+        totemPlayer.setUsername(user.getName());
+        totemPlayer.setClientBrandName(brand);
         totemPlayer.setClientVersion(user.getClientVersion());
         totemPlayer.setBedrockPlayer(userUUID.getMostSignificantBits() == 0L);
 
@@ -72,6 +106,20 @@ public class UserTracker implements PacketListener {
         plugin.getAlertManager().removePlayer(userUUID);
         plugin.getCheckManager().resetData(userUUID);
         totemPlayers.remove(userUUID);
+    }
+
+    private void announceClientBrand(String username, String brand) {
+        final Settings settings = plugin.getConfigManager().getSettings();
+        if (!settings.isAlertClientBrand()) return;
+
+        Component message = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                .append(Component.text(username, NamedTextColor.GOLD))
+                .append(Component.text(" has connected with: ", NamedTextColor.GRAY))
+                .append(Component.text(brand, NamedTextColor.GOLD))
+                .build();
+
+        Bukkit.broadcast(message, "TotemGuard.Alerts");
     }
 
     public Optional<TotemPlayer> getTotemPlayer(UUID uuid) {

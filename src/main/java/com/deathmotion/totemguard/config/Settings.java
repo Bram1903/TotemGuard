@@ -23,6 +23,8 @@ import de.exlll.configlib.Configuration;
 import io.ebean.annotation.Platform;
 import lombok.Getter;
 
+import java.util.List;
+
 @Configuration
 @Getter
 public final class Settings {
@@ -32,6 +34,9 @@ public final class Settings {
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean debug = false;
+
+    @Comment("\nAlert Client Brand: Notifies players with the alert permission, what client brand a player is using.")
+    private boolean alertClientBrand = false;
 
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
@@ -176,6 +181,9 @@ public final class Settings {
         @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
 
+        @Comment("\nBadPacketB Settings")
+        private BadPacketsB badPacketsB = new BadPacketsB();
+
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -186,9 +194,9 @@ public final class Settings {
             private boolean punishable;
             private int punishmentDelayInSeconds = 0;
             private int maxViolations;
-            private String[] punishmentCommands = {
+            private List<String> punishmentCommands = List.of(
                     "ban %player% 1d [TotemGuard] Unfair Advantage"
-            };
+            );
 
             public CheckSettings(boolean punishable, int punishmentDelay, int maxViolations) {
                 this.punishable = punishable;
@@ -282,6 +290,19 @@ public final class Settings {
         @Getter
         public static class BadPacketsA extends CheckSettings {
             public BadPacketsA() {
+                super(true, 60, 1);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class BadPacketsB extends CheckSettings {
+            @Comment("\nBanned Client Brands: The list of client brands to flag.")
+            private List<String> bannedClientBrands = List.of(
+                    "autototem"
+            );
+
+            public BadPacketsB() {
                 super(true, 60, 1);
             }
         }
