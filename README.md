@@ -58,6 +58,7 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 ### BadPackets
 
 - **BadPacketsA** - Opt-out message in a mod configuration channel
+- **BadPacketsB** - Banned client brand
 
 ### ManualTotem
 
