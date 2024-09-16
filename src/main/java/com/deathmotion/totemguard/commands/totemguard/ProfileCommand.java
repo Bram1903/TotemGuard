@@ -53,7 +53,7 @@ public class ProfileCommand implements SubCommand {
         zoneId = ZoneId.systemDefault();
 
         noPlayerSpecifiedComponent = Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED);
-        playerNotFoundComponent = Component.text("Player not found!", NamedTextColor.RED);
+        playerNotFoundComponent = Component.text("Player does not exist, or has not played before.", NamedTextColor.RED);
         loadingComponent = Component.text("Loading profile...", NamedTextColor.GRAY);
     }
 
