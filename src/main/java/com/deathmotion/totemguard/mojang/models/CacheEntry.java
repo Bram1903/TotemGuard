@@ -18,7 +18,5 @@
 
 package com.deathmotion.totemguard.mojang.models;
 
-import com.deathmotion.totemguard.mojang.ApiResponse;
-
-public record NoContent(int responseStatus) implements ApiResponse {
+public record CacheEntry(Callback value, long timestamp) {
 }

@@ -19,10 +19,9 @@
 package com.deathmotion.totemguard.mojang;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.mojang.models.BadRequest;
-import com.deathmotion.totemguard.mojang.models.Found;
-import com.deathmotion.totemguard.mojang.models.NoContent;
-import com.deathmotion.totemguard.mojang.models.TooManyRequests;
+import com.deathmotion.totemguard.mojang.models.CacheEntry;
+import com.deathmotion.totemguard.mojang.models.Callback;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -31,20 +30,31 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class MojangService {
-
     private static final String API_URL = "https://api.mojang.com/users/profiles/minecraft/";
+    private static final long CACHE_EXPIRY_DURATION = TimeUnit.MINUTES.toMillis(10);
+
     private final TotemGuard plugin;
-    private final ConcurrentHashMap<String, ApiResponse> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
 
     public MojangService(TotemGuard plugin) {
         this.plugin = plugin;
+        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> cleanupCache(), 10, 10, TimeUnit.MINUTES);
     }
 
-    public ApiResponse getUUID(String name) {
-        if (cache.containsKey(name)) {
-            return cache.get(name);
+    private void cleanupCache() {
+        long now = System.currentTimeMillis();
+        cache.entrySet().removeIf(entry -> now - entry.getValue().timestamp() >= CACHE_EXPIRY_DURATION);
+    }
+
+    public Callback getUUID(String name) {
+        name = name.toLowerCase();
+
+        CacheEntry entry = cache.get(name);
+        if (entry != null && (System.currentTimeMillis() - entry.timestamp() < CACHE_EXPIRY_DURATION)) {
+            return entry.value();
         }
 
         try {
@@ -53,7 +63,6 @@ public class MojangService {
             String responseMessage = readResponse(connection);
 
             return handleResponse(responseCode, responseMessage, name);
-
         } catch (Exception e) {
             plugin.getLogger().severe("Error while getting UUID for " + name + ": " + e.getMessage());
             return null;
@@ -79,12 +88,12 @@ public class MojangService {
         }
     }
 
-    private ApiResponse handleResponse(int responseCode, String responseMessage, String name) {
+    private Callback handleResponse(int responseCode, String responseMessage, String name) {
         return switch (responseCode) {
             case HttpURLConnection.HTTP_OK -> handleFoundResponse(responseMessage, name);
-            case HttpURLConnection.HTTP_NO_CONTENT -> new NoContent(HttpURLConnection.HTTP_NO_CONTENT);
             case HttpURLConnection.HTTP_BAD_REQUEST -> handleBadRequest(responseMessage, name);
-            case 429 -> new TooManyRequests(429);
+            case HttpURLConnection.HTTP_NOT_FOUND -> handleNotFound(name);
+            case 429 -> new Callback(429, null);
             default -> {
                 plugin.getLogger().warning("Unexpected response code: " + responseCode);
                 yield null;
@@ -92,23 +101,30 @@ public class MojangService {
         };
     }
 
-    private Found handleFoundResponse(String responseMessage, String name) {
+    private Callback handleFoundResponse(String responseMessage, String name) {
         JSONObject jsonResponse = new JSONObject(responseMessage);
         String rawUuid = jsonResponse.getString("id");
         String formattedUuid = formatUUID(rawUuid);
         UUID uuid = UUID.fromString(formattedUuid);
         String username = jsonResponse.getString("name");
 
-        Found response = new Found(HttpURLConnection.HTTP_OK, uuid, username);
-        cache.put(name, response);
+        Callback response = new Callback(username, uuid);
+        cache.put(name, new CacheEntry(response, System.currentTimeMillis())); // Cache with timestamp
         return response;
     }
 
-    private BadRequest handleBadRequest(String responseMessage, String name) {
+    private Callback handleBadRequest(String responseMessage, String name) {
         JSONObject jsonResponse = new JSONObject(responseMessage);
         String errorMessage = jsonResponse.getString("errorMessage");
-        plugin.getLogger().warning("Bad request for " + name + ": " + errorMessage);
-        return new BadRequest(HttpURLConnection.HTTP_BAD_REQUEST, errorMessage);
+        Callback response = new Callback(HttpURLConnection.HTTP_BAD_REQUEST, errorMessage);
+        cache.put(name, new CacheEntry(response, System.currentTimeMillis()));
+        return response;
+    }
+
+    private Callback handleNotFound(String name) {
+        Callback response = new Callback(HttpURLConnection.HTTP_NOT_FOUND, null);
+        cache.put(name, new CacheEntry(response, System.currentTimeMillis()));
+        return response;
     }
 
     private String formatUUID(String rawUuid) {

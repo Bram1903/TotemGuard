@@ -24,10 +24,8 @@ import com.deathmotion.totemguard.data.SafetyStatus;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
-import com.deathmotion.totemguard.mojang.ApiResponse;
 import com.deathmotion.totemguard.mojang.MojangService;
-import com.deathmotion.totemguard.mojang.models.BadRequest;
-import com.deathmotion.totemguard.mojang.models.Found;
+import com.deathmotion.totemguard.mojang.models.Callback;
 import com.deathmotion.totemguard.util.messages.ProfileCreator;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
@@ -39,7 +37,6 @@ import org.bukkit.entity.Player;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class ProfileCommand implements SubCommand {
@@ -84,46 +81,29 @@ public class ProfileCommand implements SubCommand {
     private void handleAsyncTask(CommandSender sender, String playerName) {
         long startTime = System.currentTimeMillis();
 
-        ApiResponse response = mojangService.getUUID(playerName);
+        Callback response = mojangService.getUUID(playerName);
         if (!handleApiResponse(sender, response)) {
             return;
         }
 
-        Found found = (Found) response;
-        UUID uuid = found.uuid();
-
-        List<Alert> alerts = databaseService.getAlerts(uuid);
-        List<Punishment> punishments = databaseService.getPunishments(uuid);
+        List<Alert> alerts = databaseService.getAlerts(response.getUuid());
+        List<Punishment> punishments = databaseService.getPunishments(response.getUuid());
 
         List<Alert> alertsToday = filterAlertsToday(alerts);
 
         long loadTime = System.currentTimeMillis() - startTime;
         SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
-        Component logsComponent = ProfileCreator.createProfileComponent(found.username(), alerts, punishments, loadTime, safetyStatus);
+        Component logsComponent = ProfileCreator.createProfileComponent(response.getUsername(), alerts, punishments, loadTime, safetyStatus);
         sender.sendMessage(logsComponent);
     }
 
-    private boolean handleApiResponse(CommandSender sender, ApiResponse response) {
-        if (response == null) {
-            sender.sendMessage(Component.text("An error occurred while fetching the player's UUID.", NamedTextColor.RED));
+    private boolean handleApiResponse(CommandSender sender, Callback response) {
+        if (response.getUsername() == null) {
+            sender.sendMessage(response.getMessage());
             return false;
         }
 
-        return switch (response.responseStatus()) {
-            case 204 -> {
-                sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED));
-                yield false;
-            }
-            case 400 -> {
-                sender.sendMessage(Component.text(((BadRequest) response).errorMessage(), NamedTextColor.RED));
-                yield false;
-            }
-            case 429 -> {
-                sender.sendMessage(Component.text("Rate limit exceeded. Please try again later.", NamedTextColor.RED));
-                yield false;
-            }
-            default -> true;
-        };
+        return true;
     }
 
     private List<Alert> filterAlertsToday(List<Alert> alerts) {

@@ -114,7 +114,7 @@ public class UserTracker implements PacketListener {
         Component message = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
                 .append(Component.text(username, NamedTextColor.GOLD))
-                .append(Component.text(" has connected with: ", NamedTextColor.GRAY))
+                .append(Component.text(" joined using: ", NamedTextColor.GRAY))
                 .append(Component.text(brand, NamedTextColor.GOLD))
                 .build();
 
