@@ -26,8 +26,8 @@ import com.deathmotion.totemguard.util.PlaceholderUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.jetbrains.annotations.Blocking;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 public class PunishmentManager {
@@ -35,15 +35,21 @@ public class PunishmentManager {
     private final DiscordManager discordManager;
     private final DatabaseService databaseService;
 
+    private final Set<UUID> toBePunished;
+
     public PunishmentManager(TotemGuard plugin) {
         this.plugin = plugin;
         this.discordManager = plugin.getDiscordManager();
         this.databaseService = plugin.getDatabaseService();
+
+        this.toBePunished = ConcurrentHashMap.newKeySet();
     }
 
     @Blocking
     public boolean handlePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations()) {
+        if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations() && !toBePunished.contains(totemPlayer.getUuid())) {
+            toBePunished.add(totemPlayer.getUuid());
+
             long delayTicks = checkDetails.getPunishmentDelay() * 20L;
             if (delayTicks <= 0) {
                 executePunishment(totemPlayer, checkDetails);
@@ -60,6 +66,8 @@ public class PunishmentManager {
             databaseService.savePunishment(totemPlayer, checkDetails);
             runPunishmentCommands(totemPlayer, checkDetails);
             discordManager.sendPunishment(totemPlayer, checkDetails);
+
+            toBePunished.remove(totemPlayer.getUuid());
         });
     }
 
@@ -70,6 +78,8 @@ public class PunishmentManager {
             databaseService.savePunishment(totemPlayer, checkDetails);
             runPunishmentCommands(totemPlayer, checkDetails);
             discordManager.sendPunishment(totemPlayer, checkDetails);
+
+            toBePunished.remove(totemPlayer.getUuid());
             latch.countDown();
         }, delayTicks);
 
