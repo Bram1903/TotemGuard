@@ -166,7 +166,6 @@ public final class Settings {
         @Comment({
                 "",
                 "Supported Placeholders:",
-                "",
                 "%uuid% - UUID of the Player",
                 "%player% - Name of the Player",
                 "%check% - Name of the Check",

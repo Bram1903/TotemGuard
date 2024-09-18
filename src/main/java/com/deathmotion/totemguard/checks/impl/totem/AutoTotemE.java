@@ -79,9 +79,9 @@ public final class AutoTotemE extends Check implements TotemEventListener {
 
             // Calculate average standard deviation to find consistency
             double averageStDeviation = MathUtil.getMean(stDevHistory);
-            //plugin.debug("== AutoTotemF (Consistency Check) ==");
-            //plugin.debug("Standard Deviation: " + MathUtil.trim(2, standardDeviation));
-            //plugin.debug("Average Standard Deviation: " + MathUtil.trim(2, averageStDeviation) + "ms");
+            plugin.debug("== AutoTotemF (Consistency Check) ==");
+            plugin.debug("Standard Deviation: " + MathUtil.trim(2, standardDeviation));
+            plugin.debug("Average Standard Deviation: " + MathUtil.trim(2, averageStDeviation) + "ms");
 
             var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemE();
 
