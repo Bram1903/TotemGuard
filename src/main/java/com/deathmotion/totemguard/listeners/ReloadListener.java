@@ -43,7 +43,7 @@ public class ReloadListener implements Listener {
 
         Component message = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(configManager.getSettings().getPrefix()))
-                .append(Component.text(" The configuration has been reloaded!", NamedTextColor.GREEN))
+                .append(Component.text("The configuration has been reloaded!", NamedTextColor.GREEN))
                 .build();
 
         event.getCommandSender().sendMessage(message);

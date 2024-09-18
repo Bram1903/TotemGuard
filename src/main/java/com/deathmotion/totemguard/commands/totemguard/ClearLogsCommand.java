@@ -49,12 +49,12 @@ public class ClearLogsCommand implements SubCommand {
 
         usageComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Usage: /totemguard clearlogs <player>", NamedTextColor.RED))
+                .append(Component.text("Usage: /totemguard clearlogs <player>", NamedTextColor.RED))
                 .build();
 
         clearingStartedComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Clearing logs...", NamedTextColor.GREEN))
+                .append(Component.text("Clearing logs...", NamedTextColor.GREEN))
                 .build();
     }
 
@@ -78,7 +78,7 @@ public class ClearLogsCommand implements SubCommand {
 
             Component message = Component.text()
                     .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                    .append(Component.text(" Cleared " + deletedRecords + " logs for" + response.getUsername() + " in " + loadTime + "ms", NamedTextColor.GREEN))
+                    .append(Component.text("Cleared " + deletedRecords + " logs for" + response.getUsername() + " in " + loadTime + "ms", NamedTextColor.GREEN))
                     .build();
 
             sender.sendMessage(message);

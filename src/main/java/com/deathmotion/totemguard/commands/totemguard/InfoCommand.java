@@ -37,7 +37,7 @@ public class InfoCommand implements SubCommand {
     public InfoCommand(TotemGuard plugin) {
         versionComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()).decorate(TextDecoration.BOLD))
-                .append(Component.text(" Running ", NamedTextColor.GRAY))
+                .append(Component.text("Running ", NamedTextColor.GRAY))
                 .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))

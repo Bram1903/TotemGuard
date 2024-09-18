@@ -40,7 +40,7 @@ public class ReloadCommand implements SubCommand {
 
         Component message = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(configManager.getSettings().getPrefix()))
-                .append(Component.text(" The configuration has been reloaded!", NamedTextColor.GREEN))
+                .append(Component.text("The configuration has been reloaded!", NamedTextColor.GREEN))
                 .build();
 
         sender.sendMessage(message);

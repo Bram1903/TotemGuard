@@ -30,7 +30,7 @@ import java.util.List;
 public final class Settings {
 
     @Comment("Prefix: Sets the command prefix for the plugin.")
-    private String prefix = "&6⚡";
+    private String prefix = "&6⚡ ";
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean debug = false;

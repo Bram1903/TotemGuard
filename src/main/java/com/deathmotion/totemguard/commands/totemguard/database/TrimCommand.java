@@ -48,12 +48,12 @@ public class TrimCommand implements SubCommand {
 
         invalidCodeComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Invalid code. Please use the code provided.", NamedTextColor.RED))
+                .append(Component.text("Invalid code. Please use the code provided.", NamedTextColor.RED))
                 .build();
 
         trimStartedComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Database trimming started...", NamedTextColor.GREEN))
+                .append(Component.text("Database trimming started...", NamedTextColor.GREEN))
                 .build();
     }
 
@@ -76,7 +76,12 @@ public class TrimCommand implements SubCommand {
             int totalRemovedLogs = databaseService.trimDatabase();
             long loadTime = System.currentTimeMillis() - startTime;
 
-            sender.sendMessage(Component.text("Trimmed " + totalRemovedLogs + " logs in " + loadTime + "ms.", NamedTextColor.GREEN));
+            Component message = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                    .append(Component.text("Trimmed " + totalRemovedLogs + " logs in " + loadTime + "ms.", NamedTextColor.GREEN))
+                    .build();
+
+            sender.sendMessage(message);
         }));
 
         return true;

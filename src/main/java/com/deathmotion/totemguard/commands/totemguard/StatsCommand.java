@@ -57,7 +57,7 @@ public class StatsCommand implements SubCommand {
         this.zoneId = ZoneId.systemDefault();
         this.loadingComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Loading stats...", NamedTextColor.GRAY))
+                .append(Component.text("Loading stats...", NamedTextColor.GRAY))
                 .build();
     }
 

@@ -58,11 +58,11 @@ public class ProfileCommand implements SubCommand {
 
         noPlayerSpecifiedComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Usage: /totemguard profile <player>", NamedTextColor.RED))
+                .append(Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED))
                 .build();
         loadingComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Loading profile...", NamedTextColor.GRAY))
+                .append(Component.text("Loading profile...", NamedTextColor.GRAY))
                 .build();
     }
 

@@ -48,12 +48,12 @@ public class ClearCommand implements SubCommand {
 
         invalidCodeComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Invalid code. Please use the code provided.", NamedTextColor.RED))
+                .append(Component.text("Invalid code. Please use the code provided.", NamedTextColor.RED))
                 .build();
 
         clearStartedComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text(" Database clearing started...", NamedTextColor.GREEN))
+                .append(Component.text("Database clearing started...", NamedTextColor.GREEN))
                 .build();
     }
 
@@ -78,7 +78,7 @@ public class ClearCommand implements SubCommand {
 
             Component message = Component.text()
                     .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                    .append(Component.text(" Cleared " + totalRemovedLogs + " logs in " + loadTime + "ms.", NamedTextColor.GREEN))
+                    .append(Component.text("Cleared " + totalRemovedLogs + " logs in " + loadTime + "ms.", NamedTextColor.GREEN))
                     .build();
 
             sender.sendMessage(message);

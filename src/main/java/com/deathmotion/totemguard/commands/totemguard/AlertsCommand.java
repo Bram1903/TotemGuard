@@ -49,7 +49,7 @@ public class AlertsCommand implements SubCommand {
         } else {
             Component message = Component.text()
                     .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                    .append(Component.text(" You do not have permission to toggle alerts for other players!", NamedTextColor.RED))
+                    .append(Component.text("You do not have permission to toggle alerts for other players!", NamedTextColor.RED))
                     .build();
 
             sender.sendMessage(message);
@@ -64,7 +64,7 @@ public class AlertsCommand implements SubCommand {
         } else {
             Component message = Component.text()
                     .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                    .append(Component.text(" Only players can toggle alerts!", NamedTextColor.RED))
+                    .append(Component.text("Only players can toggle alerts!", NamedTextColor.RED))
                     .build();
 
             sender.sendMessage(message);
@@ -77,7 +77,7 @@ public class AlertsCommand implements SubCommand {
         if (target == null) {
             Component message = Component.text()
                     .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                    .append(Component.text(" Player not found!", NamedTextColor.RED))
+                    .append(Component.text("Player not found!", NamedTextColor.RED))
                     .build();
 
             sender.sendMessage(message);
@@ -89,7 +89,7 @@ public class AlertsCommand implements SubCommand {
 
         Component message = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text((alertsEnabled ? " Enabled" : " Disabled") + " alerts for " + target.getName() + "!", alertsEnabled ? NamedTextColor.GREEN : NamedTextColor.RED))
+                .append(Component.text((alertsEnabled ? "Enabled" : "Disabled") + " alerts for " + target.getName() + "!", alertsEnabled ? NamedTextColor.GREEN : NamedTextColor.RED))
                 .build();
 
         sender.sendMessage(message);
