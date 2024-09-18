@@ -136,11 +136,13 @@ public final class TotemProcessor extends Check implements Listener {
 
     @Override
     public void resetData() {
+        totemUsage.clear();
         expectingReEquip.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        totemUsage.remove(uuid);
         expectingReEquip.remove(uuid);
     }
 }

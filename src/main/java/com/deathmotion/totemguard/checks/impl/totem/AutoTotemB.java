@@ -79,4 +79,14 @@ public final class AutoTotemB extends Check implements TotemEventListener {
                 .append(Component.text(MathUtil.trim(2, mean) + "ms", NamedTextColor.GOLD))
                 .build();
     }
+
+    @Override
+    public void resetData() {
+        lowSDCountMap.clear();
+    }
+
+    @Override
+    public void resetData(UUID uuid) {
+        lowSDCountMap.remove(uuid);
+    }
 }
