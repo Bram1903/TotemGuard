@@ -18,24 +18,13 @@
 
 package com.deathmotion.totemguard.database.entities;
 
-import io.ebean.Model;
-import io.ebean.annotation.WhenCreated;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.Instant;
-
-@MappedSuperclass
-@Getter
-@Setter
-public abstract class BaseDomain extends Model {
-    @Id
-    private long id;
-
-    private Check checkName;
-
-    @WhenCreated
-    private Instant whenCreated;
+public enum Check {
+    AutoTotemA,
+    AutoTotemB,
+    AutoTotemC,
+    AutoTotemD,
+    AutoTotemE,
+    BadPacketsA,
+    BadPacketsB,
+    ManualTotemA,
 }

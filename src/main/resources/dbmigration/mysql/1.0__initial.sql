@@ -1,7 +1,7 @@
 -- apply changes
 create table totemguard_alerts (
   id                            bigint auto_increment not null,
-  check_name                    varchar(255),
+  check_name                    integer,
   totemguard_player_id          bigint,
   when_created                  datetime(6) not null,
   constraint pk_totemguard_alerts primary key (id)
@@ -15,7 +15,7 @@ create table totemguard_player (
 
 create table totemguard_punishments (
   id                            bigint auto_increment not null,
-  check_name                    varchar(255),
+  check_name                    integer,
   totemguard_player_id          bigint,
   when_created                  datetime(6) not null,
   constraint pk_totemguard_punishments primary key (id)

@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.util.messages;
 
 import com.deathmotion.totemguard.data.SafetyStatus;
+import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import net.kyori.adventure.text.Component;
@@ -44,11 +45,11 @@ public class ProfileCreator {
 
     public static Component createProfileComponent(String username, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus) {
         // Group alerts by check name and count them
-        Map<String, Long> checkCounts = alerts.stream()
+        Map<Check, Long> checkCounts = alerts.stream()
                 .collect(Collectors.groupingBy(Alert::getCheckName, Collectors.counting()));
 
         // Sort the map entries by count in descending order
-        List<Map.Entry<String, Long>> sortedCheckCounts = checkCounts.entrySet().stream()
+        List<Map.Entry<Check, Long>> sortedCheckCounts = checkCounts.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .toList();
 
@@ -79,7 +80,7 @@ public class ProfileCreator {
             componentBuilder.append(Component.text(" No logs found.", NamedTextColor.GRAY, TextDecoration.ITALIC));
         } else {
             sortedCheckCounts.forEach(entry -> {
-                String checkName = entry.getKey();
+                Check checkName = entry.getKey();
                 Long count = entry.getValue();
                 componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
                         .append(Component.text(checkName + ": ", NamedTextColor.GRAY, TextDecoration.BOLD))
@@ -116,7 +117,7 @@ public class ProfileCreator {
 
             componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
                     .append(Component.text("Punished for ", NamedTextColor.GRAY))
-                    .append(Component.text(punishment.getCheckName(), NamedTextColor.GOLD, TextDecoration.BOLD))
+                    .append(Component.text(String.valueOf(punishment.getCheckName()), NamedTextColor.GOLD, TextDecoration.BOLD))
                     .append(Component.text(" on ", NamedTextColor.GRAY))
                     .append(Component.text(formattedDate, NamedTextColor.GOLD)
                             .hoverEvent(HoverEvent.showText(

@@ -3,6 +3,7 @@ package com.deathmotion.totemguard.database;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
@@ -138,7 +139,7 @@ public class DatabaseService {
     private Alert createAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
         DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.getUuid());
         Alert alert = new Alert();
-        alert.setCheckName(checkDetails.getCheckName());
+        alert.setCheckName(Check.valueOf(checkDetails.getCheckName()));
         alert.setDatabasePlayer(databasePlayer);
 
         // Add alert to player's list to maintain bidirectional relationship
@@ -149,7 +150,7 @@ public class DatabaseService {
     private Punishment createPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
         DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.getUuid());
         Punishment punishment = new Punishment();
-        punishment.setCheckName(checkDetails.getCheckName());
+        punishment.setCheckName(Check.valueOf(checkDetails.getCheckName()));
         punishment.setDatabasePlayer(databasePlayer);
 
         // Add punishment to player's list to maintain bidirectional relationship
