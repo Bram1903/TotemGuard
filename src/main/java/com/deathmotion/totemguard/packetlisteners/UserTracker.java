@@ -76,11 +76,15 @@ public class UserTracker implements PacketListener {
         if (!channelName.equalsIgnoreCase("minecraft:brand") && !channelName.equals("MC|Brand")) return;
 
         byte[] data = packet.getData();
-        if (data.length > 64 || data.length == 0) return;
-
-        byte[] minusLength = new byte[data.length - 1];
-        System.arraycopy(data, 1, minusLength, 0, minusLength.length);
-        String brand = new String(minusLength).replace(" (Velocity)", "");
+        String brand = "Unknown";
+        if (data.length <= 64 && data.length > 0) { // Check if the data length is valid
+            byte[] minusLength = new byte[data.length - 1];
+            System.arraycopy(data, 1, minusLength, 0, minusLength.length);
+            brand = new String(minusLength).replace(" (Velocity)", "");
+            if (brand.isEmpty()) {
+                brand = "Unknown";
+            }
+        }
 
         User user = event.getUser();
         UUID userUUID = user.getUUID();
@@ -113,7 +117,7 @@ public class UserTracker implements PacketListener {
 
         Component message = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text(username, NamedTextColor.GOLD))
+                .append(Component.text(" " + username, NamedTextColor.GOLD))
                 .append(Component.text(" joined using: ", NamedTextColor.GRAY))
                 .append(Component.text(brand, NamedTextColor.GOLD))
                 .build();
