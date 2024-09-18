@@ -65,6 +65,7 @@ public class PunishmentManager {
         CountDownLatch latch = new CountDownLatch(1);
 
         FoliaScheduler.getGlobalRegionScheduler().runDelayed(plugin, (o) -> {
+            databaseService.savePunishment(totemPlayer, checkDetails);
             runPunishmentCommands(totemPlayer, checkDetails);
             discordManager.sendPunishment(totemPlayer, checkDetails);
             latch.countDown(); // Signal that the task is complete
