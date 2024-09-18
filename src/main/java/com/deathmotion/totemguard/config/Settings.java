@@ -30,13 +30,30 @@ import java.util.List;
 public final class Settings {
 
     @Comment("Prefix: Sets the command prefix for the plugin.")
-    private String prefix = "&6⚡ ";
+    private String prefix = "&6⚡";
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean debug = false;
 
     @Comment("\nAlert Client Brand: Notifies players with the alert permission, what client brand a player is using.")
     private boolean alertClientBrand = false;
+
+    @Comment({
+            "",
+            "Supported Placeholders in the settings:",
+            "%prefix% - Prefix of the Plugin",
+            "%uuid% - UUID of the Player",
+            "%player% - Name of the Player",
+            "%check% - Name of the Check",
+            "%description% - Description of the Check",
+            "%ping% - Player's Ping",
+            "%tps% - Server's TPS",
+            "%punishable% - If the check is punishable",
+            "%violations% - Amount of Violations",
+            "%max_violations% - Maximum Violations",
+            "",
+            "Alert Format: The format of the alert message."})
+    private String alertFormat = "&6%prefix% &e%player%&7 failed &6%check%&7 VL[&6%violations%/%max_violations%&7]";
 
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
@@ -163,20 +180,7 @@ public final class Settings {
         @Comment("When enabled, players with the bypass permission will not be flagged.")
         private boolean bypass = false;
 
-        @Comment({
-                "",
-                "Supported Placeholders:",
-                "%uuid% - UUID of the Player",
-                "%player% - Name of the Player",
-                "%check% - Name of the Check",
-                "%description% - Description of the Check",
-                "%ping% - Player's Ping",
-                "%tps% - Server's TPS",
-                "%punishable% - If the check is punishable",
-                "%violations% - Amount of Violations",
-                "%max_violations% - Maximum Violations",
-                "",
-                "AutoTotemA Settings"})
+        @Comment({"", "AutoTotemA Settings"})
         private AutoTotemA autoTotemA = new AutoTotemA();
 
         @Comment("\nAutoTotemB Settings")

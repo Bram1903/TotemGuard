@@ -46,37 +46,37 @@ public class PunishmentManager {
     }
 
     @Blocking
-    public boolean handlePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
+    public boolean handlePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
         if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations() && !toBePunished.contains(totemPlayer.getUuid())) {
             toBePunished.add(totemPlayer.getUuid());
 
             long delayTicks = checkDetails.getPunishmentDelay() * 20L;
             if (delayTicks <= 0) {
-                executePunishment(totemPlayer, checkDetails);
+                executePunishment(totemPlayer, checkDetails, prefix);
             } else {
-                return scheduleAndWaitPunishment(totemPlayer, checkDetails, delayTicks);
+                return scheduleAndWaitPunishment(totemPlayer, checkDetails, prefix, delayTicks);
             }
             return true;
         }
         return false;
     }
 
-    private void executePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
+    private void executePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
         FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
             databaseService.savePunishment(totemPlayer, checkDetails);
-            runPunishmentCommands(totemPlayer, checkDetails);
+            runPunishmentCommands(totemPlayer, checkDetails, prefix);
             discordManager.sendPunishment(totemPlayer, checkDetails);
 
             toBePunished.remove(totemPlayer.getUuid());
         });
     }
 
-    private boolean scheduleAndWaitPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, long delayTicks) {
+    private boolean scheduleAndWaitPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix, long delayTicks) {
         CountDownLatch latch = new CountDownLatch(1);
 
         FoliaScheduler.getGlobalRegionScheduler().runDelayed(plugin, (o) -> {
             databaseService.savePunishment(totemPlayer, checkDetails);
-            runPunishmentCommands(totemPlayer, checkDetails);
+            runPunishmentCommands(totemPlayer, checkDetails, prefix);
             discordManager.sendPunishment(totemPlayer, checkDetails);
 
             toBePunished.remove(totemPlayer.getUuid());
@@ -93,10 +93,11 @@ public class PunishmentManager {
         return true;
     }
 
-    private void runPunishmentCommands(TotemPlayer totemPlayer, CheckDetails checkDetails) {
+    private void runPunishmentCommands(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
         List<String> punishmentCommands = checkDetails.getPunishmentCommands();
         for (String command : punishmentCommands) {
             String parsedCommand = PlaceholderUtil.replacePlaceholders(command, Map.of(
+                    "%prefix%", prefix,
                     "%uuid%", totemPlayer.getUuid().toString(),
                     "%player%", totemPlayer.getUsername(),
                     "%check%", checkDetails.getCheckName(),
@@ -105,7 +106,7 @@ public class PunishmentManager {
                     "%tps%", String.valueOf(checkDetails.getTps()),
                     "%punishable%", String.valueOf(checkDetails.isPunishable()),
                     "%violations%", String.valueOf(checkDetails.getViolations()),
-                    "%max_violations%", String.valueOf(checkDetails.getMaxViolations())
+                    "%max_violations%", checkDetails.isPunishable() ? String.valueOf(checkDetails.getMaxViolations()) : "∞"
             ));
             plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), parsedCommand);
         }

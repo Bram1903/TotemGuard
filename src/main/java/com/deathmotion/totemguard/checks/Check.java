@@ -84,7 +84,7 @@ public abstract class Check implements ICheck {
             alertManager.sendAlert(totemPlayer, checkDetails);
             discordManager.sendAlert(totemPlayer, checkDetails);
 
-            if (punishmentManager.handlePunishment(totemPlayer, checkDetails)) {
+            if (punishmentManager.handlePunishment(totemPlayer, checkDetails, plugin.getConfigManager().getSettings().getAlertFormat())) {
                 violations.remove(uuid);
             }
         });
@@ -114,6 +114,8 @@ public abstract class Check implements ICheck {
     }
 
     private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, Settings.Checks.CheckSettings settings, int currentViolations) {
+        final Settings globalSettings = plugin.getConfigManager().getSettings();
+
         CheckDetails checkDetails = new CheckDetails();
         checkDetails.setCheckName(checkName);
         checkDetails.setCheckDescription(checkDescription);
@@ -127,7 +129,7 @@ public abstract class Check implements ICheck {
         checkDetails.setPunishmentDelay(settings.getPunishmentDelayInSeconds());
         checkDetails.setMaxViolations(settings.getMaxViolations());
         checkDetails.setPunishmentCommands(settings.getPunishmentCommands());
-        checkDetails.setAlert(AlertCreator.createAlertComponent(totemPlayer, checkDetails, details, plugin.getConfigManager().getSettings().getPrefix()));
+        checkDetails.setAlert(AlertCreator.createAlertComponent(totemPlayer, checkDetails, details, globalSettings.getPrefix(), globalSettings.getAlertFormat()));
         checkDetails.setDetails(details);
 
         return checkDetails;
