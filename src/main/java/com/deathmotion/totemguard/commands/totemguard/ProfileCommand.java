@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.mojang.MojangService;
 import com.deathmotion.totemguard.mojang.models.Callback;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.deathmotion.totemguard.util.messages.ProfileCreator;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
@@ -86,8 +87,10 @@ public class ProfileCommand implements SubCommand {
             return;
         }
 
-        List<Alert> alerts = databaseService.getAlerts(response.getUuid());
-        List<Punishment> punishments = databaseService.getPunishments(response.getUuid());
+        Pair<List<Alert>, List<Punishment>> logs = databaseService.getLogs(response.getUuid());
+
+        List<Alert> alerts = logs.getX();
+        List<Punishment> punishments = logs.getY();
 
         List<Alert> alertsToday = filterAlertsToday(alerts);
 

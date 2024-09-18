@@ -1,30 +1,15 @@
-/*
- * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- * Copyright (C) 2024 Bram and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package com.deathmotion.totemguard.database;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.ebean.Database;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import lombok.Getter;
 import org.jetbrains.annotations.Blocking;
 
 import java.time.Instant;
@@ -34,28 +19,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-@Blocking
 public class DatabaseService {
     private static final int SAVE_INTERVAL_SECONDS = 10;
+    private static final int CACHE_EXPIRY_MINUTES = 10;
     private static final String UUID_FIELD = "uuid";
     private static final String WHEN_CREATED_FIELD = "whenCreated";
+    private static final String DATABASE_PLAYER_FIELD = "databasePlayer";
 
     private final TotemGuard plugin;
     private final Database database;
     private final ZoneId zoneId;
     private final BlockingQueue<Alert> alertsToSave = new LinkedBlockingQueue<>();
     private final BlockingQueue<Punishment> punishmentsToSave = new LinkedBlockingQueue<>();
+    private final ConcurrentHashMap<UUID, CacheEntry> playerCache = new ConcurrentHashMap<>();
 
     public DatabaseService(TotemGuard plugin) {
         this.plugin = plugin;
         this.database = plugin.getDatabaseManager().getDatabase();
         this.zoneId = ZoneId.systemDefault();
 
-        // Schedule the bulkSave task
+        // Schedule async tasks
         FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o -> bulkSave()), SAVE_INTERVAL_SECONDS, SAVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o -> cleanupCache()), CACHE_EXPIRY_MINUTES, CACHE_EXPIRY_MINUTES, TimeUnit.MINUTES);
     }
 
     /**
@@ -90,100 +79,193 @@ public class DatabaseService {
      * Saves an alert to the queue for asynchronous saving.
      */
     public void saveAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        Alert alert = createAlert(totemPlayer, checkDetails);
-        if (!alertsToSave.offer(alert)) {
-            plugin.getLogger().severe("Failed to enqueue alert for player: " + totemPlayer.getUsername());
-        }
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            Alert alert = createAlert(totemPlayer, checkDetails);
+            if (!alertsToSave.offer(alert)) {
+                plugin.getLogger().severe("Failed to enqueue alert for player: " + totemPlayer.getUsername());
+            }
+        });
     }
 
     /**
      * Saves a punishment to the queue for asynchronous saving.
      */
     public void savePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        Punishment punishment = createPunishment(totemPlayer, checkDetails);
-        if (!punishmentsToSave.offer(punishment)) {
-            plugin.getLogger().severe("Failed to enqueue punishment for player: " + totemPlayer.getUsername());
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            Punishment punishment = createPunishment(totemPlayer, checkDetails);
+            if (!punishmentsToSave.offer(punishment)) {
+                plugin.getLogger().severe("Failed to enqueue punishment for player: " + totemPlayer.getUsername());
+            }
+        });
+    }
+
+    /**
+     * Retrieves the DatabasePlayer by UUID, using a cache with a 10-minute expiration.
+     */
+    private DatabasePlayer getOrCreatePlayer(UUID uuid) {
+        // Check cache first
+        CacheEntry cacheEntry = playerCache.get(uuid);
+        if (cacheEntry != null && !cacheEntry.isExpired()) {
+            return cacheEntry.getDatabasePlayer();
         }
+
+        // If not in cache, retrieve or create from database
+        DatabasePlayer databasePlayer = database.find(DatabasePlayer.class).where().eq(UUID_FIELD, uuid).findOneOrEmpty()
+                .orElseGet(() -> {
+                    DatabasePlayer newPlayer = new DatabasePlayer();
+                    newPlayer.setUuid(uuid);
+                    try {
+                        newPlayer.save();
+                    } catch (Exception e) {
+                        // Handle case where another thread inserted the player concurrently
+                        return database.find(DatabasePlayer.class).where().eq(UUID_FIELD, uuid).findOne();
+                    }
+                    return newPlayer;
+                });
+
+        // Cache the result
+        playerCache.put(uuid, new CacheEntry(databasePlayer));
+        return databasePlayer;
+    }
+
+    /**
+     * Cleans up expired entries from the cache.
+     */
+    private void cleanupCache() {
+        playerCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+
+    private Alert createAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
+        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.getUuid());
+        Alert alert = new Alert();
+        alert.setCheckName(checkDetails.getCheckName());
+        alert.setDatabasePlayer(databasePlayer);
+
+        // Add alert to player's list to maintain bidirectional relationship
+        databasePlayer.getAlerts().add(alert);
+        return alert;
+    }
+
+    private Punishment createPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
+        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.getUuid());
+        Punishment punishment = new Punishment();
+        punishment.setCheckName(checkDetails.getCheckName());
+        punishment.setDatabasePlayer(databasePlayer);
+
+        // Add punishment to player's list to maintain bidirectional relationship
+        databasePlayer.getPunishments().add(punishment);
+        return punishment;
     }
 
     /**
      * Retrieves all alerts from the database.
      */
+    @Blocking
     public List<Alert> getAlerts() {
         return database.find(Alert.class).findList();
     }
 
     /**
-     * Retrieves alerts for a specific UUID from the database.
-     */
-    public List<Alert> getAlerts(UUID uuid) {
-        return database.find(Alert.class).where().eq(UUID_FIELD, uuid).findList();
-    }
-
-    /**
      * Retrieves all punishments from the database.
      */
+    @Blocking
     public List<Punishment> getPunishments() {
         return database.find(Punishment.class).findList();
     }
 
     /**
-     * Retrieves punishments for a specific UUID from the database.
+     * Retrieves the logs for the given player, consisting of two lists: alerts and punishments.
      */
-    public List<Punishment> getPunishments(UUID uuid) {
-        return database.find(Punishment.class).where().eq(UUID_FIELD, uuid).findList();
+    @Blocking
+    public Pair<List<Alert>, List<Punishment>> getLogs(UUID uuid) {
+        DatabasePlayer databasePlayer = getOrCreatePlayer(uuid);
+
+        List<Alert> alerts = database.find(Alert.class)
+                .where()
+                .eq(DATABASE_PLAYER_FIELD, databasePlayer)
+                .findList();
+
+        List<Punishment> punishments = database.find(Punishment.class)
+                .where()
+                .eq(DATABASE_PLAYER_FIELD, databasePlayer)
+                .findList();
+
+        return new Pair<>(alerts, punishments);
     }
 
     /**
-     * Deletes alerts for a specific UUID from the database.
+     * Deletes all alerts and punishments for a specific UUID by fetching the related DatabasePlayer.
      */
-    public int clearAlerts(UUID uuid) {
-        return database.find(Alert.class).where().eq(UUID_FIELD, uuid).delete();
-    }
+    @Blocking
+    public int clearLogs(UUID uuid) {
+        DatabasePlayer databasePlayer = getOrCreatePlayer(uuid);
 
-    /**
-     * Deletes punishments for a specific UUID from the database.
-     */
-    public int clearPunishments(UUID uuid) {
-        return database.find(Punishment.class).where().eq(UUID_FIELD, uuid).delete();
+        // Delete alerts and punishments related to the databasePlayer
+        int deletedAlerts = database.find(Alert.class)
+                .where()
+                .eq(DATABASE_PLAYER_FIELD, databasePlayer)
+                .delete();
+        int deletedPunishments = database.find(Punishment.class)
+                .where()
+                .eq(DATABASE_PLAYER_FIELD, databasePlayer)
+                .delete();
+
+        return deletedAlerts + deletedPunishments;
     }
 
     /**
      * Trims the database by removing alerts and punishments older than 30 days.
      */
+    @Blocking
     public int trimDatabase() {
         Instant thirtyDaysAgo = LocalDateTime.now().minusDays(30).atZone(zoneId).toInstant();
-        int deletedAlerts = database.find(Alert.class).where().lt(WHEN_CREATED_FIELD, thirtyDaysAgo).delete();
-        int deletedPunishments = database.find(Punishment.class).where().lt(WHEN_CREATED_FIELD, thirtyDaysAgo).delete();
+
+        // Delete alerts older than 30 days
+        int deletedAlerts = database.find(Alert.class)
+                .where()
+                .lt(WHEN_CREATED_FIELD, thirtyDaysAgo)
+                .delete();
+
+        // Delete punishments older than 30 days
+        int deletedPunishments = database.find(Punishment.class)
+                .where()
+                .lt(WHEN_CREATED_FIELD, thirtyDaysAgo)
+                .delete();
+
         return deletedAlerts + deletedPunishments;
     }
 
     /**
-     * Clears all alerts and punishments from the database.
+     * Clears all DatabasePlayers along with their associated alerts and punishments from the database.
      */
+    @Blocking
     public int clearDatabase() {
-        int deletedAlerts = database.find(Alert.class).delete();
-        int deletedPunishments = database.find(Punishment.class).delete();
-        return deletedAlerts + deletedPunishments;
+        int totalAlerts = database.find(Alert.class).findCount();
+        int totalPunishments = database.find(Punishment.class).findCount();
+        int deletedPlayers = database.find(DatabasePlayer.class).delete();
+
+        // Clear the cache
+        playerCache.clear();
+
+        // Calculate the total number of deleted records
+        return totalAlerts + totalPunishments + deletedPlayers;
     }
 
     /**
-     * Creates an Alert object based on the provided player and check details.
+     * Cache entry that contains the DatabasePlayer and its creation timestamp.
      */
-    private Alert createAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        Alert alert = new Alert();
-        alert.setUuid(totemPlayer.getUuid());
-        alert.setCheckName(checkDetails.getCheckName());
-        return alert;
-    }
+    private static class CacheEntry {
+        @Getter
+        private final DatabasePlayer databasePlayer;
+        private final long timestamp;
 
-    /**
-     * Creates a Punishment object based on the provided player and check details.
-     */
-    private Punishment createPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        Punishment punishment = new Punishment();
-        punishment.setUuid(totemPlayer.getUuid());
-        punishment.setCheckName(checkDetails.getCheckName());
-        return punishment;
+        public CacheEntry(DatabasePlayer databasePlayer) {
+            this.databasePlayer = databasePlayer;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        public boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > TimeUnit.MINUTES.toMillis(CACHE_EXPIRY_MINUTES);
+        }
     }
 }

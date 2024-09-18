@@ -16,25 +16,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.database.entities.impl;
+package com.deathmotion.totemguard.database.entities;
 
-import com.deathmotion.totemguard.database.entities.BaseDomain;
-import com.deathmotion.totemguard.database.entities.DatabasePlayer;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import com.deathmotion.totemguard.database.entities.impl.Alert;
+import com.deathmotion.totemguard.database.entities.impl.Punishment;
+import io.ebean.Model;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 @Entity
-@Table(name = "totemguard_alerts")
+@Table(name = "totemguard_player")
 @Getter
 @Setter
-public class Alert extends BaseDomain {
+public class DatabasePlayer extends Model {
 
-    @ManyToOne
-    @JoinColumn(name = "totemguard_player_id")
-    private DatabasePlayer databasePlayer;
+    @Id
+    private long id;
+
+    private UUID uuid;
+
+    @OneToMany(mappedBy = "databasePlayer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Alert> alerts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "databasePlayer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Punishment> punishments = new ArrayList<>();
 }
 

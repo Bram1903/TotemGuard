@@ -24,6 +24,7 @@ import io.ebean.Database;
 import io.ebean.DatabaseFactory;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
+import io.ebean.migration.MigrationConfig;
 import lombok.Getter;
 
 @Getter
@@ -34,6 +35,7 @@ public class DatabaseManager {
         Settings.Database settings = plugin.getConfigManager().getSettings().getDatabase();
         DataSourceConfig dataSourceConfig = createDataSourceConfig(settings, plugin);
         DatabaseConfig databaseConfig = createDatabaseConfig(dataSourceConfig);
+
         this.database = initializeDatabase(databaseConfig, plugin);
     }
 

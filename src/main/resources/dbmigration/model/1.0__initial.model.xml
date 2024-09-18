@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <migration xmlns="http://ebean-orm.github.io/xml/ns/dbmigration">
     <changeSet type="apply">
-        <createTable name="alert" pkName="pk_alert">
+        <createTable name="totemguard_alerts" pkName="pk_totemguard_alerts">
             <column name="id" type="bigint" primaryKey="true"/>
-            <column name="uuid" type="uuid"/>
             <column name="check_name" type="varchar"/>
+            <column name="totemguard_player_id" type="bigint" references="totemguard_player.id" foreignKeyName="fk_totemguard_alerts_totemguard_player_id" foreignKeyIndex="ix_totemguard_alerts_totemguard_player_id"/>
             <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
-        <createTable name="punishment" pkName="pk_punishment">
+        <createTable name="totemguard_player" pkName="pk_totemguard_player">
             <column name="id" type="bigint" primaryKey="true"/>
             <column name="uuid" type="uuid"/>
+        </createTable>
+        <createTable name="totemguard_punishments" pkName="pk_totemguard_punishments">
+            <column name="id" type="bigint" primaryKey="true"/>
             <column name="check_name" type="varchar"/>
+            <column name="totemguard_player_id" type="bigint" references="totemguard_player.id" foreignKeyName="fk_totemguard_punishments_totemguard_player_id" foreignKeyIndex="ix_totemguard_punishments_totemguard_player_id"/>
             <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
     </changeSet>

@@ -19,9 +19,24 @@
 package com.deathmotion.totemguard.database.entities.impl;
 
 import com.deathmotion.totemguard.database.entities.BaseDomain;
+import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Table(name = "totemguard_punishments")
+@Getter
+@Setter
 public class Punishment extends BaseDomain {
 
+    @ManyToOne
+    @JoinColumn(name = "totemguard_player_id")
+    private DatabasePlayer databasePlayer;
 }
+
+
+

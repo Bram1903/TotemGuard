@@ -26,7 +26,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @MappedSuperclass
 @Getter
@@ -34,8 +33,6 @@ import java.util.UUID;
 public abstract class BaseDomain extends Model {
     @Id
     private long id;
-
-    private UUID uuid;
 
     private String checkName;
 

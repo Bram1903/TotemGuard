@@ -65,12 +65,10 @@ public class ClearLogsCommand implements SubCommand {
             }
 
             long startTime = System.currentTimeMillis();
-            int deletedAlerts = databaseService.clearAlerts(response.getUuid());
-            int deletedPunishments = databaseService.clearPunishments(response.getUuid());
-            int deletedLogs = deletedAlerts + deletedPunishments;
+            int deletedRecords = databaseService.clearLogs(response.getUuid());
             long loadTime = System.currentTimeMillis() - startTime;
 
-            sender.sendMessage(Component.text("Cleared " + deletedLogs + " logs for" + response.getUsername() + " in " + loadTime + "ms", NamedTextColor.GREEN));
+            sender.sendMessage(Component.text("Cleared " + deletedRecords + " logs for" + response.getUsername() + " in " + loadTime + "ms", NamedTextColor.GREEN));
         });
         return true;
     }
