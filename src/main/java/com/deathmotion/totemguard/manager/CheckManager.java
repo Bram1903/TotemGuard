@@ -83,7 +83,7 @@ public class CheckManager {
         final Settings settings = plugin.getConfigManager().getSettings();
         Component resetComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
+                .append(Component.text(" All flag counts have been reset.", NamedTextColor.GREEN))
                 .build();
 
         alertManager.sendAlert(resetComponent);

@@ -41,13 +41,11 @@ public class ReloadListener implements Listener {
         // Code directly copied from TotemGuardCommand#handleReloadCommand
         configManager.reload();
 
-        final Settings settings = configManager.getSettings();
-
-        Component prefixMessage = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("The configuration has been reloaded!", NamedTextColor.GREEN))
+        Component message = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(configManager.getSettings().getPrefix()))
+                .append(Component.text(" The configuration has been reloaded!", NamedTextColor.GREEN))
                 .build();
 
-        event.getCommandSender().sendMessage(prefixMessage);
+        event.getCommandSender().sendMessage(message);
     }
 }

@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.manager.AlertManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -31,9 +32,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AlertsCommand implements SubCommand {
+    private final TotemGuard plugin;
     private final AlertManager alertManager;
 
     public AlertsCommand(TotemGuard plugin) {
+        this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
     }
 
@@ -44,7 +47,12 @@ public class AlertsCommand implements SubCommand {
         } else if (sender.hasPermission("TotemGuard.Alerts.Others")) {
             return toggleAlertsForOther(sender, args[1]);
         } else {
-            sender.sendMessage(Component.text("You do not have permission to toggle alerts for other players!", NamedTextColor.RED));
+            Component message = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                    .append(Component.text(" You do not have permission to toggle alerts for other players!", NamedTextColor.RED))
+                    .build();
+
+            sender.sendMessage(message);
             return false;
         }
     }
@@ -54,7 +62,12 @@ public class AlertsCommand implements SubCommand {
             alertManager.toggleAlerts(player);
             return true;
         } else {
-            sender.sendMessage(Component.text("Only players can toggle alerts!", NamedTextColor.RED));
+            Component message = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                    .append(Component.text(" Only players can toggle alerts!", NamedTextColor.RED))
+                    .build();
+
+            sender.sendMessage(message);
             return false;
         }
     }
@@ -62,13 +75,24 @@ public class AlertsCommand implements SubCommand {
     private boolean toggleAlertsForOther(CommandSender sender, String targetName) {
         Player target = Bukkit.getPlayer(targetName);
         if (target == null) {
-            sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED));
+            Component message = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                    .append(Component.text(" Player not found!", NamedTextColor.RED))
+                    .build();
+
+            sender.sendMessage(message);
             return false;
         }
 
         alertManager.toggleAlerts(target);
         boolean alertsEnabled = alertManager.hasAlertsEnabled(target);
-        sender.sendMessage(Component.text((alertsEnabled ? "Enabled" : "Disabled") + " alerts for " + target.getName() + "!", alertsEnabled ? NamedTextColor.GREEN : NamedTextColor.RED));
+
+        Component message = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text((alertsEnabled ? " Enabled" : " Disabled") + " alerts for " + target.getName() + "!", alertsEnabled ? NamedTextColor.GREEN : NamedTextColor.RED))
+                .build();
+
+        sender.sendMessage(message);
         return true;
     }
 

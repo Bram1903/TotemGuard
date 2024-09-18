@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.mojang.models.Callback;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -46,8 +47,15 @@ public class ClearLogsCommand implements SubCommand {
         this.mojangService = plugin.getMojangService();
         this.databaseService = plugin.getDatabaseService();
 
-        usageComponent = Component.text("Usage: /totemguard clearlogs <player>", NamedTextColor.RED);
-        clearingStartedComponent = Component.text("Clearing logs...", NamedTextColor.GREEN);
+        usageComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text(" Usage: /totemguard clearlogs <player>", NamedTextColor.RED))
+                .build();
+
+        clearingStartedComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text(" Clearing logs...", NamedTextColor.GREEN))
+                .build();
     }
 
     @Override
@@ -68,7 +76,12 @@ public class ClearLogsCommand implements SubCommand {
             int deletedRecords = databaseService.clearLogs(response.getUuid());
             long loadTime = System.currentTimeMillis() - startTime;
 
-            sender.sendMessage(Component.text("Cleared " + deletedRecords + " logs for" + response.getUsername() + " in " + loadTime + "ms", NamedTextColor.GREEN));
+            Component message = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                    .append(Component.text(" Cleared " + deletedRecords + " logs for" + response.getUsername() + " in " + loadTime + "ms", NamedTextColor.GREEN))
+                    .build();
+
+            sender.sendMessage(message);
         });
         return true;
     }

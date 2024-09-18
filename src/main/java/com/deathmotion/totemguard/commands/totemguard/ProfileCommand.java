@@ -31,6 +31,7 @@ import com.deathmotion.totemguard.util.messages.ProfileCreator;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -55,8 +56,14 @@ public class ProfileCommand implements SubCommand {
         this.databaseService = plugin.getDatabaseService();
         zoneId = ZoneId.systemDefault();
 
-        noPlayerSpecifiedComponent = Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED);
-        loadingComponent = Component.text("Loading profile...", NamedTextColor.GRAY);
+        noPlayerSpecifiedComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text(" Usage: /totemguard profile <player>", NamedTextColor.RED))
+                .build();
+        loadingComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text(" Loading profile...", NamedTextColor.GRAY))
+                .build();
     }
 
     @Override

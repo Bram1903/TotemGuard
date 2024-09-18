@@ -27,6 +27,7 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
@@ -45,8 +46,15 @@ public class ClearCommand implements SubCommand {
         this.plugin = plugin;
         this.databaseService = plugin.getDatabaseService();
 
-        invalidCodeComponent = Component.text("Invalid code. Please use the code provided.", NamedTextColor.RED);
-        clearStartedComponent = Component.text("Database clearing started...", NamedTextColor.GREEN);
+        invalidCodeComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text(" Invalid code. Please use the code provided.", NamedTextColor.RED))
+                .build();
+
+        clearStartedComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text(" Database clearing started...", NamedTextColor.GREEN))
+                .build();
     }
 
     @Override
@@ -68,7 +76,12 @@ public class ClearCommand implements SubCommand {
             int totalRemovedLogs = databaseService.clearDatabase();
             long loadTime = System.currentTimeMillis() - startTime;
 
-            sender.sendMessage(Component.text("Cleared " + totalRemovedLogs + " logs in " + loadTime + "ms.", NamedTextColor.GREEN));
+            Component message = Component.text()
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                    .append(Component.text(" Cleared " + totalRemovedLogs + " logs in " + loadTime + "ms.", NamedTextColor.GREEN))
+                    .build();
+
+            sender.sendMessage(message);
         }));
 
         return true;

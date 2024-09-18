@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
@@ -36,7 +37,14 @@ public class ReloadCommand implements SubCommand {
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         configManager.reload();
-        sender.sendMessage(Component.text("The configuration has been reloaded!", NamedTextColor.GREEN));
+
+        Component message = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(configManager.getSettings().getPrefix()))
+                .append(Component.text(" The configuration has been reloaded!", NamedTextColor.GREEN))
+                .build();
+
+        sender.sendMessage(message);
+
         return true;
     }
 

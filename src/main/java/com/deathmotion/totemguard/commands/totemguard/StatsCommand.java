@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.util.messages.StatsCreator;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
@@ -54,7 +55,10 @@ public class StatsCommand implements SubCommand {
         this.plugin = plugin;
         this.databaseService = plugin.getDatabaseService();
         this.zoneId = ZoneId.systemDefault();
-        this.loadingComponent = Component.text("Loading stats...", NamedTextColor.GRAY);
+        this.loadingComponent = Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
+                .append(Component.text(" Loading stats...", NamedTextColor.GRAY))
+                .build();
     }
 
     @Override

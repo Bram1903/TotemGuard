@@ -83,7 +83,7 @@ public class AlertManager {
         final Settings settings = plugin.getConfigManager().getSettings();
 
         player.sendMessage(Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix() + " "))
                 .append(Component.text(message, color))
                 .build());
     }
