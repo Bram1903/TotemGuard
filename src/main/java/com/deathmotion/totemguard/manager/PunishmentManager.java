@@ -22,10 +22,12 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
 import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.util.PlaceholderUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.jetbrains.annotations.Blocking;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class PunishmentManager {
@@ -41,12 +43,12 @@ public class PunishmentManager {
 
     @Blocking
     public boolean handlePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        if (checkDetails.isPunishable() && checkDetails.getViolations() == checkDetails.getMaxViolations()) {
-            long delay = checkDetails.getPunishmentDelay() * 20L;
-            if (delay <= 0) {
+        if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations()) {
+            long delayTicks = checkDetails.getPunishmentDelay() * 20L;
+            if (delayTicks <= 0) {
                 executePunishment(totemPlayer, checkDetails);
             } else {
-                return scheduleAndWaitPunishment(totemPlayer, checkDetails, delay);
+                return scheduleAndWaitPunishment(totemPlayer, checkDetails, delayTicks);
             }
             return true;
         }
@@ -61,31 +63,41 @@ public class PunishmentManager {
         });
     }
 
-    private boolean scheduleAndWaitPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, long delay) {
+    private boolean scheduleAndWaitPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, long delayTicks) {
         CountDownLatch latch = new CountDownLatch(1);
 
         FoliaScheduler.getGlobalRegionScheduler().runDelayed(plugin, (o) -> {
             databaseService.savePunishment(totemPlayer, checkDetails);
             runPunishmentCommands(totemPlayer, checkDetails);
             discordManager.sendPunishment(totemPlayer, checkDetails);
-            latch.countDown(); // Signal that the task is complete
-        }, delay);
+            latch.countDown();
+        }, delayTicks);
 
         try {
-            // Wait for the task to complete
-            latch.await(); // This can block until latch.countDown() is called
+            latch.await();
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Handle interrupt
-            return false; // Return false if interrupted
+            Thread.currentThread().interrupt();
+            return false;
         }
 
-        return true; // Only return true once punishment has been executed
+        return true;
     }
 
     private void runPunishmentCommands(TotemPlayer totemPlayer, CheckDetails checkDetails) {
         List<String> punishmentCommands = checkDetails.getPunishmentCommands();
         for (String command : punishmentCommands) {
-            plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command.replace("%player%", totemPlayer.getUsername()));
+            String parsedCommand = PlaceholderUtil.replacePlaceholders(command, Map.of(
+                    "%uuid%", totemPlayer.getUuid().toString(),
+                    "%player%", totemPlayer.getUsername(),
+                    "%check%", checkDetails.getCheckName(),
+                    "%description%", checkDetails.getCheckDescription(),
+                    "%ping%", String.valueOf(checkDetails.getPing()),
+                    "%tps%", String.valueOf(checkDetails.getTps()),
+                    "%punishable%", String.valueOf(checkDetails.isPunishable()),
+                    "%violations%", String.valueOf(checkDetails.getViolations()),
+                    "%max_violations%", String.valueOf(checkDetails.getMaxViolations())
+            ));
+            plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), parsedCommand);
         }
     }
 }

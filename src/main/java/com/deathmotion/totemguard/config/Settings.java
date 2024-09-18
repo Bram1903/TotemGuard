@@ -163,7 +163,21 @@ public final class Settings {
         @Comment("When enabled, players with the bypass permission will not be flagged.")
         private boolean bypass = false;
 
-        @Comment("\nAutoTotemA Settings")
+        @Comment({
+                "",
+                "Supported Placeholders:",
+                "",
+                "%uuid% - UUID of the Player",
+                "%player% - Name of the Player",
+                "%check% - Name of the Check",
+                "%description% - Description of the Check",
+                "%ping% - Player's Ping",
+                "%tps% - Server's TPS",
+                "%punishable% - If the check is punishable",
+                "%violations% - Amount of Violations",
+                "%max_violations% - Maximum Violations",
+                "",
+                "AutoTotemA Settings"})
         private AutoTotemA autoTotemA = new AutoTotemA();
 
         @Comment("\nAutoTotemB Settings")
