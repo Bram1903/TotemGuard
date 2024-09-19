@@ -18,74 +18,61 @@
 
 package com.deathmotion.totemguard.data;
 
+import lombok.Getter;
 import net.kyori.adventure.text.format.NamedTextColor;
 
+@Getter
 public enum SafetyStatus {
-    SAFE,
-    ALERTED,
-    SUSPICIOUS,
-    DANGEROUS,
-    DIABOLICAL;
+    SAFE("Safe", NamedTextColor.GREEN),
+    ALERTED("Alerted", NamedTextColor.YELLOW),
+    SUSPICIOUS("Suspicious", NamedTextColor.GOLD),
+    DANGEROUS("Dangerous", NamedTextColor.RED),
+    DIABOLICAL("Diabolical", NamedTextColor.DARK_RED);
+
+    private final String name;
+    private final NamedTextColor color;
+
+    SafetyStatus(String name, NamedTextColor color) {
+        this.name = name;
+        this.color = color;
+    }
 
     public static SafetyStatus getSafetyStatus(int alerts, int punishments) {
+        // If no alerts and no punishments, the status is SAFE
         if (alerts == 0 && punishments == 0) {
-            return SafetyStatus.SAFE;
+            return SAFE;
         }
 
-        // Multiple punishments with high alerts indicate a critical state
+        // Determine safety status based on punishments and alerts
         if (punishments > 2) {
+            // Severe case due to high number of punishments
             if (alerts > 7) {
-                return SafetyStatus.DIABOLICAL;
+                return DIABOLICAL;
             } else if (alerts > 4) {
-                return SafetyStatus.DANGEROUS;
+                return DANGEROUS;
             } else {
-                return SafetyStatus.SUSPICIOUS;
+                return SUSPICIOUS;
             }
-        }
-
-        // Some punishments and varying alert levels
-        if (punishments > 0) {
+        } else if (punishments > 0) {
+            // Moderate punishments with varying alert levels
             if (alerts > 8) {
-                return SafetyStatus.DIABOLICAL;
+                return DIABOLICAL;
             } else if (alerts > 5) {
-                return SafetyStatus.DANGEROUS;
+                return DANGEROUS;
             } else if (alerts > 2) {
-                return SafetyStatus.SUSPICIOUS;
+                return SUSPICIOUS;
             } else {
-                return SafetyStatus.ALERTED;
+                return ALERTED;
+            }
+        } else {
+            // No punishments, evaluate based on alerts only
+            if (alerts > 7) {
+                return DANGEROUS;
+            } else if (alerts > 4) {
+                return SUSPICIOUS;
+            } else {
+                return ALERTED;
             }
         }
-
-        // No punishments but alerts are present
-        if (alerts > 7) {
-            return SafetyStatus.DANGEROUS; // Elevated state due to high alerts even without punishments
-        } else if (alerts > 4) {
-            return SafetyStatus.SUSPICIOUS;
-        } else {
-            return SafetyStatus.ALERTED;
-        }
-    }
-
-    // Method to get the display name for each status
-    public String getName() {
-        return switch (this) {
-            case SAFE -> "Safe";
-            case ALERTED -> "Alerted";
-            case SUSPICIOUS -> "Suspicious";
-            case DANGEROUS -> "Dangerous";
-            case DIABOLICAL -> "Diabolical";
-        };
-    }
-
-    // Method to get the default NamedTextColor for each status
-    public NamedTextColor getColor() {
-        return switch (this) {
-            case SAFE -> NamedTextColor.GREEN;
-            case ALERTED -> NamedTextColor.YELLOW;
-            case SUSPICIOUS -> NamedTextColor.GOLD;
-            case DANGEROUS -> NamedTextColor.RED;
-            case DIABOLICAL -> NamedTextColor.DARK_RED;
-        };
     }
 }
-
