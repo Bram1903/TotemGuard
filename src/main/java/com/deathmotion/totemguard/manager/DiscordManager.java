@@ -71,10 +71,10 @@ public class DiscordManager {
                 .setAvatarUrl(settings.getProfileImage());
 
         WebhookEmbedBuilder embedBuilder = new WebhookEmbedBuilder()
-                .setThumbnailUrl("http://cravatar.eu/avatar/" + totemPlayer.getUsername() + "/64.png")
+                .setThumbnailUrl("http://cravatar.eu/avatar/" + totemPlayer.username() + "/64.png")
                 .setColor(Color.decode(settings.getColor()).getRGB())
                 .setTitle(new WebhookEmbed.EmbedTitle(settings.getTitle(), null))
-                .addField(new WebhookEmbed.EmbedField(true, "**Player**", "`" + totemPlayer.getUsername() + "`"))
+                .addField(new WebhookEmbed.EmbedField(true, "**Player**", "`" + totemPlayer.username() + "`"))
                 .addField(new WebhookEmbed.EmbedField(true, "**Check**", checkDetails.getCheckName()));
 
         if (!isPunishment) {
@@ -84,8 +84,8 @@ public class DiscordManager {
                 embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Violations**", String.valueOf(checkDetails.getViolations())));
             }
 
-            embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Client Brand**", totemPlayer.getClientBrandName()));
-            embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Client Version**", totemPlayer.getClientVersion().getReleaseName()));
+            embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Client Brand**", totemPlayer.clientBrand()));
+            embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Client Version**", totemPlayer.clientVersion().getReleaseName()));
             embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Ping**", String.valueOf(checkDetails.getPing())));
             embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**TPS**", String.valueOf(checkDetails.getTps())));
             embedBuilder.addField(new WebhookEmbed.EmbedField(false, "**Details**", "```" + PlainTextComponentSerializer.plainText().serialize(checkDetails.getDetails()) + "```"));

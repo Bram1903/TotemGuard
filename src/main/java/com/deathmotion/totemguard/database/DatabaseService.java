@@ -101,7 +101,7 @@ public class DatabaseService {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             Alert alert = createAlert(totemPlayer, checkDetails);
             if (!alertsToSave.offer(alert)) {
-                plugin.getLogger().severe("Failed to enqueue alert for player: " + totemPlayer.getUsername());
+                plugin.getLogger().severe("Failed to enqueue alert for player: " + totemPlayer.username());
             }
         });
     }
@@ -113,7 +113,7 @@ public class DatabaseService {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             Punishment punishment = createPunishment(totemPlayer, checkDetails);
             if (!punishmentsToSave.offer(punishment)) {
-                plugin.getLogger().severe("Failed to enqueue punishment for player: " + totemPlayer.getUsername());
+                plugin.getLogger().severe("Failed to enqueue punishment for player: " + totemPlayer.username());
             }
         });
     }
@@ -155,7 +155,7 @@ public class DatabaseService {
     }
 
     private Alert createAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.getUuid());
+        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.uuid());
         Alert alert = new Alert();
         alert.setCheckName(Check.valueOf(checkDetails.getCheckName()));
         alert.setDatabasePlayer(databasePlayer);
@@ -166,7 +166,7 @@ public class DatabaseService {
     }
 
     private Punishment createPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.getUuid());
+        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.uuid());
         Punishment punishment = new Punishment();
         punishment.setCheckName(Check.valueOf(checkDetails.getCheckName()));
         punishment.setDatabasePlayer(databasePlayer);

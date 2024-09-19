@@ -33,7 +33,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
         // Get the player's SD history or create a new one
         ConcurrentLinkedDeque<Double> sdHistory = sdHistoryMap.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentLinkedDeque<>());
 
-        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(4);
+        List<Long> recentIntervals = totemPlayer.totemData().getLatestIntervals(4);
         double standardDeviation = MathUtil.getStandardDeviation(recentIntervals);
 
         // Add the current SD to the history

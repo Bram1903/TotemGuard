@@ -49,7 +49,7 @@ public final class AutoTotemE extends Check implements TotemEventListener {
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         UUID playerId = player.getUniqueId();
-        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(15);
+        List<Long> intervals = totemPlayer.totemData().getLatestIntervals(15);
         if (intervals.size() < 4) return;
 
         // Get the low outliers from the intervals

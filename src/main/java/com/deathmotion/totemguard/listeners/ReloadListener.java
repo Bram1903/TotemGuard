@@ -21,7 +21,6 @@ package com.deathmotion.totemguard.listeners;
 import better.reload.api.ReloadEvent;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.ConfigManager;
-import com.deathmotion.totemguard.config.Settings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;

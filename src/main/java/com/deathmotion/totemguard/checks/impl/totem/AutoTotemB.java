@@ -47,7 +47,7 @@ public final class AutoTotemB extends Check implements TotemEventListener {
 
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
-        List<Long> intervals = totemPlayer.getTotemData().getLatestIntervals(2);
+        List<Long> intervals = totemPlayer.totemData().getLatestIntervals(2);
         if (intervals.size() < 2) return;
 
         double standardDeviation = MathUtil.getStandardDeviation(intervals);

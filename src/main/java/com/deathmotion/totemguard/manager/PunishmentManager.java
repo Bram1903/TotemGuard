@@ -26,7 +26,10 @@ import com.deathmotion.totemguard.util.PlaceholderUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.jetbrains.annotations.Blocking;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -47,8 +50,8 @@ public class PunishmentManager {
 
     @Blocking
     public boolean handlePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
-        if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations() && !toBePunished.contains(totemPlayer.getUuid())) {
-            toBePunished.add(totemPlayer.getUuid());
+        if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations() && !toBePunished.contains(totemPlayer.uuid())) {
+            toBePunished.add(totemPlayer.uuid());
 
             long delayTicks = checkDetails.getPunishmentDelay() * 20L;
             if (delayTicks <= 0) {
@@ -67,7 +70,7 @@ public class PunishmentManager {
             runPunishmentCommands(totemPlayer, checkDetails, prefix);
             discordManager.sendPunishment(totemPlayer, checkDetails);
 
-            toBePunished.remove(totemPlayer.getUuid());
+            toBePunished.remove(totemPlayer.uuid());
         });
     }
 
@@ -79,7 +82,7 @@ public class PunishmentManager {
             runPunishmentCommands(totemPlayer, checkDetails, prefix);
             discordManager.sendPunishment(totemPlayer, checkDetails);
 
-            toBePunished.remove(totemPlayer.getUuid());
+            toBePunished.remove(totemPlayer.uuid());
             latch.countDown();
         }, delayTicks);
 
@@ -98,8 +101,8 @@ public class PunishmentManager {
         for (String command : punishmentCommands) {
             String parsedCommand = PlaceholderUtil.replacePlaceholders(command, Map.of(
                     "%prefix%", prefix,
-                    "%uuid%", totemPlayer.getUuid().toString(),
-                    "%player%", totemPlayer.getUsername(),
+                    "%uuid%", totemPlayer.uuid().toString(),
+                    "%player%", totemPlayer.username(),
                     "%check%", checkDetails.getCheckName(),
                     "%description%", checkDetails.getCheckDescription(),
                     "%ping%", String.valueOf(checkDetails.getPing()),

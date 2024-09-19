@@ -37,14 +37,14 @@ public class AlertCreator {
                 .append(Component.text(checkDetails.getTps(), NamedTextColor.GOLD))
                 .append(Component.text(" |", NamedTextColor.DARK_GRAY))
                 .append(Component.text(" Client Version: ", NamedTextColor.GRAY))
-                .append(Component.text(player.getClientVersion().getReleaseName(), NamedTextColor.GOLD))
+                .append(Component.text(player.clientVersion().getReleaseName(), NamedTextColor.GOLD))
                 .append(Component.text(" |", NamedTextColor.DARK_GRAY))
                 .append(Component.text(" Client Brand: ", NamedTextColor.GRAY))
-                .append(Component.text(player.getClientBrandName(), NamedTextColor.GOLD))
+                .append(Component.text(player.clientBrand(), NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.newline())
                 .append(Component.text("Player: ", NamedTextColor.GRAY))
-                .append(Component.text(player.getUsername(), NamedTextColor.GOLD))
+                .append(Component.text(player.username(), NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Ping: ", NamedTextColor.GRAY))
                 .append(Component.text(checkDetails.getPing() + "ms", NamedTextColor.GOLD))
@@ -62,14 +62,13 @@ public class AlertCreator {
                 .append(Component.newline())
                 .append(Component.text("Click to ", NamedTextColor.GRAY))
                 .append(Component.text("teleport ", NamedTextColor.GOLD))
-                .append(Component.text("to " + player.getUsername() + ".", NamedTextColor.GRAY))
-                .clickEvent(ClickEvent.runCommand("/tp " + player.getUsername()))
+                .append(Component.text("to " + player.username() + ".", NamedTextColor.GRAY))
                 .build();
 
         String parsedAlert = PlaceholderUtil.replacePlaceholders(alertFormat, Map.of(
                 "%prefix%", prefix,
-                "%uuid%", player.getUuid().toString(),
-                "%player%", player.getUsername(),
+                "%uuid%", player.uuid().toString(),
+                "%player%", player.username(),
                 "%check%", checkDetails.getCheckName(),
                 "%description%", checkDetails.getCheckDescription(),
                 "%ping%", String.valueOf(checkDetails.getPing()),
@@ -88,6 +87,7 @@ public class AlertCreator {
         }
 
         message = message.hoverEvent(HoverEvent.showText(hoverInfo));
+        message = message.clickEvent(ClickEvent.runCommand("/tp " + player.username()));
 
         return message;
     }

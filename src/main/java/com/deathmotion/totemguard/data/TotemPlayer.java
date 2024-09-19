@@ -20,23 +20,25 @@ package com.deathmotion.totemguard.data;
 
 import com.deathmotion.totemguard.util.datastructure.TotemData;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.UUID;
 
-@Getter
-public class TotemPlayer {
-    @Getter
-    private final TotemData totemData = new TotemData();
-    @Setter
-    private UUID uuid;
-    @Setter
-    private String username;
-    @Setter
-    private String clientBrandName;
-    @Setter
-    private ClientVersion clientVersion;
-    @Setter
-    private boolean bedrockPlayer;
+public record TotemPlayer(UUID uuid, String username, ClientVersion clientVersion, boolean isBedrockPlayer,
+                          String clientBrand, TotemData totemData) {
+    // Primary constructor
+    public TotemPlayer(UUID uuid, String username, ClientVersion clientVersion, boolean isBedrockPlayer) {
+        this(uuid, username, clientVersion, isBedrockPlayer, null, new TotemData());
+    }
+
+    // Full constructor
+    public TotemPlayer(UUID uuid, String username, ClientVersion clientVersion, boolean isBedrockPlayer, String clientBrand) {
+        this(uuid, username, clientVersion, isBedrockPlayer, clientBrand, new TotemData());
+    }
+
+    // Constructor to update client brand
+    public TotemPlayer withClientBrand(String clientBrand) {
+        return new TotemPlayer(this.uuid, this.username, this.clientVersion, this.isBedrockPlayer, clientBrand, this.totemData);
+    }
 }
+
+

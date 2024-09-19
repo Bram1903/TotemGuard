@@ -125,7 +125,7 @@ public final class TotemProcessor extends Check implements Listener {
             if (totemPlayer == null) return;
 
             long interval = Math.abs(currentTime - totemUseTime);
-            totemPlayer.getTotemData().addInterval(interval);
+            totemPlayer.totemData().addInterval(interval);
 
             for (TotemEventListener listener : totemEventListener) {
                 listener.onTotemEvent(player, totemPlayer);

@@ -37,32 +37,21 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
 
+@Getter
 public final class TotemGuard extends JavaPlugin {
 
     @Getter
     private static TotemGuard instance;
 
-    @Getter
     private TGVersion version;
-
-    @Getter
     private ConfigManager configManager;
-    @Getter
     private DatabaseManager databaseManager;
-    @Getter
     private DatabaseService databaseService;
-    @Getter
     private MojangService mojangService;
-
-    @Getter
     private AlertManager alertManager;
-    @Getter
     private UserTracker userTracker;
-    @Getter
     private DiscordManager discordManager;
-    @Getter
     private PunishmentManager punishmentManager;
-    @Getter
     private CheckManager checkManager;
 
     @Override

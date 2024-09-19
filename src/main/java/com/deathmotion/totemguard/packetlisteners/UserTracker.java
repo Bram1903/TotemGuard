@@ -50,7 +50,6 @@ public class UserTracker implements PacketListener {
     @Override
     public void onUserLogin(UserLoginEvent event) {
         User user = event.getUser();
-
         UUID userUUID = user.getUUID();
         if (userUUID == null) return;
 
@@ -60,15 +59,28 @@ public class UserTracker implements PacketListener {
             plugin.getAlertManager().enableAlerts(player);
         }
 
-        String playerBrand = totemPlayers.get(userUUID).getClientBrandName();
-        announceClientBrand(player.getName(), playerBrand);
-        BadPacketsB.getInstance().check(player, playerBrand);
+        // Create a new or update the existing TotemPlayer with full details
+        TotemPlayer totemPlayer = totemPlayers.compute(userUUID, (uuid, existing) -> {
+            if (existing == null) {
+                // `onPacketReceive` was never called, create a new TotemPlayer with brand "Unknown"
+                return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, "Unknown");
+            } else {
+                // Update the existing TotemPlayer with remaining fields
+                return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, existing.clientBrand());
+            }
+        });
+
+        announceClientBrand(player.getName(), totemPlayer.clientBrand());
+        BadPacketsB.getInstance().check(player, totemPlayer.clientBrand());
     }
+
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE)
+        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE
+                && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             return;
+        }
 
         WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
 
@@ -76,28 +88,24 @@ public class UserTracker implements PacketListener {
         if (!channelName.equalsIgnoreCase("minecraft:brand") && !channelName.equals("MC|Brand")) return;
 
         byte[] data = packet.getData();
-        String brand = "Unknown";
-        if (data.length <= 64 && data.length > 0) { // Check if the data length is valid
-            byte[] minusLength = new byte[data.length - 1];
-            System.arraycopy(data, 1, minusLength, 0, minusLength.length);
-            brand = new String(minusLength).replace(" (Velocity)", "");
-            if (brand.isEmpty()) {
-                brand = "Unknown";
+        if (data.length == 0 || data.length > 64) return;
+        String brand = new String(data, 1, data.length - 1).replace(" (Velocity)", "");
+
+        UUID userUUID = event.getUser().getUUID();
+        if (userUUID == null) return;
+
+        // Create a new TotemPlayer with only the clientBrand if it doesn't exist
+        totemPlayers.compute(userUUID, (uuid, existing) -> {
+            if (existing == null) {
+                // Create a new TotemPlayer with only the clientBrand field set
+                return new TotemPlayer(uuid, null, null, false, brand);
+            } else {
+                // Update the existing TotemPlayer with the new clientBrand
+                return existing.withClientBrand(brand);
             }
-        }
-
-        User user = event.getUser();
-        UUID userUUID = user.getUUID();
-
-        TotemPlayer totemPlayer = new TotemPlayer();
-        totemPlayer.setUuid(userUUID);
-        totemPlayer.setUsername(user.getName());
-        totemPlayer.setClientBrandName(brand);
-        totemPlayer.setClientVersion(user.getClientVersion());
-        totemPlayer.setBedrockPlayer(userUUID.getMostSignificantBits() == 0L);
-
-        totemPlayers.put(userUUID, totemPlayer);
+        });
     }
+
 
     @Override
     public void onUserDisconnect(UserDisconnectEvent event) {
@@ -112,7 +120,7 @@ public class UserTracker implements PacketListener {
     }
 
     private void announceClientBrand(String username, String brand) {
-        final Settings settings = plugin.getConfigManager().getSettings();
+        Settings settings = plugin.getConfigManager().getSettings();
         if (!settings.isAlertClientBrand()) return;
 
         Component message = Component.text()
@@ -130,6 +138,6 @@ public class UserTracker implements PacketListener {
     }
 
     public void clearTotemData() {
-        totemPlayers.values().forEach(x -> x.getTotemData().clear());
+        totemPlayers.values().forEach(x -> x.totemData().clear());
     }
 }

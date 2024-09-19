@@ -19,9 +19,8 @@
 package com.deathmotion.totemguard.mojang;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.mojang.models.CacheEntry;
 import com.deathmotion.totemguard.mojang.models.Callback;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.jodah.expiringmap.ExpiringMap;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -29,32 +28,26 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class MojangService {
     private static final String API_URL = "https://api.mojang.com/users/profiles/minecraft/";
-    private static final long CACHE_EXPIRY_DURATION = TimeUnit.MINUTES.toMillis(10);
 
     private final TotemGuard plugin;
-    private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
+    private final ExpiringMap<String, Callback> cache = ExpiringMap.builder()
+            .expiration(10, TimeUnit.MINUTES)
+            .build();
 
     public MojangService(TotemGuard plugin) {
         this.plugin = plugin;
-        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> cleanupCache(), 10, 10, TimeUnit.MINUTES);
-    }
-
-    private void cleanupCache() {
-        long now = System.currentTimeMillis();
-        cache.entrySet().removeIf(entry -> now - entry.getValue().timestamp() >= CACHE_EXPIRY_DURATION);
     }
 
     public Callback getUUID(String name) {
         name = name.toLowerCase();
 
-        CacheEntry entry = cache.get(name);
-        if (entry != null && (System.currentTimeMillis() - entry.timestamp() < CACHE_EXPIRY_DURATION)) {
-            return entry.value();
+        Callback cachedCallback = cache.get(name);
+        if (cachedCallback != null) {
+            return cachedCallback;
         }
 
         try {
@@ -91,12 +84,12 @@ public class MojangService {
     private Callback handleResponse(int responseCode, String responseMessage, String name) {
         return switch (responseCode) {
             case HttpURLConnection.HTTP_OK -> handleFoundResponse(responseMessage, name);
-            case HttpURLConnection.HTTP_BAD_REQUEST -> handleBadRequest(responseMessage, name);
-            case HttpURLConnection.HTTP_NOT_FOUND -> handleNotFound(name);
-            case 429 -> new Callback(429, null);
+            case HttpURLConnection.HTTP_BAD_REQUEST -> handleBadRequest(responseMessage);
+            case HttpURLConnection.HTTP_NOT_FOUND -> handleNotFound();
+            case 429 -> new Callback(429, responseMessage);
             default -> {
                 plugin.getLogger().warning("Unexpected response code: " + responseCode);
-                yield null;
+                yield new Callback(-1, null);
             }
         };
     }
@@ -109,22 +102,18 @@ public class MojangService {
         String username = jsonResponse.getString("name");
 
         Callback response = new Callback(username, uuid);
-        cache.put(name, new CacheEntry(response, System.currentTimeMillis())); // Cache with timestamp
+        cache.put(name, response); // Cache with automatic expiry
         return response;
     }
 
-    private Callback handleBadRequest(String responseMessage, String name) {
+    private Callback handleBadRequest(String responseMessage) {
         JSONObject jsonResponse = new JSONObject(responseMessage);
         String errorMessage = jsonResponse.getString("errorMessage");
-        Callback response = new Callback(HttpURLConnection.HTTP_BAD_REQUEST, errorMessage);
-        cache.put(name, new CacheEntry(response, System.currentTimeMillis()));
-        return response;
+        return new Callback(HttpURLConnection.HTTP_BAD_REQUEST, errorMessage);
     }
 
-    private Callback handleNotFound(String name) {
-        Callback response = new Callback(HttpURLConnection.HTTP_NOT_FOUND, null);
-        cache.put(name, new CacheEntry(response, System.currentTimeMillis()));
-        return response;
+    private Callback handleNotFound() {
+        return new Callback(HttpURLConnection.HTTP_NOT_FOUND, null);
     }
 
     private String formatUUID(String rawUuid) {

@@ -8,6 +8,7 @@ run-paper = "2.3.0"
 discord-webhooks = "0.8.0"
 ebean = "14.1.0"
 betterreload = "v1.0.0"
+expiringmap = "0.5.11"
 
 [libraries]
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
@@ -16,6 +17,7 @@ packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spi
 configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
 configlib-paper = { group = "de.exlll", name = "configlib-paper", version.ref = "configlib" }
 discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.ref = "discord-webhooks" }
+expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
 betterreload-api = { group = "com.github.amnoah.betterreload", name = "api", version.ref = "betterreload" }
 ebean-core = { group = "io.ebean", name = "ebean-core", version.ref = "ebean" }
 ebean-test = { group = "io.ebean", name = "ebean-test", version.ref = "ebean" }

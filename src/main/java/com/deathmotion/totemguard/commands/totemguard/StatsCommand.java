@@ -25,17 +25,17 @@ import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.util.messages.StatsCreator;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.jodah.expiringmap.ExpirationPolicy;
+import net.jodah.expiringmap.ExpiringMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class StatsCommand implements SubCommand {
@@ -46,10 +46,9 @@ public class StatsCommand implements SubCommand {
     private final ZoneId zoneId;
     private final Component loadingComponent;
 
-    // Cache maps to store data and timestamps
-    private final ConcurrentHashMap<String, List<Punishment>> punishmentCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, List<Alert>> alertCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Instant> cacheTimestamps = new ConcurrentHashMap<>();
+    // Expiring maps to store data
+    private final ExpiringMap<String, List<Punishment>> punishmentCache;
+    private final ExpiringMap<String, List<Alert>> alertCache;
 
     public StatsCommand(TotemGuard plugin) {
         this.plugin = plugin;
@@ -58,6 +57,17 @@ public class StatsCommand implements SubCommand {
         this.loadingComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
                 .append(Component.text("Loading stats...", NamedTextColor.GRAY))
+                .build();
+
+        // Initialize the expiring maps
+        punishmentCache = ExpiringMap.builder()
+                .expiration(CACHE_DURATION_SECONDS, TimeUnit.SECONDS)
+                .expirationPolicy(ExpirationPolicy.CREATED)
+                .build();
+
+        alertCache = ExpiringMap.builder()
+                .expiration(CACHE_DURATION_SECONDS, TimeUnit.SECONDS)
+                .expirationPolicy(ExpirationPolicy.CREATED)
                 .build();
     }
 
@@ -89,35 +99,29 @@ public class StatsCommand implements SubCommand {
 
     private List<Punishment> getCachedPunishments() {
         String key = "punishments";
-        Instant now = Instant.now();
 
-        if (punishmentCache.containsKey(key) && cacheTimestamps.containsKey(key)) {
-            Instant lastFetched = cacheTimestamps.get(key);
-            if (now.minusSeconds(CACHE_DURATION_SECONDS).isBefore(lastFetched)) {
-                return punishmentCache.get(key);
-            }
+        // Check if cache contains the data
+        if (punishmentCache.containsKey(key)) {
+            return punishmentCache.get(key);
         }
+
         // Fetch from database and update cache
         List<Punishment> punishments = databaseService.getPunishments();
         punishmentCache.put(key, punishments);
-        cacheTimestamps.put(key, now);
         return punishments;
     }
 
     private List<Alert> getCachedAlerts() {
         String key = "alerts";
-        Instant now = Instant.now();
 
-        if (alertCache.containsKey(key) && cacheTimestamps.containsKey(key)) {
-            Instant lastFetched = cacheTimestamps.get(key);
-            if (now.minusSeconds(CACHE_DURATION_SECONDS).isBefore(lastFetched)) {
-                return alertCache.get(key);
-            }
+        // Check if cache contains the data
+        if (alertCache.containsKey(key)) {
+            return alertCache.get(key);
         }
+
         // Fetch from database and update cache
         List<Alert> alerts = databaseService.getAlerts();
         alertCache.put(key, alerts);
-        cacheTimestamps.put(key, now);
         return alerts;
     }
 
