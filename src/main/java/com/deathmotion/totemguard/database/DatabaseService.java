@@ -28,7 +28,7 @@ import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.ebean.Database;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import lombok.Getter;
+import net.jodah.expiringmap.ExpiringMap;
 import org.jetbrains.annotations.Blocking;
 
 import java.time.Instant;
@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -54,16 +53,16 @@ public class DatabaseService {
     private final ZoneId zoneId;
     private final BlockingQueue<Alert> alertsToSave = new LinkedBlockingQueue<>();
     private final BlockingQueue<Punishment> punishmentsToSave = new LinkedBlockingQueue<>();
-    private final ConcurrentHashMap<UUID, CacheEntry> playerCache = new ConcurrentHashMap<>();
+    private final ExpiringMap<UUID, DatabasePlayer> playerCache = ExpiringMap.builder()
+            .expiration(CACHE_EXPIRY_MINUTES, TimeUnit.MINUTES)
+            .build();
 
     public DatabaseService(TotemGuard plugin) {
         this.plugin = plugin;
         this.database = plugin.getDatabaseManager().getDatabase();
         this.zoneId = ZoneId.systemDefault();
 
-        // Schedule async tasks
         FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o -> bulkSave()), SAVE_INTERVAL_SECONDS, SAVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
-        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o -> cleanupCache()), CACHE_EXPIRY_MINUTES, CACHE_EXPIRY_MINUTES, TimeUnit.MINUTES);
     }
 
     /**
@@ -123,13 +122,13 @@ public class DatabaseService {
      */
     private DatabasePlayer getOrCreatePlayer(UUID uuid) {
         // Check cache first
-        CacheEntry cacheEntry = playerCache.get(uuid);
-        if (cacheEntry != null && !cacheEntry.isExpired()) {
-            return cacheEntry.getDatabasePlayer();
+        DatabasePlayer databasePlayer = playerCache.get(uuid);
+        if (databasePlayer != null) {
+            return databasePlayer;
         }
 
         // If not in cache, retrieve or create from database
-        DatabasePlayer databasePlayer = database.find(DatabasePlayer.class).where().eq(UUID_FIELD, uuid).findOneOrEmpty()
+        databasePlayer = database.find(DatabasePlayer.class).where().eq(UUID_FIELD, uuid).findOneOrEmpty()
                 .orElseGet(() -> {
                     DatabasePlayer newPlayer = new DatabasePlayer();
                     newPlayer.setUuid(uuid);
@@ -143,15 +142,8 @@ public class DatabaseService {
                 });
 
         // Cache the result
-        playerCache.put(uuid, new CacheEntry(databasePlayer));
+        playerCache.put(uuid, databasePlayer);
         return databasePlayer;
-    }
-
-    /**
-     * Cleans up expired entries from the cache.
-     */
-    private void cleanupCache() {
-        playerCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
     }
 
     private Alert createAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
@@ -176,25 +168,16 @@ public class DatabaseService {
         return punishment;
     }
 
-    /**
-     * Retrieves all alerts from the database.
-     */
     @Blocking
     public List<Alert> getAlerts() {
         return database.find(Alert.class).findList();
     }
 
-    /**
-     * Retrieves all punishments from the database.
-     */
     @Blocking
     public List<Punishment> getPunishments() {
         return database.find(Punishment.class).findList();
     }
 
-    /**
-     * Retrieves the logs for the given player, consisting of two lists: alerts and punishments.
-     */
     @Blocking
     public Pair<List<Alert>, List<Punishment>> getLogs(UUID uuid) {
         DatabasePlayer databasePlayer = getOrCreatePlayer(uuid);
@@ -212,14 +195,10 @@ public class DatabaseService {
         return new Pair<>(alerts, punishments);
     }
 
-    /**
-     * Deletes all alerts and punishments for a specific UUID by fetching the related DatabasePlayer.
-     */
     @Blocking
     public int clearLogs(UUID uuid) {
         DatabasePlayer databasePlayer = getOrCreatePlayer(uuid);
 
-        // Delete alerts and punishments related to the databasePlayer
         int deletedAlerts = database.find(Alert.class)
                 .where()
                 .eq(DATABASE_PLAYER_FIELD, databasePlayer)
@@ -232,20 +211,15 @@ public class DatabaseService {
         return deletedAlerts + deletedPunishments;
     }
 
-    /**
-     * Trims the database by removing alerts and punishments older than 30 days.
-     */
     @Blocking
     public int trimDatabase() {
         Instant thirtyDaysAgo = LocalDateTime.now().minusDays(30).atZone(zoneId).toInstant();
 
-        // Delete alerts older than 30 days
         int deletedAlerts = database.find(Alert.class)
                 .where()
                 .lt(WHEN_CREATED_FIELD, thirtyDaysAgo)
                 .delete();
 
-        // Delete punishments older than 30 days
         int deletedPunishments = database.find(Punishment.class)
                 .where()
                 .lt(WHEN_CREATED_FIELD, thirtyDaysAgo)
@@ -254,37 +228,14 @@ public class DatabaseService {
         return deletedAlerts + deletedPunishments;
     }
 
-    /**
-     * Clears all DatabasePlayers along with their associated alerts and punishments from the database.
-     */
     @Blocking
     public int clearDatabase() {
         int totalAlerts = database.find(Alert.class).findCount();
         int totalPunishments = database.find(Punishment.class).findCount();
         int deletedPlayers = database.find(DatabasePlayer.class).delete();
 
-        // Clear the cache
         playerCache.clear();
 
-        // Calculate the total number of deleted records
         return totalAlerts + totalPunishments + deletedPlayers;
-    }
-
-    /**
-     * Cache entry that contains the DatabasePlayer and its creation timestamp.
-     */
-    private static class CacheEntry {
-        @Getter
-        private final DatabasePlayer databasePlayer;
-        private final long timestamp;
-
-        public CacheEntry(DatabasePlayer databasePlayer) {
-            this.databasePlayer = databasePlayer;
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        public boolean isExpired() {
-            return System.currentTimeMillis() - timestamp > TimeUnit.MINUTES.toMillis(CACHE_EXPIRY_MINUTES);
-        }
     }
 }
