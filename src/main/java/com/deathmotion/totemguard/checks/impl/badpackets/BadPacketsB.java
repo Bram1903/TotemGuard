@@ -25,6 +25,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 public final class BadPacketsB extends Check {
 
     @Getter
@@ -56,5 +58,15 @@ public final class BadPacketsB extends Check {
                 .append(Component.text(clientBrand, NamedTextColor.GOLD))
                 .build();
 
+    }
+
+    @Override
+    public void resetData() {
+        super.resetData();
+    }
+
+    @Override
+    public void resetData(UUID uuid) {
+        super.resetData(uuid);
     }
 }

@@ -164,12 +164,14 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
 
     @Override
     public void resetData() {
+        super.resetData();
         totemUsage.clear();
         playerPacketState.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        super.resetData(uuid);
         totemUsage.remove(uuid);
         playerPacketState.remove(uuid);
     }

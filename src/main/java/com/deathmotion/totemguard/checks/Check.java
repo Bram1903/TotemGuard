@@ -90,12 +90,10 @@ public abstract class Check implements ICheck {
         });
     }
 
-    @Override
     public void resetData() {
         violations.clear();
     }
 
-    @Override
     public void resetData(UUID uuid) {
         violations.remove(uuid);
     }

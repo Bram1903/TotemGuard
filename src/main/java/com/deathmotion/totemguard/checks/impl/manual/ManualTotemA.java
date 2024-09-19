@@ -36,6 +36,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -176,6 +177,16 @@ public final class ManualTotemA extends Check implements CommandExecutor, TabExe
                 .append(Component.text("Elapsed Ms: ", NamedTextColor.GRAY))
                 .append(Component.text(elapsedMs, NamedTextColor.GOLD))
                 .build();
+    }
+
+    @Override
+    public void resetData() {
+        super.resetData();
+    }
+
+    @Override
+    public void resetData(UUID uuid) {
+        super.resetData(uuid);
     }
 
 }

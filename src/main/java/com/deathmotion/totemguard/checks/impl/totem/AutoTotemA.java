@@ -86,12 +86,14 @@ public final class AutoTotemA extends Check implements Listener {
 
     @Override
     public void resetData() {
+        super.resetData();
         totemUsage.clear();
         clickTimes.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        super.resetData(uuid);
         totemUsage.remove(uuid);
         clickTimes.remove(uuid);
     }

@@ -107,12 +107,14 @@ public final class AutoTotemE extends Check implements TotemEventListener {
 
     @Override
     public void resetData() {
+        super.resetData();
         lowOutliersTracker.clear();
         averageStDev.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        super.resetData(uuid);
         lowOutliersTracker.remove(uuid);
         averageStDev.remove(uuid);
     }

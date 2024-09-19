@@ -82,11 +82,13 @@ public final class AutoTotemB extends Check implements TotemEventListener {
 
     @Override
     public void resetData() {
+        super.resetData();
         lowSDCountMap.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        super.resetData(uuid);
         lowSDCountMap.remove(uuid);
     }
 }
