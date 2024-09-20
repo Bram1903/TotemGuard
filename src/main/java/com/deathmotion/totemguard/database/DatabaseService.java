@@ -21,12 +21,14 @@ package com.deathmotion.totemguard.database;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.data.CheckDetails;
 import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.database.entities.BaseDomain;
 import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.ebean.Database;
+import io.ebean.Transaction;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.jodah.expiringmap.ExpiringMap;
 import org.jetbrains.annotations.Blocking;
@@ -51,8 +53,7 @@ public class DatabaseService {
     private final TotemGuard plugin;
     private final Database database;
     private final ZoneId zoneId;
-    private final BlockingQueue<Alert> alertsToSave = new LinkedBlockingQueue<>();
-    private final BlockingQueue<Punishment> punishmentsToSave = new LinkedBlockingQueue<>();
+    private final BlockingQueue<BaseDomain> entitiesToSave = new LinkedBlockingQueue<>();
     private final ExpiringMap<UUID, DatabasePlayer> playerCache = ExpiringMap.builder()
             .expiration(CACHE_EXPIRY_MINUTES, TimeUnit.MINUTES)
             .build();
@@ -62,6 +63,7 @@ public class DatabaseService {
         this.database = plugin.getDatabaseManager().getDatabase();
         this.zoneId = ZoneId.systemDefault();
 
+        // Periodic bulk save
         FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o -> bulkSave()), SAVE_INTERVAL_SECONDS, SAVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
@@ -69,27 +71,16 @@ public class DatabaseService {
      * Periodically saves all queued alerts and punishments to the database.
      */
     private void bulkSave() {
-        List<Alert> alertsSnapshot = new ArrayList<>();
-        List<Punishment> punishmentsSnapshot = new ArrayList<>();
+        List<BaseDomain> entitiesSnapshot = new ArrayList<>();
+        entitiesToSave.drainTo(entitiesSnapshot);
 
-        // Drain the queues into the snapshots
-        alertsToSave.drainTo(alertsSnapshot);
-        punishmentsToSave.drainTo(punishmentsSnapshot);
-
-        try {
-            if (!alertsSnapshot.isEmpty()) {
-                database.saveAll(alertsSnapshot);
+        try (Transaction transaction = database.beginTransaction()) {
+            if (!entitiesSnapshot.isEmpty()) {
+                database.saveAll(entitiesSnapshot);
             }
-            if (!punishmentsSnapshot.isEmpty()) {
-                database.saveAll(punishmentsSnapshot);
-            }
+            transaction.commit();
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to save data to the database: " + e.getMessage());
-            // Ensure atomic re-adding
-            synchronized (this) {
-                alertsToSave.addAll(alertsSnapshot);
-                punishmentsToSave.addAll(punishmentsSnapshot);
-            }
+            plugin.getLogger().severe("Failed to save entities to the database: " + e.getMessage());
         }
     }
 
@@ -97,75 +88,81 @@ public class DatabaseService {
      * Saves an alert to the queue for asynchronous saving.
      */
     public void saveAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            Alert alert = createAlert(totemPlayer, checkDetails);
-            if (!alertsToSave.offer(alert)) {
-                plugin.getLogger().severe("Failed to enqueue alert for player: " + totemPlayer.username());
-            }
-        });
+        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.uuid());
+        Alert alert = createAlert(databasePlayer, checkDetails);
+        saveEntity(alert);
     }
 
     /**
      * Saves a punishment to the queue for asynchronous saving.
      */
     public void savePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            Punishment punishment = createPunishment(totemPlayer, checkDetails);
-            if (!punishmentsToSave.offer(punishment)) {
-                plugin.getLogger().severe("Failed to enqueue punishment for player: " + totemPlayer.username());
-            }
-        });
+        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.uuid());
+        Punishment punishment = createPunishment(databasePlayer, checkDetails);
+        saveEntity(punishment);
+    }
+
+    /**
+     * Adds an entity to the saving queue.
+     */
+    private void saveEntity(BaseDomain entity) {
+        if (!entitiesToSave.offer(entity)) {
+            plugin.getLogger().severe("Failed to enqueue entity for player: " + entity.getDatabasePlayer().getUuid());
+        }
+    }
+
+    /**
+     * Creates and returns an Alert object, adding it to the player's alert list.
+     */
+    private Alert createAlert(DatabasePlayer databasePlayer, CheckDetails checkDetails) {
+        Alert alert = new Alert();
+        alert.setCheckName(Check.valueOf(checkDetails.getCheckName()));
+        alert.setDatabasePlayer(databasePlayer);
+
+        // Automatically handle bidirectional relationship by adding alert to player's alert list
+        databasePlayer.getAlerts().add(alert);
+        return alert;
+    }
+
+    /**
+     * Creates and returns a Punishment object, adding it to the player's punishment list.
+     */
+    private Punishment createPunishment(DatabasePlayer databasePlayer, CheckDetails checkDetails) {
+        Punishment punishment = new Punishment();
+        punishment.setCheckName(Check.valueOf(checkDetails.getCheckName()));
+        punishment.setDatabasePlayer(databasePlayer);
+
+        // Automatically handle bidirectional relationship by adding punishment to player's punishment list
+        databasePlayer.getPunishments().add(punishment);
+        return punishment;
     }
 
     /**
      * Retrieves the DatabasePlayer by UUID, using a cache with a 10-minute expiration.
+     * If the player is not found, it creates a new entry.
      */
     private DatabasePlayer getOrCreatePlayer(UUID uuid) {
         // Check cache first
-        DatabasePlayer databasePlayer = playerCache.get(uuid);
-        if (databasePlayer != null) {
-            return databasePlayer;
+        DatabasePlayer cachedPlayer = playerCache.get(uuid);
+        if (cachedPlayer != null) {
+            return cachedPlayer;
         }
 
-        // If not in cache, retrieve or create from database
-        databasePlayer = database.find(DatabasePlayer.class).where().eq(UUID_FIELD, uuid).findOneOrEmpty()
+        // If not in cache, retrieve or create from the database
+        DatabasePlayer databasePlayer = database.find(DatabasePlayer.class)
+                .where()
+                .eq(UUID_FIELD, uuid)
+                .findOneOrEmpty()
                 .orElseGet(() -> {
                     DatabasePlayer newPlayer = new DatabasePlayer();
                     newPlayer.setUuid(uuid);
-                    try {
-                        newPlayer.save();
-                    } catch (Exception e) {
-                        // Handle case where another thread inserted the player concurrently
-                        return database.find(DatabasePlayer.class).where().eq(UUID_FIELD, uuid).findOne();
-                    }
+                    database.save(newPlayer);
                     return newPlayer;
                 });
 
         // Cache the result
         playerCache.put(uuid, databasePlayer);
         return databasePlayer;
-    }
-
-    private Alert createAlert(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.uuid());
-        Alert alert = new Alert();
-        alert.setCheckName(Check.valueOf(checkDetails.getCheckName()));
-        alert.setDatabasePlayer(databasePlayer);
-
-        // Add alert to player's list to maintain bidirectional relationship
-        databasePlayer.getAlerts().add(alert);
-        return alert;
-    }
-
-    private Punishment createPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails) {
-        DatabasePlayer databasePlayer = getOrCreatePlayer(totemPlayer.uuid());
-        Punishment punishment = new Punishment();
-        punishment.setCheckName(Check.valueOf(checkDetails.getCheckName()));
-        punishment.setDatabasePlayer(databasePlayer);
-
-        // Add punishment to player's list to maintain bidirectional relationship
-        databasePlayer.getPunishments().add(punishment);
-        return punishment;
     }
 
     @Blocking

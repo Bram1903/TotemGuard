@@ -36,8 +36,7 @@ import java.util.UUID;
 public class DatabasePlayer extends Model {
 
     @Id
-    private long id;
-
+    @Column(nullable = false, unique = true)
     private UUID uuid;
 
     @OneToMany(mappedBy = "databasePlayer", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -46,4 +45,5 @@ public class DatabasePlayer extends Model {
     @OneToMany(mappedBy = "databasePlayer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Punishment> punishments = new ArrayList<>();
 }
+
 

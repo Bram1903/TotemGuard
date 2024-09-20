@@ -3,18 +3,17 @@
     <changeSet type="apply">
         <createTable name="totemguard_alerts" pkName="pk_totemguard_alerts">
             <column name="id" type="bigint" primaryKey="true"/>
-            <column name="check_name" type="integer" checkConstraint="check ( check_name in (0,1,2,3,4,5,6,7))" checkConstraintName="ck_totemguard_alerts_check_name"/>
-            <column name="totemguard_player_id" type="bigint" references="totemguard_player.id" foreignKeyName="fk_totemguard_alerts_totemguard_player_id" foreignKeyIndex="ix_totemguard_alerts_totemguard_player_id"/>
+            <column name="check_name" type="integer" notnull="true" checkConstraint="check ( check_name in (0,1,2,3,4,5,6,7))" checkConstraintName="ck_totemguard_alerts_check_name"/>
+            <column name="totemguard_player_uuid" type="uuid" notnull="true" references="totemguard_player.uuid" foreignKeyName="fk_totemguard_alerts_totemguard_player_uuid" foreignKeyIndex="ix_totemguard_alerts_totemguard_player_uuid"/>
             <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
-        <createTable name="totemguard_player" pkName="pk_totemguard_player">
-            <column name="id" type="bigint" primaryKey="true"/>
-            <column name="uuid" type="uuid"/>
+        <createTable name="totemguard_player" identityType="external" pkName="pk_totemguard_player">
+            <column name="uuid" type="uuid" primaryKey="true" identity="true"/>
         </createTable>
         <createTable name="totemguard_punishments" pkName="pk_totemguard_punishments">
             <column name="id" type="bigint" primaryKey="true"/>
-            <column name="check_name" type="integer" checkConstraint="check ( check_name in (0,1,2,3,4,5,6,7))" checkConstraintName="ck_totemguard_punishments_check_name"/>
-            <column name="totemguard_player_id" type="bigint" references="totemguard_player.id" foreignKeyName="fk_totemguard_punishments_totemguard_player_id" foreignKeyIndex="ix_totemguard_punishments_totemguard_player_id"/>
+            <column name="check_name" type="integer" notnull="true" checkConstraint="check ( check_name in (0,1,2,3,4,5,6,7))" checkConstraintName="ck_totemguard_punishments_check_name"/>
+            <column name="totemguard_player_uuid" type="uuid" notnull="true" references="totemguard_player.uuid" foreignKeyName="fk_totemguard_punishments_totemguard_player_uuid" foreignKeyIndex="ix_totemguard_punishments_totemguard_player_uuid"/>
             <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
     </changeSet>

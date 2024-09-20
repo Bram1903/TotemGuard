@@ -20,8 +20,7 @@ package com.deathmotion.totemguard.database.entities;
 
 import io.ebean.Model;
 import io.ebean.annotation.WhenCreated;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -31,11 +30,21 @@ import java.time.Instant;
 @Getter
 @Setter
 public abstract class BaseDomain extends Model {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    @Enumerated(EnumType.ORDINAL)
+    @Column(nullable = false)
     private Check checkName;
 
+    @Column(nullable = false, updatable = false)
     @WhenCreated
     private Instant whenCreated;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "totemguard_player_uuid", nullable = false)
+    private DatabasePlayer databasePlayer;
 }
+
