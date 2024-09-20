@@ -90,20 +90,12 @@ public class UserTracker implements PacketListener {
         byte[] data = packet.getData();
         if (data.length == 0 || data.length > 64) return;
         String brand = new String(data, 1, data.length - 1).replace(" (Velocity)", "");
+        if (brand.isEmpty()) brand = "Unknown";
 
         UUID userUUID = event.getUser().getUUID();
         if (userUUID == null) return;
 
-        // Create a new TotemPlayer with only the clientBrand if it doesn't exist
-        totemPlayers.compute(userUUID, (uuid, existing) -> {
-            if (existing == null) {
-                // Create a new TotemPlayer with only the clientBrand field set
-                return new TotemPlayer(uuid, null, null, false, brand);
-            } else {
-                // Update the existing TotemPlayer with the new clientBrand
-                return existing.withClientBrand(brand);
-            }
-        });
+        totemPlayers.put(userUUID, new TotemPlayer(userUUID, null, null, false, brand));
     }
 
 
