@@ -28,18 +28,19 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public final class AutoTotemE extends Check implements TotemEventListener {
 
     private final TotemGuard plugin;
-    private final ConcurrentHashMap<UUID, Integer> lowSDCountMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> lowOutliersTracker = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> averageStDev = new ConcurrentHashMap<>();
 
     public AutoTotemE(TotemGuard plugin) {
-        super(plugin, "AutoTotemE", "Impossible consistency without outliers", true);
+        super(plugin, "AutoTotemE", "Impossible low outliers", true);
         this.plugin = plugin;
 
         TotemProcessor.getInstance().registerListener(this);
@@ -47,57 +48,74 @@ public final class AutoTotemE extends Check implements TotemEventListener {
 
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
-        var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemE();
+        UUID playerId = player.getUniqueId();
+        List<Long> intervals = totemPlayer.totemData().getLatestIntervals(15);
+        if (intervals.size() < 4) return;
 
-        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(20);
+        // Get the low outliers from the intervals
+        List<Double> lowOutliers = MathUtil.getOutliers(intervals).getX();
 
-        if (recentIntervals.size() <= 4) return;
+        // Add the current low outliers to the tracker
+        ConcurrentLinkedDeque<Double> playerOutliers = lowOutliersTracker.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
+        playerOutliers.addAll(lowOutliers);
 
-        Collection<Long> mellowedIntervals = MathUtil.removeOutliers(recentIntervals);
-        double modifiedDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(mellowedIntervals));
-        if (mellowedIntervals.size() > 5) return;
-
-        //plugin.debug("[AutoTotemE] " + player.getName() + " - Modified deviation: " + modifiedDeviation);
-
-        int consecutiveLowSDCount = lowSDCountMap.getOrDefault(player.getUniqueId(), 0);
-        if (modifiedDeviation >= settings.getLowSDThreshold()) {
-            consecutiveLowSDCount = Math.max(0, consecutiveLowSDCount - 1);
-            lowSDCountMap.put(player.getUniqueId(), consecutiveLowSDCount);
-            return;
+        // Limit the stored outliers to the last 30 entries
+        while (playerOutliers.size() > 30) {
+            playerOutliers.poll();
         }
 
-        consecutiveLowSDCount++;
-        lowSDCountMap.put(player.getUniqueId(), consecutiveLowSDCount);
+        // Perform calculations if there are enough outliers
+        if (playerOutliers.size() >= 15) {
+            double standardDeviation = MathUtil.getStandardDeviation(playerOutliers);
 
-        if (consecutiveLowSDCount >= 2) {
-            lowSDCountMap.remove(player.getUniqueId());
-            flag(player, createComponent(modifiedDeviation, totemPlayer.getTotemData().getLatestStandardDeviation(), recentIntervals.size(), mellowedIntervals.size()), settings);
+            // Store standard deviations for consistency check
+            ConcurrentLinkedDeque<Double> stDevHistory = averageStDev.computeIfAbsent(playerId, k -> new ConcurrentLinkedDeque<>());
+            stDevHistory.addLast(standardDeviation);
+
+            // Limit the stored standard deviations to the last 10 entries
+            while (stDevHistory.size() > 10) {
+                stDevHistory.poll();
+            }
+
+            // Calculate average standard deviation to find consistency
+            double averageStDeviation = MathUtil.getMean(stDevHistory);
+            plugin.debug("== AutoTotemF (Consistency Check) ==");
+            plugin.debug("Standard Deviation: " + MathUtil.trim(2, standardDeviation));
+            plugin.debug("Average Standard Deviation: " + MathUtil.trim(2, averageStDeviation) + "ms");
+
+            var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemE();
+
+            // Check if both the mean and standard deviation are consistently low
+            if (standardDeviation < settings.getStandardDeviationThreshold() && averageStDeviation < settings.getAverageStDeviationThreshold()) {
+                flag(player, createComponent(standardDeviation, averageStDeviation), settings);
+            }
+        } else {
+            //plugin.debug("== AutoTotemF ==");
+            //plugin.debug("Added low outliers for player " + player.getName() + ". Current outliers count: " + playerOutliers.size());
         }
     }
 
-    private Component createComponent(double modifiedSd, double originalSd, int intervalCount, int modifiedIntervalCount) {
+    private Component createComponent(double standardDeviation, double averageStDeviation) {
         return Component.text()
-                .append(Component.text("Original SD" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(originalSd + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Standard Deviation: ", NamedTextColor.GRAY))
+                .append(Component.text(MathUtil.trim(2, standardDeviation) + "ms", NamedTextColor.GOLD))
                 .append(Component.newline())
-                .append(Component.text("Modified SD" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(modifiedSd + "ms", NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Amount of intervals" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(intervalCount, NamedTextColor.GOLD))
-                .append(Component.newline())
-                .append(Component.text("Amount of modified intervals" + ": ", NamedTextColor.GRAY))
-                .append(Component.text(modifiedIntervalCount, NamedTextColor.GOLD))
+                .append(Component.text("Average Stdev Mean: ", NamedTextColor.GRAY))
+                .append(Component.text(MathUtil.trim(2, averageStDeviation), NamedTextColor.GOLD))
                 .build();
     }
 
     @Override
     public void resetData() {
-        lowSDCountMap.clear();
+        super.resetData();
+        lowOutliersTracker.clear();
+        averageStDev.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
-        lowSDCountMap.remove(uuid);
+        super.resetData(uuid);
+        lowOutliersTracker.remove(uuid);
+        averageStDev.remove(uuid);
     }
 }

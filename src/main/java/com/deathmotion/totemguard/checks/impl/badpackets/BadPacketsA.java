@@ -29,6 +29,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 public final class BadPacketsA extends Check implements PacketListener {
 
     private final TotemGuard plugin;
@@ -57,5 +59,15 @@ public final class BadPacketsA extends Check implements PacketListener {
 
             flag((Player) event.getPlayer(), checkDetails, settings);
         }
+    }
+
+    @Override
+    public void resetData() {
+        super.resetData();
+    }
+
+    @Override
+    public void resetData(UUID uuid) {
+        super.resetData(uuid);
     }
 }

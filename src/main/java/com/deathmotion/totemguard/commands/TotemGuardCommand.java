@@ -19,171 +19,42 @@
 package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.config.ConfigManager;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.commands.totemguard.*;
 import com.deathmotion.totemguard.data.Constants;
-import com.deathmotion.totemguard.manager.AlertManager;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TotemGuardCommand implements CommandExecutor, TabExecutor {
-
-    private final TotemGuard plugin;
-    private final ConfigManager configManager;
-    private final AlertManager alertManager;
-
-    private Component versionComponent;
+    private final Component versionComponent;
+    private final Map<String, SubCommand> subCommands = new HashMap<>();
 
     public TotemGuardCommand(TotemGuard plugin) {
-        this.plugin = plugin;
-        this.configManager = plugin.getConfigManager();
-        this.alertManager = plugin.getAlertManager();
+        subCommands.put("info", new InfoCommand(plugin));
+        subCommands.put("alerts", new AlertsCommand(plugin));
+        subCommands.put("reload", new ReloadCommand(plugin.getConfigManager()));
+        subCommands.put("profile", new ProfileCommand(plugin));
+        subCommands.put("stats", new StatsCommand(plugin));
+        subCommands.put("clearlogs", new ClearLogsCommand(plugin));
+        subCommands.put("database", new DatabaseCommand(plugin));
 
-        plugin.getCommand("totemguard").setExecutor(this);
-        loadVersionComponent();
-    }
-
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (args.length == 0 && !hasRequiredPermissions(sender) || args.length == 1 && args[0].equalsIgnoreCase("info")) {
-            sender.sendMessage(versionComponent);
-            return true;
-        }
-
-        if (!hasRequiredPermissions(sender)) {
-            sender.sendMessage(Component.text("You do not have permission to use this command.", NamedTextColor.RED));
-            return false;
-        }
-
-        if (args.length == 0) {
-            sendPrefixMessage(sender, Component.text("Usage: /totemguard <alerts|reload|info>", NamedTextColor.RED));
-            return false;
-        }
-
-        return switch (args[0].toLowerCase()) {
-            case "alerts" -> handleAlertsCommand(sender, args);
-            case "reload" -> handleReloadCommand(sender);
-            default -> {
-                sendPrefixMessage(sender, Component.text("Usage: /totemguard <alerts|reload|info>", NamedTextColor.RED));
-                yield false;
-            }
-        };
-    }
-
-    @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!hasRequiredPermissions(sender)) {
-            return List.of("info");
-        }
-
-        if (args.length == 1) {
-            return Stream.of("alerts", "reload", "info")
-                    .filter(option -> option.startsWith(args[0].toLowerCase()))
-                    .toList();
-        }
-
-        if (args.length == 2 && args[0].equalsIgnoreCase("alerts") && sender.hasPermission("TotemGuard.Alerts.Others")) {
-            String argsLowerCase = args[1].toLowerCase();
-
-            if (sender instanceof Player) {
-                String senderName = sender.getName().toLowerCase();
-                return Bukkit.getOnlinePlayers().stream()
-                        .map(Player::getName)
-                        .filter(name -> !name.toLowerCase().equals(senderName)) // Prevent self-suggestion
-                        .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
-                        .toList();
-            }
-
-            return Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
-                    .toList();
-        }
-
-        return List.of();
-    }
-
-    private boolean hasRequiredPermissions(CommandSender sender) {
-        return sender.hasPermission("TotemGuard.Alerts") || sender.hasPermission("TotemGuard.Reload");
-    }
-
-    private boolean handleAlertsCommand(CommandSender sender, String[] args) {
-        if (args.length == 1) {
-            return toggleAlertsForSender(sender);
-        } else if (sender.hasPermission("TotemGuard.Alerts.Others")) {
-            return toggleAlertsForOther(sender, args[1]);
-        } else {
-            sender.sendMessage(Component.text("You do not have permission to toggle alerts for other players!", NamedTextColor.RED));
-            return false;
-        }
-    }
-
-    private boolean toggleAlertsForSender(CommandSender sender) {
-        if (sender instanceof Player player) {
-            alertManager.toggleAlerts(player);
-            return true;
-        } else {
-            sendPrefixMessage(sender, Component.text("Only players can toggle alerts!", NamedTextColor.RED));
-            return false;
-        }
-    }
-
-    private boolean toggleAlertsForOther(CommandSender sender, String targetName) {
-        Player target = Bukkit.getPlayer(targetName);
-        if (target == null) {
-            sendPrefixMessage(sender, Component.text("Player not found!", NamedTextColor.RED));
-            return false;
-        }
-
-        if (sender instanceof Player player) {
-            if ((player.getUniqueId().equals(target.getUniqueId()))) {
-                alertManager.toggleAlerts(player);
-                return true;
-            }
-        }
-
-        alertManager.toggleAlerts(target);
-        boolean alertsEnabled = alertManager.hasAlertsEnabled(target);
-
-        sendPrefixMessage(sender, Component.text((alertsEnabled ? "Enabled" : "Disabled") + " alerts for " + target.getName() + "!").color(alertsEnabled ? NamedTextColor.GREEN : NamedTextColor.RED));
-        return true;
-    }
-
-    private boolean handleReloadCommand(CommandSender sender) {
-        configManager.reload();
-        sendPrefixMessage(sender, Component.text("The configuration has been reloaded!", NamedTextColor.GREEN));
-        return true;
-    }
-
-    private void sendPrefixMessage(CommandSender sender, Component message) {
-        final Settings settings = plugin.getConfigManager().getSettings();
-
-        Component prefixMessage = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(message)
-                .build();
-
-        sender.sendMessage(prefixMessage);
-    }
-
-    private void loadVersionComponent() {
         versionComponent = Component.text()
-                .append(Component.text("⚡", NamedTextColor.GOLD).decorate(TextDecoration.BOLD))
-                .append(Component.text(" Running ", NamedTextColor.GRAY))
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()).decorate(TextDecoration.BOLD))
+                .append(Component.text(" Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
                 .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
@@ -195,6 +66,110 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                         .decorate(TextDecoration.UNDERLINED)))
                 .clickEvent(ClickEvent.openUrl(Constants.GITHUB_URL))
                 .build();
+
+        plugin.getCommand("totemguard").setExecutor(this);
     }
 
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!hasAnyPermission(sender)) {
+            sender.sendMessage(versionComponent);
+            return true;
+        }
+
+        if (args.length == 0) {
+            sender.sendMessage(getAvailableCommandsComponent(sender));
+            return false;
+        }
+
+        String subCommandName = args[0].toLowerCase();
+        SubCommand subCommand = subCommands.get(subCommandName);
+
+        if (subCommand != null && hasPermissionForSubCommand(sender, subCommandName)) {
+            return subCommand.execute(sender, args);
+        } else {
+            sender.sendMessage(getAvailableCommandsComponent(sender));
+            return false;
+        }
+    }
+
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length == 1) {
+            return subCommands.keySet().stream()
+                    .filter(name -> name.startsWith(args[0].toLowerCase()))
+                    .filter(name -> hasPermissionForSubCommand(sender, name))
+                    .collect(Collectors.toList());
+        } else if (args.length > 1) {
+            SubCommand subCommand = subCommands.get(args[0].toLowerCase());
+            if (subCommand != null && hasPermissionForSubCommand(sender, args[0].toLowerCase())) {
+                return subCommand.onTabComplete(sender, args);
+            }
+        }
+        return List.of();
+    }
+
+    private boolean hasAnyPermission(CommandSender sender) {
+        return subCommands.keySet().stream().anyMatch(command -> hasPermissionForSubCommand(sender, command));
+    }
+
+    private boolean hasPermissionForSubCommand(CommandSender sender, String subCommand) {
+        return switch (subCommand) {
+            case "info" -> true;
+            case "alerts" -> sender.hasPermission("TotemGuard.Alerts");
+            case "reload" -> sender.hasPermission("TotemGuard.Reload");
+            case "profile" -> sender.hasPermission("TotemGuard.Profile");
+            case "stats" -> sender.hasPermission("TotemGuard.Stats");
+            case "clearlogs" -> sender.hasPermission("TotemGuard.ClearLogs");
+            case "database" -> hasAnyDatabasePermissions(sender);
+            default -> false;
+        };
+    }
+
+    private Component getAvailableCommandsComponent(CommandSender sender) {
+        // Start building the help message
+        TextComponent.Builder componentBuilder = Component.text()
+                .append(Component.text("TotemGuard Commands", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.newline())
+                .append(Component.text("Below are the available subcommands:", NamedTextColor.GRAY))
+                .append(Component.newline())
+                .append(Component.newline());
+
+        // Command descriptions
+        Map<String, String> commandDescriptions = Map.of(
+                "info", "Show plugin information.",
+                "alerts", "Toggle alerts on/off.",
+                "reload", "Reload the plugin configuration.",
+                "profile", "View player profiles.",
+                "stats", "View plugin statistics.",
+                "clearlogs", "Clear player logs.",
+                "database", "Database management commands."
+        );
+
+        // Add each command to the message if the sender has permission
+        for (String command : subCommands.keySet()) {
+            if (hasPermissionForSubCommand(sender, command)) {
+                componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("/totemguard " + command, NamedTextColor.GOLD, TextDecoration.BOLD))
+                        .append(Component.text(" - ", NamedTextColor.GRAY))
+                        .append(Component.text(commandDescriptions.get(command), NamedTextColor.GRAY))
+                        .append(Component.newline());
+            }
+        }
+
+        // If no commands are available, provide a different message
+        if (componentBuilder.children().isEmpty()) {
+            return Component.text("You do not have permission to use any commands.", NamedTextColor.RED);
+        }
+
+        return componentBuilder.build();
+    }
+
+    private boolean hasAnyDatabasePermissions(CommandSender sender) {
+        if (sender.hasPermission("TotemGuard.Database")) {
+            return true;
+        } else if (sender.hasPermission("TotemGuard.Database.Trim")) {
+            return true;
+        } else return sender.hasPermission("TotemGuard.Database.Clear");
+    }
 }

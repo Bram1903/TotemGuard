@@ -20,52 +20,66 @@ package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.data.CheckDetails;
+import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.database.DatabaseService;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AlertManager {
 
     @Getter
-    private final Set<Player> enabledAlerts = new CopyOnWriteArraySet<>();
+    private final ConcurrentHashMap<UUID, Player> enabledAlerts;
 
     private final TotemGuard plugin;
+    private final DatabaseService databaseService;
 
     public AlertManager(TotemGuard plugin) {
         this.plugin = plugin;
+        this.databaseService = plugin.getDatabaseService();
+        this.enabledAlerts = new ConcurrentHashMap<>();
     }
 
-    public void sendAlert(Component alert) {
-        enabledAlerts.forEach(player -> player.sendMessage(alert));
+    public void sendAlert(TotemPlayer totemPlayer, CheckDetails alert) {
+        enabledAlerts.values().forEach(player -> player.sendMessage(alert.getAlert()));
+        databaseService.saveAlert(totemPlayer, alert);
+    }
+
+    public void sendAlert(Component message) {
+        enabledAlerts.values().forEach(player -> player.sendMessage(message));
     }
 
     public void toggleAlerts(Player player) {
-        if (enabledAlerts.add(player)) {
-            sendAlertStatusMessage(player, "Alerts enabled!", NamedTextColor.GREEN);
-        } else {
-            enabledAlerts.remove(player);
+        UUID playerId = player.getUniqueId();
+        if (enabledAlerts.containsKey(playerId)) {
+            enabledAlerts.remove(playerId);
             sendAlertStatusMessage(player, "Alerts disabled!", NamedTextColor.RED);
+        } else {
+            enabledAlerts.put(playerId, player);
+            sendAlertStatusMessage(player, "Alerts enabled!", NamedTextColor.GREEN);
         }
     }
 
     public void enableAlerts(Player player) {
-        if (enabledAlerts.add(player)) {
+        UUID playerId = player.getUniqueId();
+        if (!enabledAlerts.containsKey(playerId)) {
+            enabledAlerts.put(playerId, player);
             sendAlertStatusMessage(player, "Alerts enabled!", NamedTextColor.GREEN);
         }
     }
 
-    public void removePlayer(UUID player) {
-        enabledAlerts.removeIf(p -> p.getUniqueId().equals(player));
+    public void removePlayer(UUID playerId) {
+        enabledAlerts.remove(playerId);
     }
 
     public boolean hasAlertsEnabled(Player player) {
-        return enabledAlerts.contains(player);
+        return enabledAlerts.containsKey(player.getUniqueId());
     }
 
     private void sendAlertStatusMessage(Player player, String message, NamedTextColor color) {

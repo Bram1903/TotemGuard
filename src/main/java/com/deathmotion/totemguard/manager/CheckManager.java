@@ -21,10 +21,12 @@ package com.deathmotion.totemguard.manager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -40,13 +42,17 @@ import java.util.UUID;
 public class CheckManager {
     private final TotemGuard plugin;
     private final AlertManager alertManager;
+    private final UserTracker userTracker;
+
     private final List<ICheck> checks;
 
     public CheckManager(TotemGuard plugin) {
         this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
+        this.userTracker = plugin.getUserTracker();
 
         TotemProcessor.init(plugin);
+        BadPacketsB.init(plugin);
 
         this.checks = ImmutableList.of(
                 TotemProcessor.getInstance(),
@@ -56,6 +62,7 @@ public class CheckManager {
                 new AutoTotemD(plugin),
                 new AutoTotemE(plugin),
                 new BadPacketsA(plugin),
+                BadPacketsB.getInstance(),
                 new ManualTotemA(plugin)
         );
 
@@ -71,6 +78,7 @@ public class CheckManager {
 
     public void resetData() {
         checks.forEach(ICheck::resetData);
+        userTracker.clearTotemData();
 
         final Settings settings = plugin.getConfigManager().getSettings();
         Component resetComponent = Component.text()

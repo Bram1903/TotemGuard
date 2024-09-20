@@ -1,0 +1,16 @@
+name: TotemGuard
+
+services:
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: 'TotemGuard'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - totemguard:/var/lib/mysql
+volumes:
+  totemguard:

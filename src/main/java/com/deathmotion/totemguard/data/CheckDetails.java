@@ -22,6 +22,8 @@ import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class CheckDetails {
@@ -38,5 +40,5 @@ public class CheckDetails {
     private boolean punishable;
     private int punishmentDelay;
     private int maxViolations;
-    private String[] punishmentCommands;
+    private List<String> punishmentCommands;
 }

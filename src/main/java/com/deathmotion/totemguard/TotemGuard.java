@@ -20,11 +20,11 @@ package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
-import com.deathmotion.totemguard.listeners.UserTracker;
-import com.deathmotion.totemguard.manager.AlertManager;
-import com.deathmotion.totemguard.manager.CheckManager;
-import com.deathmotion.totemguard.manager.DiscordManager;
-import com.deathmotion.totemguard.manager.PunishmentManager;
+import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.listeners.ReloadListener;
+import com.deathmotion.totemguard.manager.*;
+import com.deathmotion.totemguard.mojang.MojangService;
+import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.TGVersion;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -37,25 +37,21 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
 
+@Getter
 public final class TotemGuard extends JavaPlugin {
 
     @Getter
     private static TotemGuard instance;
 
-    @Getter
     private TGVersion version;
-
-    @Getter
     private ConfigManager configManager;
-    @Getter
+    private DatabaseManager databaseManager;
+    private DatabaseService databaseService;
+    private MojangService mojangService;
     private AlertManager alertManager;
-    @Getter
     private UserTracker userTracker;
-    @Getter
     private DiscordManager discordManager;
-    @Getter
     private PunishmentManager punishmentManager;
-    @Getter
     private CheckManager checkManager;
 
     @Override
@@ -70,12 +66,20 @@ public final class TotemGuard extends JavaPlugin {
             return;
         }
 
+        databaseManager = new DatabaseManager(this);
+        databaseService = new DatabaseService(this);
+        mojangService = new MojangService(this);
+
         userTracker = new UserTracker(this);
         alertManager = new AlertManager(this);
         discordManager = new DiscordManager(this);
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
+
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
+
+        if (Bukkit.getPluginManager().getPlugin("BetterReload") != null)
+            Bukkit.getPluginManager().registerEvents(new ReloadListener(this), this);
 
         new TotemGuardCommand(this);
         new UpdateChecker(this);

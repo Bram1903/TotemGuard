@@ -27,11 +27,10 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Getter
 public class TotemData {
-    @Setter
-    private double latestStandardDeviation;
-
     @Getter
     private final ConcurrentLinkedDeque<Long> intervals = new ConcurrentLinkedDeque<>();
+    @Setter
+    private double latestStandardDeviation;
 
     public void addInterval(long interval) {
         intervals.addLast(interval);
@@ -49,7 +48,8 @@ public class TotemData {
                 .toList();
     }
 
-    public double getLatestStandardDeviation(int amount) {
-        return MathUtil.trim(2, MathUtil.getStandardDeviation(getLatestIntervals(amount)));
+    public void clear() {
+        latestStandardDeviation = 0;
+        intervals.clear();
     }
 }

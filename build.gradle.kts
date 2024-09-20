@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     `maven-publish`
+    alias(libs.plugins.ebean)
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
 }
@@ -13,6 +14,9 @@ repositories {
     }
     maven {
         url = uri("https://repo.codemc.io/repository/maven-releases/")
+    }
+    maven {
+        url = uri("https://jitpack.io")
     }
 }
 
@@ -28,7 +32,16 @@ dependencies {
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
+    compileOnly(libs.expiringmap)
+    compileOnly(libs.betterreload.api)
+    compileOnly(libs.ebean.core)
+    compileOnly(libs.ebean.sqlite)
+    compileOnly(libs.ebean.mysql)
     annotationProcessor(libs.lombok)
+    annotationProcessor(libs.ebean.processor)
+    testImplementation(libs.ebean.test)
+    testImplementation(libs.ebean.sqlite)
+    testImplementation(libs.ebean.mysql)
 }
 
 group = "com.deathmotion.totemguard"
@@ -64,14 +77,18 @@ tasks {
 
     processResources {
         inputs.property("version", project.version)
+        inputs.property("ebeanVersion", libs.versions.ebean.get())
         inputs.property("configlibVersion", libs.versions.configlib.get())
         inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
+        inputs.property("expiringmapVersion", libs.versions.expiringmap.get())
 
         filesMatching("plugin.yml") {
             expand(
                 "version" to rootProject.version,
+                "ebeanVersion" to libs.versions.ebean.get(),
                 "configlibVersion" to libs.versions.configlib.get(),
-                "discordWebhooksVersion" to libs.versions.discord.webhooks.get()
+                "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
+                "expiringmapVersion" to libs.versions.expiringmap.get()
             )
         }
     }
@@ -93,6 +110,7 @@ tasks {
         url("https://ci.codemc.io/job/retrooper/job/packetevents/lastSuccessfulBuild/artifact/spigot/build/libs/packetevents-spigot-2.5.1-SNAPSHOT.jar")
         url("https://github.com/ViaVersion/ViaVersion/releases/download/5.0.3/ViaVersion-5.0.3.jar")
         url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.0.3/ViaBackwards-5.0.3.jar")
+        url("https://ci.athion.net/job/FastAsyncWorldEdit/lastSuccessfulBuild/artifact/artifacts/FastAsyncWorldEdit-Bukkit-2.11.3-SNAPSHOT-915.jar")
     }
 
     runServer {

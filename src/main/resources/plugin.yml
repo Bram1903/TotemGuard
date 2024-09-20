@@ -7,11 +7,17 @@ authors: [ Bram, OutDev ]
 description: TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
 load: POSTWORLD
 libraries:
+  - io.ebean:ebean-core:${ebeanVersion}
+  - io.ebean:ebean-sqlite:${ebeanVersion}
+  - io.ebean:ebean-mysql:${ebeanVersion}
   - de.exlll:configlib-yaml:${configlibVersion}
   - de.exlll:configlib-paper:${configlibVersion}
   - club.minnced:discord-webhooks:${discordWebhooksVersion}
+  - net.jodah:expiringmap:${expiringmapVersion}
 depend:
   - packetevents
+softdepend:
+  - BetterReload
 permissions:
   TotemGuard.*:
     description: Gives access to all TotemGuard permissions.
@@ -21,8 +27,25 @@ permissions:
       TotemGuard.Check: true
       TotemGuard.Alerts: true
       TotemGuard.Alerts.Others: true
+      TotemGuard.Profile: true
+      TotemGuard.Stats: true
+      TotemGuard.ClearLogs: true
       TotemGuard.Bypass: true
       TotemGuard.Update: true
+      TotemGuard.Database.*: true
+  TotemGuard.Staff:
+    description: Gives access to all TotemGuard Staff permissions.
+    default: op
+    children:
+      TotemGuard.Check: true
+      TotemGuard.Alerts: true
+      TotemGuard.Profile: true
+  TotemGuard.Database.*:
+    description: Gives access to all TotemGuard Database permissions.
+    default: op
+    children:
+      TotemGuard.Database.Trim: true
+      TotemGuard.Database.Clear: true
   TotemGuard.Reload:
     description: Allows the player to use /totemguard reload.
     default: op
@@ -35,12 +58,27 @@ permissions:
   TotemGuard.Alerts.Others:
     description: Allows the player to use /totemguard alerts <player>.
     default: op
+  TotemGuard.Profile:
+    description: Allows the player to use /totemguard profile.
+    default: op
+  TotemGuard.Stats:
+    description: Allows the player to use /totemguard stats.
+    default: op
+  TotemGuard.ClearLogs:
+    description: Allows the player to clear the logs of a player.
+    default: op
   TotemGuard.Bypass:
     description: Allows the player to bypass the checks.
     default: op
   TotemGuard.Update:
     description: Allows the player to receive update notifications.
     default: true
+  TotemGuard.Database.Trim:
+    description: Allows the player to trim the database.
+    default: op
+  TotemGuard.Database.Clear:
+    description: Allows the player to clear the database.
+    default: op
   TotemGuard.Debug:
     description: Allows the player to see debug messages.
     default: false

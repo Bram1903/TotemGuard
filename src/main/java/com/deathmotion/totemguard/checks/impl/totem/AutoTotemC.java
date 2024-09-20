@@ -1,3 +1,21 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2024 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
@@ -23,7 +41,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
     private final ConcurrentHashMap<UUID, Integer> consistentSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemC(TotemGuard plugin) {
-        super(plugin, "AutoTotemC", "Impossible consistency difference", true);
+        super(plugin, "AutoTotemC", "Impossible consistency difference");
         this.plugin = plugin;
         TotemProcessor.getInstance().registerListener(this);
     }
@@ -33,12 +51,12 @@ public final class AutoTotemC extends Check implements TotemEventListener {
         // Get the player's SD history or create a new one
         ConcurrentLinkedDeque<Double> sdHistory = sdHistoryMap.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentLinkedDeque<>());
 
-        List<Long> recentIntervals = totemPlayer.getTotemData().getLatestIntervals(4);
-        double standardDeviation = MathUtil.trim(2, MathUtil.getStandardDeviation(recentIntervals));
+        List<Long> recentIntervals = totemPlayer.totemData().getLatestIntervals(4);
+        double standardDeviation = MathUtil.getStandardDeviation(recentIntervals);
 
         // Add the current SD to the history
         sdHistory.addLast(standardDeviation);
-        if (sdHistory.size() > 4) {
+        while (sdHistory.size() > 4) {
             sdHistory.pollFirst();
         }
 
@@ -52,10 +70,9 @@ public final class AutoTotemC extends Check implements TotemEventListener {
                 differences.add(Math.abs(sdList.get(i) - sdList.get(i - 1)));
             }
 
-            double averageSDDifference = MathUtil.trim(2, MathUtil.getMean(differences));
+            double averageSDDifference = MathUtil.getMean(differences);
             //plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
 
-            //plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
             Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
 
             // Check if the average SD difference is below the threshold
@@ -63,7 +80,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
                 int consecutiveConsistentSDCount = consistentSDCountMap.getOrDefault(player.getUniqueId(), 0) + 1;
                 consistentSDCountMap.put(player.getUniqueId(), consecutiveConsistentSDCount);
 
-                if (consecutiveConsistentSDCount >= 1) {
+                if (consecutiveConsistentSDCount >= settings.getConsecutiveViolations()) {
                     consistentSDCountMap.remove(player.getUniqueId());
                     sdHistoryMap.remove(player.getUniqueId());  // Reset history after flagging
                     flag(player, createComponent(averageSDDifference), settings);
@@ -77,12 +94,14 @@ public final class AutoTotemC extends Check implements TotemEventListener {
 
     @Override
     public void resetData() {
+        super.resetData();
         consistentSDCountMap.clear();
         sdHistoryMap.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        super.resetData(uuid);
         consistentSDCountMap.remove(uuid);
         sdHistoryMap.remove(uuid);
     }
@@ -90,7 +109,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
     private Component createComponent(double averageSDDifference) {
         return Component.text()
                 .append(Component.text("Average SD Difference: ", NamedTextColor.GRAY))
-                .append(Component.text(averageSDDifference + "ms", NamedTextColor.GOLD))
+                .append(Component.text(MathUtil.trim(2, averageSDDifference), NamedTextColor.GOLD))
                 .build();
     }
 }

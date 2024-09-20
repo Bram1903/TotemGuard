@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.data.TotemPlayer;
-import com.deathmotion.totemguard.listeners.UserTracker;
+import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -37,7 +37,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class TotemProcessor extends Check implements Listener {
@@ -123,7 +125,7 @@ public final class TotemProcessor extends Check implements Listener {
             if (totemPlayer == null) return;
 
             long interval = Math.abs(currentTime - totemUseTime);
-            totemPlayer.getTotemData().addInterval(interval);
+            totemPlayer.totemData().addInterval(interval);
 
             for (TotemEventListener listener : totemEventListener) {
                 listener.onTotemEvent(player, totemPlayer);
@@ -134,11 +136,15 @@ public final class TotemProcessor extends Check implements Listener {
 
     @Override
     public void resetData() {
+        super.resetData();
+        totemUsage.clear();
         expectingReEquip.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        super.resetData(uuid);
+        totemUsage.remove(uuid);
         expectingReEquip.remove(uuid);
     }
 }

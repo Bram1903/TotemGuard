@@ -20,7 +20,10 @@ package com.deathmotion.totemguard.config;
 
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
+import io.ebean.annotation.Platform;
 import lombok.Getter;
+
+import java.util.List;
 
 @Configuration
 @Getter
@@ -32,6 +35,26 @@ public final class Settings {
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean debug = false;
 
+    @Comment("\nAlert Client Brand: Notifies players with the alert permission, what client brand a player is using.")
+    private boolean alertClientBrand = false;
+
+    @Comment({
+            "",
+            "Supported Placeholders in the settings:",
+            "%prefix% - Prefix of the Plugin",
+            "%uuid% - UUID of the Player",
+            "%player% - Name of the Player",
+            "%check% - Name of the Check",
+            "%description% - Description of the Check",
+            "%ping% - Player's Ping",
+            "%tps% - Server's TPS",
+            "%punishable% - If the check is punishable",
+            "%violations% - Amount of Violations",
+            "%max_violations% - Maximum Violations",
+            "",
+            "Alert Format: The format of the alert message."})
+    private String alertFormat = "&6%prefix%&e%player%&7 failed &6%check%&7 VL[&6%violations%/%max_violations%&7]";
+
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
 
@@ -41,11 +64,36 @@ public final class Settings {
     @Comment("\nDetermines when the plugin should stop for checking a player.")
     private Determine determine = new Determine();
 
+    @Comment("\nDatabase settings:")
+    private Database database = new Database();
+
     @Comment("\nWebhook settings:")
     private Webhook webhook = new Webhook();
 
     @Comment("\nChecks")
     private Checks checks = new Checks();
+
+    @Configuration
+    @Getter
+    public static class Database {
+        @Comment("Database Type: The type of database to use. (SQLite, MYSQL)")
+        private Platform type = Platform.SQLITE;
+
+        @Comment("\nDatabase Host: The host of the database.")
+        private String host = "localhost";
+
+        @Comment("\nDatabase Port: The port of the database.")
+        private int port = 3306;
+
+        @Comment("\nDatabase Name: The name of the database.")
+        private String name = "TotemGuard";
+
+        @Comment("\nDatabase Username: The username of the database.")
+        private String username = "root";
+
+        @Comment("\nDatabase Password: The password of the database.")
+        private String password = "password";
+    }
 
     @Configuration
     @Getter
@@ -132,7 +180,7 @@ public final class Settings {
         @Comment("When enabled, players with the bypass permission will not be flagged.")
         private boolean bypass = false;
 
-        @Comment("\nAutoTotemA Settings")
+        @Comment({"", "AutoTotemA Settings"})
         private AutoTotemA autoTotemA = new AutoTotemA();
 
         @Comment("\nAutoTotemB Settings")
@@ -147,11 +195,14 @@ public final class Settings {
         @Comment("\nAutoTotemE Settings")
         private AutoTotemE autoTotemE = new AutoTotemE();
 
-        @Comment("\nManualTotemA Settings")
-        private ManualTotemA manualTotemA = new ManualTotemA();
-
         @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
+
+        @Comment("\nBadPacketB Settings")
+        private BadPacketsB badPacketsB = new BadPacketsB();
+
+        @Comment("\nManualTotemA Settings")
+        private ManualTotemA manualTotemA = new ManualTotemA();
 
         @Configuration
         @Getter
@@ -160,9 +211,9 @@ public final class Settings {
             private boolean punishable;
             private int punishmentDelayInSeconds = 0;
             private int maxViolations;
-            private String[] punishmentCommands = {
+            private List<String> punishmentCommands = List.of(
                     "ban %player% 1d [TotemGuard] Unfair Advantage"
-            };
+            );
 
             public CheckSettings(boolean punishable, int punishmentDelay, int maxViolations) {
                 this.punishable = punishable;
@@ -174,17 +225,13 @@ public final class Settings {
                 this.punishable = punishable;
                 this.maxViolations = maxViolations;
             }
-
-            public CheckSettings(boolean enabled) {
-                this.enabled = enabled;
-            }
         }
 
         @Configuration
         @Getter
         public static class AutoTotemA extends CheckSettings {
             @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-            private int normalCheckTimeMs = 1000;
+            private int normalCheckTimeMs = 1500;
 
             @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
             private int clickTimeDifference = 75;
@@ -197,11 +244,17 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemB extends CheckSettings {
-            @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
-            private double lowSDThreshold  = 30.0;
+            @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
+            private double standardDeviationThreshold = 30.0;
+
+            @Comment("\nMean Threshold: The threshold for the mean.")
+            private double meanThreshold = 500.0;
+
+            @Comment("\nConsecutive Low SD Count: The amount of consecutive low standard deviations before flagging.")
+            private int consecutiveLowSDCount = 3;
 
             public AutoTotemB() {
-                super(false, 3);
+                super(false, 5);
             }
         }
 
@@ -211,8 +264,11 @@ public final class Settings {
             @Comment("\nConsistent SD Range: The range for the standard average deviation.")
             private double consistentSDRange = 1.0;
 
+            @Comment("\nConsecutive Violations: The amount of consecutive violations before flagging.")
+            private int consecutiveViolations = 3;
+
             public AutoTotemC() {
-                super(false, 5);
+                super(true, 3);
             }
         }
 
@@ -229,18 +285,42 @@ public final class Settings {
             private int tolerance = 5;
 
             public AutoTotemD() {
-                super(false, 2);
+                super(true, 2);
             }
         }
 
         @Configuration
         @Getter
         public static class AutoTotemE extends CheckSettings {
-            @Comment("\nLow SD Threshold: The threshold for the standard deviation.")
-            private double lowSDThreshold  = 80.0;
+            @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
+            private double standardDeviationThreshold = 10.0;
+
+            @Comment("\nAverage Standard Deviation Threshold: The threshold for the average standard deviation.")
+            private double averageStDeviationThreshold = 10.0;
 
             public AutoTotemE() {
-                super(false);
+                super(false, 5);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class BadPacketsA extends CheckSettings {
+            public BadPacketsA() {
+                super(true, 60, 1);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class BadPacketsB extends CheckSettings {
+            @Comment("\nBanned Client Brands: The list of client brands to flag.")
+            private List<String> bannedClientBrands = List.of(
+                    "autototem"
+            );
+
+            public BadPacketsB() {
+                super(true, 60, 1);
             }
         }
 
@@ -255,14 +335,6 @@ public final class Settings {
 
             public ManualTotemA() {
                 super(false, 2);
-            }
-        }
-
-        @Configuration
-        @Getter
-        public static class BadPacketsA extends CheckSettings {
-            public BadPacketsA() {
-                super(true, 60, 1);
             }
         }
     }
