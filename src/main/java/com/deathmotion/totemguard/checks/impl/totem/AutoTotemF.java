@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -26,6 +27,7 @@ public final class AutoTotemF extends Check implements Listener {
     public AutoTotemF(TotemGuard plugin) {
         super(plugin, "AutoTotemF", "Invalid actions with inventory open.");
         this.plugin = plugin;
+
         this.invClick = new ConcurrentHashMap<>();
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -35,6 +37,7 @@ public final class AutoTotemF extends Check implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
+
         if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
             invClick.put(player.getUniqueId(), System.currentTimeMillis());
         }
@@ -45,9 +48,30 @@ public final class AutoTotemF extends Check implements Listener {
         if (!(event.getPlayer() instanceof Player player)) {
             return;
         }
+
+        plugin.debug("Inventory close event");
         invClick.remove(player.getUniqueId());
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+
+        if (!invClick.containsKey(playerId)) return;
+
+        long storedTime = invClick.get(playerId);
+        long timeDifference = Math.abs(System.currentTimeMillis() - storedTime);
+        invClick.remove(playerId);
+
+        plugin.debug("Time difference: " + timeDifference + "ms");
+
+        if (timeDifference <= 1000) {
+            Action interaction = event.getAction();
+            final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
+            flag(player, createDetails(interaction, timeDifference, player), settings);
+        }
+    }
 
     @Override
     public void resetData() {
@@ -61,46 +85,20 @@ public final class AutoTotemF extends Check implements Listener {
         invClick.clear();
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
-
-        Player player = event.getPlayer();
-        UUID playerId = player.getUniqueId();
-        String interaction = String.valueOf(event.getAction());
-
-        long currentTime = System.currentTimeMillis();
-
-        if (invClick.containsKey(playerId)) {
-            long storedTime = invClick.get(playerId);
-            long timeDifference = currentTime - storedTime;
-            invClick.remove(playerId);
-
-            if (timeDifference <= 1000) {
-                String closedInventory = "OPEN";
-                flag(player, createDetails(interaction, closedInventory, timeDifference, player), settings);
-            }
-        }
-    }
-
-
     private String getMainHandItemString(Player player) {
         return player.getInventory().getItemInMainHand().getType() == Material.AIR
                 ? "Empty Hand"
                 : player.getInventory().getItemInMainHand().getType().toString();
     }
 
-    private Component createDetails(String interaction, String closedInventory, Long timeDifference, Player player) {
+    private Component createDetails(Action interaction, Long timeDifference, Player player) {
         Component component = Component.text()
                 .append(Component.text("Type: ", NamedTextColor.GRAY))
-                .append(Component.text(interaction, NamedTextColor.GOLD))
+                .append(Component.text(interaction.toString(), NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Time Difference: ", NamedTextColor.GRAY))
                 .append(Component.text(timeDifference, NamedTextColor.GOLD))
                 .append(Component.text("ms", NamedTextColor.GRAY))
-                .append(Component.newline())
-                .append(Component.text("Inventory: ", NamedTextColor.GRAY))
-                .append(Component.text(closedInventory, NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
                 .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
