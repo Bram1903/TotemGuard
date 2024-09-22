@@ -195,6 +195,9 @@ public final class Settings {
         @Comment("\nAutoTotemE Settings")
         private AutoTotemE autoTotemE = new AutoTotemE();
 
+        @Comment("\nAutoTotemF Settings")
+        private AutoTotemF autoTotemF = new AutoTotemF();
+
         @Comment("\nBadPacketA Settings")
         private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -299,6 +302,14 @@ public final class Settings {
             private double averageStDeviationThreshold = 10.0;
 
             public AutoTotemE() {
+                super(false, 5);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class AutoTotemF extends CheckSettings {
+            public AutoTotemF() {
                 super(false, 5);
             }
         }

@@ -61,6 +61,7 @@ public class CheckManager {
                 new AutoTotemC(plugin),
                 new AutoTotemD(plugin),
                 new AutoTotemE(plugin),
+                new AutoTotemF(plugin),
                 new BadPacketsA(plugin),
                 BadPacketsB.getInstance(),
                 new ManualTotemA(plugin)
