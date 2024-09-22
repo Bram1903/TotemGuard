@@ -80,10 +80,8 @@ public class UserTracker implements PacketListener {
         String brand = new String(data, 1, data.length - 1).replace(" (Velocity)", "");
         if (brand.isEmpty()) brand = "Unknown";
 
-        User user = event.getUser();
-
         // Ensure TotemPlayer is created or updated when receiving the packet
-        createOrUpdateTotemPlayer(user, brand);
+        createOrUpdateTotemPlayer(event.getUser(), brand);
     }
 
     @Override
