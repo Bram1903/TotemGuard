@@ -30,10 +30,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,18 +83,23 @@ public final class AutoTotemF extends Check implements Listener {
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
 
-        if (!invClick.containsKey(playerId)) return;
+        if (!invClick.containsKey(player.getUniqueId())) return;
 
         long storedTime = invClick.get(playerId);
-        long timeDifference = Math.abs(System.currentTimeMillis() - storedTime);
         invClick.remove(playerId);
+        Action action = event.getAction();
+
+        checkSuspiciousActivity(player, storedTime, String.valueOf(action));
+    }
+
+    private void checkSuspiciousActivity(Player player, long storedTime, String action){
+        long timeDifference = Math.abs(System.currentTimeMillis() - storedTime);
 
         plugin.debug("Time difference: " + timeDifference + "ms (" + player.getName() + ")");
 
-        if (timeDifference <= 1500) {
-            Action interaction = event.getAction();
+        if (timeDifference <= 1500){
             final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
-            flag(player, createDetails(interaction, timeDifference, player), settings);
+            flag(player, createDetails(Action.valueOf(action), timeDifference, player), settings);
         }
     }
 
@@ -114,10 +121,10 @@ public final class AutoTotemF extends Check implements Listener {
                 : player.getInventory().getItemInMainHand().getType().toString();
     }
 
-    private Component createDetails(Action interaction, Long timeDifference, Player player) {
+    private Component createDetails(Action action, Long timeDifference, Player player) {
         Component component = Component.text()
                 .append(Component.text("Type: ", NamedTextColor.GRAY))
-                .append(Component.text(interaction.toString(), NamedTextColor.GOLD))
+                .append(Component.text(action.toString(), NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Time Difference: ", NamedTextColor.GRAY))
                 .append(Component.text(timeDifference, NamedTextColor.GOLD))
