@@ -44,7 +44,7 @@ public final class AutoTotemF extends Check implements Listener {
     private final ConcurrentHashMap<UUID, Long> invClick;
 
     public AutoTotemF(TotemGuard plugin) {
-        super(plugin, "AutoTotemF", "Invalid actions with inventory open.");
+        super(plugin, "AutoTotemF", "Invalid interaction with open inventory");
         this.plugin = plugin;
 
         this.invClick = new ConcurrentHashMap<>();
@@ -68,13 +68,11 @@ public final class AutoTotemF extends Check implements Listener {
             return;
         }
 
-        plugin.debug("Inventory close event");
         invClick.remove(player.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        plugin.debug("Due to death, removing player from invClick map.");
         invClick.remove(event.getPlayer().getUniqueId());
     }
 
