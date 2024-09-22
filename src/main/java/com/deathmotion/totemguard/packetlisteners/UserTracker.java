@@ -35,6 +35,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,8 +51,7 @@ public class UserTracker implements PacketListener {
     @Override
     public void onUserLogin(UserLoginEvent event) {
         User user = event.getUser();
-        UUID userUUID = user.getUUID();
-        if (userUUID == null) return;
+        if (user.getUUID() == null) return;
 
         Player player = (Player) event.getPlayer();
 
@@ -59,16 +59,10 @@ public class UserTracker implements PacketListener {
             plugin.getAlertManager().enableAlerts(player);
         }
 
-        // Compute the TotemPlayer based on userUUID, updating or creating as necessary
-        TotemPlayer totemPlayer = totemPlayers.compute(userUUID, (uuid, existing) -> {
-            String clientBrand = existing != null ? existing.clientBrand() : "Unknown";
-            return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, clientBrand);
-        });
-
+        TotemPlayer totemPlayer = createOrUpdateTotemPlayer(user, null);
         announceClientBrand(player.getName(), totemPlayer.clientBrand());
         BadPacketsB.getInstance().check(player, totemPlayer.clientBrand());
     }
-
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
@@ -77,7 +71,6 @@ public class UserTracker implements PacketListener {
         }
 
         WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
-
         String channelName = packet.getChannelName();
         if (!channelName.equalsIgnoreCase("minecraft:brand") && !channelName.equals("MC|Brand")) return;
 
@@ -88,8 +81,9 @@ public class UserTracker implements PacketListener {
         if (brand.isEmpty()) brand = "Unknown";
 
         User user = event.getUser();
-        UUID userUUID = user.getUUID();
-        totemPlayers.put(userUUID, new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, brand));
+
+        // Ensure TotemPlayer is created or updated when receiving the packet
+        createOrUpdateTotemPlayer(user, brand);
     }
 
     @Override
@@ -102,6 +96,17 @@ public class UserTracker implements PacketListener {
         plugin.getAlertManager().removePlayer(userUUID);
         plugin.getCheckManager().resetData(userUUID);
         totemPlayers.remove(userUUID);
+    }
+
+    private TotemPlayer createOrUpdateTotemPlayer(User user, @Nullable String brand) {
+        UUID userUUID = user.getUUID();
+        return totemPlayers.compute(userUUID, (uuid, existing) -> {
+            String clientBrand = (existing != null && existing.clientBrand() != null)
+                    ? existing.clientBrand() // Keep existing brand if it's not null
+                    : (brand != null ? brand : "Unknown"); // Use provided brand or default to "Unknown"
+
+            return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, clientBrand);
+        });
     }
 
     private void announceClientBrand(String username, String brand) {
