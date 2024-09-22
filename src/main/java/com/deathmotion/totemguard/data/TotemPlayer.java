@@ -23,22 +23,21 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
 import java.util.UUID;
 
-public record TotemPlayer(UUID uuid, String username, ClientVersion clientVersion, boolean isBedrockPlayer,
-                          String clientBrand, TotemData totemData) {
-    // Primary constructor
-    public TotemPlayer(UUID uuid, String username, ClientVersion clientVersion, boolean isBedrockPlayer) {
-        this(uuid, username, clientVersion, isBedrockPlayer, null, new TotemData());
-    }
-
-    // Full constructor
-    public TotemPlayer(UUID uuid, String username, ClientVersion clientVersion, boolean isBedrockPlayer, String clientBrand) {
+public record TotemPlayer(
+        UUID uuid,
+        String username,
+        ClientVersion clientVersion,
+        boolean isBedrockPlayer,
+        String clientBrand,
+        TotemData totemData
+) {
+    public TotemPlayer(
+            UUID uuid,
+            String username,
+            ClientVersion clientVersion,
+            boolean isBedrockPlayer,
+            String clientBrand
+    ) {
         this(uuid, username, clientVersion, isBedrockPlayer, clientBrand, new TotemData());
     }
-
-    // Constructor to update client brand
-    public TotemPlayer withClientBrand(String clientBrand) {
-        return new TotemPlayer(this.uuid, this.username, this.clientVersion, this.isBedrockPlayer, clientBrand, this.totemData);
-    }
 }
-
-

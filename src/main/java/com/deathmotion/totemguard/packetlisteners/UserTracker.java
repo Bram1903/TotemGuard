@@ -59,15 +59,10 @@ public class UserTracker implements PacketListener {
             plugin.getAlertManager().enableAlerts(player);
         }
 
-        // Create a new or update the existing TotemPlayer with full details
+        // Compute the TotemPlayer based on userUUID, updating or creating as necessary
         TotemPlayer totemPlayer = totemPlayers.compute(userUUID, (uuid, existing) -> {
-            if (existing == null) {
-                // `onPacketReceive` was never called, create a new TotemPlayer with brand "Unknown"
-                return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, "Unknown");
-            } else {
-                // Update the existing TotemPlayer with remaining fields
-                return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, existing.clientBrand());
-            }
+            String clientBrand = existing != null ? existing.clientBrand() : "Unknown";
+            return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, clientBrand);
         });
 
         announceClientBrand(player.getName(), totemPlayer.clientBrand());
@@ -77,8 +72,7 @@ public class UserTracker implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE
-                && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE) {
+        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             return;
         }
 
@@ -89,15 +83,14 @@ public class UserTracker implements PacketListener {
 
         byte[] data = packet.getData();
         if (data.length == 0 || data.length > 64) return;
+
         String brand = new String(data, 1, data.length - 1).replace(" (Velocity)", "");
         if (brand.isEmpty()) brand = "Unknown";
 
-        UUID userUUID = event.getUser().getUUID();
-        if (userUUID == null) return;
-
-        totemPlayers.put(userUUID, new TotemPlayer(userUUID, null, null, false, brand));
+        User user = event.getUser();
+        UUID userUUID = user.getUUID();
+        totemPlayers.put(userUUID, new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, brand));
     }
-
 
     @Override
     public void onUserDisconnect(UserDisconnectEvent event) {
