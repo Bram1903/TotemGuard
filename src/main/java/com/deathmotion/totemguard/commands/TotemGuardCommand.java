@@ -54,7 +54,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
 
         versionComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()).decorate(TextDecoration.BOLD))
-                .append(Component.text(" Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
+                .append(Component.text("Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
                 .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
                 .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
@@ -110,9 +110,8 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     }
 
     private boolean hasAnyPermission(CommandSender sender) {
-        return subCommands.keySet().stream().anyMatch(command -> hasPermissionForSubCommand(sender, command));
+        return subCommands.keySet().stream().anyMatch(command -> !command.equals("info") && hasPermissionForSubCommand(sender, command));
     }
-
     private boolean hasPermissionForSubCommand(CommandSender sender, String subCommand) {
         return switch (subCommand) {
             case "info" -> true;
