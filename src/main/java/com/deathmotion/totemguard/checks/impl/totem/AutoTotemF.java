@@ -44,7 +44,7 @@ public final class AutoTotemF extends Check implements Listener {
     private final ConcurrentHashMap<UUID, Long> invClick;
 
     public AutoTotemF(TotemGuard plugin) {
-        super(plugin, "AutoTotemF", "Invalid interaction with open inventory");
+        super(plugin, "AutoTotemF", "Invalid interaction with open inventory", true);
         this.plugin = plugin;
 
         this.invClick = new ConcurrentHashMap<>();
@@ -87,9 +87,9 @@ public final class AutoTotemF extends Check implements Listener {
         long timeDifference = Math.abs(System.currentTimeMillis() - storedTime);
         invClick.remove(playerId);
 
-        plugin.debug("Time difference: " + timeDifference + "ms");
+        plugin.debug("Time difference: " + timeDifference + "ms (" + player.getName() + ")");
 
-        if (timeDifference <= 1000) {
+        if (timeDifference <= 1500) {
             Action interaction = event.getAction();
             final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
             flag(player, createDetails(interaction, timeDifference, player), settings);
@@ -121,7 +121,7 @@ public final class AutoTotemF extends Check implements Listener {
                 .append(Component.newline())
                 .append(Component.text("Time Difference: ", NamedTextColor.GRAY))
                 .append(Component.text(timeDifference, NamedTextColor.GOLD))
-                .append(Component.text("ms", NamedTextColor.GRAY))
+                .append(Component.text("ms", NamedTextColor.GOLD))
                 .append(Component.newline())
                 .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
                 .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
