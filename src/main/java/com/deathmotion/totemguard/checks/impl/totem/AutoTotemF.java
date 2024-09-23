@@ -86,6 +86,7 @@ public final class AutoTotemF extends Check implements Listener {
         long storedTime = invClick.get(playerId);
         invClick.remove(playerId);
         Action action = event.getAction();
+        if (action == Action.PHYSICAL) return;
 
         checkSuspiciousActivity(player, storedTime, String.valueOf(action));
     }
