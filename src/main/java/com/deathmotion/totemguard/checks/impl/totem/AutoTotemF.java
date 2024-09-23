@@ -98,8 +98,8 @@ public final class AutoTotemF extends Check implements Listener {
 
         plugin.debug("Time difference: " + timeDifference + "ms (" + player.getName() + ")");
 
-        if (timeDifference <= 1500) {
-            final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
+        final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
+        if (timeDifference <= settings.getTimeDifference()) {
             flag(player, createDetails(action, timeDifference, player), settings);
         }
     }

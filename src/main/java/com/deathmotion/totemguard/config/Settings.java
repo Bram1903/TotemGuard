@@ -309,6 +309,9 @@ public final class Settings {
         @Configuration
         @Getter
         public static class AutoTotemF extends CheckSettings {
+            @Comment("\nTime Difference: The time difference between closing the inventory and the last click.")
+            private int timeDifference = 1500;
+
             public AutoTotemF() {
                 super(false, 5);
             }
