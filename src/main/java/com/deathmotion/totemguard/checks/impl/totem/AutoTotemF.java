@@ -34,7 +34,9 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,6 +57,8 @@ public final class AutoTotemF extends Check implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
+        Inventory inventory = event.getClickedInventory();
+        if (inventory == null || inventory.getType() != InventoryType.PLAYER) return;
         if (!ValidClickTypes.isClickTypeValid((event.getClick()))) return;
 
         plugin.debug("Click Type: " + event.getClick() + " (" + player.getName() + ")");

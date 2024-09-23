@@ -71,13 +71,17 @@ public class UserTracker implements PacketListener {
         }
 
         WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
+
         String channelName = packet.getChannelName();
         if (!channelName.equalsIgnoreCase("minecraft:brand") && !channelName.equals("MC|Brand")) return;
 
         byte[] data = packet.getData();
-        if (data.length == 0 || data.length > 64) return;
+        if (data.length > 64 || data.length == 0) return;
 
-        String brand = new String(data, 1, data.length - 1).replace(" (Velocity)", "");
+        byte[] minusLength = new byte[data.length - 1];
+        System.arraycopy(data, 1, minusLength, 0, minusLength.length);
+        String brand = new String(minusLength).replace(" (Velocity)", "");
+
         if (brand.isEmpty()) brand = "Unknown";
 
         // Ensure TotemPlayer is created or updated when receiving the packet
