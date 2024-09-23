@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.data;
+package com.deathmotion.totemguard.models;
 
 import lombok.Getter;
 import lombok.Setter;

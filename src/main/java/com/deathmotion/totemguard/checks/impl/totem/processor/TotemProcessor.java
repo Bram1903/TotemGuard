@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.checks.impl.totem.processor;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.TotemEventListener;
-import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;

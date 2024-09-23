@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.util.messages;
 
-import com.deathmotion.totemguard.data.CheckDetails;
-import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.models.CheckDetails;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.PlaceholderUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;

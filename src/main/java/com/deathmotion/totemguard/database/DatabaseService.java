@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.database;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.data.CheckDetails;
-import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.models.CheckDetails;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.database.entities.BaseDomain;
 import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;

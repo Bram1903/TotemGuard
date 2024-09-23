@@ -20,8 +20,8 @@ package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
-import com.deathmotion.totemguard.data.CheckDetails;
-import com.deathmotion.totemguard.data.TotemPlayer;
+import com.deathmotion.totemguard.models.CheckDetails;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;

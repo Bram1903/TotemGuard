@@ -16,28 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.data;
+package com.deathmotion.totemguard.models;
 
-import com.deathmotion.totemguard.util.datastructure.TotemData;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import org.bukkit.event.inventory.ClickType;
 
-import java.util.UUID;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 
-public record TotemPlayer(
-        UUID uuid,
-        String username,
-        ClientVersion clientVersion,
-        boolean isBedrockPlayer,
-        String clientBrand,
-        TotemData totemData
-) {
-    public TotemPlayer(
-            UUID uuid,
-            String username,
-            ClientVersion clientVersion,
-            boolean isBedrockPlayer,
-            String clientBrand
-    ) {
-        this(uuid, username, clientVersion, isBedrockPlayer, clientBrand, new TotemData());
+public final class ValidClickTypes {
+
+    private static final Set<ClickType> VALID_CLICK_TYPES = Collections.unmodifiableSet(EnumSet.of(
+            ClickType.LEFT,
+            ClickType.RIGHT,
+            ClickType.DOUBLE_CLICK,
+            ClickType.SWAP_OFFHAND,
+            ClickType.NUMBER_KEY
+    ));
+
+    public static boolean isClickTypeValid(ClickType clickType) {
+        return VALID_CLICK_TYPES.contains(clickType);
     }
 }

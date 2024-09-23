@@ -16,11 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.checks;
+package com.deathmotion.totemguard.models;
 
-import com.deathmotion.totemguard.models.TotemPlayer;
-import org.bukkit.entity.Player;
+import com.deathmotion.totemguard.util.datastructure.TotemData;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
-public interface TotemEventListener {
-    void onTotemEvent(Player player, TotemPlayer totemPlayer);
+import java.util.UUID;
+
+public record TotemPlayer(
+        UUID uuid,
+        String username,
+        ClientVersion clientVersion,
+        boolean isBedrockPlayer,
+        String clientBrand,
+        TotemData totemData
+) {
+    public TotemPlayer(
+            UUID uuid,
+            String username,
+            ClientVersion clientVersion,
+            boolean isBedrockPlayer,
+            String clientBrand
+    ) {
+        this(uuid, username, clientVersion, isBedrockPlayer, clientBrand, new TotemData());
+    }
 }

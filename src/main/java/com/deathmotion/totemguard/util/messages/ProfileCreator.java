@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.util.messages;
 
-import com.deathmotion.totemguard.data.SafetyStatus;
+import com.deathmotion.totemguard.models.SafetyStatus;
 import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;

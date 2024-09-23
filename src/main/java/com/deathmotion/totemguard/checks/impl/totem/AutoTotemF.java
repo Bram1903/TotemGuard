@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.models.ValidClickTypes;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -31,12 +32,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -56,16 +55,7 @@ public final class AutoTotemF extends Check implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        EnumSet<ClickType> validClickTypes = EnumSet.of(
-                ClickType.LEFT,
-                ClickType.RIGHT,
-                ClickType.DOUBLE_CLICK,
-                ClickType.SWAP_OFFHAND,
-                ClickType.NUMBER_KEY
-        );
-
-        if (!validClickTypes.contains(event.getClick())) return;
+        if (!ValidClickTypes.isClickTypeValid((event.getClick()))) return;
 
         plugin.debug("Click Type: " + event.getClick() + " (" + player.getName() + ")");
 
@@ -100,17 +90,17 @@ public final class AutoTotemF extends Check implements Listener {
         Action action = event.getAction();
         if (action == Action.PHYSICAL) return;
 
-        checkSuspiciousActivity(player, storedTime, String.valueOf(action));
+        checkSuspiciousActivity(player, storedTime, action);
     }
 
-    private void checkSuspiciousActivity(Player player, long storedTime, String action){
+    private void checkSuspiciousActivity(Player player, long storedTime, Action action) {
         long timeDifference = Math.abs(System.currentTimeMillis() - storedTime);
 
         plugin.debug("Time difference: " + timeDifference + "ms (" + player.getName() + ")");
 
-        if (timeDifference <= 1500){
+        if (timeDifference <= 1500) {
             final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
-            flag(player, createDetails(Action.valueOf(action), timeDifference, player), settings);
+            flag(player, createDetails(action, timeDifference, player), settings);
         }
     }
 
