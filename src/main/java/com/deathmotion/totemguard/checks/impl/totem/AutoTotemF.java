@@ -31,10 +31,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
+import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -53,9 +55,19 @@ public final class AutoTotemF extends Check implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        EnumSet<ClickType> validClickTypes = EnumSet.of(
+                ClickType.LEFT,
+                ClickType.RIGHT,
+                ClickType.DOUBLE_CLICK,
+                ClickType.SWAP_OFFHAND,
+                ClickType.NUMBER_KEY
+        );
+
+        if (!validClickTypes.contains(event.getClick())) return;
+
+        plugin.debug("Click Type: " + event.getClick() + " (" + player.getName() + ")");
 
         if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
             invClick.put(player.getUniqueId(), System.currentTimeMillis());
