@@ -37,7 +37,7 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 
 ## Showcase
 
-[![Demo](docs/showcase/showcase.png)](docs/showcase/TotemGuardShowcase.mp4)
+![Demo](docs/showcase/showcase.png)
 
 ## Supported Platforms & Versions
 
