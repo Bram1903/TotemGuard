@@ -117,7 +117,7 @@ public final class AutoTotemF extends Check implements Listener {
     @Override
     public void resetData(UUID uuid) {
         super.resetData(uuid);
-        invClick.clear();
+        invClick.remove(uuid);
     }
 
     private String getMainHandItemString(Player player) {
