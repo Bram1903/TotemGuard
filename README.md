@@ -54,6 +54,7 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 - **AutoTotemC** - Impossible consistency difference
 - **AutoTotemD** - Suspicious re-totem packet sequence
 - **AutoTotemE** - Impossible low outliers
+- **AutoTotemF** - Invalid interactions during inventory close
 
 ### BadPackets
 

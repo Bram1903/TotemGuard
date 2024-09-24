@@ -47,7 +47,7 @@ public final class AutoTotemF extends Check implements Listener {
     private final ConcurrentHashMap<UUID, Long> invClick;
 
     public AutoTotemF(TotemGuard plugin) {
-        super(plugin, "AutoTotemF", "Invalid interaction with open inventory", true);
+        super(plugin, "AutoTotemF", "Invalid interaction", true);
         this.plugin = plugin;
 
         this.invClick = new ConcurrentHashMap<>();
