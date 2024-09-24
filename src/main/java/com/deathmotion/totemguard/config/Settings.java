@@ -171,7 +171,7 @@ public final class Settings {
         private double minTps = 15.0;
 
         @Comment("\nMaximum Ping.")
-        private int maxPing = 500;
+        private int maxPing = 400;
     }
 
     @Configuration
@@ -257,7 +257,7 @@ public final class Settings {
             private int consecutiveLowSDCount = 3;
 
             public AutoTotemB() {
-                super(false, 5);
+                super(true, 6);
             }
         }
 
@@ -302,7 +302,7 @@ public final class Settings {
             private double averageStDeviationThreshold = 10.0;
 
             public AutoTotemE() {
-                super(false, 5);
+                super(true, 4);
             }
         }
 
@@ -321,7 +321,7 @@ public final class Settings {
         @Getter
         public static class BadPacketsA extends CheckSettings {
             public BadPacketsA() {
-                super(true, 60, 1);
+                super(true, 30, 1);
             }
         }
 
@@ -334,7 +334,7 @@ public final class Settings {
             );
 
             public BadPacketsB() {
-                super(true, 60, 1);
+                super(true, 30, 1);
             }
         }
 
