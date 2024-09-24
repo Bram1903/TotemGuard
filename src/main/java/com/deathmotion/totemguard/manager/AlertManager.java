@@ -59,10 +59,10 @@ public class AlertManager {
         UUID playerId = player.getUniqueId();
         if (enabledAlerts.containsKey(playerId)) {
             enabledAlerts.remove(playerId);
-            sendAlertStatusMessage(player, "Alerts disabled!", NamedTextColor.RED);
+            sendAlertStatusMessage(player, "Alerts disabled", NamedTextColor.RED);
         } else {
             enabledAlerts.put(playerId, player);
-            sendAlertStatusMessage(player, "Alerts enabled!", NamedTextColor.GREEN);
+            sendAlertStatusMessage(player, "Alerts enabled", NamedTextColor.GREEN);
         }
     }
 
