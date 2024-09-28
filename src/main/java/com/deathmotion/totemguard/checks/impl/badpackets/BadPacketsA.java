@@ -27,7 +27,6 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
@@ -57,7 +56,7 @@ public final class BadPacketsA extends Check implements PacketListener {
                     .append(Component.text(channel, NamedTextColor.GOLD))
                     .build();
 
-            flag((Player) event.getPlayer(), checkDetails, settings);
+            flag(event.getPlayer(), checkDetails, settings);
         }
     }
 

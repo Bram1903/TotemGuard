@@ -19,7 +19,8 @@
 package com.deathmotion.totemguard.database.entities.impl;
 
 import com.deathmotion.totemguard.database.entities.BaseDomain;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
