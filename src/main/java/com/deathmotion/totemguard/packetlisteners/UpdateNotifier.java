@@ -54,7 +54,7 @@ public class UpdateNotifier extends PacketListenerAbstract {
 
     @Override
     public void onUserLogin(UserLoginEvent event) {
-        Player player = (Player) event.getPlayer();
+        Player player = event.getPlayer();
 
         FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
             if (player.hasPermission("TotemGuard.Update")) {

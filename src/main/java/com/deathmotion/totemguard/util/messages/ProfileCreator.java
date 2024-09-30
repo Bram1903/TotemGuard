@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.util.messages;
 
-import com.deathmotion.totemguard.models.SafetyStatus;
 import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
+import com.deathmotion.totemguard.models.SafetyStatus;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.HoverEvent;

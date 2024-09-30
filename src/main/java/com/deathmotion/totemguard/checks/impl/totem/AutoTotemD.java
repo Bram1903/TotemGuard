@@ -70,7 +70,7 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
     public void onPacketReceive(PacketReceiveEvent event) {
         // Handle Digging Packet
         if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
-            Player player = (Player) event.getPlayer();
+            Player player = event.getPlayer();
             // Check if a totem has recently been used
             if (!totemUsage.containsKey(player.getUniqueId())) return;
 
@@ -82,7 +82,7 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
 
         // Handle Pick Item Packet
         if (event.getPacketType() == PacketType.Play.Client.PICK_ITEM) {
-            handlePickItemPacket((Player) event.getPlayer(), System.currentTimeMillis());
+            handlePickItemPacket(event.getPlayer(), System.currentTimeMillis());
         }
     }
 

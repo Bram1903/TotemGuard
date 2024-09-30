@@ -53,7 +53,7 @@ public class UserTracker implements PacketListener {
         User user = event.getUser();
         if (user.getUUID() == null) return;
 
-        Player player = (Player) event.getPlayer();
+        Player player = event.getPlayer();
 
         if (player.hasPermission("TotemGuard.Alerts")) {
             plugin.getAlertManager().enableAlerts(player);

@@ -112,6 +112,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     private boolean hasAnyPermission(CommandSender sender) {
         return subCommands.keySet().stream().anyMatch(command -> !command.equals("info") && hasPermissionForSubCommand(sender, command));
     }
+
     private boolean hasPermissionForSubCommand(CommandSender sender, String subCommand) {
         return switch (subCommand) {
             case "info" -> true;
