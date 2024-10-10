@@ -66,8 +66,8 @@ public class TrackCommand implements SubCommand {
             return false;
         }
 
-        if (args.length != 2 && trackerManager.IsTrackingPlayer(player)) {
-            trackerManager.UntrackPlayer(player);
+        if (args.length != 2 && trackerManager.isTracking(player)) {
+            trackerManager.stopTracking(player);
             return true;
         } else if (args.length != 2) {
             sender.sendMessage(usageComponent);
@@ -80,7 +80,7 @@ public class TrackCommand implements SubCommand {
             return false;
         }
 
-        trackerManager.TrackPlayer(target, player);
+        trackerManager.startTracking(player, target);
         return true;
     }
 
