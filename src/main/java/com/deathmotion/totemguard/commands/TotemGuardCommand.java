@@ -46,7 +46,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     public TotemGuardCommand(TotemGuard plugin) {
         subCommands.put("info", new InfoCommand(plugin));
         subCommands.put("alerts", new AlertsCommand(plugin));
-        subCommands.put("reload", new ReloadCommand(plugin.getConfigManager()));
+        subCommands.put("reload", new ReloadCommand(plugin));
         subCommands.put("profile", new ProfileCommand(plugin));
         subCommands.put("stats", new StatsCommand(plugin));
         subCommands.put("clearlogs", new ClearLogsCommand(plugin));
