@@ -147,6 +147,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                 "stats", "View plugin statistics.",
                 "clearlogs", "Clear player logs.",
                 "track", "Tracks a player.",
+                "untrack", "Stops tracking a player.",
                 "database", "Database management commands."
         );
 

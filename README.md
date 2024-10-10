@@ -86,7 +86,7 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 - `/totemguard profile` - Display the player's profile.
 - `/totemguard stats` - Show plugin statistics.
 - `/totemguard clearlogs` - Clear the logs.
-- `/totemguard track <player>` - Tracks the player.
+- `/totemguard track/untrack <player>` - Tracks the player.
 - `/totemguard database trim` - Trim the database.
 - `/totemguard database clear` - Clear the database.
 - `/totemcheck <player>` - Check the player for AutoTotem.
