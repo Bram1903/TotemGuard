@@ -1,3 +1,21 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2024 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
@@ -10,6 +28,7 @@ import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
@@ -42,6 +61,10 @@ public class TrackerManager implements TotemEventListener {
         }, 0L, 20L); // Run every second (20 ticks)
     }
 
+    private Component getPrefix() {
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix());
+    }
+
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         long latestInterval = totemPlayer.totemData().getLatestIntervals(1).get(0);
@@ -66,7 +89,7 @@ public class TrackerManager implements TotemEventListener {
         // Map viewer to tracker
         viewerToTracker.put(viewer, tracker);
 
-        viewer.sendMessage(Component.text("You are now tracking " + target.getName() + ".", NamedTextColor.GREEN));
+        viewer.sendMessage(getPrefix().append(Component.text("You are now tracking " + target.getName() + ".", NamedTextColor.GREEN)));
 
         // Send the action bar message immediately
         sendActionBarToViewer(viewer, tracker);
@@ -81,7 +104,7 @@ public class TrackerManager implements TotemEventListener {
                 targetTrackers.remove(tracker.getTarget());
             }
 
-            viewer.sendMessage(Component.text("You are no longer tracking " + tracker.getTarget().getName() + ".", NamedTextColor.YELLOW));
+            viewer.sendMessage(getPrefix().append(Component.text("You are no longer tracking " + tracker.getTarget().getName() + ".", NamedTextColor.YELLOW)));
             viewer.sendActionBar(Component.empty());
         }
     }
@@ -114,7 +137,7 @@ public class TrackerManager implements TotemEventListener {
         if (targetToRemove != null) {
             TargetTracker tracker = targetTrackers.remove(targetToRemove);
             String playerName = targetToRemove.getName();
-            Component message = Component.text(playerName + " has disconnected.", NamedTextColor.RED);
+            Component message = getPrefix().append(Component.text(playerName + " has disconnected.", NamedTextColor.RED));
 
             for (Player viewer : tracker.getViewers()) {
                 viewerToTracker.remove(viewer);
@@ -167,7 +190,7 @@ public class TrackerManager implements TotemEventListener {
         for (Player viewer : tracker.getViewers()) {
             viewerToTracker.remove(viewer);
             if (viewer.isOnline()) {
-                viewer.sendMessage(Component.text("Stopped tracking offline player.", NamedTextColor.YELLOW));
+                viewer.sendMessage(getPrefix().append(Component.text("Stopped tracking offline player.", NamedTextColor.YELLOW)));
                 viewer.sendActionBar(Component.empty());
             }
         }
@@ -180,10 +203,10 @@ public class TrackerManager implements TotemEventListener {
                 .append(Component.text("Tracking: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(target.getName(), NamedTextColor.GOLD))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("Totem Speed: ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                .append(Component.text("Speed: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(data.latestInterval() + "ms", NamedTextColor.GOLD))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("Last Update: ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                .append(Component.text("Updated: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(timeAgo, NamedTextColor.GOLD))
                 .build();
     }
