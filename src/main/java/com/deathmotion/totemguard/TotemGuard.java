@@ -53,6 +53,7 @@ public final class TotemGuard extends JavaPlugin {
     private DiscordManager discordManager;
     private PunishmentManager punishmentManager;
     private CheckManager checkManager;
+    private TrackerManager trackerManager;
 
     @Override
     public void onEnable() {
@@ -75,6 +76,7 @@ public final class TotemGuard extends JavaPlugin {
         discordManager = new DiscordManager(this);
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
+        trackerManager = new TrackerManager(this);
 
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
 

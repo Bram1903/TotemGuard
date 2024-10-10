@@ -67,6 +67,9 @@ permissions:
   TotemGuard.ClearLogs:
     description: Allows the player to clear the logs of a player.
     default: op
+  TotemGuard.Track:
+    description: Allows the player to track a player.
+    default: op
   TotemGuard.Bypass:
     description: Allows the player to bypass the checks.
     default: op

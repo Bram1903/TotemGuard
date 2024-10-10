@@ -51,6 +51,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         subCommands.put("stats", new StatsCommand(plugin));
         subCommands.put("clearlogs", new ClearLogsCommand(plugin));
         subCommands.put("database", new DatabaseCommand(plugin));
+        subCommands.put("track", new TrackCommand(plugin));
 
         versionComponent = Component.text()
                 .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()).decorate(TextDecoration.BOLD))
@@ -121,6 +122,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
             case "profile" -> sender.hasPermission("TotemGuard.Profile");
             case "stats" -> sender.hasPermission("TotemGuard.Stats");
             case "clearlogs" -> sender.hasPermission("TotemGuard.ClearLogs");
+            case "track" -> sender.hasPermission("TotemGuard.Track");
             case "database" -> hasAnyDatabasePermissions(sender);
             default -> false;
         };
@@ -143,6 +145,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                 "profile", "View player profiles.",
                 "stats", "View plugin statistics.",
                 "clearlogs", "Clear player logs.",
+                "track", "Tracks a player.",
                 "database", "Database management commands."
         );
 
