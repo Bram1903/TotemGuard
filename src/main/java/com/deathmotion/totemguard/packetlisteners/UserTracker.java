@@ -29,6 +29,7 @@ import com.github.retrooper.packetevents.event.UserLoginEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -95,10 +96,12 @@ public class UserTracker implements PacketListener {
 
         plugin.debug("Removing data for: " + userUUID);
 
-        plugin.getAlertManager().removePlayer(userUUID);
-        plugin.getCheckManager().resetData(userUUID);
-        plugin.getTrackerManager().handlePlayerDisconnect(userUUID);
-        totemPlayers.remove(userUUID);
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o -> {
+            plugin.getAlertManager().removePlayer(userUUID);
+            plugin.getCheckManager().resetData(userUUID);
+            plugin.getTrackerManager().handlePlayerDisconnect(userUUID);
+            totemPlayers.remove(userUUID);
+        }));
     }
 
     private TotemPlayer createOrUpdateTotemPlayer(User user, @Nullable String brand) {

@@ -1,21 +1,3 @@
-/*
- * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- * Copyright (C) 2024 Bram and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
@@ -23,10 +5,11 @@ import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import lombok.Getter;
+import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
@@ -39,12 +22,10 @@ public class TrackerManager implements TotemEventListener {
 
     private final TotemGuard plugin;
 
-    // Map of viewer UUIDs to their tracked target UUIDs
-    private final ConcurrentHashMap<UUID, UUID> viewerToTargetMap = new ConcurrentHashMap<>();
-    // Map of target UUIDs to the set of viewer UUIDs tracking them
-    private final ConcurrentHashMap<UUID, Set<UUID>> targetToViewersMap = new ConcurrentHashMap<>();
-    // Map of target UUIDs to their latest data
-    private final ConcurrentHashMap<UUID, TotemData> latestDataMap = new ConcurrentHashMap<>();
+    // Map of target players to their tracking information
+    private final ConcurrentHashMap<Player, TargetTracker> targetTrackers = new ConcurrentHashMap<>();
+    // Map of viewer players to the TargetTracker they are viewing
+    private final ConcurrentHashMap<Player, TargetTracker> viewerToTracker = new ConcurrentHashMap<>();
 
     public TrackerManager(TotemGuard plugin) {
         this.plugin = plugin;
@@ -55,8 +36,8 @@ public class TrackerManager implements TotemEventListener {
 
     private void startScheduler() {
         FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, task -> {
-            for (UUID targetUUID : targetToViewersMap.keySet()) {
-                sendActionBarToViewers(targetUUID);
+            for (TargetTracker tracker : targetTrackers.values()) {
+                sendActionBarToViewers(tracker);
             }
         }, 0L, 20L); // Run every second (20 ticks)
     }
@@ -65,118 +46,115 @@ public class TrackerManager implements TotemEventListener {
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
         long latestInterval = totemPlayer.totemData().getLatestIntervals(1).get(0);
 
-        // Update the latest data for this target player
-        latestDataMap.put(player.getUniqueId(), new TotemData(latestInterval, Instant.now()));
-
-        // Send updated action bar messages to viewers immediately
-        sendActionBarToViewers(player.getUniqueId());
+        TargetTracker tracker = targetTrackers.get(player);
+        if (tracker != null) {
+            tracker.setLatestData(new TotemData(latestInterval, Instant.now()));
+            sendActionBarToViewers(tracker);
+        }
     }
 
     public void startTracking(Player viewer, Player target) {
-        UUID viewerUUID = viewer.getUniqueId();
-        UUID targetUUID = target.getUniqueId();
+        // Stop tracking current target if any
+        stopTracking(viewer);
 
-        // Ensure the viewer is only tracking one target
-        stopTracking(viewerUUID);
+        // Get or create TargetTracker for target
+        TargetTracker tracker = targetTrackers.computeIfAbsent(target, TargetTracker::new);
 
-        // Add the viewer to the set of viewers for the target
-        viewerToTargetMap.put(viewerUUID, targetUUID);
-        targetToViewersMap.computeIfAbsent(targetUUID, k -> ConcurrentHashMap.newKeySet()).add(viewerUUID);
+        // Add viewer to tracker's viewers
+        tracker.addViewer(viewer);
+
+        // Map viewer to tracker
+        viewerToTracker.put(viewer, tracker);
 
         viewer.sendMessage(Component.text("You are now tracking " + target.getName() + ".", NamedTextColor.GREEN));
 
         // Send the action bar message immediately
-        sendActionBarToViewer(viewer, targetUUID);
+        sendActionBarToViewer(viewer, tracker);
     }
 
     public void stopTracking(Player viewer) {
-        stopTracking(viewer.getUniqueId());
-    }
+        TargetTracker tracker = viewerToTracker.remove(viewer);
+        if (tracker != null) {
+            tracker.removeViewer(viewer);
 
-    private void stopTracking(UUID viewerUUID) {
-        UUID targetUUID = viewerToTargetMap.remove(viewerUUID);
-        if (targetUUID != null) {
-            Set<UUID> viewers = targetToViewersMap.get(targetUUID);
-            if (viewers != null) {
-                viewers.remove(viewerUUID);
-                if (viewers.isEmpty()) {
-                    targetToViewersMap.remove(targetUUID);
-                    latestDataMap.remove(targetUUID); // Optionally remove data if no one is tracking
-                }
+            if (tracker.getViewers().isEmpty()) {
+                targetTrackers.remove(tracker.getTarget());
             }
-            Player viewer = Bukkit.getPlayer(viewerUUID);
-            if (viewer != null && viewer.isOnline()) {
-                Player target = Bukkit.getPlayer(targetUUID);
-                String targetName = (target != null) ? target.getName() : "player";
-                viewer.sendMessage(Component.text("You are no longer tracking " + targetName + ".", NamedTextColor.YELLOW));
 
-                // Clear the action bar message immediately
-                viewer.sendActionBar(Component.empty());
-            }
+            viewer.sendMessage(Component.text("You are no longer tracking " + tracker.getTarget().getName() + ".", NamedTextColor.YELLOW));
+            viewer.sendActionBar(Component.empty());
         }
     }
 
     public boolean isTracking(Player viewer) {
-        return viewerToTargetMap.containsKey(viewer.getUniqueId());
+        return viewerToTracker.containsKey(viewer);
     }
 
     public void handlePlayerDisconnect(UUID playerUUID) {
-        // Stop tracking if the disconnected player was a viewer
-        stopTracking(playerUUID);
+        // Remove viewer from viewerToTracker
+        Player viewerToRemove = null;
+        for (Player viewer : viewerToTracker.keySet()) {
+            if (viewer.getUniqueId().equals(playerUUID)) {
+                viewerToRemove = viewer;
+                break;
+            }
+        }
+        if (viewerToRemove != null) {
+            stopTracking(viewerToRemove);
+        }
 
-        // Remove and notify viewers if the disconnected player was a target
-        Set<UUID> viewerUUIDs = targetToViewersMap.remove(playerUUID);
-        if (viewerUUIDs != null) {
-            String playerName = Bukkit.getOfflinePlayer(playerUUID).getName();
+        // Remove target from targetTrackers
+        Player targetToRemove = null;
+        for (Player target : targetTrackers.keySet()) {
+            if (target.getUniqueId().equals(playerUUID)) {
+                targetToRemove = target;
+                break;
+            }
+        }
+        if (targetToRemove != null) {
+            TargetTracker tracker = targetTrackers.remove(targetToRemove);
+            String playerName = targetToRemove.getName();
             Component message = Component.text(playerName + " has disconnected.", NamedTextColor.RED);
 
-            for (UUID viewerUUID : viewerUUIDs) {
-                viewerToTargetMap.remove(viewerUUID);
-                Player viewer = Bukkit.getPlayer(viewerUUID);
-                if (viewer != null && viewer.isOnline()) {
+            for (Player viewer : tracker.getViewers()) {
+                viewerToTracker.remove(viewer);
+                if (viewer.isOnline()) {
                     viewer.sendMessage(message);
-
-                    // Clear the action bar message immediately
                     viewer.sendActionBar(Component.empty());
                 }
             }
-            latestDataMap.remove(playerUUID);
         }
     }
 
-    private void sendActionBarToViewers(UUID targetUUID) {
-        Player target = Bukkit.getPlayer(targetUUID);
-        if (target == null) {
-            // Target is offline, remove from tracking
-            removeTarget(targetUUID);
+    private void sendActionBarToViewers(TargetTracker tracker) {
+        TotemData data = tracker.getLatestData();
+        Player target = tracker.getTarget();
+
+        if (target == null || !target.isOnline()) {
+            removeTargetTracker(tracker);
             return;
         }
 
-        TotemData data = latestDataMap.get(targetUUID);
         Component message = (data != null)
                 ? createTrackingMessage(target, data)
                 : Component.text("No data available yet.", NamedTextColor.YELLOW);
 
-        Set<UUID> viewerUUIDs = targetToViewersMap.get(targetUUID);
-        if (viewerUUIDs != null) {
-            for (UUID viewerUUID : viewerUUIDs) {
-                Player viewer = Bukkit.getPlayer(viewerUUID);
-                if (viewer != null && viewer.isOnline()) {
-                    viewer.sendActionBar(message);
-                } else {
-                    stopTracking(viewerUUID);
-                }
+        for (Player viewer : tracker.getViewers()) {
+            if (viewer != null && viewer.isOnline()) {
+                viewer.sendActionBar(message);
+            } else {
+                stopTracking(viewer);
             }
         }
     }
 
-    private void sendActionBarToViewer(Player viewer, UUID targetUUID) {
-        Player target = Bukkit.getPlayer(targetUUID);
+    private void sendActionBarToViewer(Player viewer, TargetTracker tracker) {
+        Player target = tracker.getTarget();
         if (target == null || !viewer.isOnline()) {
             return;
         }
 
-        TotemData data = latestDataMap.get(targetUUID);
+        TotemData data = tracker.getLatestData();
         Component message = (data != null)
                 ? createTrackingMessage(target, data)
                 : Component.text("No data available yet.", NamedTextColor.YELLOW);
@@ -184,33 +162,26 @@ public class TrackerManager implements TotemEventListener {
         viewer.sendActionBar(message);
     }
 
-    private void removeTarget(UUID targetUUID) {
-        // Remove target from tracking when they go offline
-        Set<UUID> viewerUUIDs = targetToViewersMap.remove(targetUUID);
-        if (viewerUUIDs != null) {
-            for (UUID viewerUUID : viewerUUIDs) {
-                viewerToTargetMap.remove(viewerUUID);
-                Player viewer = Bukkit.getPlayer(viewerUUID);
-                if (viewer != null && viewer.isOnline()) {
-                    viewer.sendMessage(Component.text("Stopped tracking offline player.", NamedTextColor.YELLOW));
-
-                    // Clear the action bar message immediately
-                    viewer.sendActionBar(Component.empty());
-                }
+    private void removeTargetTracker(TargetTracker tracker) {
+        targetTrackers.remove(tracker.getTarget());
+        for (Player viewer : tracker.getViewers()) {
+            viewerToTracker.remove(viewer);
+            if (viewer.isOnline()) {
+                viewer.sendMessage(Component.text("Stopped tracking offline player.", NamedTextColor.YELLOW));
+                viewer.sendActionBar(Component.empty());
             }
-            latestDataMap.remove(targetUUID);
         }
     }
 
     private Component createTrackingMessage(Player target, TotemData data) {
-        String timeAgo = formatTimeAgo(data.lastUpdated);
+        String timeAgo = formatTimeAgo(data.lastUpdated());
 
         return Component.text()
                 .append(Component.text("Tracking: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(target.getName(), NamedTextColor.GOLD))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
                 .append(Component.text("Totem Speed: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(data.latestInterval + "ms", NamedTextColor.GOLD))
+                .append(Component.text(data.latestInterval() + "ms", NamedTextColor.GOLD))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
                 .append(Component.text("Last Update: ", NamedTextColor.GRAY, TextDecoration.BOLD))
                 .append(Component.text(timeAgo, NamedTextColor.GOLD))
@@ -230,5 +201,26 @@ public class TrackerManager implements TotemEventListener {
     }
 
     private record TotemData(long latestInterval, Instant lastUpdated) {
+    }
+
+    @Getter
+    @Setter
+    private static class TargetTracker {
+        private final Player target;
+        private final Set<Player> viewers = ConcurrentHashMap.newKeySet();
+        private TotemData latestData;
+
+        public TargetTracker(Player target) {
+            this.target = target;
+        }
+
+        public void addViewer(Player viewer) {
+            viewers.add(viewer);
+        }
+
+        public void removeViewer(Player viewer) {
+            viewers.remove(viewer);
+        }
+
     }
 }
