@@ -28,13 +28,24 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.command.CommandSender;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class DatabaseCommand implements SubCommand {
-    private final Map<String, SubCommand> subCommands = new HashMap<>();
+    private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
+
+    // Immutable map for command descriptions
+    private static final Map<String, String> COMMAND_DESCRIPTIONS;
+
+    static {
+        Map<String, String> tempMap = new LinkedHashMap<>();
+        tempMap.put("trim", "Clears all logs that are older than 30 days.");
+        tempMap.put("clear", "Clears all logs from the database.");
+        COMMAND_DESCRIPTIONS = Collections.unmodifiableMap(tempMap);
+    }
 
     public DatabaseCommand(TotemGuard plugin) {
         subCommands.put("trim", new TrimCommand(plugin));
@@ -92,19 +103,13 @@ public class DatabaseCommand implements SubCommand {
                 .append(Component.newline())
                 .append(Component.newline());
 
-        // Command descriptions
-        Map<String, String> commandDescriptions = Map.of(
-                "trim", "Clears all logs that are older than 30 days.",
-                "clear", "Clears all logs from the database."
-        );
-
         // Add each command to the message if the sender has permission
-        for (String command : subCommands.keySet()) {
+        for (String command : COMMAND_DESCRIPTIONS.keySet()) {
             if (hasPermissionForSubCommand(sender, command)) {
                 componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
                         .append(Component.text("/totemguard database " + command, NamedTextColor.GOLD, TextDecoration.BOLD))
                         .append(Component.text(" - ", NamedTextColor.GRAY))
-                        .append(Component.text(commandDescriptions.get(command), NamedTextColor.GRAY))
+                        .append(Component.text(COMMAND_DESCRIPTIONS.get(command), NamedTextColor.GRAY))
                         .append(Component.newline());
             }
         }

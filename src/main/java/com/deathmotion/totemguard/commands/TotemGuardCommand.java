@@ -34,14 +34,32 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     private final Component versionComponent;
-    private final Map<String, SubCommand> subCommands = new HashMap<>();
+    private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
+
+    // Immutable map for command descriptions
+    private static final Map<String, String> COMMAND_DESCRIPTIONS;
+
+    static {
+        Map<String, String> tempMap = new LinkedHashMap<>();
+        tempMap.put("info", "Show plugin information.");
+        tempMap.put("alerts", "Toggle alerts on/off.");
+        tempMap.put("reload", "Reload the plugin configuration.");
+        tempMap.put("profile", "View player profiles.");
+        tempMap.put("stats", "View plugin statistics.");
+        tempMap.put("clearlogs", "Clear player logs.");
+        tempMap.put("track", "Tracks a player.");
+        tempMap.put("untrack", "Stops tracking a player.");
+        tempMap.put("database", "Database management commands.");
+        COMMAND_DESCRIPTIONS = Collections.unmodifiableMap(tempMap);
+    }
 
     public TotemGuardCommand(TotemGuard plugin) {
         subCommands.put("info", new InfoCommand(plugin));
@@ -138,26 +156,13 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                 .append(Component.newline())
                 .append(Component.newline());
 
-        // Command descriptions
-        Map<String, String> commandDescriptions = Map.of(
-                "info", "Show plugin information.",
-                "alerts", "Toggle alerts on/off.",
-                "reload", "Reload the plugin configuration.",
-                "profile", "View player profiles.",
-                "stats", "View plugin statistics.",
-                "clearlogs", "Clear player logs.",
-                "track", "Tracks a player.",
-                "untrack", "Stops tracking a player.",
-                "database", "Database management commands."
-        );
-
         // Add each command to the message if the sender has permission
-        for (String command : subCommands.keySet()) {
+        for (String command : COMMAND_DESCRIPTIONS.keySet()) {
             if (hasPermissionForSubCommand(sender, command)) {
                 componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
                         .append(Component.text("/totemguard " + command, NamedTextColor.GOLD, TextDecoration.BOLD))
                         .append(Component.text(" - ", NamedTextColor.GRAY))
-                        .append(Component.text(commandDescriptions.get(command), NamedTextColor.GRAY))
+                        .append(Component.text(COMMAND_DESCRIPTIONS.get(command), NamedTextColor.GRAY))
                         .append(Component.newline());
             }
         }
