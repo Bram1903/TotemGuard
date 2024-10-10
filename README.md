@@ -86,6 +86,7 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 - `/totemguard profile` - Display the player's profile.
 - `/totemguard stats` - Show plugin statistics.
 - `/totemguard clearlogs` - Clear the logs.
+- `/totemguard track <player>` - Tracks the player.
 - `/totemguard database trim` - Trim the database.
 - `/totemguard database clear` - Clear the database.
 - `/totemcheck <player>` - Check the player for AutoTotem.
@@ -104,6 +105,7 @@ Operators (OPs) have these permissions by default, except `TotemGuard.Debug`:
 - `TotemGuard.Profile` - Access to the `/totemguard profile` command.
 - `TotemGuard.Stats` - Access to the `/totemguard stats` command.
 - `TotemGuard.ClearLogs` - Access to the `/totemguard clearlogs` command.
+- `TotemGuard.Track` - Access to the `/totemguard track` command.
 - `TotemGuard.Bypass` - Bypass the plugin's checks.
 - `TotemGuard.Update` - Receive update notifications.
 - `TotemGuard.Database.Trim` - Access to the `/totemguard database trim` command.
