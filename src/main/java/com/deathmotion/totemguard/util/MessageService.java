@@ -63,11 +63,18 @@ public class MessageService {
 
     public Pair<TextColor, TextColor> getColorScheme() {
         final Settings.ColorScheme colorScheme = configManager.getSettings().getColorScheme();
-        TextColor primaryColor = MiniMessage.miniMessage().deserialize(colorScheme.getPrimaryColor()).color();
-        TextColor secondaryColor = MiniMessage.miniMessage().deserialize(colorScheme.getSecondaryColor()).color();
+
+        // Replace '&' with '§' to convert Minecraft color codes
+        String primaryColorCode = colorScheme.getPrimaryColor().replace('&', '§');
+        String secondaryColorCode = colorScheme.getSecondaryColor().replace('&', '§');
+
+        // Deserialize the color codes and extract the TextColor
+        TextColor primaryColor = LegacyComponentSerializer.legacySection().deserialize(primaryColorCode).color();
+        TextColor secondaryColor = LegacyComponentSerializer.legacySection().deserialize(secondaryColorCode).color();
 
         return new Pair<>(primaryColor, secondaryColor);
     }
+
 
     public Component version() {
         return getPrefix()
