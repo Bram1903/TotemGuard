@@ -24,8 +24,10 @@ import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MathUtil;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -35,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AutoTotemB extends Check implements TotemEventListener {
 
     private final TotemGuard plugin;
+    private final MessageService messageService;
 
     private final ConcurrentHashMap<UUID, Integer> lowSDCountMap = new ConcurrentHashMap<>();
 
@@ -42,6 +45,7 @@ public final class AutoTotemB extends Check implements TotemEventListener {
         super(plugin, "AutoTotemB", "Impossible stDev");
 
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
         TotemProcessor.getInstance().registerListener(this);
     }
 
@@ -67,12 +71,14 @@ public final class AutoTotemB extends Check implements TotemEventListener {
     }
 
     private Component createComponent(double standardDeviation, double mean) {
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
         return Component.text()
-                .append(Component.text("Standard Deviation: ", NamedTextColor.GRAY))
-                .append(Component.text(MathUtil.trim(2, standardDeviation), NamedTextColor.GOLD))
+                .append(Component.text("Standard Deviation: ", colorScheme.getY()))
+                .append(Component.text(MathUtil.trim(2, standardDeviation), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Mean: ", NamedTextColor.GRAY))
-                .append(Component.text(MathUtil.trim(2, mean) + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Mean: ", colorScheme.getY()))
+                .append(Component.text(MathUtil.trim(2, mean) + "ms", colorScheme.getX()))
                 .build();
     }
 

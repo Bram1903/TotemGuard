@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.listeners.ReloadListener;
 import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.mojang.MojangService;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
+import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.TGVersion;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -45,6 +46,8 @@ public final class TotemGuard extends JavaPlugin {
 
     private TGVersion version;
     private ConfigManager configManager;
+    private MessageService messageService;
+
     private DatabaseManager databaseManager;
     private DatabaseService databaseService;
     private MojangService mojangService;
@@ -66,6 +69,8 @@ public final class TotemGuard extends JavaPlugin {
             instance.getServer().getPluginManager().disablePlugin(instance);
             return;
         }
+
+        messageService = new MessageService(this);
 
         databaseManager = new DatabaseManager(this);
         databaseService = new DatabaseService(this);

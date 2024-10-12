@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.MessageService;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
@@ -30,9 +31,6 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -43,10 +41,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class UserTracker implements PacketListener {
     private final TotemGuard plugin;
+    private final MessageService messageService;
     private final ConcurrentHashMap<UUID, TotemPlayer> totemPlayers = new ConcurrentHashMap<>();
 
     public UserTracker(TotemGuard plugin) {
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
     }
 
     @Override
@@ -119,14 +119,7 @@ public class UserTracker implements PacketListener {
         Settings settings = plugin.getConfigManager().getSettings();
         if (!settings.isAlertClientBrand()) return;
 
-        Component message = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text(username, NamedTextColor.GOLD))
-                .append(Component.text(" joined using: ", NamedTextColor.GRAY))
-                .append(Component.text(brand, NamedTextColor.GOLD))
-                .build();
-
-        Bukkit.broadcast(message, "TotemGuard.Alerts");
+        Bukkit.broadcast(messageService.getJoinMessage(username, brand), "TotemGuard.Alerts");
     }
 
     public Optional<TotemPlayer> getTotemPlayer(UUID uuid) {

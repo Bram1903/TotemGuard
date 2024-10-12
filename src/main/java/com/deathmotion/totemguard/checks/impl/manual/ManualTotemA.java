@@ -21,10 +21,13 @@ package com.deathmotion.totemguard.checks.impl.manual;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import io.github.retrooper.packetevents.util.folia.TaskWrapper;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -43,11 +46,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class ManualTotemA extends Check implements CommandExecutor, TabExecutor {
 
     private final TotemGuard plugin;
+    private final MessageService messageService;
 
     public ManualTotemA(TotemGuard plugin) {
         super(plugin, "ManualTotemA", "Manual totem removal");
 
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
         plugin.getCommand("check").setExecutor(this);
     }
 
@@ -170,12 +175,14 @@ public final class ManualTotemA extends Check implements CommandExecutor, TabExe
 
 
     private Component createDetails(CommandSender sender, int elapsedMs) {
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
         return Component.text()
-                .append(Component.text("Staff: ", NamedTextColor.GRAY))
-                .append(Component.text(sender.getName(), NamedTextColor.GOLD))
+                .append(Component.text("Staff: ", colorScheme.getY()))
+                .append(Component.text(sender.getName(), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Elapsed Ms: ", NamedTextColor.GRAY))
-                .append(Component.text(elapsedMs, NamedTextColor.GOLD))
+                .append(Component.text("Elapsed Ms: ", colorScheme.getY()))
+                .append(Component.text(elapsedMs, colorScheme.getX()))
                 .build();
     }
 

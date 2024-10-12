@@ -23,13 +23,12 @@ import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
-import com.deathmotion.totemguard.util.messages.StatsCreator;
+import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
@@ -43,8 +42,8 @@ public class StatsCommand implements SubCommand {
 
     private final Plugin plugin;
     private final DatabaseService databaseService;
+    private final MessageService messageService;
     private final ZoneId zoneId;
-    private final Component loadingComponent;
 
     // Expiring maps to store data
     private final ExpiringMap<String, List<Punishment>> punishmentCache;
@@ -53,11 +52,8 @@ public class StatsCommand implements SubCommand {
     public StatsCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseService = plugin.getDatabaseService();
+        this.messageService = plugin.getMessageService();
         this.zoneId = ZoneId.systemDefault();
-        this.loadingComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("Loading stats...", NamedTextColor.GRAY))
-                .build();
 
         // Initialize the expiring maps
         punishmentCache = ExpiringMap.builder()
@@ -73,7 +69,7 @@ public class StatsCommand implements SubCommand {
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
-        sender.sendMessage(loadingComponent);
+        sender.sendMessage(getLoadingComponent());
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             List<Punishment> punishments = getCachedPunishments();
@@ -90,7 +86,7 @@ public class StatsCommand implements SubCommand {
             long alertsLast7Days = countAlertsSince(alerts, 7);
             long alertsLastDay = countAlertsSince(alerts, 1);
 
-            Component stats = StatsCreator.createStatsComponent(punishmentCount, alertCount, punishmentsLast30Days, punishmentsLast7Days, punishmentsLastDay, alertsLast30Days, alertsLast7Days, alertsLastDay);
+            Component stats = messageService.getStatsComponent(punishmentCount, alertCount, punishmentsLast30Days, punishmentsLast7Days, punishmentsLastDay, alertsLast30Days, alertsLast7Days, alertsLastDay);
             sender.sendMessage(stats);
         });
 
@@ -148,5 +144,9 @@ public class StatsCommand implements SubCommand {
     @Override
     public List<String> onTabComplete(CommandSender sender, String[] args) {
         return List.of();
+    }
+
+    private Component getLoadingComponent() {
+        return messageService.getPrefix().append(Component.text("Loading stats...", NamedTextColor.GRAY));
     }
 }

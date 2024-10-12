@@ -21,10 +21,8 @@ package com.deathmotion.totemguard.commands.totemguard;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
+import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
@@ -32,23 +30,19 @@ import java.util.List;
 public class ReloadCommand implements SubCommand {
     private final TotemGuard plugin;
     private final ConfigManager configManager;
+    private final MessageService messageService;
 
     public ReloadCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
+        this.messageService = plugin.getMessageService();
     }
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             configManager.reload();
-
-            Component message = Component.text()
-                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(configManager.getSettings().getPrefix()))
-                    .append(Component.text("The configuration has been reloaded!", NamedTextColor.GREEN))
-                    .build();
-
-            sender.sendMessage(message);
+            sender.sendMessage(messageService.getPluginReloaded());
         });
 
         return true;

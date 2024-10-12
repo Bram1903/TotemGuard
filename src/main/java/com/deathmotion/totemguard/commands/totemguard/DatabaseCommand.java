@@ -35,8 +35,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class DatabaseCommand implements SubCommand {
-    private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
-
     // Immutable map for command descriptions
     private static final Map<String, String> COMMAND_DESCRIPTIONS;
 
@@ -46,6 +44,8 @@ public class DatabaseCommand implements SubCommand {
         tempMap.put("clear", "Clears all logs from the database.");
         COMMAND_DESCRIPTIONS = Collections.unmodifiableMap(tempMap);
     }
+
+    private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
 
     public DatabaseCommand(TotemGuard plugin) {
         subCommands.put("trim", new TrimCommand(plugin));

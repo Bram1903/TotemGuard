@@ -25,8 +25,10 @@ import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MathUtil;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -37,12 +39,17 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 public final class AutoTotemC extends Check implements TotemEventListener {
     private final TotemGuard plugin;
+    private final MessageService messageService;
+
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> sdHistoryMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Integer> consistentSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemC(TotemGuard plugin) {
         super(plugin, "AutoTotemC", "Impossible consistency difference");
+
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
+
         TotemProcessor.getInstance().registerListener(this);
     }
 
@@ -107,9 +114,11 @@ public final class AutoTotemC extends Check implements TotemEventListener {
     }
 
     private Component createComponent(double averageSDDifference) {
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
         return Component.text()
-                .append(Component.text("Average SD Difference: ", NamedTextColor.GRAY))
-                .append(Component.text(MathUtil.trim(2, averageSDDifference), NamedTextColor.GOLD))
+                .append(Component.text("Average SD Difference: ", colorScheme.getY()))
+                .append(Component.text(MathUtil.trim(2, averageSDDifference), colorScheme.getX()))
                 .build();
     }
 }

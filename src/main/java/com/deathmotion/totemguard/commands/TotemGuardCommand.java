@@ -20,14 +20,11 @@ package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.totemguard.*;
-import com.deathmotion.totemguard.data.Constants;
+import com.deathmotion.totemguard.util.MessageService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -41,9 +38,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TotemGuardCommand implements CommandExecutor, TabExecutor {
-    private final Component versionComponent;
-    private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
-
     // Immutable map for command descriptions
     private static final Map<String, String> COMMAND_DESCRIPTIONS;
 
@@ -61,6 +55,9 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         COMMAND_DESCRIPTIONS = Collections.unmodifiableMap(tempMap);
     }
 
+    private final MessageService messageService;
+    private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
+
     public TotemGuardCommand(TotemGuard plugin) {
         subCommands.put("info", new InfoCommand(plugin));
         subCommands.put("alerts", new AlertsCommand(plugin));
@@ -72,28 +69,14 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         subCommands.put("untrack", new UntrackCommand(plugin));
         subCommands.put("database", new DatabaseCommand(plugin));
 
-        versionComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()).decorate(TextDecoration.BOLD))
-                .append(Component.text("Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("Bram", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" and ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("OutDev", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
-                        .decorate(TextDecoration.BOLD)
-                        .decorate(TextDecoration.UNDERLINED)))
-                .clickEvent(ClickEvent.openUrl(Constants.GITHUB_URL))
-                .build();
-
+        messageService = plugin.getMessageService();
         plugin.getCommand("totemguard").setExecutor(this);
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!hasAnyPermission(sender)) {
-            sender.sendMessage(versionComponent);
+            sender.sendMessage(messageService.version());
             return true;
         }
 
@@ -165,11 +148,6 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                         .append(Component.text(COMMAND_DESCRIPTIONS.get(command), NamedTextColor.GRAY))
                         .append(Component.newline());
             }
-        }
-
-        // If no commands are available, provide a different message
-        if (componentBuilder.children().isEmpty()) {
-            return Component.text("You do not have permission to use any commands.", NamedTextColor.RED);
         }
 
         return componentBuilder.build();

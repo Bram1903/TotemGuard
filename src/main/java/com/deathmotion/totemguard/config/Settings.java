@@ -55,6 +55,9 @@ public final class Settings {
             "Alert Format: The format of the alert message."})
     private String alertFormat = "&6%prefix%&e%player%&7 failed &6%check%&7 VL[&6%violations%/%max_violations%&7]";
 
+    @Comment("\nColor Scheme Settings:")
+    private ColorScheme colorScheme = new ColorScheme();
+
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
 
@@ -72,6 +75,16 @@ public final class Settings {
 
     @Comment("\nChecks")
     private Checks checks = new Checks();
+
+    @Configuration
+    @Getter
+    public static class ColorScheme {
+        @Comment("Primary Color: The primary color of the plugin.")
+        private String primaryColor = "&6";
+
+        @Comment("\nSecondary Color: The secondary color of the plugin.")
+        private String secondaryColor = "&7";
+    }
 
     @Configuration
     @Getter

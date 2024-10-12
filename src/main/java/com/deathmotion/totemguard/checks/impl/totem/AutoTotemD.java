@@ -21,13 +21,15 @@ package com.deathmotion.totemguard.checks.impl.totem;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -43,7 +45,10 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
 
     private static final long EXPECTED_AVERAGE_TIME = 50; // Expected average time in ms
     private static final long ACCEPTABLE_VARIATION = 20; // Allowable deviation in ms (e.g., ±20ms)
+
     private final TotemGuard plugin;
+    private final MessageService messageService;
+
     private final ConcurrentHashMap<UUID, Long> totemUsage;
     private final ConcurrentHashMap<UUID, PacketState> playerPacketState;
 
@@ -51,10 +56,12 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
         super(plugin, "AutoTotemD", "Suspicious re-totem packet sequence");
 
         this.plugin = plugin;
-        Bukkit.getPluginManager().registerEvents(this, plugin);
+        this.messageService = plugin.getMessageService();
 
         this.totemUsage = new ConcurrentHashMap<>();
         this.playerPacketState = new ConcurrentHashMap<>();
+
+        Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -110,22 +117,24 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
 
             // Check if the average time per packet is within the expected range
             if (isWithinExpectedRange(averageTimePerPacket)) {
+                Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
                 // Show individual packet timings as well as the average time
                 Component details = Component.text()
-                        .append(Component.text("Total time: ", NamedTextColor.GRAY))
-                        .append(Component.text(totalPacketTime + "ms", NamedTextColor.GOLD))
+                        .append(Component.text("Total time: ", colorScheme.getY()))
+                        .append(Component.text(totalPacketTime + "ms", colorScheme.getX()))
                         .append(Component.newline())
-                        .append(Component.text("Average time per packet: ", NamedTextColor.GRAY))
-                        .append(Component.text(averageTimePerPacket + "ms", NamedTextColor.GOLD))
+                        .append(Component.text("Average time per packet: ", colorScheme.getY()))
+                        .append(Component.text(averageTimePerPacket + "ms", colorScheme.getX()))
                         .append(Component.newline())
-                        .append(Component.text("Time to first swap packet: ", NamedTextColor.GRAY))
-                        .append(Component.text(timeToFirstDigging + "ms", NamedTextColor.GOLD))
+                        .append(Component.text("Time to first swap packet: ", colorScheme.getY()))
+                        .append(Component.text(timeToFirstDigging + "ms", colorScheme.getX()))
                         .append(Component.newline())
-                        .append(Component.text("Time from swap -> pick up: ", NamedTextColor.GRAY))
-                        .append(Component.text(timeToPickItem + "ms", NamedTextColor.GOLD))
+                        .append(Component.text("Time from swap -> pick up: ", colorScheme.getY()))
+                        .append(Component.text(timeToPickItem + "ms", colorScheme.getX()))
                         .append(Component.newline())
-                        .append(Component.text("Time from pick up -> digging: ", NamedTextColor.GRAY))
-                        .append(Component.text(timeFromPickToLastDigging + "ms", NamedTextColor.GOLD))
+                        .append(Component.text("Time from pick up -> digging: ", colorScheme.getY()))
+                        .append(Component.text(timeFromPickToLastDigging + "ms", colorScheme.getX()))
                         .build();
 
                 flag(player, details, settings);

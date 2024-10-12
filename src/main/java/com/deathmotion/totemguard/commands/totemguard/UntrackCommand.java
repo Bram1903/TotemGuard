@@ -21,9 +21,9 @@ package com.deathmotion.totemguard.commands.totemguard;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.manager.TrackerManager;
+import com.deathmotion.totemguard.util.MessageService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -32,22 +32,12 @@ import java.util.List;
 public class UntrackCommand implements SubCommand {
     private final TotemGuard plugin;
     private final TrackerManager trackerManager;
+    private final MessageService messageService;
 
     public UntrackCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.trackerManager = plugin.getTrackerManager();
-    }
-
-    private Component getPlayerOnlyCommandComponent() {
-        return LegacyComponentSerializer.legacyAmpersand()
-                .deserialize(plugin.getConfigManager().getSettings().getPrefix())
-                .append(Component.text("This command can only be ran by players!", NamedTextColor.RED));
-    }
-
-    private Component getNotTrackingComponent() {
-        return LegacyComponentSerializer.legacyAmpersand()
-                .deserialize(plugin.getConfigManager().getSettings().getPrefix())
-                .append(Component.text("You are not tracking any players!", NamedTextColor.RED));
+        this.messageService = plugin.getMessageService();
     }
 
     @Override
@@ -69,5 +59,13 @@ public class UntrackCommand implements SubCommand {
     @Override
     public List<String> onTabComplete(CommandSender sender, String[] args) {
         return List.of();
+    }
+
+    private Component getPlayerOnlyCommandComponent() {
+        return messageService.getPrefix().append(Component.text("This command can only be ran by players!", NamedTextColor.RED));
+    }
+
+    private Component getNotTrackingComponent() {
+        return messageService.getPrefix().append(Component.text("You are not tracking any players!", NamedTextColor.RED));
     }
 }

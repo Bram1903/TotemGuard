@@ -21,48 +21,50 @@ package com.deathmotion.totemguard.util.messages;
 import com.deathmotion.totemguard.models.CheckDetails;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.PlaceholderUtil;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.Map;
 
 public class AlertCreator {
-    public static Component createAlertComponent(TotemPlayer player, CheckDetails checkDetails, Component details, String prefix, String alertFormat) {
+    public Component createAlertComponent(TotemPlayer player, CheckDetails checkDetails, Component details, String prefix, String alertFormat, Pair<TextColor, TextColor> colorScheme) {
         Component hoverInfo = Component.text()
-                .append(Component.text("TPS: ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getTps(), NamedTextColor.GOLD))
+                .append(Component.text("TPS: ", colorScheme.getY()))
+                .append(Component.text(checkDetails.getTps(), colorScheme.getX()))
                 .append(Component.text(" |", NamedTextColor.DARK_GRAY))
-                .append(Component.text(" Client Version: ", NamedTextColor.GRAY))
-                .append(Component.text(player.clientVersion().getReleaseName(), NamedTextColor.GOLD))
+                .append(Component.text(" Client Version: ", colorScheme.getY()))
+                .append(Component.text(player.clientVersion().getReleaseName(), colorScheme.getX()))
                 .append(Component.text(" |", NamedTextColor.DARK_GRAY))
-                .append(Component.text(" Client Brand: ", NamedTextColor.GRAY))
-                .append(Component.text(player.clientBrand(), NamedTextColor.GOLD))
+                .append(Component.text(" Client Brand: ", colorScheme.getY()))
+                .append(Component.text(player.clientBrand(), colorScheme.getX()))
                 .append(Component.newline())
                 .append(Component.newline())
-                .append(Component.text("Player: ", NamedTextColor.GRAY))
-                .append(Component.text(player.username(), NamedTextColor.GOLD))
+                .append(Component.text("Player: ", colorScheme.getY()))
+                .append(Component.text(player.username(), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Ping: ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getPing() + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Ping: ", colorScheme.getY()))
+                .append(Component.text(checkDetails.getPing() + "ms", colorScheme.getX()))
                 .append(Component.newline())
                 .append(Component.newline())
-                .append(Component.text("Check: ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getCheckName(), NamedTextColor.GOLD))
+                .append(Component.text("Check: ", colorScheme.getY()))
+                .append(Component.text(checkDetails.getCheckName(), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Description: ", NamedTextColor.GRAY))
-                .append(Component.text(checkDetails.getCheckDescription(), NamedTextColor.GOLD))
+                .append(Component.text("Description: ", colorScheme.getY()))
+                .append(Component.text(checkDetails.getCheckDescription(), colorScheme.getX()))
                 .append(Component.newline())
                 .append(Component.newline())
                 .append(details)
                 .append(Component.newline())
                 .append(Component.newline())
-                .append(Component.text("Click to ", NamedTextColor.GRAY))
-                .append(Component.text("teleport ", NamedTextColor.GOLD))
-                .append(Component.text("to " + player.username() + ".", NamedTextColor.GRAY))
+                .append(Component.text("Click to ", colorScheme.getY()))
+                .append(Component.text("teleport ", colorScheme.getX()))
+                .append(Component.text("to " + player.username() + ".", colorScheme.getY()))
                 .build();
 
         String parsedAlert = PlaceholderUtil.replacePlaceholders(alertFormat, Map.of(
