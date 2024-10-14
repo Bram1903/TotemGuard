@@ -52,7 +52,6 @@ public class CheckCommand extends Check implements SubCommand {
     private final MessageService messageService;
 
     private final Material totemMaterial = Material.TOTEM_OF_UNDYING;
-    private final ItemStack airItem = new ItemStack(Material.AIR);
 
     private CheckCommand(TotemGuard plugin) {
         super(plugin, "ManualTotemA", "Manual totem removal");
@@ -108,6 +107,8 @@ public class CheckCommand extends Check implements SubCommand {
         final PlayerInventory inventory = target.getInventory();
         final ItemStack mainHandItem = inventory.getItemInMainHand().clone();
         final ItemStack offHandItem = inventory.getItemInOffHand().clone();
+
+        final int mainHandSlot = inventory.getHeldItemSlot();
         final boolean totemInMainHand = mainHandItem.getType() == Material.TOTEM_OF_UNDYING;
         final boolean totemInOffhand = offHandItem.getType() == Material.TOTEM_OF_UNDYING;
 
@@ -117,7 +118,7 @@ public class CheckCommand extends Check implements SubCommand {
                 inventory.setItemInOffHand(mainHandItem);
             }
             // Remove the totem from the main hand in either case
-            inventory.setItemInMainHand(airItem);
+            inventory.setItemInMainHand(null);
         } else if (!totemInOffhand) {
             sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " does not have a totem in their main or offhand!", NamedTextColor.RED)));
             return false;
@@ -137,13 +138,13 @@ public class CheckCommand extends Check implements SubCommand {
 
             if (elapsedTime >= settings.getCheckTime()) {
                 sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has successfully passed the check!", NamedTextColor.GREEN)));
-                resetPlayerState(target, health, mainHandItem, offHandItem);
+                resetPlayerState(target, health, mainHandItem, offHandItem, mainHandSlot);
                 taskWrapper[0].cancel();
                 return;
             }
 
             if (inventory.getItemInOffHand().getType() == totemMaterial) {
-                resetPlayerState(target, health, mainHandItem, offHandItem);
+                resetPlayerState(target, health, mainHandItem, offHandItem, mainHandSlot);
                 taskWrapper[0].cancel();
                 flag(target, createDetails(sender, elapsedTime), settings);
             }
@@ -152,9 +153,13 @@ public class CheckCommand extends Check implements SubCommand {
         return true;
     }
 
-    private void resetPlayerState(Player player, double health, ItemStack mainHandItem, ItemStack offHandItem) {
+    private void resetPlayerState(Player player, double health, ItemStack mainHandItem, ItemStack offHandItem, int mainHandSlot) {
         player.setHealth(health);
-        player.getInventory().setItemInMainHand(mainHandItem);
+
+        ItemStack oldSlot = player.getInventory().getItem(mainHandSlot);
+        if (oldSlot == null) {
+            player.getInventory().setItem(mainHandSlot, mainHandItem);
+        }
         player.getInventory().setItemInOffHand(offHandItem);
     }
 
