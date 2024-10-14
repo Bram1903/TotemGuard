@@ -22,11 +22,14 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
@@ -40,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TrackerManager implements TotemEventListener {
 
     private final TotemGuard plugin;
+    private final MessageService messageService;
 
     // Map of target players to their tracking information
     private final ConcurrentHashMap<Player, TargetTracker> targetTrackers = new ConcurrentHashMap<>();
@@ -48,6 +52,7 @@ public class TrackerManager implements TotemEventListener {
 
     public TrackerManager(TotemGuard plugin) {
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
 
         TotemProcessor.getInstance().registerListener(this);
         startScheduler();
@@ -198,16 +203,17 @@ public class TrackerManager implements TotemEventListener {
 
     private Component createTrackingMessage(Player target, TotemData data) {
         String timeAgo = formatTimeAgo(data.lastUpdated());
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
         return Component.text()
-                .append(Component.text("Tracking: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(target.getName(), NamedTextColor.GOLD))
+                .append(Component.text("Tracking: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(target.getName(), colorScheme.getX()))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("Speed: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(data.latestInterval() + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Speed: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(data.latestInterval() + "ms", colorScheme.getX()))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("Updated: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(timeAgo, NamedTextColor.GOLD))
+                .append(Component.text("Updated: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(timeAgo, colorScheme.getX()))
                 .build();
     }
 
