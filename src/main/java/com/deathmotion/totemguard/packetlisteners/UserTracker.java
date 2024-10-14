@@ -62,7 +62,7 @@ public class UserTracker implements PacketListener {
 
         TotemPlayer totemPlayer = createOrUpdateTotemPlayer(user, null);
         announceClientBrand(player.getName(), totemPlayer.clientBrand());
-        BadPacketsB.getInstance().check(player, totemPlayer.clientBrand());
+        BadPacketsB.getInstance(plugin).check(player, totemPlayer.clientBrand());
     }
 
     @Override

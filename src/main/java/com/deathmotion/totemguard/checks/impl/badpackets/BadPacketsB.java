@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
-import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
@@ -30,8 +29,6 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 
 public final class BadPacketsB extends Check {
-
-    @Getter
     private static BadPacketsB instance;
     private final TotemGuard plugin;
     private final MessageService messageService;
@@ -42,10 +39,11 @@ public final class BadPacketsB extends Check {
         this.messageService = plugin.getMessageService();
     }
 
-    public static void init(TotemGuard plugin) {
+    public static BadPacketsB getInstance(TotemGuard plugin) {
         if (instance == null) {
             instance = new BadPacketsB(plugin);
         }
+        return instance;
     }
 
     public void check(Player player, String clientBrand) {

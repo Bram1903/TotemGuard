@@ -53,7 +53,6 @@ public final class ManualTotemA extends Check implements CommandExecutor, TabExe
 
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
-        plugin.getCommand("check").setExecutor(this);
     }
 
     @Override

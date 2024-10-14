@@ -45,6 +45,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         Map<String, String> tempMap = new LinkedHashMap<>();
         tempMap.put("info", "Show plugin information.");
         tempMap.put("alerts", "Toggle alerts on/off.");
+        tempMap.put("check", "Attempts to bait a player");
         tempMap.put("reload", "Reload the plugin configuration.");
         tempMap.put("profile", "View player profiles.");
         tempMap.put("stats", "View plugin statistics.");
@@ -61,6 +62,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     public TotemGuardCommand(TotemGuard plugin) {
         subCommands.put("info", new InfoCommand(plugin));
         subCommands.put("alerts", new AlertsCommand(plugin));
+        subCommands.put("check", CheckCommand.getInstance(plugin));
         subCommands.put("reload", new ReloadCommand(plugin));
         subCommands.put("profile", new ProfileCommand(plugin));
         subCommands.put("stats", new StatsCommand(plugin));
@@ -120,6 +122,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         return switch (subCommand) {
             case "info" -> true;
             case "alerts" -> sender.hasPermission("TotemGuard.Alerts");
+            case "check" -> sender.hasPermission("TotemGuard.Check");
             case "reload" -> sender.hasPermission("TotemGuard.Reload");
             case "profile" -> sender.hasPermission("TotemGuard.Profile");
             case "stats" -> sender.hasPermission("TotemGuard.Stats");
