@@ -79,7 +79,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!hasAnyPermission(sender)) {
             sender.sendMessage(messageService.version());
-            return true;
+            return false;
         }
 
         if (args.length == 0) {
@@ -91,7 +91,8 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         SubCommand subCommand = subCommands.get(subCommandName);
 
         if (subCommand != null && hasPermissionForSubCommand(sender, subCommandName)) {
-            return subCommand.execute(sender, args);
+            subCommand.execute(sender, args);
+            return true;
         } else {
             sender.sendMessage(getAvailableCommandsComponent(sender));
             return false;

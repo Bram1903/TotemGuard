@@ -39,11 +39,13 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class CheckCommand extends Check implements SubCommand {
     private static CheckCommand instance;
+    private final ConcurrentHashMap<UUID, Long> cooldowns = new ConcurrentHashMap<>();
 
     private final TotemGuard plugin;
     private final ConfigManager configManager;
@@ -67,7 +69,6 @@ public class CheckCommand extends Check implements SubCommand {
         return instance;
     }
 
-    @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (args.length != 2) {
             sender.sendMessage(messageService.getPrefix().append(Component.text("Usage: /totemguard check <player>", NamedTextColor.RED)));
@@ -80,17 +81,35 @@ public class CheckCommand extends Check implements SubCommand {
             return false;
         }
 
+        final Settings.Checks.ManualTotemA settings = configManager.getSettings().getChecks().getManualTotemA();
+        UUID targetUUID = target.getUniqueId();
+        long currentTime = System.currentTimeMillis();
+
         if (target.getGameMode() != org.bukkit.GameMode.SURVIVAL && target.getGameMode() != org.bukkit.GameMode.ADVENTURE) {
             sender.sendMessage(messageService.getPrefix().append(Component.text("This player is not in survival mode!", NamedTextColor.RED)));
             return false;
         }
 
-        final PlayerInventory inventory = target.getInventory();
+        if (cooldowns.containsKey(targetUUID)) {
+            long lastExecutionTime = cooldowns.get(targetUUID);
+            long elapsedTime = currentTime - lastExecutionTime;
+            long totalCooldown = settings.getCheckTime() + 1000;
 
+            if (elapsedTime < totalCooldown) {
+                long remainingTime = totalCooldown - elapsedTime;
+                sender.sendMessage(messageService.getPrefix().append(Component.text("This player is on cooldown for " + remainingTime + "ms!", NamedTextColor.RED)));
+                return false;
+            }
+        }
+
+        cooldowns.put(targetUUID, currentTime);
+
+
+        final PlayerInventory inventory = target.getInventory();
         final ItemStack mainHandItem = inventory.getItemInMainHand().clone();
         final ItemStack offHandItem = inventory.getItemInOffHand().clone();
-        final boolean totemInMainHand = mainHandItem.getType() == org.bukkit.Material.TOTEM_OF_UNDYING;
-        final boolean totemInOffhand = offHandItem.getType() == org.bukkit.Material.TOTEM_OF_UNDYING;
+        final boolean totemInMainHand = mainHandItem.getType() == Material.TOTEM_OF_UNDYING;
+        final boolean totemInOffhand = offHandItem.getType() == Material.TOTEM_OF_UNDYING;
 
         if (totemInMainHand) {
             if (!totemInOffhand) {
@@ -105,35 +124,29 @@ public class CheckCommand extends Check implements SubCommand {
         }
 
         double health = target.getHealth();
-        final Settings.Checks.ManualTotemA settings = configManager.getSettings().getChecks().getManualTotemA();
 
-        // Declare a mutable container to hold the TaskWrapper
+        target.setHealth(0.5);
+        target.damage(1000);
+
+        // Task scheduling and check logic
         final TaskWrapper[] taskWrapper = new TaskWrapper[1];
-
         final long startTime = System.currentTimeMillis();
-        target.damage(health);
 
-        // Schedule the task and store the reference in the array
         taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> {
             long elapsedTime = System.currentTimeMillis() - startTime;
 
             if (elapsedTime >= settings.getCheckTime()) {
-                target.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has successfully passed the check!", NamedTextColor.GREEN)));
+                sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has successfully passed the check!", NamedTextColor.GREEN)));
                 resetPlayerState(target, health, mainHandItem, offHandItem);
-
-                // Cancel the task since the check is complete
                 taskWrapper[0].cancel();
                 return;
             }
 
             if (inventory.getItemInOffHand().getType() == totemMaterial) {
                 resetPlayerState(target, health, mainHandItem, offHandItem);
-
-                // Cancel the task and flag the player since the check has failed
                 taskWrapper[0].cancel();
                 flag(target, createDetails(sender, elapsedTime), settings);
             }
-
         }, 0, 50, TimeUnit.MILLISECONDS);
 
         return true;
@@ -160,11 +173,13 @@ public class CheckCommand extends Check implements SubCommand {
 
     @Override
     public void resetData() {
+        cooldowns.clear();
         super.resetData();
     }
 
     @Override
     public void resetData(UUID uuid) {
+        cooldowns.remove(uuid);
         super.resetData(uuid);
     }
 
