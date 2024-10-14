@@ -91,8 +91,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         SubCommand subCommand = subCommands.get(subCommandName);
 
         if (subCommand != null && hasPermissionForSubCommand(sender, subCommandName)) {
-            subCommand.execute(sender, args);
-            return true;
+            return subCommand.execute(sender, args);
         } else {
             sender.sendMessage(getAvailableCommandsComponent(sender));
             return false;
