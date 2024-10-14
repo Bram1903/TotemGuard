@@ -82,6 +82,7 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 - `/totemguard` or `/tg` - Main command for TotemGuard.
 - `/totemguard reload` - Reload the plugin configuration.
 - `/totemguard alerts` - Toggle alerts for the player.
+- `/totemguard check <player>` - Check the player for AutoTotem.
 - `/totemguard alerts <player>` - Toggle alerts for another player.
 - `/totemguard profile` - Display the player's profile.
 - `/totemguard stats` - Show plugin statistics.
@@ -89,7 +90,6 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 - `/totemguard track/untrack <player>` - Tracks the player.
 - `/totemguard database trim` - Trim the database.
 - `/totemguard database clear` - Clear the database.
-- `/totemcheck <player>` - Check the player for AutoTotem.
 
 ## Permission Nodes
 
