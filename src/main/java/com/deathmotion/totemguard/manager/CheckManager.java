@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
+import com.deathmotion.totemguard.util.MessageService;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -43,6 +44,7 @@ public class CheckManager {
     private final TotemGuard plugin;
     private final AlertManager alertManager;
     private final UserTracker userTracker;
+    private final MessageService messageService;
 
     private final List<ICheck> checks;
 
@@ -50,6 +52,7 @@ public class CheckManager {
         this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
         this.userTracker = plugin.getUserTracker();
+        this.messageService = plugin.getMessageService();
 
         TotemProcessor.init(plugin);
 
@@ -79,14 +82,7 @@ public class CheckManager {
     public void resetData() {
         checks.forEach(ICheck::resetData);
         userTracker.clearTotemData();
-
-        final Settings settings = plugin.getConfigManager().getSettings();
-        Component resetComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
-                .build();
-
-        alertManager.sendAlert(resetComponent);
+        alertManager.sendAlert(messageService.getPrefix().append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN)));
     }
 
     public void resetData(UUID uuid) {
