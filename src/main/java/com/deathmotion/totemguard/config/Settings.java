@@ -354,11 +354,8 @@ public final class Settings {
         @Configuration
         @Getter
         public static class ManualTotemA extends CheckSettings {
-            @Comment("\nCheck Time: Amount of time the /check command waits for a retotem. (in ms)")
+            @Comment("\nCheck Time: Amount of time the check command waits for a retotem. (in ms)")
             private int checkTime = 250;
-
-            @Comment("\nDamage on /check: Toggles damage on /check command to ensure a more accurate result.")
-            private boolean toggleDamageOnCheck = true;
 
             public ManualTotemA() {
                 super(false, 2);
