@@ -27,7 +27,6 @@ import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import io.github.retrooper.packetevents.util.folia.TaskWrapper;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -36,6 +35,7 @@ import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +48,9 @@ public class CheckCommand extends Check implements SubCommand {
     private final TotemGuard plugin;
     private final ConfigManager configManager;
     private final MessageService messageService;
+
+    private final Material totemMaterial = Material.TOTEM_OF_UNDYING;
+    private final ItemStack airItem = new ItemStack(Material.AIR);
 
     private CheckCommand(TotemGuard plugin) {
         super(plugin, "ManualTotemA", "Manual totem removal");
@@ -82,23 +85,23 @@ public class CheckCommand extends Check implements SubCommand {
             return false;
         }
 
-        final ItemStack mainHandItem = target.getInventory().getItemInMainHand().clone();
-        final ItemStack offHandItem = target.getInventory().getItemInOffHand().clone();
+        final PlayerInventory inventory = target.getInventory();
+
+        final ItemStack mainHandItem = inventory.getItemInMainHand().clone();
+        final ItemStack offHandItem = inventory.getItemInOffHand().clone();
         final boolean totemInMainHand = mainHandItem.getType() == org.bukkit.Material.TOTEM_OF_UNDYING;
         final boolean totemInOffhand = offHandItem.getType() == org.bukkit.Material.TOTEM_OF_UNDYING;
 
-        if (!totemInMainHand && !totemInOffhand) {
-            sender.sendMessage(messageService.getPrefix().append(Component.text("Player doesn't have a totem equipped.", NamedTextColor.RED)));
+        if (totemInMainHand) {
+            if (!totemInOffhand) {
+                // Move the totem from the main hand to the offhand
+                inventory.setItemInOffHand(mainHandItem);
+            }
+            // Remove the totem from the main hand in either case
+            inventory.setItemInMainHand(airItem);
+        } else if (!totemInOffhand) {
+            sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " does not have a totem in their main or offhand!", NamedTextColor.RED)));
             return false;
-        }
-
-        if (totemInMainHand && !totemInOffhand) {
-            // Move the totem from the main hand to the offhand
-            target.getInventory().setItemInOffHand(mainHandItem);
-            target.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
-        } else if (totemInMainHand) {
-            // Remove the totem from the main hand, since it's in both hands
-            target.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
         }
 
         double health = target.getHealth();
@@ -123,15 +126,12 @@ public class CheckCommand extends Check implements SubCommand {
                 return;
             }
 
-            ItemStack offHandItemAfter = target.getInventory().getItemInOffHand();
-            plugin.getLogger().info("Offhand item after: " + offHandItemAfter.getType());
-            if (offHandItemAfter.getType() == Material.TOTEM_OF_UNDYING) {
-                target.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has failed the check!", NamedTextColor.RED)));
+            if (inventory.getItemInOffHand().getType() == totemMaterial) {
                 resetPlayerState(target, health, mainHandItem, offHandItem);
 
                 // Cancel the task and flag the player since the check has failed
                 taskWrapper[0].cancel();
-                flag(target, createDetails(sender, (int) elapsedTime), settings);
+                flag(target, createDetails(sender, elapsedTime), settings);
             }
 
         }, 0, 50, TimeUnit.MILLISECONDS);
@@ -168,15 +168,15 @@ public class CheckCommand extends Check implements SubCommand {
         super.resetData(uuid);
     }
 
-    private Component createDetails(CommandSender sender, int elapsedMs) {
+    private Component createDetails(CommandSender sender, long elapsedMs) {
         Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
         return Component.text()
                 .append(Component.text("Staff: ", colorScheme.getY()))
                 .append(Component.text(sender.getName(), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Elapsed Ms: ", colorScheme.getY()))
-                .append(Component.text(elapsedMs, colorScheme.getX()))
+                .append(Component.text("Elapsed Time: ", colorScheme.getY()))
+                .append(Component.text(elapsedMs + "ms", colorScheme.getX()))
                 .build();
     }
 }
