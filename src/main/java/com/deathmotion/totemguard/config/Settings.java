@@ -30,7 +30,7 @@ import java.util.List;
 public final class Settings {
 
     @Comment("Prefix: Sets the command prefix for the plugin.")
-    private String prefix = "&6⚡ ";
+    private String prefix = "&6&lTG &8» ";
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean debug = false;
@@ -53,7 +53,7 @@ public final class Settings {
             "%max_violations% - Maximum Violations",
             "",
             "Alert Format: The format of the alert message."})
-    private String alertFormat = "&6%prefix%&e%player%&7 failed &6%check%&7 VL[&6%violations%/%max_violations%&7]";
+    private String alertFormat = "%prefix%&e%player%&7 failed &6%check%&f &7VL[&6%violations%/%max_violations%&7]";
 
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
