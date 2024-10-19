@@ -22,11 +22,11 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
-import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
+import com.deathmotion.totemguard.util.MessageService;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableList;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +42,7 @@ public class CheckManager {
     private final TotemGuard plugin;
     private final AlertManager alertManager;
     private final UserTracker userTracker;
+    private final MessageService messageService;
 
     private final List<ICheck> checks;
 
@@ -50,9 +50,9 @@ public class CheckManager {
         this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
         this.userTracker = plugin.getUserTracker();
+        this.messageService = plugin.getMessageService();
 
         TotemProcessor.init(plugin);
-        BadPacketsB.init(plugin);
 
         this.checks = ImmutableList.of(
                 TotemProcessor.getInstance(),
@@ -63,8 +63,8 @@ public class CheckManager {
                 new AutoTotemE(plugin),
                 new AutoTotemF(plugin),
                 new BadPacketsA(plugin),
-                BadPacketsB.getInstance(),
-                new ManualTotemA(plugin)
+                BadPacketsB.getInstance(plugin),
+                CheckCommand.getInstance(plugin)
         );
 
         registerPacketListeners();
@@ -80,14 +80,7 @@ public class CheckManager {
     public void resetData() {
         checks.forEach(ICheck::resetData);
         userTracker.clearTotemData();
-
-        final Settings settings = plugin.getConfigManager().getSettings();
-        Component resetComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(settings.getPrefix()))
-                .append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN))
-                .build();
-
-        alertManager.sendAlert(resetComponent);
+        alertManager.sendAlert(messageService.getPrefix().append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN)));
     }
 
     public void resetData(UUID uuid) {

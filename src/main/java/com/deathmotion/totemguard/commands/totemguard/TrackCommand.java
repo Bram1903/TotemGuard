@@ -21,48 +21,31 @@ package com.deathmotion.totemguard.commands.totemguard;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.manager.TrackerManager;
+import com.deathmotion.totemguard.util.MessageService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class TrackCommand implements SubCommand {
-    private final Component usageComponent;
-    private final Component playerNotFoundComponent;
-    private final Component playerOnlyCommandComponent;
-
+    private final TotemGuard plugin;
     private final TrackerManager trackerManager;
+    private final MessageService messageService;
 
     public TrackCommand(TotemGuard plugin) {
-
-        trackerManager = plugin.getTrackerManager();
-
-        usageComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("Usage: /totemguard track <player>", NamedTextColor.RED))
-                .build();
-
-        playerNotFoundComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("Player not found!", NamedTextColor.RED))
-                .build();
-
-        playerOnlyCommandComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("This command can only be ran by players!", NamedTextColor.RED))
-                .build();
+        this.plugin = plugin;
+        this.trackerManager = plugin.getTrackerManager();
+        this.messageService = plugin.getMessageService();
     }
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(playerOnlyCommandComponent);
+            sender.sendMessage(getPlayerOnlyCommandComponent());
             return false;
         }
 
@@ -70,13 +53,13 @@ public class TrackCommand implements SubCommand {
             trackerManager.stopTracking(player);
             return true;
         } else if (args.length != 2) {
-            sender.sendMessage(usageComponent);
+            sender.sendMessage(getUsageComponent());
             return false;
         }
 
         Player target = Bukkit.getPlayer(args[1]);
         if (target == null) {
-            sender.sendMessage(playerNotFoundComponent);
+            sender.sendMessage(getPlayerNotFoundComponent());
             return false;
         }
 
@@ -95,5 +78,20 @@ public class TrackCommand implements SubCommand {
                     .collect(Collectors.toList());
         }
         return List.of();
+    }
+
+    private Component getUsageComponent() {
+        return messageService.getPrefix()
+                .append(Component.text("Usage: /totemguard track <player>", NamedTextColor.RED));
+    }
+
+    private Component getPlayerNotFoundComponent() {
+        return messageService.getPrefix()
+                .append(Component.text("Player not found!", NamedTextColor.RED));
+    }
+
+    private Component getPlayerOnlyCommandComponent() {
+        return messageService.getPrefix()
+                .append(Component.text("This command can only be ran by players!", NamedTextColor.RED));
     }
 }

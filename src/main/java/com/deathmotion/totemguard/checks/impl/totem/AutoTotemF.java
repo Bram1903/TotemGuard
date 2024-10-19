@@ -22,8 +22,10 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.models.ValidClickTypes;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -44,11 +46,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AutoTotemF extends Check implements Listener {
 
     private final TotemGuard plugin;
+    private final MessageService messageService;
     private final ConcurrentHashMap<UUID, Long> invClick;
 
     public AutoTotemF(TotemGuard plugin) {
         super(plugin, "AutoTotemF", "Invalid interaction", true);
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
 
         this.invClick = new ConcurrentHashMap<>();
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -127,16 +131,18 @@ public final class AutoTotemF extends Check implements Listener {
     }
 
     private Component createDetails(Action action, Long timeDifference, Player player) {
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
         Component component = Component.text()
-                .append(Component.text("Type: ", NamedTextColor.GRAY))
-                .append(Component.text(action.toString(), NamedTextColor.GOLD))
+                .append(Component.text("Type: ", colorScheme.getY()))
+                .append(Component.text(action.toString(), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Time Difference: ", NamedTextColor.GRAY))
-                .append(Component.text(timeDifference, NamedTextColor.GOLD))
-                .append(Component.text("ms", NamedTextColor.GOLD))
+                .append(Component.text("Time Difference: ", colorScheme.getY()))
+                .append(Component.text(timeDifference, colorScheme.getX()))
+                .append(Component.text("ms", colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
-                .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
+                .append(Component.text("Main Hand: ", colorScheme.getY()))
+                .append(Component.text(getMainHandItemString(player), colorScheme.getX()))
                 .append(Component.newline())
                 .build();
 
@@ -154,8 +160,8 @@ public final class AutoTotemF extends Check implements Listener {
         // If any states are active, add them to the component
         if (!states.isEmpty()) {
             states.setLength(states.length() - 2);
-            component = component.append(Component.text("States: ", NamedTextColor.GRAY))
-                    .append(Component.text(states.toString(), NamedTextColor.GOLD));
+            component = component.append(Component.text("States: ", colorScheme.getY()))
+                    .append(Component.text(states.toString(), colorScheme.getX()));
         }
 
         return component;

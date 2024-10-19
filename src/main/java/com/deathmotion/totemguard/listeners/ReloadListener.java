@@ -21,10 +21,8 @@ package com.deathmotion.totemguard.listeners;
 import better.reload.api.ReloadEvent;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.ConfigManager;
+import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -32,10 +30,12 @@ public class ReloadListener implements Listener {
 
     private final TotemGuard plugin;
     private final ConfigManager configManager;
+    private final MessageService messageService;
 
     public ReloadListener(TotemGuard plugin) {
         this.plugin = plugin;
         configManager = plugin.getConfigManager();
+        messageService = plugin.getMessageService();
     }
 
     @EventHandler
@@ -43,13 +43,7 @@ public class ReloadListener implements Listener {
         // Code directly copied from TotemGuardCommand#handleReloadCommand
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             configManager.reload();
-
-            Component message = Component.text()
-                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(configManager.getSettings().getPrefix()))
-                    .append(Component.text("The configuration has been reloaded!", NamedTextColor.GREEN))
-                    .build();
-
-            event.getCommandSender().sendMessage(message);
+            event.getCommandSender().sendMessage(messageService.getPluginReloaded());
         });
     }
 }

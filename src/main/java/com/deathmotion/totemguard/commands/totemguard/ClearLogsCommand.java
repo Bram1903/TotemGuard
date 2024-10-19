@@ -23,10 +23,10 @@ import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.mojang.MojangService;
 import com.deathmotion.totemguard.mojang.models.Callback;
+import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -38,34 +38,23 @@ public class ClearLogsCommand implements SubCommand {
     private final TotemGuard plugin;
     private final MojangService mojangService;
     private final DatabaseService databaseService;
-
-    private final Component usageComponent;
-    private final Component clearingStartedComponent;
+    private final MessageService messageService;
 
     public ClearLogsCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.mojangService = plugin.getMojangService();
         this.databaseService = plugin.getDatabaseService();
-
-        usageComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("Usage: /totemguard clearlogs <player>", NamedTextColor.RED))
-                .build();
-
-        clearingStartedComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("Clearing logs...", NamedTextColor.GREEN))
-                .build();
+        this.messageService = plugin.getMessageService();
     }
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
         if (args.length != 2) {
-            sender.sendMessage(usageComponent);
+            sender.sendMessage(getUsageComponent());
             return false;
         }
 
-        sender.sendMessage(clearingStartedComponent);
+        sender.sendMessage(getClearingStartedComponent());
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             Callback response = mojangService.getUUID(args[1]);
             if (!handleApiResponse(sender, response)) {
@@ -76,12 +65,7 @@ public class ClearLogsCommand implements SubCommand {
             int deletedRecords = databaseService.clearLogs(response.getUuid());
             long loadTime = System.currentTimeMillis() - startTime;
 
-            Component message = Component.text()
-                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                    .append(Component.text("Cleared " + deletedRecords + " logs for" + response.getUsername() + " in " + loadTime + "ms", NamedTextColor.GREEN))
-                    .build();
-
-            sender.sendMessage(message);
+            sender.sendMessage(getClearedLogsComponent(deletedRecords, response.getUsername(), loadTime));
         });
         return true;
     }
@@ -106,5 +90,20 @@ public class ClearLogsCommand implements SubCommand {
                     .collect(Collectors.toList());
         }
         return List.of();
+    }
+
+    private Component getUsageComponent() {
+        return messageService.getPrefix()
+                .append(Component.text("Usage: /totemguard clearlogs <player>", NamedTextColor.RED));
+    }
+
+    private Component getClearingStartedComponent() {
+        return messageService.getPrefix()
+                .append(Component.text("Clearing logs...", NamedTextColor.GREEN));
+    }
+
+    private Component getClearedLogsComponent(int deletedRecords, String username, long loadTime) {
+        return messageService.getPrefix()
+                .append(Component.text("Cleared " + deletedRecords + " logs for" + username + " in " + loadTime + "ms", NamedTextColor.GREEN));
     }
 }

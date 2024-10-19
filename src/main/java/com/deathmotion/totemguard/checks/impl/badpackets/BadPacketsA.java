@@ -21,22 +21,26 @@ package com.deathmotion.totemguard.checks.impl.badpackets;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 
 import java.util.UUID;
 
 public final class BadPacketsA extends Check implements PacketListener {
 
     private final TotemGuard plugin;
+    private final MessageService messageService;
 
     public BadPacketsA(TotemGuard plugin) {
         super(plugin, "BadPacketsA", "Suspicious mod message");
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
     }
 
     @Override
@@ -50,13 +54,7 @@ public final class BadPacketsA extends Check implements PacketListener {
 
         if (channel.contains("autototem")) {
             final Settings.Checks.BadPacketsA settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsA();
-
-            Component checkDetails = Component.text()
-                    .append(Component.text("Channel: ", NamedTextColor.GRAY))
-                    .append(Component.text(channel, NamedTextColor.GOLD))
-                    .build();
-
-            flag(event.getPlayer(), checkDetails, settings);
+            flag(event.getPlayer(), getCheckDetails(channel), settings);
         }
     }
 
@@ -68,5 +66,14 @@ public final class BadPacketsA extends Check implements PacketListener {
     @Override
     public void resetData(UUID uuid) {
         super.resetData(uuid);
+    }
+
+    private Component getCheckDetails(String channel) {
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
+        return Component.text()
+                .append(Component.text("Channel: ", colorScheme.getY()))
+                .append(Component.text(channel, colorScheme.getX()))
+                .build();
     }
 }

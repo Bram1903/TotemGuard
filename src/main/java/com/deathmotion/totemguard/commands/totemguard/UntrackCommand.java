@@ -20,30 +20,38 @@ package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
-import com.deathmotion.totemguard.config.ConfigManager;
+import com.deathmotion.totemguard.manager.TrackerManager;
 import com.deathmotion.totemguard.util.MessageService;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.util.List;
 
-public class ReloadCommand implements SubCommand {
+public class UntrackCommand implements SubCommand {
     private final TotemGuard plugin;
-    private final ConfigManager configManager;
+    private final TrackerManager trackerManager;
     private final MessageService messageService;
 
-    public ReloadCommand(TotemGuard plugin) {
+    public UntrackCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        this.configManager = plugin.getConfigManager();
+        this.trackerManager = plugin.getTrackerManager();
         this.messageService = plugin.getMessageService();
     }
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            configManager.reload();
-            sender.sendMessage(messageService.getPluginReloaded());
-        });
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(getPlayerOnlyCommandComponent());
+            return false;
+        }
+
+        if (trackerManager.isTracking(player)) {
+            trackerManager.stopTracking(player);
+        } else {
+            player.sendMessage(getNotTrackingComponent());
+        }
 
         return true;
     }
@@ -51,5 +59,13 @@ public class ReloadCommand implements SubCommand {
     @Override
     public List<String> onTabComplete(CommandSender sender, String[] args) {
         return List.of();
+    }
+
+    private Component getPlayerOnlyCommandComponent() {
+        return messageService.getPrefix().append(Component.text("This command can only be ran by players!", NamedTextColor.RED));
+    }
+
+    private Component getNotTrackingComponent() {
+        return messageService.getPrefix().append(Component.text("You are not tracking any players!", NamedTextColor.RED));
     }
 }

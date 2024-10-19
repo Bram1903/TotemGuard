@@ -25,7 +25,7 @@ import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.models.CheckDetails;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import com.deathmotion.totemguard.util.messages.AlertCreator;
+import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
@@ -46,6 +46,7 @@ public abstract class Check implements ICheck {
     private final AlertManager alertManager;
     private final PunishmentManager punishmentManager;
     private final DiscordManager discordManager;
+    private final MessageService messageService;
 
     public Check(TotemGuard plugin, String checkName, String checkDescription, boolean experimental) {
         this.plugin = plugin;
@@ -58,6 +59,7 @@ public abstract class Check implements ICheck {
         this.alertManager = plugin.getAlertManager();
         this.punishmentManager = plugin.getPunishmentManager();
         this.discordManager = plugin.getDiscordManager();
+        this.messageService = plugin.getMessageService();
     }
 
     public Check(TotemGuard plugin, String checkName, String checkDescription) {
@@ -127,7 +129,7 @@ public abstract class Check implements ICheck {
         checkDetails.setPunishmentDelay(settings.getPunishmentDelayInSeconds());
         checkDetails.setMaxViolations(settings.getMaxViolations());
         checkDetails.setPunishmentCommands(settings.getPunishmentCommands());
-        checkDetails.setAlert(AlertCreator.createAlertComponent(totemPlayer, checkDetails, details, globalSettings.getPrefix(), globalSettings.getAlertFormat()));
+        checkDetails.setAlert(messageService.getAlertComponent(totemPlayer, checkDetails, details, globalSettings.getPrefix(), globalSettings.getAlertFormat()));
         checkDetails.setDetails(details);
 
         return checkDetails;

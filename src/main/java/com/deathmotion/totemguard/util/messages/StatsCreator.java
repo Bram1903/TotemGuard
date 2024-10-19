@@ -18,61 +18,62 @@
 
 package com.deathmotion.totemguard.util.messages;
 
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 public class StatsCreator {
-    public static Component createStatsComponent(int punishmentCount, int alertCount, long punishmentsLast30Days, long punishmentsLast7Days, long punishmentsLastDay, long alertsLast30Days, long alertsLast7Days, long alertsLastDay) {
+    public Component createStatsComponent(int punishmentCount, int alertCount, long punishmentsLast30Days, long punishmentsLast7Days, long punishmentsLastDay, long alertsLast30Days, long alertsLast7Days, long alertsLastDay, Pair<TextColor, TextColor> colorScheme) {
         TextComponent.Builder componentBuilder = Component.text()
-                .append(Component.text("TotemGuard Stats", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.text("TotemGuard Stats", colorScheme.getX(), TextDecoration.BOLD))
                 .append(Component.newline())
-                .append(Component.text("Total Punishments: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(punishmentCount, NamedTextColor.GOLD))
+                .append(Component.text("Total Punishments: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(punishmentCount, colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Total Alerts: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(alertCount, NamedTextColor.GOLD))
+                .append(Component.text("Total Alerts: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(alertCount, colorScheme.getX()))
                 .append(Component.newline())
                 .append(Component.newline());
 
         // Section for Punishments
-        componentBuilder.append(Component.text("> Punishments <", NamedTextColor.GOLD, TextDecoration.BOLD))
+        componentBuilder.append(Component.text("> Punishments <", colorScheme.getX(), TextDecoration.BOLD))
                 .append(Component.newline());
 
         if (punishmentsLast30Days == 0 && punishmentsLast7Days == 0 && punishmentsLastDay == 0) {
-            componentBuilder.append(Component.text(" No punishments found.", NamedTextColor.GRAY, TextDecoration.ITALIC))
+            componentBuilder.append(Component.text(" No punishments found.", colorScheme.getY(), TextDecoration.ITALIC))
                     .append(Component.newline());
         } else {
-            componentBuilder.append(Component.text("Last 30 days: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                    .append(Component.text(punishmentsLast30Days, NamedTextColor.GOLD))
+            componentBuilder.append(Component.text("Last 30 days: ", colorScheme.getY(), TextDecoration.BOLD))
+                    .append(Component.text(punishmentsLast30Days, colorScheme.getX()))
                     .append(Component.newline())
-                    .append(Component.text("Last 7 days: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                    .append(Component.text(punishmentsLast7Days, NamedTextColor.GOLD))
+                    .append(Component.text("Last 7 days: ", colorScheme.getY(), TextDecoration.BOLD))
+                    .append(Component.text(punishmentsLast7Days, colorScheme.getX()))
                     .append(Component.newline())
-                    .append(Component.text("Last 24 hours: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                    .append(Component.text(punishmentsLastDay, NamedTextColor.GOLD))
+                    .append(Component.text("Last 24 hours: ", colorScheme.getY(), TextDecoration.BOLD))
+                    .append(Component.text(punishmentsLastDay, colorScheme.getX()))
                     .append(Component.newline());
         }
 
         componentBuilder.append(Component.newline());
 
         // Section for Alerts
-        componentBuilder.append(Component.text("> Alerts <", NamedTextColor.GOLD, TextDecoration.BOLD))
+        componentBuilder.append(Component.text("> Alerts <", colorScheme.getX(), TextDecoration.BOLD))
                 .append(Component.newline());
 
         if (alertsLast30Days == 0 && alertsLast7Days == 0 && alertsLastDay == 0) {
-            componentBuilder.append(Component.text(" No alerts found.", NamedTextColor.GRAY, TextDecoration.ITALIC))
+            componentBuilder.append(Component.text(" No alerts found.", colorScheme.getY(), TextDecoration.ITALIC))
                     .append(Component.newline());
         } else {
-            componentBuilder.append(Component.text("Last 30 days: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                    .append(Component.text(alertsLast30Days, NamedTextColor.GOLD))
+            componentBuilder.append(Component.text("Last 30 days: ", colorScheme.getY(), TextDecoration.BOLD))
+                    .append(Component.text(alertsLast30Days, colorScheme.getX()))
                     .append(Component.newline())
-                    .append(Component.text("Last 7 days: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                    .append(Component.text(alertsLast7Days, NamedTextColor.GOLD))
+                    .append(Component.text("Last 7 days: ", colorScheme.getY(), TextDecoration.BOLD))
+                    .append(Component.text(alertsLast7Days, colorScheme.getX()))
                     .append(Component.newline())
-                    .append(Component.text("Last 24 hours: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                    .append(Component.text(alertsLastDay, NamedTextColor.GOLD))
+                    .append(Component.text("Last 24 hours: ", colorScheme.getY(), TextDecoration.BOLD))
+                    .append(Component.text(alertsLastDay, colorScheme.getX()))
                     .append(Component.newline());
         }
 

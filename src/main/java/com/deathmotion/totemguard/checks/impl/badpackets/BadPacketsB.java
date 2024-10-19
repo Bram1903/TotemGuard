@@ -20,28 +20,30 @@ package com.deathmotion.totemguard.checks.impl.badpackets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import lombok.Getter;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
 public final class BadPacketsB extends Check {
-
-    @Getter
     private static BadPacketsB instance;
     private final TotemGuard plugin;
+    private final MessageService messageService;
 
     private BadPacketsB(TotemGuard plugin) {
         super(plugin, "BadPacketsB", "Suspicious client brand");
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
     }
 
-    public static void init(TotemGuard plugin) {
+    public static BadPacketsB getInstance(TotemGuard plugin) {
         if (instance == null) {
             instance = new BadPacketsB(plugin);
         }
+        return instance;
     }
 
     public void check(Player player, String clientBrand) {
@@ -53,11 +55,12 @@ public final class BadPacketsB extends Check {
     }
 
     private Component createDetails(String clientBrand) {
-        return Component.text()
-                .append(Component.text("Client Brand: ", NamedTextColor.GRAY))
-                .append(Component.text(clientBrand, NamedTextColor.GOLD))
-                .build();
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
+        return Component.text()
+                .append(Component.text("Client Brand: ", colorScheme.getY()))
+                .append(Component.text(clientBrand, colorScheme.getX()))
+                .build();
     }
 
     @Override

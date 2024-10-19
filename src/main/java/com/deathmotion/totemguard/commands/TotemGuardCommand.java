@@ -20,62 +20,66 @@ package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.totemguard.*;
-import com.deathmotion.totemguard.data.Constants;
+import com.deathmotion.totemguard.util.MessageService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TotemGuardCommand implements CommandExecutor, TabExecutor {
-    private final Component versionComponent;
-    private final Map<String, SubCommand> subCommands = new HashMap<>();
+    // Immutable map for command descriptions
+    private static final Map<String, String> COMMAND_DESCRIPTIONS;
+
+    static {
+        Map<String, String> tempMap = new LinkedHashMap<>();
+        tempMap.put("info", "Show plugin information.");
+        tempMap.put("alerts", "Toggle alerts on/off.");
+        tempMap.put("check", "Attempts to bait a player");
+        tempMap.put("reload", "Reload the plugin configuration.");
+        tempMap.put("profile", "View player profiles.");
+        tempMap.put("stats", "View plugin statistics.");
+        tempMap.put("clearlogs", "Clear player logs.");
+        tempMap.put("track", "Tracks a player.");
+        tempMap.put("untrack", "Stops tracking a player.");
+        tempMap.put("database", "Database management commands.");
+        COMMAND_DESCRIPTIONS = Collections.unmodifiableMap(tempMap);
+    }
+
+    private final MessageService messageService;
+    private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
 
     public TotemGuardCommand(TotemGuard plugin) {
         subCommands.put("info", new InfoCommand(plugin));
         subCommands.put("alerts", new AlertsCommand(plugin));
+        subCommands.put("check", CheckCommand.getInstance(plugin));
         subCommands.put("reload", new ReloadCommand(plugin));
         subCommands.put("profile", new ProfileCommand(plugin));
         subCommands.put("stats", new StatsCommand(plugin));
         subCommands.put("clearlogs", new ClearLogsCommand(plugin));
-        subCommands.put("database", new DatabaseCommand(plugin));
         subCommands.put("track", new TrackCommand(plugin));
+        subCommands.put("untrack", new UntrackCommand(plugin));
+        subCommands.put("database", new DatabaseCommand(plugin));
 
-        versionComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()).decorate(TextDecoration.BOLD))
-                .append(Component.text("Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("Bram", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" and ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("OutDev", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
-                        .decorate(TextDecoration.BOLD)
-                        .decorate(TextDecoration.UNDERLINED)))
-                .clickEvent(ClickEvent.openUrl(Constants.GITHUB_URL))
-                .build();
-
+        messageService = plugin.getMessageService();
         plugin.getCommand("totemguard").setExecutor(this);
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!hasAnyPermission(sender)) {
-            sender.sendMessage(versionComponent);
-            return true;
+            sender.sendMessage(messageService.version());
+            return false;
         }
 
         if (args.length == 0) {
@@ -118,11 +122,12 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         return switch (subCommand) {
             case "info" -> true;
             case "alerts" -> sender.hasPermission("TotemGuard.Alerts");
+            case "check" -> sender.hasPermission("TotemGuard.Check");
             case "reload" -> sender.hasPermission("TotemGuard.Reload");
             case "profile" -> sender.hasPermission("TotemGuard.Profile");
             case "stats" -> sender.hasPermission("TotemGuard.Stats");
             case "clearlogs" -> sender.hasPermission("TotemGuard.ClearLogs");
-            case "track" -> sender.hasPermission("TotemGuard.Track");
+            case "track", "untrack" -> sender.hasPermission("TotemGuard.Track");
             case "database" -> hasAnyDatabasePermissions(sender);
             default -> false;
         };
@@ -137,32 +142,15 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                 .append(Component.newline())
                 .append(Component.newline());
 
-        // Command descriptions
-        Map<String, String> commandDescriptions = Map.of(
-                "info", "Show plugin information.",
-                "alerts", "Toggle alerts on/off.",
-                "reload", "Reload the plugin configuration.",
-                "profile", "View player profiles.",
-                "stats", "View plugin statistics.",
-                "clearlogs", "Clear player logs.",
-                "track", "Tracks a player.",
-                "database", "Database management commands."
-        );
-
         // Add each command to the message if the sender has permission
-        for (String command : subCommands.keySet()) {
+        for (String command : COMMAND_DESCRIPTIONS.keySet()) {
             if (hasPermissionForSubCommand(sender, command)) {
                 componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
                         .append(Component.text("/totemguard " + command, NamedTextColor.GOLD, TextDecoration.BOLD))
                         .append(Component.text(" - ", NamedTextColor.GRAY))
-                        .append(Component.text(commandDescriptions.get(command), NamedTextColor.GRAY))
+                        .append(Component.text(COMMAND_DESCRIPTIONS.get(command), NamedTextColor.GRAY))
                         .append(Component.newline());
             }
-        }
-
-        // If no commands are available, provide a different message
-        if (componentBuilder.children().isEmpty()) {
-            return Component.text("You do not have permission to use any commands.", NamedTextColor.RED);
         }
 
         return componentBuilder.build();

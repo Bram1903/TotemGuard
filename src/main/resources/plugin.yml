@@ -50,7 +50,7 @@ permissions:
     description: Allows the player to use /totemguard reload.
     default: op
   TotemGuard.Check:
-    description: Allows the player to use the /check command.
+    description: Allows the player to use /totemguard check.
     default: op
   TotemGuard.Alerts:
     description: Allows the player to use /totemguard alerts.
@@ -90,8 +90,3 @@ commands:
     description: Base command for TotemGuard.
     aliases:
       - tg
-  Check:
-    description: Checks a player for manually for AutoTotem.
-    aliases:
-      - totemcheck
-      - checktotem

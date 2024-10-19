@@ -20,9 +20,11 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -39,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AutoTotemA extends Check implements Listener {
 
     private final TotemGuard plugin;
+    private final MessageService messageService;
     private final ConcurrentHashMap<UUID, Long> totemUsage;
     private final ConcurrentHashMap<UUID, Long> clickTimes;
 
@@ -46,6 +49,7 @@ public final class AutoTotemA extends Check implements Listener {
         super(plugin, "AutoTotemA", "Click time difference");
 
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
         this.totemUsage = new ConcurrentHashMap<>();
         this.clickTimes = new ConcurrentHashMap<>();
 
@@ -125,18 +129,20 @@ public final class AutoTotemA extends Check implements Listener {
     }
 
     private Component createDetails(long timeDifference, long realTotemTime, long clickTimeDifference, Player player) {
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
         Component component = Component.text()
-                .append(Component.text("Totem Time: ", NamedTextColor.GRAY))
-                .append(Component.text(timeDifference + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Totem Time: ", colorScheme.getY()))
+                .append(Component.text(timeDifference + "ms", colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Real Totem Time: ", NamedTextColor.GRAY))
-                .append(Component.text(realTotemTime + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Real Totem Time: ", colorScheme.getY()))
+                .append(Component.text(realTotemTime + "ms", colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Click Difference: ", NamedTextColor.GRAY))
-                .append(Component.text(clickTimeDifference + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Click Difference: ", colorScheme.getY()))
+                .append(Component.text(clickTimeDifference + "ms", colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Main Hand: ", NamedTextColor.GRAY))
-                .append(Component.text(getMainHandItemString(player), NamedTextColor.GOLD))
+                .append(Component.text("Main Hand: ", colorScheme.getY()))
+                .append(Component.text(getMainHandItemString(player), colorScheme.getX()))
                 .append(Component.newline())
                 .build();
 
@@ -154,8 +160,8 @@ public final class AutoTotemA extends Check implements Listener {
         // If any states are active, add them to the component
         if (!states.isEmpty()) {
             states.setLength(states.length() - 2);
-            component = component.append(Component.text("States: ", NamedTextColor.GRAY))
-                    .append(Component.text(states.toString(), NamedTextColor.GOLD));
+            component = component.append(Component.text("States: ", colorScheme.getY()))
+                    .append(Component.text(states.toString(), colorScheme.getX()));
         }
 
         return component;

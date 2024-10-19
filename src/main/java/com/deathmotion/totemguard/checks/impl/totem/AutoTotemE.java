@@ -24,8 +24,10 @@ import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MathUtil;
+import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -36,12 +38,15 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public final class AutoTotemE extends Check implements TotemEventListener {
 
     private final TotemGuard plugin;
+    private final MessageService messageService;
+
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> lowOutliersTracker = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ConcurrentLinkedDeque<Double>> averageStDev = new ConcurrentHashMap<>();
 
     public AutoTotemE(TotemGuard plugin) {
         super(plugin, "AutoTotemE", "Impossible low outliers", true);
         this.plugin = plugin;
+        this.messageService = plugin.getMessageService();
 
         TotemProcessor.getInstance().registerListener(this);
     }
@@ -90,12 +95,14 @@ public final class AutoTotemE extends Check implements TotemEventListener {
     }
 
     private Component createComponent(double standardDeviation, double averageStDeviation) {
+        Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
+
         return Component.text()
-                .append(Component.text("Standard Deviation: ", NamedTextColor.GRAY))
-                .append(Component.text(MathUtil.trim(2, standardDeviation) + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Standard Deviation: ", colorScheme.getY()))
+                .append(Component.text(MathUtil.trim(2, standardDeviation) + "ms", colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Average Stdev Mean: ", NamedTextColor.GRAY))
-                .append(Component.text(MathUtil.trim(2, averageStDeviation), NamedTextColor.GOLD))
+                .append(Component.text("Average Stdev Mean: ", colorScheme.getY()))
+                .append(Component.text(MathUtil.trim(2, averageStDeviation), colorScheme.getX()))
                 .build();
     }
 

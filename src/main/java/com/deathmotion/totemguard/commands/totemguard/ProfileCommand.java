@@ -26,12 +26,11 @@ import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.models.SafetyStatus;
 import com.deathmotion.totemguard.mojang.MojangService;
 import com.deathmotion.totemguard.mojang.models.Callback;
+import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
-import com.deathmotion.totemguard.util.messages.ProfileCreator;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -45,25 +44,15 @@ public class ProfileCommand implements SubCommand {
     private final TotemGuard plugin;
     private final MojangService mojangService;
     private final DatabaseService databaseService;
+    private final MessageService messageService;
     private final ZoneId zoneId;
-
-    private final Component noPlayerSpecifiedComponent;
-    private final Component loadingComponent;
 
     public ProfileCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.mojangService = plugin.getMojangService();
         this.databaseService = plugin.getDatabaseService();
+        this.messageService = plugin.getMessageService();
         zoneId = ZoneId.systemDefault();
-
-        noPlayerSpecifiedComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED))
-                .build();
-        loadingComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()))
-                .append(Component.text("Loading profile...", NamedTextColor.GRAY))
-                .build();
     }
 
     @Override
@@ -72,7 +61,7 @@ public class ProfileCommand implements SubCommand {
             return false;
         }
 
-        sender.sendMessage(loadingComponent);
+        sender.sendMessage(getLoadingComponent());
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> handleAsyncTask(sender, args[1]));
 
         return true;
@@ -80,7 +69,7 @@ public class ProfileCommand implements SubCommand {
 
     private boolean validateArgs(CommandSender sender, String[] args) {
         if (args.length != 2) {
-            sender.sendMessage(noPlayerSpecifiedComponent);
+            sender.sendMessage(getUsageComponent());
             return false;
         }
         return true;
@@ -103,7 +92,7 @@ public class ProfileCommand implements SubCommand {
 
         long loadTime = System.currentTimeMillis() - startTime;
         SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
-        Component logsComponent = ProfileCreator.createProfileComponent(response.getUsername(), alerts, punishments, loadTime, safetyStatus);
+        Component logsComponent = messageService.getProfileComponent(response.getUsername(), alerts, punishments, loadTime, safetyStatus);
         sender.sendMessage(logsComponent);
     }
 
@@ -137,5 +126,15 @@ public class ProfileCommand implements SubCommand {
                     .collect(Collectors.toList());
         }
         return List.of();
+    }
+
+    private Component getUsageComponent() {
+        return messageService.getPrefix()
+                .append(Component.text("Usage: /totemguard profile <player>", NamedTextColor.RED));
+    }
+
+    private Component getLoadingComponent() {
+        return messageService.getPrefix()
+                .append(Component.text("Loading profile...", NamedTextColor.GRAY));
     }
 }

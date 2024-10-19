@@ -22,10 +22,12 @@ import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.models.SafetyStatus;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 import java.time.Duration;
@@ -40,10 +42,10 @@ import java.util.stream.Collectors;
 
 public class ProfileCreator {
 
-    public static DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
-    public static ZoneId zoneId = ZoneId.systemDefault();
+    public DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+    public ZoneId zoneId = ZoneId.systemDefault();
 
-    public static Component createProfileComponent(String username, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus) {
+    public Component createProfileComponent(String username, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus, Pair<TextColor, TextColor> colorScheme) {
         // Group alerts by check name and count them
         Map<Check, Long> checkCounts = alerts.stream()
                 .collect(Collectors.groupingBy(Alert::getCheckName, Collectors.counting()));
@@ -55,49 +57,49 @@ public class ProfileCreator {
 
         // Start building the component using a builder
         TextComponent.Builder componentBuilder = Component.text()
-                .append(Component.text("TotemGuard Profile", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.text("TotemGuard Profile", colorScheme.getX(), TextDecoration.BOLD))
                 .append(Component.newline())
-                .append(Component.text("Player: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(username, NamedTextColor.GOLD))
+                .append(Component.text("Player: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(username, colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Safety Status: ", NamedTextColor.GRAY, TextDecoration.BOLD))
+                .append(Component.text("Safety Status: ", colorScheme.getY(), TextDecoration.BOLD))
                 .append(Component.text(safetyStatus.getName(), safetyStatus.getColor()))
                 .append(Component.newline())
-                .append(Component.text("Total Logs: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(alerts.size(), NamedTextColor.GOLD))
+                .append(Component.text("Total Logs: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(alerts.size(), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Total Punishments: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(punishments.size(), NamedTextColor.GOLD))
+                .append(Component.text("Total Punishments: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(punishments.size(), colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("Load Time: ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                .append(Component.text(loadTime + "ms", NamedTextColor.GOLD))
+                .append(Component.text("Load Time: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(loadTime + "ms", colorScheme.getX()))
                 .append(Component.newline())
                 .append(Component.newline())
-                .append(Component.text("> Alert Summary <", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.text("> Alert Summary <", colorScheme.getX(), TextDecoration.BOLD))
                 .append(Component.newline());
 
         if (sortedCheckCounts.isEmpty()) {
-            componentBuilder.append(Component.text(" No logs found.", NamedTextColor.GRAY, TextDecoration.ITALIC));
+            componentBuilder.append(Component.text(" No logs found.", colorScheme.getY(), TextDecoration.ITALIC));
         } else {
             sortedCheckCounts.forEach(entry -> {
                 Check checkName = entry.getKey();
                 Long count = entry.getValue();
                 componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
-                        .append(Component.text(checkName + ": ", NamedTextColor.GRAY, TextDecoration.BOLD))
-                        .append(Component.text(count + "x", NamedTextColor.GOLD))
+                        .append(Component.text(checkName + ": ", colorScheme.getY(), TextDecoration.BOLD))
+                        .append(Component.text(count + "x", colorScheme.getX()))
                         .append(Component.newline());
             });
         }
 
         componentBuilder.append(Component.newline())
-                .append(Component.text("> Punishments <", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.text("> Punishments <", colorScheme.getX(), TextDecoration.BOLD))
                 .append(Component.newline());
 
         if (punishments.isEmpty()) {
-            componentBuilder.append(Component.text(" No punishments found.", NamedTextColor.GRAY, TextDecoration.ITALIC));
+            componentBuilder.append(Component.text(" No punishments found.", colorScheme.getY(), TextDecoration.ITALIC));
         }
         if (punishments.size() > 3) {
-            componentBuilder.append(Component.text("Showing the last 3 punishments:", NamedTextColor.GRAY, TextDecoration.ITALIC))
+            componentBuilder.append(Component.text("Showing the last 3 punishments:", colorScheme.getY(), TextDecoration.ITALIC))
                     .append(Component.newline());
         }
 
@@ -116,18 +118,18 @@ public class ProfileCreator {
             String relativeTime = getRelativeTime(punishment.getWhenCreated());
 
             componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
-                    .append(Component.text("Punished for ", NamedTextColor.GRAY))
-                    .append(Component.text(String.valueOf(punishment.getCheckName()), NamedTextColor.GOLD, TextDecoration.BOLD))
-                    .append(Component.text(" on ", NamedTextColor.GRAY))
-                    .append(Component.text(formattedDate, NamedTextColor.GOLD)
+                    .append(Component.text("Punished for ", colorScheme.getY()))
+                    .append(Component.text(String.valueOf(punishment.getCheckName()), colorScheme.getX(), TextDecoration.BOLD))
+                    .append(Component.text(" on ", colorScheme.getY()))
+                    .append(Component.text(formattedDate, colorScheme.getX())
                             .hoverEvent(HoverEvent.showText(
-                                    Component.text("Occurred " + relativeTime, NamedTextColor.GRAY)
+                                    Component.text("Occurred " + relativeTime, colorScheme.getY())
                             )))
                     .append(Component.newline());
         });
 
         if (punishments.size() > 5) {
-            componentBuilder.append(Component.text("... and more not displayed", NamedTextColor.GRAY, TextDecoration.ITALIC))
+            componentBuilder.append(Component.text("... and more not displayed", colorScheme.getY(), TextDecoration.ITALIC))
                     .append(Component.newline());
         }
 
@@ -135,7 +137,7 @@ public class ProfileCreator {
         return componentBuilder.build();
     }
 
-    public static String getRelativeTime(Instant past) {
+    public String getRelativeTime(Instant past) {
         Duration duration = Duration.between(past, Instant.now());
         long seconds = duration.getSeconds();
 

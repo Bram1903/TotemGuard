@@ -55,6 +55,9 @@ public final class Settings {
             "Alert Format: The format of the alert message."})
     private String alertFormat = "%prefix%&e%player%&7 failed &6%check%&f &7VL[&6%violations%/%max_violations%&7]";
 
+    @Comment("\nColor Scheme Settings:")
+    private ColorScheme colorScheme = new ColorScheme();
+
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
     private int resetViolationsInterval = 30;
 
@@ -72,6 +75,16 @@ public final class Settings {
 
     @Comment("\nChecks")
     private Checks checks = new Checks();
+
+    @Configuration
+    @Getter
+    public static class ColorScheme {
+        @Comment("Primary Color: The primary color of the plugin.")
+        private String primaryColor = "&6";
+
+        @Comment("\nSecondary Color: The secondary color of the plugin.")
+        private String secondaryColor = "&7";
+    }
 
     @Configuration
     @Getter
@@ -341,11 +354,8 @@ public final class Settings {
         @Configuration
         @Getter
         public static class ManualTotemA extends CheckSettings {
-            @Comment("\nCheck Time: Amount of time the /check command waits for a retotem. (in ms)")
+            @Comment("\nCheck Time: Amount of time the check command waits for a retotem. (in ms)")
             private int checkTime = 250;
-
-            @Comment("\nDamage on /check: Toggles damage on /check command to ensure a more accurate result.")
-            private boolean toggleDamageOnCheck = true;
 
             public ManualTotemA() {
                 super(false, 2);

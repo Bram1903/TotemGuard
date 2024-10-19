@@ -20,40 +20,21 @@ package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
-import com.deathmotion.totemguard.data.Constants;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import com.deathmotion.totemguard.util.MessageService;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
 
 public class InfoCommand implements SubCommand {
-    private final Component versionComponent;
+    private final MessageService messageService;
 
     public InfoCommand(TotemGuard plugin) {
-        versionComponent = Component.text()
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix()).decorate(TextDecoration.BOLD))
-                .append(Component.text("Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("Bram", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" and ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("OutDev", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
-                        .decorate(TextDecoration.BOLD)
-                        .decorate(TextDecoration.UNDERLINED)))
-                .clickEvent(ClickEvent.openUrl(Constants.GITHUB_URL))
-                .build();
+        this.messageService = plugin.getMessageService();
     }
 
     @Override
     public boolean execute(CommandSender sender, String[] args) {
-        sender.sendMessage(versionComponent);
+        sender.sendMessage(messageService.version());
         return true;
     }
 

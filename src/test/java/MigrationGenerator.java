@@ -32,6 +32,7 @@ public class MigrationGenerator {
         dbMigration.addPlatform(Platform.SQLITE);
         dbMigration.addPlatform(Platform.MYSQL);
 
+        dbMigration.setName("migrationName");
         dbMigration.generateMigration();
     }
 }
