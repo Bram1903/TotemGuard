@@ -52,8 +52,6 @@ tasks {
         archiveFileName = "${rootProject.name}-${project.version}.jar"
         archiveClassifier = null
 
-        relocate("org.bstats", "io.github.retrooper.packetevents.bstats")
-
         manifest {
             attributes["Implementation-Version"] = rootProject.version
         }
