@@ -9,15 +9,10 @@ plugins {
 repositories {
     mavenLocal()
     mavenCentral()
-    maven {
-        url = uri("https://repo.papermc.io/repository/maven-public/")
-    }
-    maven {
-        url = uri("https://repo.codemc.io/repository/maven-releases/")
-    }
-    maven {
-        url = uri("https://jitpack.io")
-    }
+    maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
+    maven { url = uri("https://repo.codemc.io/repository/maven-releases/") }
+    maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
+    maven { url = uri("https://jitpack.io") }
 }
 
 java {
@@ -56,6 +51,8 @@ tasks {
     shadowJar {
         archiveFileName = "${rootProject.name}-${project.version}.jar"
         archiveClassifier = null
+
+        relocate("org.bstats", "io.github.retrooper.packetevents.bstats")
 
         manifest {
             attributes["Implementation-Version"] = rootProject.version
@@ -107,9 +104,9 @@ tasks {
     )
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
-        url("https://ci.codemc.io/job/retrooper/job/packetevents/lastSuccessfulBuild/artifact/spigot/build/libs/packetevents-spigot-2.5.1-SNAPSHOT.jar")
-        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.0.3/ViaVersion-5.0.3.jar")
-        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.0.3/ViaBackwards-5.0.3.jar")
+        url("https://ci.codemc.io/job/retrooper/job/packetevents/lastSuccessfulBuild/artifact/spigot/build/libs/packetevents-spigot-2.6.0-SNAPSHOT.jar")
+        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.1.0/ViaVersion-5.1.0.jar")
+        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.1.0/ViaBackwards-5.1.0.jar")
     }
 
     runServer {
@@ -122,9 +119,9 @@ tasks {
 
         downloadPlugins {
             from(sharedPlugins)
-            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+115-6157668.jar")
-            url("https://download.luckperms.net/1552/bukkit/loader/LuckPerms-Bukkit-5.4.137.jar")
-            url("https://ci.lucko.me/job/spark/449/artifact/spark-bukkit/build/libs/spark-1.10.103-bukkit.jar")
+            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+121-f7a8f86.jar")
+            url("https://ci.lucko.me/job/spark/462/artifact/spark-bukkit/build/libs/spark-1.10.116-bukkit.jar")
+            url("https://download.luckperms.net/1560/bukkit/loader/LuckPerms-Bukkit-5.4.145.jar")
         }
 
         jvmArgs = jvmArgsExternal

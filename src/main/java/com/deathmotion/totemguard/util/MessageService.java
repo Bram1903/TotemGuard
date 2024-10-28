@@ -57,7 +57,7 @@ public class MessageService {
     }
 
     public Component getPrefix() {
-        return LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix());
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(configManager.getSettings().getPrefix());
     }
 
     public Pair<TextColor, TextColor> getColorScheme() {

@@ -30,9 +30,9 @@ import com.deathmotion.totemguard.util.TGVersion;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
-import io.github.retrooper.packetevents.bstats.Metrics;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -125,10 +125,6 @@ public final class TotemGuard extends JavaPlugin {
     }
 
     private void enableBStats() {
-        try {
-            new Metrics(this, 23179);
-        } catch (Exception e) {
-            this.getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
-        }
+        new Metrics(this, 23179);
     }
 }
