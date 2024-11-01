@@ -40,11 +40,11 @@ public class DatabaseManager {
 
     private DataSourceConfig createDataSourceConfig(Settings.Database settings, TotemGuard plugin) {
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
-        switch (settings.getType()) {
-            case SQLITE:
+        switch (settings.getType().toLowerCase()) {
+            case "sqlite":
                 configureSQLite(dataSourceConfig, plugin);
                 break;
-            case MYSQL:
+            case "mysql":
                 configureMySQL(dataSourceConfig, settings);
                 break;
             default:

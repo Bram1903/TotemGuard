@@ -90,7 +90,7 @@ public final class Settings {
     @Getter
     public static class Database {
         @Comment("Database Type: The type of database to use. (SQLite, MYSQL)")
-        private Platform type = Platform.SQLITE;
+        private String type = String.valueOf(Platform.SQLITE);
 
         @Comment("\nDatabase Host: The host of the database.")
         private String host = "localhost";
