@@ -93,6 +93,8 @@ public final class TotemProcessor extends Check implements Listener {
         ItemStack currentItem = event.getCurrentItem();
         if (currentItem == null || currentItem.getType() != Material.TOTEM_OF_UNDYING) return;
 
+        expectingReEquip.put(player.getUniqueId(), false);
+
         handleTotemEvent(player);
     }
 
@@ -119,7 +121,6 @@ public final class TotemProcessor extends Check implements Listener {
 
             long currentTime = System.currentTimeMillis();
             Long totemUseTime = totemUsage.get(playerId);
-            expectingReEquip.put(playerId, false);
 
             TotemPlayer totemPlayer = userTracker.getTotemPlayer(playerId).orElse(null);
             if (totemPlayer == null) return;
