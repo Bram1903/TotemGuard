@@ -104,6 +104,8 @@ public final class TotemProcessor extends Check implements Listener {
         if (!expectingReEquip.getOrDefault(player.getUniqueId(), false)) return;
         if (event.getOffHandItem().getType() != Material.TOTEM_OF_UNDYING) return;
 
+        expectingReEquip.put(player.getUniqueId(), false);
+
         handleTotemEvent(player);
     }
 
