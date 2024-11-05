@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.TotemEventListener;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.MathUtil;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -36,6 +37,7 @@ import org.bukkit.entity.Player;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,11 +74,20 @@ public class TrackerManager implements TotemEventListener {
 
     @Override
     public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
-        long latestInterval = totemPlayer.totemData().getLatestIntervals(1).get(0);
+        List<Long> intervals = totemPlayer.totemData().getLatestIntervals(5);
+        if (intervals.isEmpty()) return;
+
+        long latestInterval = intervals.get(0);
+        double averageInterval = MathUtil.trim(2, MathUtil.getMean(intervals));
+
+        double stDev = 0;
+        if (intervals.size() > 1) {
+            stDev = MathUtil.trim(2, MathUtil.getStandardDeviation(intervals));
+        }
 
         TargetTracker tracker = targetTrackers.get(player);
         if (tracker != null) {
-            tracker.setLatestData(new TotemData(latestInterval, Instant.now()));
+            tracker.setLatestData(new TotemData(latestInterval, averageInterval, stDev, Instant.now()));
             sendActionBarToViewers(tracker);
         }
     }
@@ -212,6 +223,12 @@ public class TrackerManager implements TotemEventListener {
                 .append(Component.text("Speed: ", colorScheme.getY(), TextDecoration.BOLD))
                 .append(Component.text(data.latestInterval() + "ms", colorScheme.getX()))
                 .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                .append(Component.text("Average: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(data.averageInterval + "ms", colorScheme.getX()))
+                .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                .append(Component.text("Std Dev: ", colorScheme.getY(), TextDecoration.BOLD))
+                .append(Component.text(data.stDev, colorScheme.getX()))
+                .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
                 .append(Component.text("Updated: ", colorScheme.getY(), TextDecoration.BOLD))
                 .append(Component.text(timeAgo, colorScheme.getX()))
                 .build();
@@ -229,7 +246,7 @@ public class TrackerManager implements TotemEventListener {
         }
     }
 
-    private record TotemData(long latestInterval, Instant lastUpdated) {
+    private record TotemData(long latestInterval, double averageInterval, double stDev, Instant lastUpdated) {
     }
 
     @Getter

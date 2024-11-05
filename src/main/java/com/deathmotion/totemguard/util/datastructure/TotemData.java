@@ -22,8 +22,10 @@ import com.deathmotion.totemguard.util.MathUtil;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.Collectors;
 
 @Getter
 public class TotemData {
@@ -45,8 +47,12 @@ public class TotemData {
     public List<Long> getLatestIntervals(int amount) {
         return intervals.stream()
                 .skip(Math.max(0, intervals.size() - amount))
-                .toList();
+                .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
+                    Collections.reverse(list);
+                    return list;
+                }));
     }
+
 
     public void clear() {
         latestStandardDeviation = 0;
