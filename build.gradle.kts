@@ -40,7 +40,7 @@ dependencies {
 }
 
 group = "com.deathmotion.totemguard"
-version = "1.1.0-SNAPSHOT"
+version = "1.1.0"
 description = "TotemGuard"
 
 tasks {

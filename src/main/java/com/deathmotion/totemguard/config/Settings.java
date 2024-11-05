@@ -40,7 +40,7 @@ public final class Settings {
 
     @Comment({
             "",
-            "Supported Placeholders in the settings:",
+            "Supported Placeholders for alerts and punishments:",
             "%prefix% - Prefix of the Plugin",
             "%uuid% - UUID of the Player",
             "%player% - Name of the Player",
@@ -54,6 +54,12 @@ public final class Settings {
             "",
             "Alert Format: The format of the alert message."})
     private String alertFormat = "%prefix%&e%player%&7 failed &6%check%&f &7VL[&6%violations%/%max_violations%&7]";
+
+    @Comment("\nAlerts Enabled: Message when enabling alerts.")
+    private String alertsEnabled = "%prefix%&aAlerts enabled";
+
+    @Comment("\nAlerts Disabled: Message when disabling alerts.")
+    private String alertsDisabled = "%prefix%&cAlerts disabled";
 
     @Comment("\nColor Scheme Settings:")
     private ColorScheme colorScheme = new ColorScheme();

@@ -38,8 +38,10 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.Map;
 
 public class MessageService {
     private final TotemGuard plugin;
@@ -74,7 +76,6 @@ public class MessageService {
         return new Pair<>(primaryColor, secondaryColor);
     }
 
-
     public Component version() {
         return getPrefix()
                 .append(Component.text("Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
@@ -88,6 +89,26 @@ public class MessageService {
                         .decorate(TextDecoration.BOLD)
                         .decorate(TextDecoration.UNDERLINED)))
                 .clickEvent(ClickEvent.openUrl(Constants.GITHUB_URL));
+    }
+
+    public Component toggleAlerts(boolean enabled, Player player) {
+        String alertToggleFormat;
+
+        if (enabled) {
+            alertToggleFormat = configManager.getSettings().getAlertsEnabled();
+        } else {
+            alertToggleFormat = configManager.getSettings().getAlertsDisabled();
+        }
+
+        String parsedMessage = PlaceholderUtil.replacePlaceholders(alertToggleFormat, Map.of(
+                "%prefix%", configManager.getSettings().getPrefix(),
+                "%uuid%", player.getUniqueId().toString(),
+                "%player%", player.getName()
+        ));
+
+        return Component.text()
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(parsedMessage))
+                .build();
     }
 
     public Component playerNotFound() {

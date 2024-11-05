@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.models.CheckDetails;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.MessageService;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -39,10 +40,13 @@ public class AlertManager {
 
     private final TotemGuard plugin;
     private final DatabaseService databaseService;
+    private final MessageService messageService;
 
     public AlertManager(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseService = plugin.getDatabaseService();
+        this.messageService = plugin.getMessageService();
+
         this.enabledAlerts = new ConcurrentHashMap<>();
     }
 
@@ -59,10 +63,10 @@ public class AlertManager {
         UUID playerId = player.getUniqueId();
         if (enabledAlerts.containsKey(playerId)) {
             enabledAlerts.remove(playerId);
-            sendAlertStatusMessage(player, "Alerts disabled", NamedTextColor.RED);
+            player.sendMessage(messageService.toggleAlerts(false, player));
         } else {
             enabledAlerts.put(playerId, player);
-            sendAlertStatusMessage(player, "Alerts enabled", NamedTextColor.GREEN);
+            player.sendMessage(messageService.toggleAlerts(true, player));
         }
     }
 
