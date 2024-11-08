@@ -75,7 +75,7 @@ permissions:
     default: op
   TotemGuard.Update:
     description: Allows the player to receive update notifications.
-    default: true
+    default: op
   TotemGuard.Database.Trim:
     description: Allows the player to trim the database.
     default: op
