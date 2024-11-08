@@ -43,7 +43,7 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 
 | Platform                        | Supported Versions |
 |---------------------------------|--------------------|
-| Paper, Folia, and related forks | 1.18 - 1.21.1      |
+| Paper, Folia, and related forks | 1.18 - 1.21.3      |
 
 ## Checks
 
