@@ -52,6 +52,7 @@ public class AlertManager {
 
     public void sendAlert(TotemPlayer totemPlayer, CheckDetails alert) {
         enabledAlerts.values().forEach(player -> player.sendMessage(alert.getAlert()));
+        plugin.getProxyMessenger().sendPluginMessage(alert.getAlert());
         databaseService.saveAlert(totemPlayer, alert);
     }
 

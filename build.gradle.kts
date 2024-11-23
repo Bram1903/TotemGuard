@@ -40,7 +40,7 @@ dependencies {
 }
 
 group = "com.deathmotion.totemguard"
-version = "1.1.0"
+version = "1.1.1-SNAPSHOT"
 description = "TotemGuard"
 
 tasks {
@@ -51,6 +51,8 @@ tasks {
     shadowJar {
         archiveFileName = "${rootProject.name}-${project.version}.jar"
         archiveClassifier = null
+
+        relocate("net.kyori.adventure.text.serializer.gson", "io.github.retrooper.packetevents.adventure.serializer.gson")
 
         manifest {
             attributes["Implementation-Version"] = rootProject.version
@@ -117,7 +119,7 @@ tasks {
 
         downloadPlugins {
             from(sharedPlugins)
-            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+121-f7a8f86.jar")
+            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+129-2ac37d8.jar")
             url("https://ci.lucko.me/job/spark/462/artifact/spark-bukkit/build/libs/spark-1.10.116-bukkit.jar")
             url("https://download.luckperms.net/1560/bukkit/loader/LuckPerms-Bukkit-5.4.145.jar")
         }

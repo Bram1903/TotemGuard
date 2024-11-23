@@ -61,6 +61,9 @@ public final class Settings {
     @Comment("\nAlerts Disabled: Message when disabling alerts.")
     private String alertsDisabled = "%prefix%&cAlerts disabled";
 
+    @Comment("\nProxy Alert Settings:")
+    private ProxyAlerts proxyAlerts = new ProxyAlerts();
+
     @Comment("\nColor Scheme Settings:")
     private ColorScheme colorScheme = new ColorScheme();
 
@@ -81,6 +84,16 @@ public final class Settings {
 
     @Comment("\nChecks")
     private Checks checks = new Checks();
+
+    @Configuration
+    @Getter
+    public static class ProxyAlerts {
+        @Comment("When enabled, the plugin will send alerts to other servers connected to the proxy.")
+        private boolean send = true;
+
+        @Comment("\nWhen enabled, the plugin will receive alerts from other servers connected to the proxy.")
+        private boolean receive = true;
+    }
 
     @Configuration
     @Getter

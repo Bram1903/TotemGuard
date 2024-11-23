@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.listeners.ReloadListener;
 import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.mojang.MojangService;
+import com.deathmotion.totemguard.packetlisteners.ProxyMessenger;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.TGVersion;
@@ -57,6 +58,7 @@ public final class TotemGuard extends JavaPlugin {
     private PunishmentManager punishmentManager;
     private CheckManager checkManager;
     private TrackerManager trackerManager;
+    private ProxyMessenger proxyMessenger;
 
     @Override
     public void onEnable() {
@@ -82,6 +84,7 @@ public final class TotemGuard extends JavaPlugin {
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
         trackerManager = new TrackerManager(this);
+        proxyMessenger = new ProxyMessenger(this);
 
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
 
