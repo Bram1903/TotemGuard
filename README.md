@@ -12,11 +12,14 @@
 
 ## Overview
 
-TotemGuard is a lightweight anti-cheat plugin designed to detect players using AutoTotem. It operates asynchronously to minimize server impact and offers extensive configurability, enabling server owners to tailor the plugin to their specific needs.
+TotemGuard is a lightweight anti-cheat plugin designed to detect players using AutoTotem. It operates asynchronously to
+minimize server impact and offers extensive configurability, enabling server owners to tailor the plugin to their
+specific needs.
 
 ### Prerequisites
 
-TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents) library to function. Ensure it is installed on your server.
+TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents) library to function. Ensure it is
+installed on your server.
 
 ## Table of Contents
 
@@ -75,7 +78,8 @@ TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents)
 - **Update Checker** - Automatically checks for updates on startup.
 - **Bypass Permission** - Allows players with `TotemGuard.Bypass` to bypass checks.
 - **Bedrock Exception** - Automatically ignores Bedrock Edition players to prevent false positives.
-- **BetterReload Support** - Integrates with [BetterReload](https://modrinth.com/plugin/betterreload) for seamless configuration reloading.
+- **BetterReload Support** - Integrates with [BetterReload](https://modrinth.com/plugin/betterreload) for seamless
+  configuration reloading.
 
 ## Commands
 
@@ -115,7 +119,8 @@ Operators (OPs) have these permissions by default, except `TotemGuard.Debug`:
 ## Installation
 
 1. **Prerequisites**: Ensure [PacketEvents](https://modrinth.com/plugin/packetevents) is installed.
-2. **Download**: Get the latest release from the [GitHub release page](https://github.com/Bram1903/TotemGuard/releases/latest).
+2. **Download**: Get the latest release from
+   the [GitHub release page](https://github.com/Bram1903/TotemGuard/releases/latest).
 3. **Install**: Place the plugin JAR file in your server's `plugins` directory.
 4. **Configure**: Customize the `config.yml` file as needed.
 5. **Reload**: Apply the changes using `/totemguard reload`.
@@ -157,9 +162,18 @@ Operators (OPs) have these permissions by default, except `TotemGuard.Debug`:
 
 ## Credits
 
-Special thanks to:
+**Maintainer: [@OutDev](https://github.com/OutDev0)**  
+For their creative ideas and dedicated efforts in maintaining the project.
 
-- **[@Retrooper](https://github.com/retrooper)**: Author of [PacketEvents](https://github.com/retrooper/packetevents).
+### Special Thanks to Our Contributors
+
+- **[@Retrooper](https://github.com/retrooper)**  
+  For developing [PacketEvents](https://github.com/retrooper/packetevents), a foundational library integral to the
+  project's success.
+
+- **[@MattMX](https://github.com/Matt-MX)**  
+  For supporting development by providing server access and contributing valuable insights
+  through [PvPHub](https://github.com/PvPHubLLC).
 
 ## License
 
