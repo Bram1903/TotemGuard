@@ -23,8 +23,9 @@ import com.deathmotion.totemguard.config.ConfigManager;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.listeners.ReloadListener;
 import com.deathmotion.totemguard.manager.*;
+import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
+import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.mojang.MojangService;
-import com.deathmotion.totemguard.packetlisteners.ProxyMessenger;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.TGVersion;
@@ -33,6 +34,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
+import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -58,7 +60,8 @@ public final class TotemGuard extends JavaPlugin {
     private PunishmentManager punishmentManager;
     private CheckManager checkManager;
     private TrackerManager trackerManager;
-    private ProxyMessenger proxyMessenger;
+    @Setter
+    private ProxyAlertMessenger proxyMessenger;
 
     @Override
     public void onEnable() {
@@ -84,7 +87,8 @@ public final class TotemGuard extends JavaPlugin {
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
         trackerManager = new TrackerManager(this);
-        proxyMessenger = new ProxyMessenger(this);
+        proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxyAlerts().getMethod(), this)
+            .orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
 
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
 
