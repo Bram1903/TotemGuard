@@ -42,7 +42,7 @@ dependencies {
 }
 
 group = "com.deathmotion.totemguard"
-version = "1.1.1-SNAPSHOT"
+version = "1.2.0-SNAPSHOT"
 description = "TotemGuard"
 
 tasks {
@@ -123,9 +123,9 @@ tasks {
 
         downloadPlugins {
             from(sharedPlugins)
-            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+129-2ac37d8.jar")
-            url("https://ci.lucko.me/job/spark/462/artifact/spark-bukkit/build/libs/spark-1.10.116-bukkit.jar")
-            url("https://download.luckperms.net/1560/bukkit/loader/LuckPerms-Bukkit-5.4.145.jar")
+            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+141-c7cc1b4.jar")
+            url("https://ci.lucko.me/job/spark/465/artifact/spark-bukkit/build/libs/spark-1.10.119-bukkit.jar")
+            url("https://download.luckperms.net/1561/bukkit/loader/LuckPerms-Bukkit-5.4.146.jar")
         }
 
         jvmArgs = jvmArgsExternal

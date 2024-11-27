@@ -97,13 +97,13 @@ public final class Settings {
         })
         private String method = "plugin-messaging";
 
-        @Comment("When enabled, the plugin will send alerts to other servers connected to the proxy.")
+        @Comment("\nWhen enabled, the plugin will send alerts to other servers connected to the proxy.")
         private boolean send = true;
 
         @Comment("\nWhen enabled, the plugin will receive alerts from other servers connected to the proxy.")
         private boolean receive = true;
 
-
+        @Comment("\nRedis Configuration")
         private RedisConfiguration redis = new RedisConfiguration();
 
         @Configuration
