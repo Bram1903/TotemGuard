@@ -14,7 +14,6 @@ import com.google.common.io.ByteStreams;
 import io.github.retrooper.packetevents.adventure.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -23,8 +22,10 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
     private static final String BUNGEECORD_CHANNEL = "BungeeCord";
     private static final String BUNGEECORD_CHANNEL_ALT = "bungeecord:main";
     private static final String TOTEMGUARD_MESSAGE = "TOTEMGUARD";
+
     private final @NotNull TotemGuard plugin;
     private final @NotNull AlertManager alertManager;
+
     private boolean proxyEnabled;
 
     public PluginMessageProxyMessenger(@NotNull TotemGuard plugin) {
@@ -137,12 +138,6 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
         return Bukkit.spigot().getPaperConfig().getBoolean("proxies.velocity-support.enabled")
             || Bukkit.spigot().getSpigotConfig().getBoolean("settings.bungeecord")
             || (isModernVersion() && Bukkit.spigot().getPaperConfig().getBoolean("proxies.velocity.enabled"));
-    }
-
-    private boolean getBooleanFromConfig(String filePath, String key) {
-        File file = new File(filePath);
-        if (!file.exists()) return false;
-        return YamlConfiguration.loadConfiguration(file).getBoolean(key);
     }
 
     private boolean isModernVersion() {

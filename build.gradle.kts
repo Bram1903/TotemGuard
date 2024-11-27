@@ -80,6 +80,7 @@ tasks {
         inputs.property("configlibVersion", libs.versions.configlib.get())
         inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
         inputs.property("expiringmapVersion", libs.versions.expiringmap.get())
+        inputs.property("lettuceVersion", libs.versions.lettuce.get())
 
         filesMatching("plugin.yml") {
             expand(
@@ -87,7 +88,8 @@ tasks {
                 "ebeanVersion" to libs.versions.ebean.get(),
                 "configlibVersion" to libs.versions.configlib.get(),
                 "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
-                "expiringmapVersion" to libs.versions.expiringmap.get()
+                "expiringmapVersion" to libs.versions.expiringmap.get(),
+                "lettuceVersion" to libs.versions.lettuce.get()
             )
         }
     }
