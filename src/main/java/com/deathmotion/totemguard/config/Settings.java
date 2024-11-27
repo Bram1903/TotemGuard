@@ -88,11 +88,33 @@ public final class Settings {
     @Configuration
     @Getter
     public static class ProxyAlerts {
+        @Comment({
+            "Proxy messaging method",
+            "How should be send and receive messages from sibling servers?",
+            "Options:",
+            " - plugin-messaging (Will use plugin messaging through player connections.)",
+            " - redis (Requires further configuration in the 'redis' section below.)"
+        })
+        private String method = "plugin-messaging";
+
         @Comment("When enabled, the plugin will send alerts to other servers connected to the proxy.")
         private boolean send = true;
 
         @Comment("\nWhen enabled, the plugin will receive alerts from other servers connected to the proxy.")
         private boolean receive = true;
+
+
+        private RedisConfiguration redis = new RedisConfiguration();
+
+        @Configuration
+        @Getter
+        public static class RedisConfiguration {
+            private String host = "localhost";
+            private int port = 0;
+            private String username = "null";
+            private String password = "1234";
+            private String channel = "totemguard";
+        }
     }
 
     @Configuration

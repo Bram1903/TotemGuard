@@ -32,11 +32,13 @@ dependencies {
     compileOnly(libs.ebean.core)
     compileOnly(libs.ebean.sqlite)
     compileOnly(libs.ebean.mysql)
+    compileOnly(libs.lettuce.core)
     annotationProcessor(libs.lombok)
     annotationProcessor(libs.ebean.processor)
     testImplementation(libs.ebean.test)
     testImplementation(libs.ebean.sqlite)
     testImplementation(libs.ebean.mysql)
+    testImplementation(libs.lettuce.core)
 }
 
 group = "com.deathmotion.totemguard"
