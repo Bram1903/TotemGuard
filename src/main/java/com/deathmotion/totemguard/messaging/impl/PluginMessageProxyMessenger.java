@@ -1,7 +1,26 @@
-package com.deathmotion.totemguard.messaging;
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2024 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.messaging.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.manager.AlertManager;
+import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -21,16 +40,33 @@ import java.io.*;
 public class PluginMessageProxyMessenger extends PacketListenerAbstract implements ProxyAlertMessenger {
     private static final String BUNGEECORD_CHANNEL = "BungeeCord";
     private static final String BUNGEECORD_CHANNEL_ALT = "bungeecord:main";
-    private static final String TOTEMGUARD_MESSAGE = "TOTEMGUARD";
 
     private final @NotNull TotemGuard plugin;
     private final @NotNull AlertManager alertManager;
+    private final @NotNull String messageChannel;
 
     private boolean proxyEnabled;
 
     public PluginMessageProxyMessenger(@NotNull TotemGuard plugin) {
         this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
+        this.messageChannel = plugin.getConfigManager().getSettings().getProxyAlerts().getChannel();
+    }
+
+    public String readRawAlert(byte[] data) {
+        ByteArrayDataInput input = ByteStreams.newDataInput(data);
+        if (!messageChannel.equals(input.readUTF())) return null;
+
+        byte[] messageBytes = new byte[input.readShort()];
+        input.readFully(messageBytes);
+
+        try (DataInputStream stream = new DataInputStream(new ByteArrayInputStream(messageBytes))) {
+            return stream.readUTF();
+        } catch (IOException e) {
+            TotemGuard.getInstance().getLogger().severe("Failed to read forwarded alert from another server.");
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
@@ -70,9 +106,9 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
         if (pluginMessage == null) return;
 
         Bukkit.getOnlinePlayers()
-            .stream()
-            .findFirst()
-            .ifPresent(player -> player.sendPluginMessage(plugin, BUNGEECORD_CHANNEL, pluginMessage));
+                .stream()
+                .findFirst()
+                .ifPresent(player -> player.sendPluginMessage(plugin, BUNGEECORD_CHANNEL, pluginMessage));
     }
 
     @Override
@@ -90,28 +126,12 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
         alertManager.sendAlert(alert);
     }
 
-    public static String readRawAlert(byte[] data) {
-        ByteArrayDataInput input = ByteStreams.newDataInput(data);
-        if (!TOTEMGUARD_MESSAGE.equals(input.readUTF())) return null;
-
-        byte[] messageBytes = new byte[input.readShort()];
-        input.readFully(messageBytes);
-
-        try (DataInputStream stream = new DataInputStream(new ByteArrayInputStream(messageBytes))) {
-            return stream.readUTF();
-        } catch (IOException e) {
-            TotemGuard.getInstance().getLogger().severe("Failed to read forwarded alert from another server.");
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     private byte[] createPluginMessage(Component message) {
         try (ByteArrayOutputStream messageBytes = new ByteArrayOutputStream()) {
             ByteArrayDataOutput output = ByteStreams.newDataOutput();
             output.writeUTF("Forward");
             output.writeUTF("ONLINE");
-            output.writeUTF(TOTEMGUARD_MESSAGE);
+            output.writeUTF(messageChannel);
 
             String rawMessage = GsonComponentSerializer.gson().serialize(message);
             new DataOutputStream(messageBytes).writeUTF(rawMessage);
@@ -136,8 +156,8 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
 
     private boolean isProxyEnabled() {
         return Bukkit.spigot().getPaperConfig().getBoolean("proxies.velocity-support.enabled")
-            || Bukkit.spigot().getSpigotConfig().getBoolean("settings.bungeecord")
-            || (isModernVersion() && Bukkit.spigot().getPaperConfig().getBoolean("proxies.velocity.enabled"));
+                || Bukkit.spigot().getSpigotConfig().getBoolean("settings.bungeecord")
+                || (isModernVersion() && Bukkit.spigot().getPaperConfig().getBoolean("proxies.velocity.enabled"));
     }
 
     private boolean isModernVersion() {

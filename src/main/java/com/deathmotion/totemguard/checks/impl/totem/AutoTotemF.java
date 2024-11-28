@@ -65,8 +65,6 @@ public final class AutoTotemF extends Check implements Listener {
         if (inventory == null || inventory.getType() != InventoryType.PLAYER) return;
         if (!ValidClickTypes.isClickTypeValid((event.getClick()))) return;
 
-        plugin.debug("Click Type: " + event.getClick() + " (" + player.getName() + ")");
-
         if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
             invClick.put(player.getUniqueId(), System.currentTimeMillis());
         }
@@ -103,8 +101,6 @@ public final class AutoTotemF extends Check implements Listener {
 
     private void checkSuspiciousActivity(Player player, long storedTime, Action action) {
         long timeDifference = Math.abs(System.currentTimeMillis() - storedTime);
-
-        plugin.debug("Time difference: " + timeDifference + "ms (" + player.getName() + ")");
 
         final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
         if (timeDifference <= settings.getTimeDifference()) {

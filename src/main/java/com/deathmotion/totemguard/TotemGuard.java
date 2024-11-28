@@ -88,8 +88,8 @@ public final class TotemGuard extends JavaPlugin {
         punishmentManager = new PunishmentManager(this);
         checkManager = new CheckManager(this);
         trackerManager = new TrackerManager(this);
-        proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxyAlerts().getMethod(), this)
-                .orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
+        proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxyAlerts().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
+        proxyMessenger.start();
 
         PacketEvents.getAPI().getEventManager().registerListener(userTracker, PacketListenerPriority.LOW);
 

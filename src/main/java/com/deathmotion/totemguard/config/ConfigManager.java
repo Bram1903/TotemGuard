@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.config;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
@@ -72,11 +71,6 @@ public class ConfigManager {
 
         plugin.getProxyMessenger().stop();
         settings = YamlConfigurations.load(new File(plugin.getDataFolder(), "config.yml").toPath(), Settings.class, properties);
-        plugin.setProxyMessenger(
-            AlertMessengerRegistry.getMessenger(settings.getProxyAlerts().getMethod(), plugin)
-                .orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"))
-        );
-        plugin.getProxyMessenger().start();
     }
 
     private String returnHeader() {

@@ -97,6 +97,9 @@ public final class Settings {
         })
         private String method = "plugin-messaging";
 
+        @Comment("\nChannel: The channel to send and receive alerts.")
+        private String channel = "totemguard";
+
         @Comment("\nWhen enabled, the plugin will send alerts to other servers connected to the proxy.")
         private boolean send = true;
 
@@ -110,10 +113,9 @@ public final class Settings {
         @Getter
         public static class RedisConfiguration {
             private String host = "localhost";
-            private int port = 0;
-            private String username = "null";
-            private String password = "1234";
-            private String channel = "totemguard";
+            private int port = 25571;
+            private String username = "default";
+            private String password = "yourPassword";
         }
     }
 
