@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.config;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
@@ -42,18 +43,18 @@ public class ConfigManager {
     @NotNull
     public Optional<Throwable> loadConfig() {
         final YamlConfigurationProperties properties = ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder()
-            .charset(StandardCharsets.UTF_8)
-            .outputNulls(true)
-            .inputNulls(false)
-            .header(returnHeader())
-            .build();
+                .charset(StandardCharsets.UTF_8)
+                .outputNulls(true)
+                .inputNulls(false)
+                .header(returnHeader())
+                .build();
         final File settingsFile = new File(plugin.getDataFolder(), "config.yml");
 
         try {
             settings = YamlConfigurations.update(
-                settingsFile.toPath(),
-                Settings.class,
-                properties
+                    settingsFile.toPath(),
+                    Settings.class,
+                    properties
             );
             return Optional.empty();
         } catch (Exception e) {
@@ -63,25 +64,26 @@ public class ConfigManager {
 
     public void reload() {
         final YamlConfigurationProperties properties = ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder()
-            .charset(StandardCharsets.UTF_8)
-            .outputNulls(true)
-            .inputNulls(false)
-            .header(returnHeader())
-            .build();
+                .charset(StandardCharsets.UTF_8)
+                .outputNulls(true)
+                .inputNulls(false)
+                .header(returnHeader())
+                .build();
 
         plugin.getProxyMessenger().stop();
         settings = YamlConfigurations.load(new File(plugin.getDataFolder(), "config.yml").toPath(), Settings.class, properties);
+        plugin.setProxyMessenger(AlertMessengerRegistry.getMessenger(settings.getProxyAlerts().getMethod(), plugin).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!")));
         plugin.getProxyMessenger().start();
     }
 
     private String returnHeader() {
         return """
-              ___________     __                   ________                       .___
-              \\__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
-                |    | /  _ \\   __\\/ __ \\ /     \\/   \\  ___|  |  \\__  \\\\_  __ \\/ __ |
-                |    |(  <_> )  | \\  ___/|  Y Y  \\    \\_\\  \\  |  // __ \\|  | \\/ /_/ |
-                |____| \\____/|__|  \\___  >__|_|  /\\______  /____/(____  /__|  \\____ |
-                                       \\/      \\/        \\/           \\/           \\/\
-            """;
+                  ___________     __                   ________                       .___
+                  \\__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+                    |    | /  _ \\   __\\/ __ \\ /     \\/   \\  ___|  |  \\__  \\\\_  __ \\/ __ |
+                    |    |(  <_> )  | \\  ___/|  Y Y  \\    \\_\\  \\  |  // __ \\|  | \\/ /_/ |
+                    |____| \\____/|__|  \\___  >__|_|  /\\______  /____/(____  /__|  \\____ |
+                                           \\/      \\/        \\/           \\/           \\/\
+                """;
     }
 }
