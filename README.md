@@ -77,6 +77,8 @@ installed on your server.
 - **Highly Configurable** - Adjust nearly every setting during runtime to fit your server's needs.
 - **Update Checker** - Automatically checks for updates on startup.
 - **Bypass Permission** - Allows players with `TotemGuard.Bypass` to bypass checks.
+- **Cross Server Alerts** - Easily send and retrieve alerts across multiple servers, through either plugin messaging or
+  Redis.
 - **Bedrock Exception** - Automatically ignores Bedrock Edition players to prevent false positives.
 - **BetterReload Support** - Integrates with [BetterReload](https://modrinth.com/plugin/betterreload) for seamless
   configuration reloading.
