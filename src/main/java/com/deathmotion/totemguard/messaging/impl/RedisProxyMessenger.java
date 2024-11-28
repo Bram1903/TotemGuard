@@ -40,23 +40,21 @@ import java.util.UUID;
 public class RedisProxyMessenger extends RedisPubSubAdapter<byte[], byte[]> implements ProxyAlertMessenger {
     private final @NotNull TotemGuard plugin;
     private final @NotNull String identifier;
-    private final byte[] channel;
 
     private StatefulRedisPubSubConnection<byte[], byte[]> pubsub = null;
     private StatefulRedisConnection<byte[], byte[]> publishConnection = null;
+    private byte[] channel;
 
     public RedisProxyMessenger(@NotNull TotemGuard plugin) {
         this.plugin = plugin;
         this.identifier = UUID.randomUUID().toString();
-        channel = plugin.getConfigManager().getSettings().getProxyAlerts().getChannel().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
     public void start() {
-        final Settings.ProxyAlerts.RedisConfiguration settings = plugin.getConfigManager()
-                .getSettings()
-                .getProxyAlerts()
-                .getRedis();
+        Settings.ProxyAlerts proxySettings = plugin.getConfigManager().getSettings().getProxyAlerts();
+        channel = proxySettings.getChannel().getBytes(StandardCharsets.UTF_8);
+        final Settings.ProxyAlerts.RedisConfiguration settings = proxySettings.getRedis();
 
         try {
             RedisClient redisClient = RedisClient.create(

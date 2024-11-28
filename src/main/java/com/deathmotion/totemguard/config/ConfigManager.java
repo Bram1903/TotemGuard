@@ -71,6 +71,7 @@ public class ConfigManager {
 
         plugin.getProxyMessenger().stop();
         settings = YamlConfigurations.load(new File(plugin.getDataFolder(), "config.yml").toPath(), Settings.class, properties);
+        plugin.getProxyMessenger().start();
     }
 
     private String returnHeader() {

@@ -21,9 +21,6 @@ package com.deathmotion.totemguard.messaging;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.messaging.impl.PluginMessageProxyMessenger;
 import com.deathmotion.totemguard.messaging.impl.RedisProxyMessenger;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -46,12 +43,6 @@ public class AlertMessengerRegistry {
     }
 
     public static Optional<ProxyAlertMessenger> getMessenger(@NotNull String identifier, @NotNull TotemGuard instance) {
-        return getMessengerSupplier(identifier).map((func) -> {
-            ProxyAlertMessenger messenger = func.apply(instance);
-            if (messenger instanceof PacketListener) {
-                PacketEvents.getAPI().getEventManager().registerListener((PacketListener) messenger, PacketListenerPriority.NORMAL);
-            }
-            return messenger;
-        });
+        return getMessengerSupplier(identifier).map((func) -> func.apply(instance));
     }
 }

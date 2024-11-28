@@ -43,14 +43,13 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
 
     private final @NotNull TotemGuard plugin;
     private final @NotNull AlertManager alertManager;
-    private final @NotNull String messageChannel;
 
     private boolean proxyEnabled;
+    private String messageChannel;
 
     public PluginMessageProxyMessenger(@NotNull TotemGuard plugin) {
         this.plugin = plugin;
         this.alertManager = plugin.getAlertManager();
-        this.messageChannel = plugin.getConfigManager().getSettings().getProxyAlerts().getChannel();
     }
 
     public String readRawAlert(byte[] data) {
@@ -78,6 +77,7 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
             // Register incoming listener and outgoing plugin channel
             PacketEvents.getAPI().getEventManager().registerListener(this);
             plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, BUNGEECORD_CHANNEL);
+            this.messageChannel = plugin.getConfigManager().getSettings().getProxyAlerts().getChannel();
             plugin.debug("Proxy messenger has been enabled.");
         } else {
             plugin.debug("Proxy messenger failed to enable.");
