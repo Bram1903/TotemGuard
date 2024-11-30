@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.models.TopViolation;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -40,7 +41,8 @@ public class TopCreator {
                 .append(Component.newline());
 
         topViolations.forEach(topViolation -> {
-            TextComponent.Builder hoverTextBuilder = Component.text().append(Component.text("Alerts per check:\n", colorScheme.getY(), TextDecoration.BOLD));
+            TextComponent.Builder hoverTextBuilder = Component.text()
+                    .append(Component.text("Alerts per check:\n", colorScheme.getY(), TextDecoration.BOLD));
 
             topViolation.checkViolations().forEach((checkName, violationCount) ->
                     hoverTextBuilder.append(Component.text("- ", colorScheme.getX()))
@@ -48,14 +50,25 @@ public class TopCreator {
                             .append(Component.text(violationCount + "\n", colorScheme.getX()))
             );
 
-            // Build the hover event component
-            HoverEvent<Component> hoverEvent = HoverEvent.showText(hoverTextBuilder.build());
+            hoverTextBuilder.append(Component.newline())
+                    .append(Component.text("Click to run ", colorScheme.getY()))
+                    .append(Component.text("/tg profile " + topViolation.username(), colorScheme.getX()));
 
-            componentBuilder.append(Component.text("- ", colorScheme.getX()))
-                    .append(Component.text(topViolation.username() + ": ", colorScheme.getX(), TextDecoration.BOLD)
-                            .hoverEvent(hoverEvent))
-                    .append(Component.text(topViolation.violations() + " violations", colorScheme.getY()))
-                    .append(Component.newline());
+            // Create hover and click events
+            HoverEvent<Component> hoverEvent = HoverEvent.showText(hoverTextBuilder.build());
+            ClickEvent clickEvent = ClickEvent.runCommand("/tg profile " + topViolation.username());
+
+            // Build the player component
+            Component perPlayerComponent = Component.text()
+                    .append(Component.text("- ", colorScheme.getX()))
+                    .append(Component.text(topViolation.username() + ": ", colorScheme.getX(), TextDecoration.BOLD))
+                    .append(Component.text("VL[" + topViolation.violations() + "]", colorScheme.getY()))
+                    .append(Component.newline())
+                    .hoverEvent(hoverEvent)
+                    .clickEvent(clickEvent)
+                    .build();
+
+            componentBuilder.append(perPlayerComponent);
         });
 
         return componentBuilder.build();
