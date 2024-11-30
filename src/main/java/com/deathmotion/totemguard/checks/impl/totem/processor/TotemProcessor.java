@@ -55,7 +55,7 @@ public final class TotemProcessor extends Check implements Listener {
     private final ConcurrentHashMap<UUID, Boolean> expectingReEquip = new ConcurrentHashMap<>();
 
     private TotemProcessor(TotemGuard plugin) {
-        super(plugin, null, null);
+        super(plugin, "TotemProcessor", "No description");
         this.plugin = plugin;
         this.userTracker = plugin.getUserTracker();
 

@@ -16,15 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.checks;
+package com.deathmotion.totemguard.models;
 
-import com.deathmotion.totemguard.models.CheckRecord;
-import java.util.UUID;
+import java.util.Map;
 
-public interface ICheck {
-    void resetData();
-
-    void resetData(UUID uuid);
-
-    CheckRecord getViolations();
+public record TopViolation(String username, int violations, Map<String, Integer> checkViolations) {
 }

@@ -26,11 +26,13 @@ import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.models.CheckDetails;
 import com.deathmotion.totemguard.models.SafetyStatus;
+import com.deathmotion.totemguard.models.TopViolation;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.deathmotion.totemguard.util.messages.AlertCreator;
 import com.deathmotion.totemguard.util.messages.ProfileCreator;
 import com.deathmotion.totemguard.util.messages.StatsCreator;
+import com.deathmotion.totemguard.util.messages.TopCreator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -49,6 +51,7 @@ public class MessageService {
     private final ProfileCreator profileCreator;
     private final AlertCreator alertCreator;
     private final StatsCreator statsCreator;
+    private final TopCreator topCreator;
 
     public MessageService(TotemGuard plugin) {
         this.plugin = plugin;
@@ -56,6 +59,7 @@ public class MessageService {
         this.profileCreator = new ProfileCreator();
         this.alertCreator = new AlertCreator();
         this.statsCreator = new StatsCreator();
+        this.topCreator = new TopCreator();
     }
 
     public Component getPrefix() {
@@ -129,6 +133,10 @@ public class MessageService {
 
     public Component getStatsComponent(int punishmentCount, int alertCount, long punishmentsLast30Days, long punishmentsLast7Days, long punishmentsLastDay, long alertsLast30Days, long alertsLast7Days, long alertsLastDay) {
         return statsCreator.createStatsComponent(punishmentCount, alertCount, punishmentsLast30Days, punishmentsLast7Days, punishmentsLastDay, alertsLast30Days, alertsLast7Days, alertsLastDay, getColorScheme());
+    }
+
+    public Component getTopComponent(List<TopViolation> topViolations) {
+        return getPrefix().append(topCreator.createTopComponent(topViolations, getColorScheme()));
     }
 
     public Component getJoinMessage(String username, String brand) {

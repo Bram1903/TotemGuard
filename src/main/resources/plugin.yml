@@ -33,6 +33,7 @@ permissions:
       TotemGuard.ClearLogs: true
       TotemGuard.Bypass: true
       TotemGuard.Update: true
+      TotemGuard.Top: true
       TotemGuard.Database.*: true
   TotemGuard.Staff:
     description: Gives access to all TotemGuard Staff permissions.
@@ -76,6 +77,9 @@ permissions:
     default: op
   TotemGuard.Update:
     description: Allows the player to receive update notifications.
+    default: op
+  TotemGuard.Top:
+    description: Allows the player to see the top players based on violations.
     default: op
   TotemGuard.Database.Trim:
     description: Allows the player to trim the database.

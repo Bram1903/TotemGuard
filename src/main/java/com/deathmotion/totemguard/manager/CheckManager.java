@@ -25,8 +25,10 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
+import com.deathmotion.totemguard.models.CheckRecord;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.MessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -35,8 +37,11 @@ import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class CheckManager {
     private final TotemGuard plugin;
@@ -86,6 +91,14 @@ public class CheckManager {
     public void resetData(UUID uuid) {
         checks.forEach(check -> check.resetData(uuid));
     }
+
+    public List<CheckRecord> getViolations() {
+        return checks.stream()
+                .map(ICheck::getViolations)
+                .filter(checkRecord -> !checkRecord.violations().isEmpty()) // Ensure only non-empty violations are included
+                .collect(Collectors.toList());
+    }
+
 
     private void registerPacketListeners() {
         checks.stream()

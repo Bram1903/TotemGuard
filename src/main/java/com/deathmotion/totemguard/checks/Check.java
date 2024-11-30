@@ -24,14 +24,14 @@ import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.models.CheckDetails;
+import com.deathmotion.totemguard.models.CheckRecord;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Check implements ICheck {
@@ -98,6 +98,10 @@ public abstract class Check implements ICheck {
 
     public void resetData(UUID uuid) {
         violations.remove(uuid);
+    }
+
+    public CheckRecord getViolations() {
+        return new CheckRecord(checkName, new HashMap<>(violations));
     }
 
     private boolean shouldCheck(Player player, boolean bedrockPlayer, Settings.Checks.CheckSettings checkSettings) {
