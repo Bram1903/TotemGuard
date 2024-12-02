@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.ICheck;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
 import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
@@ -65,6 +66,7 @@ public class CheckManager {
                 new AutoTotemE(plugin),
                 new AutoTotemF(plugin),
                 new BadPacketsA(plugin),
+                new BadPacketsC(plugin),
                 BadPacketsB.getInstance(plugin),
                 CheckCommand.getInstance(plugin)
         );

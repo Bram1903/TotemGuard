@@ -89,11 +89,11 @@ public final class Settings {
     @Getter
     public static class ProxyAlerts {
         @Comment({
-            "Proxy messaging method",
-            "How should be send and receive messages from sibling servers?",
-            "Options:",
-            " - plugin-messaging (Will use plugin messaging through player connections.)",
-            " - redis (Requires further configuration in the 'redis' section below.)"
+                "Proxy messaging method",
+                "How should be send and receive messages from sibling servers?",
+                "Options:",
+                " - plugin-messaging (Will use plugin messaging through player connections.)",
+                " - redis (Requires further configuration in the 'redis' section below.)"
         })
         private String method = "plugin-messaging";
 
@@ -260,6 +260,9 @@ public final class Settings {
         @Comment("\nBadPacketB Settings")
         private BadPacketsB badPacketsB = new BadPacketsB();
 
+        @Comment("\nBadPacketC Settings")
+        private BadPacketsC badPacketsC = new BadPacketsC();
+
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -381,6 +384,7 @@ public final class Settings {
             }
         }
 
+
         @Configuration
         @Getter
         public static class BadPacketsB extends CheckSettings {
@@ -390,6 +394,14 @@ public final class Settings {
             );
 
             public BadPacketsB() {
+                super(true, 30, 1);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class BadPacketsC extends CheckSettings {
+            public BadPacketsC() {
                 super(true, 30, 1);
             }
         }
