@@ -56,8 +56,7 @@ public final class BadPacketsC extends Check implements PacketListener {
         int slot = packet.getSlot();
         UUID playerUUID = event.getUser().getUUID();
 
-
-        //set default value to an impossible slot
+        // Set default value to an impossible slot to prevent a rare false positive on the first slot change
         int lastSlot = playerLastSlotMap.computeIfAbsent(playerUUID, k -> -69);
         if (lastSlot == slot) {
             final Settings.Checks.BadPacketsC settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsC();
