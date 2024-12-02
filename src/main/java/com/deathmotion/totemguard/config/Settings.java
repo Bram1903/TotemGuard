@@ -89,11 +89,11 @@ public final class Settings {
     @Getter
     public static class ProxyAlerts {
         @Comment({
-            "Proxy messaging method",
-            "How should be send and receive messages from sibling servers?",
-            "Options:",
-            " - plugin-messaging (Will use plugin messaging through player connections.)",
-            " - redis (Requires further configuration in the 'redis' section below.)"
+                "Proxy messaging method",
+                "How should be send and receive messages from sibling servers?",
+                "Options:",
+                " - plugin-messaging (Will use plugin messaging through player connections.)",
+                " - redis (Requires further configuration in the 'redis' section below.)"
         })
         private String method = "plugin-messaging";
 
@@ -401,7 +401,8 @@ public final class Settings {
         @Configuration
         @Getter
         public static class BadPacketsC extends CheckSettings {
-            public BadPacketsC() {super(true, 30, 1);
+            public BadPacketsC() {
+                super(true, 30, 1);
             }
         }
 
