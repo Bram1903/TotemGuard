@@ -26,25 +26,24 @@ import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSlotStateChange;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 
-import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class BadPacketsC extends Check implements PacketListener {
 
     private final TotemGuard plugin;
     private final MessageService messageService;
-    private final HashMap<UUID, Integer> playerlastSlotmap;
+    private final ConcurrentHashMap<UUID, Integer> playerLastSlotMap;
 
     public BadPacketsC(TotemGuard plugin) {
         super(plugin, "BadPacketsC", "Impossible same slot packet");
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
-        this.playerlastSlotmap = new HashMap<>();
+        this.playerLastSlotMap = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -57,23 +56,25 @@ public final class BadPacketsC extends Check implements PacketListener {
         int slot = packet.getSlot();
         UUID playerUUID = event.getUser().getUUID();
 
-        Integer lastSlot = playerlastSlotmap.get(playerUUID);
+        Integer lastSlot = playerLastSlotMap.get(playerUUID);
         if (lastSlot != null && lastSlot == slot) {
             final Settings.Checks.BadPacketsC settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsC();
             flag(event.getPlayer(), getCheckDetails(slot, lastSlot), settings);
         }
 
-        playerlastSlotmap.put(playerUUID, slot);
+        playerLastSlotMap.put(playerUUID, slot);
     }
 
     @Override
     public void resetData() {
         super.resetData();
+        playerLastSlotMap.clear();
     }
 
     @Override
     public void resetData(UUID uuid) {
         super.resetData(uuid);
+        playerLastSlotMap.remove(uuid);
     }
 
     private Component getCheckDetails(int slot, int lastSlot) {
