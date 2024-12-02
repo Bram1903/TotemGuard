@@ -410,7 +410,7 @@ public final class Settings {
         @Getter
         public static class ManualTotemA extends CheckSettings {
             @Comment("\nCheck Time: Amount of time the check command waits for a retotem. (in ms)")
-            private int checkTime = 250;
+            private int checkTime = 350;
 
             public ManualTotemA() {
                 super(false, 2);

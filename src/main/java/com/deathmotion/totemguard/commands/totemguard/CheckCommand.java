@@ -36,9 +36,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.potion.PotionEffect;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -89,6 +89,15 @@ public class CheckCommand extends Check implements SubCommand {
             return false;
         }
 
+        final PlayerInventory inventory = target.getInventory();
+        final boolean hasTotemInMainHand = inventory.getItemInMainHand().getType() == totemMaterial;
+        final boolean hasTotemInOffHand = inventory.getItemInOffHand().getType() == totemMaterial;
+
+        if (!hasTotemInMainHand && !hasTotemInOffHand) {
+            sender.sendMessage(messageService.getPrefix().append(Component.text("This player does not have a totem in their hands!", NamedTextColor.RED)));
+            return false;
+        }
+
         if (cooldowns.containsKey(targetUUID)) {
             long lastExecutionTime = cooldowns.get(targetUUID);
             long elapsedTime = currentTime - lastExecutionTime;
@@ -103,48 +112,52 @@ public class CheckCommand extends Check implements SubCommand {
 
         cooldowns.put(targetUUID, currentTime);
 
+        // Deep clone the player's inventory
+        final ItemStack[] originalInventoryContents = Arrays.stream(inventory.getContents())
+                .map(item -> item == null ? null : item.clone())
+                .toArray(ItemStack[]::new);
 
-        final PlayerInventory inventory = target.getInventory();
-        final ItemStack mainHandItem = inventory.getItemInMainHand().clone();
-        final ItemStack offHandItem = inventory.getItemInOffHand().clone();
+        final double originalHealth = target.getHealth();
+        final int originalFoodLevel = target.getFoodLevel();
+        final float originalSaturation = target.getSaturation();
+
+        final Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
 
         final int mainHandSlot = inventory.getHeldItemSlot();
-        final boolean totemInMainHand = mainHandItem.getType() == Material.TOTEM_OF_UNDYING;
-        final boolean totemInOffhand = offHandItem.getType() == Material.TOTEM_OF_UNDYING;
-
-        if (totemInMainHand) {
-            if (!totemInOffhand) {
-                // Move the totem from the main hand to the offhand
-                inventory.setItemInOffHand(mainHandItem);
-            }
-            // Remove the totem from the main hand in either case
-            inventory.setItemInMainHand(null);
-        } else if (!totemInOffhand) {
-            sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " does not have a totem in their main or offhand!", NamedTextColor.RED)));
-            return false;
+        if (hasTotemInMainHand && hasTotemInOffHand) {
+            inventory.setItemInMainHand(new ItemStack(Material.AIR));
         }
 
-        double health = target.getHealth();
+        // Iterate only over hotbar slots (0 to 8)
+        for (int i = 0; i < 9; i++) {
+            if (i == mainHandSlot) {
+                continue; // Skip main hand slot
+            }
 
-        target.setHealth(0.5);
-        target.damage(1000);
+            inventory.setItem(i, new ItemStack(Material.TOTEM_OF_UNDYING));
+            break;
+        }
 
-        // Task scheduling and check logic
-        final TaskWrapper[] taskWrapper = new TaskWrapper[1];
+        // Damage the player to ensure the totem is used
+        target.damage(Double.MAX_VALUE);
+
+        // Start monitoring for totem replacement
         final long startTime = System.currentTimeMillis();
+        final TaskWrapper[] taskWrapper = new TaskWrapper[1];
 
         taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> {
             long elapsedTime = System.currentTimeMillis() - startTime;
 
             if (elapsedTime >= settings.getCheckTime()) {
                 sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has successfully passed the check!", NamedTextColor.GREEN)));
-                resetPlayerState(target, health, mainHandItem, offHandItem, mainHandSlot);
+                resetPlayerState(target, originalHealth, originalInventoryContents, originalFoodLevel, originalSaturation, originalEffects);
                 taskWrapper[0].cancel();
                 return;
             }
 
-            if (inventory.getItemInOffHand().getType() == totemMaterial) {
-                resetPlayerState(target, health, mainHandItem, offHandItem, mainHandSlot);
+            ItemStack currentOffHandItem = inventory.getItemInOffHand();
+            if (currentOffHandItem.getType() == totemMaterial) {
+                resetPlayerState(target, originalHealth, originalInventoryContents, originalFoodLevel, originalSaturation, originalEffects);
                 taskWrapper[0].cancel();
                 flag(target, createDetails(sender, elapsedTime), settings);
             }
@@ -153,14 +166,20 @@ public class CheckCommand extends Check implements SubCommand {
         return true;
     }
 
-    private void resetPlayerState(Player player, double health, ItemStack mainHandItem, ItemStack offHandItem, int mainHandSlot) {
-        player.setHealth(health);
+    private void resetPlayerState(Player player, double health, ItemStack[] inventoryContents, int foodLevel, float saturation, Collection<PotionEffect> effects) {
+        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
+            player.setHealth(health);
+            player.setFoodLevel(foodLevel);
+            player.setSaturation(saturation);
 
-        ItemStack oldSlot = player.getInventory().getItem(mainHandSlot);
-        if (oldSlot == null) {
-            player.getInventory().setItem(mainHandSlot, mainHandItem);
-        }
-        player.getInventory().setItemInOffHand(offHandItem);
+            player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+            player.addPotionEffects(effects);
+
+            final PlayerInventory inventory = player.getInventory();
+
+            // Restore inventory
+            inventory.setContents(inventoryContents);
+        });
     }
 
     @Override
