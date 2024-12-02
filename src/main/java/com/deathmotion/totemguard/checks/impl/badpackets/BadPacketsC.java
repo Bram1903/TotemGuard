@@ -54,10 +54,12 @@ public final class BadPacketsC extends Check implements PacketListener {
 
         WrapperPlayClientSlotStateChange packet = new WrapperPlayClientSlotStateChange(event);
         int slot = packet.getSlot();
+        plugin.debug("Slot: " + slot);
         UUID playerUUID = event.getUser().getUUID();
 
         Integer lastSlot = playerLastSlotMap.get(playerUUID);
         if (lastSlot != null && lastSlot == slot) {
+            plugin.debug("Same slot packet " + slot);
             final Settings.Checks.BadPacketsC settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsC();
             flag(event.getPlayer(), getCheckDetails(slot, lastSlot), settings);
         }
@@ -81,10 +83,10 @@ public final class BadPacketsC extends Check implements PacketListener {
         Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
         return Component.text()
-                .append(Component.text("slot: ", colorScheme.getY()))
+                .append(Component.text("New Slot Change: ", colorScheme.getY()))
                 .append(Component.text(slot, colorScheme.getX()))
                 .append(Component.newline())
-                .append(Component.text("lastSlot: ", colorScheme.getY()))
+                .append(Component.text("Last Slot Change: ", colorScheme.getY()))
                 .append(Component.text(lastSlot, colorScheme.getX()))
                 .build();
     }
