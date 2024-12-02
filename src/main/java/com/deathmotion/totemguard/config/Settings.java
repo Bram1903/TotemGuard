@@ -260,6 +260,9 @@ public final class Settings {
         @Comment("\nBadPacketB Settings")
         private BadPacketsB badPacketsB = new BadPacketsB();
 
+        @Comment("\nBadPacketC Settings")
+        private BadPacketsC badPacketsC = new BadPacketsC();
+
         @Comment("\nManualTotemA Settings")
         private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -381,6 +384,7 @@ public final class Settings {
             }
         }
 
+
         @Configuration
         @Getter
         public static class BadPacketsB extends CheckSettings {
@@ -391,6 +395,13 @@ public final class Settings {
 
             public BadPacketsB() {
                 super(true, 30, 1);
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class BadPacketsC extends CheckSettings {
+            public BadPacketsC() {super(true, 30, 1);
             }
         }
 
