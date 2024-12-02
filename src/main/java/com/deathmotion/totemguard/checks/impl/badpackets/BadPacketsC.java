@@ -54,12 +54,10 @@ public final class BadPacketsC extends Check implements PacketListener {
 
         WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
         int slot = packet.getSlot();
-        plugin.debug("Slot: " + slot);
         UUID playerUUID = event.getUser().getUUID();
 
         Integer lastSlot = playerLastSlotMap.get(playerUUID);
         if (lastSlot != null && lastSlot == slot) {
-            plugin.debug("Same slot packet " + slot);
             final Settings.Checks.BadPacketsC settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsC();
             flag(event.getPlayer(), getCheckDetails(slot, lastSlot), settings);
         }
