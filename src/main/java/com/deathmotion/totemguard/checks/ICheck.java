@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.models.CheckRecord;
+
 import java.util.UUID;
 
 public interface ICheck {
