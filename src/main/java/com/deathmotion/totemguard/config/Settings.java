@@ -113,7 +113,7 @@ public final class Settings {
         @Getter
         public static class RedisConfiguration {
             private String host = "localhost";
-            private int port = 25571;
+            private int port = 6379;
             private String username = "default";
             private String password = "yourPassword";
         }

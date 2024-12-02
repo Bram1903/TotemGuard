@@ -12,5 +12,15 @@ services:
       - '3306'
     volumes:
       - totemguard:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    expose:
+      - '6379'
+    volumes:
+      - totemguard:/data
+
 volumes:
   totemguard:

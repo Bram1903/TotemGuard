@@ -78,7 +78,7 @@ public class PluginMessageProxyMessenger extends PacketListenerAbstract implemen
             PacketEvents.getAPI().getEventManager().registerListener(this);
             plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, BUNGEECORD_CHANNEL);
             this.messageChannel = plugin.getConfigManager().getSettings().getProxyAlerts().getChannel();
-            plugin.debug("Proxy messenger has been enabled.");
+            plugin.getLogger().info("Proxy messenger enabled successfully.");
         } else {
             plugin.debug("Proxy messenger failed to enable.");
         }

@@ -41,6 +41,7 @@ public class RedisProxyMessenger extends RedisPubSubAdapter<byte[], byte[]> impl
     private final @NotNull TotemGuard plugin;
     private final @NotNull String identifier;
 
+    private RedisClient redisClient = null;
     private StatefulRedisPubSubConnection<byte[], byte[]> pubsub = null;
     private StatefulRedisConnection<byte[], byte[]> publishConnection = null;
     private byte[] channel;
@@ -57,7 +58,7 @@ public class RedisProxyMessenger extends RedisPubSubAdapter<byte[], byte[]> impl
         final Settings.ProxyAlerts.RedisConfiguration settings = proxySettings.getRedis();
 
         try {
-            RedisClient redisClient = RedisClient.create(
+            redisClient = RedisClient.create(
                     RedisURI.builder()
                             .withHost(settings.getHost())
                             .withPort(settings.getPort())
@@ -72,39 +73,26 @@ public class RedisProxyMessenger extends RedisPubSubAdapter<byte[], byte[]> impl
 
             // Create a separate connection for publishing
             this.publishConnection = redisClient.connect(new ByteArrayCodec());
-
+            plugin.getLogger().info("Successfully connected to Redis.");
         } catch (Exception exception) {
-            plugin.debug("Failed to connect to Redis.");
+            plugin.getLogger().severe("Failed to connect to Redis.");
             exception.printStackTrace();
         }
     }
 
     @Override
     public void stop() {
-        if (this.pubsub != null) {
-            this.pubsub.async().unsubscribe(channel)
-                    .thenAccept((e) -> this.pubsub.closeAsync())
-                    .thenAccept((e) -> plugin.debug("Disconnected from redis pubsub successfully!"))
-                    .exceptionally((ex) -> {
-                        plugin.debug("Failed to disconnect gracefully from redis pubsub.");
-                        ex.printStackTrace();
-                        return null;
-                    });
-        }
-
-        if (this.publishConnection != null) {
-            this.publishConnection.closeAsync()
-                    .thenAccept((e) -> plugin.debug("Disconnected from redis publish connection successfully!"))
-                    .exceptionally((ex) -> {
-                        plugin.debug("Failed to disconnect gracefully from redis publish connection.");
-                        ex.printStackTrace();
-                        return null;
-                    });
+        if (redisClient != null) {
+            redisClient.shutdown();
+            plugin.debug("RedisClient and all connections shut down successfully!");
+        } else {
+            plugin.debug("RedisClient was already null or not initialized.");
         }
     }
 
     @Override
     public void message(byte[] channel, byte[] bytes) {
+        plugin.debug("Received message from Redis.");
         if (!java.util.Arrays.equals(channel, this.channel)) return;
 
         ByteArrayDataInput out = ByteStreams.newDataInput(bytes);
