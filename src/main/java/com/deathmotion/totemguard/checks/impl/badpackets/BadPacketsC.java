@@ -26,7 +26,7 @@ import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSlotStateChange;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 
@@ -48,11 +48,11 @@ public final class BadPacketsC extends Check implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.SLOT_STATE_CHANGE) {
+        if (event.getPacketType() != PacketType.Play.Client.HELD_ITEM_CHANGE) {
             return;
         }
 
-        WrapperPlayClientSlotStateChange packet = new WrapperPlayClientSlotStateChange(event);
+        WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
         int slot = packet.getSlot();
         plugin.debug("Slot: " + slot);
         UUID playerUUID = event.getUser().getUUID();
