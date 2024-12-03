@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.config;
 
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
-import io.ebean.annotation.Platform;
 import lombok.Getter;
 
 import java.util.List;
@@ -133,7 +132,7 @@ public final class Settings {
     @Getter
     public static class Database {
         @Comment("Database Type: The type of database to use. (SQLite, MYSQL)")
-        private String type = String.valueOf(Platform.SQLITE);
+        private String type = "SQLITE";
 
         @Comment("\nDatabase Host: The host of the database.")
         private String host = "localhost";

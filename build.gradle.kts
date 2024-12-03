@@ -21,24 +21,31 @@ java {
 }
 
 dependencies {
+    // Compile-time dependencies
     compileOnly(libs.paper.api)
     compileOnly(libs.packetevents.spigot)
-    compileOnly(libs.discord.webhooks)
-    compileOnly(libs.configlib.yaml)
-    compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
-    compileOnly(libs.expiringmap)
     compileOnly(libs.betterreload.api)
+
+    // Implementation dependencies (shaded into JAR)
+    implementation(libs.expiringmap)
+    implementation(libs.configlib.paper)
+    implementation(libs.discord.webhooks)
+    implementation(libs.jedis)
+
+    // Loaded at runtime
     compileOnly(libs.ebean.core)
     compileOnly(libs.ebean.sqlite)
     compileOnly(libs.ebean.mysql)
-    compileOnly(libs.lettuce.core)
+
+    // Annotation processing
     annotationProcessor(libs.lombok)
     annotationProcessor(libs.ebean.processor)
+
+    // Testing dependencies
     testImplementation(libs.ebean.test)
     testImplementation(libs.ebean.sqlite)
     testImplementation(libs.ebean.mysql)
-    testImplementation(libs.lettuce.core)
 }
 
 group = "com.deathmotion.totemguard"
@@ -54,12 +61,41 @@ tasks {
         archiveFileName = "${rootProject.name}-${project.version}.jar"
         archiveClassifier = null
 
+        // ExpiringMap
+        relocate("net.jodah.expiringmap", "com.deathmotion.totemguard.shaded.expiringmap")
+
+        // ConfigLib
+        relocate("de.exlll.configlib", "com.deathmotion.totemguard.shaded.configlib.configlib")
+        relocate("org.snakeyaml.engine", "com.deathmotion.totemguard.shaded.snakeyaml-engine")
+
+        // Discord Webhook
+        relocate("club.minnced.discord.webhook", "com.deathmotion.totemguard.shaded.discord-webhook")
+        relocate("okhttp3", "com.deathmotion.totemguard.shaded.okhttp3")
+        relocate("okio", "com.deathmotion.totemguard.shaded.okio")
+        relocate("org.jetbrains.annotations", "com.deathmotion.totemguard.shaded.jetbrains-annotations")
+
+        // Jedis
+        relocate("redis.clients.jedis", "com.deathmotion.totemguard.shaded.jedis")
+        relocate("org.apache.commons.pool2", "com.deathmotion.totemguard.shaded.commons-pool2")
+
+        // PacketEvents
         relocate("net.kyori.adventure.text.serializer.gson", "io.github.retrooper.packetevents.adventure.serializer.gson")
+
+        // Exclude libraries provided by Bukkit/Spigot
+        dependencies {
+            exclude(dependency("org.slf4j:slf4j-api"))
+            exclude(dependency("com.google.code.gson:gson"))
+            exclude(dependency("org.json:json"))
+            exclude(dependency("org.yaml:snakeyaml"))
+        }
 
         manifest {
             attributes["Implementation-Version"] = rootProject.version
         }
+
+        minimize()
     }
+
 
     assemble {
         dependsOn(shadowJar)
@@ -70,26 +106,18 @@ tasks {
         options.release = 17
     }
 
-    withType<Javadoc>() {
+    withType<Javadoc> {
         options.encoding = Charsets.UTF_8.name()
     }
 
     processResources {
         inputs.property("version", project.version)
         inputs.property("ebeanVersion", libs.versions.ebean.get())
-        inputs.property("configlibVersion", libs.versions.configlib.get())
-        inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
-        inputs.property("expiringmapVersion", libs.versions.expiringmap.get())
-        inputs.property("lettuceVersion", libs.versions.lettuce.get())
 
         filesMatching("plugin.yml") {
             expand(
                 "version" to rootProject.version,
-                "ebeanVersion" to libs.versions.ebean.get(),
-                "configlibVersion" to libs.versions.configlib.get(),
-                "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
-                "expiringmapVersion" to libs.versions.expiringmap.get(),
-                "lettuceVersion" to libs.versions.lettuce.get()
+                "ebeanVersion" to libs.versions.ebean.get()
             )
         }
     }

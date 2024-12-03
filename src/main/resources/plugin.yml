@@ -10,11 +10,6 @@ libraries:
   - io.ebean:ebean-core:${ebeanVersion}
   - io.ebean:ebean-sqlite:${ebeanVersion}
   - io.ebean:ebean-mysql:${ebeanVersion}
-  - de.exlll:configlib-yaml:${configlibVersion}
-  - de.exlll:configlib-paper:${configlibVersion}
-  - club.minnced:discord-webhooks:${discordWebhooksVersion}
-  - net.jodah:expiringmap:${expiringmapVersion}
-  - io.lettuce:lettuce-core:${lettuceVersion}
 depend:
   - packetevents
 softdepend:
