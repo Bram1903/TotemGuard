@@ -23,9 +23,9 @@ import lombok.Getter;
 @Getter
 public enum Library {
     LETTUCE_CORE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
-    EBEAN_CORE("io.ebean", "ebean-core", "14.1.0"),
-    EBEAN_SQLITE("io.ebean", "ebean-sqlite", "14.1.0"),
-    EBEAN_MYSQL("io.ebean", "ebean-mysql", "14.1.0"),
+    EBEAN_CORE("io.ebean", "ebean-core", "15.8.0"),
+    EBEAN_SQLITE("io.ebean", "ebean-sqlite", "15.8.0"),
+    EBEAN_MYSQL("io.ebean", "ebean-mysql", "15.8.0"),
     CONFIGLIB("de.exlll", "configlib-paper", "4.5.0"),
     DISCORD_WEBHOOKS("club.minnced", "discord-webhooks", "0.8.0"),
     EXPIRING_MAP("net.jodah", "expiringmap", "0.5.11");
