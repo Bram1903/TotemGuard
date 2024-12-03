@@ -61,28 +61,7 @@ tasks {
         archiveFileName = "${rootProject.name}-${project.version}.jar"
         archiveClassifier = null
 
-        // ExpiringMap
-        relocate("net.jodah.expiringmap", "com.deathmotion.totemguard.shaded.expiringmap")
-
-        // ConfigLib
-        relocate("de.exlll.configlib", "com.deathmotion.totemguard.shaded.configlib.configlib")
-        relocate("org.snakeyaml.engine", "com.deathmotion.totemguard.shaded.snakeyaml-engine")
-
-        // Discord Webhook
-        relocate("club.minnced.discord.webhook", "com.deathmotion.totemguard.shaded.discord-webhook")
-        relocate("okhttp3", "com.deathmotion.totemguard.shaded.okhttp3")
-        relocate("okio", "com.deathmotion.totemguard.shaded.okio")
-        relocate("org.jetbrains.annotations", "com.deathmotion.totemguard.shaded.jetbrains-annotations")
-
-        // PacketEvents
         relocate("net.kyori.adventure.text.serializer.gson", "io.github.retrooper.packetevents.adventure.serializer.gson")
-
-        // Exclude libraries provided by Bukkit/Spigot
-        dependencies {
-            exclude(dependency("org.slf4j:slf4j-api"))
-            exclude(dependency("org.json:json"))
-            exclude(dependency("org.yaml:snakeyaml"))
-        }
 
         manifest {
             attributes["Implementation-Version"] = rootProject.version
@@ -107,14 +86,20 @@ tasks {
 
     processResources {
         inputs.property("version", project.version)
-        inputs.property("lettuceVersion", libs.versions.lettuce.get())
         inputs.property("ebeanVersion", libs.versions.ebean.get())
+        inputs.property("configlibVersion", libs.versions.configlib.get())
+        inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
+        inputs.property("expiringmapVersion", libs.versions.expiringmap.get())
+        inputs.property("lettuceVersion", libs.versions.lettuce.get())
 
-        filesMatching("plugin.yml") {
+        filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
                 "version" to rootProject.version,
-                "lettuceVersion" to libs.versions.lettuce.get(),
-                "ebeanVersion" to libs.versions.ebean.get()
+                "ebeanVersion" to libs.versions.ebean.get(),
+                "configlibVersion" to libs.versions.configlib.get(),
+                "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
+                "expiringmapVersion" to libs.versions.expiringmap.get(),
+                "lettuceVersion" to libs.versions.lettuce.get()
             )
         }
     }

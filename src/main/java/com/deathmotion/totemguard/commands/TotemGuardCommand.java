@@ -25,10 +25,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
+import org.bukkit.command.defaults.BukkitCommand;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -37,8 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class TotemGuardCommand implements CommandExecutor, TabExecutor {
-    // Immutable map for command descriptions
+public class TotemGuardCommand extends BukkitCommand {
     private static final Map<String, String> COMMAND_DESCRIPTIONS;
 
     static {
@@ -61,6 +58,11 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     private final Map<String, SubCommand> subCommands = new LinkedHashMap<>();
 
     public TotemGuardCommand(TotemGuard plugin) {
+        super("totemguard");
+        setDescription("Main command for TotemGuard.");
+        setUsage("/totemguard [subcommand]");
+        setAliases(List.of("tg", "tguard"));
+
         subCommands.put("info", new InfoCommand(plugin));
         subCommands.put("alerts", new AlertsCommand(plugin));
         subCommands.put("check", CheckCommand.getInstance(plugin));
@@ -74,11 +76,10 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
         subCommands.put("database", new DatabaseCommand(plugin));
 
         messageService = plugin.getMessageService();
-        plugin.getCommand("totemguard").setExecutor(this);
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, @NotNull String[] args) {
         if (!hasAnyPermission(sender)) {
             sender.sendMessage(messageService.version());
             return false;
@@ -101,7 +102,7 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     }
 
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
             return subCommands.keySet().stream()
                     .filter(name -> name.startsWith(args[0].toLowerCase()))
@@ -137,7 +138,6 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     }
 
     private Component getAvailableCommandsComponent(CommandSender sender) {
-        // Start building the help message
         TextComponent.Builder componentBuilder = Component.text()
                 .append(Component.text("TotemGuard Commands", NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.newline())
@@ -145,7 +145,6 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
                 .append(Component.newline())
                 .append(Component.newline());
 
-        // Add each command to the message if the sender has permission
         for (String command : COMMAND_DESCRIPTIONS.keySet()) {
             if (hasPermissionForSubCommand(sender, command)) {
                 componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
@@ -160,10 +159,8 @@ public class TotemGuardCommand implements CommandExecutor, TabExecutor {
     }
 
     private boolean hasAnyDatabasePermissions(CommandSender sender) {
-        if (sender.hasPermission("TotemGuard.Database")) {
-            return true;
-        } else if (sender.hasPermission("TotemGuard.Database.Trim")) {
-            return true;
-        } else return sender.hasPermission("TotemGuard.Database.Clear");
+        return sender.hasPermission("TotemGuard.Database") ||
+                sender.hasPermission("TotemGuard.Database.Trim") ||
+                sender.hasPermission("TotemGuard.Database.Clear");
     }
 }

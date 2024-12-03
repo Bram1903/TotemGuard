@@ -37,8 +37,11 @@ import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 
 @Getter
@@ -96,7 +99,7 @@ public final class TotemGuard extends JavaPlugin {
         if (Bukkit.getPluginManager().getPlugin("BetterReload") != null)
             Bukkit.getPluginManager().registerEvents(new ReloadListener(this), this);
 
-        new TotemGuardCommand(this);
+        registerCommand("totemguard", new TotemGuardCommand(this));
         new UpdateChecker(this);
         enableBStats();
     }
@@ -129,6 +132,20 @@ public final class TotemGuard extends JavaPlugin {
             String debugMessage = "[TG DEBUG] " + message;
             getLogger().info(debugMessage);
             Bukkit.broadcast(Component.text(debugMessage), "TotemGuard.Debug");
+        }
+    }
+
+    private void registerCommand(String name, Command command) {
+        try {
+            // Get the CommandMap instance
+            Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+            commandMapField.setAccessible(true);
+            CommandMap commandMap = (CommandMap) commandMapField.get(Bukkit.getServer());
+
+            // Register the command
+            commandMap.register(name, command);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

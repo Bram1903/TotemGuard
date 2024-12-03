@@ -1,23 +1,22 @@
 name: TotemGuard
 version: ${version}
 main: com.deathmotion.totemguard.TotemGuard
+loader: com.deathmotion.totemguard.bootstrap.TotemGuardLoader
 api-version: '1.20'
 folia-supported: true
 authors: [ Bram, OutDev ]
 description: TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
 load: POSTWORLD
-libraries:
-  - io.ebean:ebean-core:${ebeanVersion}
-  - io.ebean:ebean-sqlite:${ebeanVersion}
-  - io.ebean:ebean-mysql:${ebeanVersion}
-  - de.exlll:configlib-paper:${configlibVersion}
-  - club.minnced:discord-webhooks:${discordWebhooksVersion}
-  - net.jodah:expiringmap:${expiringmapVersion}
-  - io.lettuce:lettuce-core:${lettuceVersion}
-depend:
-  - packetevents
-softdepend:
-  - BetterReload
+dependencies:
+  server:
+    packetevents:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    BetterReload:
+      load: BEFORE
+      required: false
+      join-classpath: true
 permissions:
   TotemGuard.*:
     description: Gives access to all TotemGuard permissions.
