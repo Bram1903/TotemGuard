@@ -28,7 +28,6 @@ import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.mojang.MojangService;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.MessageService;
-import com.deathmotion.totemguard.util.TGVersion;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -50,7 +49,6 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
-    private TGVersion version;
     private ConfigManager configManager;
     private MessageService messageService;
 
@@ -70,7 +68,6 @@ public final class TotemGuard extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        version = TGVersion.createFromPackageVersion();
 
         configManager = new ConfigManager(this);
 

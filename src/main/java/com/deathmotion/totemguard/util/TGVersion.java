@@ -18,12 +18,10 @@
 
 package com.deathmotion.totemguard.util;
 
-import com.deathmotion.totemguard.TotemGuard;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 
 public class TGVersion implements Comparable<TGVersion> {
 
@@ -113,20 +111,6 @@ public class TGVersion implements Comparable<TGVersion> {
         String snapshotCommit = largeParts.length > 1 ? largeParts[1] : null;
 
         return new TGVersion(major, minor, patch, snapshot, snapshotCommit);
-    }
-
-    /**
-     * Creates a {@link TGVersion} instance from the package implementation version.
-     *
-     * @return a {@link TGVersion} instance.
-     */
-    public static TGVersion createFromPackageVersion() {
-        Optional<TGVersion> version = Optional.ofNullable(TotemGuard.class.getPackage().getImplementationVersion()).map(TGVersion::fromString);
-        if (version.isEmpty()) {
-            TotemGuard.getInstance().getLogger().warning("Failed to retrieve the TotemGuard version from the package implementation version. Are you using a using a custom build?");
-        }
-
-        return version.orElse(new TGVersion(0, 0, 0));
     }
 
     /**

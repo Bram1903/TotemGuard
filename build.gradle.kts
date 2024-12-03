@@ -1,6 +1,9 @@
+import java.io.ByteArrayOutputStream
+
 plugins {
     `java-library`
     `maven-publish`
+    `tg-version`
     alias(libs.plugins.ebean)
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
@@ -47,8 +50,27 @@ dependencies {
 }
 
 group = "com.deathmotion.totemguard"
-version = "1.2.0-SNAPSHOT"
 description = "TotemGuard"
+val fullVersion = "1.2.0"
+val snapshot = true
+
+fun getVersionMeta(includeHash: Boolean): String {
+    if (!snapshot) {
+        return ""
+    }
+    var commitHash = ""
+    if (includeHash && file(".git").isDirectory) {
+        val stdout = ByteArrayOutputStream()
+        exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+            standardOutput = stdout
+        }
+        commitHash = "+${stdout.toString().trim()}"
+    }
+    return "$commitHash-SNAPSHOT"
+}
+version = "$fullVersion${getVersionMeta(true)}"
+ext["versionNoHash"] = "$fullVersion${getVersionMeta(false)}"
 
 tasks {
     jar {
@@ -56,14 +78,10 @@ tasks {
     }
 
     shadowJar {
-        archiveFileName = "${rootProject.name}-${project.version}.jar"
+        archiveFileName = "${rootProject.name}-${ext["versionNoHash"]}.jar"
         archiveClassifier = null
 
         relocate("net.kyori.adventure.text.serializer.gson", "io.github.retrooper.packetevents.adventure.serializer.gson")
-
-        manifest {
-            attributes["Implementation-Version"] = rootProject.version
-        }
 
         minimize()
     }
@@ -73,16 +91,22 @@ tasks {
     }
 
     withType<JavaCompile> {
+        dependsOn(generateVersionsFile)
         options.encoding = Charsets.UTF_8.name()
         options.release = 17
     }
 
     withType<Javadoc> {
+        mustRunAfter(generateVersionsFile)
         options.encoding = Charsets.UTF_8.name()
     }
 
+    generateVersionsFile {
+        packageName = "com.deathmotion.totemguard.util"
+    }
+
     processResources {
-        inputs.property("version", project.version)
+        inputs.property("version", ext["versionNoHash"])
         inputs.property("ebeanVersion", libs.versions.ebean.get())
         inputs.property("configlibVersion", libs.versions.configlib.get())
         inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
@@ -91,7 +115,7 @@ tasks {
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
-                "version" to rootProject.version,
+                "version" to ext["versionNoHash"],
                 "ebeanVersion" to libs.versions.ebean.get(),
                 "configlibVersion" to libs.versions.configlib.get(),
                 "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),

@@ -81,17 +81,30 @@ public class MessageService {
     }
 
     public Component version() {
+        Component versionComponent = Component.text()
+                .append(Component.text("Running ", NamedTextColor.WHITE))
+                .append(Component.text("TotemGuard", NamedTextColor.GREEN))
+                .append(Component.text(" v" + TGVersions.CURRENT, NamedTextColor.GREEN))
+                .build();
+
+        if (TGVersions.CURRENT.snapshotCommit() != null) {
+            versionComponent = versionComponent.append(Component.text()
+                    .append(Component.text(" (Git: ", NamedTextColor.WHITE))
+                    .append(Component.text(TGVersions.CURRENT.snapshotCommit(), NamedTextColor.WHITE))
+                    .append(Component.text(")", NamedTextColor.WHITE))
+                    .build());
+        }
+
         return getPrefix()
-                .append(Component.text("Running ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("TotemGuard", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" v" + plugin.getVersion().toString(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" by ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("Bram", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .append(Component.text(" and ", NamedTextColor.GRAY).decorate(TextDecoration.BOLD))
-                .append(Component.text("OutDev", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
-                .hoverEvent(HoverEvent.showText(Component.text("Open Github Page!", NamedTextColor.GREEN)
-                        .decorate(TextDecoration.BOLD)
-                        .decorate(TextDecoration.UNDERLINED)))
+                .append(versionComponent)
+                .append(Component.text(" by ", NamedTextColor.WHITE))
+                .append(Component.text("Bram", NamedTextColor.GREEN))
+                .append(Component.text(" and ", NamedTextColor.WHITE))
+                .append(Component.text("OutDev", NamedTextColor.GREEN))
+                .hoverEvent(HoverEvent.showText(Component.text()
+                        .append(Component.text("Open Github Page!", NamedTextColor.GREEN, TextDecoration.BOLD, TextDecoration.UNDERLINED))
+                        .build()))
+                .decorate(TextDecoration.BOLD)
                 .clickEvent(ClickEvent.openUrl(Constants.GITHUB_URL));
     }
 

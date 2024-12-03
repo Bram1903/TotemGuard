@@ -51,7 +51,7 @@ public class UpdateChecker {
     public void checkForUpdate() {
         CompletableFuture.runAsync(() -> {
             try {
-                TGVersion localVersion = plugin.getVersion();
+                TGVersion localVersion = TGVersions.CURRENT;
                 TGVersion latestVersion = fetchLatestGitHubVersion();
 
                 if (latestVersion != null) {
