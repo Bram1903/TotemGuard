@@ -27,16 +27,14 @@ dependencies {
     compileOnly(libs.lombok)
     compileOnly(libs.betterreload.api)
 
-    // Implementation dependencies (shaded into JAR)
-    implementation(libs.expiringmap)
-    implementation(libs.configlib.paper)
-    implementation(libs.discord.webhooks)
-
     // Loaded at runtime
     compileOnly(libs.lettuce)
     compileOnly(libs.ebean.core)
     compileOnly(libs.ebean.sqlite)
     compileOnly(libs.ebean.mysql)
+    compileOnly(libs.expiringmap)
+    compileOnly(libs.configlib.paper)
+    compileOnly(libs.discord.webhooks)
 
     // Annotation processing
     annotationProcessor(libs.lombok)
@@ -69,7 +67,6 @@ tasks {
 
         minimize()
     }
-
 
     assemble {
         dependsOn(shadowJar)
