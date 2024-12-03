@@ -31,9 +31,9 @@ dependencies {
     implementation(libs.expiringmap)
     implementation(libs.configlib.paper)
     implementation(libs.discord.webhooks)
-    implementation(libs.jedis)
 
     // Loaded at runtime
+    compileOnly(libs.lettuce)
     compileOnly(libs.ebean.core)
     compileOnly(libs.ebean.sqlite)
     compileOnly(libs.ebean.mysql)
@@ -74,17 +74,12 @@ tasks {
         relocate("okio", "com.deathmotion.totemguard.shaded.okio")
         relocate("org.jetbrains.annotations", "com.deathmotion.totemguard.shaded.jetbrains-annotations")
 
-        // Jedis
-        relocate("redis.clients.jedis", "com.deathmotion.totemguard.shaded.jedis")
-        relocate("org.apache.commons.pool2", "com.deathmotion.totemguard.shaded.commons-pool2")
-
         // PacketEvents
         relocate("net.kyori.adventure.text.serializer.gson", "io.github.retrooper.packetevents.adventure.serializer.gson")
 
         // Exclude libraries provided by Bukkit/Spigot
         dependencies {
             exclude(dependency("org.slf4j:slf4j-api"))
-            exclude(dependency("com.google.code.gson:gson"))
             exclude(dependency("org.json:json"))
             exclude(dependency("org.yaml:snakeyaml"))
         }
@@ -112,11 +107,13 @@ tasks {
 
     processResources {
         inputs.property("version", project.version)
+        inputs.property("lettuceVersion", libs.versions.lettuce.get())
         inputs.property("ebeanVersion", libs.versions.ebean.get())
 
         filesMatching("plugin.yml") {
             expand(
                 "version" to rootProject.version,
+                "lettuceVersion" to libs.versions.lettuce.get(),
                 "ebeanVersion" to libs.versions.ebean.get()
             )
         }

@@ -25,23 +25,26 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import io.github.retrooper.packetevents.adventure.serializer.gson.GsonComponentSerializer;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.pubsub.RedisPubSubAdapter;
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
-import redis.clients.jedis.*;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.UUID;
 
-public class RedisProxyMessenger implements ProxyAlertMessenger {
+public class RedisProxyMessenger extends RedisPubSubAdapter<byte[], byte[]> implements ProxyAlertMessenger {
     private final @NotNull TotemGuard plugin;
     private final @NotNull String identifier;
 
-    private JedisPool jedisPool = null;
-    private Jedis publishJedis = null;
+    private RedisClient redisClient = null;
+    private StatefulRedisPubSubConnection<byte[], byte[]> pubsub = null;
+    private StatefulRedisConnection<byte[], byte[]> publishConnection = null;
     private byte[] channel;
-    private Thread subscribeThread;
-    private BinaryJedisPubSub jedisPubSub;
 
     public RedisProxyMessenger(@NotNull TotemGuard plugin) {
         this.plugin = plugin;
@@ -55,36 +58,22 @@ public class RedisProxyMessenger implements ProxyAlertMessenger {
         final Settings.ProxyAlerts.RedisConfiguration settings = proxySettings.getRedis();
 
         try {
-            JedisPoolConfig poolConfig = new JedisPoolConfig();
-            HostAndPort hostAndPort = new HostAndPort(settings.getHost(), settings.getPort());
-            DefaultJedisClientConfig.Builder clientConfigBuilder = DefaultJedisClientConfig.builder().timeoutMillis(2000);
-            clientConfigBuilder.user(settings.getUsername());
-            clientConfigBuilder.password(settings.getPassword());
-            JedisClientConfig clientConfig = clientConfigBuilder.build();
+            redisClient = RedisClient.create(
+                    RedisURI.builder()
+                            .withHost(settings.getHost())
+                            .withPort(settings.getPort())
+                            .withAuthentication(settings.getUsername(), settings.getPassword())
+                            .build()
+            );
 
-            jedisPool = new JedisPool(poolConfig, hostAndPort, clientConfig);
-            publishJedis = jedisPool.getResource();
+            // Create pubsub connection for subscribing
+            this.pubsub = redisClient.connectPubSub(new ByteArrayCodec());
+            this.pubsub.async().subscribe(channel);
+            this.pubsub.addListener(this);
+
+            // Create a separate connection for publishing
+            this.publishConnection = redisClient.connect(new ByteArrayCodec());
             plugin.getLogger().info("Successfully connected to Redis.");
-
-            // Create JedisPubSub instance
-            jedisPubSub = new BinaryJedisPubSub() {
-                @Override
-                public void onMessage(byte[] channel, byte[] message) {
-                    handleMessage(channel, message);
-                }
-            };
-
-            // Start subscription in a new thread
-            subscribeThread = new Thread(() -> {
-                try (Jedis jedis = jedisPool.getResource()) {
-                    jedis.subscribe(jedisPubSub, channel);
-                } catch (Exception e) {
-                    plugin.getLogger().severe("Error while subscribing to Redis channel.");
-                    e.printStackTrace();
-                }
-            });
-            subscribeThread.start();
-
         } catch (Exception exception) {
             plugin.getLogger().severe("Failed to connect to Redis.");
             exception.printStackTrace();
@@ -93,38 +82,20 @@ public class RedisProxyMessenger implements ProxyAlertMessenger {
 
     @Override
     public void stop() {
-        if (jedisPubSub != null) {
-            try {
-                jedisPubSub.unsubscribe();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (subscribeThread != null) {
-            try {
-                subscribeThread.interrupt();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (publishJedis != null) {
-            publishJedis.close();
-        }
-
-        if (jedisPool != null) {
-            jedisPool.close();
-            plugin.debug("JedisPool and all connections shut down successfully!");
+        if (redisClient != null) {
+            redisClient.shutdown();
+            plugin.debug("RedisClient and all connections shut down successfully!");
         } else {
-            plugin.debug("JedisPool was already null or not initialized.");
+            plugin.debug("RedisClient was already null or not initialized.");
         }
     }
 
-    private void handleMessage(byte[] channel, byte[] message) {
-        if (!Arrays.equals(channel, this.channel)) return;
+    @Override
+    public void message(byte[] channel, byte[] bytes) {
+        plugin.debug("Received message from Redis.");
+        if (!java.util.Arrays.equals(channel, this.channel)) return;
 
-        ByteArrayDataInput out = ByteStreams.newDataInput(message);
+        ByteArrayDataInput out = ByteStreams.newDataInput(bytes);
         final String from = out.readUTF();
 
         // Shouldn't repeat if we receive from ourselves
@@ -140,7 +111,7 @@ public class RedisProxyMessenger implements ProxyAlertMessenger {
 
     @Override
     public void sendAlert(@NotNull Component alert) {
-        if (this.publishJedis == null) {
+        if (this.publishConnection == null) {
             plugin.debug("Redis is not connected, cannot send cross-server alerts.");
             return;
         }
@@ -151,13 +122,11 @@ public class RedisProxyMessenger implements ProxyAlertMessenger {
         in.writeUTF(json);
 
         byte[] bytes = in.toByteArray();
-        try {
-            publishJedis.publish(channel, bytes);
-        } catch (Exception ex) {
-            plugin.debug("Failed to publish message.");
-            ex.printStackTrace();
-        }
+        this.publishConnection.async().publish(channel, bytes)
+                .exceptionally(ex -> {
+                    plugin.debug("Failed to publish message.");
+                    ex.printStackTrace();
+                    return null;
+                });
     }
 }
-
-

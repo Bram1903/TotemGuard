@@ -9,7 +9,7 @@ discord-webhooks = "0.8.0"
 ebean = "14.1.0"
 betterreload = "v1.0.0"
 expiringmap = "0.5.11"
-jedis = "5.0.0"
+lettuce = "6.5.1.RELEASE"
 
 [libraries]
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
@@ -24,7 +24,7 @@ ebean-test = { group = "io.ebean", name = "ebean-test", version.ref = "ebean" }
 ebean-sqlite = { group = "io.ebean", name = "ebean-sqlite", version.ref = "ebean" }
 ebean-mysql = { group = "io.ebean", name = "ebean-mysql", version.ref = "ebean" }
 ebean-processor = { group = "io.ebean", name = "querybean-generator", version.ref = "ebean" }
-jedis = { group = "redis.clients", name = "jedis", version.ref = "jedis" }
+lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
 
 [plugins]
 ebean = { id = "io.ebean", version.ref = "ebean" }
