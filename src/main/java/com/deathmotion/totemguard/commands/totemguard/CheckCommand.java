@@ -139,7 +139,8 @@ public class CheckCommand extends Check implements SubCommand {
         }
 
         // Damage the player to ensure the totem is used
-        target.damage(Double.MAX_VALUE);
+        target.setHealth(0.5);
+        target.damage(originalHealth + 1000);
 
         // Start monitoring for totem replacement
         final long startTime = System.currentTimeMillis();
