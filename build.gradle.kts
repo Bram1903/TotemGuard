@@ -52,7 +52,7 @@ dependencies {
 group = "com.deathmotion.totemguard"
 description = "TotemGuard"
 val fullVersion = "1.2.0"
-val snapshot = true
+val snapshot = false
 
 fun getVersionMeta(includeHash: Boolean): String {
     if (!snapshot) {
