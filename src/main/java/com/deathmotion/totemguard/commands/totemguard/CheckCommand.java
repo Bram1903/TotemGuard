@@ -90,8 +90,11 @@ public class CheckCommand extends Check implements SubCommand {
         }
 
         final PlayerInventory inventory = target.getInventory();
-        final boolean hasTotemInMainHand = inventory.getItemInMainHand().getType() == totemMaterial;
-        final boolean hasTotemInOffHand = inventory.getItemInOffHand().getType() == totemMaterial;
+        final ItemStack mainHandItem = inventory.getItemInMainHand();
+        final ItemStack offHandItem = inventory.getItemInOffHand();
+
+        final boolean hasTotemInMainHand = mainHandItem.getType() == totemMaterial;
+        final boolean hasTotemInOffHand = offHandItem.getType() == totemMaterial;
 
         if (!hasTotemInMainHand && !hasTotemInOffHand) {
             sender.sendMessage(messageService.getPrefix().append(Component.text("This player does not have a totem in their hands!", NamedTextColor.RED)));
@@ -123,19 +126,17 @@ public class CheckCommand extends Check implements SubCommand {
 
         final Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
 
+        if (hasTotemInMainHand) mainHandItem.setAmount(1);
+        if (hasTotemInOffHand) offHandItem.setAmount(1);
+
+        if (hasTotemInMainHand && hasTotemInOffHand) inventory.setItemInMainHand(new ItemStack(Material.AIR));
+
         final int mainHandSlot = inventory.getHeldItemSlot();
-        if (hasTotemInMainHand && hasTotemInOffHand) {
-            inventory.setItemInMainHand(new ItemStack(Material.AIR));
-        }
-
-        // Iterate only over hotbar slots (0 to 8)
         for (int i = 0; i < 9; i++) {
-            if (i == mainHandSlot) {
-                continue; // Skip main hand slot
+            if (i != mainHandSlot) {
+                inventory.setItem(i, new ItemStack(Material.TOTEM_OF_UNDYING));
+                break; // Stop after placing one totem
             }
-
-            inventory.setItem(i, new ItemStack(Material.TOTEM_OF_UNDYING));
-            break;
         }
 
         // Damage the player to ensure the totem is used
