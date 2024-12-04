@@ -45,7 +45,7 @@ installed on your server.
 
 | Platform                        | Supported Versions |
 |---------------------------------|--------------------|
-| Paper, Folia, and related forks | 1.18 - 1.21.3      |
+| Paper, Folia, and related forks | 1.18 - 1.21.4      |
 
 ## Checks
 
