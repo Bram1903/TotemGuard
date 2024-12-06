@@ -95,6 +95,12 @@ public class CheckCommand extends Check implements SubCommand {
         Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
 
         preparePlayerForCheck(target, inventory);
+        if (!tookDamage(target, originalHealth)) {
+            resetPlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
+            sendErrorMessage(sender, "The player did not receive any damage! Are they in a non-damageable area or god mode?");
+            return false;
+        }
+
         startCheckTimer(sender, target, checkTime, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects, settings);
 
         return true;
@@ -153,10 +159,17 @@ public class CheckCommand extends Check implements SubCommand {
         if (args.length == 3) {
             try {
                 long time = Long.parseLong(args[2]);
+
                 if (time <= 0) {
                     sendErrorMessage(sender, "The check time must be a positive number!");
                     return -1;
                 }
+
+                if (time > 5000) {
+                    sendErrorMessage(sender, "The check time must be less than 5000ms!");
+                    return -1;
+                }
+
                 return time;
             } catch (NumberFormatException e) {
                 sendErrorMessage(sender, "Invalid time format! Please enter a valid number.");
@@ -175,6 +188,12 @@ public class CheckCommand extends Check implements SubCommand {
             sendErrorMessage(sender, "This player is not in survival mode!");
             return false;
         }
+
+        if (target.isInvulnerable()) {
+            sendErrorMessage(sender, "This player is invulnerable!");
+            return false;
+        }
+
         return true;
     }
 
@@ -244,6 +263,10 @@ public class CheckCommand extends Check implements SubCommand {
         double originalHealth = target.getHealth();
         target.setHealth(0.5);
         target.damage(originalHealth + 1000);
+    }
+
+    private boolean tookDamage(Player player, double originalHealth) {
+        return player.getLastDamage() == originalHealth + 1000;
     }
 
     /**
