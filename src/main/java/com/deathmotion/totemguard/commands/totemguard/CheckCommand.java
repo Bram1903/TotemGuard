@@ -69,8 +69,8 @@ public class CheckCommand extends Check implements SubCommand {
     }
 
     public boolean execute(CommandSender sender, String[] args) {
-        if (args.length != 2) {
-            sender.sendMessage(messageService.getPrefix().append(Component.text("Usage: /totemguard check <player>", NamedTextColor.RED)));
+        if (args.length < 2 || args.length > 3) {
+            sender.sendMessage(messageService.getPrefix().append(Component.text("Usage: /totemguard check <player> [ms]", NamedTextColor.RED)));
             return false;
         }
 
@@ -81,6 +81,23 @@ public class CheckCommand extends Check implements SubCommand {
         }
 
         final Settings.Checks.ManualTotemA settings = configManager.getSettings().getChecks().getManualTotemA();
+
+        long checkTime;
+        if (args.length == 3) {
+            try {
+                checkTime = Long.parseLong(args[2]);
+                if (checkTime <= 0) {
+                    sender.sendMessage(messageService.getPrefix().append(Component.text("The check time must be a positive number!", NamedTextColor.RED)));
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                sender.sendMessage(messageService.getPrefix().append(Component.text("Invalid time format! Please enter a valid number.", NamedTextColor.RED)));
+                return false;
+            }
+        } else {
+            checkTime = settings.getCheckTime();
+        }
+
         UUID targetUUID = target.getUniqueId();
         long currentTime = System.currentTimeMillis();
 
@@ -104,7 +121,7 @@ public class CheckCommand extends Check implements SubCommand {
         if (cooldowns.containsKey(targetUUID)) {
             long lastExecutionTime = cooldowns.get(targetUUID);
             long elapsedTime = currentTime - lastExecutionTime;
-            long totalCooldown = settings.getCheckTime() + 1000;
+            long totalCooldown = checkTime + 1000;
 
             if (elapsedTime < totalCooldown) {
                 long remainingTime = totalCooldown - elapsedTime;
@@ -115,7 +132,7 @@ public class CheckCommand extends Check implements SubCommand {
 
         cooldowns.put(targetUUID, currentTime);
 
-        // Deep clone the player's inventory
+        // Deep clone the player's inventory and store the original state
         final ItemStack[] originalInventoryContents = Arrays.stream(inventory.getContents())
                 .map(item -> item == null ? null : item.clone())
                 .toArray(ItemStack[]::new);
@@ -139,18 +156,16 @@ public class CheckCommand extends Check implements SubCommand {
             }
         }
 
-        // Damage the player to ensure the totem is used
         target.setHealth(0.5);
         target.damage(originalHealth + 1000);
 
-        // Start monitoring for totem replacement
         final long startTime = System.currentTimeMillis();
         final TaskWrapper[] taskWrapper = new TaskWrapper[1];
 
         taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> {
             long elapsedTime = System.currentTimeMillis() - startTime;
 
-            if (elapsedTime >= settings.getCheckTime()) {
+            if (elapsedTime >= checkTime) {
                 sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has successfully passed the check!", NamedTextColor.GREEN)));
                 resetPlayerState(target, originalHealth, originalInventoryContents, originalFoodLevel, originalSaturation, originalEffects);
                 taskWrapper[0].cancel();
@@ -161,7 +176,7 @@ public class CheckCommand extends Check implements SubCommand {
             if (currentOffHandItem.getType() == totemMaterial) {
                 resetPlayerState(target, originalHealth, originalInventoryContents, originalFoodLevel, originalSaturation, originalEffects);
                 taskWrapper[0].cancel();
-                flag(target, createDetails(sender, elapsedTime), settings);
+                flag(target, createDetails(sender, elapsedTime, checkTime), settings);
             }
         }, 0, 50, TimeUnit.MILLISECONDS);
 
@@ -209,7 +224,7 @@ public class CheckCommand extends Check implements SubCommand {
         super.resetData(uuid);
     }
 
-    private Component createDetails(CommandSender sender, long elapsedMs) {
+    private Component createDetails(CommandSender sender, long elapsedMs, long checkTime) {
         Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
         return Component.text()
@@ -218,6 +233,9 @@ public class CheckCommand extends Check implements SubCommand {
                 .append(Component.newline())
                 .append(Component.text("Elapsed Time: ", colorScheme.getY()))
                 .append(Component.text(elapsedMs + "ms", colorScheme.getX()))
+                .append(Component.newline())
+                .append(Component.text("Max Check Duration: ", colorScheme.getY()))
+                .append(Component.text(checkTime + "ms", colorScheme.getX()))
                 .build();
     }
 }
