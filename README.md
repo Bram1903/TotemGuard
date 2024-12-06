@@ -49,11 +49,13 @@ installed on your server.
 
 ## Checks
 
+For a much more detailed explanation of the checks, see [the wiki!](https://github.com/Bram1903/TotemGuard/wiki/Checks)
+
 ### AutoTotem
 
 - **AutoTotemA** - Click time difference
 - **AutoTotemB** - Impossible standard deviation
-- **AutoTotemC** - Impossible consistency difference
+- **AutoTotemC** - Impossible average standard deviation
 - **AutoTotemD** - Suspicious re-totem packet sequence
 - **AutoTotemE** - Impossible low outliers
 - **AutoTotemF** - Invalid interactions during inventory close

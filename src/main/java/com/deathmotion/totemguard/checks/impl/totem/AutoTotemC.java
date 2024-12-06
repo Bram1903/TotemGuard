@@ -45,7 +45,7 @@ public final class AutoTotemC extends Check implements TotemEventListener {
     private final ConcurrentHashMap<UUID, Integer> consistentSDCountMap = new ConcurrentHashMap<>();
 
     public AutoTotemC(TotemGuard plugin) {
-        super(plugin, "AutoTotemC", "Impossible consistency difference");
+        super(plugin, "AutoTotemC", "Impossible average standard deviation");
 
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
