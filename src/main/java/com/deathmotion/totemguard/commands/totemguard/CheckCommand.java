@@ -1,6 +1,6 @@
 /*
  * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- * Copyright (C) 2024 Bram and contributors
+ * Copyright (C) 2024 Bram
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -45,17 +46,16 @@ import java.util.stream.Collectors;
 
 public class CheckCommand extends Check implements SubCommand {
     private static CheckCommand instance;
+
     private final ConcurrentHashMap<UUID, Long> cooldowns = new ConcurrentHashMap<>();
 
     private final TotemGuard plugin;
     private final ConfigManager configManager;
     private final MessageService messageService;
-
     private final Material totemMaterial = Material.TOTEM_OF_UNDYING;
 
     private CheckCommand(TotemGuard plugin) {
         super(plugin, "ManualTotemA", "Manual totem removal");
-
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
         this.messageService = plugin.getMessageService();
@@ -68,145 +68,45 @@ public class CheckCommand extends Check implements SubCommand {
         return instance;
     }
 
+    @Override
     public boolean execute(CommandSender sender, String[] args) {
-        if (args.length < 2 || args.length > 3) {
-            sender.sendMessage(messageService.getPrefix().append(Component.text("Usage: /totemguard check <player> [ms]", NamedTextColor.RED)));
-            return false;
-        }
+        if (!isArgumentLengthValid(sender, args)) return false;
 
-        final Player target = Bukkit.getPlayer(args[1]);
-        if (target == null) {
-            sender.sendMessage(messageService.getPrefix().append(Component.text("Player not found!", NamedTextColor.RED)));
-            return false;
-        }
+        Player target = getTargetPlayer(sender, args[1]);
+        if (target == null) return false;
 
-        final Settings.Checks.ManualTotemA settings = configManager.getSettings().getChecks().getManualTotemA();
+        Settings.Checks.ManualTotemA settings = configManager.getSettings().getChecks().getManualTotemA();
+        long checkTime = getCheckTime(sender, args, settings);
+        if (checkTime <= 0) return false; // Error message already sent in getCheckTime
 
-        long checkTime;
-        if (args.length == 3) {
-            try {
-                checkTime = Long.parseLong(args[2]);
-                if (checkTime <= 0) {
-                    sender.sendMessage(messageService.getPrefix().append(Component.text("The check time must be a positive number!", NamedTextColor.RED)));
-                    return false;
-                }
-            } catch (NumberFormatException e) {
-                sender.sendMessage(messageService.getPrefix().append(Component.text("Invalid time format! Please enter a valid number.", NamedTextColor.RED)));
-                return false;
-            }
-        } else {
-            checkTime = settings.getCheckTime();
-        }
+        if (!isPlayerInValidMode(sender, target)) return false;
+        if (!playerHasTotemInHand(sender, target)) return false;
+        if (isPlayerOnCooldown(sender, target, checkTime)) return false;
 
-        UUID targetUUID = target.getUniqueId();
-        long currentTime = System.currentTimeMillis();
+        // Record the start of the cooldown
+        cooldowns.put(target.getUniqueId(), System.currentTimeMillis());
 
-        if (target.getGameMode() != org.bukkit.GameMode.SURVIVAL && target.getGameMode() != org.bukkit.GameMode.ADVENTURE) {
-            sender.sendMessage(messageService.getPrefix().append(Component.text("This player is not in survival mode!", NamedTextColor.RED)));
-            return false;
-        }
+        // Capture original player state for later restoration
+        PlayerInventory inventory = target.getInventory();
+        ItemStack[] originalInventory = Arrays.stream(inventory.getContents()).map(item -> item == null ? null : item.clone()).toArray(ItemStack[]::new);
+        double originalHealth = target.getHealth();
+        int originalFoodLevel = target.getFoodLevel();
+        float originalSaturation = target.getSaturation();
+        Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
 
-        final PlayerInventory inventory = target.getInventory();
-        final ItemStack mainHandItem = inventory.getItemInMainHand();
-        final ItemStack offHandItem = inventory.getItemInOffHand();
-
-        final boolean hasTotemInMainHand = mainHandItem.getType() == totemMaterial;
-        final boolean hasTotemInOffHand = offHandItem.getType() == totemMaterial;
-
-        if (!hasTotemInMainHand && !hasTotemInOffHand) {
-            sender.sendMessage(messageService.getPrefix().append(Component.text("This player does not have a totem in their hands!", NamedTextColor.RED)));
-            return false;
-        }
-
-        if (cooldowns.containsKey(targetUUID)) {
-            long lastExecutionTime = cooldowns.get(targetUUID);
-            long elapsedTime = currentTime - lastExecutionTime;
-            long totalCooldown = checkTime + 1000;
-
-            if (elapsedTime < totalCooldown) {
-                long remainingTime = totalCooldown - elapsedTime;
-                sender.sendMessage(messageService.getPrefix().append(Component.text("This player is on cooldown for " + remainingTime + "ms!", NamedTextColor.RED)));
-                return false;
-            }
-        }
-
-        cooldowns.put(targetUUID, currentTime);
-
-        // Deep clone the player's inventory and store the original state
-        final ItemStack[] originalInventoryContents = Arrays.stream(inventory.getContents())
-                .map(item -> item == null ? null : item.clone())
-                .toArray(ItemStack[]::new);
-
-        final double originalHealth = target.getHealth();
-        final int originalFoodLevel = target.getFoodLevel();
-        final float originalSaturation = target.getSaturation();
-
-        final Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
-
-        if (hasTotemInMainHand) mainHandItem.setAmount(1);
-        if (hasTotemInOffHand) offHandItem.setAmount(1);
-
-        if (hasTotemInMainHand && hasTotemInOffHand) inventory.setItemInMainHand(new ItemStack(Material.AIR));
-
-        final int mainHandSlot = inventory.getHeldItemSlot();
-        for (int i = 0; i < 9; i++) {
-            if (i != mainHandSlot) {
-                inventory.setItem(i, new ItemStack(Material.TOTEM_OF_UNDYING));
-                break; // Stop after placing one totem
-            }
-        }
-
-        target.setHealth(0.5);
-        target.damage(originalHealth + 1000);
-
-        final long startTime = System.currentTimeMillis();
-        final TaskWrapper[] taskWrapper = new TaskWrapper[1];
-
-        taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> {
-            long elapsedTime = System.currentTimeMillis() - startTime;
-
-            if (elapsedTime >= checkTime) {
-                sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has successfully passed the check!", NamedTextColor.GREEN)));
-                resetPlayerState(target, originalHealth, originalInventoryContents, originalFoodLevel, originalSaturation, originalEffects);
-                taskWrapper[0].cancel();
-                return;
-            }
-
-            ItemStack currentOffHandItem = inventory.getItemInOffHand();
-            if (currentOffHandItem.getType() == totemMaterial) {
-                resetPlayerState(target, originalHealth, originalInventoryContents, originalFoodLevel, originalSaturation, originalEffects);
-                taskWrapper[0].cancel();
-                flag(target, createDetails(sender, elapsedTime, checkTime), settings);
-            }
-        }, 0, 50, TimeUnit.MILLISECONDS);
+        preparePlayerForCheck(target, inventory);
+        startCheckTimer(sender, target, checkTime, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects, settings);
 
         return true;
-    }
-
-    private void resetPlayerState(Player player, double health, ItemStack[] inventoryContents, int foodLevel, float saturation, Collection<PotionEffect> effects) {
-        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
-            player.setHealth(health);
-            player.setFoodLevel(foodLevel);
-            player.setSaturation(saturation);
-
-            player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
-            player.addPotionEffects(effects);
-
-            final PlayerInventory inventory = player.getInventory();
-
-            // Restore inventory
-            inventory.setContents(inventoryContents);
-        });
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, String[] args) {
         if (args.length == 2) {
-            String argsLowerCase = args[1].toLowerCase();
-
+            String prefix = args[1].toLowerCase();
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
-                    .filter(name -> name.toLowerCase().startsWith(argsLowerCase))
+                    .filter(name -> name.toLowerCase().startsWith(prefix))
                     .collect(Collectors.toList());
         }
         return List.of();
@@ -224,6 +124,177 @@ public class CheckCommand extends Check implements SubCommand {
         super.resetData(uuid);
     }
 
+    /**
+     * Validate command arguments length.
+     */
+    private boolean isArgumentLengthValid(CommandSender sender, String[] args) {
+        if (args.length < 2 || args.length > 3) {
+            sendErrorMessage(sender, "Usage: /totemguard check <player> [ms]");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Retrieve the target player from args.
+     */
+    private Player getTargetPlayer(CommandSender sender, String playerName) {
+        Player target = Bukkit.getPlayer(playerName);
+        if (target == null) {
+            sendErrorMessage(sender, "Player not found!");
+        }
+        return target;
+    }
+
+    /**
+     * Determine the check time either from args or from default settings.
+     */
+    private long getCheckTime(CommandSender sender, String[] args, Settings.Checks.ManualTotemA settings) {
+        if (args.length == 3) {
+            try {
+                long time = Long.parseLong(args[2]);
+                if (time <= 0) {
+                    sendErrorMessage(sender, "The check time must be a positive number!");
+                    return -1;
+                }
+                return time;
+            } catch (NumberFormatException e) {
+                sendErrorMessage(sender, "Invalid time format! Please enter a valid number.");
+                return -1;
+            }
+        } else {
+            return settings.getCheckTime();
+        }
+    }
+
+    /**
+     * Check if player is in survival or adventure mode.
+     */
+    private boolean isPlayerInValidMode(CommandSender sender, Player target) {
+        if (target.getGameMode() != GameMode.SURVIVAL && target.getGameMode() != GameMode.ADVENTURE) {
+            sendErrorMessage(sender, "This player is not in survival mode!");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if the player currently has a totem in hand.
+     */
+    private boolean playerHasTotemInHand(CommandSender sender, Player target) {
+        PlayerInventory inventory = target.getInventory();
+        boolean hasTotem = inventory.getItemInMainHand().getType() == totemMaterial || inventory.getItemInOffHand().getType() == totemMaterial;
+
+        if (!hasTotem) {
+            sendErrorMessage(sender, "This player does not have a totem in their hands!");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if the player is currently on cooldown.
+     */
+    private boolean isPlayerOnCooldown(CommandSender sender, Player target, long checkTime) {
+        UUID targetUUID = target.getUniqueId();
+        long currentTime = System.currentTimeMillis();
+
+        if (cooldowns.containsKey(targetUUID)) {
+            long lastExecution = cooldowns.get(targetUUID);
+            long elapsedTime = currentTime - lastExecution;
+            long totalCooldown = checkTime + 1000; // Additional 1s cooldown
+
+            if (elapsedTime < totalCooldown) {
+                long remaining = totalCooldown - elapsedTime;
+                sendErrorMessage(sender, "This player is on cooldown for " + remaining + "ms!");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Prepare the player for the totem check by modifying their inventory and health.
+     */
+    private void preparePlayerForCheck(Player target, PlayerInventory inventory) {
+        final ItemStack mainHandItem = inventory.getItemInMainHand();
+        final ItemStack offHandItem = inventory.getItemInOffHand();
+        final boolean hasTotemInMainHand = mainHandItem.getType() == totemMaterial;
+        final boolean hasTotemInOffHand = offHandItem.getType() == totemMaterial;
+
+        // Ensure only 1 totem in each hand if they have any
+        if (hasTotemInMainHand) mainHandItem.setAmount(1);
+        if (hasTotemInOffHand) offHandItem.setAmount(1);
+
+        // If both hands have totems, clear main hand to force them to rely on off-hand
+        if (hasTotemInMainHand && hasTotemInOffHand) {
+            inventory.setItemInMainHand(new ItemStack(Material.AIR));
+        }
+
+        // Place a single additional totem in one of the hotbar slots other than main hand
+        int mainHandSlot = inventory.getHeldItemSlot();
+        for (int i = 0; i < 9; i++) {
+            if (i != mainHandSlot) {
+                inventory.setItem(i, new ItemStack(totemMaterial));
+                break;
+            }
+        }
+
+        // Reduce player's health to trigger totem use
+        double originalHealth = target.getHealth();
+        target.setHealth(0.5);
+        target.damage(originalHealth + 1000);
+    }
+
+    /**
+     * Start the periodic check to see if the player uses a totem before the time expires.
+     */
+    private void startCheckTimer(CommandSender sender, Player target, long checkTime, double originalHealth, ItemStack[] originalInventory, int originalFoodLevel, float originalSaturation, Collection<PotionEffect> originalEffects, Settings.Checks.ManualTotemA settings) {
+        final long startTime = System.currentTimeMillis();
+        final PlayerInventory inventory = target.getInventory();
+        final TaskWrapper[] taskWrapper = new TaskWrapper[1];
+
+        taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> {
+            long elapsedTime = System.currentTimeMillis() - startTime;
+
+            // If time expired, player passes the check
+            if (elapsedTime >= checkTime) {
+                sender.sendMessage(messageService.getPrefix().append(Component.text(target.getName() + " has successfully passed the check!", NamedTextColor.GREEN)));
+                resetPlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
+                taskWrapper[0].cancel();
+                return;
+            }
+
+            // If the player still has a totem in the off-hand, they fail the check
+            if (inventory.getItemInOffHand().getType() == totemMaterial) {
+                resetPlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
+                taskWrapper[0].cancel();
+                flag(target, createDetails(sender, elapsedTime, checkTime), settings);
+            }
+        }, 0, 50, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Reset player's state to what it was before the check.
+     */
+    private void resetPlayerState(Player player, double health, ItemStack[] inventoryContents, int foodLevel, float saturation, Collection<PotionEffect> effects) {
+        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
+            player.setHealth(health);
+            player.setFoodLevel(foodLevel);
+            player.setSaturation(saturation);
+
+            // Clear current effects and re-apply the original ones
+            player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+            player.addPotionEffects(effects);
+
+            // Restore inventory
+            player.getInventory().setContents(inventoryContents);
+        });
+    }
+
+    /**
+     * Create the component containing details about the failed check.
+     */
     private Component createDetails(CommandSender sender, long elapsedMs, long checkTime) {
         Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
@@ -237,5 +308,12 @@ public class CheckCommand extends Check implements SubCommand {
                 .append(Component.text("Max Check Duration: ", colorScheme.getY()))
                 .append(Component.text(checkTime + "ms", colorScheme.getX()))
                 .build();
+    }
+
+    /**
+     * Send a formatted error message to the sender.
+     */
+    private void sendErrorMessage(CommandSender sender, String message) {
+        sender.sendMessage(messageService.getPrefix().append(Component.text(message, NamedTextColor.RED)));
     }
 }
