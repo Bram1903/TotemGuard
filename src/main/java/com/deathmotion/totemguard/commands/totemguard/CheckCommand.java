@@ -35,6 +35,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.*;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
@@ -95,12 +97,39 @@ public class CheckCommand extends Check implements SubCommand {
         Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
 
         preparePlayerForCheck(target, inventory);
-        if (!tookDamage(target, originalHealth)) {
+
+        // Use an event listener to confirm damage application
+        final UUID targetUUID = target.getUniqueId();
+        final double healthBeforeDamage = target.getHealth();
+        final boolean[] damageApplied = { false };
+
+        Listener damageListener = new Listener() {
+            @EventHandler(priority = EventPriority.MONITOR)
+            public void onDamage(EntityDamageEvent event) {
+                if (!event.getEntity().getUniqueId().equals(targetUUID)) return;
+                // This is the final state of the event after all plugins
+                boolean actuallyDamaged = !event.isCancelled() && event.getFinalDamage() > 0;
+                if (actuallyDamaged) {
+                    damageApplied[0] = true;
+                }
+                // Unregister this listener now
+                EntityDamageEvent.getHandlerList().unregister(this);
+            }
+        };
+
+        // Register the listener and then apply damage
+        Bukkit.getPluginManager().registerEvents(damageListener, plugin);
+        target.damage(healthBeforeDamage + 1000); // Trigger damage to force a check
+
+        // At this point, the event has been fired synchronously.
+        if (!damageApplied[0]) {
+            // Damage not applied, revert player state
             resetPlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
-            sendErrorMessage(sender, "The player did not receive any damage! Are they in a non-damageable area or god mode?");
+            sendErrorMessage(sender, "The player did not receive any damage! Are they protected by a plugin or in a safe zone?");
             return false;
         }
 
+        // If damage is applied, proceed as normal
         startCheckTimer(sender, target, checkTime, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects, settings);
 
         return true;
@@ -259,14 +288,8 @@ public class CheckCommand extends Check implements SubCommand {
             }
         }
 
-        // Reduce player's health to trigger totem use
-        double originalHealth = target.getHealth();
+        // Reduce player's health so damage is guaranteed high enough to trigger the totem use if allowed
         target.setHealth(0.5);
-        target.damage(originalHealth + 1000);
-    }
-
-    private boolean tookDamage(Player player, double originalHealth) {
-        return player.getLastDamage() == originalHealth + 1000;
     }
 
     /**
