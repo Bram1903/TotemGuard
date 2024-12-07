@@ -379,7 +379,7 @@ public final class Settings {
         @Getter
         public static class BadPacketsA extends CheckSettings {
             public BadPacketsA() {
-                super(true, 30, 1);
+                super(true, 20, 1);
             }
         }
 
@@ -393,7 +393,7 @@ public final class Settings {
             );
 
             public BadPacketsB() {
-                super(true, 30, 1);
+                super(true, 20, 1);
             }
         }
 
@@ -401,7 +401,7 @@ public final class Settings {
         @Getter
         public static class BadPacketsC extends CheckSettings {
             public BadPacketsC() {
-                super(true, 30, 1);
+                super(true, 20, 3);
             }
         }
 
@@ -412,7 +412,7 @@ public final class Settings {
             private int checkTime = 400;
 
             public ManualTotemA() {
-                super(false, 2);
+                super(false, 4);
             }
         }
     }
