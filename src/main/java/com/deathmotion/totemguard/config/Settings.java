@@ -371,7 +371,7 @@ public final class Settings {
             private int timeDifference = 1500;
 
             public AutoTotemF() {
-                super(false, 5);
+                super(false, 6);
             }
         }
 
