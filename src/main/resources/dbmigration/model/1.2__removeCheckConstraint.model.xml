@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<migration xmlns="http://ebean-orm.github.io/xml/ns/dbmigration">
+    <changeSet type="apply">
+        <alterColumn columnName="check_name" tableName="totemguard_alerts" checkConstraint="check ( check_name in (0,1,2,3,4,5,6,7,8,9,10))" checkConstraintName="ck_totemguard_alerts_check_name"/>
+        <alterColumn columnName="check_name" tableName="totemguard_punishments" checkConstraint="check ( check_name in (0,1,2,3,4,5,6,7,8,9,10))" checkConstraintName="ck_totemguard_punishments_check_name"/>
+    </changeSet>
+</migration>

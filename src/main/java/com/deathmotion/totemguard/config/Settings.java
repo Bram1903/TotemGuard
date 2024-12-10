@@ -426,6 +426,7 @@ public final class Settings {
         @Configuration
         @Getter
         public static class ManualBan {
+            @Comment("Punishment commands to execute when a player is manually banned.")
             private List<String> PunishmentCommands = List.of(
                     "%default_punishment%"
             );
