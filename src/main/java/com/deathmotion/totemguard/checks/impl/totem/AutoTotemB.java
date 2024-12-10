@@ -19,22 +19,24 @@
 package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.events.TotemCycleEvent;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.checks.TotemEventListener;
-import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
-import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MathUtil;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class AutoTotemB extends Check implements TotemEventListener {
+public final class AutoTotemB extends Check implements Listener {
 
     private final TotemGuard plugin;
     private final MessageService messageService;
@@ -46,12 +48,14 @@ public final class AutoTotemB extends Check implements TotemEventListener {
 
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
-        TotemProcessor.getInstance().registerListener(this);
+        Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    @Override
-    public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
-        List<Long> intervals = totemPlayer.totemData().getLatestIntervals(2);
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTotemCycle(TotemCycleEvent event) {
+        Player player = event.getPlayer();
+
+        List<Long> intervals = event.getTotemPlayer().totemData().getLatestIntervals(2);
         if (intervals.size() < 2) return;
 
         double standardDeviation = MathUtil.getStandardDeviation(intervals);

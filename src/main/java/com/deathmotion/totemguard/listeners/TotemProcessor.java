@@ -16,13 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.checks.impl.totem.processor;
+package com.deathmotion.totemguard.listeners;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.checks.TotemEventListener;
-import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.api.events.TotemCycleEvent;
+import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
+import com.deathmotion.totemguard.util.datastructure.TotemData;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -36,26 +36,20 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class TotemProcessor extends Check implements Listener {
+public final class TotemProcessor implements Listener {
     @Getter
     private static TotemProcessor instance;
 
     private final TotemGuard plugin;
     private final UserTracker userTracker;
 
-    private final List<TotemEventListener> totemEventListener = new ArrayList<>();
-
     private final ConcurrentHashMap<UUID, Long> totemUsage = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Boolean> expectingReEquip = new ConcurrentHashMap<>();
 
     private TotemProcessor(TotemGuard plugin) {
-        super(plugin, "TotemProcessor", "No description");
         this.plugin = plugin;
         this.userTracker = plugin.getUserTracker();
 
@@ -66,10 +60,6 @@ public final class TotemProcessor extends Check implements Listener {
         if (instance == null) {
             instance = new TotemProcessor(plugin);
         }
-    }
-
-    public void registerListener(TotemEventListener listener) {
-        totemEventListener.add(listener);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -128,25 +118,20 @@ public final class TotemProcessor extends Check implements Listener {
             if (totemPlayer == null) return;
 
             long interval = Math.abs(currentTime - totemUseTime);
-            totemPlayer.totemData().addInterval(interval);
+            TotemData totemData = (TotemData) totemPlayer.totemData();
+            totemData.addInterval(interval);
 
-            for (TotemEventListener listener : totemEventListener) {
-                listener.onTotemEvent(player, totemPlayer);
-            }
+            TotemCycleEvent event = new TotemCycleEvent(player, totemPlayer);
+            Bukkit.getPluginManager().callEvent(event);
         });
     }
 
-
-    @Override
     public void resetData() {
-        super.resetData();
         totemUsage.clear();
         expectingReEquip.clear();
     }
 
-    @Override
     public void resetData(UUID uuid) {
-        super.resetData(uuid);
         totemUsage.remove(uuid);
         expectingReEquip.remove(uuid);
     }

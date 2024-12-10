@@ -19,9 +19,7 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.checks.TotemEventListener;
-import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
-import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.api.events.TotemCycleEvent;
 import com.deathmotion.totemguard.util.MathUtil;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
@@ -33,7 +31,11 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -42,7 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TrackerManager implements TotemEventListener {
+public class TrackerManager implements Listener {
 
     private final TotemGuard plugin;
     private final MessageService messageService;
@@ -56,7 +58,7 @@ public class TrackerManager implements TotemEventListener {
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
 
-        TotemProcessor.getInstance().registerListener(this);
+        Bukkit.getPluginManager().registerEvents(this, plugin);
         startScheduler();
     }
 
@@ -72,9 +74,9 @@ public class TrackerManager implements TotemEventListener {
         return LegacyComponentSerializer.legacyAmpersand().deserialize(plugin.getConfigManager().getSettings().getPrefix());
     }
 
-    @Override
-    public void onTotemEvent(Player player, TotemPlayer totemPlayer) {
-        List<Long> intervals = totemPlayer.totemData().getLatestIntervals(5);
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTotemCycle(TotemCycleEvent event) {
+        List<Long> intervals = event.getTotemPlayer().totemData().getLatestIntervals(5);
         if (intervals.isEmpty()) return;
 
         long latestInterval = intervals.get(0);
@@ -85,7 +87,7 @@ public class TrackerManager implements TotemEventListener {
             stDev = MathUtil.trim(2, MathUtil.getStandardDeviation(intervals));
         }
 
-        TargetTracker tracker = targetTrackers.get(player);
+        TargetTracker tracker = targetTrackers.get(event.getPlayer());
         if (tracker != null) {
             tracker.setLatestData(new TotemData(latestInterval, averageInterval, stDev, Instant.now()));
             sendActionBarToViewers(tracker);

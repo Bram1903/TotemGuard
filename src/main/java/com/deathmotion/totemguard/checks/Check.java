@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
-import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.models.checks.CheckRecord;
 import com.deathmotion.totemguard.models.checks.ICheckSettings;

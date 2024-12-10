@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.util.messages;
 
-import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.util.PlaceholderUtil;
 import com.deathmotion.totemguard.util.datastructure.Pair;

@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
 import com.deathmotion.totemguard.checks.impl.totem.*;
-import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
+import com.deathmotion.totemguard.listeners.TotemProcessor;
 import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
 import com.deathmotion.totemguard.models.checks.CheckRecord;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
@@ -58,7 +58,6 @@ public class CheckManager {
         TotemProcessor.init(plugin);
 
         this.checks = ImmutableList.of(
-                TotemProcessor.getInstance(),
                 new AutoTotemA(plugin),
                 new AutoTotemB(plugin),
                 new AutoTotemC(plugin),
@@ -83,12 +82,14 @@ public class CheckManager {
 
     public void resetData() {
         checks.forEach(ICheck::resetData);
+        TotemProcessor.getInstance().resetData();
         userTracker.clearTotemData();
         alertManager.sendAlert(messageService.getPrefix().append(Component.text("All flag counts have been reset.", NamedTextColor.GREEN)));
     }
 
     public void resetData(UUID uuid) {
         checks.forEach(check -> check.resetData(uuid));
+        TotemProcessor.getInstance().resetData(uuid);
     }
 
     public List<CheckRecord> getViolations() {

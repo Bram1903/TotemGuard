@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.models;
+package com.deathmotion.totemguard.api.models;
 
-import com.deathmotion.totemguard.util.datastructure.TotemData;
+import com.deathmotion.totemguard.api.interfaces.ITotemData;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
 import java.util.UUID;
@@ -29,15 +29,6 @@ public record TotemPlayer(
         ClientVersion clientVersion,
         boolean isBedrockPlayer,
         String clientBrand,
-        TotemData totemData
+        ITotemData totemData
 ) {
-    public TotemPlayer(
-            UUID uuid,
-            String username,
-            ClientVersion clientVersion,
-            boolean isBedrockPlayer,
-            String clientBrand
-    ) {
-        this(uuid, username, clientVersion, isBedrockPlayer, clientBrand, new TotemData());
-    }
 }

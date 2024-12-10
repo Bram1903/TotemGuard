@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.api.events;
 
-import com.deathmotion.totemguard.api.interfaces.IAbstractCheck;
+import com.deathmotion.totemguard.api.models.TotemPlayer;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -27,38 +27,39 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event triggered when a check flags a player.
- * This event is cancellable, allowing other plugins to prevent actions based on the flag.
+ * Represents an event triggered after a full totem cycle.
+ * A totem cycle occurs when a player pops a totem to prevent death,
+ * and then moves a new totem into their off-hand slot.
  */
 @Getter
-public class FlagEvent extends Event implements Cancellable {
+public class TotemCycleEvent extends Event implements Cancellable {
     private static final HandlerList handlers = new HandlerList();
 
     /**
-     * The player who triggered the flag.
+     * The player associated with this totem cycle event.
      */
     private final Player player;
 
     /**
-     * The check that triggered the flag.
+     * The TotemPlayer instance representing the player's totem state.
      */
-    private final IAbstractCheck check;
+    private final TotemPlayer totemPlayer;
 
     /**
-     * Whether the event has been canceled.
+     * Indicates whether the event has been canceled.
      */
     private boolean cancelled;
 
     /**
-     * Constructs a new {@code FlagEvent}.
+     * Constructs a new TotemCycleEvent.
      *
-     * @param player the player who triggered the flag
-     * @param check  the check that triggered the flag
+     * @param player      the player involved in this event
+     * @param totemPlayer the totem-related data for the player
      */
-    public FlagEvent(Player player, IAbstractCheck check) {
+    public TotemCycleEvent(Player player, TotemPlayer totemPlayer) {
         super(true);
         this.player = player;
-        this.check = check;
+        this.totemPlayer = totemPlayer;
     }
 
     /**
@@ -71,9 +72,9 @@ public class FlagEvent extends Event implements Cancellable {
     }
 
     /**
-     * Checks whether the event is canceled.
+     * Gets whether this event is canceled.
      *
-     * @return {@code true} if the event is canceled; {@code false} otherwise
+     * @return true if the event is canceled, otherwise false
      */
     @Override
     public boolean isCancelled() {
@@ -81,9 +82,9 @@ public class FlagEvent extends Event implements Cancellable {
     }
 
     /**
-     * Sets whether the event should be canceled.
+     * Sets whether this event should be canceled.
      *
-     * @param cancel {@code true} to cancel the event; {@code false} otherwise
+     * @param cancel true to cancel the event, otherwise false
      */
     @Override
     public void setCancelled(boolean cancel) {
@@ -91,7 +92,7 @@ public class FlagEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the list of handlers for this event.
+     * Gets the handler list for this event instance.
      *
      * @return the handler list
      */

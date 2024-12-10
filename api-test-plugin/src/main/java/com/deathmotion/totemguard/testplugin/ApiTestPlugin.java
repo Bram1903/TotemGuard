@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.testplugin;
 
 import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
+import com.deathmotion.totemguard.testplugin.events.TotemCycleEventTest;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -50,5 +51,6 @@ public final class ApiTestPlugin extends JavaPlugin {
 
     private void registerListeners() {
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
+        Bukkit.getPluginManager().registerEvents(new TotemCycleEventTest(this), this);
     }
 }

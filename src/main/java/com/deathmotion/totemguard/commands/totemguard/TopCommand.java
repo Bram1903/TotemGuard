@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.manager.CheckManager;
 import com.deathmotion.totemguard.models.TopViolation;
-import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckRecord;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.MessageService;
