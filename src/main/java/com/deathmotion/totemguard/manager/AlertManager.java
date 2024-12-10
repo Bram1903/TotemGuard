@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.interfaces.IAlertManager;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.models.TotemPlayer;
@@ -33,7 +34,7 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AlertManager {
+public class AlertManager implements IAlertManager {
 
     @Getter
     private final ConcurrentHashMap<UUID, Player> enabledAlerts;

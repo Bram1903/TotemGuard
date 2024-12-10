@@ -60,6 +60,7 @@ public final class TotemGuard extends JavaPlugin {
     private PunishmentManager punishmentManager;
     private CheckManager checkManager;
     private TrackerManager trackerManager;
+    private TotemGuardAPI totemGuardAPI;
 
     @Setter
     private ProxyAlertMessenger proxyMessenger;
@@ -92,6 +93,8 @@ public final class TotemGuard extends JavaPlugin {
         registerCommand("totemguard", new TotemGuardCommand(this));
 
         new UpdateChecker(this);
+        totemGuardAPI = new TotemGuardAPI(this);
+
         enableBStats();
     }
 

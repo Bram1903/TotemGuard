@@ -19,10 +19,12 @@
 package com.deathmotion.totemguard.config;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.interfaces.IConfigManager;
 import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 
 import java.io.File;
@@ -30,7 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
 @Getter
-public class ConfigManager {
+public class ConfigManager implements IConfigManager {
 
     private final TotemGuard plugin;
     private Settings settings;
@@ -52,27 +54,29 @@ public class ConfigManager {
     }
 
     public void reload() {
-        File settingsFile = getSettingsFile();
-        YamlConfigurationProperties properties = createYamlProperties();
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            File settingsFile = getSettingsFile();
+            YamlConfigurationProperties properties = createYamlProperties();
 
-        if (!settingsFile.exists()) {
-            try {
-                plugin.getLogger().info("Recreating config file...");
-                settings = YamlConfigurations.update(settingsFile.toPath(), Settings.class, properties);
-            } catch (Exception e) {
-                logAndDisable("Failed to create default config file during reload", e);
+            if (!settingsFile.exists()) {
+                try {
+                    plugin.getLogger().info("Recreating config file...");
+                    settings = YamlConfigurations.update(settingsFile.toPath(), Settings.class, properties);
+                } catch (Exception e) {
+                    logAndDisable("Failed to create default config file during reload", e);
+                }
             }
-        }
 
-        plugin.getProxyMessenger().stop();
+            plugin.getProxyMessenger().stop();
 
-        try {
-            settings = YamlConfigurations.load(settingsFile.toPath(), Settings.class, properties);
-        } catch (Exception e) {
-            logAndDisable("Failed to load config file during reload", e);
-        }
+            try {
+                settings = YamlConfigurations.load(settingsFile.toPath(), Settings.class, properties);
+            } catch (Exception e) {
+                logAndDisable("Failed to load config file during reload", e);
+            }
 
-        configureProxyMessenger();
+            configureProxyMessenger();
+        });
     }
 
     private void configureProxyMessenger() {

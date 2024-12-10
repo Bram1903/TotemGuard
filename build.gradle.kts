@@ -24,6 +24,8 @@ java {
 }
 
 dependencies {
+    implementation(project(":api"))
+
     // Compile-time dependencies
     compileOnly(libs.paper.api)
     compileOnly(libs.packetevents.spigot)
@@ -82,8 +84,6 @@ tasks {
         archiveClassifier = null
 
         relocate("net.kyori.adventure.text.serializer.gson", "io.github.retrooper.packetevents.adventure.serializer.gson")
-
-        minimize()
     }
 
     assemble {
