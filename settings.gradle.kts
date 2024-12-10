@@ -10,4 +10,5 @@ plugins {
 }
 
 rootProject.name = "TotemGuard"
-include("api")
+include(":api")
+include(":api-test-plugin")

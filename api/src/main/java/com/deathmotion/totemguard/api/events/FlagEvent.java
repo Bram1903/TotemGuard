@@ -26,30 +26,75 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Represents an event triggered when a check flags a player.
+ * This event is cancellable, allowing other plugins to prevent actions based on the flag.
+ */
 @Getter
 public class FlagEvent extends Event implements Cancellable {
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * The player who triggered the flag.
+     */
     private Player player;
+
+    /**
+     * The check that triggered the flag.
+     */
     private IAbstractCheck check;
+
+    /**
+     * Whether the event has been cancelled.
+     */
     private boolean cancelled;
 
+    /**
+     * Constructs a new {@code FlagEvent}.
+     *
+     * @param player the player who triggered the flag
+     * @param check  the check that triggered the flag
+     */
     public FlagEvent(Player player, IAbstractCheck check) {
         super(true);
         this.player = player;
         this.check = check;
     }
 
+    /**
+     * Gets the static handler list for this event type.
+     *
+     * @return the static handler list
+     */
+    public static HandlerList getHandlerList() {
+        return handlers;
+    }
+
+    /**
+     * Checks whether the event is canceled.
+     *
+     * @return {@code true} if the event is canceled; {@code false} otherwise
+     */
     @Override
     public boolean isCancelled() {
         return cancelled;
     }
 
+    /**
+     * Sets whether the event should be cancelled.
+     *
+     * @param cancel {@code true} to cancel the event; {@code false} otherwise
+     */
     @Override
     public void setCancelled(boolean cancel) {
         this.cancelled = cancel;
     }
 
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return the handler list
+     */
     @Override
     public @NotNull HandlerList getHandlers() {
         return handlers;

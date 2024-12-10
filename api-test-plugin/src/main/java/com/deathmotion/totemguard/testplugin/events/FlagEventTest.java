@@ -16,33 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.interfaces;
+package com.deathmotion.totemguard.testplugin.events;
 
-/**
- * Represents an abstract check.
- * This interface defines the basic properties and behaviors of a check,
- * including its name, description, and whether it is experimental.
- */
-public interface IAbstractCheck {
+import com.deathmotion.totemguard.api.events.FlagEvent;
+import com.deathmotion.totemguard.testplugin.ApiTestPlugin;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 
-    /**
-     * Gets the name of the check.
-     *
-     * @return the name of the check
-     */
-    String getCheckName();
+public class FlagEventTest implements Listener {
 
-    /**
-     * Gets a brief description of the check.
-     *
-     * @return the description of the check
-     */
-    String getDescription();
+    private final ApiTestPlugin plugin;
 
-    /**
-     * Indicates whether the check is experimental.
-     *
-     * @return {@code true} if the check is experimental; {@code false} otherwise
-     */
-    boolean isExperimental();
+    public FlagEventTest(ApiTestPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @EventHandler
+    public void onFlagEvent(FlagEvent event) {
+        plugin.getLogger().info("Flag event triggered for player " + event.getPlayer().getName() + " with check " + event.getCheck().getCheckName());
+    }
 }

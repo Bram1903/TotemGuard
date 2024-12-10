@@ -1,0 +1,116 @@
+plugins {
+    id("java")
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.run.paper)
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
+    maven { url = uri("https://jitpack.io") }
+}
+
+java {
+    disableAutoTargetJvm()
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+dependencies {
+    compileOnly(project(":api"))
+    compileOnly(libs.paper.api)
+    compileOnly(libs.lombok)
+
+    annotationProcessor(libs.lombok)
+}
+
+group = "com.deathmotion.totemguard.testplugin"
+version = "1.0.0-SNAPSHOT"
+
+tasks {
+    jar {
+        enabled = false
+    }
+
+    shadowJar {
+        archiveFileName = "APITestPlugin.jar"
+        archiveClassifier = null
+
+    }
+
+    assemble {
+        dependsOn(shadowJar)
+    }
+
+    withType<JavaCompile> {
+        options.encoding = Charsets.UTF_8.name()
+        options.release = 17
+    }
+
+    withType<Javadoc> {
+        options.encoding = Charsets.UTF_8.name()
+    }
+
+    processResources {
+        inputs.property("version", project.version)
+
+        filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
+            expand(
+                "version" to project.version,
+            )
+        }
+    }
+
+    defaultTasks("build")
+
+    // 1.8.8 - 1.16.5 = Java 8
+    // 1.17           = Java 16
+    // 1.18 - 1.20.4  = Java 17
+    // 1-20.5+        = Java 21
+    val version = "1.21.3"
+    val javaVersion = JavaLanguageVersion.of(21)
+
+    val jvmArgsExternal = listOf(
+        "-Dcom.mojang.eula.agree=true"
+    )
+
+    val sharedPlugins = runPaper.downloadPluginsSpec {
+        url("totemguard")
+        url("https://ci.codemc.io/job/retrooper/job/packetevents/lastSuccessfulBuild/artifact/spigot/build/libs/packetevents-spigot-2.7.0-SNAPSHOT.jar")
+        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.1.1/ViaVersion-5.1.1.jar")
+        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.1.1/ViaBackwards-5.1.1.jar")
+    }
+
+    runServer {
+        minecraftVersion(version)
+        runDirectory = rootDir.resolve("run/paper/$version")
+
+        javaLauncher = project.javaToolchains.launcherFor {
+            languageVersion = javaVersion
+        }
+
+        downloadPlugins {
+            from(sharedPlugins)
+            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+149-424816e.jar")
+            url("https://ci.lucko.me/job/spark/465/artifact/spark-bukkit/build/libs/spark-1.10.119-bukkit.jar")
+            url("https://download.luckperms.net/1561/bukkit/loader/LuckPerms-Bukkit-5.4.146.jar")
+        }
+
+        jvmArgs = jvmArgsExternal
+    }
+
+    runPaper.folia.registerTask {
+        minecraftVersion(version)
+        runDirectory = rootDir.resolve("run/folia/$version")
+
+        javaLauncher = project.javaToolchains.launcherFor {
+            languageVersion = javaVersion
+        }
+
+        downloadPlugins {
+            from(sharedPlugins)
+        }
+
+        jvmArgs = jvmArgsExternal
+    }
+}
