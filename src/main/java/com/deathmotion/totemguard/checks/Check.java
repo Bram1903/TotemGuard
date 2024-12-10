@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
 import com.deathmotion.totemguard.models.CheckDetails;
 import com.deathmotion.totemguard.models.CheckRecord;
+import com.deathmotion.totemguard.models.ICheckSettings;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -68,7 +69,7 @@ public abstract class Check implements ICheck {
         this(plugin, checkName, checkDescription, false);
     }
 
-    public final void flag(Player player, Component details, Settings.Checks.CheckSettings settings) {
+    public final void flag(Player player, Component details, ICheckSettings settings) {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             if (player == null || !player.isOnline()) return;
             UUID uuid = player.getUniqueId();
@@ -80,7 +81,11 @@ public abstract class Check implements ICheck {
             }
 
             TotemPlayer totemPlayer = optionalTotemPlayer.get();
-            if (!shouldCheck(player, totemPlayer.isBedrockPlayer(), settings)) return;
+            if (checkName.equals("ManualBan")) {
+                if (!shouldCheckOverride(player, settings)) return;
+            } else {
+                if (!shouldCheck(player, totemPlayer.isBedrockPlayer(), settings)) return;
+            }
 
             int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
             CheckDetails checkDetails = createCheckDetails(player, totemPlayer, details, settings, currentViolations);
@@ -106,7 +111,7 @@ public abstract class Check implements ICheck {
         return new CheckRecord(checkName, new HashMap<>(violations));
     }
 
-    private boolean shouldCheck(Player player, boolean bedrockPlayer, Settings.Checks.CheckSettings checkSettings) {
+    private boolean shouldCheck(Player player, boolean bedrockPlayer, ICheckSettings checkSettings) {
         if (!checkSettings.isEnabled()) return false;
         if (bedrockPlayer) return false;
 
@@ -119,7 +124,14 @@ public abstract class Check implements ICheck {
         return !settings.getChecks().isBypass() || !player.hasPermission("TotemGuard.Bypass");
     }
 
-    private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, Settings.Checks.CheckSettings settings, int currentViolations) {
+    private boolean shouldCheckOverride(Player player, ICheckSettings checkSettings) {
+        if (!checkSettings.isEnabled()) return false;
+
+        var settings = plugin.getConfigManager().getSettings();
+        return !settings.getChecks().isBypass() || !player.hasPermission("TotemGuard.Bypass");
+    }
+
+    private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, ICheckSettings settings, int currentViolations) {
         final Settings globalSettings = plugin.getConfigManager().getSettings();
 
         CheckDetails checkDetails = new CheckDetails();

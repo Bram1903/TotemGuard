@@ -50,6 +50,7 @@ public class TotemGuardCommand extends BukkitCommand {
         tempMap.put("track", "Tracks a player.");
         tempMap.put("untrack", "Stops tracking a player.");
         tempMap.put("top", "View the top players based on violations.");
+        tempMap.put("manualban", "Manually ban a player as TotemGuard.");
         tempMap.put("database", "Database management commands.");
         COMMAND_DESCRIPTIONS = Collections.unmodifiableMap(tempMap);
     }
@@ -73,6 +74,7 @@ public class TotemGuardCommand extends BukkitCommand {
         subCommands.put("track", new TrackCommand(plugin));
         subCommands.put("untrack", new UntrackCommand(plugin));
         subCommands.put("top", new TopCommand(plugin));
+        subCommands.put("manualban", new ManualBanCommand(plugin));
         subCommands.put("database", new DatabaseCommand(plugin));
 
         messageService = plugin.getMessageService();
@@ -132,6 +134,7 @@ public class TotemGuardCommand extends BukkitCommand {
             case "clearlogs" -> sender.hasPermission("TotemGuard.ClearLogs");
             case "track", "untrack" -> sender.hasPermission("TotemGuard.Track");
             case "top" -> sender.hasPermission("TotemGuard.Top");
+            case "manualban" -> sender.hasPermission("TotemGuard.ManualBan");
             case "database" -> hasAnyDatabasePermissions(sender);
             default -> false;
         };

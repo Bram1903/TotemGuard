@@ -16,18 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.database.entities;
+package com.deathmotion.totemguard.models;
 
-public enum Check {
-    AutoTotemA,
-    AutoTotemB,
-    AutoTotemC,
-    AutoTotemD,
-    AutoTotemE,
-    AutoTotemF,
-    BadPacketsA,
-    BadPacketsB,
-    BadPacketsC,
-    ManualTotemA,
-    ManualBan
+import java.util.List;
+
+public interface ICheckSettings {
+    boolean isEnabled();
+    boolean isPunishable();
+    int getPunishmentDelayInSeconds();
+    int getMaxViolations();
+    List<String> getPunishmentCommands();
 }
+

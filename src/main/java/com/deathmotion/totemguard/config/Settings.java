@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.config;
 
+import com.deathmotion.totemguard.models.ICheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
@@ -268,9 +269,12 @@ public final class Settings {
         @Comment("\nManualTotemA Settings")
         private ManualTotemA ManualTotemA = new ManualTotemA();
 
+        @Comment("\nManualBan Settings")
+        private ManualBan ManualBan = new ManualBan();
+
         @Configuration
         @Getter
-        public abstract static class CheckSettings {
+        public abstract static class CheckSettings implements ICheckSettings {
             private boolean Enabled = true;
             private boolean Punishable;
             private int PunishmentDelayInSeconds = 0;
@@ -417,6 +421,14 @@ public final class Settings {
             public ManualTotemA() {
                 super(false, 4);
             }
+        }
+
+        @Configuration
+        @Getter
+        public static class ManualBan {
+            private List<String> PunishmentCommands = List.of(
+                    "%default_punishment%"
+            );
         }
     }
 }
