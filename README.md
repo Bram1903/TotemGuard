@@ -97,6 +97,7 @@ For a much more detailed explanation of the checks, see [the wiki!](https://gith
 - `/totemguard clearlogs` - Clear the logs.
 - `/totemguard track/untrack <player>` - Tracks the player.
 - `/totemguard top` - Shows the top 10 violators.
+- `/totemguard manualban <player>` - Manually ban a player.
 - `/totemguard database trim` - Trim the database.
 - `/totemguard database clear` - Clear the database.
 
@@ -118,6 +119,7 @@ Operators (OPs) have these permissions by default, except `TotemGuard.Debug`:
 - `TotemGuard.Bypass` - Bypass the plugin's checks.
 - `TotemGuard.Update` - Receive update notifications.
 - `TotemGuard.Top` - Access to the `/totemguard top` command.
+- `TotemGuard.ManualBan` - Access to the `/totemguard manualban` command.
 - `TotemGuard.Database.Trim` - Access to the `/totemguard database trim` command.
 - `TotemGuard.Database.Clear` - Access to the `/totemguard database clear` command.
 - `TotemGuard.Debug` - View debug messages.
