@@ -33,6 +33,6 @@ public class FlagEventTest implements Listener {
 
     @EventHandler
     public void onFlagEvent(FlagEvent event) {
-        plugin.getLogger().info("Flag event triggered for player " + event.getPlayer().getName() + " with check " + event.getCheck().getCheckName());
+        plugin.getLogger().info("Flag event triggered for player " + event.getPlayer().getName() + " with check " + event.getCheckDetails().getCheckName());
     }
 }
