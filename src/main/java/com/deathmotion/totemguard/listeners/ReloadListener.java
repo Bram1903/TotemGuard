@@ -22,7 +22,6 @@ import better.reload.api.ReloadEvent;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.ConfigManager;
 import com.deathmotion.totemguard.util.MessageService;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -41,9 +40,7 @@ public class ReloadListener implements Listener {
     @EventHandler
     public void onReloadEvent(ReloadEvent event) {
         // Code directly copied from TotemGuardCommand#handleReloadCommand
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            configManager.reload();
-            event.getCommandSender().sendMessage(messageService.getPluginReloaded());
-        });
+        configManager.reload();
+        event.getCommandSender().sendMessage(messageService.getPluginReloaded());
     }
 }

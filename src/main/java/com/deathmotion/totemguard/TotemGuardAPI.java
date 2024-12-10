@@ -18,12 +18,12 @@
 
 package com.deathmotion.totemguard;
 
-import com.deathmotion.totemguard.api.TotemGuardAbstractAPI;
+import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.api.interfaces.IAlertManager;
 import com.deathmotion.totemguard.api.interfaces.IConfigManager;
 import com.deathmotion.totemguard.util.TGVersions;
 
-public class TotemGuardAPI implements TotemGuardAbstractAPI {
+public class TotemGuardAPI implements ITotemGuardAPI {
 
     private final TotemGuard plugin;
 

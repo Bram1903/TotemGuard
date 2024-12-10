@@ -2,6 +2,9 @@ plugins {
     id("java")
 }
 
+group = "com.deathmotion.totemguard.api"
+description = "TotemGuardAPI"
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -18,4 +21,7 @@ dependencies {
 java {
     disableAutoTargetJvm()
     toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+    withJavadocJar()
+    withSourcesJar()
 }

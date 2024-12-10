@@ -16,17 +16,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.checks;
+package com.deathmotion.totemguard.api;
 
-import com.deathmotion.totemguard.api.interfaces.IAbstractCheck;
-import com.deathmotion.totemguard.models.checks.CheckRecord;
+import com.deathmotion.totemguard.api.interfaces.IAlertManager;
+import com.deathmotion.totemguard.api.interfaces.IConfigManager;
 
-import java.util.UUID;
+/**
+ * This is the main API class for TotemGuard.
+ */
+public interface ITotemGuardAPI {
 
-public interface ICheck extends IAbstractCheck {
-    void resetData();
+    /**
+     * Get the version of TotemGuard.
+     *
+     * @return The version of TotemGuard.
+     */
+    String getTotemGuardVersion();
 
-    void resetData(UUID uuid);
+    /**
+     * Get the alert manager.
+     *
+     * @return The alert manager.
+     */
+    IAlertManager alertManager();
 
-    CheckRecord getViolations();
+    /**
+     * Get the config manager.
+     *
+     * @return The config manager.
+     */
+    IConfigManager configManager();
 }

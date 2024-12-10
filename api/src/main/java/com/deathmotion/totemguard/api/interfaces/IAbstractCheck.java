@@ -16,34 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api;
+package com.deathmotion.totemguard.api.interfaces;
 
-import com.deathmotion.totemguard.api.interfaces.IAlertManager;
-import com.deathmotion.totemguard.api.interfaces.IConfigManager;
+public interface IAbstractCheck {
+    String getCheckName();
 
-/**
- * This is the main API class for TotemGuard.
- */
-public interface TotemGuardAbstractAPI {
+    String getDescription();
 
-    /**
-     * Get the version of TotemGuard.
-     *
-     * @return The version of TotemGuard.
-     */
-    String getTotemGuardVersion();
-
-    /**
-     * Get the alert manager.
-     *
-     * @return The alert manager.
-     */
-    IAlertManager alertManager();
-
-    /**
-     * Get the config manager.
-     *
-     * @return The config manager.
-     */
-    IConfigManager configManager();
+    boolean isExperimental();
 }

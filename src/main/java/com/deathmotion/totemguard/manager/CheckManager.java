@@ -98,7 +98,6 @@ public class CheckManager {
                 .collect(Collectors.toList());
     }
 
-
     private void registerPacketListeners() {
         checks.stream()
                 .filter(check -> check instanceof PacketListener)

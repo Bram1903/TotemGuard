@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.events.FlagEvent;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
@@ -30,6 +31,7 @@ import com.deathmotion.totemguard.models.checks.ICheckSettings;
 import com.deathmotion.totemguard.util.MessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -37,7 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class Check implements ICheck {
+public class Check implements ICheck {
 
     private final ConcurrentHashMap<UUID, Integer> violations;
 
@@ -74,6 +76,10 @@ public abstract class Check implements ICheck {
             if (player == null || !player.isOnline()) return;
             UUID uuid = player.getUniqueId();
 
+            FlagEvent event = new FlagEvent(player, this);
+            Bukkit.getPluginManager().callEvent(event);
+            if (event.isCancelled()) return;
+
             Optional<TotemPlayer> optionalTotemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
             if (optionalTotemPlayer.isEmpty()) {
                 plugin.getLogger().severe("Failed to get data for player: " + player.getName() + " during check: " + checkName);
@@ -97,18 +103,6 @@ public abstract class Check implements ICheck {
                 violations.remove(uuid);
             }
         });
-    }
-
-    public void resetData() {
-        violations.clear();
-    }
-
-    public void resetData(UUID uuid) {
-        violations.remove(uuid);
-    }
-
-    public CheckRecord getViolations() {
-        return new CheckRecord(checkName, new HashMap<>(violations));
     }
 
     private boolean shouldCheck(Player player, boolean bedrockPlayer, ICheckSettings checkSettings) {
@@ -151,5 +145,35 @@ public abstract class Check implements ICheck {
         checkDetails.setDetails(details);
 
         return checkDetails;
+    }
+
+    @Override
+    public String getCheckName() {
+        return checkName;
+    }
+
+    @Override
+    public String getDescription() {
+        return checkDescription;
+    }
+
+    @Override
+    public boolean isExperimental() {
+        return experimental;
+    }
+
+    @Override
+    public void resetData() {
+        violations.clear();
+    }
+
+    @Override
+    public void resetData(UUID uuid) {
+        violations.remove(uuid);
+    }
+
+    @Override
+    public CheckRecord getViolations() {
+        return new CheckRecord(checkName, new HashMap<>(violations));
     }
 }
