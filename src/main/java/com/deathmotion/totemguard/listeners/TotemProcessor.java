@@ -36,6 +36,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
+
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 

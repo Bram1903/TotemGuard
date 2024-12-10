@@ -20,11 +20,11 @@ package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.FlagEvent;
+import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
-import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.models.checks.CheckRecord;
 import com.deathmotion.totemguard.models.checks.ICheckSettings;
@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Check implements ICheck {
+public abstract class Check implements ICheck {
 
     private final ConcurrentHashMap<UUID, Integer> violations;
 
@@ -76,10 +76,6 @@ public class Check implements ICheck {
             if (player == null || !player.isOnline()) return;
             UUID uuid = player.getUniqueId();
 
-            FlagEvent event = new FlagEvent(player, this);
-            Bukkit.getPluginManager().callEvent(event);
-            if (event.isCancelled()) return;
-
             Optional<TotemPlayer> optionalTotemPlayer = plugin.getUserTracker().getTotemPlayer(uuid);
             if (optionalTotemPlayer.isEmpty()) {
                 plugin.getLogger().severe("Failed to get data for player: " + player.getName() + " during check: " + checkName);
@@ -96,10 +92,14 @@ public class Check implements ICheck {
             int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
             CheckDetails checkDetails = createCheckDetails(player, totemPlayer, details, settings, currentViolations);
 
+            FlagEvent event = new FlagEvent(player, checkDetails);
+            Bukkit.getPluginManager().callEvent(event);
+            if (event.isCancelled()) return;
+
             alertManager.sendAlert(totemPlayer, checkDetails);
             discordManager.sendAlert(totemPlayer, checkDetails);
 
-            if (punishmentManager.handlePunishment(totemPlayer, checkDetails, plugin.getConfigManager().getSettings().getAlertFormat())) {
+            if (punishmentManager.handlePunishment(player, totemPlayer, checkDetails, plugin.getConfigManager().getSettings().getAlertFormat())) {
                 violations.remove(uuid);
             }
         });

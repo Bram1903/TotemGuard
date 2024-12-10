@@ -19,11 +19,13 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.api.events.PunishEvent;
 import com.deathmotion.totemguard.api.models.TotemPlayer;
+import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.util.PlaceholderUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Blocking;
 
 import java.util.List;
@@ -49,8 +51,12 @@ public class PunishmentManager {
     }
 
     @Blocking
-    public boolean handlePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
+    public boolean handlePunishment(Player player, TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
         if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations() && !toBePunished.contains(totemPlayer.uuid())) {
+            PunishEvent punishEvent = new PunishEvent(player, checkDetails);
+            plugin.getServer().getPluginManager().callEvent(punishEvent);
+            if (punishEvent.isCancelled()) return false;
+
             toBePunished.add(totemPlayer.uuid());
 
             long delayTicks = checkDetails.getPunishmentDelay() * 20L;

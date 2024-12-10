@@ -18,12 +18,18 @@
 
 package com.deathmotion.totemguard.checks;
 
-import com.deathmotion.totemguard.api.interfaces.IAbstractCheck;
 import com.deathmotion.totemguard.models.checks.CheckRecord;
 
 import java.util.UUID;
 
-public interface ICheck extends IAbstractCheck {
+public interface ICheck {
+
+    String getCheckName();
+
+    String getDescription();
+
+    boolean isExperimental();
+
     void resetData();
 
     void resetData(UUID uuid);

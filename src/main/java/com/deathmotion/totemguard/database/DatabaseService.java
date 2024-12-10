@@ -19,12 +19,12 @@
 package com.deathmotion.totemguard.database;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.database.entities.BaseDomain;
 import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
-import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.ebean.Database;

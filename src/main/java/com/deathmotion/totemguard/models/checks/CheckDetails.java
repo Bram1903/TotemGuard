@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.models.checks;
 
+import com.deathmotion.totemguard.api.interfaces.ICheckDetails;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
@@ -26,7 +27,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class CheckDetails {
+public class CheckDetails implements ICheckDetails {
     private String checkName;
     private String checkDescription;
     private Component alert;

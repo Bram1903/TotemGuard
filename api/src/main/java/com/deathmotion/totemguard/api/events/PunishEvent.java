@@ -27,35 +27,36 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event triggered when a check flags a player.
- * This event is cancellable, allowing other plugins to prevent actions based on the flag.
+ * Represents an event that is triggered when a player is about to be punished
+ * by a TotemGuard check. This event can be canceled to prevent the punishment.
  */
 @Getter
-public class FlagEvent extends Event implements Cancellable {
+public class PunishEvent extends Event implements Cancellable {
+
     private static final HandlerList handlers = new HandlerList();
 
     /**
-     * The player who triggered the flag.
+     * The player who is being punished.
      */
     private final Player player;
 
     /**
-     * The check that triggered the flag.
+     * The details of the check that triggered this punishment.
      */
     private final ICheckDetails checkDetails;
 
     /**
-     * Whether the event has been canceled.
+     * Whether the event is canceled.
      */
     private boolean cancelled;
 
     /**
-     * Constructs a new {@code FlagEvent}.
+     * Constructs a new PunishEvent.
      *
-     * @param player       the player who triggered the flag
-     * @param checkDetails the check details that triggered the flag
+     * @param player       the player who is being punished
+     * @param checkDetails the details of the check that triggered the punishment
      */
-    public FlagEvent(Player player, ICheckDetails checkDetails) {
+    public PunishEvent(Player player, ICheckDetails checkDetails) {
         super(true);
         this.player = player;
         this.checkDetails = checkDetails;
@@ -71,9 +72,9 @@ public class FlagEvent extends Event implements Cancellable {
     }
 
     /**
-     * Checks whether the event is canceled.
+     * Gets whether this event is canceled.
      *
-     * @return {@code true} if the event is canceled; {@code false} otherwise
+     * @return {@code true} if the event is canceled, otherwise {@code false}
      */
     @Override
     public boolean isCancelled() {
@@ -81,9 +82,9 @@ public class FlagEvent extends Event implements Cancellable {
     }
 
     /**
-     * Sets whether the event should be canceled.
+     * Sets whether this event should be canceled.
      *
-     * @param cancel {@code true} to cancel the event; {@code false} otherwise
+     * @param cancel {@code true} to cancel the event, otherwise {@code false}
      */
     @Override
     public void setCancelled(boolean cancel) {
@@ -91,7 +92,7 @@ public class FlagEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the list of handlers for this event.
+     * Gets the handler list for this event instance.
      *
      * @return the handler list
      */

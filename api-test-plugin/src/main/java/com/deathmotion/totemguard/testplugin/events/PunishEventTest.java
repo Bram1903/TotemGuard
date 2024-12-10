@@ -16,33 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.interfaces;
+package com.deathmotion.totemguard.testplugin.events;
 
-/**
- * Represents an abstract check.
- * This interface defines the basic properties and behaviors of a check,
- * including its name, description, and whether it is experimental.
- */
-public interface IAbstractCheck {
+import com.deathmotion.totemguard.api.events.PunishEvent;
+import com.deathmotion.totemguard.testplugin.ApiTestPlugin;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 
-    /**
-     * Gets the name of the check.
-     *
-     * @return the name of the check
-     */
-    String getCheckName();
+public class PunishEventTest implements Listener {
+    private final ApiTestPlugin plugin;
 
-    /**
-     * Gets a brief description of the check.
-     *
-     * @return the description of the check
-     */
-    String getDescription();
+    public PunishEventTest(ApiTestPlugin plugin) {
+        this.plugin = plugin;
+    }
 
-    /**
-     * Indicates whether the check is experimental.
-     *
-     * @return {@code true} if the check is experimental; {@code false} otherwise
-     */
-    boolean isExperimental();
+    @EventHandler
+    public void onPunishEvent(PunishEvent event) {
+        plugin.getLogger().info("Punish event triggered for player " + event.getPlayer().getName() + " for check " + event.getCheckDetails().getCheckName());
+    }
 }
