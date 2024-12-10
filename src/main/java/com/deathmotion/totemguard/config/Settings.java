@@ -29,13 +29,13 @@ import java.util.List;
 public final class Settings {
 
     @Comment("Prefix: Sets the command prefix for the plugin.")
-    private String prefix = "&6&lTG &8» ";
+    private String Prefix = "&6&lTG &8» ";
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
-    private boolean debug = false;
+    private boolean Debug = false;
 
-    @Comment("\nAlert Client Brand: Notifies players with the alert permission, what client brand a player is using.")
-    private boolean alertClientBrand = false;
+    @Comment("\nClient Brand Notifier: Notifies players with the alert permission, what client brand a player is using.")
+    private boolean AlertBrand = false;
 
     @Comment({
             "",
@@ -52,37 +52,37 @@ public final class Settings {
             "%max_violations% - Maximum Violations",
             "",
             "Alert Format: The format of the alert message."})
-    private String alertFormat = "%prefix%&e%player%&7 failed &6%check%&f &7VL[&6%violations%/%max_violations%&7]";
+    private String AlertFormat = "%prefix%&e%player%&7 failed &6%check%&f &7VL[&6%violations%/%max_violations%&7]";
 
     @Comment("\nAlerts Enabled: Message when enabling alerts.")
-    private String alertsEnabled = "%prefix%&aAlerts enabled";
+    private String AlertsEnabled = "%prefix%&aAlerts enabled";
 
     @Comment("\nAlerts Disabled: Message when disabling alerts.")
-    private String alertsDisabled = "%prefix%&cAlerts disabled";
+    private String AlertsDisabled = "%prefix%&cAlerts disabled";
 
     @Comment("\nProxy Alert Settings:")
-    private ProxyAlerts proxyAlerts = new ProxyAlerts();
+    private ProxyAlerts ProxyAlerts = new ProxyAlerts();
 
     @Comment("\nColor Scheme Settings:")
-    private ColorScheme colorScheme = new ColorScheme();
+    private ColorScheme ColorScheme = new ColorScheme();
 
     @Comment("\nThe time in minutes at which the plugin should reset the violations.")
-    private int resetViolationsInterval = 30;
+    private int ResetViolationsInterval = 30;
 
     @Comment("\nUpdate Checker Settings:")
-    private UpdateChecker updateChecker = new UpdateChecker();
+    private UpdateChecker UpdateChecker = new UpdateChecker();
 
     @Comment("\nDetermines when the plugin should stop for checking a player.")
-    private Determine determine = new Determine();
+    private Determine Determine = new Determine();
 
     @Comment("\nDatabase settings:")
-    private Database database = new Database();
+    private Database Database = new Database();
 
     @Comment("\nWebhook settings:")
-    private Webhook webhook = new Webhook();
+    private Webhook Webhook = new Webhook();
 
     @Comment("\nChecks")
-    private Checks checks = new Checks();
+    private Checks Checks = new Checks();
 
     @Configuration
     @Getter
@@ -94,27 +94,27 @@ public final class Settings {
                 " - plugin-messaging (Will use plugin messaging through player connections.)",
                 " - redis (Requires further configuration in the 'redis' section below.)"
         })
-        private String method = "plugin-messaging";
+        private String Method = "plugin-messaging";
 
         @Comment("\nChannel: The channel to send and receive alerts.")
-        private String channel = "totemguard";
+        private String Channel = "totemguard";
 
         @Comment("\nWhen enabled, the plugin will send alerts to other servers connected to the proxy.")
-        private boolean send = true;
+        private boolean Send = true;
 
         @Comment("\nWhen enabled, the plugin will receive alerts from other servers connected to the proxy.")
-        private boolean receive = true;
+        private boolean Receive = true;
 
         @Comment("\nRedis Configuration")
-        private RedisConfiguration redis = new RedisConfiguration();
+        private RedisConfiguration Redis = new RedisConfiguration();
 
         @Configuration
         @Getter
         public static class RedisConfiguration {
-            private String host = "localhost";
-            private int port = 6379;
-            private String username = "default";
-            private String password = "yourPassword";
+            private String Host = "localhost";
+            private int Port = 6379;
+            private String Username = "default";
+            private String Password = "yourPassword";
         }
     }
 
@@ -122,70 +122,70 @@ public final class Settings {
     @Getter
     public static class ColorScheme {
         @Comment("Primary Color: The primary color of the plugin.")
-        private String primaryColor = "&6";
+        private String PrimaryColor = "&6";
 
         @Comment("\nSecondary Color: The secondary color of the plugin.")
-        private String secondaryColor = "&7";
+        private String SecondaryColor = "&7";
     }
 
     @Configuration
     @Getter
     public static class Database {
         @Comment("Database Type: The type of database to use. (SQLite, MYSQL)")
-        private String type = "SQLITE";
+        private String Type = "SQLITE";
 
         @Comment("\nDatabase Host: The host of the database.")
-        private String host = "localhost";
+        private String Host = "localhost";
 
         @Comment("\nDatabase Port: The port of the database.")
-        private int port = 3306;
+        private int Port = 3306;
 
         @Comment("\nDatabase Name: The name of the database.")
-        private String name = "TotemGuard";
+        private String Name = "TotemGuard";
 
         @Comment("\nDatabase Username: The username of the database.")
-        private String username = "root";
+        private String Username = "root";
 
         @Comment("\nDatabase Password: The password of the database.")
-        private String password = "password";
+        private String Password = "password";
     }
 
     @Configuration
     @Getter
     public static class Webhook {
         @Comment("Webhook Alert Settings")
-        private AlertSettings alert = new AlertSettings();
+        private AlertSettings Alert = new AlertSettings();
 
         @Comment("\nWebhook Punishment Settings")
-        private PunishmentSettings punishment = new PunishmentSettings();
+        private PunishmentSettings Punishment = new PunishmentSettings();
 
         @Configuration
         @Getter
         public abstract static class WebhookSettings {
             @Comment("Enable and/or disable the webhook implementation.")
-            private boolean enabled = false;
+            private boolean Enabled = false;
 
             @Comment("\nWebhook URL: The URL of the webhook to send notifications to.")
-            private String url = "https://discord.com/api/webhooks/your_webhook_url";
+            private String Url = "https://discord.com/api/webhooks/your_webhook_url";
 
             @Comment("\nClient Name: Name of the client.")
-            private String name = "TotemGuard";
+            private String Name = "TotemGuard";
 
             @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
-            private String color;
+            private String Color;
 
             @Comment("\nWebhook Title: Brief description about what the webhook is about. (Like Alert, Punishment, etc.)")
-            private String title;
+            private String Title;
 
             @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
-            private String profileImage = "https://i.imgur.com/hqaGO5H.png";
+            private String ProfileImage = "https://i.imgur.com/hqaGO5H.png";
 
             @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
-            private boolean timestamp = true;
+            private boolean Timestamp = true;
 
             public WebhookSettings(String title, String color) {
-                this.title = title;
-                this.color = color;
+                this.Title = title;
+                this.Color = color;
             }
         }
 
@@ -210,81 +210,84 @@ public final class Settings {
     @Getter
     public static class UpdateChecker {
         @Comment("Enable and/or disable the update checker.")
-        private boolean enabled = true;
+        private boolean Enabled = true;
 
         @Comment("\nPrint to Console: Prints the update message to the console.")
-        private boolean printToConsole = true;
+        private boolean PrintToConsole = true;
 
         @Comment("\nNotify In-Game: Notifies players with the permission in-game.")
-        private boolean notifyInGame = true;
+        private boolean NotifyInGame = true;
     }
 
     @Configuration
     @Getter
     public static class Determine {
         @Comment("Minimum TPS.")
-        private double minTps = 15.0;
+        private double MinTps = 15.0;
 
         @Comment("\nMaximum Ping.")
-        private int maxPing = 400;
+        private int MaxPing = 400;
     }
 
     @Configuration
     @Getter
     public static class Checks {
         @Comment("When enabled, players with the bypass permission will not be flagged.")
-        private boolean bypass = false;
+        private boolean Bypass = false;
+
+        @Comment("\nThis command placeholder can be used by using %default_punishment% as a punishment command.")
+        private String DefaultPunishment = "ban %player% 1d [TotemGuard] Unfair Advantage";
 
         @Comment({"", "AutoTotemA Settings"})
-        private AutoTotemA autoTotemA = new AutoTotemA();
+        private AutoTotemA AutoTotemA = new AutoTotemA();
 
         @Comment("\nAutoTotemB Settings")
-        private AutoTotemB autoTotemB = new AutoTotemB();
+        private AutoTotemB AutoTotemB = new AutoTotemB();
 
         @Comment("\nAutoTotemC Settings")
-        private AutoTotemC autoTotemC = new AutoTotemC();
+        private AutoTotemC AutoTotemC = new AutoTotemC();
 
         @Comment("\nAutoTotemD Settings")
-        private AutoTotemD autoTotemD = new AutoTotemD();
+        private AutoTotemD AutoTotemD = new AutoTotemD();
 
         @Comment("\nAutoTotemE Settings")
-        private AutoTotemE autoTotemE = new AutoTotemE();
+        private AutoTotemE AutoTotemE = new AutoTotemE();
 
         @Comment("\nAutoTotemF Settings")
-        private AutoTotemF autoTotemF = new AutoTotemF();
+        private AutoTotemF AutoTotemF = new AutoTotemF();
 
         @Comment("\nBadPacketA Settings")
-        private BadPacketsA badPacketsA = new BadPacketsA();
+        private BadPacketsA BadPacketsA = new BadPacketsA();
 
         @Comment("\nBadPacketB Settings")
-        private BadPacketsB badPacketsB = new BadPacketsB();
+        private BadPacketsB BadPacketB = new BadPacketsB();
 
         @Comment("\nBadPacketC Settings")
-        private BadPacketsC badPacketsC = new BadPacketsC();
+        private BadPacketsC BadPacketC = new BadPacketsC();
 
         @Comment("\nManualTotemA Settings")
-        private ManualTotemA manualTotemA = new ManualTotemA();
+        private ManualTotemA ManualTotemA = new ManualTotemA();
 
         @Configuration
         @Getter
         public abstract static class CheckSettings {
-            private boolean enabled = true;
-            private boolean punishable;
-            private int punishmentDelayInSeconds = 0;
-            private int maxViolations;
-            private List<String> punishmentCommands = List.of(
-                    "ban %player% 1d [TotemGuard] Unfair Advantage"
+            private boolean Enabled = true;
+            private boolean Punishable;
+            private int PunishmentDelayInSeconds = 0;
+            private int MaxViolations;
+            private List<String> PunishmentCommands = List.of(
+                    "%default_punishment%"
             );
 
             public CheckSettings(boolean punishable, int punishmentDelay, int maxViolations) {
-                this.punishable = punishable;
-                this.punishmentDelayInSeconds = punishmentDelay;
-                this.maxViolations = maxViolations;
+                this.Punishable = punishable;
+                this.PunishmentDelayInSeconds = punishmentDelay;
+                this.MaxViolations = maxViolations;
             }
 
             public CheckSettings(boolean punishable, int maxViolations) {
-                this.punishable = punishable;
-                this.maxViolations = maxViolations;
+                this.Punishable = punishable;
+                this.MaxViolations = maxViolations;
             }
         }
 
@@ -292,10 +295,10 @@ public final class Settings {
         @Getter
         public static class AutoTotemA extends CheckSettings {
             @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-            private int normalCheckTimeMs = 1500;
+            private int NormalCheckTimeMs = 1500;
 
             @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
-            private int clickTimeDifference = 75;
+            private int ClickTimeDifference = 75;
 
             public AutoTotemA() {
                 super(true, 2);
@@ -306,13 +309,13 @@ public final class Settings {
         @Getter
         public static class AutoTotemB extends CheckSettings {
             @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
-            private double standardDeviationThreshold = 30.0;
+            private double StandardDeviationThreshold = 30.0;
 
             @Comment("\nMean Threshold: The threshold for the mean.")
-            private double meanThreshold = 500.0;
+            private double MeanThreshold = 500.0;
 
             @Comment("\nConsecutive Low SD Count: The amount of consecutive low standard deviations before flagging.")
-            private int consecutiveLowSDCount = 3;
+            private int ConsecutiveLowSDCount = 3;
 
             public AutoTotemB() {
                 super(true, 6);
@@ -323,10 +326,10 @@ public final class Settings {
         @Getter
         public static class AutoTotemC extends CheckSettings {
             @Comment("\nConsistent SD Range: The range for the standard average deviation.")
-            private double consistentSDRange = 1.0;
+            private double ConsistentSDRange = 1.0;
 
             @Comment("\nConsecutive Violations: The amount of consecutive violations before flagging.")
-            private int consecutiveViolations = 3;
+            private int ConsecutiveViolations = 3;
 
             public AutoTotemC() {
                 super(true, 3);
@@ -337,13 +340,13 @@ public final class Settings {
         @Getter
         public static class AutoTotemD extends CheckSettings {
             @Comment("\nTotal Sequence: The total sequence timing under which the player will be flagged.")
-            private int totalSequence = 160;
+            private int TotalSequence = 160;
 
             @Comment("\nTime average Difference between packets: The time difference between packets.")
-            private int baseTimeDifference = 50;
+            private int BaseTimeDifference = 50;
 
             @Comment("\nTime Tolerance: The tolerance for the time difference.")
-            private int tolerance = 5;
+            private int Tolerance = 5;
 
             public AutoTotemD() {
                 super(true, 2);
@@ -354,10 +357,10 @@ public final class Settings {
         @Getter
         public static class AutoTotemE extends CheckSettings {
             @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
-            private double standardDeviationThreshold = 10.0;
+            private double StandardDeviationThreshold = 10.0;
 
             @Comment("\nAverage Standard Deviation Threshold: The threshold for the average standard deviation.")
-            private double averageStDeviationThreshold = 10.0;
+            private double AverageStDeviationThreshold = 10.0;
 
             public AutoTotemE() {
                 super(true, 4);
@@ -368,7 +371,7 @@ public final class Settings {
         @Getter
         public static class AutoTotemF extends CheckSettings {
             @Comment("\nTime Difference: The time difference between closing the inventory and the last click.")
-            private int timeDifference = 1500;
+            private int TimeDifference = 1500;
 
             public AutoTotemF() {
                 super(false, 6);
@@ -388,7 +391,7 @@ public final class Settings {
         @Getter
         public static class BadPacketsB extends CheckSettings {
             @Comment("\nBanned Client Brands: The list of client brands to flag.")
-            private List<String> bannedClientBrands = List.of(
+            private List<String> BannedClientBrands = List.of(
                     "autototem"
             );
 
@@ -409,7 +412,7 @@ public final class Settings {
         @Getter
         public static class ManualTotemA extends CheckSettings {
             @Comment("\nCheck Time: Amount of time the check command waits for a retotem. (in ms)")
-            private int checkTime = 400;
+            private int CheckTime = 400;
 
             public ManualTotemA() {
                 super(false, 4);

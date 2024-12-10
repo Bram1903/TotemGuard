@@ -35,7 +35,9 @@ import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.*;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -101,7 +103,7 @@ public class CheckCommand extends Check implements SubCommand {
         // Use an event listener to confirm damage application
         final UUID targetUUID = target.getUniqueId();
         final double healthBeforeDamage = target.getHealth();
-        final boolean[] damageApplied = { false };
+        final boolean[] damageApplied = {false};
 
         Listener damageListener = new Listener() {
             @EventHandler(priority = EventPriority.MONITOR)

@@ -24,11 +24,10 @@ import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
+import java.util.logging.Level;
 
 @Getter
 public class ConfigManager {
@@ -38,45 +37,68 @@ public class ConfigManager {
 
     public ConfigManager(TotemGuard plugin) {
         this.plugin = plugin;
+        loadConfig();
     }
 
-    @NotNull
-    public Optional<Throwable> loadConfig() {
-        final YamlConfigurationProperties properties = ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder()
-                .charset(StandardCharsets.UTF_8)
-                .outputNulls(true)
-                .inputNulls(false)
-                .header(returnHeader())
-                .build();
-        final File settingsFile = new File(plugin.getDataFolder(), "config.yml");
+    private void loadConfig() {
+        File settingsFile = getSettingsFile();
+        YamlConfigurationProperties properties = createYamlProperties();
 
         try {
-            settings = YamlConfigurations.update(
-                    settingsFile.toPath(),
-                    Settings.class,
-                    properties
-            );
-            return Optional.empty();
+            settings = YamlConfigurations.update(settingsFile.toPath(), Settings.class, properties);
         } catch (Exception e) {
-            return Optional.of(e);
+            logAndDisable("Failed to create default config file during load", e);
         }
     }
 
     public void reload() {
-        final YamlConfigurationProperties properties = ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder()
-                .charset(StandardCharsets.UTF_8)
-                .outputNulls(true)
-                .inputNulls(false)
-                .header(returnHeader())
-                .build();
+        File settingsFile = getSettingsFile();
+        YamlConfigurationProperties properties = createYamlProperties();
+
+        if (!settingsFile.exists()) {
+            try {
+                plugin.getLogger().info("Recreating config file...");
+                settings = YamlConfigurations.update(settingsFile.toPath(), Settings.class, properties);
+            } catch (Exception e) {
+                logAndDisable("Failed to create default config file during reload", e);
+            }
+        }
 
         plugin.getProxyMessenger().stop();
-        settings = YamlConfigurations.load(new File(plugin.getDataFolder(), "config.yml").toPath(), Settings.class, properties);
+
+        try {
+            settings = YamlConfigurations.load(settingsFile.toPath(), Settings.class, properties);
+        } catch (Exception e) {
+            logAndDisable("Failed to load config file during reload", e);
+        }
+
+        configureProxyMessenger();
+    }
+
+    private void configureProxyMessenger() {
         plugin.setProxyMessenger(AlertMessengerRegistry.getMessenger(settings.getProxyAlerts().getMethod(), plugin).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!")));
         plugin.getProxyMessenger().start();
     }
 
-    private String returnHeader() {
+    private File getSettingsFile() {
+        return new File(plugin.getDataFolder(), "config.yml");
+    }
+
+    private YamlConfigurationProperties createYamlProperties() {
+        return ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder()
+                .charset(StandardCharsets.UTF_8)
+                .outputNulls(true)
+                .inputNulls(false)
+                .header(createHeader())
+                .build();
+    }
+
+    private void logAndDisable(String message, Exception e) {
+        plugin.getLogger().log(Level.SEVERE, message, e);
+        plugin.getServer().getPluginManager().disablePlugin(plugin);
+    }
+
+    private String createHeader() {
         return """
                   ___________     __                   ________                       .___
                   \\__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/

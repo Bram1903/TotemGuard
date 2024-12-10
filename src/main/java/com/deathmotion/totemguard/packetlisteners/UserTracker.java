@@ -117,7 +117,7 @@ public class UserTracker implements PacketListener {
 
     private void announceClientBrand(String username, String brand) {
         Settings settings = plugin.getConfigManager().getSettings();
-        if (!settings.isAlertClientBrand()) return;
+        if (!settings.isAlertBrand()) return;
 
         Bukkit.broadcast(messageService.getJoinMessage(username, brand), "TotemGuard.Alerts");
     }

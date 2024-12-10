@@ -47,10 +47,10 @@ public final class BadPacketsB extends Check {
     }
 
     public void check(Player player, String clientBrand) {
-        final var settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsB();
+        final var settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketB();
 
         if (settings.getBannedClientBrands().contains(clientBrand.toLowerCase())) {
-            flag(player, createDetails(clientBrand), plugin.getConfigManager().getSettings().getChecks().getBadPacketsB());
+            flag(player, createDetails(clientBrand), plugin.getConfigManager().getSettings().getChecks().getBadPacketB());
         }
     }
 

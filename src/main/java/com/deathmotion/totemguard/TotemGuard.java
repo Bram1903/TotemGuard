@@ -41,7 +41,6 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Field;
-import java.util.Optional;
 
 @Getter
 public final class TotemGuard extends JavaPlugin {
@@ -71,13 +70,7 @@ public final class TotemGuard extends JavaPlugin {
 
         configManager = new ConfigManager(this);
 
-        if (!loadConfig()) {
-            instance.getServer().getPluginManager().disablePlugin(instance);
-            return;
-        }
-
         messageService = new MessageService(this);
-
         databaseManager = new DatabaseManager(this);
         databaseService = new DatabaseService(this);
         mojangService = new MojangService(this);
@@ -97,6 +90,7 @@ public final class TotemGuard extends JavaPlugin {
             Bukkit.getPluginManager().registerEvents(new ReloadListener(this), this);
 
         registerCommand("totemguard", new TotemGuardCommand(this));
+
         new UpdateChecker(this);
         enableBStats();
     }
@@ -104,20 +98,6 @@ public final class TotemGuard extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("Disabling TotemGuard...");
-    }
-
-    /**
-     * Loads the plugin configuration.
-     *
-     * @return true if the configuration was loaded successfully, false otherwise.
-     */
-    private boolean loadConfig() {
-        final Optional<Throwable> error = configManager.loadConfig();
-        if (error.isPresent()) {
-            instance.getLogger().log(java.util.logging.Level.SEVERE, "Failed to load configuration", error.get());
-            return false;
-        }
-        return true;
     }
 
     public int getTps() {

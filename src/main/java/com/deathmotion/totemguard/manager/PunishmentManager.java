@@ -97,20 +97,29 @@ public class PunishmentManager {
     }
 
     private void runPunishmentCommands(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
-        List<String> punishmentCommands = checkDetails.getPunishmentCommands();
+        // Map of placeholders
+        Map<String, String> placeholders = Map.of(
+                "%prefix%", prefix,
+                "%uuid%", totemPlayer.uuid().toString(),
+                "%player%", totemPlayer.username(),
+                "%check%", checkDetails.getCheckName(),
+                "%description%", checkDetails.getCheckDescription(),
+                "%ping%", String.valueOf(checkDetails.getPing()),
+                "%tps%", String.valueOf(checkDetails.getTps()),
+                "%punishable%", String.valueOf(checkDetails.isPunishable()),
+                "%violations%", String.valueOf(checkDetails.getViolations()),
+                "%max_violations%", checkDetails.isPunishable() ? String.valueOf(checkDetails.getMaxViolations()) : "∞"
+        );
+
+        // Parse the defaultPunishment command
+        String defaultPunishmentCommand = PlaceholderUtil.replacePlaceholders(plugin.getConfigManager().getSettings().getChecks().getDefaultPunishment(), placeholders);
+
+        List<String> punishmentCommands = checkDetails.getPunishmentCommands().stream()
+                .map(command -> command.replace("%default_punishment%", defaultPunishmentCommand))
+                .toList();
+
         for (String command : punishmentCommands) {
-            String parsedCommand = PlaceholderUtil.replacePlaceholders(command, Map.of(
-                    "%prefix%", prefix,
-                    "%uuid%", totemPlayer.uuid().toString(),
-                    "%player%", totemPlayer.username(),
-                    "%check%", checkDetails.getCheckName(),
-                    "%description%", checkDetails.getCheckDescription(),
-                    "%ping%", String.valueOf(checkDetails.getPing()),
-                    "%tps%", String.valueOf(checkDetails.getTps()),
-                    "%punishable%", String.valueOf(checkDetails.isPunishable()),
-                    "%violations%", String.valueOf(checkDetails.getViolations()),
-                    "%max_violations%", checkDetails.isPunishable() ? String.valueOf(checkDetails.getMaxViolations()) : "∞"
-            ));
+            String parsedCommand = PlaceholderUtil.replacePlaceholders(command, placeholders);
             plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), parsedCommand);
         }
     }
