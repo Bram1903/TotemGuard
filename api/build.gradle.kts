@@ -28,3 +28,13 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
+tasks {
+    javadoc {
+        title = "TotemGuardAPI v${rootProject.version}"
+        options.encoding = Charsets.UTF_8.name()
+        options {
+            (this as CoreJavadocOptions).addBooleanOption("Xdoclint:none", true)
+        }
+    }
+}
