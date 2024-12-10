@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
-import com.deathmotion.totemguard.models.CheckDetails;
+import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.ebean.Database;

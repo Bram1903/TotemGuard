@@ -26,7 +26,7 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
 import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.checks.impl.totem.processor.TotemProcessor;
 import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
-import com.deathmotion.totemguard.models.CheckRecord;
+import com.deathmotion.totemguard.models.checks.CheckRecord;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.MessageService;
 import com.github.retrooper.packetevents.PacketEvents;

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.checks;
 
-import com.deathmotion.totemguard.models.CheckRecord;
+import com.deathmotion.totemguard.models.checks.CheckRecord;
 
 import java.util.UUID;
 

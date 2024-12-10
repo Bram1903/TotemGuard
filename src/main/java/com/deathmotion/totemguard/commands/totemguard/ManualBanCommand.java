@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.commands.totemguard;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.commands.SubCommand;
-import com.deathmotion.totemguard.models.ICheckSettings;
+import com.deathmotion.totemguard.models.checks.ICheckSettings;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;

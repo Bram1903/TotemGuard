@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.packetlisteners;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.data.Constants;
+import com.deathmotion.totemguard.models.Constants;
 import com.deathmotion.totemguard.util.TGVersion;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.UserLoginEvent;

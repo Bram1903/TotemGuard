@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.config;
 
-import com.deathmotion.totemguard.models.ICheckSettings;
+import com.deathmotion.totemguard.models.checks.ICheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;

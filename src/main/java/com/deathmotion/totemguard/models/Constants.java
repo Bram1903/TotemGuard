@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.data;
+package com.deathmotion.totemguard.models;
 
 public class Constants {
     public static final String GITHUB_API_URL = "https://api.github.com/repos/Bram1903/TotemGuard/releases/latest";

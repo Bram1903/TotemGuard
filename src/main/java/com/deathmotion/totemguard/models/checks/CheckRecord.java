@@ -16,15 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.models;
+package com.deathmotion.totemguard.models.checks;
 
-import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-public interface ICheckSettings {
-    boolean isEnabled();
-    boolean isPunishable();
-    int getPunishmentDelayInSeconds();
-    int getMaxViolations();
-    List<String> getPunishmentCommands();
+public record CheckRecord(String checkName, Map<UUID, Integer> violations) {
 }
-
