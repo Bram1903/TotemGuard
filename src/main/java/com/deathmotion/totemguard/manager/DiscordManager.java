@@ -25,8 +25,8 @@ import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
-import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.models.checks.CheckDetails;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.awt.*;

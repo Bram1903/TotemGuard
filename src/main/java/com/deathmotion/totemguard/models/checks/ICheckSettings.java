@@ -22,9 +22,13 @@ import java.util.List;
 
 public interface ICheckSettings {
     boolean isEnabled();
+
     boolean isPunishable();
+
     int getPunishmentDelayInSeconds();
+
     int getMaxViolations();
+
     List<String> getPunishmentCommands();
 }
 
