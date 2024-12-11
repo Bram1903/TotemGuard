@@ -37,13 +37,22 @@ import java.util.stream.Collectors;
 
 public class ManualBanCommand extends Check implements SubCommand {
 
+    private static ManualBanCommand instance;
+
     private final TotemGuard plugin;
     private final MessageService messageService;
 
-    public ManualBanCommand(TotemGuard plugin) {
+    private ManualBanCommand(TotemGuard plugin) {
         super(plugin, "ManualBan", "Manually ban a player", false);
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
+    }
+
+    public static ManualBanCommand getInstance(TotemGuard plugin) {
+        if (instance == null) {
+            instance = new ManualBanCommand(plugin);
+        }
+        return instance;
     }
 
     @Override

@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
 import com.deathmotion.totemguard.checks.impl.totem.*;
 import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
+import com.deathmotion.totemguard.commands.totemguard.ManualBanCommand;
 import com.deathmotion.totemguard.listeners.TotemProcessor;
 import com.deathmotion.totemguard.models.checks.CheckRecord;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
@@ -67,7 +68,8 @@ public class CheckManager {
                 new BadPacketsA(plugin),
                 new BadPacketsC(plugin),
                 BadPacketsB.getInstance(plugin),
-                CheckCommand.getInstance(plugin)
+                CheckCommand.getInstance(plugin),
+                ManualBanCommand.getInstance(plugin)
         );
 
         registerPacketListeners();

@@ -74,7 +74,7 @@ public class TotemGuardCommand extends BukkitCommand {
         subCommands.put("track", new TrackCommand(plugin));
         subCommands.put("untrack", new UntrackCommand(plugin));
         subCommands.put("top", new TopCommand(plugin));
-        subCommands.put("manualban", new ManualBanCommand(plugin));
+        subCommands.put("manualban", ManualBanCommand.getInstance(plugin));
         subCommands.put("database", new DatabaseCommand(plugin));
 
         messageService = plugin.getMessageService();
