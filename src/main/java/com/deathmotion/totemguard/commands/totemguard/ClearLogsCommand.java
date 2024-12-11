@@ -104,6 +104,6 @@ public class ClearLogsCommand implements SubCommand {
 
     private Component getClearedLogsComponent(int deletedRecords, String username, long loadTime) {
         return messageService.getPrefix()
-                .append(Component.text("Cleared " + deletedRecords + " logs for" + username + " in " + loadTime + "ms", NamedTextColor.GREEN));
+                .append(Component.text("Cleared " + deletedRecords + " logs for " + username + " in " + loadTime + "ms", NamedTextColor.GREEN));
     }
 }
