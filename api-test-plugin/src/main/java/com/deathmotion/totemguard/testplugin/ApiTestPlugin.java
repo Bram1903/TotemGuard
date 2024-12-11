@@ -19,13 +19,20 @@
 package com.deathmotion.totemguard.testplugin;
 
 import com.deathmotion.totemguard.api.ITotemGuardAPI;
+import com.deathmotion.totemguard.testplugin.commands.AlertsCommand;
 import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
 import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
 import com.deathmotion.totemguard.testplugin.events.TotemCycleEventTest;
+import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.Field;
+
+@Getter
 public final class ApiTestPlugin extends JavaPlugin {
 
     ITotemGuardAPI api;
@@ -42,6 +49,8 @@ public final class ApiTestPlugin extends JavaPlugin {
         }
 
         registerListeners();
+        registerCommand("alerts", new AlertsCommand(this));
+
         getLogger().info("Successfully hooked into TotemGuard API version " + api.getTotemGuardVersion());
     }
 
@@ -54,5 +63,19 @@ public final class ApiTestPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new TotemCycleEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
+    }
+
+    private void registerCommand(String name, Command command) {
+        try {
+            // Get the CommandMap instance
+            Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+            commandMapField.setAccessible(true);
+            CommandMap commandMap = (CommandMap) commandMapField.get(Bukkit.getServer());
+
+            // Register the command
+            commandMap.register(name, command);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
