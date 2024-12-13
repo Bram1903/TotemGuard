@@ -21,6 +21,7 @@ package com.deathmotion.totemguard;
 import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.api.interfaces.IAlertManager;
 import com.deathmotion.totemguard.api.interfaces.IConfigManager;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.config.ConfigManager;
 import com.deathmotion.totemguard.util.TGVersions;
 import org.bukkit.Bukkit;
@@ -53,8 +54,8 @@ public class TotemGuardAPI implements ITotemGuardAPI {
     }
 
     @Override
-    public String getTotemGuardVersion() {
-        return isApiEnabled() ? TGVersions.CURRENT.toString() : null;
+    public TGVersion getTotemGuardVersion() {
+        return isApiEnabled() ? TGVersions.CURRENT : null;
     }
 
     @Override

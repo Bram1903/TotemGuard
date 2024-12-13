@@ -96,11 +96,6 @@ tasks {
         options.release = 17
     }
 
-    withType<Javadoc> {
-        mustRunAfter(generateVersionsFile)
-        options.encoding = Charsets.UTF_8.name()
-    }
-
     generateVersionsFile {
         packageName = "com.deathmotion.totemguard.util"
     }

@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.api;
 
 import com.deathmotion.totemguard.api.interfaces.IAlertManager;
 import com.deathmotion.totemguard.api.interfaces.IConfigManager;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 
 /**
  * This is the main API class for TotemGuard.
@@ -45,7 +46,7 @@ public interface ITotemGuardAPI {
      *
      * @return The version of TotemGuard.
      */
-    String getTotemGuardVersion();
+    TGVersion getTotemGuardVersion();
 
     /**
      * Get the alert manager.

@@ -42,6 +42,8 @@ abstract class TGVersionTask : DefaultTask() {
              */
             package $packageName;
             
+            import com.deathmotion.totemguard.api.versioning.TGVersion;
+            
             import java.time.Instant;
             
             public final class TGVersions {

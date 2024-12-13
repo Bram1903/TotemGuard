@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.util;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.models.Constants;
 import com.deathmotion.totemguard.packetlisteners.UpdateNotifier;

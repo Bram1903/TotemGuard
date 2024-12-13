@@ -1,10 +1,10 @@
 plugins {
-    id("java")
-    alias(libs.plugins.shadow)
+    `java-library`
 }
 
 group = "com.deathmotion.totemguard.api"
 description = "TotemGuardAPI"
+version = rootProject.version
 
 repositories {
     mavenLocal()
@@ -27,17 +27,16 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 
     withJavadocJar()
-    withSourcesJar()
 }
 
 tasks {
-    shadowJar {
-        archiveFileName = "${rootProject.name}API.jar"
+    jar {
+        archiveFileName = "${rootProject.name}API-${rootProject.ext["versionNoHash"]}.jar"
         archiveClassifier = null
     }
 
-    assemble {
-        dependsOn(shadowJar)
+    named<Jar>("javadocJar") {
+        archiveFileName.set("${rootProject.name}API-${rootProject.ext["versionNoHash"]}-javadoc.jar")
     }
 
     javadoc {
@@ -46,5 +45,10 @@ tasks {
         options {
             (this as CoreJavadocOptions).addBooleanOption("Xdoclint:none", true)
         }
+    }
+
+    withType<JavaCompile> {
+        options.encoding = Charsets.UTF_8.name()
+        options.release = 17
     }
 }

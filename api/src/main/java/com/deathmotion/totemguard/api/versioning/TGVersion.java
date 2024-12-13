@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.util;
+package com.deathmotion.totemguard.api.versioning;
 
 import org.jetbrains.annotations.NotNull;
 

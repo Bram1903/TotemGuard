@@ -57,7 +57,7 @@ public final class ApiTestPlugin extends JavaPlugin {
         registerListeners();
         registerCommand("alerts", new AlertsCommand(this));
 
-        getLogger().info("Successfully hooked into TotemGuard API version " + api.getTotemGuardVersion() + ".");
+        getLogger().info("Successfully hooked into TotemGuard API version " + api.getTotemGuardVersion().toString() + ".");
     }
 
     @Override
