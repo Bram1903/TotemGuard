@@ -51,6 +51,11 @@ public class AlertsCommand extends BukkitCommand {
             return false;
         }
 
+        if (!plugin.getApi().isApiEnabled()) {
+            sender.sendMessage(Component.text("The TotemGuard API is not enabled.", NamedTextColor.RED));
+            return false;
+        }
+
         if (args.length == 0) {
             plugin.getApi().alertManager().toggleAlerts(player);
             return true;
