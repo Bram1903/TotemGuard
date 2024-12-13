@@ -49,7 +49,7 @@ public final class ApiTestPlugin extends JavaPlugin {
             this.getServer().getPluginManager().disablePlugin(this);
         }
 
-        if (!api.isApiEnabled()) {
+        if (!api.isEnabled()) {
             getLogger().severe("TotemGuard API is not enabled.");
             this.getServer().getPluginManager().disablePlugin(this);
         }

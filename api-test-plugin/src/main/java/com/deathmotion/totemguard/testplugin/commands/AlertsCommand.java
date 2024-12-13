@@ -51,13 +51,13 @@ public class AlertsCommand extends BukkitCommand {
             return false;
         }
 
-        if (!plugin.getApi().isApiEnabled()) {
+        if (!plugin.getApi().isEnabled()) {
             sender.sendMessage(Component.text("The TotemGuard API is not enabled.", NamedTextColor.RED));
             return false;
         }
 
         if (args.length == 0) {
-            plugin.getApi().alertManager().toggleAlerts(player);
+            plugin.getApi().getAlertManager().toggleAlerts(player);
             return true;
         } else if (args.length == 1) {
             Player target = Bukkit.getPlayer(args[0]);
@@ -67,8 +67,8 @@ public class AlertsCommand extends BukkitCommand {
                 return false;
             }
 
-            plugin.getApi().alertManager().toggleAlerts(target);
-            boolean hasAlertsEnabled = plugin.getApi().alertManager().hasAlertsEnabled(target);
+            plugin.getApi().getAlertManager().toggleAlerts(target);
+            boolean hasAlertsEnabled = plugin.getApi().getAlertManager().hasAlertsEnabled(target);
             NamedTextColor color = hasAlertsEnabled ? NamedTextColor.GREEN : NamedTextColor.RED;
             sender.sendMessage(Component.text("Alerts for " + target.getName() + " are now " + (hasAlertsEnabled ? "enabled!" : "disabled!"), color));
 

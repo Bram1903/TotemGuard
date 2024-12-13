@@ -44,27 +44,27 @@ public class TotemGuardAPI implements ITotemGuardAPI {
     }
 
     @Override
-    public boolean isApiEnabled() {
+    public boolean isEnabled() {
         return configManager.getSettings().isApi();
     }
 
     @Override
     public String getServerName() {
-        return isApiEnabled() ? configManager.getSettings().getServer() : null;
+        return isEnabled() ? configManager.getSettings().getServer() : null;
     }
 
     @Override
     public TGVersion getVersion() {
-        return isApiEnabled() ? TGVersions.CURRENT : null;
+        return isEnabled() ? TGVersions.CURRENT : null;
     }
 
     @Override
-    public IAlertManager alertManager() {
-        return isApiEnabled() ? plugin.getAlertManager() : null;
+    public IAlertManager getAlertManager() {
+        return isEnabled() ? plugin.getAlertManager() : null;
     }
 
     @Override
-    public IConfigManager configManager() {
-        return isApiEnabled() ? plugin.getConfigManager() : null;
+    public IConfigManager getConfigManager() {
+        return isEnabled() ? plugin.getConfigManager() : null;
     }
 }

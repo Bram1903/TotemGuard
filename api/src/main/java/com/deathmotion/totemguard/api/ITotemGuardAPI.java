@@ -32,7 +32,7 @@ public interface ITotemGuardAPI {
      *
      * @return True if the API is enabled, false otherwise.
      */
-    boolean isApiEnabled();
+    boolean isEnabled();
 
     /**
      * Get the name of the server.
@@ -53,12 +53,12 @@ public interface ITotemGuardAPI {
      *
      * @return The alert manager.
      */
-    IAlertManager alertManager();
+    IAlertManager getAlertManager();
 
     /**
      * Get the config manager.
      *
      * @return The config manager.
      */
-    IConfigManager configManager();
+    IConfigManager getConfigManager();
 }
