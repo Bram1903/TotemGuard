@@ -54,7 +54,7 @@ public class TotemGuardAPI implements ITotemGuardAPI {
     }
 
     @Override
-    public TGVersion getTotemGuardVersion() {
+    public TGVersion getVersion() {
         return isApiEnabled() ? TGVersions.CURRENT : null;
     }
 

@@ -46,7 +46,7 @@ public interface ITotemGuardAPI {
      *
      * @return The version of TotemGuard.
      */
-    TGVersion getTotemGuardVersion();
+    TGVersion getVersion();
 
     /**
      * Get the alert manager.
