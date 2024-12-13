@@ -21,6 +21,9 @@ package com.deathmotion.totemguard.checks.impl.inventory;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.models.PlayerState;
+import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
@@ -30,43 +33,51 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
+import java.util.Optional;
+
 public final class InventoryA extends Check implements PacketListener {
 
     private final TotemGuard plugin;
+    private final UserTracker userTracker;
     private final MessageService messageService;
 
     public InventoryA(TotemGuard plugin) {
         super(plugin, "InventoryA", "Invalid action with open inventory");
         this.plugin = plugin;
+        this.userTracker = plugin.getUserTracker();
         this.messageService = plugin.getMessageService();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        Player player = event.getPlayer();
         if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
-            if (player.isSprinting() || player.isBlocking() || player.isSneaking() || player.isSwimming()) {
+            Player player = event.getPlayer();
+
+            Optional<TotemPlayer> optionalTotemPlayer = userTracker.getTotemPlayer(player.getUniqueId());
+            if (optionalTotemPlayer.isEmpty()) return;
+
+            TotemPlayer totemPlayer = optionalTotemPlayer.get();
+            PlayerState playerState = totemPlayer.playerState();
+
+            if (playerState.isSprinting() || playerState.isSneaking()) {
                 final Settings.Checks.InventoryA settings = plugin.getConfigManager().getSettings().getChecks().getInventoryA();
-                flag(player, getCheckDetails(player), settings);
+                flag(player, getCheckDetails(playerState), settings);
             }
         }
     }
 
-    private Component getCheckDetails(Player player) {
+    private Component getCheckDetails(PlayerState playerState) {
         Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
         Component component = Component.text()
                 .build();
 
         StringBuilder states = new StringBuilder();
-        if (player.isSprinting() || player.isSwimming()) {
+        if (playerState.isSprinting()) {
             states.append("Sprinting, ");
         }
-        if (player.isSneaking()) {
+        if (playerState.isSneaking()) {
             states.append("Sneaking, ");
-        }
-        if (player.isBlocking()) {
-            states.append("Blocking, ");
         }
 
         if (!states.isEmpty()) {

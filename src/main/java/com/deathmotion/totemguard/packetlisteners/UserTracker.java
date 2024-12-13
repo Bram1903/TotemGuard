@@ -25,10 +25,8 @@ import com.deathmotion.totemguard.models.PlayerState;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.TotemData;
-import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.event.UserDisconnectEvent;
-import com.github.retrooper.packetevents.event.UserLoginEvent;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
@@ -44,11 +42,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class UserTracker implements PacketListener {
     private final TotemGuard plugin;
     private final MessageService messageService;
+
     private final ConcurrentHashMap<UUID, TotemPlayer> totemPlayers = new ConcurrentHashMap<>();
 
     public UserTracker(TotemGuard plugin) {
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
+        PacketEvents.getAPI().getEventManager().registerListener(new PlayerStateTracker(this), PacketListenerPriority.NORMAL);
     }
 
     @Override

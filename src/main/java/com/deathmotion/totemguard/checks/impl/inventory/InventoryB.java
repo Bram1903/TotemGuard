@@ -48,12 +48,14 @@ public final class InventoryB extends Check implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        Player player = event.getPlayer();
         if (event.getPacketType() == PacketType.Play.Client.PLAYER_ROTATION ||
                 event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION ||
                 event.getPacketType() == PacketType.Play.Client.INTERACT_ENTITY ||
                 event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT ||
                 event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
+
+            Player player = event.getPlayer();
+
             if (!inventoryClick.containsKey(player.getUniqueId())) return;
             long storedTime = inventoryClick.get(player.getUniqueId());
             inventoryClick.remove(player.getUniqueId());
@@ -62,10 +64,10 @@ public final class InventoryB extends Check implements PacketListener {
         }
 
         if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
-            inventoryClick.remove(player.getUniqueId());
+            inventoryClick.remove(event.getUser().getUUID());
         }
         if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
-            inventoryClick.put(player.getUniqueId(), System.currentTimeMillis());
+            inventoryClick.put(event.getUser().getUUID(), System.currentTimeMillis());
         }
 
     }
@@ -88,14 +90,14 @@ public final class InventoryB extends Check implements PacketListener {
 
         final Settings.Checks.InventoryB settings = plugin.getConfigManager().getSettings().getChecks().getInventoryB();
         if (timeDifference <= 1000) {
-            flag(player, getCheckDetails(action, timeDifference, player), settings);
+            flag(player, getCheckDetails(action, timeDifference), settings);
         }
     }
 
-    private Component getCheckDetails(String action, long timeDifference, Player player) {
+    private Component getCheckDetails(String action, long timeDifference) {
         Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
-        Component component = Component.text()
+        return Component.text()
                 .append(Component.text("Action: ", colorScheme.getY()))
                 .append(Component.text(action, colorScheme.getX()))
                 .append(Component.newline())
@@ -103,6 +105,5 @@ public final class InventoryB extends Check implements PacketListener {
                 .append(Component.text(timeDifference, colorScheme.getX()))
                 .append(Component.text("ms", colorScheme.getX()))
                 .build();
-        return component;
     }
 }

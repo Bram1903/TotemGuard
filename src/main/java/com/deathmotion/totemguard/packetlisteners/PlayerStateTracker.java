@@ -29,10 +29,10 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEn
 import java.util.Optional;
 import java.util.UUID;
 
-public class PlayerStateListener implements PacketListener {
+public class PlayerStateTracker implements PacketListener {
     private final UserTracker userTracker;
 
-    public PlayerStateListener(UserTracker userTracker) {
+    public PlayerStateTracker(UserTracker userTracker) {
         this.userTracker = userTracker;
     }
 
