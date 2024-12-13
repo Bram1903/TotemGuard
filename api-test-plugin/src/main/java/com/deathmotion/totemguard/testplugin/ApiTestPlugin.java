@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.testplugin.commands.AlertsCommand;
 import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
 import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
-import com.deathmotion.totemguard.testplugin.events.TotemCycleEventTest;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -48,10 +47,15 @@ public final class ApiTestPlugin extends JavaPlugin {
             this.getServer().getPluginManager().disablePlugin(this);
         }
 
+        if (!api.isApiEnabled()) {
+            getLogger().severe("TotemGuard API is not enabled.");
+            this.getServer().getPluginManager().disablePlugin(this);
+        }
+
         registerListeners();
         registerCommand("alerts", new AlertsCommand(this));
 
-        getLogger().info("Successfully hooked into TotemGuard API version " + api.getTotemGuardVersion());
+        getLogger().info("Successfully hooked into TotemGuard API version " + api.getTotemGuardVersion() + ".");
     }
 
     @Override
@@ -61,7 +65,6 @@ public final class ApiTestPlugin extends JavaPlugin {
 
     private void registerListeners() {
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
-        Bukkit.getPluginManager().registerEvents(new TotemCycleEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
     }
 

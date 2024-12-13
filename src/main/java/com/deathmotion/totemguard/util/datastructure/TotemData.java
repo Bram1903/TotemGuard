@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.util.datastructure;
 
-import com.deathmotion.totemguard.api.interfaces.ITotemData;
 import com.deathmotion.totemguard.util.MathUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,7 +28,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 @Getter
-public class TotemData implements ITotemData {
+public class TotemData {
     @Getter
     private final ConcurrentLinkedDeque<Long> intervals = new ConcurrentLinkedDeque<>();
 

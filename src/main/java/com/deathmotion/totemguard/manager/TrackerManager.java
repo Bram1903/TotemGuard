@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.api.events.TotemCycleEvent;
+import com.deathmotion.totemguard.models.events.TotemCycleEvent;
 import com.deathmotion.totemguard.util.MathUtil;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;

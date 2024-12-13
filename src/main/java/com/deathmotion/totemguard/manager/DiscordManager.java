@@ -24,8 +24,8 @@ import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
@@ -94,6 +94,8 @@ public class DiscordManager {
         if (settings.isTimestamp()) {
             embedBuilder.setTimestamp(Instant.now());
         }
+
+        embedBuilder.setFooter(new WebhookEmbed.EmbedFooter("Server: " + checkDetails.getServerName(), null));
 
         messageBuilder.addEmbeds(embedBuilder.build());
         WebhookMessage message = messageBuilder.build();

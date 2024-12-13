@@ -30,6 +30,7 @@ import java.util.List;
 public class CheckDetails implements ICheckDetails {
     private String checkName;
     private String checkDescription;
+    private String serverName;
     private Component alert;
     private Component details;
     private int violations;

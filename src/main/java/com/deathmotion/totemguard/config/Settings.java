@@ -32,8 +32,11 @@ public final class Settings {
     @Comment("Prefix: Sets the command prefix for the plugin.")
     private String Prefix = "&6&lTG &8» ";
 
-    @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
-    private boolean Debug = false;
+    @Comment("\nAPI: Enables the TotemGuard API.")
+    private boolean Api = true;
+
+    @Comment("\nServer Name: The name of the server. (Used for alerts, webhooks, API, etc.)")
+    private String Server = "Default";
 
     @Comment("\nClient Brand Notifier: Notifies players with the alert permission, what client brand a player is using.")
     private boolean AlertBrand = false;
@@ -48,6 +51,7 @@ public final class Settings {
             "%description% - Description of the Check",
             "%ping% - Player's Ping",
             "%tps% - Server's TPS",
+            "%server% - Server Name",
             "%punishable% - If the check is punishable",
             "%violations% - Amount of Violations",
             "%max_violations% - Maximum Violations",
@@ -78,6 +82,9 @@ public final class Settings {
 
     @Comment("\nDatabase settings:")
     private Database Database = new Database();
+
+    @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
+    private boolean Debug = false;
 
     @Comment("\nWebhook settings:")
     private Webhook Webhook = new Webhook();

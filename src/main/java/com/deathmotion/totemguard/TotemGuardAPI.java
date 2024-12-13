@@ -21,34 +21,49 @@ package com.deathmotion.totemguard;
 import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.api.interfaces.IAlertManager;
 import com.deathmotion.totemguard.api.interfaces.IConfigManager;
+import com.deathmotion.totemguard.config.ConfigManager;
 import com.deathmotion.totemguard.util.TGVersions;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.ServicePriority;
 
 public class TotemGuardAPI implements ITotemGuardAPI {
 
     private final TotemGuard plugin;
+    private final ConfigManager configManager;
 
-    public TotemGuardAPI(TotemGuard plugin) {
+    protected TotemGuardAPI(TotemGuard plugin) {
         this.plugin = plugin;
+        this.configManager = plugin.getConfigManager();
+
         registerService();
     }
 
     private void registerService() {
-        Bukkit.getServicesManager().register(ITotemGuardAPI.class, this, plugin, org.bukkit.plugin.ServicePriority.Normal);
+        Bukkit.getServicesManager().register(ITotemGuardAPI.class, this, plugin, ServicePriority.Normal);
+    }
+
+    @Override
+    public boolean isApiEnabled() {
+        return configManager.getSettings().isApi();
+    }
+
+    @Override
+    public String getServerName() {
+        return isApiEnabled() ? configManager.getSettings().getServer() : null;
     }
 
     @Override
     public String getTotemGuardVersion() {
-        return TGVersions.CURRENT.toString();
+        return isApiEnabled() ? TGVersions.CURRENT.toString() : null;
     }
 
     @Override
     public IAlertManager alertManager() {
-        return plugin.getAlertManager();
+        return isApiEnabled() ? plugin.getAlertManager() : null;
     }
 
     @Override
     public IConfigManager configManager() {
-        return plugin.getConfigManager();
+        return isApiEnabled() ? plugin.getConfigManager() : null;
     }
 }

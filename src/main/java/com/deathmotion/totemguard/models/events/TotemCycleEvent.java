@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.events;
+package com.deathmotion.totemguard.models.events;
 
-import com.deathmotion.totemguard.api.models.TotemPlayer;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;

@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.listeners;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.api.events.TotemCycleEvent;
-import com.deathmotion.totemguard.api.models.TotemPlayer;
+import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.models.events.TotemCycleEvent;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
 import com.deathmotion.totemguard.util.datastructure.TotemData;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -119,7 +119,7 @@ public final class TotemProcessor implements Listener {
             if (totemPlayer == null) return;
 
             long interval = Math.abs(currentTime - totemUseTime);
-            TotemData totemData = (TotemData) totemPlayer.totemData();
+            TotemData totemData = totemPlayer.totemData();
             totemData.addInterval(interval);
 
             TotemCycleEvent event = new TotemCycleEvent(player, totemPlayer);

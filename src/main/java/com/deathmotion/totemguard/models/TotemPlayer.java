@@ -16,23 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.testplugin.events;
+package com.deathmotion.totemguard.models;
 
-import com.deathmotion.totemguard.api.events.TotemCycleEvent;
-import com.deathmotion.totemguard.testplugin.ApiTestPlugin;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
+import com.deathmotion.totemguard.util.datastructure.TotemData;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
-public class TotemCycleEventTest implements Listener {
+import java.util.UUID;
 
-    private final ApiTestPlugin plugin;
-
-    public TotemCycleEventTest(ApiTestPlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    @EventHandler
-    public void onTotemCycle(TotemCycleEvent event) {
-        plugin.getLogger().info("Totem cycle event triggered for player " + event.getPlayer().getName());
-    }
+public record TotemPlayer(
+        UUID uuid,
+        String username,
+        ClientVersion clientVersion,
+        boolean isBedrockPlayer,
+        String clientBrand,
+        TotemData totemData
+) {
 }

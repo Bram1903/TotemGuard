@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.util.messages;
 
-import com.deathmotion.totemguard.api.models.TotemPlayer;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.util.PlaceholderUtil;
 import com.deathmotion.totemguard.util.datastructure.Pair;
@@ -58,6 +58,9 @@ public class AlertCreator {
                 .append(Component.text("Description: ", colorScheme.getY()))
                 .append(Component.text(checkDetails.getCheckDescription(), colorScheme.getX()))
                 .append(Component.newline())
+                .append(Component.text("Server: ", colorScheme.getY()))
+                .append(Component.text(checkDetails.getServerName(), colorScheme.getX()))
+                .append(Component.newline())
                 .append(Component.newline())
                 .append(details)
                 .append(Component.newline())
@@ -67,17 +70,18 @@ public class AlertCreator {
                 .append(Component.text("to " + player.username() + ".", colorScheme.getY()))
                 .build();
 
-        String parsedAlert = PlaceholderUtil.replacePlaceholders(alertFormat, Map.of(
-                "%prefix%", prefix,
-                "%uuid%", player.uuid().toString(),
-                "%player%", player.username(),
-                "%check%", checkDetails.getCheckName(),
-                "%description%", checkDetails.getCheckDescription(),
-                "%ping%", String.valueOf(checkDetails.getPing()),
-                "%tps%", String.valueOf(checkDetails.getTps()),
-                "%punishable%", String.valueOf(checkDetails.isPunishable()),
-                "%violations%", String.valueOf(checkDetails.getViolations()),
-                "%max_violations%", checkDetails.isPunishable() ? String.valueOf(checkDetails.getMaxViolations()) : "∞"
+        String parsedAlert = PlaceholderUtil.replacePlaceholders(alertFormat, Map.ofEntries(
+                Map.entry("%prefix%", prefix),
+                Map.entry("%uuid%", player.uuid().toString()),
+                Map.entry("%player%", player.username()),
+                Map.entry("%check%", checkDetails.getCheckName()),
+                Map.entry("%description%", checkDetails.getCheckDescription()),
+                Map.entry("%ping%", String.valueOf(checkDetails.getPing())),
+                Map.entry("%tps%", String.valueOf(checkDetails.getTps())),
+                Map.entry("%server%", checkDetails.getServerName()),
+                Map.entry("%punishable%", String.valueOf(checkDetails.isPunishable())),
+                Map.entry("%violations%", String.valueOf(checkDetails.getViolations())),
+                Map.entry("%max_violations%", checkDetails.isPunishable() ? String.valueOf(checkDetails.getMaxViolations()) : "∞")
         ));
 
         Component message = Component.text()

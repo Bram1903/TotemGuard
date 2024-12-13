@@ -27,6 +27,20 @@ import com.deathmotion.totemguard.api.interfaces.IConfigManager;
 public interface ITotemGuardAPI {
 
     /**
+     * Check if the API is enabled.
+     *
+     * @return True if the API is enabled, false otherwise.
+     */
+    boolean isApiEnabled();
+
+    /**
+     * Get the name of the server.
+     *
+     * @return The name of the server.
+     */
+    String getServerName();
+
+    /**
      * Get the version of TotemGuard.
      *
      * @return The version of TotemGuard.

@@ -20,8 +20,8 @@ package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.PunishEvent;
-import com.deathmotion.totemguard.api.models.TotemPlayer;
 import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;
 import com.deathmotion.totemguard.util.PlaceholderUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -53,9 +53,11 @@ public class PunishmentManager {
     @Blocking
     public boolean handlePunishment(Player player, TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
         if (checkDetails.isPunishable() && checkDetails.getViolations() >= checkDetails.getMaxViolations() && !toBePunished.contains(totemPlayer.uuid())) {
-            PunishEvent punishEvent = new PunishEvent(player, checkDetails);
-            plugin.getServer().getPluginManager().callEvent(punishEvent);
-            if (punishEvent.isCancelled()) return false;
+            if (plugin.getConfigManager().getSettings().isApi()) {
+                PunishEvent punishEvent = new PunishEvent(player, checkDetails);
+                plugin.getServer().getPluginManager().callEvent(punishEvent);
+                if (punishEvent.isCancelled()) return false;
+            }
 
             toBePunished.add(totemPlayer.uuid());
 
@@ -104,17 +106,18 @@ public class PunishmentManager {
 
     private void runPunishmentCommands(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
         // Map of placeholders
-        Map<String, String> placeholders = Map.of(
-                "%prefix%", prefix,
-                "%uuid%", totemPlayer.uuid().toString(),
-                "%player%", totemPlayer.username(),
-                "%check%", checkDetails.getCheckName(),
-                "%description%", checkDetails.getCheckDescription(),
-                "%ping%", String.valueOf(checkDetails.getPing()),
-                "%tps%", String.valueOf(checkDetails.getTps()),
-                "%punishable%", String.valueOf(checkDetails.isPunishable()),
-                "%violations%", String.valueOf(checkDetails.getViolations()),
-                "%max_violations%", checkDetails.isPunishable() ? String.valueOf(checkDetails.getMaxViolations()) : "∞"
+        Map<String, String> placeholders = Map.ofEntries(
+                Map.entry("%prefix%", prefix),
+                Map.entry("%uuid%", totemPlayer.uuid().toString()),
+                Map.entry("%player%", totemPlayer.username()),
+                Map.entry("%check%", checkDetails.getCheckName()),
+                Map.entry("%description%", checkDetails.getCheckDescription()),
+                Map.entry("%ping%", String.valueOf(checkDetails.getPing())),
+                Map.entry("%tps%", String.valueOf(checkDetails.getTps())),
+                Map.entry("%server%", checkDetails.getServerName()),
+                Map.entry("%punishable%", String.valueOf(checkDetails.isPunishable())),
+                Map.entry("%violations%", String.valueOf(checkDetails.getViolations())),
+                Map.entry("%max_violations%", checkDetails.isPunishable() ? String.valueOf(checkDetails.getMaxViolations()) : "∞")
         );
 
         // Parse the defaultPunishment command
