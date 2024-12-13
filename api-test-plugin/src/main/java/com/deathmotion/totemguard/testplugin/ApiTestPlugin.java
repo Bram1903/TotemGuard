@@ -55,7 +55,7 @@ public final class ApiTestPlugin extends JavaPlugin {
         }
 
         registerListeners();
-        registerCommand("alerts", new AlertsCommand(this));
+        registerCommands();
 
         getLogger().info("Successfully hooked into TotemGuard API version " + api.getVersion().toString() + ".");
     }
@@ -70,6 +70,10 @@ public final class ApiTestPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new ApiDisabledEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
+    }
+
+    private void registerCommands() {
+        registerCommand("alerts", new AlertsCommand(this));
     }
 
     private void registerCommand(String name, Command command) {
