@@ -18,18 +18,12 @@
 
 package com.deathmotion.totemguard.models;
 
-import com.deathmotion.totemguard.util.datastructure.TotemData;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.UUID;
-
-public record TotemPlayer(
-        UUID uuid,
-        String username,
-        ClientVersion clientVersion,
-        boolean isBedrockPlayer,
-        String clientBrand,
-        TotemData totemData,
-        PlayerState playerState
-) {
+@Getter
+@Setter
+public class PlayerState {
+    private boolean isSprinting;
+    private boolean isSneaking;
 }
