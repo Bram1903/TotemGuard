@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.models.CheckType;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
@@ -59,7 +60,7 @@ public class CheckCommand extends Check implements SubCommand {
     private final Material totemMaterial = Material.TOTEM_OF_UNDYING;
 
     private CheckCommand(TotemGuard plugin) {
-        super(plugin, "ManualTotemA", "Manual totem removal");
+        super(plugin, "ManualTotemA", "Manual totem removal", CheckType.Manual);
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
         this.messageService = plugin.getMessageService();

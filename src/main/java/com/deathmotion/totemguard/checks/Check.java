@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.FlagEvent;
+import com.deathmotion.totemguard.api.models.CheckType;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
@@ -45,6 +46,7 @@ public abstract class Check implements ICheck {
 
     private final String checkName;
     private final String checkDescription;
+    private final CheckType checkType;
     private final boolean experimental;
 
     private final TotemGuard plugin;
@@ -53,11 +55,12 @@ public abstract class Check implements ICheck {
     private final DiscordManager discordManager;
     private final MessageService messageService;
 
-    public Check(TotemGuard plugin, String checkName, String checkDescription, boolean experimental) {
+    public Check(TotemGuard plugin, String checkName, String checkDescription, boolean experimental, CheckType checkType) {
         this.plugin = plugin;
         this.checkName = checkName;
         this.checkDescription = checkDescription;
         this.experimental = experimental;
+        this.checkType = checkType;
 
         this.violations = new ConcurrentHashMap<>();
 
@@ -68,7 +71,15 @@ public abstract class Check implements ICheck {
     }
 
     public Check(TotemGuard plugin, String checkName, String checkDescription) {
-        this(plugin, checkName, checkDescription, false);
+        this(plugin, checkName, checkDescription, false, CheckType.Automatic);
+    }
+
+    public Check(TotemGuard plugin, String checkName, String checkDescription, CheckType checkType) {
+        this(plugin, checkName, checkDescription, false, checkType);
+    }
+
+    public Check(TotemGuard plugin, String checkName, String checkDescription, boolean experimental) {
+        this(plugin, checkName, checkDescription, experimental, CheckType.Automatic);
     }
 
     public final void flag(Player player, Component details, ICheckSettings settings) {
@@ -135,6 +146,7 @@ public abstract class Check implements ICheck {
         CheckDetails checkDetails = new CheckDetails();
         checkDetails.setCheckName(checkName);
         checkDetails.setCheckDescription(checkDescription);
+        checkDetails.setCheckType(checkType);
         checkDetails.setServerName(globalSettings.getServer());
         checkDetails.setViolations(currentViolations);
         checkDetails.setTps(plugin.getTps());

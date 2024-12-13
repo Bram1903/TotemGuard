@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.testplugin.events;
 
 import com.deathmotion.totemguard.api.events.PunishEvent;
+import com.deathmotion.totemguard.api.models.CheckType;
 import com.deathmotion.totemguard.testplugin.ApiTestPlugin;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,5 +34,13 @@ public class PunishEventTest implements Listener {
     @EventHandler
     public void onPunishEvent(PunishEvent event) {
         plugin.getLogger().info("Punish event triggered for player " + event.getPlayer().getName() + " for check " + event.getCheckDetails().getCheckName());
+
+        CheckType checkType = event.getCheckDetails().getCheckType();
+
+        if (checkType == CheckType.Automatic) {
+            plugin.getLogger().info("Automatic check");
+        } else if (checkType == CheckType.Manual) {
+            plugin.getLogger().info("Manual check");
+        }
     }
 }
