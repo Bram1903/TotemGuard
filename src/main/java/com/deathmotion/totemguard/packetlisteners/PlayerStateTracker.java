@@ -19,14 +19,14 @@
 package com.deathmotion.totemguard.packetlisteners;
 
 import com.deathmotion.totemguard.models.PlayerState;
-import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class PlayerStateTracker implements PacketListener {
@@ -38,16 +38,25 @@ public class PlayerStateTracker implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
+        if (event.getPacketType().equals(PacketType.Play.Client.ENTITY_ACTION)) {
+            handleEntityAction(event);
+        }
+    }
+
+    @Override
+    public void onPacketSend(PacketSendEvent event) {
+        PacketTypeCommon packetType = event.getPacketType();
+        if (packetType.equals(PacketType.Play.Server.RESPAWN) || packetType.equals(PacketType.Play.Server.JOIN_GAME) || packetType.equals(PacketType.Play.Server.CONFIGURATION_START)) {
+            resetPlayerState(event.getUser());
+        }
+    }
+
+    private void handleEntityAction(PacketReceiveEvent event) {
         User user = event.getUser();
         UUID uuid = user.getUUID();
 
-        Optional<TotemPlayer> optionalTotemPlayer = userTracker.getTotemPlayer(uuid);
-        if (optionalTotemPlayer.isEmpty()) return;
-
-        TotemPlayer totemPlayer = optionalTotemPlayer.get();
-        PlayerState playerState = totemPlayer.playerState();
-
-        if (event.getPacketType() == PacketType.Play.Client.ENTITY_ACTION) {
+        userTracker.getTotemPlayer(uuid).ifPresent(totemPlayer -> {
+            PlayerState playerState = totemPlayer.playerState();
             WrapperPlayClientEntityAction actionPacket = new WrapperPlayClientEntityAction(event);
 
             switch (actionPacket.getAction()) {
@@ -56,6 +65,16 @@ public class PlayerStateTracker implements PacketListener {
                 case START_SPRINTING -> playerState.setSprinting(true);
                 case STOP_SPRINTING -> playerState.setSprinting(false);
             }
-        }
+        });
+    }
+
+    private void resetPlayerState(User user) {
+        UUID uuid = user.getUUID();
+
+        userTracker.getTotemPlayer(uuid).ifPresent(totemPlayer -> {
+            PlayerState playerState = totemPlayer.playerState();
+            playerState.setSneaking(false);
+            playerState.setSprinting(false);
+        });
     }
 }
