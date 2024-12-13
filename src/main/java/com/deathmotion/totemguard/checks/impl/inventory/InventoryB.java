@@ -40,7 +40,7 @@ public final class InventoryB extends Check implements PacketListener {
     private final ConcurrentHashMap<UUID, Long> inventoryClick;
 
     public InventoryB(TotemGuard plugin) {
-        super(plugin, "InventoryB", "Actions with open inventory");
+        super(plugin, "InventoryB", "Actions with open inventory", true);
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
         this.inventoryClick = new ConcurrentHashMap<>();

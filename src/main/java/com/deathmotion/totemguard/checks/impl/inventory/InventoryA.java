@@ -44,7 +44,7 @@ public final class InventoryA extends Check implements PacketListener {
     private final MessageService messageService;
 
     public InventoryA(TotemGuard plugin) {
-        super(plugin, "InventoryA", "Invalid action with open inventory");
+        super(plugin, "InventoryA", "Invalid action with open inventory", true);
         this.plugin = plugin;
         this.userTracker = plugin.getUserTracker();
         this.messageService = plugin.getMessageService();
