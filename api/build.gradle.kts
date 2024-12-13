@@ -27,6 +27,7 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 
     withJavadocJar()
+    withSourcesJar()
 }
 
 tasks {
@@ -37,6 +38,10 @@ tasks {
 
     named<Jar>("javadocJar") {
         archiveFileName.set("${rootProject.name}API-${rootProject.ext["versionNoHash"]}-javadoc.jar")
+    }
+
+    named<Jar>("sourcesJar") {
+        archiveFileName.set("${rootProject.name}API-${rootProject.ext["versionNoHash"]}-sources.jar")
     }
 
     javadoc {
