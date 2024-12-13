@@ -20,6 +20,8 @@ package com.deathmotion.totemguard.testplugin;
 
 import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.testplugin.commands.AlertsCommand;
+import com.deathmotion.totemguard.testplugin.events.ApiDisabledEventTest;
+import com.deathmotion.totemguard.testplugin.events.ApiEnabledEventTest;
 import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
 import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
 import lombok.Getter;
@@ -64,6 +66,8 @@ public final class ApiTestPlugin extends JavaPlugin {
     }
 
     private void registerListeners() {
+        Bukkit.getPluginManager().registerEvents(new ApiEnabledEventTest(this), this);
+        Bukkit.getPluginManager().registerEvents(new ApiDisabledEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
     }
