@@ -191,6 +191,9 @@ public final class Settings {
             @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
             private boolean Timestamp = true;
 
+            @Comment("\nWebhook Footer: Sets the server name as the footer.")
+            private boolean Footer = true;
+
             public WebhookSettings(String title, String color) {
                 this.Title = title;
                 this.Color = color;

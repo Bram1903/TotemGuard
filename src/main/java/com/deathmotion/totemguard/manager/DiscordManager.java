@@ -95,7 +95,9 @@ public class DiscordManager {
             embedBuilder.setTimestamp(Instant.now());
         }
 
-        embedBuilder.setFooter(new WebhookEmbed.EmbedFooter("Server: " + checkDetails.getServerName(), null));
+        if (settings.isFooter()) {
+            embedBuilder.setFooter(new WebhookEmbed.EmbedFooter("Server: " + checkDetails.getServerName(), null));
+        }
 
         messageBuilder.addEmbeds(embedBuilder.build());
         WebhookMessage message = messageBuilder.build();
