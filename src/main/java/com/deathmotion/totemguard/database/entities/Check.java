@@ -25,6 +25,8 @@ public enum Check {
     AutoTotemD,
     AutoTotemE,
     AutoTotemF,
+    InventoryA,
+    InventoryB,
     BadPacketsA,
     BadPacketsB,
     BadPacketsC,
