@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.testplugin.events;
 
 import com.deathmotion.totemguard.api.events.FlagEvent;
-import com.deathmotion.totemguard.api.models.CheckType;
 import com.deathmotion.totemguard.testplugin.ApiTestPlugin;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

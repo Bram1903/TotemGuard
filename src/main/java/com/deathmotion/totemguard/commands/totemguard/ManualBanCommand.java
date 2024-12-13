@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.api.models.CheckType;
+import com.deathmotion.totemguard.api.enums.CheckType;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.models.checks.ICheckSettings;

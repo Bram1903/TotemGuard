@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.models;
+package com.deathmotion.totemguard.api.enums;
 
 /**
  * Represents the type of check.

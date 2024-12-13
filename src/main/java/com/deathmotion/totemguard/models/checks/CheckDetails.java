@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.models.checks;
 
 import com.deathmotion.totemguard.api.interfaces.ICheckDetails;
-import com.deathmotion.totemguard.api.models.CheckType;
+import com.deathmotion.totemguard.api.enums.CheckType;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;

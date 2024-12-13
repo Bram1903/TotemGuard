@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.api.interfaces;
 
-import com.deathmotion.totemguard.api.models.CheckType;
+import com.deathmotion.totemguard.api.enums.CheckType;
 import net.kyori.adventure.text.Component;
 
 import java.util.List;
