@@ -25,7 +25,6 @@ public final class InventoryA extends Check implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        plugin.debug(String.valueOf(event.getPacketType()));
         Player player = event.getPlayer();
         if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
             if (player.isSprinting() || player.isBlocking() || player.isSneaking() || player.isSwimming()) {
