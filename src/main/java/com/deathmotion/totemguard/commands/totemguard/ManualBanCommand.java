@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.models.CheckType;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.models.checks.ICheckSettings;
@@ -43,7 +44,7 @@ public class ManualBanCommand extends Check implements SubCommand {
     private final MessageService messageService;
 
     private ManualBanCommand(TotemGuard plugin) {
-        super(plugin, "ManualBan", "Manually ban a player", false);
+        super(plugin, "ManualBan", "Manually ban a player", CheckType.Manual);
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
     }

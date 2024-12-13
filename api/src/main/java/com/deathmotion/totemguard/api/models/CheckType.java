@@ -16,24 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.testplugin.events;
+package com.deathmotion.totemguard.api.models;
 
-import com.deathmotion.totemguard.api.events.FlagEvent;
-import com.deathmotion.totemguard.api.models.CheckType;
-import com.deathmotion.totemguard.testplugin.ApiTestPlugin;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
+/**
+ * Represents the type of check.
+ */
+public enum CheckType {
+    /**
+     * Represents an automatic check.
+     */
+    Automatic,
 
-public class FlagEventTest implements Listener {
-
-    private final ApiTestPlugin plugin;
-
-    public FlagEventTest(ApiTestPlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    @EventHandler
-    public void onFlagEvent(FlagEvent event) {
-        plugin.getLogger().info("Flag event triggered for player " + event.getPlayer().getName() + " with check " + event.getCheckDetails().getCheckName());
-    }
+    /**
+     * Represents a manual check.
+     */
+    Manual
 }

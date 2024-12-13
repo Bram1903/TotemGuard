@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api.interfaces;
 
+import com.deathmotion.totemguard.api.models.CheckType;
 import net.kyori.adventure.text.Component;
 
 import java.util.List;
@@ -40,6 +41,13 @@ public interface ICheckDetails {
      * @return the check description.
      */
     String getCheckDescription();
+
+    /**
+     * Gets the type of check.
+     *
+     * @return the check type.
+     */
+    CheckType getCheckType();
 
     /**
      * Gets the alert message displayed when a violation is detected.
