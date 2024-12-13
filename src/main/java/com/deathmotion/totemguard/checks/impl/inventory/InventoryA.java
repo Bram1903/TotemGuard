@@ -33,6 +33,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public final class InventoryA extends Check implements PacketListener {
@@ -69,23 +71,21 @@ public final class InventoryA extends Check implements PacketListener {
     private Component getCheckDetails(PlayerState playerState) {
         Pair<TextColor, TextColor> colorScheme = messageService.getColorScheme();
 
-        Component component = Component.text()
-                .build();
-
-        StringBuilder states = new StringBuilder();
+        List<String> activeStates = new ArrayList<>();
         if (playerState.isSprinting()) {
-            states.append("Sprinting, ");
+            activeStates.add("Sprinting");
         }
         if (playerState.isSneaking()) {
-            states.append("Sneaking, ");
+            activeStates.add("Sneaking");
         }
 
-        if (!states.isEmpty()) {
-            states.setLength(states.length() - 2);
-            component = component.append(Component.text("States: ", colorScheme.getY()))
-                    .append(Component.text(states.toString(), colorScheme.getX()));
+        if (activeStates.isEmpty()) {
+            return Component.empty();
         }
 
-        return component;
+        return Component.text()
+                .append(Component.text("States: ", colorScheme.getY()))
+                .append(Component.text(String.join(", ", activeStates), colorScheme.getX()))
+                .build();
     }
 }
