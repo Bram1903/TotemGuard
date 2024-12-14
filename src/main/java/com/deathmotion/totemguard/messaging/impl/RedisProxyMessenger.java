@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.messaging.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Settings;
 import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;

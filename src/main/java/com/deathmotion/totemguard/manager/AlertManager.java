@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.IAlertManager;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Settings;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.models.checks.CheckDetails;

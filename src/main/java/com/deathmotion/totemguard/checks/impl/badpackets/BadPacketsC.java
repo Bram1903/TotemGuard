@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.checks.impl.badpackets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Checks;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
@@ -59,7 +59,7 @@ public final class BadPacketsC extends Check implements PacketListener {
         // Set default value to an impossible slot to prevent a rare false positive on the first slot change
         int lastSlot = playerLastSlotMap.computeIfAbsent(playerUUID, k -> -69);
         if (lastSlot == slot) {
-            final Settings.Checks.BadPacketsC settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketC();
+            final Checks.BadPacketsC settings = plugin.getConfigManager().getChecks().getBadPacketC();
             flag(event.getPlayer(), getCheckDetails(slot, lastSlot), settings);
         }
 

@@ -87,7 +87,7 @@ public final class AutoTotemE extends Check implements Listener {
             // Calculate average standard deviation to find consistency
             double averageStDeviation = MathUtil.getMean(stDevHistory);
 
-            var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemE();
+            var settings = plugin.getConfigManager().getChecks().getAutoTotemE();
 
             // Check if both the mean and standard deviation are consistently low
             if (standardDeviation < settings.getStandardDeviationThreshold() && averageStDeviation < settings.getAverageStDeviationThreshold()) {

@@ -121,7 +121,7 @@ public class PunishmentManager {
         );
 
         // Parse the defaultPunishment command
-        String defaultPunishmentCommand = PlaceholderUtil.replacePlaceholders(plugin.getConfigManager().getSettings().getChecks().getDefaultPunishment(), placeholders);
+        String defaultPunishmentCommand = PlaceholderUtil.replacePlaceholders(plugin.getConfigManager().getChecks().getDefaultPunishment(), placeholders);
 
         List<String> punishmentCommands = checkDetails.getPunishmentCommands().stream()
                 .map(command -> command.replace("%default_punishment%", defaultPunishmentCommand))

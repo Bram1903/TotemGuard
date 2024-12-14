@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.api.enums.CheckType;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.commands.SubCommand;
 import com.deathmotion.totemguard.config.ConfigManager;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Checks;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -80,7 +80,7 @@ public class CheckCommand extends Check implements SubCommand {
         Player target = getTargetPlayer(sender, args[1]);
         if (target == null) return false;
 
-        Settings.Checks.ManualTotemA settings = configManager.getSettings().getChecks().getManualTotemA();
+        Checks.ManualTotemA settings = configManager.getChecks().getManualTotemA();
         long checkTime = getCheckTime(sender, args, settings);
         if (checkTime <= 0) return false; // Error message already sent in getCheckTime
 
@@ -187,7 +187,7 @@ public class CheckCommand extends Check implements SubCommand {
     /**
      * Determine the check time either from args or from default settings.
      */
-    private long getCheckTime(CommandSender sender, String[] args, Settings.Checks.ManualTotemA settings) {
+    private long getCheckTime(CommandSender sender, String[] args, Checks.ManualTotemA settings) {
         if (args.length == 3) {
             try {
                 long time = Long.parseLong(args[2]);
@@ -298,7 +298,7 @@ public class CheckCommand extends Check implements SubCommand {
     /**
      * Start the periodic check to see if the player uses a totem before the time expires.
      */
-    private void startCheckTimer(CommandSender sender, Player target, long checkTime, double originalHealth, ItemStack[] originalInventory, int originalFoodLevel, float originalSaturation, Collection<PotionEffect> originalEffects, Settings.Checks.ManualTotemA settings) {
+    private void startCheckTimer(CommandSender sender, Player target, long checkTime, double originalHealth, ItemStack[] originalInventory, int originalFoodLevel, float originalSaturation, Collection<PotionEffect> originalEffects, Checks.ManualTotemA settings) {
         final long startTime = System.currentTimeMillis();
         final PlayerInventory inventory = target.getInventory();
         final TaskWrapper[] taskWrapper = new TaskWrapper[1];

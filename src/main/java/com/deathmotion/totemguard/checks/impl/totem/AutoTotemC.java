@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Checks;
 import com.deathmotion.totemguard.models.events.TotemCycleEvent;
 import com.deathmotion.totemguard.util.MathUtil;
 import com.deathmotion.totemguard.util.MessageService;
@@ -83,7 +83,7 @@ public final class AutoTotemC extends Check implements Listener {
             double averageSDDifference = MathUtil.getMean(differences);
             //plugin.debug(player.getName() + " - Average SD Difference: " + averageSDDifference + "ms");
 
-            Settings.Checks.AutoTotemC settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemC();
+            Checks.AutoTotemC settings = plugin.getConfigManager().getChecks().getAutoTotemC();
 
             // Check if the average SD difference is below the threshold
             if (averageSDDifference < settings.getConsistentSDRange()) {

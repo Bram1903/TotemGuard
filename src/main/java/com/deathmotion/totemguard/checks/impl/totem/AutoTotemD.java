@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Checks;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
@@ -113,7 +113,7 @@ public final class AutoTotemD extends Check implements PacketListener, Listener 
             long timeToPickItem = state.timeToPickItem;
             long timeFromPickToLastDigging = currentTime - state.pickItemPacketTime;
 
-            final Settings.Checks.AutoTotemD settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemD();
+            final Checks.AutoTotemD settings = plugin.getConfigManager().getChecks().getAutoTotemD();
 
             // Check if the average time per packet is within the expected range
             if (isWithinExpectedRange(averageTimePerPacket)) {

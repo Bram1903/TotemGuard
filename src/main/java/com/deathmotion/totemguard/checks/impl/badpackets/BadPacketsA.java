@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.checks.impl.badpackets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Checks;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import com.github.retrooper.packetevents.event.PacketListener;
@@ -53,7 +53,7 @@ public final class BadPacketsA extends Check implements PacketListener {
         String channel = packet.getChannelName().toLowerCase();
 
         if (channel.contains("autototem")) {
-            final Settings.Checks.BadPacketsA settings = plugin.getConfigManager().getSettings().getChecks().getBadPacketsA();
+            final Checks.BadPacketsA settings = plugin.getConfigManager().getChecks().getBadPacketsA();
             flag(event.getPlayer(), getCheckDetails(channel), settings);
         }
     }
