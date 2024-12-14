@@ -61,7 +61,7 @@ public final class AutoTotemB extends Check implements Listener {
         double standardDeviation = MathUtil.getStandardDeviation(intervals);
         double mean = MathUtil.getMean(intervals);
 
-        var settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemB();
+        var settings = plugin.getConfigManager().getChecks().getAutoTotemB();
         if (standardDeviation >= settings.getStandardDeviationThreshold()) return;
         if (mean >= settings.getMeanThreshold()) return;
 

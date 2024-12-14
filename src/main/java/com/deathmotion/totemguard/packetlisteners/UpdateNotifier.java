@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.packetlisteners;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.models.Constants;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.models.Constants;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.UserLoginEvent;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;

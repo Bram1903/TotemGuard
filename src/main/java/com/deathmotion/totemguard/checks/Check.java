@@ -19,9 +19,9 @@
 package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.api.events.FlagEvent;
 import com.deathmotion.totemguard.api.enums.CheckType;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.api.events.FlagEvent;
+import com.deathmotion.totemguard.config.impl.Settings;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
 import com.deathmotion.totemguard.manager.PunishmentManager;
@@ -82,7 +82,7 @@ public abstract class Check implements ICheck {
         this(plugin, checkName, checkDescription, experimental, CheckType.Automatic);
     }
 
-    public final void flag(Player player, Component details, ICheckSettings settings) {
+    public final void flag(Player player, Component details, ICheckSettings checkSettings) {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             if (player == null || !player.isOnline()) return;
             UUID uuid = player.getUniqueId();
@@ -93,19 +93,19 @@ public abstract class Check implements ICheck {
                 return;
             }
 
+            final com.deathmotion.totemguard.config.impl.Settings settings = plugin.getConfigManager().getSettings();
+
             TotemPlayer totemPlayer = optionalTotemPlayer.get();
             if (checkName.equals("ManualBan")) {
-                if (!shouldCheckOverride(player, settings)) return;
+                if (!shouldCheckOverride(player, checkSettings)) return;
             } else {
-                if (!shouldCheck(player, totemPlayer.isBedrockPlayer(), settings)) return;
+                if (!shouldCheck(player, totemPlayer.isBedrockPlayer(), checkSettings)) return;
             }
 
             int currentViolations = violations.compute(uuid, (key, value) -> value == null ? 1 : value + 1);
-            CheckDetails checkDetails = createCheckDetails(player, totemPlayer, details, settings, currentViolations);
+            CheckDetails checkDetails = createCheckDetails(player, totemPlayer, details, checkSettings, currentViolations);
 
-            final Settings globalSettings = plugin.getConfigManager().getSettings();
-
-            if (globalSettings.isApi()) {
+            if (settings.isApi()) {
                 FlagEvent event = new FlagEvent(player, checkDetails);
                 Bukkit.getPluginManager().callEvent(event);
                 if (event.isCancelled()) return;
@@ -114,7 +114,7 @@ public abstract class Check implements ICheck {
             alertManager.sendAlert(totemPlayer, checkDetails);
             discordManager.sendAlert(totemPlayer, checkDetails);
 
-            if (punishmentManager.handlePunishment(player, totemPlayer, checkDetails, globalSettings.getAlertFormat())) {
+            if (punishmentManager.handlePunishment(player, totemPlayer, checkDetails, settings.getAlertFormat())) {
                 violations.remove(uuid);
             }
         });
@@ -130,17 +130,17 @@ public abstract class Check implements ICheck {
             return false;
         }
 
-        return !settings.getChecks().isBypass() || !player.hasPermission("TotemGuard.Bypass");
+        return !settings.isBypass() || !player.hasPermission("TotemGuard.Bypass");
     }
 
     private boolean shouldCheckOverride(Player player, ICheckSettings checkSettings) {
         if (!checkSettings.isEnabled()) return false;
 
         var settings = plugin.getConfigManager().getSettings();
-        return !settings.getChecks().isBypass() || !player.hasPermission("TotemGuard.Bypass");
+        return !settings.isBypass() || !player.hasPermission("TotemGuard.Bypass");
     }
 
-    private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, ICheckSettings settings, int currentViolations) {
+    private CheckDetails createCheckDetails(Player player, TotemPlayer totemPlayer, Component details, ICheckSettings checkSettings, int currentViolations) {
         final Settings globalSettings = plugin.getConfigManager().getSettings();
 
         CheckDetails checkDetails = new CheckDetails();
@@ -153,11 +153,11 @@ public abstract class Check implements ICheck {
         checkDetails.setPing(player.getPing());
         checkDetails.setGamemode(String.valueOf(player.getGameMode()));
         checkDetails.setExperimental(experimental);
-        checkDetails.setEnabled(settings.isEnabled());
-        checkDetails.setPunishable(settings.isPunishable());
-        checkDetails.setPunishmentDelay(settings.getPunishmentDelayInSeconds());
-        checkDetails.setMaxViolations(settings.getMaxViolations());
-        checkDetails.setPunishmentCommands(settings.getPunishmentCommands());
+        checkDetails.setEnabled(checkSettings.isEnabled());
+        checkDetails.setPunishable(checkSettings.isPunishable());
+        checkDetails.setPunishmentDelay(checkSettings.getPunishmentDelayInSeconds());
+        checkDetails.setMaxViolations(checkSettings.getMaxViolations());
+        checkDetails.setPunishmentCommands(checkSettings.getPunishmentCommands());
         checkDetails.setAlert(messageService.getAlertComponent(totemPlayer, checkDetails, details, globalSettings.getPrefix(), globalSettings.getAlertFormat()));
         checkDetails.setDetails(details);
 

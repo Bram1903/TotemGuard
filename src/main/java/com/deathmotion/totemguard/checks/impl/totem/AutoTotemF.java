@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.checks.impl.totem;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Checks;
 import com.deathmotion.totemguard.models.ValidClickTypes;
 import com.deathmotion.totemguard.util.MessageService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
@@ -102,7 +102,7 @@ public final class AutoTotemF extends Check implements Listener {
     private void checkSuspiciousActivity(Player player, long storedTime, Action action) {
         long timeDifference = Math.abs(System.currentTimeMillis() - storedTime);
 
-        final Settings.Checks.AutoTotemF settings = plugin.getConfigManager().getSettings().getChecks().getAutoTotemF();
+        final Checks.AutoTotemF settings = plugin.getConfigManager().getChecks().getAutoTotemF();
         if (timeDifference <= settings.getTimeDifference()) {
             flag(player, createDetails(action, timeDifference, player), settings);
         }

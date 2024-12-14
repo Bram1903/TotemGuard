@@ -22,6 +22,9 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.ApiDisabledEvent;
 import com.deathmotion.totemguard.api.events.ApiEnabledEvent;
 import com.deathmotion.totemguard.api.interfaces.IConfigManager;
+import com.deathmotion.totemguard.config.impl.Checks;
+import com.deathmotion.totemguard.config.impl.Settings;
+import com.deathmotion.totemguard.config.impl.Webhook;
 import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
@@ -39,41 +42,39 @@ public class ConfigManager implements IConfigManager {
 
     private final TotemGuard plugin;
     private Settings settings;
+    private Checks checks;
+    private Webhook webhook;
+
     private boolean apiEnabled;
 
     public ConfigManager(TotemGuard plugin) {
         this.plugin = plugin;
-        loadConfig();
+        initializeConfig();
     }
 
-    private void loadConfig() {
-        File settingsFile = getSettingsFile();
-        YamlConfigurationProperties properties = createYamlProperties();
-
-        settings = safelyUpdateConfig(settingsFile, properties, "Failed to create default config file during load");
-
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            handleApiState(settings.isApi());
-        });
+    private void initializeConfig() {
+        loadConfigurations();
+        scheduleApiStateCheck();
     }
 
     public void reload() {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            File settingsFile = getSettingsFile();
-            YamlConfigurationProperties properties = createYamlProperties();
-
-            if (!settingsFile.exists()) {
-                plugin.getLogger().info("Recreating config file...");
-                settings = safelyUpdateConfig(settingsFile, properties, "Failed to create default config file during reload");
-            }
-
             plugin.getProxyMessenger().stop();
-
-            settings = safelyLoadConfig(settingsFile, properties, "Failed to load config file during reload");
-
-            configureProxyMessenger();
+            loadConfigurations();
+            setupProxyMessenger();
             handleApiState(settings.isApi());
         });
+    }
+
+    private void loadConfigurations() {
+        YamlConfigurationProperties properties = createYamlProperties();
+        settings = loadConfigFile(getSettingsFile(), Settings.class, properties, "Failed to load config file");
+        checks = loadConfigFile(getChecksFile(), Checks.class, properties, "Failed to load checks file");
+        webhook = loadConfigFile(getWebhooksFile(), Webhook.class, properties, "Failed to load webhook file");
+    }
+
+    private void scheduleApiStateCheck() {
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> handleApiState(settings.isApi()));
     }
 
     private void handleApiState(boolean newApiState) {
@@ -83,9 +84,11 @@ public class ConfigManager implements IConfigManager {
         }
     }
 
-    private void configureProxyMessenger() {
-        plugin.setProxyMessenger(AlertMessengerRegistry.getMessenger(settings.getProxyAlerts().getMethod(), plugin)
-                .orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!")));
+    private void setupProxyMessenger() {
+        plugin.setProxyMessenger(AlertMessengerRegistry.getMessenger(
+                settings.getProxyAlerts().getMethod(),
+                plugin
+        ).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!")));
         plugin.getProxyMessenger().start();
     }
 
@@ -93,41 +96,40 @@ public class ConfigManager implements IConfigManager {
         return new File(plugin.getDataFolder(), "config.yml");
     }
 
+    private File getChecksFile() {
+        return new File(plugin.getDataFolder(), "checks.yml");
+    }
+
+    private File getWebhooksFile() {
+        return new File(plugin.getDataFolder(), "webhooks.yml");
+    }
+
     private YamlConfigurationProperties createYamlProperties() {
         return ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder()
                 .charset(StandardCharsets.UTF_8)
                 .outputNulls(true)
                 .inputNulls(false)
-                .header(createHeader())
+                .header(createConfigHeader())
                 .build();
     }
 
-    private Settings safelyUpdateConfig(File file, YamlConfigurationProperties properties, String errorMessage) {
+    private <T> T loadConfigFile(File file, Class<T> configClass, YamlConfigurationProperties properties, String errorMessage) {
         try {
-            return YamlConfigurations.update(file.toPath(), Settings.class, properties);
+            return YamlConfigurations.update(file.toPath(), configClass, properties);
         } catch (Exception e) {
             logAndDisable(errorMessage, e);
             return null;
         }
     }
 
-    private Settings safelyLoadConfig(File file, YamlConfigurationProperties properties, String errorMessage) {
-        try {
-            return YamlConfigurations.load(file.toPath(), Settings.class, properties);
-        } catch (Exception e) {
-            logAndDisable(errorMessage, e);
-            return null;
-        }
-    }
-
-    private String createHeader() {
+    private String createConfigHeader() {
         return """
                   ___________     __                   ________                       .___
                   \\__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
                     |    | /  _ \\   __\\/ __ \\ /     \\/   \\  ___|  |  \\__  \\\\_  __ \\/ __ |
                     |    |(  <_> )  | \\  ___/|  Y Y  \\    \\_\\  \\  |  // __ \\|  | \\/ /_/ |
                     |____| \\____/|__|  \\___  >__|_|  /\\______  /____/(____  /__|  \\____ |
-                                           \\/      \\/        \\/           \\/           \\/\
+                                           \\/      \\/        \\/           \\/           \\/
                 """;
     }
 

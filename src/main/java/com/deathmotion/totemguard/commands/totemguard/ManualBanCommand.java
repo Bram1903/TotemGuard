@@ -145,7 +145,6 @@ public class ManualBanCommand extends Check implements SubCommand {
 
     private ICheckSettings getCheckSettings() {
         var settings = plugin.getConfigManager()
-                .getSettings()
                 .getChecks()
                 .getManualBan();
 
