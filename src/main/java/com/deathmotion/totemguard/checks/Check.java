@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.FlagEvent;
-import com.deathmotion.totemguard.api.models.CheckType;
+import com.deathmotion.totemguard.api.enums.CheckType;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.manager.AlertManager;
 import com.deathmotion.totemguard.manager.DiscordManager;
