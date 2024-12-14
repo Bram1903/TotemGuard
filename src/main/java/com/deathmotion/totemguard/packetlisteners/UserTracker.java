@@ -21,7 +21,6 @@ package com.deathmotion.totemguard.packetlisteners;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.config.impl.Settings;
-import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.models.PlayerState;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MessageService;
@@ -117,6 +116,7 @@ public class UserTracker implements PacketListener {
             PlayerState playerState = (existing != null && existing.playerState() != null)
                     ? existing.playerState()
                     : new PlayerState();
+
             return new TotemPlayer(userUUID, user.getName(), user.getClientVersion(), userUUID.getMostSignificantBits() == 0L, clientBrand, new TotemData(), playerState);
         });
     }

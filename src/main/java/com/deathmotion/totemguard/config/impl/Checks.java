@@ -49,6 +49,12 @@ public final class Checks {
     @Comment("\nAutoTotemF Settings")
     private AutoTotemF AutoTotemF = new AutoTotemF();
 
+    @Comment("\nInventoryA Settings")
+    private InventoryA InventoryA = new InventoryA();
+
+    @Comment("\nInventoryB Settings")
+    private InventoryB InventoryB = new InventoryB();
+
     @Comment("\nBadPacketA Settings")
     private BadPacketsA BadPacketsA = new BadPacketsA();
 
@@ -170,6 +176,24 @@ public final class Checks {
         private int TimeDifference = 1500;
 
         public AutoTotemF() {
+            super(false, 6);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class InventoryA extends CheckSettings {
+
+        public InventoryA() {
+            super(false, 6);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class InventoryB extends CheckSettings {
+
+        public InventoryB() {
             super(false, 6);
         }
     }

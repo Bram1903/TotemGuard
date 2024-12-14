@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.checks.impl.inventory;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.impl.Checks;
 import com.deathmotion.totemguard.models.PlayerState;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.packetlisteners.UserTracker;
@@ -62,7 +62,7 @@ public final class InventoryA extends Check implements PacketListener {
             PlayerState playerState = totemPlayer.playerState();
 
             if (playerState.isSprinting() || playerState.isSneaking()) {
-                final Settings.Checks.InventoryA settings = plugin.getConfigManager().getSettings().getChecks().getInventoryA();
+                final Checks.InventoryA settings = plugin.getConfigManager().getChecks().getInventoryA();
                 flag(player, getCheckDetails(playerState), settings);
             }
         }
