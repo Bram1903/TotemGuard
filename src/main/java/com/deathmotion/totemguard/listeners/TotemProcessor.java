@@ -102,7 +102,8 @@ public final class TotemProcessor implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        UUID playerId = event.getPlayer().getUniqueId();
+        Player player = event.getEntity();
+        UUID playerId = player.getUniqueId();
 
         expectingReEquip.remove(playerId);
         totemUsage.remove(playerId);

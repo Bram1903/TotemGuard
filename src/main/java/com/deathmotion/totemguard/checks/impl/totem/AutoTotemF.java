@@ -81,7 +81,9 @@ public final class AutoTotemF extends Check implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        invClick.remove(event.getPlayer().getUniqueId());
+        Player player = event.getEntity();
+        UUID playerId = player.getUniqueId();
+        invClick.remove(playerId);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

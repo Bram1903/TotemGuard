@@ -100,8 +100,8 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        databaseManager.close();
-        proxyMessenger.stop();
+        if (databaseManager != null) databaseManager.close();
+        if (proxyMessenger != null) proxyMessenger.stop();
     }
 
     public int getTps() {
