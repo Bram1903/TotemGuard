@@ -1,15 +1,25 @@
 name: TotemGuard
 version: ${version}
 main: com.deathmotion.totemguard.TotemGuard
-api-version: '1.20'
+api-version: '1.13'
 folia-supported: true
 authors: [ Bram, OutDev ]
 description: TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
 load: POSTWORLD
 libraries:
   - io.ebean:ebean-core:${ebeanVersion}
-  - io.ebean:ebean-sqlite:${ebeanVersion}
-  - io.ebean:ebean-mysql:${ebeanVersion}
+  - io.ebean:ebean-datasource:9.0
+  - io.ebean:ebean-migration:14.2.0
+  - io.ebean:ebean-platform-h2:${ebeanVersion}
+  - io.ebean:ebean-platform-postgres:${ebeanVersion}
+  - io.ebean:ebean-platform-mysql:${ebeanVersion}
+  - io.ebean:ebean-platform-mariadb:${ebeanVersion}
+  - io.ebean:ebean-platform-sqlite:${ebeanVersion}
+  - com.h2database:h2:2.3.232
+  - mysql:mysql-connector-java:8.0.30
+  - org.postgresql:postgresql:42.7.4
+  - org.mariadb.jdbc:mariadb-java-client:3.5.1
+  - org.xerial:sqlite-jdbc:3.8.9.1
   - de.exlll:configlib-paper:${configlibVersion}
   - club.minnced:discord-webhooks:${discordWebhooksVersion}
   - net.jodah:expiringmap:${expiringmapVersion}
@@ -93,8 +103,3 @@ permissions:
   TotemGuard.Debug:
     description: Allows the player to see debug messages.
     default: false
-commands:
-  TotemGuard:
-    description: Base command for TotemGuard.
-    aliases:
-      - tg

@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.util.messages;
 
-import com.deathmotion.totemguard.database.entities.Check;
 import com.deathmotion.totemguard.database.entities.impl.Alert;
 import com.deathmotion.totemguard.database.entities.impl.Punishment;
 import com.deathmotion.totemguard.models.SafetyStatus;
@@ -47,11 +46,10 @@ public class ProfileCreator {
 
     public Component createProfileComponent(String username, List<Alert> alerts, List<Punishment> punishments, long loadTime, SafetyStatus safetyStatus, Pair<TextColor, TextColor> colorScheme) {
         // Group alerts by check name and count them
-        Map<Check, Long> checkCounts = alerts.stream()
-                .collect(Collectors.groupingBy(Alert::getCheckName, Collectors.counting()));
+        Map<String, Long> checkCounts = alerts.stream().collect(Collectors.groupingBy(Alert::getCheckName, Collectors.counting()));
 
         // Sort the map entries by count in descending order
-        List<Map.Entry<Check, Long>> sortedCheckCounts = checkCounts.entrySet().stream()
+        List<Map.Entry<String, Long>> sortedCheckCounts = checkCounts.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .toList();
 
@@ -82,7 +80,7 @@ public class ProfileCreator {
             componentBuilder.append(Component.text(" No logs found.", colorScheme.getY(), TextDecoration.ITALIC));
         } else {
             sortedCheckCounts.forEach(entry -> {
-                Check checkName = entry.getKey();
+                String checkName = entry.getKey();
                 Long count = entry.getValue();
                 componentBuilder.append(Component.text("- ", NamedTextColor.DARK_GRAY))
                         .append(Component.text(checkName + ": ", colorScheme.getY(), TextDecoration.BOLD))

@@ -31,6 +31,9 @@ public class MigrationGenerator {
         DbMigration dbMigration = DbMigration.create();
         dbMigration.addPlatform(Platform.SQLITE);
         dbMigration.addPlatform(Platform.MYSQL);
+        dbMigration.addPlatform(Platform.POSTGRES);
+        dbMigration.addPlatform(Platform.H2);
+        dbMigration.addPlatform(Platform.MARIADB);
 
         dbMigration.setName("migrationName");
         dbMigration.generateMigration();
