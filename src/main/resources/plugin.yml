@@ -8,11 +8,13 @@ description: TotemGuard is a simple anti-cheat that tries to detect players who 
 load: POSTWORLD
 libraries:
   - io.ebean:ebean-core:${ebeanVersion}
-  - io.ebean:ebean-h2:${ebeanVersion}
-  - io.ebean:ebean-sqlite:${ebeanVersion}
-  - io.ebean:ebean-postgres:${ebeanVersion}
-  - io.ebean:ebean-mysql:${ebeanVersion}
-  - io.ebean:ebean-mariadb:${ebeanVersion}
+  - io.ebean:ebean-datasource:9.0
+  - io.ebean:ebean-migration:14.2.0
+  - io.ebean:ebean-platform-h2:${ebeanVersion}
+  - io.ebean:ebean-platform-postgres:${ebeanVersion}
+  - io.ebean:ebean-platform-mysql:${ebeanVersion}
+  - io.ebean:ebean-platform-mariadb:${ebeanVersion}
+  - io.ebean:ebean-platform-sqlite:${ebeanVersion}
   - com.h2database:h2:2.3.232
   - mysql:mysql-connector-java:8.0.30
   - org.postgresql:postgresql:42.7.4

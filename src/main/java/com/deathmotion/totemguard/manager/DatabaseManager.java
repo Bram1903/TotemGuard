@@ -65,22 +65,24 @@ public class DatabaseManager {
         List<URL> jarUrls = new ArrayList<>();
 
         List<String> paths = List.of(
-                // Core Ebean library
+                // Core Ebean libraries
                 "io/ebean/ebean-core/15.8.0/ebean-core-15.8.0.jar",
-
-                // Additional Ebean libraries
                 "io/ebean/ebean-datasource/9.0/ebean-datasource-9.0.jar",
-                "io/ebean/ebean-h2/15.8.0/ebean-h2-15.8.0.jar",
-                "io/ebean/ebean-sqlite/15.8.0/ebean-sqlite-15.8.0.jar",
-                "io/ebean/ebean-postgres/15.8.0/ebean-postgres-15.8.0.jar",
-                "io/ebean/ebean-mysql/15.8.0/ebean-mysql-15.8.0.jar",
-                "io/ebean/ebean-mariadb/15.8.0/ebean-mariadb-15.8.0.jar",
+                "io/ebean/ebean-migration/14.2.0/ebean-migration-14.2.0.jar",
+
+                // Ebean platform libraries
+                "io/ebean/ebean-platform-h2/15.8.0/ebean-platform-h2-15.8.0.jar",
+                "io/ebean/ebean-platform-mysql/15.8.0/ebean-platform-mysql-15.8.0.jar",
+                "io/ebean/ebean-platform-postgres/15.8.0/ebean-platform-postgres-15.8.0.jar",
+                "io/ebean/ebean-platform-sqlite/15.8.0/ebean-platform-sqlite-15.8.0.jar",
+                "io/ebean/ebean-platform-mariadb/15.8.0/ebean-platform-mariadb-15.8.0.jar",
 
                 // Database-specific drivers
                 "com/h2database/h2/2.3.232/h2-2.3.232.jar",
                 "org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar",
                 "org/mariadb/jdbc/mariadb-java-client/3.5.1/mariadb-java-client-3.5.1.jar",
-                "org/xerial/sqlite-jdbc/3.8.9.1/sqlite-jdbc-3.8.9.1.jar"
+                "org/xerial/sqlite-jdbc/3.8.9.1/sqlite-jdbc-3.8.9.1.jar",
+                "mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar"
         );
 
         for (String path : paths) {
