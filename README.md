@@ -43,9 +43,9 @@ installed on your server.
 
 ## Supported Platforms & Versions
 
-| Platform                        | Supported Versions |
-|---------------------------------|--------------------|
-| Paper, Folia, and related forks | 1.18 - 1.21.4      |
+| Platform                                        | Supported Versions |
+|-------------------------------------------------|--------------------|
+| Bukkit, Spigot, Paper, Folia, and related forks | 1.16.5 - 1.21.4    |
 
 ## Checks
 
