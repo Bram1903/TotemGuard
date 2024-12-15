@@ -24,8 +24,19 @@ import lombok.Getter;
 public enum Library {
     LETTUCE_CORE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
     EBEAN_CORE("io.ebean", "ebean-core", "15.8.0"),
+    EBEAN_H2("io.ebean", "ebean-h2", "15.8.0"),
     EBEAN_SQLITE("io.ebean", "ebean-sqlite", "15.8.0"),
     EBEAN_MYSQL("io.ebean", "ebean-mysql", "15.8.0"),
+    EBEAN_MARIADB("io.ebean", "ebean-mariadb", "15.8.0"),
+    EBEAN_POSTGRES("io.ebean", "ebean-postgres", "15.8.0"),
+
+    // SQL Drivers
+    H2("com.h2database", "h2", "2.3.232"),
+    MYSQL("mysql", "mysql-connector-java", "8.0.30"),
+    POSTGRES("org.postgresql", "postgresql", "42.7.4"),
+    MARIADB("org.mariadb.jdbc", "mariadb-java-client", "3.5.1"),
+    SQLITE("org.xerial", "sqlite-jdbc", "3.8.9.1"),
+
     CONFIGLIB("de.exlll", "configlib-paper", "4.5.0"),
     DISCORD_WEBHOOKS("club.minnced", "discord-webhooks", "0.8.0"),
     EXPIRING_MAP("net.jodah", "expiringmap", "0.5.11");

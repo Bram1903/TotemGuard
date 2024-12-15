@@ -35,9 +35,8 @@ public abstract class BaseDomain extends Model {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Enumerated(EnumType.ORDINAL)
     @Column(nullable = false)
-    private Check checkName;
+    private String checkName;
 
     @Column(nullable = false, updatable = false)
     @WhenCreated

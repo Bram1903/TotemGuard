@@ -49,6 +49,9 @@ dependencies {
     testImplementation(libs.ebean.test)
     testImplementation(libs.ebean.sqlite)
     testImplementation(libs.ebean.mysql)
+    testImplementation(libs.ebean.mariadb)
+    testImplementation(libs.ebean.postgres)
+    testImplementation(libs.ebean.h2)
 }
 
 group = "com.deathmotion.totemguard"

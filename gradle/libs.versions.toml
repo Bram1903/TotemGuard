@@ -23,6 +23,9 @@ ebean-core = { group = "io.ebean", name = "ebean-core", version.ref = "ebean" }
 ebean-test = { group = "io.ebean", name = "ebean-test", version.ref = "ebean" }
 ebean-sqlite = { group = "io.ebean", name = "ebean-sqlite", version.ref = "ebean" }
 ebean-mysql = { group = "io.ebean", name = "ebean-mysql", version.ref = "ebean" }
+ebean-postgres = { group = "io.ebean", name = "ebean-postgres", version.ref = "ebean" }
+ebean-h2 = { group = "io.ebean", name = "ebean-h2", version.ref = "ebean" }
+ebean-mariadb = { group = "io.ebean", name = "ebean-mariadb", version.ref = "ebean" }
 ebean-processor = { group = "io.ebean", name = "querybean-generator", version.ref = "ebean" }
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
 

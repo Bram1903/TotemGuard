@@ -133,8 +133,8 @@ public final class Settings {
     @Configuration
     @Getter
     public static class Database {
-        @Comment("Database Type: The type of database to use. (SQLite, MYSQL)")
-        private String Type = "SQLITE";
+        @Comment("Database Type: The type of database to use. (h2, sqlite, mysql, postgresql, mariadb)")
+        private String Type = "h2";
 
         @Comment("\nDatabase Host: The host of the database.")
         private String Host = "localhost";

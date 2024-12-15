@@ -32,37 +32,32 @@ public class DatabaseManager {
 
     public DatabaseManager(TotemGuard plugin) {
         Settings.Database settings = plugin.getConfigManager().getSettings().getDatabase();
-        DataSourceConfig dataSourceConfig = createDataSourceConfig(settings, plugin);
+        DataSourceConfig dataSourceConfig = configureDataSource(settings, plugin);
         DatabaseConfig databaseConfig = createDatabaseConfig(dataSourceConfig);
 
         this.database = initializeDatabase(databaseConfig, plugin);
     }
 
-    private DataSourceConfig createDataSourceConfig(Settings.Database settings, TotemGuard plugin) {
-        DataSourceConfig dataSourceConfig = new DataSourceConfig();
-        switch (settings.getType().toLowerCase()) {
-            case "sqlite":
-                configureSQLite(dataSourceConfig, plugin);
-                break;
-            case "mysql":
-                configureMySQL(dataSourceConfig, settings);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported database type: " + settings.getType());
-        }
-        return dataSourceConfig;
-    }
-
-    private void configureSQLite(DataSourceConfig config, TotemGuard plugin) {
-        config.setUrl("jdbc:sqlite:" + plugin.getDataFolder().getAbsolutePath() + "/data.db");
-        config.setUsername("root");
-        config.setPassword("root");
-    }
-
-    private void configureMySQL(DataSourceConfig config, Settings.Database settings) {
-        config.setUrl("jdbc:mysql://" + settings.getHost() + ":" + settings.getPort() + "/" + settings.getName());
+    private DataSourceConfig configureDataSource(Settings.Database settings, TotemGuard plugin) {
+        DataSourceConfig config = new DataSourceConfig();
         config.setUsername(settings.getUsername());
         config.setPassword(settings.getPassword());
+
+        String url = switch (settings.getType().toLowerCase()) {
+            case "sqlite" -> "jdbc:sqlite:" + plugin.getDataFolder().getAbsolutePath() + "/data.db";
+            case "mysql" -> buildJdbcUrl("mysql", settings);
+            case "postgresql" -> buildJdbcUrl("postgresql", settings);
+            case "mariadb" -> buildJdbcUrl("mariadb", settings);
+            case "h2" -> "jdbc:h2:file:" + plugin.getDataFolder().getAbsolutePath() + "/data";
+            default -> throw new IllegalArgumentException("Unsupported database type: " + settings.getType());
+        };
+
+        config.setUrl(url);
+        return config;
+    }
+
+    private String buildJdbcUrl(String dbType, Settings.Database settings) {
+        return "jdbc:" + dbType + "://" + settings.getHost() + ":" + settings.getPort() + "/" + settings.getName();
     }
 
     private DatabaseConfig createDatabaseConfig(DataSourceConfig dataSourceConfig) {
