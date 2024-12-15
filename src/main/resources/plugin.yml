@@ -103,8 +103,3 @@ permissions:
   TotemGuard.Debug:
     description: Allows the player to see debug messages.
     default: false
-commands:
-  TotemGuard:
-    description: Base command for TotemGuard.
-    aliases:
-      - tg
