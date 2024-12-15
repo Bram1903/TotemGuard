@@ -24,7 +24,6 @@ import io.ebean.Database;
 import io.ebean.DatabaseFactory;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
-import io.ebean.service.SpiContainerFactory;
 import lombok.Getter;
 
 import java.io.File;
@@ -47,45 +46,35 @@ public class DatabaseManager {
     }
 
     private Database initializeDatabase(DatabaseConfig config, TotemGuard plugin) {
-        try {
-            List<URL> jarUrls = getJarUrls(plugin);
-            URLClassLoader customClassLoader = createCustomClassLoader(jarUrls, plugin);
+        URLClassLoader customClassLoader = createCustomClassLoader(plugin);
 
-            Thread.currentThread().setContextClassLoader(customClassLoader);
+        Thread currentThread = Thread.currentThread();
+        ClassLoader originalClassLoader = currentThread.getContextClassLoader();
+
+        try {
+            currentThread.setContextClassLoader(customClassLoader);
             return DatabaseFactory.createWithContextClassLoader(config, customClassLoader);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize database.", e);
         } finally {
-            Thread.currentThread().setContextClassLoader(plugin.getClass().getClassLoader());
+            currentThread.setContextClassLoader(originalClassLoader);
         }
     }
 
-    private List<URL> getJarUrls(TotemGuard plugin) throws Exception {
-        File librariesRoot = new File(plugin.getServer().getWorldContainer() + "/libraries");
+    private URLClassLoader createCustomClassLoader(TotemGuard plugin) {
+        try {
+            List<URL> jarUrls = loadLibraryUrls(plugin);
+            return new URLClassLoader(jarUrls.toArray(new URL[0]), plugin.getClass().getClassLoader());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create custom class loader.", e);
+        }
+    }
+
+    private List<URL> loadLibraryUrls(TotemGuard plugin) throws Exception {
+        File librariesRoot = new File(plugin.getServer().getWorldContainer(), "libraries");
         List<URL> jarUrls = new ArrayList<>();
 
-        List<String> paths = List.of(
-                // Core Ebean libraries
-                "io/ebean/ebean-core/15.8.0/ebean-core-15.8.0.jar",
-                "io/ebean/ebean-datasource/9.0/ebean-datasource-9.0.jar",
-                "io/ebean/ebean-migration/14.2.0/ebean-migration-14.2.0.jar",
-
-                // Ebean platform libraries
-                "io/ebean/ebean-platform-h2/15.8.0/ebean-platform-h2-15.8.0.jar",
-                "io/ebean/ebean-platform-mysql/15.8.0/ebean-platform-mysql-15.8.0.jar",
-                "io/ebean/ebean-platform-postgres/15.8.0/ebean-platform-postgres-15.8.0.jar",
-                "io/ebean/ebean-platform-sqlite/15.8.0/ebean-platform-sqlite-15.8.0.jar",
-                "io/ebean/ebean-platform-mariadb/15.8.0/ebean-platform-mariadb-15.8.0.jar",
-
-                // Database-specific drivers
-                "com/h2database/h2/2.3.232/h2-2.3.232.jar",
-                "org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar",
-                "org/mariadb/jdbc/mariadb-java-client/3.5.1/mariadb-java-client-3.5.1.jar",
-                "org/xerial/sqlite-jdbc/3.8.9.1/sqlite-jdbc-3.8.9.1.jar",
-                "mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar"
-        );
-
-        for (String path : paths) {
+        for (String path : getLibraryPaths()) {
             File jarFile = new File(librariesRoot, path);
             if (jarFile.exists()) {
                 jarUrls.add(jarFile.toURI().toURL());
@@ -97,30 +86,45 @@ public class DatabaseManager {
         return jarUrls;
     }
 
-    private URLClassLoader createCustomClassLoader(List<URL> jarUrls, TotemGuard plugin) {
-        return new URLClassLoader(jarUrls.toArray(new URL[0]), plugin.getClass().getClassLoader());
+    private List<String> getLibraryPaths() {
+        return List.of(
+                "io/ebean/ebean-core/15.8.0/ebean-core-15.8.0.jar",
+                "io/ebean/ebean-datasource/9.0/ebean-datasource-9.0.jar",
+                "io/ebean/ebean-migration/14.2.0/ebean-migration-14.2.0.jar",
+                "io/ebean/ebean-platform-h2/15.8.0/ebean-platform-h2-15.8.0.jar",
+                "io/ebean/ebean-platform-mysql/15.8.0/ebean-platform-mysql-15.8.0.jar",
+                "io/ebean/ebean-platform-postgres/15.8.0/ebean-platform-postgres-15.8.0.jar",
+                "io/ebean/ebean-platform-sqlite/15.8.0/ebean-platform-sqlite-15.8.0.jar",
+                "io/ebean/ebean-platform-mariadb/15.8.0/ebean-platform-mariadb-15.8.0.jar",
+                "com/h2database/h2/2.3.232/h2-2.3.232.jar",
+                "org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar",
+                "org/mariadb/jdbc/mariadb-java-client/3.5.1/mariadb-java-client-3.5.1.jar",
+                "org/xerial/sqlite-jdbc/3.8.9.1/sqlite-jdbc-3.8.9.1.jar",
+                "mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar"
+        );
     }
 
     private DataSourceConfig configureDataSource(Settings.Database settings, TotemGuard plugin) {
         DataSourceConfig config = new DataSourceConfig();
         config.setUsername(settings.getUsername());
         config.setPassword(settings.getPassword());
-
-        String url = switch (settings.getType().toLowerCase()) {
-            case "sqlite" -> "jdbc:sqlite:" + plugin.getDataFolder().getAbsolutePath() + "/data.db";
-            case "mysql" -> buildJdbcUrl("mysql", settings);
-            case "postgresql" -> buildJdbcUrl("postgresql", settings);
-            case "mariadb" -> buildJdbcUrl("mariadb", settings);
-            case "h2" -> "jdbc:h2:file:" + plugin.getDataFolder().getAbsolutePath() + "/data";
-            default -> throw new IllegalArgumentException("Unsupported database type: " + settings.getType());
-        };
-
-        config.setUrl(url);
+        config.setUrl(buildJdbcUrl(settings, plugin));
         return config;
     }
 
-    private String buildJdbcUrl(String dbType, Settings.Database settings) {
-        return "jdbc:" + dbType + "://" + settings.getHost() + ":" + settings.getPort() + "/" + settings.getName();
+    private String buildJdbcUrl(Settings.Database settings, TotemGuard plugin) {
+        return switch (settings.getType().toLowerCase()) {
+            case "sqlite" -> "jdbc:sqlite:" + new File(plugin.getDataFolder(), "data.db").getAbsolutePath();
+            case "mysql" -> buildStandardJdbcUrl("mysql", settings);
+            case "postgresql" -> buildStandardJdbcUrl("postgresql", settings);
+            case "mariadb" -> buildStandardJdbcUrl("mariadb", settings);
+            case "h2" -> "jdbc:h2:file:" + new File(plugin.getDataFolder(), "data").getAbsolutePath();
+            default -> throw new IllegalArgumentException("Unsupported database type: " + settings.getType());
+        };
+    }
+
+    private String buildStandardJdbcUrl(String dbType, Settings.Database settings) {
+        return String.format("jdbc:%s://%s:%d/%s", dbType, settings.getHost(), settings.getPort(), settings.getName());
     }
 
     private DatabaseConfig createDatabaseConfig(DataSourceConfig dataSourceConfig) {
