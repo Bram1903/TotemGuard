@@ -45,6 +45,10 @@ public class DatabaseManager {
         this.database = initializeDatabase(databaseConfig, plugin);
     }
 
+    public void close() {
+        database.shutdown(true, true);
+    }
+
     private Database initializeDatabase(DatabaseConfig config, TotemGuard plugin) {
         URLClassLoader customClassLoader = createCustomClassLoader(plugin);
 
