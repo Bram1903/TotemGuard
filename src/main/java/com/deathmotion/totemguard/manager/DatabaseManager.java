@@ -24,7 +24,15 @@ import io.ebean.Database;
 import io.ebean.DatabaseFactory;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
+import io.ebean.service.SpiContainerFactory;
 import lombok.Getter;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 public class DatabaseManager {
@@ -36,6 +44,59 @@ public class DatabaseManager {
         DatabaseConfig databaseConfig = createDatabaseConfig(dataSourceConfig);
 
         this.database = initializeDatabase(databaseConfig, plugin);
+    }
+
+    private Database initializeDatabase(DatabaseConfig config, TotemGuard plugin) {
+        try {
+            List<URL> jarUrls = getJarUrls(plugin);
+            URLClassLoader customClassLoader = createCustomClassLoader(jarUrls, plugin);
+
+            Thread.currentThread().setContextClassLoader(customClassLoader);
+            return DatabaseFactory.createWithContextClassLoader(config, customClassLoader);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize database.", e);
+        } finally {
+            Thread.currentThread().setContextClassLoader(plugin.getClass().getClassLoader());
+        }
+    }
+
+    private List<URL> getJarUrls(TotemGuard plugin) throws Exception {
+        File librariesRoot = new File(plugin.getServer().getWorldContainer() + "/libraries");
+        List<URL> jarUrls = new ArrayList<>();
+
+        List<String> paths = List.of(
+                // Core Ebean library
+                "io/ebean/ebean-core/15.8.0/ebean-core-15.8.0.jar",
+
+                // Additional Ebean libraries
+                "io/ebean/ebean-datasource/9.0/ebean-datasource-9.0.jar",
+                "io/ebean/ebean-h2/15.8.0/ebean-h2-15.8.0.jar",
+                "io/ebean/ebean-sqlite/15.8.0/ebean-sqlite-15.8.0.jar",
+                "io/ebean/ebean-postgres/15.8.0/ebean-postgres-15.8.0.jar",
+                "io/ebean/ebean-mysql/15.8.0/ebean-mysql-15.8.0.jar",
+                "io/ebean/ebean-mariadb/15.8.0/ebean-mariadb-15.8.0.jar",
+
+                // Database-specific drivers
+                "com/h2database/h2/2.3.232/h2-2.3.232.jar",
+                "org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar",
+                "org/mariadb/jdbc/mariadb-java-client/3.5.1/mariadb-java-client-3.5.1.jar",
+                "org/xerial/sqlite-jdbc/3.8.9.1/sqlite-jdbc-3.8.9.1.jar"
+        );
+
+        for (String path : paths) {
+            File jarFile = new File(librariesRoot, path);
+            if (jarFile.exists()) {
+                jarUrls.add(jarFile.toURI().toURL());
+            } else {
+                throw new FileNotFoundException("Library not found: " + jarFile.getAbsolutePath());
+            }
+        }
+
+        return jarUrls;
+    }
+
+    private URLClassLoader createCustomClassLoader(List<URL> jarUrls, TotemGuard plugin) {
+        return new URLClassLoader(jarUrls.toArray(new URL[0]), plugin.getClass().getClassLoader());
     }
 
     private DataSourceConfig configureDataSource(Settings.Database settings, TotemGuard plugin) {
@@ -65,17 +126,5 @@ public class DatabaseManager {
         config.setDataSourceConfig(dataSourceConfig);
         config.setRunMigration(true);
         return config;
-    }
-
-    private Database initializeDatabase(DatabaseConfig config, TotemGuard plugin) {
-        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-        ClassLoader pluginClassLoader = plugin.getClass().getClassLoader();
-
-        try {
-            Thread.currentThread().setContextClassLoader(pluginClassLoader);
-            return DatabaseFactory.createWithContextClassLoader(config, pluginClassLoader);
-        } finally {
-            Thread.currentThread().setContextClassLoader(originalClassLoader);
-        }
     }
 }
