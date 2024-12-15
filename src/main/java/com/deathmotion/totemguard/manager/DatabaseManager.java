@@ -118,11 +118,11 @@ public class DatabaseManager {
 
     private String buildJdbcUrl(Settings.Database settings, TotemGuard plugin) {
         return switch (settings.getType().toLowerCase()) {
-            case "sqlite" -> "jdbc:sqlite:" + new File(plugin.getDataFolder(), "data.db").getAbsolutePath();
+            case "sqlite" -> "jdbc:sqlite:" + new File(plugin.getDataFolder(), "/db/data.db").getAbsolutePath();
             case "mysql" -> buildStandardJdbcUrl("mysql", settings);
             case "postgresql" -> buildStandardJdbcUrl("postgresql", settings);
             case "mariadb" -> buildStandardJdbcUrl("mariadb", settings);
-            case "h2" -> "jdbc:h2:file:" + new File(plugin.getDataFolder(), "data").getAbsolutePath();
+            case "h2" -> "jdbc:h2:file:" + new File(plugin.getDataFolder(), "db/data").getAbsolutePath();
             default -> throw new IllegalArgumentException("Unsupported database type: " + settings.getType());
         };
     }
