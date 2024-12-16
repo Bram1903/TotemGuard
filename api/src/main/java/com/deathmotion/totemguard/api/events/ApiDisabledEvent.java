@@ -23,7 +23,11 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This event is called when the TotemGuard API is disabled.
+ * Represents an event triggered when the TotemGuard API is disabled.
+ *
+ * <p>This event is called during the shutdown process of the TotemGuard API
+ * and signals that the API is no longer available for use. Handlers of this event
+ * can perform cleanup or finalize operations related to the API.</p>
  */
 public class ApiDisabledEvent extends Event {
     private static final HandlerList handlers = new HandlerList();
@@ -45,7 +49,7 @@ public class ApiDisabledEvent extends Event {
     }
 
     /**
-     * Gets the list of handlers for this event.
+     * Gets the list of handlers for this event instance.
      *
      * @return the handler list
      */
@@ -54,3 +58,4 @@ public class ApiDisabledEvent extends Event {
         return handlers;
     }
 }
+

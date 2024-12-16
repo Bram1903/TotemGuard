@@ -19,6 +19,8 @@
 package com.deathmotion.totemguard.util;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.events.LatestVersionFoundEvent;
+import com.deathmotion.totemguard.api.events.UpdateFoundEvent;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.config.impl.Settings;
 import com.deathmotion.totemguard.models.Constants;
@@ -26,6 +28,8 @@ import com.deathmotion.totemguard.packetlisteners.UpdateNotifier;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import io.avaje.lang.Nullable;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -39,6 +43,8 @@ import java.util.concurrent.CompletableFuture;
 public class UpdateChecker {
     private final TotemGuard plugin;
     private final Settings settings;
+    @Getter
+    private @Nullable TGVersion latestVersion;
 
     public UpdateChecker(TotemGuard plugin) {
         this.plugin = plugin;
@@ -53,9 +59,12 @@ public class UpdateChecker {
         CompletableFuture.runAsync(() -> {
             try {
                 TGVersion localVersion = TGVersions.CURRENT;
-                TGVersion latestVersion = fetchLatestGitHubVersion();
+                latestVersion = fetchLatestGitHubVersion();
 
                 if (latestVersion != null) {
+                    LatestVersionFoundEvent event = new LatestVersionFoundEvent(latestVersion);
+                    plugin.getServer().getPluginManager().callEvent(event);
+
                     handleVersionComparison(localVersion, latestVersion);
                 } else {
                     plugin.getLogger().warning("Unable to fetch the latest version from GitHub.");
@@ -90,6 +99,9 @@ public class UpdateChecker {
     }
 
     private void notifyUpdateAvailable(TGVersion currentVersion, TGVersion newVersion) {
+        UpdateFoundEvent event = new UpdateFoundEvent(newVersion);
+        plugin.getServer().getPluginManager().callEvent(event);
+
         if (settings.getUpdateChecker().isPrintToConsole()) {
             plugin.getServer().getConsoleSender().sendMessage(Component.text("[TotemGuard] ", NamedTextColor.DARK_GREEN)
                     .append(Component.text("Update available! ", NamedTextColor.BLUE))

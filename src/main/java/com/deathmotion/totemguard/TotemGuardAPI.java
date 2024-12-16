@@ -27,6 +27,8 @@ import com.deathmotion.totemguard.util.TGVersions;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicePriority;
 
+import java.util.Optional;
+
 public class TotemGuardAPI implements ITotemGuardAPI {
 
     private final TotemGuard plugin;
@@ -56,6 +58,11 @@ public class TotemGuardAPI implements ITotemGuardAPI {
     @Override
     public TGVersion getVersion() {
         return isEnabled() ? TGVersions.CURRENT : null;
+    }
+
+    @Override
+    public Optional<TGVersion> getLatestVersion() {
+        return isEnabled() ? Optional.ofNullable(plugin.getUpdateChecker().getLatestVersion()) : Optional.empty();
     }
 
     @Override

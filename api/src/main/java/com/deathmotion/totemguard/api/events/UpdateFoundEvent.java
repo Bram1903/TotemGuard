@@ -18,25 +18,45 @@
 
 package com.deathmotion.totemguard.api.events;
 
+import com.deathmotion.totemguard.api.versioning.TGVersion;
+import lombok.Getter;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event triggered when the TotemGuard API is enabled.
+ * Represents an event triggered when a new update for the TotemGuard plugin is found.
  *
- * <p>This event is called during the initialization process of the TotemGuard API
- * and signals that the API is now available for use. Handlers of this event
- * can perform setup operations or register features dependent on the API.</p>
+ * <p>This event indicates that a newer version of the plugin is available compared
+ * to the currently installed version. It provides access to the details of the
+ * latest version retrieved from the GitHub API.</p>
+ *
+ * <p>Example use cases include:
+ * <ul>
+ *   <li>Notifying server administrators about the availability of a new update.</li>
+ *   <li>Logging update information for plugin management and audits.</li>
+ *   <li>Triggering custom update reminders or announcements.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>Note: This event will not be triggered if the installed version of the plugin
+ * is already up-to-date.</p>
  */
-public class ApiEnabledEvent extends Event {
+@Getter
+public class UpdateFoundEvent extends Event {
+
     private static final HandlerList handlers = new HandlerList();
 
+    private final TGVersion latestVersion;
+
     /**
-     * Constructs a new {@code ApiEnabledEvent}.
+     * Constructs a new {@code UpdateFoundEvent}.
+     *
+     * @param latestVersion the newer version of the plugin that has been found
      */
-    public ApiEnabledEvent() {
+    public UpdateFoundEvent(TGVersion latestVersion) {
         super(true);
+        this.latestVersion = latestVersion;
     }
 
     /**
@@ -49,7 +69,7 @@ public class ApiEnabledEvent extends Event {
     }
 
     /**
-     * Gets the list of handlers for this event instance.
+     * Gets the handler list for this event instance.
      *
      * @return the handler list
      */

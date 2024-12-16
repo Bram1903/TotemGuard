@@ -60,6 +60,8 @@ public final class TotemGuard extends JavaPlugin {
     private PunishmentManager punishmentManager;
     private CheckManager checkManager;
     private TrackerManager trackerManager;
+    private UpdateChecker updateChecker;
+
     private TotemGuardAPI totemGuardAPI;
 
     @Setter
@@ -92,7 +94,7 @@ public final class TotemGuard extends JavaPlugin {
 
         registerCommand("totemguard", new TotemGuardCommand(this));
 
-        new UpdateChecker(this);
+        updateChecker = new UpdateChecker(this);
         totemGuardAPI = new TotemGuardAPI(this);
 
         enableBStats();

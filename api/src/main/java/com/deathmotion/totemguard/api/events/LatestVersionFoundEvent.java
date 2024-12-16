@@ -18,25 +18,47 @@
 
 package com.deathmotion.totemguard.api.events;
 
+import com.deathmotion.totemguard.api.versioning.TGVersion;
+import lombok.Getter;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event triggered when the TotemGuard API is enabled.
+ * Represents an event triggered when the latest version of the TotemGuard plugin
+ * is successfully retrieved.
  *
- * <p>This event is called during the initialization process of the TotemGuard API
- * and signals that the API is now available for use. Handlers of this event
- * can perform setup operations or register features dependent on the API.</p>
+ * <p>This event does not necessarily indicate that an update is available.
+ * Instead, it signifies that the latest version information has been fetched
+ * from the GitHub API.</p>
+ *
+ * <p>Handlers for this event can access the latest version of the plugin
+ * through the {@link #getLatestVersion()} method.</p>
+ *
+ * <p>Example use cases include notifying administrators or logging version
+ * information for diagnostics.</p>
  */
-public class ApiEnabledEvent extends Event {
+@Getter
+public class LatestVersionFoundEvent extends Event {
+
+    /**
+     * The handler list for this event type.
+     */
     private static final HandlerList handlers = new HandlerList();
 
     /**
-     * Constructs a new {@code ApiEnabledEvent}.
+     * The latest version of the plugin that has been found.
      */
-    public ApiEnabledEvent() {
+    private final TGVersion latestVersion;
+
+    /**
+     * Constructs a new {@code UpdateFoundEvent}.
+     *
+     * @param latestVersion the latest version of the plugin that has been found
+     */
+    public LatestVersionFoundEvent(TGVersion latestVersion) {
         super(true);
+        this.latestVersion = latestVersion;
     }
 
     /**
@@ -49,7 +71,7 @@ public class ApiEnabledEvent extends Event {
     }
 
     /**
-     * Gets the list of handlers for this event instance.
+     * Gets the handler list for this event instance.
      *
      * @return the handler list
      */

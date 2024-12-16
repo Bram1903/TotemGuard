@@ -20,10 +20,8 @@ package com.deathmotion.totemguard.testplugin;
 
 import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.testplugin.commands.AlertsCommand;
-import com.deathmotion.totemguard.testplugin.events.ApiDisabledEventTest;
-import com.deathmotion.totemguard.testplugin.events.ApiEnabledEventTest;
-import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
-import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
+import com.deathmotion.totemguard.testplugin.commands.LatestVersionCommand;
+import com.deathmotion.totemguard.testplugin.events.*;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -55,7 +53,7 @@ public final class ApiTestPlugin extends JavaPlugin {
         }
 
         registerListeners();
-        registerCommand("alerts", new AlertsCommand(this));
+        registerCommands();
 
         getLogger().info("Successfully hooked into TotemGuard API version " + api.getVersion().toString() + ".");
     }
@@ -70,6 +68,13 @@ public final class ApiTestPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new ApiDisabledEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
+        Bukkit.getPluginManager().registerEvents(new LatestVersionFoundTest(this), this);
+        Bukkit.getPluginManager().registerEvents(new UpdateFoundEventTest(this), this);
+    }
+
+    public void registerCommands() {
+        registerCommand("alerts", new AlertsCommand(this));
+        registerCommand("latestversion", new LatestVersionCommand(this));
     }
 
     private void registerCommand(String name, Command command) {

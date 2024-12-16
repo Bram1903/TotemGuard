@@ -27,31 +27,31 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event that is triggered when a player is about to be punished
- * by a TotemGuard check. This event can be canceled to prevent the punishment.
+ * Represents an event triggered when a player is about to be punished by a TotemGuard check.
+ *
+ * <p>This event provides detailed information about the player and the check
+ * that triggered the punishment. It is cancellable, allowing other plugins to
+ * prevent the punishment and handle the situation differently.</p>
+ *
+ * <p>Example use cases include:
+ * <ul>
+ *   <li>Customizing punishment actions based on the player's status or context.</li>
+ *   <li>Preventing punishment for legitimate players under specific conditions.</li>
+ *   <li>Logging detailed information about punishment events.</li>
+ * </ul>
+ * </p>
  */
 @Getter
 public class PunishEvent extends Event implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
 
-    /**
-     * The player who is being punished.
-     */
     private final Player player;
-
-    /**
-     * The details of the check that triggered this punishment.
-     */
     private final ICheckDetails checkDetails;
-
-    /**
-     * Whether the event is canceled.
-     */
     private boolean cancelled;
 
     /**
-     * Constructs a new PunishEvent.
+     * Constructs a new {@code PunishEvent}.
      *
      * @param player       the player who is being punished
      * @param checkDetails the details of the check that triggered the punishment
@@ -72,9 +72,9 @@ public class PunishEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets whether this event is canceled.
+     * Checks whether this event is canceled.
      *
-     * @return {@code true} if the event is canceled, otherwise {@code false}
+     * @return {@code true} if the event is canceled; {@code false} otherwise
      */
     @Override
     public boolean isCancelled() {
@@ -84,7 +84,7 @@ public class PunishEvent extends Event implements Cancellable {
     /**
      * Sets whether this event should be canceled.
      *
-     * @param cancel {@code true} to cancel the event, otherwise {@code false}
+     * @param cancel {@code true} to cancel the event; {@code false} otherwise
      */
     @Override
     public void setCancelled(boolean cancel) {
@@ -92,7 +92,7 @@ public class PunishEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the handler list for this event instance.
+     * Gets the list of handlers for this event instance.
      *
      * @return the handler list
      */

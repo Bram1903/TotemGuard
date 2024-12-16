@@ -27,26 +27,26 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event triggered when a check flags a player.
- * This event is cancellable, allowing other plugins to prevent actions based on the flag.
+ * Represents an event triggered when a check flags a player for potential violations.
+ *
+ * <p>This event provides detailed information about the check that triggered the flag
+ * and the player involved. It is cancellable, allowing other plugins to override
+ * the default behavior and prevent any subsequent actions based on the flag.</p>
+ *
+ * <p>Example use cases include:
+ * <ul>
+ *   <li>Logging the flagged player and check details.</li>
+ *   <li>Preventing false positives by canceling the event.</li>
+ *   <li>Notifying administrators of the flag in real-time.</li>
+ * </ul>
+ * </p>
  */
 @Getter
 public class FlagEvent extends Event implements Cancellable {
     private static final HandlerList handlers = new HandlerList();
 
-    /**
-     * The player who triggered the flag.
-     */
     private final Player player;
-
-    /**
-     * The check that triggered the flag.
-     */
     private final ICheckDetails checkDetails;
-
-    /**
-     * Whether the event has been canceled.
-     */
     private boolean cancelled;
 
     /**
@@ -91,7 +91,7 @@ public class FlagEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the list of handlers for this event.
+     * Gets the list of handlers for this event instance.
      *
      * @return the handler list
      */
