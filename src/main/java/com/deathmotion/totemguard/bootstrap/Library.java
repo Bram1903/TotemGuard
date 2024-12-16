@@ -37,7 +37,7 @@ public enum Library {
     MYSQL("mysql", "mysql-connector-java", "8.0.30"),
     POSTGRES("org.postgresql", "postgresql", "42.7.4"),
     MARIADB("org.mariadb.jdbc", "mariadb-java-client", "3.5.1"),
-    SQLITE("org.xerial", "sqlite-jdbc", "3.8.9.1"),
+    SQLITE("org.xerial", "sqlite-jdbc", "3.47.1.0"),
 
     // Other Libraries
     CONFIGLIB("de.exlll", "configlib-paper", "4.5.0"),

@@ -19,7 +19,7 @@ libraries:
   - mysql:mysql-connector-java:8.0.30
   - org.postgresql:postgresql:42.7.4
   - org.mariadb.jdbc:mariadb-java-client:3.5.1
-  - org.xerial:sqlite-jdbc:3.8.9.1
+  - org.xerial:sqlite-jdbc:3.47.1.0
   - de.exlll:configlib-paper:${configlibVersion}
   - club.minnced:discord-webhooks:${discordWebhooksVersion}
   - net.jodah:expiringmap:${expiringmapVersion}

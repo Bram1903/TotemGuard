@@ -22,24 +22,28 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.impl.Settings;
 import io.ebean.Database;
 import io.ebean.DatabaseFactory;
+import io.ebean.Transaction;
 import io.ebean.config.DatabaseConfig;
 import io.ebean.datasource.DataSourceConfig;
 import lombok.Getter;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 public class DatabaseManager {
+
     private final Database database;
 
     public DatabaseManager(TotemGuard plugin) {
         Settings.Database settings = plugin.getConfigManager().getSettings().getDatabase();
-        DataSourceConfig dataSourceConfig = configureDataSource(settings, plugin);
+        DataSourceConfig dataSourceConfig = createDataSourceConfig(settings, plugin);
         DatabaseConfig databaseConfig = createDatabaseConfig(dataSourceConfig);
 
         this.database = initializeDatabase(databaseConfig, plugin);
@@ -50,25 +54,17 @@ public class DatabaseManager {
     }
 
     private Database initializeDatabase(DatabaseConfig config, TotemGuard plugin) {
-        URLClassLoader customClassLoader = createCustomClassLoader(plugin);
-
-        Thread currentThread = Thread.currentThread();
-        ClassLoader originalClassLoader = currentThread.getContextClassLoader();
-
-        try {
-            currentThread.setContextClassLoader(customClassLoader);
-            return DatabaseFactory.createWithContextClassLoader(config, customClassLoader);
+        try (URLClassLoader customClassLoader = createCustomClassLoader(plugin)) {
+            return executeWithCustomClassLoader(customClassLoader, () -> DatabaseFactory.createWithContextClassLoader(config, customClassLoader));
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize database.", e);
-        } finally {
-            currentThread.setContextClassLoader(originalClassLoader);
+            throw new RuntimeException("Failed to initialize the database.", e);
         }
     }
 
     private URLClassLoader createCustomClassLoader(TotemGuard plugin) {
         try {
-            List<URL> jarUrls = loadLibraryUrls(plugin);
-            return new URLClassLoader(jarUrls.toArray(new URL[0]), plugin.getClass().getClassLoader());
+            List<URL> libraryUrls = loadLibraryUrls(plugin);
+            return new URLClassLoader(libraryUrls.toArray(new URL[0]), plugin.getClass().getClassLoader());
         } catch (Exception e) {
             throw new RuntimeException("Failed to create custom class loader.", e);
         }
@@ -80,14 +76,106 @@ public class DatabaseManager {
 
         for (String path : getLibraryPaths()) {
             File jarFile = new File(librariesRoot, path);
-            if (jarFile.exists()) {
-                jarUrls.add(jarFile.toURI().toURL());
-            } else {
+            if (!jarFile.exists()) {
                 throw new FileNotFoundException("Library not found: " + jarFile.getAbsolutePath());
             }
+            jarUrls.add(jarFile.toURI().toURL());
+            plugin.getLogger().info("Loaded library: " + jarFile.getName());
         }
 
         return jarUrls;
+    }
+
+    private DataSourceConfig createDataSourceConfig(Settings.Database settings, TotemGuard plugin) {
+        DataSourceConfig config = new DataSourceConfig();
+        configureAuthentication(settings, config);
+        config.setUrl(createJdbcUrl(settings, plugin));
+
+        String driverClass = getDriverClass(settings.getType().toLowerCase());
+        loadDriver(driverClass);
+
+        return config;
+    }
+
+    private void configureAuthentication(Settings.Database settings, DataSourceConfig config) {
+        switch (settings.getType().toLowerCase()) {
+            case "mysql", "mariadb", "postgresql" -> {
+                config.setUsername(settings.getUsername());
+                config.setPassword(settings.getPassword());
+            }
+            case "sqlite", "h2" -> {
+                config.setUsername("root");
+                config.setPassword("");
+                config.setIsolationLevel(Transaction.SERIALIZABLE);
+            }
+        }
+    }
+
+    private String createJdbcUrl(Settings.Database settings, TotemGuard plugin) {
+        return switch (settings.getType().toLowerCase()) {
+            case "sqlite", "h2" -> {
+                File dbFile = new File(plugin.getDataFolder(), settings.getType().equals("sqlite") ? "db/data.db" : "db/data");
+                ensureDirectoryExists(dbFile.getParentFile());
+                yield settings.getType().equals("sqlite")
+                        ? "jdbc:sqlite:" + dbFile.getAbsolutePath()
+                        : "jdbc:h2:file:" + dbFile.getAbsolutePath();
+            }
+            case "mysql", "postgresql", "mariadb" -> buildStandardJdbcUrl(settings);
+            default -> throw new IllegalArgumentException("Unsupported database type: " + settings.getType());
+        };
+    }
+
+    private void ensureDirectoryExists(File directory) {
+        try {
+            Files.createDirectories(directory.toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create database directory: " + directory.getAbsolutePath(), e);
+        }
+    }
+
+    private String buildStandardJdbcUrl(Settings.Database settings) {
+        return String.format("jdbc:%s://%s:%d/%s",
+                settings.getType().toLowerCase(),
+                settings.getHost(),
+                settings.getPort(),
+                settings.getName());
+    }
+
+    private String getDriverClass(String databaseType) {
+        return switch (databaseType) {
+            case "mysql" -> "com.mysql.cj.jdbc.Driver";
+            case "mariadb" -> "org.mariadb.jdbc.Driver";
+            case "postgresql" -> "org.postgresql.Driver";
+            case "sqlite" -> "org.sqlite.JDBC";
+            case "h2" -> "org.h2.Driver";
+            default -> throw new IllegalArgumentException("Unsupported database type: " + databaseType);
+        };
+    }
+
+    private void loadDriver(String driverClassName) {
+        try {
+            Class.forName(driverClassName);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Failed to load driver: " + driverClassName, e);
+        }
+    }
+
+    private DatabaseConfig createDatabaseConfig(DataSourceConfig dataSourceConfig) {
+        DatabaseConfig config = new DatabaseConfig();
+        config.setDataSourceConfig(dataSourceConfig);
+        config.setRunMigration(true);
+        return config;
+    }
+
+    private <T> T executeWithCustomClassLoader(ClassLoader classLoader, ClassLoaderTask<T> task) throws Exception {
+        Thread currentThread = Thread.currentThread();
+        ClassLoader originalClassLoader = currentThread.getContextClassLoader();
+        try {
+            currentThread.setContextClassLoader(classLoader);
+            return task.execute();
+        } finally {
+            currentThread.setContextClassLoader(originalClassLoader);
+        }
     }
 
     private List<String> getLibraryPaths() {
@@ -103,38 +191,13 @@ public class DatabaseManager {
                 "com/h2database/h2/2.3.232/h2-2.3.232.jar",
                 "org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar",
                 "org/mariadb/jdbc/mariadb-java-client/3.5.1/mariadb-java-client-3.5.1.jar",
-                "org/xerial/sqlite-jdbc/3.8.9.1/sqlite-jdbc-3.8.9.1.jar",
+                "org/xerial/sqlite-jdbc/3.47.1.0/sqlite-jdbc-3.47.1.0.jar",
                 "mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar"
         );
     }
 
-    private DataSourceConfig configureDataSource(Settings.Database settings, TotemGuard plugin) {
-        DataSourceConfig config = new DataSourceConfig();
-        config.setUsername(settings.getUsername());
-        config.setPassword(settings.getPassword());
-        config.setUrl(buildJdbcUrl(settings, plugin));
-        return config;
-    }
-
-    private String buildJdbcUrl(Settings.Database settings, TotemGuard plugin) {
-        return switch (settings.getType().toLowerCase()) {
-            case "sqlite" -> "jdbc:sqlite:" + new File(plugin.getDataFolder(), "db/data.db").getAbsolutePath();
-            case "mysql" -> buildStandardJdbcUrl("mysql", settings);
-            case "postgresql" -> buildStandardJdbcUrl("postgresql", settings);
-            case "mariadb" -> buildStandardJdbcUrl("mariadb", settings);
-            case "h2" -> "jdbc:h2:file:" + new File(plugin.getDataFolder(), "db/data").getAbsolutePath();
-            default -> throw new IllegalArgumentException("Unsupported database type: " + settings.getType());
-        };
-    }
-
-    private String buildStandardJdbcUrl(String dbType, Settings.Database settings) {
-        return String.format("jdbc:%s://%s:%d/%s", dbType, settings.getHost(), settings.getPort(), settings.getName());
-    }
-
-    private DatabaseConfig createDatabaseConfig(DataSourceConfig dataSourceConfig) {
-        DatabaseConfig config = new DatabaseConfig();
-        config.setDataSourceConfig(dataSourceConfig);
-        config.setRunMigration(true);
-        return config;
+    @FunctionalInterface
+    private interface ClassLoaderTask<T> {
+        T execute() throws Exception;
     }
 }
