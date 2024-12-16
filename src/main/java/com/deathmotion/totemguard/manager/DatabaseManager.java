@@ -80,7 +80,6 @@ public class DatabaseManager {
                 throw new FileNotFoundException("Library not found: " + jarFile.getAbsolutePath());
             }
             jarUrls.add(jarFile.toURI().toURL());
-            plugin.getLogger().info("Loaded library: " + jarFile.getName());
         }
 
         return jarUrls;
