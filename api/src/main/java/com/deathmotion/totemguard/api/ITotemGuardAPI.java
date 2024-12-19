@@ -18,5 +18,5 @@
 
 package com.deathmotion.totemguard.api;
 
-public interface ITotemGuardAPI{
+public interface ITotemGuardAPI {
 }
