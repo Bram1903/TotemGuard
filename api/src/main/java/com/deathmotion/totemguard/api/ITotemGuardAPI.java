@@ -18,5 +18,16 @@
 
 package com.deathmotion.totemguard.api;
 
+import com.deathmotion.totemguard.api.versioning.TGVersion;
+
+/**
+ * This is the main API class for TotemGuard.
+ */
 public interface ITotemGuardAPI {
+    /**
+     * Get the version of TotemGuard.
+     *
+     * @return The version of TotemGuard.
+     */
+    TGVersion getVersion();
 }

@@ -2,6 +2,7 @@ import java.io.ByteArrayOutputStream
 
 plugins {
     totemguard.`java-conventions`
+    `tg-version`
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
 }
@@ -50,6 +51,14 @@ tasks {
 
     assemble {
         dependsOn(shadowJar)
+    }
+
+    withType<JavaCompile> {
+        dependsOn(generateVersionsFile)
+    }
+
+    generateVersionsFile {
+        packageName = "com.deathmotion.totemguard.util"
     }
 
     processResources {
