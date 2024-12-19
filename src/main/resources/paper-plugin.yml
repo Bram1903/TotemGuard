@@ -1,0 +1,14 @@
+name: TotemGuard
+version: ${version}
+main: com.deathmotion.totemguard.TotemGuard
+api-version: '1.20'
+folia-supported: true
+authors: [ Bram, OutDev ]
+description: TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
+load: POSTWORLD
+dependencies:
+  server:
+    packetevents:
+      load: BEFORE
+      required: true
+      join-classpath: true
