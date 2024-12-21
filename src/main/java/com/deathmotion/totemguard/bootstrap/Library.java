@@ -16,30 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard;
+package com.deathmotion.totemguard.bootstrap;
 
-import com.deathmotion.totemguard.manager.ConfigManager;
-import com.deathmotion.totemguard.messenger.MessengerService;
 import lombok.Getter;
-import org.bukkit.plugin.java.JavaPlugin;
 
 @Getter
-public final class TotemGuard extends JavaPlugin {
+public enum Library {
+    CONFIGLIB("de.exlll", "configlib-paper", "4.5.0");
 
-    private ConfigManager configManager;
-    private MessengerService messengerService;
+    private final String group;
+    private final String name;
+    private final String version;
 
-    @Override
-    public void onEnable() {
-        configManager = new ConfigManager(this);
-        messengerService = new MessengerService(this);
-
-        getServer().getConsoleSender().sendMessage(messengerService.getPrefix());
-        getLogger().info("TotemGuard has been enabled!");
+    Library(String group, String name, String version) {
+        this.group = group;
+        this.name = name;
+        this.version = version;
     }
 
-    @Override
-    public void onDisable() {
-        getLogger().info("TotemGuard has been disabled!");
+    public String getMavenDependency() {
+        return String.format("%s:%s:%s", group, name, version);
     }
 }

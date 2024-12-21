@@ -12,6 +12,7 @@ dependencies {
 
     compileOnly(libs.paper)
     compileOnly(libs.packetevents.spigot)
+    compileOnly(libs.configlib.paper)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 }
@@ -63,10 +64,14 @@ tasks {
 
     processResources {
         inputs.property("version", ext["versionNoHash"])
+        inputs.property("description", project.description)
+        inputs.property("configlibVersion", libs.versions.configlib.get())
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
                 "version" to ext["versionNoHash"],
+                "description" to project.description,
+                "configlibVersion" to libs.versions.configlib.get()
             )
         }
     }

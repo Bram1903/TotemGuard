@@ -20,13 +20,6 @@ java {
 }
 
 tasks {
-    processResources {
-        inputs.property("version", project.version)
-        filesMatching(listOf("plugin.yml")) {
-            expand("version" to project.version)
-        }
-    }
-
     withType<JavaCompile> {
         options.encoding = Charsets.UTF_8.name()
         options.release = 17
