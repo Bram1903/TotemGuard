@@ -26,31 +26,41 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 public class ComponentSerializer implements Serializer<Component, String> {
 
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
-    private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacyAmpersand();
+    private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.builder()
+            .character('&')
+            .hexCharacter('#')
+            .hexColors()
+            .build();
+
+    /**
+     * Replace §-style color codes with '&'
+     *
+     * @param text the input text
+     * @return the processed text
+     */
+    private static String replaceHexColorCodes(String text) {
+        return text.replace('§', '&');
+    }
 
     @Override
     public String serialize(Component component) {
-        // Attempt to determine the format of the original text
-        String plainText = legacySerializer.serialize(component);
-
-        if (isLegacyFormat(plainText)) {
-            return legacySerializer.serialize(component); // Retain a legacy format
-        }
-
-        return miniMessage.serialize(component); // Otherwise, use MiniMessage
+        return miniMessage.serialize(component);
     }
 
+    // This method has been heavily inspired by
+    // https://github.com/alexdev03/UnlimitedNametags/blob/main/src/main/java/org/alexdev/unlimitednametags/config/Formatter.java
     @Override
     public Component deserialize(String string) {
-        if (isLegacyFormat(string)) {
-            return legacySerializer.deserialize(string);
-        } else {
-            return miniMessage.deserialize(string);
-        }
-    }
+        // Universal deserialization logic
+        // Step 1: Convert string to legacy component
+        String legacy = legacySerializer.serialize(legacySerializer.deserialize(replaceHexColorCodes(string)));
 
-    private boolean isLegacyFormat(String string) {
-        // Check for legacy formatting codes
-        return string.contains("&") || string.contains("§");
+        // Step 2: Convert a legacy component to MiniMessage string
+        String miniMessageString = miniMessage.serialize(legacySerializer.deserialize(legacy))
+                .replace("\\<", "<")
+                .replace("\\", "");
+
+        // Step 3: Deserialize MiniMessage string into a Component
+        return miniMessage.deserialize(miniMessageString);
     }
 }
