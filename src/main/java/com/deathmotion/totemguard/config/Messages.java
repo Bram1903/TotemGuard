@@ -23,11 +23,16 @@ import de.exlll.configlib.Configuration;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 
+import net.kyori.adventure.text.minimessage.MiniMessage;
+
 @SuppressWarnings("FieldMayBeFinal")
 @Configuration
 @Getter
 public class Messages {
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
     @Comment("\nPrefix: The prefix for all messages.")
-    private Component prefix = Component.text("<gold><bold>TG</bold></gold> <dark_gray>»</dark_gray> ");
+    private Component prefix = MINI_MESSAGE.deserialize("<gold><bold>TG</bold></gold> <dark_gray>»</dark_gray> ");
 }
+
 
