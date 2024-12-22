@@ -26,20 +26,22 @@ import org.bukkit.plugin.java.JavaPlugin;
 @Getter
 public final class TotemGuard extends JavaPlugin {
 
+    @Getter
+    private static TotemGuard instance;
+
     private ConfigManager configManager;
     private MessengerService messengerService;
 
     @Override
     public void onEnable() {
+        instance = this;
+
         configManager = new ConfigManager(this);
         messengerService = new MessengerService(this);
-
-        getServer().getConsoleSender().sendMessage(messengerService.getPrefix());
-        getLogger().info("TotemGuard has been enabled!");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("TotemGuard has been disabled!");
+
     }
 }

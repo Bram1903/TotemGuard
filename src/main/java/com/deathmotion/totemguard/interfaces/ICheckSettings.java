@@ -16,19 +16,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.config;
+package com.deathmotion.totemguard.interfaces;
 
-import de.exlll.configlib.Comment;
-import de.exlll.configlib.Configuration;
-import lombok.Getter;
+import net.kyori.adventure.text.Component;
 
-@SuppressWarnings("FieldMayBeFinal")
-@Configuration
-@Getter
-public class Settings {
-    @Comment("Debug: Enables debug mode (Advanced Users Only).")
-    private boolean Debug = false;
+import java.util.List;
 
-    @Comment("\nBypass: Weather or not players with the permission 'totemguard.bypass' can bypass checks.")
-    private boolean Bypass = false;
+public interface ICheckSettings {
+    boolean isEnabled();
+
+    boolean isPunishable();
+
+    int getPunishmentDelayInSeconds();
+
+    int getMaxViolations();
+
+    Component getCheckAlertMessage();
+
+    List<String> getPunishmentCommands();
 }

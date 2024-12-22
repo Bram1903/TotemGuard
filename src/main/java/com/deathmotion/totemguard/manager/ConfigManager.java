@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.config.Checks;
 import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
@@ -38,6 +39,7 @@ public class ConfigManager {
     private final TotemGuard plugin;
 
     private Settings settings;
+    private Checks checks;
     private Messages messages;
 
     public ConfigManager(TotemGuard plugin) {
@@ -58,11 +60,16 @@ public class ConfigManager {
     private void loadConfigurations() {
         YamlConfigurationProperties properties = createYamlProperties();
         settings = loadConfigFile(getSettingsFile(), Settings.class, properties, "Failed to load config file");
+        checks = loadConfigFile(getChecksFile(), Checks.class, properties, "Failed to load checks file");
         messages = loadConfigFile(getMessagesFile(), Messages.class, properties, "Failed to load messages file");
     }
 
     private File getSettingsFile() {
         return new File(plugin.getDataFolder(), "config.yml");
+    }
+
+    private File getChecksFile() {
+        return new File(plugin.getDataFolder(), "checks.yml");
     }
 
     private File getMessagesFile() {

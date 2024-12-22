@@ -16,19 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.config;
+package com.deathmotion.totemguard.messenger.impl;
 
-import de.exlll.configlib.Comment;
-import de.exlll.configlib.Configuration;
-import lombok.Getter;
+import com.deathmotion.totemguard.manager.ConfigManager;
+import net.kyori.adventure.text.Component;
 
-@SuppressWarnings("FieldMayBeFinal")
-@Configuration
-@Getter
-public class Settings {
-    @Comment("Debug: Enables debug mode (Advanced Users Only).")
-    private boolean Debug = false;
+public class AlertMessageService {
+    private final ConfigManager configManager;
 
-    @Comment("\nBypass: Weather or not players with the permission 'totemguard.bypass' can bypass checks.")
-    private boolean Bypass = false;
+    public AlertMessageService(ConfigManager configManager) {
+        this.configManager = configManager;
+    }
+
+    public Component createAlert() {
+        return configManager.getMessages().getAlertFormat();
+    }
 }

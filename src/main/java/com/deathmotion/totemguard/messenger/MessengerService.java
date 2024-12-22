@@ -20,16 +20,23 @@ package com.deathmotion.totemguard.messenger;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.manager.ConfigManager;
+import com.deathmotion.totemguard.messenger.impl.AlertMessageService;
 import net.kyori.adventure.text.Component;
 
 public class MessengerService {
     private final ConfigManager configManager;
+    private final AlertMessageService alertMessageService;
 
     public MessengerService(TotemGuard totemGuard) {
         this.configManager = totemGuard.getConfigManager();
+        this.alertMessageService = new AlertMessageService(configManager);
     }
 
     public Component getPrefix() {
         return configManager.getMessages().getPrefix();
+    }
+
+    public Component createAlert() {
+        return alertMessageService.createAlert();
     }
 }

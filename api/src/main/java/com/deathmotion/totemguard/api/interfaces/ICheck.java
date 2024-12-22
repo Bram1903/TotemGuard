@@ -16,19 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.config;
+package com.deathmotion.totemguard.api.interfaces;
 
-import de.exlll.configlib.Comment;
-import de.exlll.configlib.Configuration;
-import lombok.Getter;
-
-@SuppressWarnings("FieldMayBeFinal")
-@Configuration
-@Getter
-public class Settings {
-    @Comment("Debug: Enables debug mode (Advanced Users Only).")
-    private boolean Debug = false;
-
-    @Comment("\nBypass: Weather or not players with the permission 'totemguard.bypass' can bypass checks.")
-    private boolean Bypass = false;
+public interface ICheck {
+    String getCheckName();
+    String getDescription();
+    boolean isExperimental();
+    int getViolations();
 }
