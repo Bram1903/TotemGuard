@@ -21,18 +21,36 @@ package com.deathmotion.totemguard.config.serializers;
 import de.exlll.configlib.Serializer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class ComponentSerializer implements Serializer<Component, String> {
 
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacyAmpersand();
 
     @Override
     public String serialize(Component component) {
-        return miniMessage.serialize(component);
+        // Attempt to determine the format of the original text
+        String plainText = legacySerializer.serialize(component);
+
+        if (isLegacyFormat(plainText)) {
+            return legacySerializer.serialize(component); // Retain a legacy format
+        }
+
+        return miniMessage.serialize(component); // Otherwise, use MiniMessage
     }
 
     @Override
     public Component deserialize(String string) {
-        return miniMessage.deserialize(string);
+        if (isLegacyFormat(string)) {
+            return legacySerializer.deserialize(string);
+        } else {
+            return miniMessage.deserialize(string);
+        }
+    }
+
+    private boolean isLegacyFormat(String string) {
+        // Check for legacy formatting codes
+        return string.contains("&") || string.contains("§");
     }
 }
