@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.checks.impl.misc;
 
+import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
@@ -25,6 +26,7 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -56,19 +58,28 @@ public class ClientBrand extends Check implements PacketCheck {
                 brand = new String(minusLength).replace(" (Velocity)", ""); //removes velocity's brand suffix
                 brand = ChatColor.stripColor(brand); //strip color codes from client brand
 
-                // TODO: Implement this method
-                //announceBrand(player.bukkitPlayer, brand);
+                announceBrand(brand);
             }
 
             hasBrand = true;
         }
     }
 
-    private void announceBrand(Player player, String brand) {
+    private void announceBrand(String brand) {
+        if (!settings.isAnnounceClientBrand()) return;
+
+        Component message = TotemGuard.getInstance().getConfigManager().getMessages().getAlertBrand()
+                .replaceText(builder -> builder
+                        .matchLiteral("%player%")
+                        .replacement(player.getName())
+                        .matchLiteral("%brand%")
+                        .replacement(brand)
+                );
+
         // sendMessage is async safe while broadcast isn't due to adventure
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (player.hasPermission("TotemGuard.Alerts")) {
-                // Finish sending the message to online players
+            if (onlinePlayer.hasPermission("TotemGuard.Brand")) {
+                onlinePlayer.sendMessage(message);
             }
         }
     }

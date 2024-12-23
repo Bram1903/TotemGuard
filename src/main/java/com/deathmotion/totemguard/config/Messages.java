@@ -31,16 +31,15 @@ public class Messages {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     @Comment("Prefix: The prefix for all messages.")
-    private Component prefix = MINI_MESSAGE.deserialize("<gold><bold>TG</bold></gold> <dark_gray>»</dark_gray>");
+    private Component Prefix = MINI_MESSAGE.deserialize("<gold><bold>TG</bold></gold> <dark_gray>»</dark_gray>");
 
     @Comment("\nAlert Format: The format for all alerts.")
-    private Component alertFormat = MINI_MESSAGE.deserialize("<click:run_command:'/tp %player%'><hover:show_text:'<gray>TPS: </gray><gold>%tps%</gold><dark_gray> |</dark_gray><gray> Client Version: </gray><gold>%client_version%</gold><dark_gray> |</dark_gray><gray> Client Brand: </gray><gold>%client_brand%</gold><br><br><gray>Player: </gray><gold>%player%</gold><br><gray>Ping: </gray><gold>%ping%ms</gold><br><br><gray>Check: </gray><gold>%check_name%</gold><br><gray>Description: </gray><gold>%check_description</gold><br><gray>Server: </gray><gold>%server%</gold><br><br>%check_details%<br><br><gray>Click to </gray><gold>teleport </gold><gray>to %player%.'>%prefix% <yellow>%player%</yellow><gray> failed </gray><gold>%check_name%</gold><white> </white><gray>VL[</gray><gold>%violations%/%max_violations%</gold><gray>]\n");
+    private Component AlertFormat = MINI_MESSAGE.deserialize("<click:run_command:'/tp %player%'><hover:show_text:'<gray>TPS: </gray><gold>%tps%</gold><dark_gray> |</dark_gray><gray> Client Version: </gray><gold>%client_version%</gold><dark_gray> |</dark_gray><gray> Client Brand: </gray><gold>%client_brand%</gold><br><br><gray>Player: </gray><gold>%player%</gold><br><gray>Ping: </gray><gold>%ping%ms</gold><br><br><gray>Check: </gray><gold>%check_name%</gold><br><gray>Description: </gray><gold>%check_description</gold><br><gray>Server: </gray><gold>%server%</gold><br><br>%check_details%<br><br><gray>Click to </gray><gold>teleport </gold><gray>to %player%.'>%prefix% <yellow>%player%</yellow><gray> failed </gray><gold>%check_name%</gold><white> </white><gray>VL[</gray><gold>%violations%/%max_violations%</gold><gray>]\n");
 
     @Comment("\nAlerts Enabled: Message when alerts are enabled.")
-    private Component alertsEnabled = MINI_MESSAGE.deserialize("%prefix% <green>Alerts enabled");
-
-    @Comment("Alerts Disabled: Message when alerts are disabled.")
-    private Component alertsDisabled = MINI_MESSAGE.deserialize("%prefix% <red>Alerts disabled");
+    private Component AlertsEnabled = MINI_MESSAGE.deserialize("%prefix% <green>Alerts enabled");
+    private Component AlertsDisabled = MINI_MESSAGE.deserialize("%prefix% <red>Alerts disabled");
+    private Component AlertBrand = MINI_MESSAGE.deserialize("%prefix% <gold>%player%</gold> joined using: <gold>%client_brand%</gold>");
 }
 
 
