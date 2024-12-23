@@ -34,7 +34,7 @@ public class TotemPlayer implements TotemUser {
     private final UUID uniqueId;
     private final User user;
 
-    private final CheckManager checkManager;
+    public final CheckManager checkManager;
 
     @Nullable
     public Player bukkitPlayer;

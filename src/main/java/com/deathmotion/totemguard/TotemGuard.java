@@ -18,8 +18,13 @@
 
 package com.deathmotion.totemguard;
 
+import com.deathmotion.totemguard.events.packets.PacketConfigurationListener;
+import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
+import com.deathmotion.totemguard.manager.AlertManagerImpl;
 import com.deathmotion.totemguard.manager.ConfigManager;
+import com.deathmotion.totemguard.manager.PlayerDataManager;
 import com.deathmotion.totemguard.messenger.MessengerService;
+import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,15 +34,17 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
-    private ConfigManager configManager;
-    private MessengerService messengerService;
+    private final ConfigManager configManager = new ConfigManager(this);
+    private final MessengerService messengerService = new MessengerService(this);
+    private final AlertManagerImpl alertManager = new AlertManagerImpl(this);
+    private final PlayerDataManager playerDataManager = new PlayerDataManager();
 
     @Override
     public void onEnable() {
         instance = this;
 
-        configManager = new ConfigManager(this);
-        messengerService = new MessengerService(this);
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketConfigurationListener());
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
     }
 
     @Override

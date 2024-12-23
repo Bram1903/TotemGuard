@@ -39,7 +39,7 @@ public class Messages {
     @Comment("\nAlerts Enabled: Message when alerts are enabled.")
     private Component alertsEnabled = MINI_MESSAGE.deserialize("%prefix% <green>Alerts enabled");
 
-    @Comment("\nAlerts Disabled: Message when alerts are disabled.")
+    @Comment("Alerts Disabled: Message when alerts are disabled.")
     private Component alertsDisabled = MINI_MESSAGE.deserialize("%prefix% <red>Alerts disabled");
 }
 

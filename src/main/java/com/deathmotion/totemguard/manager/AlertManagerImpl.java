@@ -79,4 +79,8 @@ public class AlertManagerImpl implements AlertManager {
     public boolean hasAlertsEnabled(Player player) {
         return enabledAlerts.containsKey(player.getUniqueId());
     }
+
+    public void handlePlayerQuit(Player player) {
+        enabledAlerts.remove(player.getUniqueId());
+    }
 }

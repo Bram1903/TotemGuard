@@ -40,15 +40,12 @@ public class ClientBrand extends Check implements PacketCheck {
 
     @Override
     public void onPacketReceive(final PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE && event.getPacketType() != PacketType.Configuration.Client.PLUGIN_MESSAGE) {
-            return;
-        }
-
+        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE) return;
         WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
         handle(packet.getChannelName(), packet.getData());
     }
 
-    private void handle(String channel, byte[] data) {
+    public void handle(String channel, byte[] data) {
         if (channel.equalsIgnoreCase("minecraft:brand") || channel.equals("MC|Brand")) {
             if (data.length > 64 || data.length == 0) {
                 brand = "sent " + data.length + " bytes as brand";
