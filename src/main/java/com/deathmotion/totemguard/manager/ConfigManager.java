@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Checks;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.Webhooks;
 import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
@@ -40,6 +41,7 @@ public class ConfigManager {
     private Settings settings;
     private Checks checks;
     private Messages messages;
+    private Webhooks webhooks;
 
     public ConfigManager(TotemGuard plugin) {
         this.plugin = plugin;
@@ -61,6 +63,7 @@ public class ConfigManager {
         settings = loadConfigFile(getSettingsFile(), Settings.class, properties, "Failed to load config file");
         checks = loadConfigFile(getChecksFile(), Checks.class, properties, "Failed to load checks file");
         messages = loadConfigFile(getMessagesFile(), Messages.class, properties, "Failed to load messages file");
+        webhooks = loadConfigFile(getWebhookFile(), Webhooks.class, properties, "Failed to load webhooks file");
     }
 
     private File getSettingsFile() {
@@ -73,6 +76,10 @@ public class ConfigManager {
 
     private File getMessagesFile() {
         return new File(plugin.getDataFolder(), "messages.yml");
+    }
+
+    private File getWebhookFile() {
+        return new File(plugin.getDataFolder(), "webhook.yml");
     }
 
     private YamlConfigurationProperties createYamlProperties() {

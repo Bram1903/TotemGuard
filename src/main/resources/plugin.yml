@@ -10,3 +10,4 @@ depend:
   - packetevents
 libraries:
   - de.exlll:configlib-paper:${configlibVersion}
+  - club.minnced:discord-webhooks:${discordWebhooksVersion}

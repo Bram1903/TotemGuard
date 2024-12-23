@@ -20,10 +20,7 @@ package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.events.packets.PacketConfigurationListener;
 import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
-import com.deathmotion.totemguard.manager.AlertManagerImpl;
-import com.deathmotion.totemguard.manager.ConfigManager;
-import com.deathmotion.totemguard.manager.PlayerDataManager;
-import com.deathmotion.totemguard.manager.PunishmentManager;
+import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
@@ -39,6 +36,8 @@ public final class TotemGuard extends JavaPlugin {
     private final MessengerService messengerService = new MessengerService(this);
     private final AlertManagerImpl alertManager = new AlertManagerImpl(this);
     private final PunishmentManager punishmentManager = new PunishmentManager(this);
+    private final DiscordManager discordManager = new DiscordManager(this);
+
     private final PlayerDataManager playerDataManager = new PlayerDataManager();
 
     @Override

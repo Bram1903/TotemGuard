@@ -5,12 +5,14 @@ lombok = "1.18.36"
 shadow = "8.3.5"
 run-paper = "2.3.1"
 configlib = "4.5.0"
+discord-webhooks = "0.8.0"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
 configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
+discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.ref = "discord-webhooks" }
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

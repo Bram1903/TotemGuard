@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.PunishEvent;
 import com.deathmotion.totemguard.checks.Check;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.kyori.adventure.text.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +40,9 @@ public class PunishmentManager {
         this.plugin = plugin;
     }
 
-    public void punishPlayer(Check check) {
+    public void punishPlayer(Check check, Component details) {
         if (check.getCheckSettings().isPunishable()) return;
-        if (check.getViolations().get() < check.getCheckSettings().getMaxViolations()) return;
+        if (check.getViolations() < check.getCheckSettings().getMaxViolations()) return;
         if (toBePunished.contains(check.getPlayer().getUniqueId())) return;
 
         if (check.getSettings().isAPI()) {
@@ -51,24 +52,25 @@ public class PunishmentManager {
         }
 
         toBePunished.add(check.getPlayer().getUniqueId());
-        startPunishment(check);
+        startPunishment(check, details);
     }
 
-    private void startPunishment(Check check) {
+    private void startPunishment(Check check, Component details) {
         int delay = check.getCheckSettings().getPunishmentDelayInSeconds();
         if (delay <= 0) {
-            executePunishment(check);
+            executePunishment(check, details);
             toBePunished.remove(check.getPlayer().getUniqueId());
         } else {
             FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
-                executePunishment(check);
+                executePunishment(check, details);
                 toBePunished.remove(check.getPlayer().getUniqueId());
             }, delay, TimeUnit.SECONDS);
         }
     }
 
-    private void executePunishment(Check check) {
+    private void executePunishment(Check check, Component details) {
         runPunishmentCommands(check);
+        plugin.getDiscordManager().sendPunishment(check, details);
     }
 
     private void runPunishmentCommands(Check check) {
@@ -82,7 +84,7 @@ public class PunishmentManager {
                     .replace("%player%", check.getPlayer().getUser().getName())
                     .replace("%uuid%", check.getPlayer().getUser().getUUID().toString())
                     .replace("%check_name%", check.getCheckName())
-                    .replace("%violations%", String.valueOf(check.getViolations().get()))
+                    .replace("%violations%", String.valueOf(check.getViolations()))
                     .replace("%max_violations%", String.valueOf(check.getCheckSettings().getMaxViolations()))
                     .replace("%server_name%", check.getSettings().getServer());
 

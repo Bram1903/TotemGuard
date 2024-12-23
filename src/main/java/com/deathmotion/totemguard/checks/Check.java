@@ -70,7 +70,7 @@ public class Check implements AbstractCheck, Reloadable {
             this.violations.incrementAndGet();
 
             TotemGuard.getInstance().getAlertManager().sendAlert(this, details);
-            TotemGuard.getInstance().getPunishmentManager().punishPlayer(this);
+            TotemGuard.getInstance().getPunishmentManager().punishPlayer(this, details);
         });
     }
 

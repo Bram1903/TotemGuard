@@ -22,7 +22,8 @@ import lombok.Getter;
 
 @Getter
 public enum Library {
-    CONFIGLIB("de.exlll", "configlib-yaml", "4.5.0");
+    CONFIGLIB("de.exlll", "configlib-yaml", "4.5.0"),
+    DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0");
 
     private final String group;
     private final String name;
