@@ -16,27 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.bootstrap;
+package com.deathmotion.totemguard.messaging;
 
-import lombok.Getter;
+import net.kyori.adventure.text.Component;
+import org.jetbrains.annotations.NotNull;
 
-@Getter
-public enum Library {
-    CONFIGLIB("de.exlll", "configlib-yaml", "4.5.0"),
-    DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0"),
-    LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE");
+public interface ProxyAlertMessenger {
+    void start();
 
-    private final String group;
-    private final String name;
-    private final String version;
+    void stop();
 
-    Library(String group, String name, String version) {
-        this.group = group;
-        this.name = name;
-        this.version = version;
-    }
-
-    public String getMavenDependency() {
-        return String.format("%s:%s:%s", group, name, version);
-    }
+    void sendAlert(@NotNull Component alert);
 }

@@ -21,9 +21,14 @@ package com.deathmotion.totemguard;
 import com.deathmotion.totemguard.events.packets.PacketConfigurationListener;
 import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.manager.*;
+import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
+import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
+import lombok.Setter;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 @Getter
@@ -40,16 +45,29 @@ public final class TotemGuard extends JavaPlugin {
 
     private final PlayerDataManager playerDataManager = new PlayerDataManager();
 
+    @Setter
+    private ProxyAlertMessenger proxyMessenger;
+
     @Override
     public void onEnable() {
         instance = this;
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketConfigurationListener());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
+
+        proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
     }
 
     @Override
     public void onDisable() {
+        if (proxyMessenger != null) proxyMessenger.stop();
+    }
 
+    public void debug(String message) {
+        if (configManager.getSettings().isDebug()) {
+            String debugMessage = "[TG DEBUG] " + message;
+            getLogger().info(debugMessage);
+            Bukkit.broadcast(Component.text(debugMessage), "TotemGuard.Debug");
+        }
     }
 }

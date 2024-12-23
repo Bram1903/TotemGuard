@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.config.Webhooks;
 import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
+import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -55,6 +56,7 @@ public class ConfigManager {
     public void reload() {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             loadConfigurations();
+            setupProxyMessenger();
         });
     }
 
@@ -64,6 +66,14 @@ public class ConfigManager {
         checks = loadConfigFile(getChecksFile(), Checks.class, properties, "Failed to load checks file");
         messages = loadConfigFile(getMessagesFile(), Messages.class, properties, "Failed to load messages file");
         webhooks = loadConfigFile(getWebhookFile(), Webhooks.class, properties, "Failed to load webhooks file");
+    }
+
+    private void setupProxyMessenger() {
+        plugin.setProxyMessenger(AlertMessengerRegistry.getMessenger(
+                settings.getProxy().getMethod(),
+                plugin
+        ).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!")));
+        plugin.getProxyMessenger().start();
     }
 
     private File getSettingsFile() {

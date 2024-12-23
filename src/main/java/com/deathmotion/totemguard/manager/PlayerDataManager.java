@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.models.TotemPlayer;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -35,11 +34,6 @@ public class PlayerDataManager {
     public final Collection<User> exemptUsers = Collections.synchronizedCollection(new HashSet<>());
     private final ConcurrentHashMap<User, TotemPlayer> playerDataMap = new ConcurrentHashMap<>();
 
-    public TotemPlayer getPlayer(final Player player) {
-        User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
-        return playerDataMap.get(user);
-    }
-
     public boolean shouldCheck(User user) {
         if (exemptUsers.contains(user)) return false;
 
@@ -54,11 +48,7 @@ public class PlayerDataManager {
         }
 
         // Is a Geyser (Bedrock) player
-        if (user.getUUID().getMostSignificantBits() != 0L) {
-            return false;
-        }
-
-        return true;
+        return user.getUUID().getMostSignificantBits() == 0L;
     }
 
     @Nullable
@@ -75,13 +65,5 @@ public class PlayerDataManager {
 
     public void remove(final User player) {
         playerDataMap.remove(player);
-    }
-
-    public Collection<TotemPlayer> getEntries() {
-        return playerDataMap.values();
-    }
-
-    public int size() {
-        return playerDataMap.size();
     }
 }

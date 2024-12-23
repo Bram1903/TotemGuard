@@ -13,6 +13,7 @@ dependencies {
     compileOnly(libs.paper)
     compileOnly(libs.packetevents.spigot)
     compileOnly(libs.configlib.yaml)
+    compileOnly(libs.lettuce)
     compileOnly(libs.discord.webhooks)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
@@ -68,13 +69,15 @@ tasks {
         inputs.property("description", project.description)
         inputs.property("configlibVersion", libs.versions.configlib.get())
         inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
+        inputs.property("lettuceVersion", libs.versions.lettuce.get())
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
                 "version" to ext["versionNoHash"],
                 "description" to project.description,
                 "configlibVersion" to libs.versions.configlib.get(),
-                "discordWebhooksVersion" to libs.versions.discord.webhooks.get()
+                "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
+                "lettuceVersion" to libs.versions.lettuce.get()
             )
         }
     }

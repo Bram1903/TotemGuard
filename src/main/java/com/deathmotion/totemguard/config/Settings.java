@@ -38,6 +38,43 @@ public class Settings {
     @Comment("Announce client brand: Weather or not the client brand should be announced upon a player joining.")
     private boolean AnnounceClientBrand = false;
 
+    @Comment("\nProxy Alert Settings:")
+    private ProxyAlerts Proxy = new ProxyAlerts();
+
+    @Configuration
+    @Getter
+    public static class ProxyAlerts {
+        @Comment({
+                "Proxy messaging method",
+                "How should be send and receive messages from sibling servers?",
+                "Options:",
+                " - plugin-messaging (Will use plugin messaging through player connections.)",
+                " - redis (Requires further configuration in the 'redis' section below.)"
+        })
+        private String Method = "plugin-messaging";
+
+        @Comment("\nChannel: The channel to send and receive alerts.")
+        private String Channel = "totemguard";
+
+        @Comment("\nWhen enabled, the plugin will send alerts to other servers connected to the proxy.")
+        private boolean Send = true;
+
+        @Comment("\nWhen enabled, the plugin will receive alerts from other servers connected to the proxy.")
+        private boolean Receive = true;
+
+        @Comment("\nRedis Configuration")
+        private RedisConfiguration Redis = new RedisConfiguration();
+
+        @Configuration
+        @Getter
+        public static class RedisConfiguration {
+            private String Host = "localhost";
+            private int Port = 6379;
+            private String Username = "default";
+            private String Password = "yourPassword";
+        }
+    }
+
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean Debug = false;
 }
