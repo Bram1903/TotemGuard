@@ -25,9 +25,12 @@ import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.interfaces.ICheckSettings;
 import com.deathmotion.totemguard.interfaces.Reloadable;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 // Class is heavily expired from https://github.com/Tecnio/antihaxerman/blob/master/src/main/java/me/tecnio/ahm/check/Check.java
 @Getter
@@ -40,8 +43,7 @@ public class Check implements AbstractCheck, Reloadable {
     private String description;
     private boolean experimental;
 
-    private int violations;
-    private int maxViolations;
+    private final AtomicInteger violations = new AtomicInteger();
 
     public Check(TotemPlayer player) {
         this.player = player;
@@ -53,7 +55,6 @@ public class Check implements AbstractCheck, Reloadable {
             this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
             this.description = checkData.description();
             this.experimental = checkData.experimental();
-            this.maxViolations = checkSettings.getMaxViolations();
         }
     }
 
@@ -61,14 +62,16 @@ public class Check implements AbstractCheck, Reloadable {
     public void reload() {
         this.settings = TotemGuard.getInstance().getConfigManager().getSettings();
         this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
-        this.maxViolations = checkSettings.getMaxViolations();
     }
 
     public void fail(Component details) {
-        if (!shouldFail()) return;
+        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (O) -> {
+            if (!shouldFail()) return;
+            this.violations.incrementAndGet();
 
-        violations++;
-        TotemGuard.getInstance().getMessengerService().createAlert(this, details);
+            TotemGuard.getInstance().getAlertManager().sendAlert(this, details);
+            TotemGuard.getInstance().getPunishmentManager().punishPlayer(this);
+        });
     }
 
     public boolean shouldFail() {
@@ -79,5 +82,10 @@ public class Check implements AbstractCheck, Reloadable {
         }
 
         return true;
+    }
+
+    @Override
+    public int getMaxViolations() {
+        return checkSettings.getPunishmentDelayInSeconds();
     }
 }
