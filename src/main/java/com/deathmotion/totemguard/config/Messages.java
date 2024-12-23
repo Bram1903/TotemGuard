@@ -36,7 +36,7 @@ public class Messages {
     @Comment("\nAlert Format: The format for all alerts.")
     private Component AlertFormat = MINI_MESSAGE.deserialize("<click:run_command:'/tp %player%'><hover:show_text:'<gray>TPS: </gray><gold>%tps%</gold><dark_gray> |</dark_gray><gray> Client Version: </gray><gold>%client_version%</gold><dark_gray> |</dark_gray><gray> Client Brand: </gray><gold>%client_brand%</gold><br><br><gray>Player: </gray><gold>%player%</gold><br><gray>Ping: </gray><gold>%ping%ms</gold><br><br><gray>Check: </gray><gold>%check_name%</gold><br><gray>Description: </gray><gold>%check_description</gold><br><gray>Server: </gray><gold>%server%</gold><br><br>%check_details%<br><br><gray>Click to </gray><gold>teleport </gold><gray>to %player%.'>%prefix% <yellow>%player%</yellow><gray> failed </gray><gold>%check_name%</gold><white> </white><gray>VL[</gray><gold>%violations%/%max_violations%</gold><gray>]\n");
 
-    @Comment("\nAlerts Enabled: Message when alerts are enabled.")
+    @Comment("\n")
     private Component AlertsEnabled = MINI_MESSAGE.deserialize("%prefix% <green>Alerts enabled");
     private Component AlertsDisabled = MINI_MESSAGE.deserialize("%prefix% <red>Alerts disabled");
     private Component AlertBrand = MINI_MESSAGE.deserialize("%prefix% <gold>%player%</gold> joined using: <gold>%client_brand%</gold>");

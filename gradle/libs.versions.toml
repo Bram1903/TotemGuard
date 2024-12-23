@@ -10,7 +10,7 @@ configlib = "4.5.0"
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
-configlib-paper = { group = "de.exlll", name = "configlib-paper", version.ref = "configlib" }
+configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

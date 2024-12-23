@@ -12,7 +12,7 @@ dependencies {
 
     compileOnly(libs.paper)
     compileOnly(libs.packetevents.spigot)
-    compileOnly(libs.configlib.paper)
+    compileOnly(libs.configlib.yaml)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 }

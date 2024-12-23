@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.config.Checks;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
-import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -77,11 +76,11 @@ public class ConfigManager {
     }
 
     private YamlConfigurationProperties createYamlProperties() {
-        return ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder()
+        return YamlConfigurationProperties.newBuilder()
                 .charset(StandardCharsets.UTF_8)
                 .addSerializer(Component.class, new ComponentSerializer())
-                .outputNulls(true)
-                .inputNulls(false)
+                .outputNulls(false)
+                .inputNulls(true)
                 .header(createConfigHeader())
                 .build();
     }
