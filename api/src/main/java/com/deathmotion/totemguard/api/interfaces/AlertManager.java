@@ -18,14 +18,25 @@
 
 package com.deathmotion.totemguard.api.interfaces;
 
-import java.util.UUID;
+import org.bukkit.entity.Player;
 
-public interface TotemUser {
-    String getName();
+/**
+ * Interface for managing alerts.
+ */
+public interface AlertManager {
 
-    UUID getUniqueId();
+    /**
+     * Check if alerts are enabled for a player.
+     *
+     * @param player The player to check.
+     * @return True if alerts are enabled, false otherwise.
+     */
+    boolean hasAlertsEnabled(Player player);
 
-    String getBrand();
-
-    String getVersionName();
+    /**
+     * Enable or disable alerts for a player.
+     *
+     * @param player The player to toggle alerts for.
+     */
+    void toggleAlerts(Player player);
 }

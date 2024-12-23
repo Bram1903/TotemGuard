@@ -26,9 +26,15 @@ import lombok.Getter;
 @Configuration
 @Getter
 public class Settings {
-    @Comment("Debug: Enables debug mode (Advanced Users Only).")
-    private boolean Debug = false;
+    @Comment("API: Weather or not the API is enabled.")
+    private boolean API = true;
+
+    @Comment("\nServer Name: The name of the server. (Used for alerts, webhooks, API, etc.)")
+    private String Server = "Default";
 
     @Comment("\nBypass: Weather or not players with the permission 'totemguard.bypass' can bypass checks.")
     private boolean Bypass = false;
+
+    @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
+    private boolean Debug = false;
 }

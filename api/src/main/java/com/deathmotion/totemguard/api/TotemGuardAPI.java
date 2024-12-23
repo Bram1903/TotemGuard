@@ -16,16 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard;
+package com.deathmotion.totemguard.api;
 
-import com.deathmotion.totemguard.api.ITotemGuardAPI;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
-import com.deathmotion.totemguard.util.TGVersions;
 
-public class TotemGuardAPI implements ITotemGuardAPI {
-
-    @Override
-    public TGVersion getVersion() {
-        return TGVersions.CURRENT;
-    }
+/**
+ * This is the main API class for TotemGuard.
+ */
+public interface TotemGuardAPI {
+    /**
+     * Get the version of TotemGuard.
+     *
+     * @return The version of TotemGuard.
+     */
+    TGVersion getVersion();
 }

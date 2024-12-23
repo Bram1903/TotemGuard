@@ -50,7 +50,7 @@ public class BadPacketsA extends Check implements PacketCheck {
             return;
         }
 
-        flag(getCheckDetails(channel));
+        fail(getCheckDetails(channel));
     }
 
     private boolean isPluginMessage(PacketTypeCommon packetType) {
@@ -58,9 +58,9 @@ public class BadPacketsA extends Check implements PacketCheck {
     }
 
     private Component getCheckDetails(String channel) {
-        return config.getCheckAlertMessage()
+        return checkSettings.getCheckAlertMessage()
                 .replaceText(builder -> builder
                         .matchLiteral("%channel%")
-                        .replacement(Component.text(channel)));
+                        .replacement(channel));
     }
 }

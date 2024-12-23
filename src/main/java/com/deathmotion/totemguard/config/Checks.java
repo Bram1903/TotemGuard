@@ -32,13 +32,16 @@ import java.util.List;
 @Getter
 public class Checks {
 
-    @Comment("BadPacketsA")
+    @Comment("This command placeholder can be used by using %default_punishment% as a punishment command.")
+    private String DefaultPunishment = "ban %player% 1d [TotemGuard] Unfair Advantage";
+
+    @Comment("\nBadPacketsA")
     private BadPacketsA BadPacketsA = new BadPacketsA();
 
     public ICheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
             case "BadPacketsA" -> BadPacketsA;
-            default -> null;
+            default -> throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
         };
     }
 

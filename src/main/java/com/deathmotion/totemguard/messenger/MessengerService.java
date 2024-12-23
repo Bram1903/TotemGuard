@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.messenger;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.impl.AlertMessageService;
 import net.kyori.adventure.text.Component;
@@ -36,7 +37,17 @@ public class MessengerService {
         return configManager.getMessages().getPrefix();
     }
 
-    public Component createAlert() {
-        return alertMessageService.createAlert();
+    public Component toggleAlerts(boolean enabled) {
+        Component message = enabled
+                ? configManager.getMessages().getAlertsEnabled()
+                : configManager.getMessages().getAlertsDisabled();
+
+        return message.replaceText(builder ->
+                builder.matchLiteral("%prefix%").replacement(getPrefix())
+        );
+    }
+
+    public Component createAlert(Check check, Component details) {
+        return alertMessageService.createAlert(check, details);
     }
 }

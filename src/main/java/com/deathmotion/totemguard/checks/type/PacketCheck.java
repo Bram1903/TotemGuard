@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.checks.type;
 
-import com.deathmotion.totemguard.api.interfaces.ICheck;
+import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 
-public interface PacketCheck extends ICheck {
+public interface PacketCheck extends AbstractCheck {
     default void onPacketReceive(final PacketReceiveEvent event) {}
     default void onPacketSend(final PacketSendEvent event) {}
 }

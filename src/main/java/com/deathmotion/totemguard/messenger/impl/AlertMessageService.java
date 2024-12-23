@@ -18,8 +18,12 @@
 
 package com.deathmotion.totemguard.messenger.impl;
 
+import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.manager.ConfigManager;
+import com.deathmotion.totemguard.models.TotemPlayer;
+import io.github.retrooper.packetevents.util.SpigotReflectionUtil;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextReplacementConfig;
 
 public class AlertMessageService {
     private final ConfigManager configManager;
@@ -28,7 +32,39 @@ public class AlertMessageService {
         this.configManager = configManager;
     }
 
-    public Component createAlert() {
-        return configManager.getMessages().getAlertFormat();
+    public Component createAlert(Check check, Component details) {
+        // Get the alert format as a Component
+        Component alertTemplate = configManager.getMessages().getAlertFormat();
+
+        TotemPlayer player = check.getPlayer();
+
+        // Replace placeholders directly in the Component
+        return alertTemplate
+                .replaceText(createReplacement("%player%", player.getUser().getName()))
+                .replaceText(createReplacement("%tps%", String.format("%.2f", SpigotReflectionUtil.getTPS())))
+                .replaceText(createReplacement("%client_version%", player.getUser().getClientVersion().getReleaseName()))
+                .replaceText(createReplacement("%client_brand%", player.getBrand()))
+                .replaceText(createReplacement("%ping%", String.valueOf(player.bukkitPlayer.getPing())))
+                .replaceText(createReplacement("%check_name%", check.getCheckName()))
+                .replaceText(createReplacement("%check_description%", check.getDescription()))
+                .replaceText(createReplacement("%server%", check.getSettings().getServer()))
+                .replaceText(createReplacement("%check_details%", details))
+                .replaceText(createReplacement("%prefix%", configManager.getMessages().getPrefix()))
+                .replaceText(createReplacement("%violations%", String.valueOf(check.getViolations())))
+                .replaceText(createReplacement("%max_violations%", String.valueOf(check.getCheckSettings().getMaxViolations())));
+    }
+
+    private TextReplacementConfig createReplacement(String placeholder, String replacement) {
+        return TextReplacementConfig.builder()
+                .matchLiteral(placeholder)
+                .replacement(replacement)
+                .build();
+    }
+
+    private TextReplacementConfig createReplacement(String placeholder, Component replacement) {
+        return TextReplacementConfig.builder()
+                .matchLiteral(placeholder)
+                .replacement(replacement)
+                .build();
     }
 }

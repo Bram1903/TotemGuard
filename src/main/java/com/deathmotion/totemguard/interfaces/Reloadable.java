@@ -16,16 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.interfaces;
+package com.deathmotion.totemguard.interfaces;
 
-import java.util.UUID;
-
-public interface TotemUser {
-    String getName();
-
-    UUID getUniqueId();
-
-    String getBrand();
-
-    String getVersionName();
+public interface Reloadable {
+    void reload();
 }

@@ -35,6 +35,13 @@ public class Messages {
 
     @Comment("\nAlert Format: The format for all alerts.")
     private Component alertFormat = MINI_MESSAGE.deserialize("<click:run_command:'/tp %player%'><hover:show_text:'<gray>TPS: </gray><gold>%tps%</gold><dark_gray> |</dark_gray><gray> Client Version: </gray><gold>%client_version%</gold><dark_gray> |</dark_gray><gray> Client Brand: </gray><gold>%client_brand%</gold><br><br><gray>Player: </gray><gold>%player%</gold><br><gray>Ping: </gray><gold>%ping%ms</gold><br><br><gray>Check: </gray><gold>%check_name%</gold><br><gray>Description: </gray><gold>%check_description</gold><br><gray>Server: </gray><gold>%server%</gold><br><br>%check_details%<br><br><gray>Click to </gray><gold>teleport </gold><gray>to %player%.'>%prefix% <yellow>%player%</yellow><gray> failed </gray><gold>%check_name%</gold><white> </white><gray>VL[</gray><gold>%violations%/%max_violations%</gold><gray>]\n");
+
+    @Comment("\nAlerts Enabled: Message when alerts are enabled.")
+    private Component alertsEnabled = MINI_MESSAGE.deserialize("%prefix% <green>Alerts enabled");
+
+    @Comment("\nAlerts Disabled: Message when alerts are disabled.")
+    private Component alertsDisabled = MINI_MESSAGE.deserialize("%prefix% <red>Alerts disabled");
 }
+
 
 

@@ -19,23 +19,29 @@
 package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.api.interfaces.ICheck;
+import com.deathmotion.totemguard.api.events.FlagEvent;
+import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
+import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.interfaces.ICheckSettings;
+import com.deathmotion.totemguard.interfaces.Reloadable;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 
-// Class is heavily expired from https://github.com/Tecnio/AntiCheatBase/blob/master/src/main/java/me/tecnio/anticheat/check/Check.java
+// Class is heavily expired from https://github.com/Tecnio/antihaxerman/blob/master/src/main/java/me/tecnio/ahm/check/Check.java
 @Getter
-public class Check implements ICheck {
+public class Check implements AbstractCheck, Reloadable {
     protected final TotemPlayer player;
+    protected Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
+    protected ICheckSettings checkSettings;
 
     private String checkName;
-    protected ICheckSettings config;
     private String description;
     private boolean experimental;
 
     private int violations;
+    private int maxViolations;
 
     public Check(TotemPlayer player) {
         this.player = player;
@@ -44,13 +50,34 @@ public class Check implements ICheck {
         if (checkClass.isAnnotationPresent(CheckData.class)) {
             final CheckData checkData = checkClass.getAnnotation(CheckData.class);
             this.checkName = checkData.name();
-            this.config = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
+            this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
             this.description = checkData.description();
             this.experimental = checkData.experimental();
+            this.maxViolations = checkSettings.getMaxViolations();
         }
     }
 
-    public void flag(Component details) {
+    @Override
+    public void reload() {
+        this.settings = TotemGuard.getInstance().getConfigManager().getSettings();
+        this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
+        this.maxViolations = checkSettings.getMaxViolations();
+    }
+
+    public void fail(Component details) {
+        if (!shouldFail()) return;
+
         violations++;
+        TotemGuard.getInstance().getMessengerService().createAlert(this, details);
+    }
+
+    public boolean shouldFail() {
+        if (settings.isAPI()) {
+            FlagEvent event = new FlagEvent(player, this);
+            Bukkit.getPluginManager().callEvent(event);
+            if (event.isCancelled()) return false;
+        }
+
+        return true;
     }
 }

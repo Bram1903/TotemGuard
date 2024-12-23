@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.manager;
 
-import com.deathmotion.totemguard.api.interfaces.ICheck;
+import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public class CheckManager {
 
-    public ClassToInstanceMap<ICheck> allChecks;
+    public ClassToInstanceMap<AbstractCheck> allChecks;
     ClassToInstanceMap<PacketCheck> packetChecks;
 
     public CheckManager(TotemPlayer player) {
@@ -37,7 +37,7 @@ public class CheckManager {
                 .put(BadPacketsA.class, new BadPacketsA(player))
                 .build();
 
-        allChecks = new ImmutableClassToInstanceMap.Builder<ICheck>()
+        allChecks = new ImmutableClassToInstanceMap.Builder<AbstractCheck>()
                 .putAll(packetChecks)
                 .build();
     }

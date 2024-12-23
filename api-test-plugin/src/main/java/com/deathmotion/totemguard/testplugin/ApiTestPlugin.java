@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.testplugin;
 
-import com.deathmotion.totemguard.api.ITotemGuardAPI;
+import com.deathmotion.totemguard.api.TotemGuardAPI;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -27,11 +27,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 @Getter
 public final class ApiTestPlugin extends JavaPlugin {
 
-    ITotemGuardAPI api;
+    TotemGuardAPI api;
 
     @Override
     public void onEnable() {
-        RegisteredServiceProvider<ITotemGuardAPI> provider = Bukkit.getServicesManager().getRegistration(ITotemGuardAPI.class);
+        RegisteredServiceProvider<TotemGuardAPI> provider = Bukkit.getServicesManager().getRegistration(TotemGuardAPI.class);
         if (provider != null) {
             api = provider.getProvider();
             getLogger().info("TotemGuard API provider found.");

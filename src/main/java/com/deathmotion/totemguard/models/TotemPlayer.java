@@ -31,7 +31,7 @@ import java.util.UUID;
 
 @Getter
 public class TotemPlayer implements TotemUser {
-    private final UUID uuid;
+    private final UUID uniqueId;
     private final User user;
 
     private final CheckManager checkManager;
@@ -40,19 +40,29 @@ public class TotemPlayer implements TotemUser {
     public Player bukkitPlayer;
 
     public TotemPlayer(User user) {
-        this.uuid = user.getUUID();
+        this.uniqueId = user.getUUID();
         this.user = user;
 
         checkManager = new CheckManager(this);
     }
 
     public void pollData() {
-        if (uuid != null && this.bukkitPlayer == null) {
-            this.bukkitPlayer = Bukkit.getPlayer(uuid);
+        if (uniqueId != null && this.bukkitPlayer == null) {
+            this.bukkitPlayer = Bukkit.getPlayer(uniqueId);
         }
     }
 
-    public String getClientBrand() {
+    public String getBrand() {
         return checkManager.getPacketCheck(ClientBrand.class).getBrand();
+    }
+
+    @Override
+    public String getName() {
+        return user.getName();
+    }
+
+    @Override
+    public String getVersionName() {
+        return user.getClientVersion().getReleaseName();
     }
 }
