@@ -20,7 +20,7 @@ public class PacketConfigurationListener extends PacketListenerAbstract {
         if (event.getPacketType() == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             TotemPlayer player = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getUser());
             if (player == null) return;
-            //
+
             WrapperConfigClientPluginMessage wrapper = new WrapperConfigClientPluginMessage(event);
             String channelName = wrapper.getChannelName();
             byte[] data = wrapper.getData();

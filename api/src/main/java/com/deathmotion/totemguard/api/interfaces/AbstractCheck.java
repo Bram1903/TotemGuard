@@ -20,8 +20,12 @@ package com.deathmotion.totemguard.api.interfaces;
 
 public interface AbstractCheck {
     String getCheckName();
+
     String getDescription();
+
     boolean isExperimental();
+
     int getViolations();
+
     int getMaxViolations();
 }

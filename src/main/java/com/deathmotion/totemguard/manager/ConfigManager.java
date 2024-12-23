@@ -20,9 +20,9 @@ package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Checks;
-import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
+import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
 import de.exlll.configlib.ConfigLib;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;

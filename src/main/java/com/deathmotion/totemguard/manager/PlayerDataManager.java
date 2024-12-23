@@ -32,8 +32,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataManager {
-    private final ConcurrentHashMap<User, TotemPlayer> playerDataMap = new ConcurrentHashMap<>();
     public final Collection<User> exemptUsers = Collections.synchronizedCollection(new HashSet<>());
+    private final ConcurrentHashMap<User, TotemPlayer> playerDataMap = new ConcurrentHashMap<>();
 
     public TotemPlayer getPlayer(final Player player) {
         User user = PacketEvents.getAPI().getPlayerManager().getUser(player);

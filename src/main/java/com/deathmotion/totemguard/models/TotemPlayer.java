@@ -31,11 +31,10 @@ import java.util.UUID;
 
 @Getter
 public class TotemPlayer implements TotemUser {
-    private final UUID uniqueId;
-    private final User user;
-
     public final CheckManager checkManager;
 
+    private final UUID uniqueId;
+    private final User user;
     @Nullable
     public Player bukkitPlayer;
 

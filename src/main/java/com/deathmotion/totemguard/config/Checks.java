@@ -41,7 +41,8 @@ public class Checks {
     public ICheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
             case "BadPacketsA" -> BadPacketsA;
-            default -> throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
+            default ->
+                    throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
         };
     }
 
