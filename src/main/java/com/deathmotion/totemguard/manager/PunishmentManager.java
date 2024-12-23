@@ -60,7 +60,7 @@ public class PunishmentManager {
             executePunishment(check);
             toBePunished.remove(check.getPlayer().getUniqueId());
         } else {
-            FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (O) -> {
+            FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
                 executePunishment(check);
                 toBePunished.remove(check.getPlayer().getUniqueId());
             }, delay, TimeUnit.SECONDS);
@@ -89,11 +89,11 @@ public class PunishmentManager {
             processedCommands.add(processedCommand);
         }
 
-        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (O -> {
+        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
             for (String command : processedCommands) {
                 plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command);
             }
-        }));
+        });
     }
 
 }

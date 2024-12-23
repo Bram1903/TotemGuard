@@ -85,6 +85,11 @@ public class Check implements AbstractCheck, Reloadable {
     }
 
     @Override
+    public int getViolations() {
+        return violations.get();
+    }
+
+    @Override
     public int getMaxViolations() {
         return checkSettings.getPunishmentDelayInSeconds();
     }
