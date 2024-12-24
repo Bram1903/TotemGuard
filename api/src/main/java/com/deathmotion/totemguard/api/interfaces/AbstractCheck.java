@@ -28,4 +28,6 @@ public interface AbstractCheck {
     int getViolations();
 
     int getMaxViolations();
+
+    void reload();
 }

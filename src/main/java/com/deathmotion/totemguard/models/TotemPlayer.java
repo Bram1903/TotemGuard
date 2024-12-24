@@ -18,23 +18,23 @@
 
 package com.deathmotion.totemguard.models;
 
+import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.manager.CheckManager;
 import com.github.retrooper.packetevents.protocol.player.User;
-import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-@Getter
 public class TotemPlayer implements TotemUser {
     public final CheckManager checkManager;
 
-    private final UUID uniqueId;
-    private final User user;
+    public final UUID uniqueId;
+    public final User user;
+
     @Nullable
     public Player bukkitPlayer;
 
@@ -43,6 +43,11 @@ public class TotemPlayer implements TotemUser {
         this.user = user;
 
         checkManager = new CheckManager(this);
+    }
+
+    public void reload() {
+        // reload all checks
+        for (AbstractCheck value : checkManager.allChecks.values()) value.reload();
     }
 
     public void pollData() {
@@ -58,6 +63,11 @@ public class TotemPlayer implements TotemUser {
     @Override
     public String getName() {
         return user.getName();
+    }
+
+    @Override
+    public UUID getUniqueId() {
+        return uniqueId;
     }
 
     @Override

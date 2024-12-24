@@ -66,4 +66,8 @@ public class PlayerDataManager {
     public void remove(final User player) {
         playerDataMap.remove(player);
     }
+
+    public Collection<TotemPlayer> getEntries() {
+        return playerDataMap.values();
+    }
 }

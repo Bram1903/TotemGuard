@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.api.events.FlagEvent;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.interfaces.AbstractCheckSettings;
-import com.deathmotion.totemguard.interfaces.Reloadable;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
@@ -34,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 // Class is heavily expired from https://github.com/Tecnio/antihaxerman/blob/master/src/main/java/me/tecnio/ahm/check/Check.java
 @Getter
-public class Check implements AbstractCheck, Reloadable {
+public class Check implements AbstractCheck {
     protected final TotemPlayer player;
     protected Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
     protected AbstractCheckSettings checkSettings;
@@ -58,7 +57,6 @@ public class Check implements AbstractCheck, Reloadable {
         }
     }
 
-    @Override
     public void reload() {
         this.settings = TotemGuard.getInstance().getConfigManager().getSettings();
         this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);

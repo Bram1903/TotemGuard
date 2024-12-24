@@ -25,6 +25,8 @@ import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.config.Webhooks;
 import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
 import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
+import com.deathmotion.totemguard.models.TotemPlayer;
+import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -57,6 +59,11 @@ public class ConfigManager {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             loadConfigurations();
             setupProxyMessenger();
+
+            // Reload checks for all players
+            for (TotemPlayer totemPlayer : TotemGuard.getInstance().getPlayerDataManager().getEntries()) {
+                ChannelHelper.runInEventLoop(totemPlayer.user.getChannel(), totemPlayer::reload);
+            }
         });
     }
 
