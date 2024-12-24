@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class PunishmentManager {
     private final TotemGuard plugin;
@@ -61,11 +62,11 @@ public class PunishmentManager {
 
             toBePunished.add(totemPlayer.uuid());
 
-            long delayTicks = checkDetails.getPunishmentDelay() * 20L;
-            if (delayTicks <= 0) {
+            int delay = checkDetails.getPunishmentDelay();
+            if (delay <= 0) {
                 executePunishment(totemPlayer, checkDetails, prefix);
             } else {
-                return scheduleAndWaitPunishment(totemPlayer, checkDetails, prefix, delayTicks);
+                return scheduleAndWaitPunishment(totemPlayer, checkDetails, prefix, delay);
             }
             return true;
         }
@@ -73,7 +74,7 @@ public class PunishmentManager {
     }
 
     private void executePunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix) {
-        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             databaseService.savePunishment(totemPlayer, checkDetails);
             runPunishmentCommands(totemPlayer, checkDetails, prefix);
             discordManager.sendPunishment(totemPlayer, checkDetails);
@@ -82,17 +83,17 @@ public class PunishmentManager {
         });
     }
 
-    private boolean scheduleAndWaitPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix, long delayTicks) {
+    private boolean scheduleAndWaitPunishment(TotemPlayer totemPlayer, CheckDetails checkDetails, String prefix, int delay) {
         CountDownLatch latch = new CountDownLatch(1);
 
-        FoliaScheduler.getGlobalRegionScheduler().runDelayed(plugin, (o) -> {
+        FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
             databaseService.savePunishment(totemPlayer, checkDetails);
             runPunishmentCommands(totemPlayer, checkDetails, prefix);
             discordManager.sendPunishment(totemPlayer, checkDetails);
 
             toBePunished.remove(totemPlayer.uuid());
             latch.countDown();
-        }, delayTicks);
+        }, delay, TimeUnit.SECONDS);
 
         try {
             latch.await();
@@ -127,9 +128,11 @@ public class PunishmentManager {
                 .map(command -> command.replace("%default_punishment%", defaultPunishmentCommand))
                 .toList();
 
-        for (String command : punishmentCommands) {
-            String parsedCommand = PlaceholderUtil.replacePlaceholders(command, placeholders);
-            plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), parsedCommand);
-        }
+        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
+            for (String command : punishmentCommands) {
+                String parsedCommand = PlaceholderUtil.replacePlaceholders(command, placeholders);
+                plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), parsedCommand);
+            }
+        });
     }
 }
