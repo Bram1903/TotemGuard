@@ -41,6 +41,9 @@ public class Checks {
     @Comment("\nBadPacketsB")
     private BadPacketsB BadPacketsB = new BadPacketsB();
 
+    @Comment("\nBadPacketsC")
+    private BadPacketsC BadPacketsC = new BadPacketsC();
+
     public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
             case "BadPacketsA" -> BadPacketsA;
@@ -94,6 +97,14 @@ public class Checks {
 
         public BadPacketsB() {
             super(true, 20, 1, Component.text("Client Brand: ", NamedTextColor.GOLD).append(Component.text("%client_brand%", NamedTextColor.GRAY)));
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class BadPacketsC extends CheckSettings {
+        public BadPacketsC() {
+            super(true, 20, 3, Component.text("New Slot Change: ", NamedTextColor.GOLD).append(Component.text("%new_slot%", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Last Slot Change: ", NamedTextColor.GOLD).append(Component.text("%last_slot%", NamedTextColor.GRAY)))));
         }
     }
 }
