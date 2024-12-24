@@ -38,9 +38,13 @@ public class Checks {
     @Comment("\nBadPacketsA")
     private BadPacketsA BadPacketsA = new BadPacketsA();
 
+    @Comment("\nBadPacketsB")
+    private BadPacketsB BadPacketsB = new BadPacketsB();
+
     public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
             case "BadPacketsA" -> BadPacketsA;
+            case "BadPacketsB" -> BadPacketsB;
             default ->
                     throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
         };
@@ -77,6 +81,19 @@ public class Checks {
     public static class BadPacketsA extends CheckSettings {
         public BadPacketsA() {
             super(true, 20, 1, Component.text("Channel: ", NamedTextColor.GOLD).append(Component.text("%channel%", NamedTextColor.GRAY)));
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class BadPacketsB extends CheckSettings {
+        @Comment("\nBanned Client Brands: The list of client brands to flag.")
+        private List<String> BannedClientBrands = List.of(
+                "autototem"
+        );
+
+        public BadPacketsB() {
+            super(true, 20, 1, Component.text("Client Brand: ", NamedTextColor.GOLD).append(Component.text("%client_brand%", NamedTextColor.GRAY)));
         }
     }
 }
