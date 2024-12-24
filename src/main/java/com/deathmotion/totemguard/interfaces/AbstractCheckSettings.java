@@ -22,7 +22,7 @@ import net.kyori.adventure.text.Component;
 
 import java.util.List;
 
-public interface ICheckSettings {
+public interface AbstractCheckSettings {
     boolean isEnabled();
 
     boolean isPunishable();

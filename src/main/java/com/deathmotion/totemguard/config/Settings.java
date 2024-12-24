@@ -41,6 +41,9 @@ public class Settings {
     @Comment("\nProxy Alert Settings:")
     private ProxyAlerts Proxy = new ProxyAlerts();
 
+    @Comment("\nUpdate Checker Settings:")
+    private UpdateChecker UpdateChecker = new UpdateChecker();
+
     @Configuration
     @Getter
     public static class ProxyAlerts {
@@ -73,6 +76,19 @@ public class Settings {
             private String Username = "default";
             private String Password = "yourPassword";
         }
+    }
+
+    @Configuration
+    @Getter
+    public static class UpdateChecker {
+        @Comment("Enable and/or disable the update checker.")
+        private boolean Enabled = true;
+
+        @Comment("\nPrint to Console: Prints the update message to the console.")
+        private boolean PrintToConsole = true;
+
+        @Comment("\nNotify In-Game: Notifies players with the permission in-game.")
+        private boolean NotifyInGame = true;
     }
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")

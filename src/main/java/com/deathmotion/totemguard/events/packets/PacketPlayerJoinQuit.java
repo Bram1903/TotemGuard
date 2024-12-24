@@ -4,10 +4,19 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.concurrent.TimeUnit;
+
 public class PacketPlayerJoinQuit extends PacketListenerAbstract {
+
+    private final TotemGuard plugin;
+
+    public PacketPlayerJoinQuit(TotemGuard plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
@@ -32,6 +41,14 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
 
         if (player.hasPermission("TotemGuard.Alerts") && player.hasPermission("TotemGuard.Alerts.EnableOnJoin")) {
             TotemGuard.getInstance().getAlertManager().toggleAlerts(player);
+        }
+
+        if (plugin.getConfigManager().getSettings().getUpdateChecker().isNotifyInGame() && plugin.getUpdateChecker().isUpdateAvailable()) {
+            if (player.hasPermission("TotemGuard.Update")) {
+                FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
+                    player.sendMessage(plugin.getUpdateChecker().getUpdateComponent());
+                }, 2, TimeUnit.SECONDS);
+            }
         }
     }
 

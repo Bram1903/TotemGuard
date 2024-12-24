@@ -24,7 +24,9 @@ import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.messenger.MessengerService;
+import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
@@ -46,16 +48,19 @@ public final class TotemGuard extends JavaPlugin {
     private final PlayerDataManager playerDataManager = new PlayerDataManager();
 
     @Setter
-    private ProxyAlertMessenger proxyMessenger;
+    private ProxyAlertMessenger proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));;
+
+    private final UpdateChecker updateChecker = new UpdateChecker(this);
+    private final TotemGuardAPIImpl totemGuardAPI = new TotemGuardAPIImpl();
 
     @Override
     public void onEnable() {
         instance = this;
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketConfigurationListener());
-        PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit(this));
 
-        proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
+        enableBStats();
     }
 
     @Override
@@ -69,5 +74,9 @@ public final class TotemGuard extends JavaPlugin {
             getLogger().info(debugMessage);
             Bukkit.broadcast(Component.text(debugMessage), "TotemGuard.Debug");
         }
+    }
+
+    private void enableBStats() {
+        new Metrics(this, 23179);
     }
 }

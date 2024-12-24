@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.FlagEvent;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.config.Settings;
-import com.deathmotion.totemguard.interfaces.ICheckSettings;
+import com.deathmotion.totemguard.interfaces.AbstractCheckSettings;
 import com.deathmotion.totemguard.interfaces.Reloadable;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Check implements AbstractCheck, Reloadable {
     protected final TotemPlayer player;
     protected Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
-    protected ICheckSettings checkSettings;
+    protected AbstractCheckSettings checkSettings;
 
     private String checkName;
     private String description;

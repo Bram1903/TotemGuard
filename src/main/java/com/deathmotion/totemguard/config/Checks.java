@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.config;
 
-import com.deathmotion.totemguard.interfaces.ICheckSettings;
+import com.deathmotion.totemguard.interfaces.AbstractCheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
@@ -38,7 +38,7 @@ public class Checks {
     @Comment("\nBadPacketsA")
     private BadPacketsA BadPacketsA = new BadPacketsA();
 
-    public ICheckSettings getCheckSettings(String checkName) {
+    public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
             case "BadPacketsA" -> BadPacketsA;
             default ->
@@ -48,7 +48,7 @@ public class Checks {
 
     @Configuration
     @Getter
-    public abstract static class CheckSettings implements ICheckSettings {
+    public abstract static class CheckSettings implements AbstractCheckSettings {
         private boolean Enabled = true;
         private boolean Punishable;
         private int PunishmentDelayInSeconds = 0;
