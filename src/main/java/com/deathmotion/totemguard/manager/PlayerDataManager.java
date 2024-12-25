@@ -74,11 +74,13 @@ public class PlayerDataManager {
         if (shouldCheck(user)) {
             TotemPlayer player = new TotemPlayer(user);
             playerDataMap.put(user, player);
+            TotemGuard.getInstance().debug("Added " + user.getName() + " to the player data map.");
         }
     }
 
     public void remove(final User player) {
         playerDataMap.remove(player);
+        TotemGuard.getInstance().debug("Removed " + player.getName() + " from the player data map.");
     }
 
     public Collection<TotemPlayer> getEntries() {
