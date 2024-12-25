@@ -25,7 +25,6 @@ import com.deathmotion.totemguard.manager.CheckManager;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -35,13 +34,11 @@ public class TotemPlayer implements TotemUser {
     public final UUID uniqueId;
     public final User user;
 
-    @Nullable
-    public Player bukkitPlayer;
+    private Player bukkitPlayer;
 
     public TotemPlayer(User user) {
         this.uniqueId = user.getUUID();
         this.user = user;
-        this.bukkitPlayer = Bukkit.getPlayer(uniqueId);
 
         checkManager = new CheckManager(this);
     }
@@ -68,5 +65,12 @@ public class TotemPlayer implements TotemUser {
     @Override
     public String getVersionName() {
         return user.getClientVersion().getReleaseName();
+    }
+
+    public Player getBukkitPlayer() {
+        if (bukkitPlayer == null) {
+            bukkitPlayer = Bukkit.getPlayer(uniqueId);
+        }
+        return bukkitPlayer;
     }
 }

@@ -57,7 +57,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
      * Records the moment a totem is used (if conditions are met).
      */
     private void handleEntityResurrection() {
-        PlayerInventory playerInventory = player.bukkitPlayer.getInventory();
+        PlayerInventory playerInventory = player.getBukkitPlayer().getInventory();
 
         // Ensure the main hand doesn't already have a Totem, and at least 2 Totems exist in the inventory
         if (playerInventory.getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
@@ -91,7 +91,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
         long now = System.currentTimeMillis();
         long timeSinceTotemUse = Math.abs(now - lastTotemUse);
         long timeSinceClick = Math.abs(now - clickMoment);
-        long adjustedTotemTime = Math.abs(timeSinceTotemUse - player.bukkitPlayer.getPing());
+        long adjustedTotemTime = Math.abs(timeSinceTotemUse - player.getBukkitPlayer().getPing());
 
         var config = TotemGuard.getInstance().getConfigManager().getChecks().getAutoTotemA();
 
@@ -123,7 +123,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
                 .matchLiteral("%click_time_difference%")
                 .replacement(String.valueOf(rawClickDiff))
                 .matchLiteral("%main_hand%")
-                .replacement(describeMainHand(player.bukkitPlayer))
+                .replacement(describeMainHand(player.getBukkitPlayer()))
                 .matchLiteral("%states%")
                 .replacement(gatherStates()));
     }
@@ -134,9 +134,9 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
     private String gatherStates() {
         StringBuilder currentStates = new StringBuilder();
 
-        if (player.bukkitPlayer.isSprinting()) currentStates.append("Sprinting, ");
-        if (player.bukkitPlayer.isSneaking()) currentStates.append("Sneaking, ");
-        if (player.bukkitPlayer.isBlocking()) currentStates.append("Blocking, ");
+        if (player.getBukkitPlayer().isSprinting()) currentStates.append("Sprinting, ");
+        if (player.getBukkitPlayer().isSneaking()) currentStates.append("Sneaking, ");
+        if (player.getBukkitPlayer().isBlocking()) currentStates.append("Blocking, ");
 
         if (!currentStates.isEmpty()) {
             // Remove the last ", "

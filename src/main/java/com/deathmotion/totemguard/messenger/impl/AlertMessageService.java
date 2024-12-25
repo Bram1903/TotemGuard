@@ -44,7 +44,7 @@ public class AlertMessageService {
                 .replaceText(createReplacement("%tps%", String.format("%.2f", SpigotReflectionUtil.getTPS())))
                 .replaceText(createReplacement("%client_version%", player.user.getClientVersion().getReleaseName()))
                 .replaceText(createReplacement("%client_brand%", player.getBrand()))
-                .replaceText(createReplacement("%ping%", String.valueOf(player.bukkitPlayer.getPing())))
+                .replaceText(createReplacement("%ping%", String.valueOf(player.getBukkitPlayer().getPing())))
                 .replaceText(createReplacement("%check_name%", check.getCheckName()))
                 .replaceText(createReplacement("%check_description%", check.getDescription()))
                 .replaceText(createReplacement("%server%", check.getSettings().getServer()))
