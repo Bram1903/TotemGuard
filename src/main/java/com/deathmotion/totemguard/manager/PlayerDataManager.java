@@ -27,8 +27,6 @@ import org.bukkit.entity.Player;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -42,7 +40,7 @@ public class PlayerDataManager {
         if (TotemGuard.getInstance().getConfigManager().getSettings().isBypass()) {
             // Has exempt permission
             Player player = Bukkit.getPlayer(user.getUUID());
-            if (player != null &&  player.hasPermission("TotemGuard.Bypass")) {
+            if (player != null && player.hasPermission("TotemGuard.Bypass")) {
                 return false;
             }
         }

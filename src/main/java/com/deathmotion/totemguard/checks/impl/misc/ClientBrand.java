@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.checks.impl.misc;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;

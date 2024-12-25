@@ -35,14 +35,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 public class Check implements AbstractCheck {
     protected final TotemPlayer player;
+    private final AtomicInteger violations = new AtomicInteger();
     protected Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
     protected AbstractCheckSettings checkSettings;
-
     private String checkName;
     private String description;
     private boolean experimental;
-
-    private final AtomicInteger violations = new AtomicInteger();
 
     public Check(TotemPlayer player) {
         this.player = player;

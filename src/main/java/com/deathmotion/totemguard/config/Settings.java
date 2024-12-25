@@ -44,6 +44,9 @@ public class Settings {
     @Comment("\nUpdate Checker Settings:")
     private UpdateChecker UpdateChecker = new UpdateChecker();
 
+    @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
+    private boolean Debug = false;
+
     @Configuration
     @Getter
     public static class ProxyAlerts {
@@ -90,7 +93,4 @@ public class Settings {
         @Comment("\nNotify In-Game: Notifies players with the permission in-game.")
         private boolean NotifyInGame = true;
     }
-
-    @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
-    private boolean Debug = false;
 }
