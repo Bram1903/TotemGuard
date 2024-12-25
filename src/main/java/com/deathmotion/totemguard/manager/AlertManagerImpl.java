@@ -47,6 +47,11 @@ public class AlertManagerImpl implements AlertManager {
     public void sendAlert(Check check, Component details) {
         Component alert = messengerService.createAlert(check, details);
         enabledAlerts.values().forEach(player -> player.sendMessage(alert));
+
+        if (plugin.getConfigManager().getSettings().isConsoleAlerts()) {
+            plugin.getServer().getConsoleSender().sendMessage(alert);
+        }
+
         plugin.getProxyMessenger().sendAlert(alert);
         plugin.getDiscordManager().sendAlert(check, details);
     }

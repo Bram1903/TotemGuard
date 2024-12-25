@@ -35,6 +35,9 @@ public class Settings {
     @Comment("\nBypass: Weather or not players with the permission 'totemguard.bypass' can bypass checks.")
     private boolean Bypass = false;
 
+    @Comment("\nConsole Alerts: Weather or not the console should receive alerts.")
+    private boolean ConsoleAlerts = true;
+
     @Comment("Announce client brand: Weather or not the client brand should be announced upon a player joining.")
     private boolean AnnounceClientBrand = false;
 
