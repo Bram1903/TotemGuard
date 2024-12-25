@@ -32,7 +32,6 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import org.bukkit.event.Event;
-import org.bukkit.event.entity.EntityEvent;
 
 public class CheckManager {
 
@@ -72,7 +71,7 @@ public class CheckManager {
 
     public void onBukkitEvent(Event event) {
         for (BukkitEventCheck check : bukkitEventChecks.values()) {
-            check.onPlayerEvent(event);
+            check.onEvent(event);
         }
     }
 

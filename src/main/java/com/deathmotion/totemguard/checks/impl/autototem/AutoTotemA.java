@@ -44,7 +44,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
     }
 
     @Override
-    public void onPlayerEvent(Event event) {
+    public void onEvent(Event event) {
         if (event instanceof EntityResurrectEvent resurrectEvent) {
             handleEntityResurrection(resurrectEvent);
         }
