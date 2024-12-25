@@ -21,42 +21,31 @@ package com.deathmotion.totemguard.events.bukkit;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityEvent;
-import org.bukkit.event.inventory.InventoryInteractEvent;
+import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
 public class CheckManagerBukkitListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerEvent(Event event) {
-        Player bukkitPlayer = null;
+    public void onEntityRecurrentEvent(EntityResurrectEvent event) {
+        if (event.getEntity() instanceof Player player) callCheckManager(player, event);
+    }
 
-        // Handle events where the entity is a player
-        if (event instanceof EntityEvent) {
-            Entity entity = ((EntityEvent) event).getEntity();
-            if (entity instanceof Player) {
-                bukkitPlayer = (Player) entity;
-            }
-        }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInventoryClickEvent(InventoryClickEvent event) {
+        if (event.getWhoClicked() instanceof Player player) callCheckManager(player, event);
+    }
 
-        // Handle inventory interaction events
-        else if (event instanceof InventoryInteractEvent) {
-            bukkitPlayer = (Player) ((InventoryInteractEvent) event).getWhoClicked();
-        }
-
-        // If we couldn't determine the player, exit early
-        if (bukkitPlayer == null) return;
-
+    private void callCheckManager(Player bukkitPlayer, Event event) {
         // Fetch the TotemPlayer instance
         TotemPlayer player = TotemGuard.getInstance().getPlayerDataManager().getPlayer(bukkitPlayer);
         if (player == null) return;
 
-        // Pass the event to the player's check manager
         player.checkManager.onBukkitEvent(event);
     }
 }
