@@ -27,15 +27,6 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
     }
 
     @Override
-    public void onUserConnect(UserConnectEvent event) {
-        // Player connected too soon, perhaps late bind is off
-        // Don't kick everyone on reload
-        if (event.getUser().getConnectionState() == ConnectionState.PLAY && !TotemGuard.getInstance().getPlayerDataManager().exemptUsers.contains(event.getUser())) {
-            event.setCancelled(true);
-        }
-    }
-
-    @Override
     public void onUserLogin(UserLoginEvent event) {
         Player player = event.getPlayer();
 
@@ -55,7 +46,6 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
     @Override
     public void onUserDisconnect(UserDisconnectEvent event) {
         TotemGuard.getInstance().getPlayerDataManager().remove(event.getUser());
-        TotemGuard.getInstance().getPlayerDataManager().exemptUsers.remove(event.getUser());
 
         //Check if calling async is safe
         if (event.getUser().getProfile().getUUID() == null) return; // folia doesn't like null getPlayer()

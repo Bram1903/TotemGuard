@@ -33,12 +33,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataManager {
-    public final Collection<User> exemptUsers = Collections.synchronizedCollection(new HashSet<>());
     private final ConcurrentHashMap<User, TotemPlayer> playerDataMap = new ConcurrentHashMap<>();
 
     public boolean shouldCheck(User user) {
-        if (exemptUsers.contains(user)) return false;
-
         UUID uuid = user.getUUID();
         if (uuid == null) return false;
 
@@ -46,7 +43,6 @@ public class PlayerDataManager {
             // Has exempt permission
             Player player = Bukkit.getPlayer(user.getUUID());
             if (player != null &&  player.hasPermission("TotemGuard.Bypass")) {
-                exemptUsers.add(user);
                 return false;
             }
         }
