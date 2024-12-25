@@ -99,6 +99,8 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
         if (timeSinceClick <= config.getClickTimeDifference() && timeSinceTotemUse <= config.getNormalCheckTimeMs()) {
             fail(buildAlertMessage(timeSinceTotemUse, adjustedTotemTime, timeSinceClick));
         }
+
+        lastTotemUse = null;
     }
 
     /**
