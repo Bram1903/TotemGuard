@@ -19,6 +19,9 @@
 package com.deathmotion.totemguard.testplugin;
 
 import com.deathmotion.totemguard.api.TotemGuardAPI;
+import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
+import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
+import com.deathmotion.totemguard.testplugin.events.UpdateFoundEventTest;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -39,6 +42,10 @@ public final class ApiTestPlugin extends JavaPlugin {
             getLogger().severe("Could not find TotemGuard API provider.");
             this.getServer().getPluginManager().disablePlugin(this);
         }
+
+        Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
+        Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
+        Bukkit.getPluginManager().registerEvents(new UpdateFoundEventTest(this), this);
 
         getLogger().info("Successfully hooked into TotemGuard API.");
     }
