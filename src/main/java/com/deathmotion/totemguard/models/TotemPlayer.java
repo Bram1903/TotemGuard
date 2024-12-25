@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.manager.CheckManager;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -65,6 +66,12 @@ public class TotemPlayer implements TotemUser {
     @Override
     public String getVersionName() {
         return user.getClientVersion().getReleaseName();
+    }
+
+    @Override
+    public int getKeepAlivePing() {
+        if (bukkitPlayer == null) return -1;
+        return PacketEvents.getAPI().getPlayerManager().getPing(bukkitPlayer);
     }
 
     public Player getBukkitPlayer() {

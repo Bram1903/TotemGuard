@@ -94,7 +94,7 @@ public class Checks {
         private int ClickTimeDifference = 75;
 
         public AutoTotemA() {
-            super(true, 2, Component.text("Totem Time: ", NamedTextColor.GOLD).append(Component.text("%totem_time%ms", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Real Totem Time: ", NamedTextColor.GOLD).append(Component.text("%real_totem_time%ms", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Click Time Difference: ", NamedTextColor.GOLD).append(Component.text("%click_time_difference%ms", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Main Hand: ", NamedTextColor.GOLD).append(Component.text("%main_hand%", NamedTextColor.GRAY).append(Component.newline().append(Component.text("States: ", NamedTextColor.GOLD).append(Component.text("%states%", NamedTextColor.GRAY))))))))))));
+            super(true, 2, Component.text("Totem Time: ", NamedTextColor.GRAY).append(Component.text("%totem_time%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Real Totem Time: ", NamedTextColor.GRAY).append(Component.text("%real_totem_time%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Click Time Difference: ", NamedTextColor.GRAY).append(Component.text("%click_time_difference%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Main Hand: ", NamedTextColor.GRAY).append(Component.text("%main_hand%", NamedTextColor.GOLD).append(Component.newline().append(Component.text("States: ", NamedTextColor.GRAY).append(Component.text("%states%", NamedTextColor.GOLD))))))))))));
         }
     }
 
@@ -102,7 +102,7 @@ public class Checks {
     @Getter
     public static class BadPacketsA extends CheckSettings {
         public BadPacketsA() {
-            super(true, 20, 1, Component.text("Channel: ", NamedTextColor.GOLD).append(Component.text("%channel%", NamedTextColor.GRAY)));
+            super(true, 20, 1, Component.text("Channel: ", NamedTextColor.GRAY).append(Component.text("%channel%", NamedTextColor.GOLD)));
         }
     }
 
@@ -115,7 +115,7 @@ public class Checks {
         );
 
         public BadPacketsB() {
-            super(true, 20, 1, Component.text("Client Brand: ", NamedTextColor.GOLD).append(Component.text("%client_brand%", NamedTextColor.GRAY)));
+            super(true, 20, 1, Component.text("Client Brand: ", NamedTextColor.GRAY).append(Component.text("%client_brand%", NamedTextColor.GOLD)));
         }
     }
 
@@ -123,7 +123,7 @@ public class Checks {
     @Getter
     public static class BadPacketsC extends CheckSettings {
         public BadPacketsC() {
-            super(true, 20, 3, Component.text("New Slot Change: ", NamedTextColor.GOLD).append(Component.text("%new_slot%", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Last Slot Change: ", NamedTextColor.GOLD).append(Component.text("%last_slot%", NamedTextColor.GRAY)))));
+            super(true, 20, 3, Component.text("New Slot Change: ", NamedTextColor.GRAY).append(Component.text("%new_slot%", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Last Slot Change: ", NamedTextColor.GRAY).append(Component.text("%last_slot%", NamedTextColor.GOLD)))));
         }
     }
 }

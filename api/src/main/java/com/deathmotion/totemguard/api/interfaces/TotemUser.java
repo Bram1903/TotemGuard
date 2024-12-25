@@ -28,4 +28,6 @@ public interface TotemUser {
     String getBrand();
 
     String getVersionName();
+
+    int getKeepAlivePing();
 }
