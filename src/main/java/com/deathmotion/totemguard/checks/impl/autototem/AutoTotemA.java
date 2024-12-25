@@ -73,7 +73,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
         // Moving Totem to off-hand
         if (event.getRawSlot() == 45 && event.getCursor().getType() == Material.TOTEM_OF_UNDYING) {
             if (lastClickTime != null && lastTotemUse != null) {
-                evaluateSuspicion(player.bukkitPlayer, lastClickTime);
+                evaluateSuspicion(lastClickTime);
             }
             return;
         }
@@ -87,11 +87,11 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
     /**
      * Validates whether the behavior is suspicious by comparing relevant time intervals.
      */
-    private void evaluateSuspicion(Player bukkitPlayer, long clickMoment) {
+    private void evaluateSuspicion(long clickMoment) {
         long now = System.currentTimeMillis();
         long timeSinceTotemUse = Math.abs(now - lastTotemUse);
         long timeSinceClick = Math.abs(now - clickMoment);
-        long adjustedTotemTime = Math.abs(timeSinceTotemUse - bukkitPlayer.getPing());
+        long adjustedTotemTime = Math.abs(timeSinceTotemUse - player.bukkitPlayer.getPing());
 
         var config = TotemGuard.getInstance().getConfigManager().getChecks().getAutoTotemA();
 
