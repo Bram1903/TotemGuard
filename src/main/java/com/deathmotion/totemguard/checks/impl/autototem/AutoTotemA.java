@@ -45,8 +45,8 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
 
     @Override
     public void onBukkitEvent(Event event) {
-        if (event instanceof EntityResurrectEvent resurrectEvent) {
-            handleEntityResurrection(resurrectEvent);
+        if (event instanceof EntityResurrectEvent) {
+            handleEntityResurrection();
         }
         if (event instanceof InventoryClickEvent invClickEvent) {
             handleInventoryClick(invClickEvent);
@@ -56,7 +56,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
     /**
      * Records the moment a totem is used (if conditions are met).
      */
-    private void handleEntityResurrection(EntityResurrectEvent event) {
+    private void handleEntityResurrection() {
         PlayerInventory playerInventory = player.bukkitPlayer.getInventory();
 
         // Ensure the main hand doesn't already have a Totem, and at least 2 Totems exist in the inventory
