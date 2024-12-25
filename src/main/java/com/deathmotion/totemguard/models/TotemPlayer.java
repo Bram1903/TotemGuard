@@ -41,6 +41,7 @@ public class TotemPlayer implements TotemUser {
     public TotemPlayer(User user) {
         this.uniqueId = user.getUUID();
         this.user = user;
+        this.bukkitPlayer = Bukkit.getPlayer(uniqueId);
 
         checkManager = new CheckManager(this);
     }
@@ -48,12 +49,6 @@ public class TotemPlayer implements TotemUser {
     public void reload() {
         // reload all checks
         for (AbstractCheck value : checkManager.allChecks.values()) value.reload();
-    }
-
-    public void pollData() {
-        if (uniqueId != null && this.bukkitPlayer == null) {
-            this.bukkitPlayer = Bukkit.getPlayer(uniqueId);
-        }
     }
 
     public String getBrand() {

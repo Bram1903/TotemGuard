@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.manager;
 
+import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -42,15 +42,21 @@ public class PlayerDataManager {
         UUID uuid = user.getUUID();
         if (uuid == null) return false;
 
-        // Has exempt permission
-        Player player = Bukkit.getPlayer(user.getUUID());
-        if (player != null && player.hasPermission("TotemGuard.Bypass")) {
-            exemptUsers.add(user);
-            return false;
+        if (TotemGuard.getInstance().getConfigManager().getSettings().isBypass()) {
+            // Has exempt permission
+            Player player = Bukkit.getPlayer(user.getUUID());
+            if (player != null &&  player.hasPermission("TotemGuard.Bypass")) {
+                exemptUsers.add(user);
+                return false;
+            }
         }
 
         // Is a Geyser (Bedrock) player
-        return user.getUUID().getMostSignificantBits() == 0L;
+        if (user.getUUID().getMostSignificantBits() == 0L) {
+            return false;
+        }
+
+        return true;
     }
 
     @Nullable

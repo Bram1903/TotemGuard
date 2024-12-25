@@ -52,6 +52,7 @@ public class Checks {
             case "AutoTotemA" -> AutoTotemA;
             case "BadPacketsA" -> BadPacketsA;
             case "BadPacketsB" -> BadPacketsB;
+            case "BadPacketsC" -> BadPacketsC;
             default ->
                     throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
         };
