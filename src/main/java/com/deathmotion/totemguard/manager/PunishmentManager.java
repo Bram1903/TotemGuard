@@ -41,7 +41,7 @@ public class PunishmentManager {
     }
 
     public void punishPlayer(Check check, Component details) {
-        if (check.getCheckSettings().isPunishable()) return;
+        if (!check.getCheckSettings().isPunishable()) return;
         if (check.getViolations() < check.getCheckSettings().getMaxViolations()) return;
         if (toBePunished.contains(check.getPlayer().getUniqueId())) return;
 
