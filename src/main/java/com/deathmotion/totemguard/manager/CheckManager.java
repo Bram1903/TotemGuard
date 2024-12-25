@@ -19,21 +19,26 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
+import com.deathmotion.totemguard.checks.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
+import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import org.bukkit.event.Event;
+import org.bukkit.event.entity.EntityEvent;
 
 public class CheckManager {
 
     public ClassToInstanceMap<AbstractCheck> allChecks;
     ClassToInstanceMap<PacketCheck> packetChecks;
+    ClassToInstanceMap<BukkitEventCheck> bukkitEventChecks;
 
     public CheckManager(TotemPlayer player) {
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
@@ -43,8 +48,13 @@ public class CheckManager {
                 .put(BadPacketsC.class, new BadPacketsC(player))
                 .build();
 
+        bukkitEventChecks = new ImmutableClassToInstanceMap.Builder<BukkitEventCheck>()
+                .put(AutoTotemA.class, new AutoTotemA(player))
+                .build();
+
         allChecks = new ImmutableClassToInstanceMap.Builder<AbstractCheck>()
                 .putAll(packetChecks)
+                .putAll(bukkitEventChecks)
                 .build();
     }
 
@@ -60,8 +70,19 @@ public class CheckManager {
         }
     }
 
+    public void onBukkitEvent(Event event) {
+        for (BukkitEventCheck check : bukkitEventChecks.values()) {
+            check.onPlayerEvent(event);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {
         return (T) packetChecks.get(check);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends BukkitEventCheck> T getBukkitEventCheck(Class<T> check) {
+        return (T) bukkitEventChecks.get(check);
     }
 }

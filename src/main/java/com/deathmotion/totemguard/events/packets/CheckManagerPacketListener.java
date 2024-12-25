@@ -26,9 +26,9 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 
-public class CheckManagerListener extends PacketListenerAbstract {
+public class CheckManagerPacketListener extends PacketListenerAbstract {
 
-    public CheckManagerListener() {
+    public CheckManagerPacketListener() {
         super(PacketListenerPriority.LOW);
     }
 

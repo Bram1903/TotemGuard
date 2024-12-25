@@ -35,6 +35,9 @@ public class Checks {
     @Comment("This command placeholder can be used by using %default_punishment% as a punishment command.")
     private String DefaultPunishment = "ban %player% 1d [TotemGuard] Unfair Advantage";
 
+    @Comment("\nAutoTotemA")
+    private AutoTotemA AutoTotemA = new AutoTotemA();
+
     @Comment("\nBadPacketsA")
     private BadPacketsA BadPacketsA = new BadPacketsA();
 
@@ -76,6 +79,20 @@ public class Checks {
             this.Punishable = punishable;
             this.MaxViolations = maxViolations;
             this.CheckAlertMessage = checkAlertMessage;
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class AutoTotemA extends CheckSettings {
+        @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
+        private int NormalCheckTimeMs = 1500;
+
+        @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
+        private int ClickTimeDifference = 75;
+
+        public AutoTotemA() {
+            super(true, 2, Component.text("Totem Time: ", NamedTextColor.GOLD).append(Component.text("%totem_time%ms", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Real Totem Time: ", NamedTextColor.GOLD).append(Component.text("%real_totem_time%ms", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Click Time Difference: ", NamedTextColor.GOLD).append(Component.text("%click_time_difference%ms", NamedTextColor.GRAY).append(Component.newline()).append(Component.text("Main Hand: ", NamedTextColor.GOLD).append(Component.text("%main_hand%", NamedTextColor.GRAY).append(Component.newline().append(Component.text("States: ", NamedTextColor.GOLD).append(Component.text("%states%", NamedTextColor.GRAY))))))))))));
         }
     }
 

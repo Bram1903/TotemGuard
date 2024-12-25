@@ -91,7 +91,7 @@ public class DiscordManager {
             }
 
             embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Client Brand**", totemPlayer.getBrand()));
-            embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Client Version**", totemPlayer.getUser().getClientVersion().getReleaseName()));
+            embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Client Version**", totemPlayer.user.getClientVersion().getReleaseName()));
             embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**Ping**", String.valueOf(totemPlayer.bukkitPlayer.getPing())));
             embedBuilder.addField(new WebhookEmbed.EmbedField(true, "**TPS**", String.format("%.2f", SpigotReflectionUtil.getTPS())));
             embedBuilder.addField(new WebhookEmbed.EmbedField(false, "**Details**", "```" + PlainTextComponentSerializer.plainText().serialize(details) + "```"));

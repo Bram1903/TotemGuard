@@ -19,6 +19,8 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -53,6 +55,12 @@ public class PlayerDataManager {
 
     @Nullable
     public TotemPlayer getPlayer(final User user) {
+        return playerDataMap.get(user);
+    }
+
+    @Nullable
+    public TotemPlayer getPlayer(final Player player) {
+        User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
         return playerDataMap.get(user);
     }
 

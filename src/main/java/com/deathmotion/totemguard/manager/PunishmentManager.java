@@ -81,8 +81,8 @@ public class PunishmentManager {
         for (String command : commands) {
             String processedCommand = command
                     .replace("%default_punishment%", defaultPunishment)
-                    .replace("%player%", check.getPlayer().getUser().getName())
-                    .replace("%uuid%", check.getPlayer().getUser().getUUID().toString())
+                    .replace("%player%", check.getPlayer().user.getName())
+                    .replace("%uuid%", check.getPlayer().user.getUUID().toString())
                     .replace("%check_name%", check.getCheckName())
                     .replace("%violations%", String.valueOf(check.getViolations()))
                     .replace("%max_violations%", String.valueOf(check.getCheckSettings().getMaxViolations()))

@@ -40,9 +40,9 @@ public class AlertMessageService {
 
         // Replace placeholders directly in the Component
         return alertTemplate
-                .replaceText(createReplacement("%player%", player.getUser().getName()))
+                .replaceText(createReplacement("%player%", player.user.getName()))
                 .replaceText(createReplacement("%tps%", String.format("%.2f", SpigotReflectionUtil.getTPS())))
-                .replaceText(createReplacement("%client_version%", player.getUser().getClientVersion().getReleaseName()))
+                .replaceText(createReplacement("%client_version%", player.user.getClientVersion().getReleaseName()))
                 .replaceText(createReplacement("%client_brand%", player.getBrand()))
                 .replaceText(createReplacement("%ping%", String.valueOf(player.bukkitPlayer.getPing())))
                 .replaceText(createReplacement("%check_name%", check.getCheckName()))

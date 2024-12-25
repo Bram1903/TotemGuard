@@ -18,7 +18,8 @@
 
 package com.deathmotion.totemguard;
 
-import com.deathmotion.totemguard.events.packets.CheckManagerListener;
+import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
+import com.deathmotion.totemguard.events.packets.CheckManagerPacketListener;
 import com.deathmotion.totemguard.events.packets.PacketConfigurationListener;
 import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.manager.*;
@@ -60,7 +61,8 @@ public final class TotemGuard extends JavaPlugin {
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketConfigurationListener());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit(this));
-        PacketEvents.getAPI().getEventManager().registerListener(new CheckManagerListener());
+        PacketEvents.getAPI().getEventManager().registerListener(new CheckManagerPacketListener());
+        getServer().getPluginManager().registerEvents(new CheckManagerBukkitListener(), this);
 
         enableBStats();
     }
