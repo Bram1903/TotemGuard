@@ -1,8 +1,9 @@
 package com.deathmotion.totemguard.events.packets;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.*;
-import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.Bukkit;
@@ -41,6 +42,14 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
                 }, 2, TimeUnit.SECONDS);
             }
         }
+
+        TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getUser());
+        if (totemPlayer == null) return;
+
+        totemPlayer.bukkitPlayer = player;
+
+        // Trigger the BadPacketsB check here, as it will otherwise still be in the configuration state
+        totemPlayer.checkManager.getPacketCheck(BadPacketsB.class).handle(totemPlayer.getBrand());
     }
 
     @Override

@@ -60,7 +60,6 @@ public class ClientBrand extends Check implements PacketCheck {
                 brand = ChatColor.stripColor(brand); //strip color codes from client brand
 
                 announceBrand(brand);
-                player.checkManager.getPacketCheck(BadPacketsB.class).handle(brand);
             }
 
             hasBrand = true;

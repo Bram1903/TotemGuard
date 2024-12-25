@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.manager.CheckManager;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -34,8 +33,7 @@ public class TotemPlayer implements TotemUser {
 
     public final UUID uniqueId;
     public final User user;
-
-    private Player bukkitPlayer;
+    public Player bukkitPlayer;
 
     public TotemPlayer(User user) {
         this.uniqueId = user.getUUID();
@@ -72,12 +70,5 @@ public class TotemPlayer implements TotemUser {
     public int getKeepAlivePing() {
         if (bukkitPlayer == null) return -1;
         return PacketEvents.getAPI().getPlayerManager().getPing(bukkitPlayer);
-    }
-
-    public Player getBukkitPlayer() {
-        if (bukkitPlayer == null) {
-            bukkitPlayer = Bukkit.getPlayer(uniqueId);
-        }
-        return bukkitPlayer;
     }
 }
