@@ -1,9 +1,10 @@
 /*
- *  This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- *  Copyright (C) 2024 Bram and contributors
+ *  This source is part of TotemGuard, found at https://github.com/Bram1903/TotemGuard
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  Copyright (C) 2024 Bram
+ *
+ *  This program is free software: you may redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
@@ -13,7 +14,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with this program. If not, visit <http://www.gnu.org/licenses/>.
  */
 
 package com.deathmotion.totemguard.checks.impl.autototem;
@@ -23,7 +24,6 @@ import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.CheckData;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -31,111 +31,118 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
-@CheckData(name = "AutoTotemA", description = "Click time difference")
+@CheckData(name = "AutoTotemA", description = "Monitors usage timings")
 public class AutoTotemA extends Check implements BukkitEventCheck {
 
-    private Long totemUsageTime;
-    private Long clickTime;
+    private Long lastTotemUse;
+    private Long lastClickTime;
 
-    public AutoTotemA(final TotemPlayer player) {
-        super(player);
+    public AutoTotemA(TotemPlayer playerData) {
+        super(playerData);
     }
-
 
     @Override
     public void onPlayerEvent(Event event) {
         if (event instanceof EntityResurrectEvent resurrectEvent) {
-            onTotemUsage(resurrectEvent);
+            handleEntityResurrection(resurrectEvent);
         }
-
-        if (event instanceof InventoryClickEvent inventoryClickEvent) {
-            onInventoryClick(inventoryClickEvent);
+        if (event instanceof InventoryClickEvent invClickEvent) {
+            handleInventoryClick(invClickEvent);
         }
     }
 
-    private void onTotemUsage(EntityResurrectEvent event) {
-        if (player.bukkitPlayer.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
-        if (!player.bukkitPlayer.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
-            return;
-        }
+    /**
+     * Records the moment a totem is used (if conditions are met).
+     */
+    private void handleEntityResurrection(EntityResurrectEvent event) {
+        PlayerInventory playerInventory = player.bukkitPlayer.getInventory();
 
-        totemUsageTime = System.currentTimeMillis();
+        // Ensure the main hand doesn't already have a Totem, and at least 2 Totems exist in the inventory
+        if (playerInventory.getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING) return;
+        if (!playerInventory.containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) return;
+
+        lastTotemUse = System.currentTimeMillis();
     }
 
-    private void onInventoryClick(InventoryClickEvent event) {
-        // If the cursor is holding a Totem of Undying and is being moved to the off-hand slot
+    /**
+     * Tracks inventory clicks to capture the time of a Totem click.
+     */
+    private void handleInventoryClick(InventoryClickEvent event) {
+        // Moving Totem to off-hand
         if (event.getRawSlot() == 45 && event.getCursor().getType() == Material.TOTEM_OF_UNDYING) {
-            if (clickTime != null && totemUsageTime != null) {
-                checkSuspiciousActivity(player.bukkitPlayer, clickTime);
+            if (lastClickTime != null && lastTotemUse != null) {
+                evaluateSuspicion(player.bukkitPlayer, lastClickTime);
             }
             return;
         }
 
-        // If the clicked item is a Totem of Undying
+        // Clicking an item that’s a Totem
         if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
-            clickTime = System.currentTimeMillis();
+            lastClickTime = System.currentTimeMillis();
         }
     }
 
-    private void checkSuspiciousActivity(Player player, long clickTime) {
-        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o) -> {
-            long currentTime = System.currentTimeMillis();
-            long timeDifference = Math.abs(currentTime - totemUsageTime);
-            long clickTimeDifference = Math.abs(currentTime - clickTime);
-            long realTotemTime = Math.abs(timeDifference - player.getPing());
+    /**
+     * Validates whether the behavior is suspicious by comparing relevant time intervals.
+     */
+    private void evaluateSuspicion(Player bukkitPlayer, long clickMoment) {
+        long now = System.currentTimeMillis();
+        long timeSinceTotemUse = Math.abs(now - lastTotemUse);
+        long timeSinceClick = Math.abs(now - clickMoment);
+        long adjustedTotemTime = Math.abs(timeSinceTotemUse - bukkitPlayer.getPing());
 
-            com.deathmotion.totemguard.config.Checks.AutoTotemA checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getAutoTotemA();
+        var config = TotemGuard.getInstance().getConfigManager().getChecks().getAutoTotemA();
 
-            if (clickTimeDifference <= checkSettings.getClickTimeDifference() && timeDifference <= checkSettings.getNormalCheckTimeMs()) {
-                fail(createComponent(timeDifference, realTotemTime, clickTimeDifference));
-            }
-        });
+        // If both the time after click and time since totem usage are under the configured thresholds, flag.
+        if (timeSinceClick <= config.getClickTimeDifference() && timeSinceTotemUse <= config.getNormalCheckTimeMs()) {
+            fail(buildAlertMessage(timeSinceTotemUse, adjustedTotemTime, timeSinceClick));
+        }
     }
 
-    private String getMainHandItemString(Player player) {
-        return player.getInventory().getItemInMainHand().getType() == Material.AIR
-                ? "Empty Hand"
-                : player.getInventory().getItemInMainHand().getType().toString();
+    /**
+     * Retrieves a string for the item in the player's main hand (or "Empty Hand").
+     */
+    private String describeMainHand(Player bukkitPlayer) {
+        Material mainHandItem = bukkitPlayer.getInventory().getItemInMainHand().getType();
+        return mainHandItem == Material.AIR ? "Empty Hand" : mainHandItem.toString();
     }
 
-    private Component createComponent(long timeDifference, long realTotemTime, long clickTimeDifference) {
-        return checkSettings.getCheckAlertMessage()
-                .replaceText(builder -> builder
-                        .matchLiteral("%totem_time%")
-                        .replacement(String.valueOf(timeDifference))
-                        .matchLiteral("%real_totem_time%")
-                        .replacement(String.valueOf(realTotemTime))
-                        .matchLiteral("%click_time_difference%")
-                        .replacement(String.valueOf(clickTimeDifference))
-                        .matchLiteral("%main_hand%")
-                        .replacement(getMainHandItemString(player.bukkitPlayer))
-                        .matchLiteral("%states%")
-                        .replacement(getStatesString()));
+    /**
+     * Constructs the alert message using placeholders from the check's configured message.
+     */
+    private Component buildAlertMessage(long rawTotemDiff, long pingAdjustedDiff, long rawClickDiff) {
+        return checkSettings.getCheckAlertMessage().replaceText(builder -> builder
+                .matchLiteral("%totem_time%")
+                .replacement(String.valueOf(rawTotemDiff))
+                .matchLiteral("%real_totem_time%")
+                .replacement(String.valueOf(pingAdjustedDiff))
+                .matchLiteral("%click_time_difference%")
+                .replacement(String.valueOf(rawClickDiff))
+                .matchLiteral("%main_hand%")
+                .replacement(describeMainHand(player.bukkitPlayer))
+                .matchLiteral("%states%")
+                .replacement(gatherStates()));
     }
 
-    private String getStatesString() {
-        StringBuilder states = new StringBuilder();
+    /**
+     * Gathers and returns a comma-separated list of the player's current activity states, or "None" if empty.
+     */
+    private String gatherStates() {
+        StringBuilder currentStates = new StringBuilder();
 
-        // Collect active player states
-        if (player.bukkitPlayer.isSprinting()) {
-            states.append("Sprinting, ");
-        }
-        if (player.bukkitPlayer.isSneaking()) {
-            states.append("Sneaking, ");
-        }
-        if (player.bukkitPlayer.isBlocking()) {
-            states.append("Blocking, ");
-        }
+        if (player.bukkitPlayer.isSprinting()) currentStates.append("Sprinting, ");
+        if (player.bukkitPlayer.isSneaking()) currentStates.append("Sneaking, ");
+        if (player.bukkitPlayer.isBlocking()) currentStates.append("Blocking, ");
 
-        // Remove the trailing comma and space if any states were added
-        if (!states.isEmpty()) {
-            states.setLength(states.length() - 2);
+        if (!currentStates.isEmpty()) {
+            // Remove the last ", "
+            currentStates.setLength(currentStates.length() - 2);
         } else {
-            states.append("None");
+            currentStates.append("None");
         }
 
-        return states.toString();
+        return currentStates.toString();
     }
-
 }

@@ -49,6 +49,7 @@ public class Checks {
 
     public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
+            case "AutoTotemA" -> AutoTotemA;
             case "BadPacketsA" -> BadPacketsA;
             case "BadPacketsB" -> BadPacketsB;
             default ->
