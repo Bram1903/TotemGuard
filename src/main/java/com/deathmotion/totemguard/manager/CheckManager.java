@@ -71,7 +71,7 @@ public class CheckManager {
 
     public void onBukkitEvent(Event event) {
         for (BukkitEventCheck check : bukkitEventChecks.values()) {
-            check.onEvent(event);
+            check.onBukkitEvent(event);
         }
     }
 
