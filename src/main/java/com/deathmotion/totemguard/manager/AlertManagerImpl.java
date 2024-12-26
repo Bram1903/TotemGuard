@@ -13,17 +13,19 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.events.AlertsToggleEvent;
 import com.deathmotion.totemguard.api.interfaces.AlertManager;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -35,59 +37,142 @@ public class AlertManagerImpl implements AlertManager {
     private final ConcurrentHashMap<UUID, Player> enabledAlerts;
 
     private final TotemGuard plugin;
-    private final MessengerService messengerService;
+    private final MessengerService messageService;
 
-    public AlertManagerImpl(TotemGuard plugin) {
-        this.plugin = plugin;
-        this.messengerService = plugin.getMessengerService();
-
+    public AlertManagerImpl(TotemGuard pluginInstance) {
+        this.plugin = pluginInstance;
+        this.messageService = pluginInstance.getMessengerService();
         this.enabledAlerts = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Sends an alert message derived from a given Check and details to all players
+     * who have alerts enabled, as well as to console and other integrations if configured.
+     *
+     * @param check   The Check instance representing the type of alert.
+     * @param details Additional message details.
+     */
     public void sendAlert(Check check, Component details) {
-        Component alert = messengerService.createAlert(check, details);
-        enabledAlerts.values().forEach(player -> player.sendMessage(alert));
+        Component craftedAlert = messageService.createAlert(check, details);
 
+        // Send to all players who have alerts enabled
+        enabledAlerts.values().forEach(player -> player.sendMessage(craftedAlert));
+
+        // Optionally log to console
         if (plugin.getConfigManager().getSettings().isConsoleAlerts()) {
-            plugin.getServer().getConsoleSender().sendMessage(alert);
+            plugin.getServer().getConsoleSender().sendMessage(craftedAlert);
         }
 
-        plugin.getProxyMessenger().sendAlert(alert);
+        // Send to proxy and Discord if enabled
+        plugin.getProxyMessenger().sendAlert(craftedAlert);
         plugin.getDiscordManager().sendAlert(check, details);
     }
 
+    /**
+     * Sends a generic alert message to everyone with alerts enabled.
+     *
+     * @param message The text component to be broadcast.
+     */
     public void sendAlert(Component message) {
         enabledAlerts.values().forEach(player -> player.sendMessage(message));
     }
 
+    /**
+     * Toggles the alert status for a given player. If alerts are currently enabled for them,
+     * they will be disabled; if disabled, they will be enabled. An AlertsToggleEvent is fired
+     * if API usage is enabled, and if the event is not canceled.
+     *
+     * @param player The player whose alerts will be toggled.
+     */
     public void toggleAlerts(Player player) {
         UUID playerId = player.getUniqueId();
-        if (enabledAlerts.containsKey(playerId)) {
+
+        boolean currentlyEnabled = enabledAlerts.containsKey(playerId);
+        boolean willEnable = !currentlyEnabled;
+
+        // Check whether this toggling action is allowed by any external event listeners
+        if (!canToggleAlerts(player, willEnable)) {
+            return;
+        }
+
+        // Perform the toggle
+        if (currentlyEnabled) {
             enabledAlerts.remove(playerId);
-            player.sendMessage(messengerService.toggleAlerts(false));
+            player.sendMessage(messageService.toggleAlerts(false));
         } else {
             enabledAlerts.put(playerId, player);
-            player.sendMessage(messengerService.toggleAlerts(true));
+            player.sendMessage(messageService.toggleAlerts(true));
         }
     }
 
+    /**
+     * Enables alerts for a specified player if not already enabled.
+     *
+     * @param player The player for whom alerts will be enabled.
+     */
     public void enableAlerts(Player player) {
         UUID playerId = player.getUniqueId();
-        if (!enabledAlerts.containsKey(playerId)) {
-            enabledAlerts.put(playerId, player);
-            player.sendMessage(messengerService.toggleAlerts(true));
+
+        // If alerts are already enabled, do nothing
+        if (enabledAlerts.containsKey(playerId)) {
+            return;
         }
+
+        // Check if we can enable them (event not canceled, etc.)
+        if (!canToggleAlerts(player, true)) {
+            return;
+        }
+
+        enabledAlerts.put(playerId, player);
+        player.sendMessage(messageService.toggleAlerts(true));
     }
 
+    /**
+     * Removes a player's UUID from the alert list, effectively disabling alerts for them.
+     *
+     * @param playerId The player's UUID to remove from active alerts.
+     */
     public void removePlayer(UUID playerId) {
         enabledAlerts.remove(playerId);
     }
 
+    /**
+     * Checks if a given player has alerts enabled.
+     *
+     * @param player The player to check.
+     * @return True if the player has alerts enabled; otherwise false.
+     */
     public boolean hasAlertsEnabled(Player player) {
         return enabledAlerts.containsKey(player.getUniqueId());
     }
 
+    /**
+     * Handles player disconnects (removes them from the active alerts).
+     *
+     * @param player The player who is quitting.
+     */
     public void handlePlayerQuit(Player player) {
         enabledAlerts.remove(player.getUniqueId());
+    }
+
+    /**
+     * Helper method to centralize event firing logic.
+     * If the API is disabled or
+     * there is no valid TotemPlayer, this returns true without firing an event.
+     * Otherwise, it fires an AlertsToggleEvent and returns false if the event was canceled.
+     *
+     * @param player Player instance
+     * @param enable Whether we intend to enable or disable alerts.
+     * @return True if toggling can proceed (event not canceled); false otherwise.
+     */
+    private boolean canToggleAlerts(Player player, boolean enable) {
+        if (!TotemGuard.getInstance().getConfigManager().getSettings().isApi()) {
+            return true;
+        }
+
+        // Create and fire the event
+        AlertsToggleEvent event = new AlertsToggleEvent(player, enable);
+        Bukkit.getPluginManager().callEvent(event);
+        return !event.isCancelled();
     }
 }
