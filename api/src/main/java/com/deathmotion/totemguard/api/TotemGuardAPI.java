@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api;
 
+import com.deathmotion.totemguard.api.interfaces.AlertManager;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 
 /**
@@ -30,4 +31,11 @@ public interface TotemGuardAPI {
      * @return The version of TotemGuard.
      */
     TGVersion getVersion();
+
+    /**
+     * Get the alert manager.
+     *
+     * @return The alert manager.
+     */
+    AlertManager getAlertManager();
 }

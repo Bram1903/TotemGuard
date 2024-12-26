@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.api.TotemGuardAPI;
+import com.deathmotion.totemguard.api.interfaces.AlertManager;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.util.TGVersions;
 
@@ -27,5 +28,10 @@ public class TotemGuardAPIImpl implements TotemGuardAPI {
     @Override
     public TGVersion getVersion() {
         return TGVersions.CURRENT;
+    }
+
+    @Override
+    public AlertManager getAlertManager() {
+        return TotemGuard.getInstance().getAlertManager();
     }
 }
