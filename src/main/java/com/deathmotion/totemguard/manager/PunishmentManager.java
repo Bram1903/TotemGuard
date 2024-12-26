@@ -91,8 +91,6 @@ public class PunishmentManager {
             processedCommands.add(processedCommand);
         }
 
-        TotemGuard.getInstance().getLogger().info(check.getPlayer().user.getConnectionState().toString());
-
         FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
             for (String command : processedCommands) {
                 plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command);
