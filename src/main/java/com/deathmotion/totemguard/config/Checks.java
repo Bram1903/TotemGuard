@@ -33,26 +33,26 @@ import java.util.List;
 public class Checks {
 
     @Comment("This command placeholder can be used by using %default_punishment% as a punishment command.")
-    private String DefaultPunishment = "ban %player% 1d [TotemGuard] Unfair Advantage";
+    private String defaultPunishment = "ban %player% 1d [TotemGuard] Unfair Advantage";
 
     @Comment("\nAutoTotemA")
-    private AutoTotemA AutoTotemA = new AutoTotemA();
+    private AutoTotemA autoTotemA = new AutoTotemA();
 
     @Comment("\nBadPacketsA")
-    private BadPacketsA BadPacketsA = new BadPacketsA();
+    private BadPacketsA badPacketsA = new BadPacketsA();
 
     @Comment("\nBadPacketsB")
-    private BadPacketsB BadPacketsB = new BadPacketsB();
+    private BadPacketsB badPacketsB = new BadPacketsB();
 
     @Comment("\nBadPacketsC")
-    private BadPacketsC BadPacketsC = new BadPacketsC();
+    private BadPacketsC badPacketsC = new BadPacketsC();
 
     public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
-            case "AutoTotemA" -> AutoTotemA;
-            case "BadPacketsA" -> BadPacketsA;
-            case "BadPacketsB" -> BadPacketsB;
-            case "BadPacketsC" -> BadPacketsC;
+            case "AutoTotemA" -> autoTotemA;
+            case "BadPacketsA" -> badPacketsA;
+            case "BadPacketsB" -> badPacketsB;
+            case "BadPacketsC" -> badPacketsC;
             default ->
                     throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
         };
@@ -61,26 +61,26 @@ public class Checks {
     @Configuration
     @Getter
     public abstract static class CheckSettings implements AbstractCheckSettings {
-        private boolean Enabled = true;
-        private boolean Punishable;
-        private int PunishmentDelayInSeconds = 0;
-        private int MaxViolations;
-        private Component CheckAlertMessage;
-        private List<String> PunishmentCommands = List.of(
+        private boolean enabled = true;
+        private boolean punishable;
+        private int punishmentDelayInSeconds = 0;
+        private int maxViolations;
+        private Component checkAlertMessage;
+        private List<String> punishmentCommands = List.of(
                 "%default_punishment%"
         );
 
         public CheckSettings(boolean punishable, int punishmentDelay, int maxViolations, Component checkAlertMessage) {
-            this.Punishable = punishable;
-            this.PunishmentDelayInSeconds = punishmentDelay;
-            this.MaxViolations = maxViolations;
-            this.CheckAlertMessage = checkAlertMessage;
+            this.punishable = punishable;
+            this.punishmentDelayInSeconds = punishmentDelay;
+            this.maxViolations = maxViolations;
+            this.checkAlertMessage = checkAlertMessage;
         }
 
         public CheckSettings(boolean punishable, int maxViolations, Component checkAlertMessage) {
-            this.Punishable = punishable;
-            this.MaxViolations = maxViolations;
-            this.CheckAlertMessage = checkAlertMessage;
+            this.punishable = punishable;
+            this.maxViolations = maxViolations;
+            this.checkAlertMessage = checkAlertMessage;
         }
     }
 
@@ -88,10 +88,10 @@ public class Checks {
     @Getter
     public static class AutoTotemA extends CheckSettings {
         @Comment("\nNormal Check Time: Sets the interval (in ms) for normal checks.")
-        private int NormalCheckTimeMs = 1500;
+        private int normalCheckTimeMs = 1500;
 
         @Comment("\nClick Time Difference: The value (in ms) which anything below will trigger the flag.")
-        private int ClickTimeDifference = 75;
+        private int clickTimeDifference = 75;
 
         public AutoTotemA() {
             super(true, 2, Component.text("Totem Time: ", NamedTextColor.GRAY).append(Component.text("%totem_time%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Real Totem Time: ", NamedTextColor.GRAY).append(Component.text("%real_totem_time%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Click Time Difference: ", NamedTextColor.GRAY).append(Component.text("%click_time_difference%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Main Hand: ", NamedTextColor.GRAY).append(Component.text("%main_hand%", NamedTextColor.GOLD).append(Component.newline().append(Component.text("States: ", NamedTextColor.GRAY).append(Component.text("%states%", NamedTextColor.GOLD))))))))))));
@@ -110,7 +110,7 @@ public class Checks {
     @Getter
     public static class BadPacketsB extends CheckSettings {
         @Comment("\nBanned Client Brands: The list of client brands to flag.")
-        private List<String> BannedClientBrands = List.of(
+        private List<String> bannedBrands = List.of(
                 "autototem"
         );
 

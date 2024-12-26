@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
 import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
+import de.exlll.configlib.NameFormatters;
 import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -103,6 +104,7 @@ public class ConfigManager {
         return YamlConfigurationProperties.newBuilder()
                 .charset(StandardCharsets.UTF_8)
                 .addSerializer(Component.class, new ComponentSerializer())
+                .setNameFormatter(NameFormatters.LOWER_KEBAB_CASE)
                 .outputNulls(false)
                 .inputNulls(true)
                 .header(createConfigHeader())

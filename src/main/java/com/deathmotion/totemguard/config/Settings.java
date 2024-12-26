@@ -27,28 +27,28 @@ import lombok.Getter;
 @Getter
 public class Settings {
     @Comment("API: Weather or not the API is enabled.")
-    private boolean API = true;
+    private boolean api = true;
 
     @Comment("\nServer Name: The name of the server. (Used for alerts, webhooks, API, etc.)")
-    private String Server = "Default";
+    private String server = "Default";
 
     @Comment("\nBypass: Weather or not players with the permission 'totemguard.bypass' can bypass checks.")
-    private boolean Bypass = false;
+    private boolean bypass = false;
 
     @Comment("\nConsole Alerts: Weather or not the console should receive alerts.")
-    private boolean ConsoleAlerts = true;
+    private boolean consoleAlerts = true;
 
     @Comment("Announce client brand: Weather or not the client brand should be announced upon a player joining.")
-    private boolean AnnounceClientBrand = false;
+    private boolean announceClientBrand = false;
 
     @Comment("\nProxy Alert Settings:")
-    private ProxyAlerts Proxy = new ProxyAlerts();
+    private ProxyAlerts proxy = new ProxyAlerts();
 
     @Comment("\nUpdate Checker Settings:")
-    private UpdateChecker UpdateChecker = new UpdateChecker();
+    private UpdateChecker updateChecker = new UpdateChecker();
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
-    private boolean Debug = false;
+    private boolean debug = false;
 
     @Configuration
     @Getter
@@ -60,27 +60,27 @@ public class Settings {
                 " - plugin-messaging (Will use plugin messaging through player connections.)",
                 " - redis (Requires further configuration in the 'redis' section below.)"
         })
-        private String Method = "plugin-messaging";
+        private String method = "plugin-messaging";
 
         @Comment("\nChannel: The channel to send and receive alerts.")
-        private String Channel = "totemguard";
+        private String channel = "totemguard";
 
         @Comment("\nWhen enabled, the plugin will send alerts to other servers connected to the proxy.")
-        private boolean Send = true;
+        private boolean send = true;
 
         @Comment("\nWhen enabled, the plugin will receive alerts from other servers connected to the proxy.")
-        private boolean Receive = true;
+        private boolean receive = true;
 
         @Comment("\nRedis Configuration")
-        private RedisConfiguration Redis = new RedisConfiguration();
+        private RedisConfiguration redis = new RedisConfiguration();
 
         @Configuration
         @Getter
         public static class RedisConfiguration {
-            private String Host = "localhost";
-            private int Port = 6379;
-            private String Username = "default";
-            private String Password = "yourPassword";
+            private String host = "localhost";
+            private int port = 6379;
+            private String username = "default";
+            private String password = "yourPassword";
         }
     }
 
@@ -88,12 +88,12 @@ public class Settings {
     @Getter
     public static class UpdateChecker {
         @Comment("Enable and/or disable the update checker.")
-        private boolean Enabled = true;
+        private boolean enabled = true;
 
         @Comment("\nPrint to Console: Prints the update message to the console.")
-        private boolean PrintToConsole = true;
+        private boolean printToConsole = true;
 
         @Comment("\nNotify In-Game: Notifies players with the permission in-game.")
-        private boolean NotifyInGame = true;
+        private boolean notifyInGame = true;
     }
 }

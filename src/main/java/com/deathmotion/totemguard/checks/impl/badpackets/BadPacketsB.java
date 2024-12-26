@@ -33,7 +33,7 @@ public class BadPacketsB extends Check implements PacketCheck {
     }
 
     public void handle(String clientBrand) {
-        if (TotemGuard.getInstance().getConfigManager().getChecks().getBadPacketsB().getBannedClientBrands().contains(clientBrand.toLowerCase())) {
+        if (TotemGuard.getInstance().getConfigManager().getChecks().getBadPacketsB().getBannedBrands().contains(clientBrand.toLowerCase())) {
             fail(createDetails(clientBrand));
         }
     }

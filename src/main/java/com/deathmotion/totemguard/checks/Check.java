@@ -71,7 +71,7 @@ public class Check implements AbstractCheck {
     }
 
     public boolean shouldFail() {
-        if (settings.isAPI()) {
+        if (settings.isApi()) {
             FlagEvent event = new FlagEvent(player, this);
             Bukkit.getPluginManager().callEvent(event);
             if (event.isCancelled()) return false;

@@ -45,7 +45,7 @@ public class PunishmentManager {
         if (check.getViolations() < check.getCheckSettings().getMaxViolations()) return;
         if (toBePunished.contains(check.getPlayer().getUniqueId())) return;
 
-        if (check.getSettings().isAPI()) {
+        if (check.getSettings().isApi()) {
             PunishEvent punishEvent = new PunishEvent(check.getPlayer(), check);
             plugin.getServer().getPluginManager().callEvent(punishEvent);
             if (punishEvent.isCancelled()) return;

@@ -27,41 +27,41 @@ import lombok.Getter;
 @Getter
 public class Webhooks {
     @Comment("Webhook Alert Settings")
-    private AlertSettings Alert = new AlertSettings();
+    private AlertSettings alert = new AlertSettings();
 
     @Comment("\nWebhook Punishment Settings")
-    private PunishmentSettings Punishment = new PunishmentSettings();
+    private PunishmentSettings punishment = new PunishmentSettings();
 
     @Configuration
     @Getter
     public abstract static class WebhookSettings {
         @Comment("Enable and/or disable the webhook implementation.")
-        private boolean Enabled = false;
+        private boolean enabled = false;
 
         @Comment("\nWebhook URL: The URL of the webhook to send notifications to.")
-        private String Url = "https://discord.com/api/webhooks/your_webhook_url";
+        private String url = "https://discord.com/api/webhooks/your_webhook_url";
 
         @Comment("\nClient Name: Name of the client.")
-        private String Name = "TotemGuard";
+        private String name = "TotemGuard";
 
         @Comment("\nWebhook Embed color: Color of the webhook embed (in hex).")
-        private String Color;
+        private String color;
 
         @Comment("\nWebhook Title: Brief description about what the webhook is about. (Like Alert, Punishment, etc.)")
-        private String Title;
+        private String title;
 
         @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
-        private String ProfileImage = "https://i.imgur.com/hqaGO5H.png";
+        private String profileImage = "https://i.imgur.com/hqaGO5H.png";
 
         @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
-        private boolean Timestamp = true;
+        private boolean timestamp = true;
 
         @Comment("\nWebhook Footer: Sets the server name as the footer.")
-        private boolean Footer = true;
+        private boolean footer = true;
 
         public WebhookSettings(String title, String color) {
-            this.Title = title;
-            this.Color = color;
+            this.title = title;
+            this.color = color;
         }
     }
 

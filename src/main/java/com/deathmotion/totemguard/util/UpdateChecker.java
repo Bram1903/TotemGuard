@@ -97,7 +97,7 @@ public class UpdateChecker {
     }
 
     private void notifyUpdateAvailable(TGVersion currentVersion, TGVersion newVersion) {
-        if (settings.isAPI()) {
+        if (settings.isApi()) {
             UpdateFoundEvent event = new UpdateFoundEvent(newVersion);
             plugin.getServer().getPluginManager().callEvent(event);
         }
