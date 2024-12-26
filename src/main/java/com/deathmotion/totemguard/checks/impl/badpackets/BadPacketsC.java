@@ -48,11 +48,12 @@ public class BadPacketsC extends Check implements PacketCheck {
     }
 
     private Component createDetails(int slot, int lastSlot) {
-        return checkSettings.getCheckAlertMessage()
-                .replaceText(builder -> builder
-                        .matchLiteral("%new_slot%")
-                        .replacement(String.valueOf(slot))
-                        .matchLiteral("%last_slot%")
-                        .replacement(String.valueOf(lastSlot)));
+        return Component.text()
+                .append(Component.text("New Slot Change: ", color.getX()))
+                .append(Component.text(slot, color.getY()))
+                .append(Component.newline())
+                .append(Component.text("Last Slot Change: ", color.getX()))
+                .append(Component.text(lastSlot, color.getY()))
+                .build();
     }
 }

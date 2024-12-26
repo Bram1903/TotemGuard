@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.interfaces;
 
-import net.kyori.adventure.text.Component;
 
 import java.util.List;
 
@@ -30,8 +29,6 @@ public interface AbstractCheckSettings {
     int getPunishmentDelayInSeconds();
 
     int getMaxViolations();
-
-    Component getCheckAlertMessage();
 
     List<String> getPunishmentCommands();
 }

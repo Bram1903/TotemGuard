@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.config.Checks;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.config.Webhooks;
-import com.deathmotion.totemguard.config.serializers.ComponentSerializer;
 import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
@@ -32,7 +31,6 @@ import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
-import net.kyori.adventure.text.Component;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -103,7 +101,6 @@ public class ConfigManager {
     private YamlConfigurationProperties createYamlProperties() {
         return YamlConfigurationProperties.newBuilder()
                 .charset(StandardCharsets.UTF_8)
-                .addSerializer(Component.class, new ComponentSerializer())
                 .setNameFormatter(NameFormatters.LOWER_KEBAB_CASE)
                 .outputNulls(false)
                 .inputNulls(true)

@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.impl.AlertMessageService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
 
 public class MessengerService {
@@ -30,24 +31,32 @@ public class MessengerService {
 
     public MessengerService(TotemGuard totemGuard) {
         this.configManager = totemGuard.getConfigManager();
-        this.alertMessageService = new AlertMessageService(configManager);
+        this.alertMessageService = new AlertMessageService(this);
     }
 
-    public Component getPrefix() {
+    public Component format(String text) {
+        return configManager.getMessages().getFormat().format(text);
+    }
+
+    public String unformat(Component component) {
+        return configManager.getMessages().getFormat().unformat(component);
+    }
+
+    public String getPrefix() {
         return configManager.getMessages().getPrefix();
     }
 
     public Component toggleAlerts(boolean enabled) {
-        Component message = enabled
+        String message = enabled
                 ? configManager.getMessages().getAlertsEnabled()
                 : configManager.getMessages().getAlertsDisabled();
 
-        return message.replaceText(builder ->
-                builder.matchLiteral("%prefix%").replacement(getPrefix())
-        );
+        message = message.replace("%prefix%", getPrefix());
+
+        return format(message);
     }
 
-    public Component createAlert(Check check, Component details) {
+    public Pair<Component, Component> createAlert(Check check, Component details) {
         return alertMessageService.createAlert(check, details);
     }
 }

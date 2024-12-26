@@ -114,17 +114,22 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
      * Constructs the alert message using placeholders from the check's configured message.
      */
     private Component buildAlertMessage(long rawTotemDiff, long pingAdjustedDiff, long rawClickDiff) {
-        return checkSettings.getCheckAlertMessage().replaceText(builder -> builder
-                .matchLiteral("%totem_time%")
-                .replacement(String.valueOf(rawTotemDiff))
-                .matchLiteral("%real_totem_time%")
-                .replacement(String.valueOf(pingAdjustedDiff))
-                .matchLiteral("%click_time_difference%")
-                .replacement(String.valueOf(rawClickDiff))
-                .matchLiteral("%main_hand%")
-                .replacement(describeMainHand())
-                .matchLiteral("%states%")
-                .replacement(gatherStates()));
+        return Component.text()
+                .append(Component.text("Totem Time: ", color.getX()))
+                .append(Component.text(rawTotemDiff + "ms", color.getY()))
+                .append(Component.newline())
+                .append(Component.text("Real Totem Time: ", color.getX()))
+                .append(Component.text(pingAdjustedDiff + "ms", color.getY()))
+                .append(Component.newline())
+                .append(Component.text("Click Difference: ", color.getX()))
+                .append(Component.text(rawClickDiff + "ms", color.getY()))
+                .append(Component.newline())
+                .append(Component.text("Main Hand: ", color.getX()))
+                .append(Component.text(describeMainHand(), color.getY()))
+                .append(Component.newline())
+                .append(Component.text("States: ", color.getX()))
+                .append(Component.text(gatherStates(), color.getY()))
+                .build();
     }
 
     /**

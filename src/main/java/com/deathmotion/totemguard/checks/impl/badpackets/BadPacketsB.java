@@ -39,9 +39,9 @@ public class BadPacketsB extends Check implements PacketCheck {
     }
 
     private Component createDetails(String clientBrand) {
-        return checkSettings.getCheckAlertMessage()
-                .replaceText(builder -> builder
-                        .matchLiteral("%client_brand%")
-                        .replacement(clientBrand));
+        return Component.text()
+                .append(Component.text("Client Brand: ", color.getX()))
+                .append(Component.text(clientBrand, color.getY()))
+                .build();
     }
 }

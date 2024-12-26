@@ -68,18 +68,18 @@ public class ClientBrand extends Check implements PacketCheck {
     private void announceBrand(String brand) {
         if (!settings.isAnnounceClientBrand()) return;
 
-        Component message = TotemGuard.getInstance().getConfigManager().getMessages().getAlertBrand()
-                .replaceText(builder -> builder
-                        .matchLiteral("%player%")
-                        .replacement(player.getName())
-                        .matchLiteral("%brand%")
-                        .replacement(brand)
-                );
+        String alertBrandTemplate = TotemGuard.getInstance().getConfigManager().getMessages().getAlertBrand();
+
+        Component brandAlert = TotemGuard.getInstance().getMessengerService().format(
+                alertBrandTemplate
+                        .replace("%player%", player.getName())
+                        .replace("%brand%", brand)
+        );
 
         // sendMessage is async safe while broadcast isn't due to adventure
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             if (onlinePlayer.hasPermission("TotemGuard.Brand")) {
-                onlinePlayer.sendMessage(message);
+                onlinePlayer.sendMessage(brandAlert);
             }
         }
     }

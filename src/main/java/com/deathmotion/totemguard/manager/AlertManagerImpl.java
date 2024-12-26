@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.api.events.AlertsToggleEvent;
 import com.deathmotion.totemguard.api.interfaces.AlertManager;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.messenger.MessengerService;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -53,18 +54,18 @@ public class AlertManagerImpl implements AlertManager {
      * @param details Additional message details.
      */
     public void sendAlert(Check check, Component details) {
-        Component craftedAlert = messageService.createAlert(check, details);
+        Pair<Component, Component> craftedAlert = messageService.createAlert(check, details);
 
         // Send to all players who have alerts enabled
-        enabledAlerts.values().forEach(player -> player.sendMessage(craftedAlert));
+        enabledAlerts.values().forEach(player -> player.sendMessage(craftedAlert.getX()));
 
         // Optionally log to console
         if (plugin.getConfigManager().getSettings().isConsoleAlerts()) {
-            plugin.getServer().getConsoleSender().sendMessage(craftedAlert);
+            plugin.getServer().getConsoleSender().sendMessage(craftedAlert.getY());
         }
 
         // Send to proxy and Discord if enabled
-        plugin.getProxyMessenger().sendAlert(craftedAlert);
+        plugin.getProxyMessenger().sendAlert(craftedAlert.getX());
         plugin.getDiscordManager().sendAlert(check, details);
     }
 

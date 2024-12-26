@@ -21,12 +21,16 @@ package com.deathmotion.totemguard.checks;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.FlagEvent;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
+import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.interfaces.AbstractCheckSettings;
+import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +41,8 @@ public class Check implements AbstractCheck {
     protected final TotemPlayer player;
     private final AtomicInteger violations = new AtomicInteger();
     protected Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
+    protected Messages messages = TotemGuard.getInstance().getConfigManager().getMessages();
+    protected Pair<TextColor, TextColor> color;
     protected AbstractCheckSettings checkSettings;
     private String checkName;
     private String description;
@@ -52,12 +58,17 @@ public class Check implements AbstractCheck {
             this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
             this.description = checkData.description();
             this.experimental = checkData.experimental();
+
+            this.color = getColors();
         }
     }
 
     public void reload() {
         this.settings = TotemGuard.getInstance().getConfigManager().getSettings();
+        this.messages = TotemGuard.getInstance().getConfigManager().getMessages();
         this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
+
+        this.color = getColors();
     }
 
     public void fail(Component details) {
@@ -74,7 +85,7 @@ public class Check implements AbstractCheck {
         if (settings.isApi()) {
             FlagEvent event = new FlagEvent(player, this);
             Bukkit.getPluginManager().callEvent(event);
-            if (event.isCancelled()) return false;
+            return !event.isCancelled();
         }
 
         return true;
@@ -87,6 +98,17 @@ public class Check implements AbstractCheck {
 
     @Override
     public int getMaxViolations() {
-        return checkSettings.getPunishmentDelayInSeconds();
+        return checkSettings.getMaxViolations();
+    }
+
+    private Pair<TextColor, TextColor> getColors() {
+        MessengerService messengerService = TotemGuard.getInstance().getMessengerService();
+        Messages.AlertFormat.CheckDetailsColor colorScheme = messages.getAlertFormat().getCheckDetailsColor();
+
+        // Deserialize the color codes and extract the TextColor
+        TextColor primaryColor = messengerService.format(colorScheme.getMain()).color();
+        TextColor secondaryColor = messengerService.format(colorScheme.getSecondary()).color();
+
+        return new Pair<>(primaryColor, secondaryColor);
     }
 }

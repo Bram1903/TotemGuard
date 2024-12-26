@@ -19,52 +19,62 @@
 package com.deathmotion.totemguard.messenger.impl;
 
 import com.deathmotion.totemguard.checks.Check;
-import com.deathmotion.totemguard.manager.ConfigManager;
+import com.deathmotion.totemguard.config.Messages;
+import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.github.retrooper.packetevents.util.SpigotReflectionUtil;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.event.ClickEvent;
 
 public class AlertMessageService {
-    private final ConfigManager configManager;
+    private final MessengerService messengerService;
 
-    public AlertMessageService(ConfigManager configManager) {
-        this.configManager = configManager;
+    public AlertMessageService(MessengerService messengerService) {
+        this.messengerService = messengerService;
     }
 
-    public Component createAlert(Check check, Component details) {
-        // Get the alert format as a Component
-        Component alertTemplate = configManager.getMessages().getAlertFormat();
+    public Pair<Component, Component> createAlert(Check check, Component details) {
+        Messages messages = check.getMessages();
 
+        String alertTemplate = messages.getAlertFormat().getAlertFormat();
+        String alertConsoleTemplate = messages.getAlertFormat().getAlertFormatConsole();
+        String alertHoverTemplate = messages.getAlertFormat().getAlertHoverMessage();
+        String alertClickTemplate = messages.getAlertFormat().getAlertClickCommand();
+
+        Component hoverMessage = createHoverMessage(alertHoverTemplate, check, details);
+        Component alertMessage = createAlertMessage(alertTemplate, check);
+        Component consoleMessage = createAlertMessage(alertConsoleTemplate, check);
+
+        alertMessage = alertMessage.hoverEvent(hoverMessage);
+        alertMessage = alertMessage.clickEvent(ClickEvent.runCommand(alertClickTemplate.replace("%player%", check.getPlayer().getName())));
+
+        return new Pair<>(alertMessage, consoleMessage);
+    }
+
+    private Component createHoverMessage(String alertHoverTemplate, Check check, Component details) {
         TotemPlayer player = check.getPlayer();
 
-        // Replace placeholders directly in the Component
-        return alertTemplate
-                .replaceText(createReplacement("%player%", player.user.getName()))
-                .replaceText(createReplacement("%tps%", String.format("%.2f", SpigotReflectionUtil.getTPS())))
-                .replaceText(createReplacement("%client_version%", player.user.getClientVersion().getReleaseName()))
-                .replaceText(createReplacement("%client_brand%", player.getBrand()))
-                .replaceText(createReplacement("%ping%", String.valueOf(player.getKeepAlivePing())))
-                .replaceText(createReplacement("%check_name%", check.getCheckName()))
-                .replaceText(createReplacement("%check_description%", check.getDescription()))
-                .replaceText(createReplacement("%server%", check.getSettings().getServer()))
-                .replaceText(createReplacement("%check_details%", details))
-                .replaceText(createReplacement("%prefix%", configManager.getMessages().getPrefix()))
-                .replaceText(createReplacement("%violations%", String.valueOf(check.getViolations())))
-                .replaceText(createReplacement("%max_violations%", String.valueOf(check.getCheckSettings().getMaxViolations())));
+        return messengerService.format(alertHoverTemplate
+                .replace("%tps%", String.format("%.2f", SpigotReflectionUtil.getTPS()))
+                .replace("%client_version%", player.getVersionName())
+                .replace("%client_brand%", player.getBrand())
+                .replace("%player%", player.getName())
+                .replace("%ping%", String.valueOf(player.getKeepAlivePing()))
+                .replace("%check_name%", check.getCheckName())
+                .replace("%check_description%", check.getDescription())
+                .replace("%server%", check.getSettings().getServer())
+                .replace("%check_details%", messengerService.unformat(details)));
     }
 
-    private TextReplacementConfig createReplacement(String placeholder, String replacement) {
-        return TextReplacementConfig.builder()
-                .matchLiteral(placeholder)
-                .replacement(replacement)
-                .build();
-    }
+    private Component createAlertMessage(String alertTemplate, Check check) {
+        TotemPlayer player = check.getPlayer();
 
-    private TextReplacementConfig createReplacement(String placeholder, Component replacement) {
-        return TextReplacementConfig.builder()
-                .matchLiteral(placeholder)
-                .replacement(replacement)
-                .build();
+        return messengerService.format(alertTemplate
+                .replace("%prefix%", messengerService.getPrefix())
+                .replace("%player%", player.getName())
+                .replace("%check_name%", check.getCheckName())
+                .replace("%violations%", String.valueOf(check.getViolations()))
+                .replace("%max_violations%", check.getCheckSettings().isPunishable() ? String.valueOf(check.getMaxViolations()) : "∞"));
     }
 }

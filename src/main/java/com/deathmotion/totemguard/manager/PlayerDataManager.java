@@ -46,11 +46,7 @@ public class PlayerDataManager {
         }
 
         // Is a Geyser (Bedrock) player
-        if (user.getUUID().getMostSignificantBits() == 0L) {
-            return false;
-        }
-
-        return true;
+        return user.getUUID().getMostSignificantBits() != 0L;
     }
 
     @Nullable

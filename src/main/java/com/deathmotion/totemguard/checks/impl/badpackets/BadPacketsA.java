@@ -58,9 +58,9 @@ public class BadPacketsA extends Check implements PacketCheck {
     }
 
     private Component getCheckDetails(String channel) {
-        return checkSettings.getCheckAlertMessage()
-                .replaceText(builder -> builder
-                        .matchLiteral("%channel%")
-                        .replacement(channel));
+        return Component.text()
+                .append(Component.text("Channel: ", color.getX()))
+                .append(Component.text(channel, color.getY()))
+                .build();
     }
 }

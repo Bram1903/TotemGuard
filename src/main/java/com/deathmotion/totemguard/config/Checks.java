@@ -22,8 +22,6 @@ import com.deathmotion.totemguard.interfaces.AbstractCheckSettings;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.List;
 
@@ -65,22 +63,19 @@ public class Checks {
         private boolean punishable;
         private int punishmentDelayInSeconds = 0;
         private int maxViolations;
-        private Component checkAlertMessage;
         private List<String> punishmentCommands = List.of(
                 "%default_punishment%"
         );
 
-        public CheckSettings(boolean punishable, int punishmentDelay, int maxViolations, Component checkAlertMessage) {
+        public CheckSettings(boolean punishable, int punishmentDelay, int maxViolations) {
             this.punishable = punishable;
             this.punishmentDelayInSeconds = punishmentDelay;
             this.maxViolations = maxViolations;
-            this.checkAlertMessage = checkAlertMessage;
         }
 
-        public CheckSettings(boolean punishable, int maxViolations, Component checkAlertMessage) {
+        public CheckSettings(boolean punishable, int maxViolations) {
             this.punishable = punishable;
             this.maxViolations = maxViolations;
-            this.checkAlertMessage = checkAlertMessage;
         }
     }
 
@@ -94,7 +89,7 @@ public class Checks {
         private int clickTimeDifference = 75;
 
         public AutoTotemA() {
-            super(true, 2, Component.text("Totem Time: ", NamedTextColor.GRAY).append(Component.text("%totem_time%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Real Totem Time: ", NamedTextColor.GRAY).append(Component.text("%real_totem_time%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Click Time Difference: ", NamedTextColor.GRAY).append(Component.text("%click_time_difference%ms", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Main Hand: ", NamedTextColor.GRAY).append(Component.text("%main_hand%", NamedTextColor.GOLD).append(Component.newline().append(Component.text("States: ", NamedTextColor.GRAY).append(Component.text("%states%", NamedTextColor.GOLD))))))))))));
+            super(true, 2);
         }
     }
 
@@ -102,7 +97,7 @@ public class Checks {
     @Getter
     public static class BadPacketsA extends CheckSettings {
         public BadPacketsA() {
-            super(true, 20, 1, Component.text("Channel: ", NamedTextColor.GRAY).append(Component.text("%channel%", NamedTextColor.GOLD)));
+            super(true, 20, 1);
         }
     }
 
@@ -115,7 +110,7 @@ public class Checks {
         );
 
         public BadPacketsB() {
-            super(true, 20, 1, Component.text("Client Brand: ", NamedTextColor.GRAY).append(Component.text("%client_brand%", NamedTextColor.GOLD)));
+            super(true, 20, 1);
         }
     }
 
@@ -123,7 +118,7 @@ public class Checks {
     @Getter
     public static class BadPacketsC extends CheckSettings {
         public BadPacketsC() {
-            super(true, 20, 3, Component.text("New Slot Change: ", NamedTextColor.GRAY).append(Component.text("%new_slot%", NamedTextColor.GOLD).append(Component.newline()).append(Component.text("Last Slot Change: ", NamedTextColor.GRAY).append(Component.text("%last_slot%", NamedTextColor.GOLD)))));
+            super(true, 20, 3);
         }
     }
 }
