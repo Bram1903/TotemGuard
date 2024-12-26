@@ -27,7 +27,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
-@SuppressWarnings("unused")
+// I copied most of this code from https://github.com/alexdev03/UnlimitedNametags/blob/main/src/main/java/org/alexdev/unlimitednametags/config/Formatter.java
+// Thanks Alex <3
 public enum Formatter {
     MINIMESSAGE(
             text -> MiniMessage.miniMessage().deserialize(text),
