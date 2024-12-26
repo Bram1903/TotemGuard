@@ -95,7 +95,7 @@ public class ConfigManager {
     }
 
     private File getWebhookFile() {
-        return new File(plugin.getDataFolder(), "webhook.yml");
+        return new File(plugin.getDataFolder(), "webhooks.yml");
     }
 
     private YamlConfigurationProperties createYamlProperties() {
