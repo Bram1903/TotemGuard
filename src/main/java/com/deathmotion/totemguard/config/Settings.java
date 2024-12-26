@@ -26,19 +26,19 @@ import lombok.Getter;
 @Configuration
 @Getter
 public class Settings {
-    @Comment("API: Weather or not the API is enabled.")
+    @Comment("API: Whether the API should be enabled.")
     private boolean api = true;
 
     @Comment("\nServer Name: The name of the server. (Used for alerts, webhooks, API, etc.)")
     private String server = "Default";
 
-    @Comment("\nBypass: Weather or not players with the permission 'totemguard.bypass' can bypass checks.")
+    @Comment("\nBypass: Whether players with the permission 'totemguard.bypass' can bypass checks.")
     private boolean bypass = false;
 
-    @Comment("\nConsole Alerts: Weather or not the console should receive alerts.")
+    @Comment("\nConsole Alerts: Whether the console should receive alerts.")
     private boolean consoleAlerts = true;
 
-    @Comment("Announce client brand: Weather or not the client brand should be announced upon a player joining.")
+    @Comment("\nAnnounce client brand: Whether the client brand should be announced upon a player joining.")
     private boolean announceClientBrand = false;
 
     @Comment("\nProxy Alert Settings:")
@@ -55,7 +55,7 @@ public class Settings {
     public static class ProxyAlerts {
         @Comment({
                 "Proxy messaging method",
-                "How should be send and receive messages from sibling servers?",
+                "How should messages be sent and received from sibling servers?",
                 "Options:",
                 " - plugin-messaging (Will use plugin messaging through player connections.)",
                 " - redis (Requires further configuration in the 'redis' section below.)"
