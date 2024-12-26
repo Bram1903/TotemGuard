@@ -22,8 +22,22 @@ import com.deathmotion.totemguard.api.TotemGuardAPI;
 import com.deathmotion.totemguard.api.interfaces.AlertManager;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.util.TGVersions;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.ServicePriority;
 
 public class TotemGuardAPIImpl implements TotemGuardAPI {
+
+    private final TotemGuard plugin;
+
+    protected TotemGuardAPIImpl(TotemGuard plugin) {
+        this.plugin = plugin;
+
+        registerService();
+    }
+
+    private void registerService() {
+        Bukkit.getServicesManager().register(TotemGuardAPI.class, this, plugin, ServicePriority.Normal);
+    }
 
     @Override
     public TGVersion getVersion() {

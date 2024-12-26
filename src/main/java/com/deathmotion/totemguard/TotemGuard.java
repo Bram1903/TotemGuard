@@ -50,7 +50,7 @@ public final class TotemGuard extends JavaPlugin {
     private final PlayerDataManager playerDataManager = new PlayerDataManager();
     private final UpdateChecker updateChecker = new UpdateChecker(this);
 
-    private final TotemGuardAPIImpl totemGuardAPI = new TotemGuardAPIImpl();
+    private final TotemGuardAPIImpl totemGuardAPI = new TotemGuardAPIImpl(this);
 
     @Setter
     private ProxyAlertMessenger proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));

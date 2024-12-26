@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.testplugin;
 
 import com.deathmotion.totemguard.api.TotemGuardAPI;
+import com.deathmotion.totemguard.testplugin.events.AlertsToggleEventTest;
 import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
 import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
 import com.deathmotion.totemguard.testplugin.events.UpdateFoundEventTest;
@@ -45,6 +46,7 @@ public final class ApiTestPlugin extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
+        Bukkit.getPluginManager().registerEvents(new AlertsToggleEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new UpdateFoundEventTest(this), this);
 
         getLogger().info("Successfully hooked into TotemGuard API.");
