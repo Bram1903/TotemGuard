@@ -26,7 +26,6 @@ import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -91,7 +90,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
         long now = System.currentTimeMillis();
         long timeSinceTotemUse = Math.abs(now - lastTotemUse);
         long timeSinceClick = Math.abs(now - clickMoment);
-        long adjustedTotemTime = Math.abs(timeSinceTotemUse - player.bukkitPlayer.getPing());
+        long adjustedTotemTime = Math.abs(timeSinceTotemUse - player.getKeepAlivePing());
 
         var config = TotemGuard.getInstance().getConfigManager().getChecks().getAutoTotemA();
 
@@ -106,8 +105,8 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
     /**
      * Retrieves a string for the item in the player's main hand (or "Empty Hand").
      */
-    private String describeMainHand(Player bukkitPlayer) {
-        Material mainHandItem = bukkitPlayer.getInventory().getItemInMainHand().getType();
+    private String describeMainHand() {
+        Material mainHandItem = player.bukkitPlayer.getInventory().getItemInMainHand().getType();
         return mainHandItem == Material.AIR ? "Empty Hand" : mainHandItem.toString();
     }
 
@@ -123,7 +122,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
                 .matchLiteral("%click_time_difference%")
                 .replacement(String.valueOf(rawClickDiff))
                 .matchLiteral("%main_hand%")
-                .replacement(describeMainHand(player.bukkitPlayer))
+                .replacement(describeMainHand())
                 .matchLiteral("%states%")
                 .replacement(gatherStates()));
     }
