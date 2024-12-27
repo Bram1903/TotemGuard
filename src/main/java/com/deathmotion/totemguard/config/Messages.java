@@ -45,10 +45,10 @@ public class Messages {
     @Getter
     public static class AlertFormat {
         @Comment("Alert Format: The format for all alerts.")
-        private String alertFormat = "%prefix% &e%player%&7 failed &6%check_name% &7VL[&6%violations%/%max_violations%&7]";
+        private String alertFormat = "%prefix% &e%player%&7 failed &6%check_name% &7VL[&6%violations%/%max_violations%&7]%dev%";
 
         @Comment("\nAlert Format Console: The format for all alerts in console.")
-        private String alertFormatConsole = "%prefix% &e%player%&7 failed &6%check_name% &7VL[&6%violations%/%max_violations%&7]";
+        private String alertFormatConsole = "%prefix% &e%player%&7 failed &6%check_name% &7VL[&6%violations%/%max_violations%&7]%dev%";
 
         @Comment("\nAlert Hover Format: The format for all alerts when hovered over.")
         private String alertHoverMessage = """
@@ -67,6 +67,9 @@ public class Messages {
 
         @Comment("\nAlert Click Command: The command to run when the alert is clicked.")
         private String alertClickCommand = "/tp %player%";
+
+        @Comment("\nPrefix for experimental checks. Replaces the %dev% placeholder.")
+        private String devPrefix = "&d&l *";
 
         @Comment("\nCheck Details Color: The color for the alert details.")
         private CheckDetailsColor checkDetailsColor = new CheckDetailsColor();

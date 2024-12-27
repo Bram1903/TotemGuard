@@ -44,6 +44,7 @@ public class PlaceHolderService {
                 .replace("%server%", check.getSettings().getServer())
                 .replace("%prefix%", messengerService.getPrefix())
                 .replace("%violations%", String.valueOf(check.getViolations()))
-                .replace("%max_violations%", check.getCheckSettings().isPunishable() ? String.valueOf(check.getMaxViolations()) : "∞");
+                .replace("%max_violations%", check.getCheckSettings().isPunishable() ? String.valueOf(check.getMaxViolations()) : "∞")
+                .replace("%dev%", check.isExperimental() ? check.getMessages().getAlertFormat().getDevPrefix() : "");
     }
 }
