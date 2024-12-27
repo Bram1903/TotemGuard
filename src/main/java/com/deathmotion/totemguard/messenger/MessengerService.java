@@ -22,15 +22,20 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.impl.AlertMessageService;
+import com.deathmotion.totemguard.messenger.impl.PlaceHolderService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
 
 public class MessengerService {
     private final ConfigManager configManager;
+
+    private final PlaceHolderService placeHolderService;
     private final AlertMessageService alertMessageService;
 
     public MessengerService(TotemGuard totemGuard) {
         this.configManager = totemGuard.getConfigManager();
+
+        this.placeHolderService = new PlaceHolderService(this);
         this.alertMessageService = new AlertMessageService(this);
     }
 
@@ -44,6 +49,10 @@ public class MessengerService {
 
     public String getPrefix() {
         return configManager.getMessages().getPrefix();
+    }
+
+    public String replacePlaceholders(String text, Check check) {
+        return placeHolderService.replacePlaceHolders(text, check);
     }
 
     public Component toggleAlerts(boolean enabled) {

@@ -58,22 +58,23 @@ public class ClientBrand extends Check implements PacketCheck {
                 brand = new String(minusLength).replace(" (Velocity)", ""); //removes velocity's brand suffix
                 brand = ChatColor.stripColor(brand); //strip color codes from client brand
 
-                announceBrand(brand);
+                announceBrand();
             }
 
             hasBrand = true;
         }
     }
 
-    private void announceBrand(String brand) {
+    private void announceBrand() {
         if (!settings.isAnnounceClientBrand()) return;
 
         String alertBrandTemplate = TotemGuard.getInstance().getConfigManager().getMessages().getAlertBrand();
 
         Component brandAlert = TotemGuard.getInstance().getMessengerService().format(
                 alertBrandTemplate
+                        .replace("%prefix%", messages.getPrefix())
                         .replace("%player%", player.getName())
-                        .replace("%brand%", brand)
+                        .replace("%client_brand%", brand)
         );
 
         // sendMessage is async safe while broadcast isn't due to adventure

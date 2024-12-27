@@ -27,45 +27,43 @@ import lombok.Getter;
 @Configuration
 @Getter
 public class Messages {
-    @Comment("""
-            Which text formatter to use (MINIMESSAGE, LEGACY)
-            (&#084cfbc LEGACY - <color:#084cfbc> MINIMESSAGE)""")
-    private Formatter format = Formatter.MINIMESSAGE;
+    @Comment("Which text formatter to use (MINIMESSAGE, LEGACY)")
+    private Formatter format = Formatter.LEGACY;
 
     @Comment("\nPrefix: The prefix for all messages.")
-    private String prefix = "<gold><bold>TG</bold></gold> <dark_gray>»</dark_gray>";
+    private String prefix = "&6&lTG &8»";
 
     @Comment("\nAlert Format: The format for all alerts.")
     private AlertFormat alertFormat = new AlertFormat();
 
     @Comment("\n")
-    private String alertsEnabled = "%prefix% <green>Alerts enabled";
-    private String alertsDisabled = "%prefix% <red>Alerts disabled";
-    private String alertBrand = "%prefix% <gold>%player%</gold> joined using: <gold>%brand%</gold>";
+    private String alertsEnabled = "%prefix% &aAlerts enabled";
+    private String alertsDisabled = "%prefix% &cAlerts disabled";
+    private String alertBrand = "%prefix% &6%player% &7joined using: &6%client_brand%";
 
     @Configuration
     @Getter
     public static class AlertFormat {
         @Comment("Alert Format: The format for all alerts.")
-        private String alertFormat = "%prefix% <yellow>%player%</yellow><gray> failed </gray><gold>%check_name%</gold><white> </white><gray>VL[</gray><gold>%violations%/%max_violations%</gold><gray>]";
+        private String alertFormat = "%prefix% &e%player%&7 failed &6%check_name% &7VL[&6%violations%/%max_violations%&7]";
 
         @Comment("\nAlert Format Console: The format for all alerts in console.")
-        private String alertFormatConsole = "%prefix% <yellow>%player%</yellow><gray> failed </gray><gold>%check_name%</gold><white> </white><gray>VL[</gray><gold>%violations%/%max_violations%</gold><gray>]";
+        private String alertFormatConsole = "%prefix% &e%player%&7 failed &6%check_name% &7VL[&6%violations%/%max_violations%&7]";
 
         @Comment("\nAlert Hover Format: The format for all alerts when hovered over.")
         private String alertHoverMessage = """
-                <gray>TPS: </gray><gold>%tps%</gold><dark_gray> |</dark_gray><gray> Client Version: </gray><gold>%client_version%</gold><dark_gray> |</dark_gray><gray> Client Brand: </gray><gold>%client_brand%</gold>
+                &7TPS: &6%tps%&8 |&7 Client Version: &6%client_version%&8 |&7 Client Brand: &6%client_brand%
                 
-                <gray>Player: </gray><gold>%player%</gold>
-                <gray>Ping: </gray><gold>%ping%ms</gold>
+                &7Player: &6%player%
+                &7Ping: &6%ping%ms
                 
-                <gray>Check: </gray><gold>%check_name%</gold>
-                <gray>Description: </gray><gold>%check_description%</gold>
-                <gray>Server: </gray><gold>%server%</gold>
+                &7Check: &6%check_name%
+                &7Description: &6%check_description%
+                &7Server: &6%server%
                 
                 %check_details%
                 
-                <gray>Click to </gray><gold>teleport </gold><gray>to %player%.""";
+                &7Click to &6teleport &7to %player%.""";
 
         @Comment("\nAlert Click Command: The command to run when the alert is clicked.")
         private String alertClickCommand = "/tp %player%";
@@ -77,13 +75,10 @@ public class Messages {
         @Getter
         public static class CheckDetailsColor {
             @Comment("Main Color: The main color for the check details.")
-            private String main = "<gray>";
+            private String main = "&7";
 
             @Comment("\nSecondary Color: The secondary color for the check details.")
-            private String secondary = "<gold>";
+            private String secondary = "&6";
         }
     }
 }
-
-
-
