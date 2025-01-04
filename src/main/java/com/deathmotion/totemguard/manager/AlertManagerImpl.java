@@ -28,7 +28,6 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.Blocking;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

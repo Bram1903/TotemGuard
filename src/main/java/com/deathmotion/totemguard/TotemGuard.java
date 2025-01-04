@@ -62,10 +62,8 @@ public final class TotemGuard extends JavaPlugin {
     @Override
     public void onLoad() {
         CommandAPI.setLogger(CommandAPILogger.fromJavaLogger(getLogger()));
-
         CommandAPIBukkitConfig config = new CommandAPIBukkitConfig(this);
         config.usePluginNamespace();
-
         CommandAPI.onLoad(config);
     }
 

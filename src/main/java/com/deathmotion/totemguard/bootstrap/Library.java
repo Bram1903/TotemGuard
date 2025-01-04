@@ -58,15 +58,6 @@ public enum Library {
     }
 
     /**
-     * Formats the Maven dependency string.
-     *
-     * @return The formatted Maven dependency string.
-     */
-    public String getMavenDependency() {
-        return String.format("%s:%s:%s", group, name, version);
-    }
-
-    /**
      * Reads and extracts the plugin version from the version.json file inside the JAR.
      *
      * @return The plugin version.
@@ -82,5 +73,14 @@ public enum Library {
         } catch (Exception e) {
             throw new RuntimeException("Failed to read or parse version from server JAR: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Formats the Maven dependency string.
+     *
+     * @return The formatted Maven dependency string.
+     */
+    public String getMavenDependency() {
+        return String.format("%s:%s:%s", group, name, version);
     }
 }
