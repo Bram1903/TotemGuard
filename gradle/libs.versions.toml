@@ -8,6 +8,7 @@ configlib = "4.5.0"
 discord-webhooks = "0.8.0"
 lettuce = "6.5.1.RELEASE"
 commandapi = "9.7.0"
+expiringmap = "0.5.11"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
@@ -17,6 +18,7 @@ configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "c
 discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.ref = "discord-webhooks" }
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
 commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade", version.ref = "commandapi" }
+expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

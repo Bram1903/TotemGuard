@@ -15,6 +15,7 @@ dependencies {
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.lettuce)
     compileOnly(libs.commandapi)
+    compileOnly(libs.expiringmap)
     compileOnly(libs.discord.webhooks)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
@@ -72,6 +73,7 @@ tasks {
         inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
         inputs.property("lettuceVersion", libs.versions.lettuce.get())
         inputs.property("commandapiVersion", libs.versions.commandapi.get())
+        inputs.property("expiringmapVersion", libs.versions.expiringmap.get())
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
@@ -80,7 +82,8 @@ tasks {
                 "configlibVersion" to libs.versions.configlib.get(),
                 "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
                 "lettuceVersion" to libs.versions.lettuce.get(),
-                "commandapiVersion" to libs.versions.commandapi.get()
+                "commandapiVersion" to libs.versions.commandapi.get(),
+                "expiringmapVersion" to libs.versions.expiringmap.get()
             )
         }
     }

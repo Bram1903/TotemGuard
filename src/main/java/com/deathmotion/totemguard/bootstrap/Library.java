@@ -32,6 +32,7 @@ public enum Library {
     CONFIGLIB("de.exlll", "configlib-yaml", "4.5.0"),
     DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0"),
     LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
+    EXPIRINGMAP("net.jodah", "expiringmap", "0.5.11"),
     COMMANDAPI_MOJANG_MAPPED("dev.jorel", "commandapi-bukkit-shade-mojang-mapped", "9.7.0"),
     COMMANDAPI("dev.jorel", "commandapi-bukkit-shade", "9.7.0");
 
@@ -54,7 +55,7 @@ public enum Library {
         Library commandApiLibrary = getServerVersion().isNewerThan(TGVersion.fromString("1.20.4"))
                 ? COMMANDAPI_MOJANG_MAPPED
                 : COMMANDAPI;
-        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, commandApiLibrary};
+        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, commandApiLibrary};
     }
 
     /**

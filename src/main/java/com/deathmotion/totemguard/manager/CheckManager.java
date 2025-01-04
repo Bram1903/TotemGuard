@@ -23,8 +23,10 @@ import com.deathmotion.totemguard.checks.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
+import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
+import com.deathmotion.totemguard.checks.type.GenericCheck;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -38,6 +40,7 @@ public class CheckManager {
     public ClassToInstanceMap<AbstractCheck> allChecks;
     ClassToInstanceMap<PacketCheck> packetChecks;
     ClassToInstanceMap<BukkitEventCheck> bukkitEventChecks;
+    ClassToInstanceMap<GenericCheck> genericChecks;
 
     public CheckManager(TotemPlayer player) {
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
@@ -51,9 +54,14 @@ public class CheckManager {
                 .put(AutoTotemA.class, new AutoTotemA(player))
                 .build();
 
+        genericChecks = new ImmutableClassToInstanceMap.Builder<GenericCheck>()
+                .put(ManualTotemA.class, new ManualTotemA(player))
+                .build();
+
         allChecks = new ImmutableClassToInstanceMap.Builder<AbstractCheck>()
                 .putAll(packetChecks)
                 .putAll(bukkitEventChecks)
+                .putAll(genericChecks)
                 .build();
     }
 
@@ -83,5 +91,10 @@ public class CheckManager {
     @SuppressWarnings("unchecked")
     public <T extends BukkitEventCheck> T getBukkitEventCheck(Class<T> check) {
         return (T) bukkitEventChecks.get(check);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends GenericCheck> T getGenericCheck(Class<T> check) {
+        return (T) genericChecks.get(check);
     }
 }
