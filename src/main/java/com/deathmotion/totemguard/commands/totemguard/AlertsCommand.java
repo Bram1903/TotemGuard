@@ -38,6 +38,7 @@ public class AlertsCommand {
 
     public CommandAPICommand init() {
         return new CommandAPICommand("alerts")
+                .withPermission("TotemGuard.Alerts")
                 .withOptionalArguments(new EntitySelectorArgument.OnePlayer("player").replaceSuggestions(ArgumentSuggestions.strings(info -> Bukkit.getOnlinePlayers().stream().map(Player::getName).toArray(String[]::new))))
                 .executesConsole(this::handleConsoleCommand)
                 .executesPlayer(this::handlePlayerCommand);
@@ -56,6 +57,11 @@ public class AlertsCommand {
     private void handlePlayerCommand(Player player, CommandArguments args) {
         if (args.getOptional("player").isEmpty()) {
             alertManager.toggleAlerts(player);
+            return;
+        }
+
+        if (!player.hasPermission("TotemGuard.Alerts.Others")) {
+            player.sendMessage("You do not have permission to toggle alerts for other players!");
             return;
         }
 
