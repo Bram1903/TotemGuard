@@ -16,28 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.bootstrap;
+package com.deathmotion.totemguard.commands;
 
-import lombok.Getter;
+import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.commands.totemguard.AlertsCommand;
+import dev.jorel.commandapi.CommandAPICommand;
 
-@Getter
-public enum Library {
-    CONFIGLIB("de.exlll", "configlib-yaml", "4.5.0"),
-    DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0"),
-    LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
-    COMMANDAPI("dev.jorel", "commandapi-bukkit-shade-mojang-mapped", "9.7.0");
+public class TotemGuardCommand {
 
-    private final String group;
-    private final String name;
-    private final String version;
+    private final TotemGuard plugin;
 
-    Library(String group, String name, String version) {
-        this.group = group;
-        this.name = name;
-        this.version = version;
+    public TotemGuardCommand(TotemGuard plugin) {
+        this.plugin = plugin;
+        init();
     }
 
-    public String getMavenDependency() {
-        return String.format("%s:%s:%s", group, name, version);
+    public void init() {
+        new CommandAPICommand("totemguard")
+                .withAliases("tg")
+                .withSubcommands(new AlertsCommand(plugin).init())
+                .executes((sender, args) -> {
+                    sender.sendMessage(plugin.getMessengerService().totemGuardInfo());
+                })
+                .register();
     }
 }

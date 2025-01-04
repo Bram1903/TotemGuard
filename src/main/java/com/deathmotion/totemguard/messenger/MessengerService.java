@@ -23,8 +23,13 @@ import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.impl.AlertMessageService;
 import com.deathmotion.totemguard.messenger.impl.PlaceHolderService;
+import com.deathmotion.totemguard.util.TGVersions;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 public class MessengerService {
     private final ConfigManager configManager;
@@ -63,6 +68,34 @@ public class MessengerService {
         message = message.replace("%prefix%", getPrefix());
 
         return format(message);
+    }
+
+    public Component totemGuardInfo() {
+        Component versionComponent = Component.text()
+                .append(Component.text(" Running ", NamedTextColor.WHITE))
+                .append(Component.text("TotemGuard", NamedTextColor.GREEN))
+                .append(Component.text(" v" + TGVersions.CURRENT, NamedTextColor.GREEN))
+                .build();
+
+        if (TGVersions.CURRENT.snapshotCommit() != null) {
+            versionComponent = versionComponent.append(Component.text()
+                    .append(Component.text(" (Git: ", NamedTextColor.WHITE))
+                    .append(Component.text(TGVersions.CURRENT.snapshotCommit(), NamedTextColor.WHITE))
+                    .append(Component.text(")", NamedTextColor.WHITE))
+                    .build());
+        }
+
+        return format(getPrefix())
+                .append(versionComponent)
+                .append(Component.text(" by ", NamedTextColor.WHITE))
+                .append(Component.text("Bram", NamedTextColor.GREEN))
+                .append(Component.text(" and ", NamedTextColor.WHITE))
+                .append(Component.text("OutDev", NamedTextColor.GREEN))
+                .hoverEvent(HoverEvent.showText(Component.text()
+                        .append(Component.text("Open Github Page!", NamedTextColor.GREEN, TextDecoration.BOLD, TextDecoration.UNDERLINED))
+                        .build()))
+                .decorate(TextDecoration.BOLD)
+                .clickEvent(ClickEvent.openUrl("https://github.com/Bram1903/TotemGuard"));
     }
 
     public Pair<Component, Component> createAlert(Check check, Component details) {

@@ -12,3 +12,4 @@ libraries:
   - de.exlll:configlib-paper:${configlibVersion}
   - club.minnced:discord-webhooks:${discordWebhooksVersion}
   - io.lettuce:lettuce-core:${lettuceVersion}
+  - dev.jorel:commandapi-bukkit-shade:${commandapiVersion}

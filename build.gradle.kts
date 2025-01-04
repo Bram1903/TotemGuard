@@ -14,6 +14,7 @@ dependencies {
     compileOnly(libs.packetevents.spigot)
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.lettuce)
+    compileOnly(libs.commandapi)
     compileOnly(libs.discord.webhooks)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
@@ -70,6 +71,7 @@ tasks {
         inputs.property("configlibVersion", libs.versions.configlib.get())
         inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
         inputs.property("lettuceVersion", libs.versions.lettuce.get())
+        inputs.property("commandapiVersion", libs.versions.commandapi.get())
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
@@ -77,7 +79,8 @@ tasks {
                 "description" to project.description,
                 "configlibVersion" to libs.versions.configlib.get(),
                 "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
-                "lettuceVersion" to libs.versions.lettuce.get()
+                "lettuceVersion" to libs.versions.lettuce.get(),
+                "commandapiVersion" to libs.versions.commandapi.get()
             )
         }
     }
@@ -95,8 +98,8 @@ tasks {
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
         url("https://ci.codemc.io/job/retrooper/job/packetevents/lastSuccessfulBuild/artifact/spigot/build/libs/packetevents-spigot-2.7.1-SNAPSHOT.jar")
-        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.2.0/ViaVersion-5.2.0.jar")
-        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.2.0/ViaBackwards-5.2.0.jar")
+        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.2.1/ViaVersion-5.2.1.jar")
+        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.2.1/ViaBackwards-5.2.1.jar")
     }
 
     runServer {
@@ -109,8 +112,8 @@ tasks {
 
         downloadPlugins {
             from(sharedPlugins)
-            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+151-f2af952.jar")
-            url("https://download.luckperms.net/1567/bukkit/loader/LuckPerms-Bukkit-5.4.150.jar")
+            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+154-667b0f7.jar")
+            url("https://download.luckperms.net/1568/bukkit/loader/LuckPerms-Bukkit-5.4.151.jar")
         }
 
         jvmArgs = jvmArgsExternal

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard;
 
+import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
 import com.deathmotion.totemguard.events.packets.CheckManagerPacketListener;
 import com.deathmotion.totemguard.events.packets.PacketConfigurationListener;
@@ -28,6 +29,9 @@ import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIBukkitConfig;
+import dev.jorel.commandapi.CommandAPILogger;
 import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
 import lombok.Setter;
@@ -56,6 +60,16 @@ public final class TotemGuard extends JavaPlugin {
     private ProxyAlertMessenger proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
 
     @Override
+    public void onLoad() {
+        CommandAPI.setLogger(CommandAPILogger.fromJavaLogger(getLogger()));
+
+        CommandAPIBukkitConfig config = new CommandAPIBukkitConfig(this);
+        config.usePluginNamespace();
+
+        CommandAPI.onLoad(config);
+    }
+
+    @Override
     public void onEnable() {
         instance = this;
 
@@ -64,12 +78,16 @@ public final class TotemGuard extends JavaPlugin {
         PacketEvents.getAPI().getEventManager().registerListener(new CheckManagerPacketListener());
         getServer().getPluginManager().registerEvents(new CheckManagerBukkitListener(), this);
 
+        CommandAPI.onEnable();
+
+        new TotemGuardCommand(this);
         enableBStats();
     }
 
     @Override
     public void onDisable() {
         if (proxyMessenger != null) proxyMessenger.stop();
+        CommandAPI.onDisable();
     }
 
     public void debug(String message) {

@@ -28,6 +28,7 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Blocking;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,8 +85,9 @@ public class AlertManagerImpl implements AlertManager {
      * if API usage is enabled, and if the event is not canceled.
      *
      * @param player The player whose alerts will be toggled.
+     * @return True if the toggle was successful; false if the event was canceled or other issues arose.
      */
-    public void toggleAlerts(Player player) {
+    public boolean toggleAlerts(Player player) {
         UUID playerId = player.getUniqueId();
 
         boolean currentlyEnabled = enabledAlerts.containsKey(playerId);
@@ -93,7 +95,7 @@ public class AlertManagerImpl implements AlertManager {
 
         // Check whether this toggling action is allowed by any external event listeners
         if (!canToggleAlerts(player, willEnable)) {
-            return;
+            return false;
         }
 
         // Perform the toggle
@@ -104,28 +106,32 @@ public class AlertManagerImpl implements AlertManager {
             enabledAlerts.put(playerId, player);
             player.sendMessage(messageService.toggleAlerts(true));
         }
+
+        return true;
     }
 
     /**
      * Enables alerts for a specified player if not already enabled.
      *
      * @param player The player for whom alerts will be enabled.
+     * @return True if alerts were successfully enabled; false if the event was canceled or other issues arose.
      */
-    public void enableAlerts(Player player) {
+    public boolean enableAlerts(Player player) {
         UUID playerId = player.getUniqueId();
 
         // If alerts are already enabled, do nothing
         if (enabledAlerts.containsKey(playerId)) {
-            return;
+            return true;
         }
 
         // Check if we can enable them (event not canceled, etc.)
         if (!canToggleAlerts(player, true)) {
-            return;
+            return false;
         }
 
         enabledAlerts.put(playerId, player);
         player.sendMessage(messageService.toggleAlerts(true));
+        return true;
     }
 
     /**
