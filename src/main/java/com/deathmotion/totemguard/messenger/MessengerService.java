@@ -22,9 +22,11 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.impl.AlertMessageService;
+import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.impl.PlaceHolderService;
 import com.deathmotion.totemguard.util.TGVersions;
 import com.deathmotion.totemguard.util.datastructure.Pair;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -36,12 +38,15 @@ public class MessengerService {
 
     private final PlaceHolderService placeHolderService;
     private final AlertMessageService alertMessageService;
+    @Getter
+    private final CommandMessengerService commandMessengerService;
 
     public MessengerService(TotemGuard totemGuard) {
         this.configManager = totemGuard.getConfigManager();
 
         this.placeHolderService = new PlaceHolderService(this);
         this.alertMessageService = new AlertMessageService(this);
+        this.commandMessengerService = new CommandMessengerService(totemGuard, this);
     }
 
     public Component format(String text) {

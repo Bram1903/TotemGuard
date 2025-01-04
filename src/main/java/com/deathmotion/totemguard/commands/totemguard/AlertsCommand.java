@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.manager.AlertManagerImpl;
+import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
@@ -30,9 +31,11 @@ import org.bukkit.entity.Player;
 
 public class AlertsCommand {
 
+    private final CommandMessengerService commandMessengerService;
     private final AlertManagerImpl alertManager;
 
     public AlertsCommand(TotemGuard plugin) {
+        this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
         this.alertManager = plugin.getAlertManager();
     }
 
@@ -46,7 +49,7 @@ public class AlertsCommand {
 
     private void handleConsoleCommand(CommandSender sender, CommandArguments args) {
         if (args.getOptional("player").isEmpty()) {
-            sender.sendMessage("You need to specify a player when running this command from the console.");
+            sender.sendMessage(commandMessengerService.specifyPlayer());
             return;
         }
 
