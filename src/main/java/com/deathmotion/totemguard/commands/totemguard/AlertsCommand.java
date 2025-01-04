@@ -21,8 +21,8 @@ package com.deathmotion.totemguard.commands.totemguard;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.manager.AlertManagerImpl;
 import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.PlayerArgument;
-import dev.jorel.commandapi.arguments.SafeSuggestions;
+import dev.jorel.commandapi.arguments.ArgumentSuggestions;
+import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -38,7 +38,7 @@ public class AlertsCommand {
 
     public CommandAPICommand init() {
         return new CommandAPICommand("alerts")
-                .withOptionalArguments(new PlayerArgument("player").replaceSafeSuggestions(SafeSuggestions.suggest(info -> Bukkit.getOnlinePlayers().toArray(new Player[0]))))
+                .withOptionalArguments(new EntitySelectorArgument.OnePlayer("player").replaceSuggestions(ArgumentSuggestions.strings(info -> Bukkit.getOnlinePlayers().stream().map(Player::getName).toArray(String[]::new))))
                 .executesConsole(this::handleConsoleCommand)
                 .executesPlayer(this::handlePlayerCommand);
     }
