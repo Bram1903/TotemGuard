@@ -36,12 +36,12 @@ public class Messages {
     @Comment("\nAlert Format: The format for all alerts.")
     private AlertFormat alertFormat = new AlertFormat();
 
-    @Comment("\n")
+    @Comment("")
     private String alertsEnabled = "%prefix% &aAlerts enabled";
     private String alertsDisabled = "%prefix% &cAlerts disabled";
     private String alertBrand = "%prefix% &6%player% &7joined using: &6%client_brand%";
 
-    @Comment("\n")
+    @Comment("")
     private String specifyPlayer = "%prefix% &cPlease specify a player.";
 
     @Configuration
