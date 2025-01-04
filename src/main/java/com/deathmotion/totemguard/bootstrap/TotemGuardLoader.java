@@ -37,7 +37,8 @@ public class TotemGuardLoader implements PluginLoader {
         // Add repositories
         resolver.addRepository(new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build());
 
-        for (Library library : Library.values()) {
+        // Add filtered dependencies
+        for (Library library : Library.getFilteredLibraries()) {
             resolver.addDependency(new Dependency(new DefaultArtifact(library.getMavenDependency()), "runtime"));
         }
 
