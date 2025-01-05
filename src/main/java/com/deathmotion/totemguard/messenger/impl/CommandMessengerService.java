@@ -42,6 +42,10 @@ public class CommandMessengerService {
         return messengerService.format(commandMessages().getGenericCommands().getSpecifyPlayer().replace("%prefix%", messengerService.getPrefix()));
     }
 
+    public Component pluginReloaded() {
+        return messengerService.format(commandMessages().getGenericCommands().getPluginReloaded().replace("%prefix%", messengerService.getPrefix()));
+    }
+
     public Component targetCannotBeChecked() {
         return messengerService.format(commandMessages().getCheckCommand().getTargetCannotBeChecked().replace("%prefix%", messengerService.getPrefix()));
     }

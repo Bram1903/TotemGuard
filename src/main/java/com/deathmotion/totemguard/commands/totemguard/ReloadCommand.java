@@ -16,34 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands;
+package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.totemguard.AlertsCommand;
-import com.deathmotion.totemguard.commands.totemguard.CheckCommand;
-import com.deathmotion.totemguard.commands.totemguard.ReloadCommand;
+import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
 import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.executors.CommandArguments;
+import org.bukkit.command.CommandSender;
 
-public class TotemGuardCommand {
-
+public class ReloadCommand {
     private final TotemGuard plugin;
+    private final CommandMessengerService commandMessengerService;
 
-    public TotemGuardCommand(TotemGuard plugin) {
+    public ReloadCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        init();
+        this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
     }
 
-    public void init() {
-        new CommandAPICommand("totemguard")
-                .withAliases("tg")
-                .withSubcommands(
-                        new ReloadCommand(plugin).init(),
-                        new CheckCommand(plugin).init(),
-                        new AlertsCommand(plugin).init()
-                )
-                .executes((sender, args) -> {
-                    sender.sendMessage(plugin.getMessengerService().totemGuardInfo());
-                })
-                .register();
+    public CommandAPICommand init() {
+        return new CommandAPICommand("reload")
+                .withPermission("TotemGuard.Reload")
+                .executes(this::onCommand);
+    }
+
+    private void onCommand(CommandSender sender, CommandArguments args) {
+        plugin.getConfigManager().reload();
+        sender.sendMessage(commandMessengerService.pluginReloaded());
     }
 }

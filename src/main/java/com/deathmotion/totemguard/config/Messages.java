@@ -101,6 +101,7 @@ public class Messages {
         @Getter
         public static class GenericCommands {
             private String specifyPlayer = "%prefix% &cPlease specify a player.";
+            private String pluginReloaded = "%prefix% &aThe plugin has been reloaded!";
         }
 
         @Configuration
