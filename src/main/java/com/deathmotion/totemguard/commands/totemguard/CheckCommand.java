@@ -50,113 +50,182 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Command that forces a "totem check" on a specified player. The command ensures the player
+ * is in survival/adventure mode, possesses a totem, and then forces incoming damage to test
+ * whether the totem is used. If the totem remains unused by the end of a configurable duration,
+ * the player is flagged via the ManualTotemA check.
+ */
 public class CheckCommand {
 
     private final TotemGuard plugin;
     private final CommandMessengerService commandMessengerService;
+
+    /**
+     * The material representing the Totem of Undying.
+     * Keeping it final for immutability and clarity.
+     */
     private final Material totemMaterial = Material.TOTEM_OF_UNDYING;
 
+    /**
+     * Map to store cooldowns (in milliseconds) for players who have recently been checked.
+     * Uses ExpiringMap to automatically remove entries after 15s, though we manually
+     * enforce a total cooldown time that depends on check duration.
+     */
     private final ExpiringMap<UUID, Long> cooldownCache = ExpiringMap.builder()
             .expiration(15, TimeUnit.SECONDS)
             .build();
 
+    /**
+     * Constructor that injects the main plugin and retrieves the command messenger service.
+     *
+     * @param plugin reference to the main TotemGuard plugin
+     */
     public CheckCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
     }
 
+    /**
+     * Initializes and returns the CommandAPICommand for the "/check" command.
+     * Usage: /check <player> [duration]
+     *
+     * @return the CommandAPICommand object representing this command
+     */
     public CommandAPICommand init() {
         return new CommandAPICommand("check")
                 .withPermission("TotemGuard.Check")
                 .withArguments(new EntitySelectorArgument.OnePlayer("target").replaceSuggestions(ArgumentSuggestions.strings(info -> Bukkit.getOnlinePlayers().stream().map(Player::getName).toArray(String[]::new))))
                 .withOptionalArguments(new IntegerArgument("duration", 0, 5000))
-                .executes(this::handleCommand);
+                .executes(this::onCheckCommand);
     }
 
-    private void handleCommand(CommandSender sender, CommandArguments args) {
-        Player target = (Player) args.get("target");
+    /**
+     * Primary command execution method. Performs all the main checks for game mode,
+     * totem presence, and cooldown, then forces damage on the target to see if the
+     * totem triggers. If damage is successfully applied, schedules a repeated task
+     * to check whether the totem is still in the player's off-hand.
+     *
+     * @param sender the command sender (likely a player or console)
+     * @param args   the command arguments including target player and optional duration
+     */
+    private void onCheckCommand(CommandSender sender, CommandArguments args) {
+        final Player target = (Player) args.get("target");
+        final Checks.ManualTotemA settings = plugin.getConfigManager().getChecks().getManualTotemA();
 
-        Checks.ManualTotemA settings = plugin.getConfigManager().getChecks().getManualTotemA();
-        int checkDuration = (int) args.getOptional("duration").orElse(settings.getCheckTime());
-        if (isTargetOnCooldown(sender, target, checkDuration)) return;
+        // Get the custom duration if supplied, otherwise use the default config value.
+        final int checkDuration = (int) args.getOptional("duration").orElse(settings.getCheckTime());
 
-        TotemPlayer totemPlayer = plugin.getPlayerDataManager().getPlayer(target);
+        // Check for cooldown before proceeding.
+        if (isTargetOnCooldown(sender, target, checkDuration)) {
+            return;
+        }
+
+        // Get TotemPlayer data; if unavailable, we cannot proceed.
+        final TotemPlayer totemPlayer = plugin.getPlayerDataManager().getPlayer(target);
         if (totemPlayer == null) {
             sender.sendMessage(commandMessengerService.targetCannotBeChecked());
             return;
         }
 
-        if (!isTargetInValidMode(sender, target)) return;
-        if (!targetHasTotemInHand(sender, target)) return;
+        // Ensure the target is in a valid state (survival/adventure, not invulnerable, has totem).
+        if (!isTargetInValidGameState(sender, target)) {
+            return;
+        }
+        if (!doesTargetHaveTotem(sender, target)) {
+            return;
+        }
 
-        // Capture original player state for later restoration
-        PlayerInventory inventory = target.getInventory();
-        ItemStack[] originalInventory = Arrays.stream(inventory.getContents()).map(item -> item == null ? null : item.clone()).toArray(ItemStack[]::new);
-        double originalHealth = target.getHealth();
-        int originalFoodLevel = target.getFoodLevel();
-        float originalSaturation = target.getSaturation();
-        Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
+        // Store original player state (health, food, saturation, potion effects, inventory).
+        final PlayerInventory playerInventory = target.getInventory();
+        final ItemStack[] originalInventory = Arrays.stream(playerInventory.getContents())
+                .map(item -> (item == null) ? null : item.clone())
+                .toArray(ItemStack[]::new);
+        final double originalHealth = target.getHealth();
+        final int originalFoodLevel = target.getFoodLevel();
+        final float originalSaturation = target.getSaturation();
+        final Collection<PotionEffect> originalEffects = new ArrayList<>(target.getActivePotionEffects());
 
-        prepareTargetForCheck(target, inventory);
+        // Prepare the target for the forced-damage check (adjust inventory and health).
+        prepareTargetForCheck(target, playerInventory);
 
-        // Use an event listener to confirm damage application
+        // We want to verify that damage is actually dealt; we track this in a small array for concurrency.
         final UUID targetUUID = target.getUniqueId();
         final double healthBeforeDamage = target.getHealth();
         final boolean[] damageApplied = {false};
 
+        // Create and register an event listener that observes whether damage actually occurred.
         Listener damageListener = new Listener() {
             @EventHandler(priority = EventPriority.MONITOR)
             public void onDamage(EntityDamageEvent event) {
-                if (!event.getEntity().getUniqueId().equals(targetUUID)) return;
-                // This is the final state of the event after all plugins
-                boolean actuallyDamaged = !event.isCancelled() && event.getFinalDamage() > 0;
-                if (actuallyDamaged) {
+                // Check if this event is for our targeted player.
+                if (!event.getEntity().getUniqueId().equals(targetUUID)) {
+                    return;
+                }
+                // If damage is not canceled and finalDamage > 0, we consider it "actually damaged."
+                if (!event.isCancelled() && event.getFinalDamage() > 0) {
                     damageApplied[0] = true;
                 }
-                // Unregister this listener now
+                // Unregister this listener immediately after checking.
                 EntityDamageEvent.getHandlerList().unregister(this);
             }
         };
-
-        // Register the listener and then apply damage
         Bukkit.getPluginManager().registerEvents(damageListener, plugin);
-        target.damage(healthBeforeDamage + 1000); // Trigger damage to force a check
 
-        // At this point, the event has been fired synchronously.
+        // Force damage high enough to trigger the totem if possible.
+        target.damage(healthBeforeDamage + 1000);
+
+        // If no damage was dealt, revert the player's state and notify.
         if (!damageApplied[0]) {
-            // Damage not applied, revert player state
-            resetTargetState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
+            restorePlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
             sender.sendMessage(commandMessengerService.targetNoDamage());
             return;
         }
 
-        // If damage is applied, proceed as normal
-        startCheckTimer(sender, target, totemPlayer, checkDuration, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects, settings);
+        // Otherwise, schedule the repeated task to watch for totem usage within the allowed time.
+        scheduleCheckTask(
+                sender,
+                target,
+                totemPlayer,
+                checkDuration,
+                originalHealth,
+                originalInventory,
+                originalFoodLevel,
+                originalSaturation,
+                originalEffects
+        );
     }
 
     /**
-     * Check if target is in survival or adventure mode.
+     * Ensures the target is in SURVIVAL or ADVENTURE mode, and not invulnerable.
+     *
+     * @param sender the command sender
+     * @param target the player being forced to check
+     * @return true if the target is in a valid mode and not invulnerable, otherwise false
      */
-    private boolean isTargetInValidMode(CommandSender sender, Player target) {
+    private boolean isTargetInValidGameState(CommandSender sender, Player target) {
         if (target.getGameMode() != GameMode.SURVIVAL && target.getGameMode() != GameMode.ADVENTURE) {
             sender.sendMessage(commandMessengerService.playerNotInSurvival());
             return false;
         }
-
         if (target.isInvulnerable()) {
             sender.sendMessage(commandMessengerService.playerInvulnerable());
             return false;
         }
-
         return true;
     }
 
     /**
-     * Check if the target currently has a totem in hand.
+     * Checks if the target has a Totem of Undying in either the main hand or off-hand.
+     *
+     * @param sender the command sender
+     * @param target the player being forced to check
+     * @return true if the player holds a totem, otherwise false
      */
-    private boolean targetHasTotemInHand(CommandSender sender, Player target) {
-        PlayerInventory inventory = target.getInventory();
-        boolean hasTotem = inventory.getItemInMainHand().getType() == totemMaterial || inventory.getItemInOffHand().getType() == totemMaterial;
+    private boolean doesTargetHaveTotem(CommandSender sender, Player target) {
+        final PlayerInventory inventory = target.getInventory();
+        final boolean hasTotem = (inventory.getItemInMainHand().getType() == totemMaterial) ||
+                (inventory.getItemInOffHand().getType() == totemMaterial);
 
         if (!hasTotem) {
             sender.sendMessage(commandMessengerService.playerNoTotem());
@@ -166,48 +235,65 @@ public class CheckCommand {
     }
 
     /**
-     * Check if the target is currently on cooldown.
+     * Checks if the target is currently on cooldown based on previous checks.
+     * The total cooldown is (checkTime + 1000ms). If the target is still in cooldown,
+     * the sender is notified of the remaining time.
+     *
+     * @param sender    the command sender
+     * @param target    the target player
+     * @param checkTime the duration of the check used to extend cooldown
+     * @return true if the target is on cooldown, otherwise false
      */
     private boolean isTargetOnCooldown(CommandSender sender, Player target, long checkTime) {
-        UUID targetUUID = target.getUniqueId();
-        long currentTime = System.currentTimeMillis();
+        final UUID targetUUID = target.getUniqueId();
+        final long currentTime = System.currentTimeMillis();
 
         if (cooldownCache.containsKey(targetUUID)) {
-            long lastExecution = cooldownCache.get(targetUUID);
-            long elapsedTime = currentTime - lastExecution;
-            long totalCooldown = checkTime + 1000; // Additional 1s cooldown
+            final long lastExecutionTime = cooldownCache.get(targetUUID);
+            final long elapsedTime = currentTime - lastExecutionTime;
+            // Add an extra 1s (1000ms) to the checkTime for total cooldown.
+            final long totalCooldown = checkTime + 1000;
 
             if (elapsedTime < totalCooldown) {
-                long remaining = totalCooldown - elapsedTime;
-                sender.sendMessage(commandMessengerService.targetOnCooldown(remaining));
+                long remainingTime = totalCooldown - elapsedTime;
+                sender.sendMessage(commandMessengerService.targetOnCooldown(remainingTime));
                 return true;
             }
         }
 
-        cooldownCache.put(targetUUID, System.currentTimeMillis());
+        // If not on cooldown, store the current timestamp.
+        cooldownCache.put(targetUUID, currentTime);
         return false;
     }
 
     /**
-     * Prepare the target for the totem check by modifying their inventory and health.
+     * Prepares the player's inventory and health in such a way that if the totem can be used,
+     * it will be forced to trigger. Ensures that the player only retains 1 totem in a single hand.
+     *
+     * @param target    the player who will be forced to check
+     * @param inventory the player's inventory
      */
     private void prepareTargetForCheck(Player target, PlayerInventory inventory) {
         final ItemStack mainHandItem = inventory.getItemInMainHand();
         final ItemStack offHandItem = inventory.getItemInOffHand();
-        final boolean hasTotemInMainHand = mainHandItem.getType() == totemMaterial;
-        final boolean hasTotemInOffHand = offHandItem.getType() == totemMaterial;
+        final boolean hasTotemInMainHand = (mainHandItem.getType() == totemMaterial);
+        final boolean hasTotemInOffHand = (offHandItem.getType() == totemMaterial);
 
-        // Ensure only 1 totem in each hand if they have any
-        if (hasTotemInMainHand) mainHandItem.setAmount(1);
-        if (hasTotemInOffHand) offHandItem.setAmount(1);
-
-        // If both hands have totems, clear main hand to force them to rely on off-hand
-        if (hasTotemInMainHand && hasTotemInOffHand) {
-            inventory.setItemInMainHand(new ItemStack(Material.AIR));
+        // Ensure only one totem in each hand if they are present.
+        if (hasTotemInMainHand) {
+            mainHandItem.setAmount(1);
+        }
+        if (hasTotemInOffHand) {
+            offHandItem.setAmount(1);
         }
 
-        // Place a single additional totem in one of the hotbar slots other than main hand
-        int mainHandSlot = inventory.getHeldItemSlot();
+        // If both hands have totems, clear main hand to force reliance on off-hand.
+        if (hasTotemInMainHand && hasTotemInOffHand) {
+            inventory.setItemInMainHand(null);
+        }
+
+        // Place a single additional totem in one of the hotbar slots (other than the main hand slot).
+        final int mainHandSlot = inventory.getHeldItemSlot();
         for (int i = 0; i < 9; i++) {
             if (i != mainHandSlot) {
                 inventory.setItem(i, new ItemStack(totemMaterial));
@@ -215,54 +301,78 @@ public class CheckCommand {
             }
         }
 
-        // Reduce player's health so damage is guaranteed high enough to trigger the totem use if allowed
+        // Slightly reduce player's health so that forced damage is guaranteed to be fatal if the totem does not trigger.
         target.setHealth(0.5);
     }
 
     /**
-     * Start the periodic check to see if the player uses a totem before the time expires.
+     * Schedules a periodic task (every 50ms) that checks whether the player still has a totem
+     * in their off-hand. If time expires, the player "passes" the check; if the totem remains
+     * in off-hand earlier, the player is flagged.
+     *
+     * @param sender             the command sender
+     * @param target             the player under check
+     * @param totemPlayer        the TotemPlayer wrapper for check management
+     * @param checkTime          total time (ms) the player must keep from using the totem
+     * @param originalHealth     the player's health prior to check
+     * @param originalInventory  the player's inventory prior to check
+     * @param originalFoodLevel  the player's food level prior to check
+     * @param originalSaturation the player's saturation prior to check
+     * @param originalEffects    the player's potion effects prior to check
      */
-    private void startCheckTimer(CommandSender sender, Player target, TotemPlayer totemPlayer, long checkTime, double originalHealth, ItemStack[] originalInventory, int originalFoodLevel, float originalSaturation, Collection<PotionEffect> originalEffects, Checks.ManualTotemA settings) {
+    private void scheduleCheckTask(CommandSender sender, Player target, TotemPlayer totemPlayer, long checkTime, double originalHealth, ItemStack[] originalInventory, int originalFoodLevel, float originalSaturation, Collection<PotionEffect> originalEffects) {
         final long startTime = System.currentTimeMillis();
         final PlayerInventory inventory = target.getInventory();
-        final TaskWrapper[] taskWrapper = new TaskWrapper[1];
 
+        // TaskWrapper is needed to manage and cancel the repeating task cleanly.
+        final TaskWrapper[] taskWrapper = new TaskWrapper[1];
         taskWrapper[0] = FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o) -> {
             long elapsedTime = System.currentTimeMillis() - startTime;
 
-            // If time expired, player passes the check
+            // If the check duration has elapsed, the player "passes" the check.
             if (elapsedTime >= checkTime) {
                 sender.sendMessage(commandMessengerService.targetPassedCheck(target.getName()));
-                resetTargetState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
+                restorePlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
                 taskWrapper[0].cancel();
                 return;
             }
 
-            // If the player still has a totem in the off-hand, they fail the check
+            // If the player suddenly switches a totem to their off-hand, flag them.
             if (inventory.getItemInOffHand().getType() == totemMaterial) {
-                resetTargetState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
+                restorePlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
                 taskWrapper[0].cancel();
 
+                // Trigger the ManualTotemA check handling logic.
                 totemPlayer.checkManager.getGenericCheck(ManualTotemA.class).handle(sender, elapsedTime, checkTime);
             }
         }, 0, 50, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Reset target state to what it was before the check.
+     * Restores the player's state back to how it was before the check:
+     * - Health, food level, saturation, potion effects, and inventory.
+     *
+     * @param player            the player to restore
+     * @param health            the player's original health
+     * @param inventoryContents the player's original inventory contents
+     * @param foodLevel         the player's original food level
+     * @param saturation        the player's original saturation
+     * @param effects           the player's original potion effects
      */
-    private void resetTargetState(Player player, double health, ItemStack[] inventoryContents, int foodLevel, float saturation, Collection<PotionEffect> effects) {
+    private void restorePlayerState(Player player, double health, ItemStack[] inventoryContents, int foodLevel, float saturation, Collection<PotionEffect> effects) {
+        // Schedule restoration on the global region scheduler (main thread) to avoid concurrency issues.
         FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
             player.setHealth(health);
             player.setFoodLevel(foodLevel);
             player.setSaturation(saturation);
 
-            // Clear current effects and re-apply the original ones
+            // Remove current potion effects and reapply the originals.
             player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
             player.addPotionEffects(effects);
 
-            // Restore inventory
+            // Restore the original inventory contents.
             player.getInventory().setContents(inventoryContents);
         });
     }
 }
+
