@@ -36,6 +36,9 @@ public class Checks {
     @Comment("\nAutoTotemA")
     private AutoTotemA autoTotemA = new AutoTotemA();
 
+    @Comment("\nAutoTotemB")
+    private AutoTotemB autoTotemB = new AutoTotemB();
+
     @Comment("\nBadPacketsA")
     private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -51,6 +54,7 @@ public class Checks {
     public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
             case "AutoTotemA" -> autoTotemA;
+            case "AutoTotemB" -> autoTotemB;
             case "BadPacketsA" -> badPacketsA;
             case "BadPacketsB" -> badPacketsB;
             case "BadPacketsC" -> badPacketsC;
@@ -94,6 +98,23 @@ public class Checks {
 
         public AutoTotemA() {
             super(true, 2);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class AutoTotemB extends CheckSettings {
+        @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
+        private double StandardDeviationThreshold = 30.0;
+
+        @Comment("\nMean Threshold: The threshold for the mean.")
+        private double MeanThreshold = 500.0;
+
+        @Comment("\nConsecutive Low SD Count: The amount of consecutive low standard deviations before flagging.")
+        private int ConsecutiveLowSDCount = 3;
+
+        public AutoTotemB() {
+            super(true, 6);
         }
     }
 

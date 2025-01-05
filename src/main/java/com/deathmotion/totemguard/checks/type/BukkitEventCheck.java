@@ -22,9 +22,9 @@ import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import org.bukkit.event.Event;
 
 public interface BukkitEventCheck extends AbstractCheck {
-    void onBukkitEvent(final Event event);
+    default void onBukkitEvent(final Event event) {
+    }
 
     default void onTotemCycleEvent() {
-
     }
 }
