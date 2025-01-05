@@ -30,6 +30,7 @@ import java.util.UUID;
 
 public class TotemPlayer implements TotemUser {
     public final CheckManager checkManager;
+    public final TotemData totemData;
 
     public final UUID uniqueId;
     public final User user;
@@ -40,6 +41,7 @@ public class TotemPlayer implements TotemUser {
         this.user = user;
 
         checkManager = new CheckManager(this);
+        totemData = new TotemData();
     }
 
     public void reload() {

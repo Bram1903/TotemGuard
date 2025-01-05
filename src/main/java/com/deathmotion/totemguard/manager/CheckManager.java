@@ -83,6 +83,12 @@ public class CheckManager {
         }
     }
 
+    public void onTotemCycleEvent() {
+        for (BukkitEventCheck check : bukkitEventChecks.values()) {
+            check.onTotemCycleEvent();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {
         return (T) packetChecks.get(check);

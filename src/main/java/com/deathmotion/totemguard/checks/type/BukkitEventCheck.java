@@ -23,4 +23,8 @@ import org.bukkit.event.Event;
 
 public interface BukkitEventCheck extends AbstractCheck {
     void onBukkitEvent(final Event event);
+
+    default void onTotemCycleEvent() {
+
+    }
 }

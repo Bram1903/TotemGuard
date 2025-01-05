@@ -18,34 +18,98 @@
 
 package com.deathmotion.totemguard.events.bukkit;
 
-
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.ItemStack;
 
 public class CheckManagerBukkitListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onEntityRecurrentEvent(EntityResurrectEvent event) {
-        if (event.getEntity() instanceof Player player) callCheckManager(player, event);
+    public void onPlayerResurrect(EntityResurrectEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+
+        TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(player);
+        if (totemPlayer == null) return;
+
+        // If not holding a totem in main hand but still has >= 2 totems in inventory,
+        // track the next time they swap another totem into their hand.
+        if (player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING
+                && player.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
+            totemPlayer.totemData.setLastTotemUsage(System.currentTimeMillis());
+            totemPlayer.totemData.setExpectingTotemSwap(true);
+        }
+
+        totemPlayer.checkManager.onBukkitEvent(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryClickEvent(InventoryClickEvent event) {
-        if (event.getWhoClicked() instanceof Player player) callCheckManager(player, event);
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(player);
+        if (totemPlayer == null) return;
+
+        if (totemPlayer.totemData.isExpectingTotemSwap()) {
+            ItemStack item = event.getCurrentItem();
+            if (item != null && item.getType() == Material.TOTEM_OF_UNDYING) {
+                totemPlayer.totemData.setExpectingTotemSwap(false);
+                callTotemCycleHandlers(totemPlayer);
+            }
+        }
+
+        totemPlayer.checkManager.onBukkitEvent(event);
     }
 
-    private void callCheckManager(Player bukkitPlayer, Event event) {
-        // Fetch the TotemPlayer instance
-        TotemPlayer player = TotemGuard.getInstance().getPlayerDataManager().getPlayer(bukkitPlayer);
-        if (player == null) return;
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
+        TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getPlayer());
+        if (totemPlayer == null) return;
 
-        player.checkManager.onBukkitEvent(event);
+        if (totemPlayer.totemData.isExpectingTotemSwap()) {
+            ItemStack offHand = event.getOffHandItem();
+            if (offHand != null && offHand.getType() == Material.TOTEM_OF_UNDYING) {
+                // Finalize the swap
+                totemPlayer.totemData.setExpectingTotemSwap(false);
+
+                // Handle the timing for totem usage
+                long currentTime = System.currentTimeMillis();
+                Long lastUsage = totemPlayer.totemData.getLastTotemUsage();
+                if (lastUsage != null) {
+                    long interval = Math.abs(currentTime - lastUsage);
+                    totemPlayer.totemData.addInterval(interval);
+                }
+
+                totemPlayer.checkManager.onTotemCycleEvent();
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getEntity());
+        if (totemPlayer == null) return;
+
+        // Reset any pending totem swap logic upon death.
+        totemPlayer.totemData.setExpectingTotemSwap(false);
+        totemPlayer.totemData.setLastTotemUsage(null);
+    }
+
+    private void callTotemCycleHandlers(TotemPlayer player) {
+        long currentTime = System.currentTimeMillis();
+        Long lastUsage = player.totemData.getLastTotemUsage();
+
+        long interval = Math.abs(currentTime - lastUsage);
+        player.totemData.addInterval(interval);
+
+        player.checkManager.onTotemCycleEvent();
     }
 }
