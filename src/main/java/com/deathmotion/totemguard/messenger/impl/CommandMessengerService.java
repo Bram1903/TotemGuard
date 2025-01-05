@@ -19,9 +19,11 @@
 package com.deathmotion.totemguard.messenger.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import net.kyori.adventure.text.Component;
+import org.bukkit.entity.Player;
 
 public class CommandMessengerService {
     private final MessengerService messengerService;
@@ -32,7 +34,39 @@ public class CommandMessengerService {
         this.messengerService = messengerService;
     }
 
+    private Messages.CommandMessages commandMessages() {
+        return configManager.getMessages().getCommandMessages();
+    }
+
     public Component specifyPlayer() {
-        return messengerService.format(configManager.getMessages().getSpecifyPlayer().replace("%prefix%", messengerService.getPrefix()));
+        return messengerService.format(commandMessages().getGenericCommands().getSpecifyPlayer().replace("%prefix%", messengerService.getPrefix()));
+    }
+
+    public Component targetCannotBeChecked() {
+        return messengerService.format(commandMessages().getCheckCommand().getTargetCannotBeChecked().replace("%prefix%", messengerService.getPrefix()));
+    }
+
+    public Component playerNotInSurvival() {
+        return messengerService.format(commandMessages().getCheckCommand().getPlayerNotSurvival().replace("%prefix%", messengerService.getPrefix()));
+    }
+
+    public Component playerInvulnerable() {
+        return messengerService.format(commandMessages().getCheckCommand().getPlayerInvulnerable().replace("%prefix%", messengerService.getPrefix()));
+    }
+
+    public Component playerNoTotem() {
+        return messengerService.format(commandMessages().getCheckCommand().getPlayerNoTotem().replace("%prefix%", messengerService.getPrefix()));
+    }
+
+    public Component targetOnCooldown(long cooldown) {
+        return messengerService.format(commandMessages().getCheckCommand().getTargetOnCooldown().replace("%prefix%", messengerService.getPrefix()).replace("%cooldown%", String.valueOf(cooldown)));
+    }
+
+    public Component targetNoDamage() {
+        return messengerService.format(commandMessages().getCheckCommand().getTargetNoDamage().replace("%prefix%", messengerService.getPrefix()));
+    }
+
+    public Component targetPassedCheck(String target) {
+        return messengerService.format(commandMessages().getCheckCommand().getTargetPassed().replace("%prefix%", messengerService.getPrefix()).replace("%player%", target));
     }
 }

@@ -41,8 +41,8 @@ public class Messages {
     private String alertsDisabled = "%prefix% &cAlerts disabled";
     private String alertBrand = "%prefix% &6%player% &7joined using: &6%client_brand%";
 
-    @Comment("")
-    private String specifyPlayer = "%prefix% &cPlease specify a player.";
+    @Comment("\nCommand Messages")
+    private CommandMessages commandMessages = new CommandMessages();
 
     @Configuration
     @Getter
@@ -85,6 +85,34 @@ public class Messages {
 
             @Comment("\nSecondary Color: The secondary color for the check details.")
             private String secondary = "&6";
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class CommandMessages {
+        @Comment("Generic Command Messages")
+        private GenericCommands genericCommands = new GenericCommands();
+
+        @Comment("/totemguard check")
+        private CheckCommand checkCommand = new CheckCommand();
+
+        @Configuration
+        @Getter
+        public static class GenericCommands {
+            private String specifyPlayer = "%prefix% &cPlease specify a player.";
+        }
+
+        @Configuration
+        @Getter
+        public static class CheckCommand {
+            private String targetCannotBeChecked = "%prefix% &cTarget cannot be checked.";
+            private String targetOnCooldown = "%prefix% &cTarget is on cooldown for %cooldown%ms.";
+            private String playerNotSurvival = "%prefix% &cTarget must be in survival mode to use this command.";
+            private String playerInvulnerable = "%prefix% &cTarget is invulnerable.";
+            private String playerNoTotem = "%prefix% &cTarget does not have a totem in their hands.";
+            private String targetNoDamage = "%prefix% &cTarget did not receive any damage. Are they protected by a plugin or in a safe zone?";
+            private String targetPassed = "%prefix% &a%player% has successfully passed the check.";
         }
     }
 }
