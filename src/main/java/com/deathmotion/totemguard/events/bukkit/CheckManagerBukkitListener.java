@@ -42,8 +42,7 @@ public class CheckManagerBukkitListener implements Listener {
 
         // If not holding a totem in main hand but still has >= 2 totems in inventory,
         // track the next time they swap another totem into their hand.
-        if (player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING
-                && player.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
+        if (player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING && player.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
             totemPlayer.totemData.setLastTotemUsage(System.currentTimeMillis());
             totemPlayer.totemData.setExpectingTotemSwap(true);
         }
@@ -61,7 +60,6 @@ public class CheckManagerBukkitListener implements Listener {
         if (totemPlayer.totemData.isExpectingTotemSwap()) {
             ItemStack item = event.getCurrentItem();
             if (item != null && item.getType() == Material.TOTEM_OF_UNDYING) {
-                totemPlayer.totemData.setExpectingTotemSwap(false);
                 callTotemCycleHandlers(totemPlayer);
             }
         }
@@ -74,23 +72,10 @@ public class CheckManagerBukkitListener implements Listener {
         TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getPlayer());
         if (totemPlayer == null) return;
 
-        if (totemPlayer.totemData.isExpectingTotemSwap()) {
-            ItemStack offHand = event.getOffHandItem();
-            if (offHand != null && offHand.getType() == Material.TOTEM_OF_UNDYING) {
-                // Finalize the swap
-                totemPlayer.totemData.setExpectingTotemSwap(false);
+        if (!totemPlayer.totemData.isExpectingTotemSwap()) return;
+        if (event.getOffHandItem().getType() != Material.TOTEM_OF_UNDYING) return;
 
-                // Handle the timing for totem usage
-                long currentTime = System.currentTimeMillis();
-                Long lastUsage = totemPlayer.totemData.getLastTotemUsage();
-                if (lastUsage != null) {
-                    long interval = Math.abs(currentTime - lastUsage);
-                    totemPlayer.totemData.addInterval(interval);
-                }
-
-                totemPlayer.checkManager.onTotemCycleEvent();
-            }
-        }
+        callTotemCycleHandlers(totemPlayer);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -104,6 +89,8 @@ public class CheckManagerBukkitListener implements Listener {
     }
 
     private void callTotemCycleHandlers(TotemPlayer player) {
+        player.totemData.setExpectingTotemSwap(false);
+
         long currentTime = System.currentTimeMillis();
         Long lastUsage = player.totemData.getLastTotemUsage();
 
