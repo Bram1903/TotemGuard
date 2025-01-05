@@ -72,7 +72,7 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
         // Moving Totem to off-hand
         if (event.getRawSlot() == 45 && event.getCursor().getType() == Material.TOTEM_OF_UNDYING) {
             if (lastClickTime != null && lastTotemUse != null) {
-                evaluateSuspicion(lastClickTime);
+                evaluateSuspicion();
             }
             return;
         }
@@ -86,69 +86,64 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
     /**
      * Validates whether the behavior is suspicious by comparing relevant time intervals.
      */
-    private void evaluateSuspicion(long clickMoment) {
+    private void evaluateSuspicion() {
         long now = System.currentTimeMillis();
         long timeSinceTotemUse = Math.abs(now - lastTotemUse);
-        long timeSinceClick = Math.abs(now - clickMoment);
+        long timeSinceClick = Math.abs(now - lastClickTime);
         long adjustedTotemTime = Math.abs(timeSinceTotemUse - player.getKeepAlivePing());
 
         var config = TotemGuard.getInstance().getConfigManager().getChecks().getAutoTotemA();
 
         // If both the time after click and time since totem usage are under the configured thresholds, flag.
         if (timeSinceClick <= config.getClickTimeDifference() && timeSinceTotemUse <= config.getNormalCheckTimeMs()) {
-            fail(buildAlertMessage(timeSinceTotemUse, adjustedTotemTime, timeSinceClick));
+            fail(createDetails(timeSinceTotemUse, adjustedTotemTime, timeSinceClick));
         }
 
         lastTotemUse = null;
     }
 
-    /**
-     * Retrieves a string for the item in the player's main hand (or "Empty Hand").
-     */
-    private String describeMainHand() {
-        Material mainHandItem = player.bukkitPlayer.getInventory().getItemInMainHand().getType();
-        return mainHandItem == Material.AIR ? "Empty Hand" : mainHandItem.toString();
-    }
-
-    /**
-     * Constructs the alert message using placeholders from the check's configured message.
-     */
-    private Component buildAlertMessage(long rawTotemDiff, long pingAdjustedDiff, long rawClickDiff) {
-        return Component.text()
+    private Component createDetails(long timeDifference, long realTotemTime, long clickTimeDifference) {
+        Component component = Component.text()
                 .append(Component.text("Totem Time: ", color.getX()))
-                .append(Component.text(rawTotemDiff + "ms", color.getY()))
+                .append(Component.text(timeDifference + "ms", color.getY()))
                 .append(Component.newline())
                 .append(Component.text("Real Totem Time: ", color.getX()))
-                .append(Component.text(pingAdjustedDiff + "ms", color.getY()))
+                .append(Component.text(realTotemTime + "ms", color.getY()))
                 .append(Component.newline())
                 .append(Component.text("Click Difference: ", color.getX()))
-                .append(Component.text(rawClickDiff + "ms", color.getY()))
+                .append(Component.text(clickTimeDifference + "ms", color.getY()))
                 .append(Component.newline())
                 .append(Component.text("Main Hand: ", color.getX()))
-                .append(Component.text(describeMainHand(), color.getY()))
+                .append(Component.text(getMainHandItemString(), color.getY()))
                 .append(Component.newline())
-                .append(Component.text("States: ", color.getX()))
-                .append(Component.text(gatherStates(), color.getY()))
                 .build();
-    }
 
-    /**
-     * Gathers and returns a comma-separated list of the player's current activity states, or "None" if empty.
-     */
-    private String gatherStates() {
-        StringBuilder currentStates = new StringBuilder();
-
-        if (player.bukkitPlayer.isSprinting()) currentStates.append("Sprinting, ");
-        if (player.bukkitPlayer.isSneaking()) currentStates.append("Sneaking, ");
-        if (player.bukkitPlayer.isBlocking()) currentStates.append("Blocking, ");
-
-        if (!currentStates.isEmpty()) {
-            // Remove the last ", "
-            currentStates.setLength(currentStates.length() - 2);
-        } else {
-            currentStates.append("None");
+        StringBuilder states = new StringBuilder();
+        if (player.bukkitPlayer.isSprinting()) {
+            states.append("Sprinting, ");
+        }
+        if (player.bukkitPlayer.isSneaking()) {
+            states.append("Sneaking, ");
+        }
+        if (player.bukkitPlayer.isBlocking()) {
+            states.append("Blocking, ");
         }
 
-        return currentStates.toString();
+        // If any states are active, add them to the component
+        if (!states.isEmpty()) {
+            states.setLength(states.length() - 2);
+            component = component.append(Component.text("States: ", color.getX()))
+                    .append(Component.text(states.toString(), color.getY()));
+        }
+
+        return component;
+    }
+
+    private String getMainHandItemString() {
+        PlayerInventory inventory = player.bukkitPlayer.getInventory();
+
+        return inventory.getItemInMainHand().getType() == Material.AIR
+                ? "Empty Hand"
+                : inventory.getItemInMainHand().getType().toString();
     }
 }

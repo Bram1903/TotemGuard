@@ -45,6 +45,12 @@ public class Checks {
     @Comment("\nAutoTotemD")
     private AutoTotemD autoTotemD = new AutoTotemD();
 
+    @Comment("\nAutoTotemE")
+    private AutoTotemE autoTotemE = new AutoTotemE();
+
+    @Comment("\nAutoTotemF")
+    private AutoTotemF autoTotemF = new AutoTotemF();
+
     @Comment("\nBadPacketsA")
     private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -63,6 +69,8 @@ public class Checks {
             case "AutoTotemB" -> autoTotemB;
             case "AutoTotemC" -> autoTotemC;
             case "AutoTotemD" -> autoTotemD;
+            case "AutoTotemE" -> autoTotemE;
+            case "AutoTotemF" -> autoTotemF;
             case "BadPacketsA" -> badPacketsA;
             case "BadPacketsB" -> badPacketsB;
             case "BadPacketsC" -> badPacketsC;
@@ -154,6 +162,31 @@ public class Checks {
 
         public AutoTotemD() {
             super(true, 2);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class AutoTotemE extends CheckSettings {
+        @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
+        private double StandardDeviationThreshold = 10.0;
+
+        @Comment("\nAverage Standard Deviation Threshold: The threshold for the average standard deviation.")
+        private double AverageStDeviationThreshold = 10.0;
+
+        public AutoTotemE() {
+            super(true, 4);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class AutoTotemF extends CheckSettings {
+        @Comment("\nTime Difference: The time difference between closing the inventory and the last click.")
+        private int TimeDifference = 1500;
+
+        public AutoTotemF() {
+            super(false, 6);
         }
     }
 

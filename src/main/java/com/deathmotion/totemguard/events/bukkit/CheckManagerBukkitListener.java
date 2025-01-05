@@ -29,6 +29,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -70,6 +72,16 @@ public class CheckManagerBukkitListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) return;
+
+        TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(player);
+        if (totemPlayer == null) return;
+
+        totemPlayer.checkManager.onBukkitEvent(event);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
         TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getPlayer());
         if (totemPlayer == null) return;
@@ -88,6 +100,16 @@ public class CheckManagerBukkitListener implements Listener {
         // Reset any pending totem swap logic upon death.
         totemPlayer.totemData.setExpectingTotemSwap(false);
         totemPlayer.totemData.setLastTotemUsage(null);
+
+        totemPlayer.checkManager.onBukkitEvent(event);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getPlayer());
+        if (totemPlayer == null) return;
+
+        totemPlayer.checkManager.onBukkitEvent(event);
     }
 
     private void callTotemCycleHandlers(TotemPlayer player) {

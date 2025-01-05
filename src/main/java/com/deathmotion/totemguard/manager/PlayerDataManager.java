@@ -57,6 +57,8 @@ public class PlayerDataManager {
     @Nullable
     public TotemPlayer getPlayer(final Player player) {
         User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
+        if (user == null) return null;
+
         return playerDataMap.get(user);
     }
 
