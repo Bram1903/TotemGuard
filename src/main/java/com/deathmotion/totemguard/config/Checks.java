@@ -39,6 +39,12 @@ public class Checks {
     @Comment("\nAutoTotemB")
     private AutoTotemB autoTotemB = new AutoTotemB();
 
+    @Comment("\nAutoTotemC")
+    private AutoTotemC autoTotemC = new AutoTotemC();
+
+    @Comment("\nAutoTotemD")
+    private AutoTotemD autoTotemD = new AutoTotemD();
+
     @Comment("\nBadPacketsA")
     private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -55,6 +61,8 @@ public class Checks {
         return switch (checkName) {
             case "AutoTotemA" -> autoTotemA;
             case "AutoTotemB" -> autoTotemB;
+            case "AutoTotemC" -> autoTotemC;
+            case "AutoTotemD" -> autoTotemD;
             case "BadPacketsA" -> badPacketsA;
             case "BadPacketsB" -> badPacketsB;
             case "BadPacketsC" -> badPacketsC;
@@ -115,6 +123,37 @@ public class Checks {
 
         public AutoTotemB() {
             super(true, 6);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class AutoTotemC extends CheckSettings {
+        @Comment("\nConsistent SD Range: The range for the standard average deviation.")
+        private double ConsistentSDRange = 1.0;
+
+        @Comment("\nConsecutive Violations: The amount of consecutive violations before flagging.")
+        private int ConsecutiveViolations = 3;
+
+        public AutoTotemC() {
+            super(true, 3);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class AutoTotemD extends CheckSettings {
+        @Comment("\nTotal Sequence: The total sequence timing under which the player will be flagged.")
+        private int TotalSequence = 160;
+
+        @Comment("\nTime average Difference between packets: The time difference between packets.")
+        private int BaseTimeDifference = 50;
+
+        @Comment("\nTime Tolerance: The tolerance for the time difference.")
+        private int Tolerance = 5;
+
+        public AutoTotemD() {
+            super(true, 2);
         }
     }
 

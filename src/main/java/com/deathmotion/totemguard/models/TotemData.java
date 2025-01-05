@@ -29,15 +29,12 @@ import java.util.stream.Collectors;
 
 @Getter
 public class TotemData {
-    @Setter
-    private boolean expectingTotemSwap;
-
-    @Setter
-    private Long lastTotemUsage;
-
     @Getter
     private final ConcurrentLinkedDeque<Long> intervals = new ConcurrentLinkedDeque<>();
-
+    @Setter
+    private boolean expectingTotemSwap;
+    @Setter
+    private Long lastTotemUsage;
     @Setter
     private double latestStandardDeviation;
 

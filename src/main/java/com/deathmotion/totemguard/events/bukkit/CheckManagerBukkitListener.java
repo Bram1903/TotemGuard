@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.events.bukkit;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.models.DigAndPickupState;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -42,9 +43,10 @@ public class CheckManagerBukkitListener implements Listener {
 
         // If not holding a totem in main hand but still has >= 2 totems in inventory,
         // track the next time they swap another totem into their hand.
-        if (player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING && player.getInventory().containsAtLeast(new ItemStack(Material.TOTEM_OF_UNDYING), 2)) {
+        if (player.getInventory().getItemInMainHand().getType() != Material.TOTEM_OF_UNDYING) {
             totemPlayer.totemData.setLastTotemUsage(System.currentTimeMillis());
             totemPlayer.totemData.setExpectingTotemSwap(true);
+            totemPlayer.digAndPickupState = new DigAndPickupState();
         }
 
         totemPlayer.checkManager.onBukkitEvent(event);

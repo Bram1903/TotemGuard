@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import net.kyori.adventure.text.Component;
-import org.bukkit.entity.Player;
 
 public class CommandMessengerService {
     private final MessengerService messengerService;

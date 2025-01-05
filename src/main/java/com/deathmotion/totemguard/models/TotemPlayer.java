@@ -31,6 +31,7 @@ import java.util.UUID;
 public class TotemPlayer implements TotemUser {
     public final CheckManager checkManager;
     public final TotemData totemData;
+    public DigAndPickupState digAndPickupState;
 
     public final UUID uniqueId;
     public final User user;
@@ -42,6 +43,7 @@ public class TotemPlayer implements TotemUser {
 
         checkManager = new CheckManager(this);
         totemData = new TotemData();
+        digAndPickupState = new DigAndPickupState();
     }
 
     public void reload() {
