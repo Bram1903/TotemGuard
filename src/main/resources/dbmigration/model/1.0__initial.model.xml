@@ -6,7 +6,7 @@
             <column name="check_name" type="varchar" notnull="true"/>
             <column name="details" type="TEXT"/>
             <column name="totemguard_player_uuid" type="uuid" notnull="true" references="totemguard_player.uuid" foreignKeyName="fk_totemguard_alert_totemguard_player_uuid"/>
-            <column name="timestamp" type="timestamp" notnull="true"/>
+            <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
         <createTable name="totemguard_player" identityType="external" pkName="pk_totemguard_player">
             <column name="uuid" type="uuid(36)" primaryKey="true" identity="true"/>
@@ -14,8 +14,9 @@
         <createTable name="totemguard_punishment" identityType="identity" pkName="pk_totemguard_punishment">
             <column name="id" type="bigint" primaryKey="true"/>
             <column name="check_name" type="varchar" notnull="true"/>
+            <column name="details" type="TEXT"/>
             <column name="totemguard_player_uuid" type="uuid" notnull="true" references="totemguard_player.uuid" foreignKeyName="fk_totemguard_punishment_totemguard_player_uuid"/>
-            <column name="timestamp" type="timestamp" notnull="true"/>
+            <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
         <createIndex indexName="idx_alert_player_uuid" tableName="totemguard_alert" columns="totemguard_player_uuid"/>
         <createIndex indexName="idx_player_uuid" tableName="totemguard_player" columns="uuid"/>

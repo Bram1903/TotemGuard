@@ -18,12 +18,15 @@
 
 package com.deathmotion.totemguard.models;
 
+import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
+import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.manager.CheckManager;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -31,11 +34,11 @@ import java.util.UUID;
 public class TotemPlayer implements TotemUser {
     public final CheckManager checkManager;
     public final TotemData totemData;
-    public DigAndPickupState digAndPickupState;
-
     public final UUID uniqueId;
     public final User user;
+    public DigAndPickupState digAndPickupState;
     public Player bukkitPlayer;
+    public DatabasePlayer databasePlayer;
 
     public TotemPlayer(User user) {
         this.uniqueId = user.getUUID();
@@ -44,6 +47,10 @@ public class TotemPlayer implements TotemUser {
         checkManager = new CheckManager(this);
         totemData = new TotemData();
         digAndPickupState = new DigAndPickupState();
+
+        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> {
+            databasePlayer = TotemGuard.getInstance().getDatabaseService().getOrCreatePlayer(uniqueId);
+        }));
     }
 
     public void reload() {

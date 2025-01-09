@@ -18,12 +18,33 @@
 
 package com.deathmotion.totemguard.database.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import io.ebean.Model;
+import io.ebean.annotation.WhenCreated;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-@Entity
-@Table(name = "totemguard_punishment", indexes = @Index(columnList = "totemguard_player_uuid", name = "idx_punishment_player_uuid"))
-public class DatabasePunishment extends BaseDomain {
+import java.time.Instant;
+
+@Getter
+@Setter
+@MappedSuperclass
+public abstract class BaseDomain extends Model {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "check_name", nullable = false)
+    private String checkName;
+
+    @Column(columnDefinition = "TEXT")
+    private String details;
+
+    @Column(nullable = false, updatable = false)
+    @WhenCreated
+    private Instant whenCreated;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "totemguard_player_uuid", nullable = false)
+    private DatabasePlayer player;
 }
-

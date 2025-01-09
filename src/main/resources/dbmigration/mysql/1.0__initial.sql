@@ -4,7 +4,7 @@ create table totemguard_alert (
   check_name                    varchar(255) not null,
   details                       TEXT,
   totemguard_player_uuid        varchar(40) not null,
-  timestamp                     datetime(6) not null,
+  when_created                  datetime(6) not null,
   constraint pk_totemguard_alert primary key (id)
 );
 
@@ -16,8 +16,9 @@ create table totemguard_player (
 create table totemguard_punishment (
   id                            bigint auto_increment not null,
   check_name                    varchar(255) not null,
+  details                       TEXT,
   totemguard_player_uuid        varchar(40) not null,
-  timestamp                     datetime(6) not null,
+  when_created                  datetime(6) not null,
   constraint pk_totemguard_punishment primary key (id)
 );
 
