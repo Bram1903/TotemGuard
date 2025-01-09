@@ -38,6 +38,10 @@ public class DatabaseManager {
         this.database = initializeDatabase(databaseConfig, plugin);
     }
 
+    public void close() {
+        database.shutdown(true, true);
+    }
+
     private DataSourceConfig createDataSourceConfig(Settings.Database settings, TotemGuard plugin) {
         return switch (settings.getType().toLowerCase()) {
             case "h2" -> configureH2(plugin);
