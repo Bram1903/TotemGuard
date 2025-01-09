@@ -5,6 +5,7 @@ plugins {
     `tg-version`
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
+    alias(libs.plugins.ebean)
 }
 
 dependencies {
@@ -15,6 +16,7 @@ dependencies {
     compileOnly(libs.packetevents.spigot)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+    annotationProcessor(libs.ebean.processor)
 
     // Loaded during runtime
     compileOnly(libs.configlib.yaml)
@@ -23,8 +25,15 @@ dependencies {
     compileOnly(libs.expiringmap)
     compileOnly(libs.discord.webhooks)
 
-    // Database Dependencies
-    compileOnly(libs.hibernate)
+    // Database Dependencies (loaded during runtime)
+    compileOnly(libs.ebean.core)
+    compileOnly(libs.ebean.h2)
+    compileOnly(libs.ebean.mysql)
+
+    // Testing dependencies
+    testImplementation(libs.ebean.test)
+    testImplementation(libs.ebean.h2)
+    testImplementation(libs.ebean.mysql)
 }
 
 group = "com.deathmotion.totemguard"
@@ -75,27 +84,11 @@ tasks {
     processResources {
         inputs.property("version", ext["versionNoHash"])
         inputs.property("description", project.description)
-        inputs.property("configlibVersion", libs.versions.configlib.get())
-        inputs.property("discordWebhooksVersion", libs.versions.discord.webhooks.get())
-        inputs.property("lettuceVersion", libs.versions.lettuce.get())
-        inputs.property("commandapiVersion", libs.versions.commandapi.get())
-        inputs.property("expiringmapVersion", libs.versions.expiringmap.get())
-        inputs.property("hibernateVersion", libs.versions.hibernate.get())
-        inputs.property("mysqlConnectorVersion", libs.versions.mysql.get())
-        inputs.property("h2Version", libs.versions.h2.get())
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
                 "version" to ext["versionNoHash"],
-                "description" to project.description,
-                "configlibVersion" to libs.versions.configlib.get(),
-                "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
-                "lettuceVersion" to libs.versions.lettuce.get(),
-                "commandapiVersion" to libs.versions.commandapi.get(),
-                "expiringmapVersion" to libs.versions.expiringmap.get(),
-                "hibernateVersion" to libs.versions.hibernate.get(),
-                "mysqlConnectorVersion" to libs.versions.mysql.get(),
-                "h2Version" to libs.versions.h2.get()
+                "description" to project.description
             )
         }
     }

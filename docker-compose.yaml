@@ -1,0 +1,34 @@
+name: TotemGuard
+
+services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: 'TotemGuard'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MYSQL_DATABASE: 'TotemGuard'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mysql_data:
+  mariadb_data:
+  redis_data:

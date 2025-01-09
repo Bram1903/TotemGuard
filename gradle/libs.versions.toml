@@ -9,11 +9,7 @@ discord-webhooks = "0.8.0"
 lettuce = "6.5.1.RELEASE"
 commandapi = "9.7.0"
 expiringmap = "0.5.11"
-
-# Database
-hibernate = "6.6.4.Final"
-mysql = "9.1.0"
-h2 = "2.3.232"
+ebean = "15.8.0"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
@@ -26,10 +22,14 @@ commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade", version.re
 expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
 
 # Database
-hibernate = { group = "org.hibernate", name = "hibernate-core", version.ref = "hibernate" }
-mysql = { group = "mysql", name = "mysql-connector-java", version.ref = "mysql" }
-h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
+ebean-core = { group = "io.ebean", name = "ebean-core", version.ref = "ebean" }
+ebean-processor = { group = "io.ebean", name = "querybean-generator", version.ref = "ebean" }
+
+ebean-test = { group = "io.ebean", name = "ebean-test", version.ref = "ebean" }
+ebean-h2 = { group = "io.ebean", name = "ebean-h2", version.ref = "ebean" }
+ebean-mysql = { group = "io.ebean", name = "ebean-mysql", version.ref = "ebean" }
 
 [plugins]
+ebean = { id = "io.ebean", version.ref = "ebean" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }

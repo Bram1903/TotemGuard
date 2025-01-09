@@ -52,6 +52,7 @@ public final class TotemGuard extends JavaPlugin {
     private final DiscordManager discordManager = new DiscordManager(this);
 
     private final PlayerDataManager playerDataManager = new PlayerDataManager();
+    private DatabaseManager databaseManager;
     private final UpdateChecker updateChecker = new UpdateChecker(this);
 
     private final TotemGuardAPIImpl totemGuardAPI = new TotemGuardAPIImpl(this);
@@ -79,6 +80,7 @@ public final class TotemGuard extends JavaPlugin {
         CommandAPI.onEnable();
 
         new TotemGuardCommand(this);
+        databaseManager = new DatabaseManager(this);
         enableBStats();
     }
 

@@ -47,6 +47,9 @@ public class Settings {
     @Comment("\nUpdate Checker Settings:")
     private UpdateChecker updateChecker = new UpdateChecker();
 
+    @Comment("\nDatabase Settings:")
+    private Database database = new Database();
+
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean debug = false;
 
@@ -95,5 +98,27 @@ public class Settings {
 
         @Comment("\nNotify In-Game: Notifies players with the permission in-game.")
         private boolean notifyInGame = true;
+    }
+
+    @Configuration
+    @Getter
+    public static class Database {
+        @Comment("Database Type: The type of database to use. (h2, mysql, mariadb)")
+        private String Type = "h2";
+
+        @Comment("\nDatabase Host: The host of the database.")
+        private String Host = "localhost";
+
+        @Comment("\nDatabase Port: The port of the database.")
+        private int Port = 3306;
+
+        @Comment("\nDatabase Name: The name of the database.")
+        private String Name = "TotemGuard";
+
+        @Comment("\nDatabase Username: The username of the database.")
+        private String Username = "root";
+
+        @Comment("\nDatabase Password: The password of the database.")
+        private String Password = "password";
     }
 }

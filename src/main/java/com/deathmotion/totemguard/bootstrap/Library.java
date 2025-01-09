@@ -33,11 +33,22 @@ public enum Library {
     DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0"),
     LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
     EXPIRINGMAP("net.jodah", "expiringmap", "0.5.11"),
+
+    // Ebean ORM
+    EBEAN_CORE("io.ebean", "ebean-core", "15.8.0"),
+    EBEAN_DATASOURCE("io.ebean", "ebean-datasource", "9.0"),
+    EBEAN_MIGRATION("io.ebean", "ebean-migration", "14.2.0"),
+    EBEAN_H2("io.ebean", "ebean-platform-h2", "15.8.0"),
+    EBEAN_MYSQL("io.ebean", "ebean-platform-mysql", "15.8.0"),
+    EBEAN_MARIADB("io.ebean", "ebean-platform-mariadb", "15.8.0"),
+
+    // SQL Drivers
+    H2("com.h2database", "h2", "2.3.232"),
+    MYSQL("mysql", "mysql-connector-java", "8.0.30"),
+
+    // CommandAPI (Loads different versions based on the server version)
     COMMANDAPI_MOJANG_MAPPED("dev.jorel", "commandapi-bukkit-shade-mojang-mapped", "9.7.0"),
-    COMMANDAPI("dev.jorel", "commandapi-bukkit-shade", "9.7.0"),
-    HIBERNATE("org.hibernate", "hibernate-core", "6.6.4.Final"),
-    MYSQL("mysql", "mysql-connector-java", "9.1.0"),
-    H2("com.h2database", "h2", "2.3.232");
+    COMMANDAPI("dev.jorel", "commandapi-bukkit-shade", "9.7.0");
 
     private final String group;
     private final String name;
@@ -58,7 +69,7 @@ public enum Library {
         Library commandApiLibrary = getServerVersion().isNewerThan(TGVersion.fromString("1.20.4"))
                 ? COMMANDAPI_MOJANG_MAPPED
                 : COMMANDAPI;
-        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, HIBERNATE, MYSQL, H2, commandApiLibrary};
+        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, EBEAN_CORE, EBEAN_DATASOURCE, EBEAN_MIGRATION, EBEAN_H2, EBEAN_MYSQL, EBEAN_MARIADB, H2, MYSQL, commandApiLibrary};
     }
 
     /**
@@ -87,4 +98,4 @@ public enum Library {
     public String getMavenDependency() {
         return String.format("%s:%s:%s", group, name, version);
     }
-}
+    }
