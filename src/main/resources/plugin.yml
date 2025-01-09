@@ -14,3 +14,6 @@ libraries:
   - io.lettuce:lettuce-core:${lettuceVersion}
   - dev.jorel:commandapi-bukkit-shade:${commandapiVersion}
   - net.jodah:expiringmap:${expiringmapVersion}
+  - org.hibernate:hibernate-core:${hibernateVersion}
+  - mysql:mysql-connector-java:${mysqlConnectorVersion}
+  - com.h2database:h2:${h2Version}

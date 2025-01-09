@@ -10,15 +10,21 @@ plugins {
 dependencies {
     implementation(project(":api"))
 
+    // Provided dependencies
     compileOnly(libs.paper)
     compileOnly(libs.packetevents.spigot)
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+
+    // Loaded during runtime
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.lettuce)
     compileOnly(libs.commandapi)
     compileOnly(libs.expiringmap)
     compileOnly(libs.discord.webhooks)
-    compileOnly(libs.lombok)
-    annotationProcessor(libs.lombok)
+
+    // Database Dependencies
+    compileOnly(libs.hibernate)
 }
 
 group = "com.deathmotion.totemguard"
@@ -74,6 +80,9 @@ tasks {
         inputs.property("lettuceVersion", libs.versions.lettuce.get())
         inputs.property("commandapiVersion", libs.versions.commandapi.get())
         inputs.property("expiringmapVersion", libs.versions.expiringmap.get())
+        inputs.property("hibernateVersion", libs.versions.hibernate.get())
+        inputs.property("mysqlConnectorVersion", libs.versions.mysql.get())
+        inputs.property("h2Version", libs.versions.h2.get())
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
@@ -83,7 +92,10 @@ tasks {
                 "discordWebhooksVersion" to libs.versions.discord.webhooks.get(),
                 "lettuceVersion" to libs.versions.lettuce.get(),
                 "commandapiVersion" to libs.versions.commandapi.get(),
-                "expiringmapVersion" to libs.versions.expiringmap.get()
+                "expiringmapVersion" to libs.versions.expiringmap.get(),
+                "hibernateVersion" to libs.versions.hibernate.get(),
+                "mysqlConnectorVersion" to libs.versions.mysql.get(),
+                "h2Version" to libs.versions.h2.get()
             )
         }
     }

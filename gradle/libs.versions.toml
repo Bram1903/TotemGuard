@@ -10,6 +10,11 @@ lettuce = "6.5.1.RELEASE"
 commandapi = "9.7.0"
 expiringmap = "0.5.11"
 
+# Database
+hibernate = "6.6.4.Final"
+mysql = "9.1.0"
+h2 = "2.3.232"
+
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
@@ -19,6 +24,11 @@ discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
 commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade", version.ref = "commandapi" }
 expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
+
+# Database
+hibernate = { group = "org.hibernate", name = "hibernate-core", version.ref = "hibernate" }
+mysql = { group = "mysql", name = "mysql-connector-java", version.ref = "mysql" }
+h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

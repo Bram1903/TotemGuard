@@ -34,7 +34,10 @@ public enum Library {
     LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
     EXPIRINGMAP("net.jodah", "expiringmap", "0.5.11"),
     COMMANDAPI_MOJANG_MAPPED("dev.jorel", "commandapi-bukkit-shade-mojang-mapped", "9.7.0"),
-    COMMANDAPI("dev.jorel", "commandapi-bukkit-shade", "9.7.0");
+    COMMANDAPI("dev.jorel", "commandapi-bukkit-shade", "9.7.0"),
+    HIBERNATE("org.hibernate", "hibernate-core", "6.6.4.Final"),
+    MYSQL("mysql", "mysql-connector-java", "9.1.0"),
+    H2("com.h2database", "h2", "2.3.232");
 
     private final String group;
     private final String name;
@@ -55,7 +58,7 @@ public enum Library {
         Library commandApiLibrary = getServerVersion().isNewerThan(TGVersion.fromString("1.20.4"))
                 ? COMMANDAPI_MOJANG_MAPPED
                 : COMMANDAPI;
-        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, commandApiLibrary};
+        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, HIBERNATE, MYSQL, H2, commandApiLibrary};
     }
 
     /**
