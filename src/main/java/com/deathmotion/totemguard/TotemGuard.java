@@ -45,20 +45,17 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
-    private final ConfigManager configManager = new ConfigManager(this);
-    private final MessengerService messengerService = new MessengerService(this);
-    private final AlertManagerImpl alertManager = new AlertManagerImpl(this);
-    private final PunishmentManager punishmentManager = new PunishmentManager(this);
-    private final DiscordManager discordManager = new DiscordManager(this);
-
-    private final PlayerDataManager playerDataManager = new PlayerDataManager();
-    private DatabaseManager databaseManager;
-    private final UpdateChecker updateChecker = new UpdateChecker(this);
-
-    private final TotemGuardAPIImpl totemGuardAPI = new TotemGuardAPIImpl(this);
-
+    private ConfigManager configManager;
+    private MessengerService messengerService;
+    private AlertManagerImpl alertManager;
+    private PunishmentManager punishmentManager;
+    private DiscordManager discordManager;
     @Setter
-    private ProxyAlertMessenger proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
+    private ProxyAlertMessenger proxyMessenger;
+    private PlayerDataManager playerDataManager;
+    private DatabaseManager databaseManager;
+    private UpdateChecker updateChecker;
+    private TotemGuardAPIImpl totemGuardAPI;
 
     @Override
     public void onLoad() {
@@ -72,15 +69,24 @@ public final class TotemGuard extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
+        configManager = new ConfigManager(this);
+        messengerService = new MessengerService(this);
+        alertManager = new AlertManagerImpl(this);
+        punishmentManager = new PunishmentManager(this);
+        discordManager = new DiscordManager(this);
+        proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
+        playerDataManager = new PlayerDataManager();
+        databaseManager = new DatabaseManager(this);
+        totemGuardAPI = new TotemGuardAPIImpl(this);
+        updateChecker = new UpdateChecker(this);
+
         PacketEvents.getAPI().getEventManager().registerListener(new PacketConfigurationListener());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit(this));
         PacketEvents.getAPI().getEventManager().registerListener(new CheckManagerPacketListener());
         getServer().getPluginManager().registerEvents(new CheckManagerBukkitListener(), this);
 
         CommandAPI.onEnable();
-
         new TotemGuardCommand(this);
-        databaseManager = new DatabaseManager(this);
         enableBStats();
     }
 
