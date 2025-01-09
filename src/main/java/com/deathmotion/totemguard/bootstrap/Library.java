@@ -40,7 +40,6 @@ public enum Library {
     EBEAN_MIGRATION("io.ebean", "ebean-migration", "14.2.0"),
     EBEAN_H2("io.ebean", "ebean-platform-h2", "15.8.0"),
     EBEAN_MYSQL("io.ebean", "ebean-platform-mysql", "15.8.0"),
-    EBEAN_MARIADB("io.ebean", "ebean-platform-mariadb", "15.8.0"),
 
     // SQL Drivers
     H2("com.h2database", "h2", "2.3.232"),
@@ -69,7 +68,7 @@ public enum Library {
         Library commandApiLibrary = getServerVersion().isNewerThan(TGVersion.fromString("1.20.4"))
                 ? COMMANDAPI_MOJANG_MAPPED
                 : COMMANDAPI;
-        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, EBEAN_CORE, EBEAN_DATASOURCE, EBEAN_MIGRATION, EBEAN_H2, EBEAN_MYSQL, EBEAN_MARIADB, H2, MYSQL, commandApiLibrary};
+        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, EBEAN_CORE, EBEAN_DATASOURCE, EBEAN_MIGRATION, EBEAN_H2, EBEAN_MYSQL, H2, MYSQL, commandApiLibrary};
     }
 
     /**
