@@ -31,13 +31,19 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataManager {
+
+    private final TotemGuard plugin;
     private final ConcurrentHashMap<User, TotemPlayer> playerDataMap = new ConcurrentHashMap<>();
+
+    public PlayerDataManager(TotemGuard plugin) {
+        this.plugin = plugin;
+    }
 
     public boolean shouldCheck(User user) {
         UUID uuid = user.getUUID();
         if (uuid == null) return false;
 
-        if (TotemGuard.getInstance().getConfigManager().getSettings().isBypass()) {
+        if (plugin.getConfigManager().getSettings().isBypass()) {
             // Has exempt permission
             Player player = Bukkit.getPlayer(user.getUUID());
             if (player != null && player.hasPermission("TotemGuard.Bypass")) {
@@ -66,13 +72,13 @@ public class PlayerDataManager {
         if (shouldCheck(user)) {
             TotemPlayer player = new TotemPlayer(user);
             playerDataMap.put(user, player);
-            TotemGuard.getInstance().debug("Added " + user.getName() + " to the player data map.");
+            plugin.debug("Added " + user.getName() + " to the player data map.");
         }
     }
 
     public void remove(final User player) {
         playerDataMap.remove(player);
-        TotemGuard.getInstance().debug("Removed " + player.getName() + " from the player data map.");
+        plugin.debug("Removed " + player.getName() + " from the player data map.");
     }
 
     public Collection<TotemPlayer> getEntries() {

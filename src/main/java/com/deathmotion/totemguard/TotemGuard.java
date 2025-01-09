@@ -77,7 +77,7 @@ public final class TotemGuard extends JavaPlugin {
         punishmentManager = new PunishmentManager(this);
         discordManager = new DiscordManager(this);
         proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
-        playerDataManager = new PlayerDataManager();
+        playerDataManager = new PlayerDataManager(this);
         databaseManager = new DatabaseManager(this);
         databaseService = new DatabaseService(this);
         totemGuardAPI = new TotemGuardAPIImpl(this);
