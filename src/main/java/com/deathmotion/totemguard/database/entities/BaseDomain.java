@@ -34,7 +34,7 @@ public abstract class BaseDomain extends Model {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "check_name", nullable = false)
+    @Column(name = "check_name", nullable = false, length = 30)
     private String checkName;
 
     @Column(nullable = false, updatable = false)
