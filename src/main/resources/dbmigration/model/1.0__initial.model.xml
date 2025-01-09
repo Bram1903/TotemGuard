@@ -10,6 +10,7 @@
         </createTable>
         <createTable name="totemguard_player" identityType="external" pkName="pk_totemguard_player">
             <column name="uuid" type="uuid(36)" primaryKey="true" identity="true"/>
+            <column name="when_created" type="timestamp" notnull="true"/>
         </createTable>
         <createTable name="totemguard_punishment" identityType="identity" pkName="pk_totemguard_punishment">
             <column name="id" type="bigint" primaryKey="true"/>

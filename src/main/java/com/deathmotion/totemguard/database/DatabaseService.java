@@ -28,6 +28,8 @@ import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.ebean.Database;
 import io.ebean.Transaction;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.jetbrains.annotations.Blocking;
 
 import java.time.Instant;
@@ -75,14 +77,14 @@ public class DatabaseService {
     }
 
     @Blocking
-    public void saveAlert(Check check) {
-        DatabaseAlert alert = createAlert(check);
+    public void saveAlert(Check check, Component details) {
+        DatabaseAlert alert = createAlert(check, details);
         saveEntity(alert);
     }
 
     @Blocking
-    public void savePunishment(Check check) {
-        DatabasePunishment punishment = createPunishment(check);
+    public void savePunishment(Check check, Component details) {
+        DatabasePunishment punishment = createPunishment(check, details);
         saveEntity(punishment);
     }
 
@@ -92,24 +94,32 @@ public class DatabaseService {
         }
     }
 
-    private DatabaseAlert createAlert(Check check) {
+    private DatabaseAlert createAlert(Check check, Component details) {
         DatabasePlayer databasePlayer = check.getPlayer().databasePlayer;
+        if (databasePlayer == null) {
+            databasePlayer = getOrCreatePlayer(check.getPlayer().getUniqueId());
+        }
 
         DatabaseAlert alert = new DatabaseAlert();
         alert.setCheckName(check.getCheckName());
         alert.setPlayer(databasePlayer);
+        alert.setDetails(LegacyComponentSerializer.legacySection().serialize(details));
 
         // Automatically handle bidirectional relationship by adding alert to player's alert list
         databasePlayer.getAlerts().add(alert);
         return alert;
     }
 
-    private DatabasePunishment createPunishment(Check check) {
+    private DatabasePunishment createPunishment(Check check, Component details) {
         DatabasePlayer databasePlayer = check.getPlayer().databasePlayer;
+        if (databasePlayer == null) {
+            databasePlayer = getOrCreatePlayer(check.getPlayer().getUniqueId());
+        }
 
         DatabasePunishment punishment = new DatabasePunishment();
         punishment.setCheckName(check.getCheckName());
         punishment.setPlayer(databasePlayer);
+        punishment.setDetails(LegacyComponentSerializer.legacySection().serialize(details));
 
         // Automatically handle bidirectional relationship by adding punishment to player's punishment list
         databasePlayer.getPunishments().add(punishment);

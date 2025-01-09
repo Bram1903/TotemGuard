@@ -97,4 +97,4 @@ public enum Library {
     public String getMavenDependency() {
         return String.format("%s:%s:%s", group, name, version);
     }
-    }
+}

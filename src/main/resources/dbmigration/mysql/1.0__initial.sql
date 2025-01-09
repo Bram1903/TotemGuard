@@ -10,6 +10,7 @@ create table totemguard_alert (
 
 create table totemguard_player (
   uuid                          varchar(36) not null,
+  when_created                  datetime(6) not null,
   constraint pk_totemguard_player primary key (uuid)
 );
 

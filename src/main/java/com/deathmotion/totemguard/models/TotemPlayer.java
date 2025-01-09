@@ -29,6 +29,7 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.entity.Player;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class TotemPlayer implements TotemUser {
@@ -38,6 +39,8 @@ public class TotemPlayer implements TotemUser {
     public final User user;
     public DigAndPickupState digAndPickupState;
     public Player bukkitPlayer;
+
+    @Nullable
     public DatabasePlayer databasePlayer;
 
     public TotemPlayer(User user) {
