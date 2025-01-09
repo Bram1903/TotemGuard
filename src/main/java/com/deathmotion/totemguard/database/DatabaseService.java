@@ -24,12 +24,13 @@ import com.deathmotion.totemguard.database.entities.BaseDomain;
 import com.deathmotion.totemguard.database.entities.DatabaseAlert;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.database.entities.DatabasePunishment;
+import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import io.ebean.Database;
 import io.ebean.Transaction;
+import io.github.retrooper.packetevents.adventure.serializer.gson.GsonComponentSerializer;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.jetbrains.annotations.Blocking;
 
 import java.time.Instant;
@@ -37,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -83,8 +85,8 @@ public class DatabaseService {
     }
 
     @Blocking
-    public void savePunishment(Check check, Component details) {
-        DatabasePunishment punishment = createPunishment(check, details);
+    public void savePunishment(Check check) {
+        DatabasePunishment punishment = createPunishment(check);
         saveEntity(punishment);
     }
 
@@ -97,29 +99,28 @@ public class DatabaseService {
     private DatabaseAlert createAlert(Check check, Component details) {
         DatabasePlayer databasePlayer = check.getPlayer().databasePlayer;
         if (databasePlayer == null) {
-            databasePlayer = getOrCreatePlayer(check.getPlayer().getUniqueId());
+            databasePlayer = getOrUpdatePlayer(check.getPlayer());
         }
 
         DatabaseAlert alert = new DatabaseAlert();
         alert.setCheckName(check.getCheckName());
         alert.setPlayer(databasePlayer);
-        alert.setDetails(LegacyComponentSerializer.legacySection().serialize(details));
+        alert.setDetails(GsonComponentSerializer.gson().serialize(details));
 
         // Automatically handle bidirectional relationship by adding alert to player's alert list
         databasePlayer.getAlerts().add(alert);
         return alert;
     }
 
-    private DatabasePunishment createPunishment(Check check, Component details) {
+    private DatabasePunishment createPunishment(Check check) {
         DatabasePlayer databasePlayer = check.getPlayer().databasePlayer;
         if (databasePlayer == null) {
-            databasePlayer = getOrCreatePlayer(check.getPlayer().getUniqueId());
+            databasePlayer = getOrUpdatePlayer(check.getPlayer());
         }
 
         DatabasePunishment punishment = new DatabasePunishment();
         punishment.setCheckName(check.getCheckName());
         punishment.setPlayer(databasePlayer);
-        punishment.setDetails(LegacyComponentSerializer.legacySection().serialize(details));
 
         // Automatically handle bidirectional relationship by adding punishment to player's punishment list
         databasePlayer.getPunishments().add(punishment);
@@ -127,7 +128,31 @@ public class DatabaseService {
     }
 
     @Blocking
-    public DatabasePlayer getOrCreatePlayer(UUID uuid) {
+    public DatabasePlayer getOrUpdatePlayer(TotemPlayer totemPlayer) {
+        Optional<DatabasePlayer> databasePlayer = database.find(DatabasePlayer.class)
+                .where()
+                .eq(UUID_FIELD, totemPlayer.getUniqueId())
+                .findOneOrEmpty();
+
+        if (databasePlayer.isPresent()) {
+            DatabasePlayer player = databasePlayer.get();
+            player.setClientBrand(totemPlayer.getBrand());
+            player.setLastSeen(Instant.now());
+            player.save();
+
+            return player;
+        }
+
+        DatabasePlayer newPlayer = new DatabasePlayer();
+        newPlayer.setUuid(totemPlayer.uniqueId);
+        newPlayer.setClientBrand(totemPlayer.getBrand());
+        newPlayer.setLastSeen(Instant.now());
+        database.save(newPlayer);
+
+        return newPlayer;
+    }
+
+    private DatabasePlayer getOrCreatePlayer(UUID uuid) {
         return database.find(DatabasePlayer.class)
                 .where()
                 .eq(UUID_FIELD, uuid)
@@ -135,6 +160,8 @@ public class DatabaseService {
                 .orElseGet(() -> {
                     DatabasePlayer newPlayer = new DatabasePlayer();
                     newPlayer.setUuid(uuid);
+                    newPlayer.setClientBrand("Unknown");
+                    newPlayer.setLastSeen(Instant.now());
                     database.save(newPlayer);
                     return newPlayer;
                 });

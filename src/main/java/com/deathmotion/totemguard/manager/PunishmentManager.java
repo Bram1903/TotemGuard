@@ -71,7 +71,7 @@ public class PunishmentManager {
     private void executePunishment(Check check, Component details) {
         runPunishmentCommands(check);
         plugin.getDiscordManager().sendPunishment(check, details);
-        plugin.getDatabaseService().savePunishment(check, details);
+        plugin.getDatabaseService().savePunishment(check);
     }
 
     private void runPunishmentCommands(Check check) {

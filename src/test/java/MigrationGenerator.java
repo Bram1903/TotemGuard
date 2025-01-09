@@ -32,7 +32,7 @@ public class MigrationGenerator {
         dbMigration.addPlatform(Platform.H2);
         dbMigration.addPlatform(Platform.MYSQL);
 
-        dbMigration.setName("initial");
+        dbMigration.setName("migrationName");
         dbMigration.generateMigration();
     }
 }

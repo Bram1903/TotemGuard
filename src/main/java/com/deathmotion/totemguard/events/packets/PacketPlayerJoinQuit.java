@@ -50,6 +50,7 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
         if (totemPlayer == null) return;
 
         totemPlayer.bukkitPlayer = player;
+        totemPlayer.loadDatabasePlayer();
 
         // Trigger the BadPacketsB check here, as it will otherwise still be in the configuration state
         totemPlayer.checkManager.getPacketCheck(BadPacketsB.class).handle(totemPlayer.getBrand());

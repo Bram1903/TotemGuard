@@ -50,15 +50,15 @@ public class TotemPlayer implements TotemUser {
         checkManager = new CheckManager(this);
         totemData = new TotemData();
         digAndPickupState = new DigAndPickupState();
-
-        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> {
-            databasePlayer = TotemGuard.getInstance().getDatabaseService().getOrCreatePlayer(uniqueId);
-        }));
     }
 
     public void reload() {
         // reload all checks
         for (AbstractCheck value : checkManager.allChecks.values()) value.reload();
+    }
+
+    public void loadDatabasePlayer() {
+        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseService().getOrUpdatePlayer(this)));
     }
 
     public String getBrand() {

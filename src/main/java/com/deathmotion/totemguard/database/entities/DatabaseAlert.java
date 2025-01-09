@@ -18,12 +18,19 @@
 
 package com.deathmotion.totemguard.database.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "totemguard_alert", indexes = @Index(columnList = "totemguard_player_uuid", name = "idx_alert_player_uuid"))
 public class DatabaseAlert extends BaseDomain {
+    @Column(columnDefinition = "TEXT")
+    private String details;
 }
 

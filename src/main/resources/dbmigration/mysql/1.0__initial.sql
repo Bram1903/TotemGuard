@@ -2,14 +2,16 @@
 create table totemguard_alert (
   id                            bigint auto_increment not null,
   check_name                    varchar(255) not null,
-  details                       TEXT,
   totemguard_player_uuid        varchar(40) not null,
+  details                       TEXT,
   when_created                  datetime(6) not null,
   constraint pk_totemguard_alert primary key (id)
 );
 
 create table totemguard_player (
   uuid                          varchar(36) not null,
+  client_brand                  varchar(255),
+  last_seen                     datetime(6) not null,
   when_created                  datetime(6) not null,
   constraint pk_totemguard_player primary key (uuid)
 );
@@ -17,7 +19,6 @@ create table totemguard_player (
 create table totemguard_punishment (
   id                            bigint auto_increment not null,
   check_name                    varchar(255) not null,
-  details                       TEXT,
   totemguard_player_uuid        varchar(40) not null,
   when_created                  datetime(6) not null,
   constraint pk_totemguard_punishment primary key (id)

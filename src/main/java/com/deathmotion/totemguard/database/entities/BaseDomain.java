@@ -37,9 +37,6 @@ public abstract class BaseDomain extends Model {
     @Column(name = "check_name", nullable = false)
     private String checkName;
 
-    @Column(columnDefinition = "TEXT")
-    private String details;
-
     @Column(nullable = false, updatable = false)
     @WhenCreated
     private Instant whenCreated;

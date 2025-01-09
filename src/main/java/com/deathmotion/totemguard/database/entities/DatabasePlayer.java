@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.database.entities;
 
 import io.ebean.Model;
 import io.ebean.annotation.WhenCreated;
+import io.ebean.annotation.WhenModified;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,9 +39,15 @@ public class DatabasePlayer extends Model {
     @Column(nullable = false, unique = true, length = 36)
     private UUID uuid;
 
+    @Column(name = "client_brand")
+    private String clientBrand = "Unknown";
+
     @Column(nullable = false, updatable = false)
     @WhenCreated
     private Instant whenCreated;
+
+    @Column(nullable = false)
+    private Instant lastSeen;
 
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DatabaseAlert> alerts = new ArrayList<>();
