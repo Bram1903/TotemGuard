@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.impl.AlertMessageService;
 import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.impl.PlaceHolderService;
+import com.deathmotion.totemguard.messenger.impl.ProfileMessageService;
 import com.deathmotion.totemguard.util.TGVersions;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import lombok.Getter;
@@ -40,13 +41,16 @@ public class MessengerService {
     private final AlertMessageService alertMessageService;
     @Getter
     private final CommandMessengerService commandMessengerService;
+    @Getter
+    private final ProfileMessageService profileMessageService;
 
-    public MessengerService(TotemGuard totemGuard) {
-        this.configManager = totemGuard.getConfigManager();
+    public MessengerService(TotemGuard plugin) {
+        this.configManager = plugin.getConfigManager();
 
         this.placeHolderService = new PlaceHolderService(this);
         this.alertMessageService = new AlertMessageService(this);
-        this.commandMessengerService = new CommandMessengerService(totemGuard, this);
+        this.commandMessengerService = new CommandMessengerService(plugin, this);
+        this.profileMessageService = new ProfileMessageService(plugin, this);
     }
 
     public Component format(String text) {

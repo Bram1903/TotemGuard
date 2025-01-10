@@ -84,4 +84,8 @@ public class CommandMessengerService {
     public Component targetPassedCheck(String target) {
         return messengerService.format(commandMessages().getCheckCommand().getTargetPassed().replace("%prefix%", messengerService.getPrefix()).replace("%player%", target));
     }
+
+    public Component loadingProfile(String target) {
+        return messengerService.format(commandMessages().getProfileCommand().getLoadingProfile().replace("%prefix%", messengerService.getPrefix()).replace("%player%", target));
+    }
 }

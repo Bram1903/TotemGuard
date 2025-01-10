@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.models.impl;
 
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 @Getter
@@ -29,11 +30,11 @@ public enum SafetyStatus {
     DANGEROUS("Dangerous", NamedTextColor.RED),
     DIABOLICAL("Diabolical", NamedTextColor.DARK_RED);
 
-    private final String name;
+    private final String status;
     private final NamedTextColor color;
 
-    SafetyStatus(String name, NamedTextColor color) {
-        this.name = name;
+    SafetyStatus(String status, NamedTextColor color) {
+        this.status = status;
         this.color = color;
     }
 
@@ -74,5 +75,9 @@ public enum SafetyStatus {
                 return ALERTED;
             }
         }
+    }
+
+    public Component toComponent() {
+        return Component.text(status, color);
     }
 }

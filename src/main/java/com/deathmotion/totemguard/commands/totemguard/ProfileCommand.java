@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.database.entities.DatabaseAlert;
 import com.deathmotion.totemguard.database.entities.DatabasePunishment;
+import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
 import com.deathmotion.totemguard.models.impl.SafetyStatus;
 import com.deathmotion.totemguard.util.datastructure.Pair;
@@ -29,6 +30,7 @@ import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.OfflinePlayerArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -42,13 +44,15 @@ public class ProfileCommand {
 
     private final TotemGuard plugin;
     private final DatabaseService databaseService;
+    private final MessengerService messengerService;
     private final CommandMessengerService commandMessengerService;
     private final ZoneId zoneId;
 
     public ProfileCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseService = plugin.getDatabaseService();
-        this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
+        this.messengerService = plugin.getMessengerService();
+        this.commandMessengerService = messengerService.getCommandMessengerService();
         zoneId = ZoneId.systemDefault();
     }
 
@@ -71,23 +75,26 @@ public class ProfileCommand {
             return;
         }
 
+        sender.sendMessage(commandMessengerService.loadingProfile(target.getName()));
         long startTime = System.currentTimeMillis();
 
-        Pair<List<DatabaseAlert>, List<DatabasePunishment>> logs = databaseService.retrieveLogs(target.getUniqueId());
-        if (logs == null) {
-            sender.sendMessage(commandMessengerService.noDatabasePlayerFound(target.getName()));
-            return;
-        }
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            Pair<List<DatabaseAlert>, List<DatabasePunishment>> logs = databaseService.retrieveLogs(target.getUniqueId());
+            if (logs == null) {
+                sender.sendMessage(commandMessengerService.noDatabasePlayerFound(target.getName()));
+                return;
+            }
 
-        List<DatabaseAlert> alerts = logs.getX();
-        List<DatabasePunishment> punishments = logs.getY();
+            List<DatabaseAlert> alerts = logs.getX();
+            List<DatabasePunishment> punishments = logs.getY();
 
-        List<DatabaseAlert> alertsToday = filterAlertsToday(alerts);
+            List<DatabaseAlert> alertsToday = filterAlertsToday(alerts);
 
-        long loadTime = System.currentTimeMillis() - startTime;
-        SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
+            long loadTime = System.currentTimeMillis() - startTime;
+            SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
 
-        sender.sendMessage("Checks Passed");
+            sender.sendMessage(messengerService.getProfileMessageService().createProfileMessage(target.getName(), alertsToday, punishments, loadTime, safetyStatus));
+        });
     }
 
     private List<DatabaseAlert> filterAlertsToday(List<DatabaseAlert> alerts) {

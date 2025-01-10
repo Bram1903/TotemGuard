@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.config.formatter.Formatter;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
-import lombok.Setter;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Configuration
@@ -124,7 +123,7 @@ public class Messages {
         }
 
         @Configuration
-        @Setter
+        @Getter
         public static class ProfileCommand {
 
             private String loadingProfile = "%prefix% &7Loading profile for %player%...";
@@ -133,15 +132,15 @@ public class Messages {
             private ProfileFormat profileFormat = new ProfileFormat();
 
             @Configuration
-            @Setter
+            @Getter
             public static class ProfileFormat {
                 private String profileFormat = """
                         &6&lTotemGuard Profile
-                        &7&lPlayer: &6&l%player%
+                        &7&lPlayer: &6%player%
                         &7&lSafety Status: %safety_status%
-                        &7&lTotal Alerts: &6&l%total_alerts%
-                        &7&lTotal Punishments: &6&l%total_punishments%
-                        &7&lLoad Time: &6&l%load_time%ms
+                        &7&lTotal Alerts: &6%total_alerts%
+                        &7&lTotal Punishments: &6%total_punishments%
+                        &7&lLoad Time: &6%load_time%ms
                         
                         &6&l> Alert Summary <
                         %alert_summary%
@@ -150,16 +149,21 @@ public class Messages {
                         %punishment_summary%""";
 
                 @Comment("\nProfile Alert Summary: The format for the alert summary in the profile. Will replace %alert_summary%.")
-                private String alertSummary = "&8- &7&l%check_name% &7&l%violations%x";
+                private String alertSummary = "&8- &7&l%check_name% &6%violations%x";
 
                 @Comment("\nProfile Punishment Summary: The format for the punishment summary in the profile. Will replace %punishment_summary%.")
-                private String punishmentSummary = "&8- &7&l%punishment_type% &7&l%punishment_reason% &7&l%punishment_date%";
+                private String punishmentSummary = "&8- &7Punished for &6&l%check_name% &7on &6%date%";
 
                 @Comment("\nProfile No Alerts Found: The message returned when no alerts are found. Will replace %alert_summary%.")
-                private String noAlertsFound = "&7&oNo alerts found.";
+                private String noAlertsFound = "&7&o No alerts found.";
 
                 @Comment("\nProfile No Punishments Found: The message returned when no punishments are found. Will replace %punishment_summary%.")
-                private String noPunishmentsFound = "&7&oNo punishments found.";
+                private String noPunishmentsFound = "&7&o No punishments found.";
+
+                @Comment("\nMessage to be added when more than 3 punishments are found.")
+                private String showingLastPunishments = "&7&oShowing the last 3 punishments:";
+
+                private String andMoreToBeDisplayed = "&7&o... and more not displayed";
             }
         }
     }
