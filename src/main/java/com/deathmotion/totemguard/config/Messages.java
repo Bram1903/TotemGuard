@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.config.formatter.Formatter;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
+import lombok.Setter;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Configuration
@@ -94,8 +95,11 @@ public class Messages {
         @Comment("Generic Command Messages")
         private GenericCommands genericCommands = new GenericCommands();
 
-        @Comment("/totemguard check")
+        @Comment("\n/totemguard check")
         private CheckCommand checkCommand = new CheckCommand();
+
+        @Comment("\n/totemguard profile")
+        private ProfileCommand profileCommand = new ProfileCommand();
 
         @Configuration
         @Getter
@@ -117,6 +121,46 @@ public class Messages {
             private String playerNoTotem = "%prefix% &cTarget does not have a totem in their hands.";
             private String targetNoDamage = "%prefix% &cTarget did not receive any damage. Are they protected by a plugin or in a safe zone?";
             private String targetPassed = "%prefix% &a%player% has successfully passed the check.";
+        }
+
+        @Configuration
+        @Setter
+        public static class ProfileCommand {
+
+            private String loadingProfile = "%prefix% &7Loading profile for %player%...";
+
+            @Comment("\nProfile Format: The format for the message returned when checking a player's profile.")
+            private ProfileFormat profileFormat = new ProfileFormat();
+
+            @Configuration
+            @Setter
+            public static class ProfileFormat {
+                private String profileFormat = """
+                        &6&lTotemGuard Profile
+                        &7&lPlayer: &6&l%player%
+                        &7&lSafety Status: %safety_status%
+                        &7&lTotal Alerts: &6&l%total_alerts%
+                        &7&lTotal Punishments: &6&l%total_punishments%
+                        &7&lLoad Time: &6&l%load_time%ms
+                        
+                        &6&l> Alert Summary <
+                        %alert_summary%
+                        
+                        &6&l> Punishment Summary <
+                        %punishment_summary%""";
+
+                @Comment("\nProfile Alert Summary: The format for the alert summary in the profile. Will replace %alert_summary%.")
+                private String alertSummary = "&8- &7&l%check_name% &7&l%violations%x";
+
+                @Comment("\nProfile Punishment Summary: The format for the punishment summary in the profile. Will replace %punishment_summary%.")
+                private String punishmentSummary = "&8- &7&l%punishment_type% &7&l%punishment_reason% &7&l%punishment_date%";
+
+                @Comment("\nProfile No Alerts Found: The message returned when no alerts are found. Will replace %alert_summary%.")
+                private String noAlertsFound = "&7&oNo alerts found.";
+
+                @Comment("\nProfile No Punishments Found: The message returned when no punishments are found. Will replace %punishment_summary%.")
+                private String noPunishmentsFound = "&7&oNo punishments found.";
+            }
         }
     }
 }
