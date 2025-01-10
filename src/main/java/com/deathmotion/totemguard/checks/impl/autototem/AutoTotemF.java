@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.checks.CheckData;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
 import com.deathmotion.totemguard.config.Checks;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import com.deathmotion.totemguard.models.ValidClickTypes;
+import com.deathmotion.totemguard.models.impl.ValidClickTypes;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.event.Event;

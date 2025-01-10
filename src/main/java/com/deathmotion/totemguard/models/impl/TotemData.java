@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.models;
+package com.deathmotion.totemguard.models.impl;
 
 import com.deathmotion.totemguard.util.MathUtil;
 import lombok.Getter;

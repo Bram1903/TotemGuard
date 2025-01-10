@@ -16,25 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.models;
+package com.deathmotion.totemguard.models.impl;
 
-import org.bukkit.event.inventory.ClickType;
-
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
-
-public final class ValidClickTypes {
-
-    private static final Set<ClickType> VALID_CLICK_TYPES = Collections.unmodifiableSet(EnumSet.of(
-            ClickType.LEFT,
-            ClickType.RIGHT,
-            ClickType.DOUBLE_CLICK,
-            ClickType.SWAP_OFFHAND,
-            ClickType.NUMBER_KEY
-    ));
-
-    public static boolean isClickTypeValid(ClickType clickType) {
-        return VALID_CLICK_TYPES.contains(clickType);
-    }
+public class DigAndPickupState {
+    public int sequence = 0; // Sequence: 0 (none), 1 (Digging), 2 (PickItem), 3 (Digging)
+    public long firstPacketTime = 0;
+    public long lastDiggingPacketTime = 0;
+    public long pickItemPacketTime = 0;
+    public long timeToPickItem = 0;
 }

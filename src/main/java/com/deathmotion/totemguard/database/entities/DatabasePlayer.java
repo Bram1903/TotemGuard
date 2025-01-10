@@ -45,9 +45,6 @@ public class DatabasePlayer extends Model {
     @WhenCreated
     private Instant whenCreated;
 
-    @Column(nullable = false)
-    private Instant lastSeen;
-
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DatabaseAlert> alerts = new ArrayList<>();
 

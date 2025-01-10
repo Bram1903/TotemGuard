@@ -11,7 +11,6 @@ create table totemguard_alert (
 create table totemguard_player (
   uuid                          uuid not null,
   client_brand                  varchar(63),
-  last_seen                     timestamp not null,
   when_created                  timestamp not null,
   constraint pk_totemguard_player primary key (uuid)
 );

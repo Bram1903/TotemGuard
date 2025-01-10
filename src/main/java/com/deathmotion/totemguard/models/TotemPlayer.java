@@ -24,6 +24,8 @@ import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.manager.CheckManager;
+import com.deathmotion.totemguard.models.impl.DigAndPickupState;
+import com.deathmotion.totemguard.models.impl.TotemData;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -58,7 +60,7 @@ public class TotemPlayer implements TotemUser {
     }
 
     public void loadDatabasePlayer() {
-        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseService().getOrUpdatePlayer(this)));
+        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseService().retrieveOrRefreshPlayer(this)));
     }
 
     public String getBrand() {

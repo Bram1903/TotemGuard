@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.events.bukkit;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.models.DigAndPickupState;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.models.impl.DigAndPickupState;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

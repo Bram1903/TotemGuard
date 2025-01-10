@@ -67,7 +67,7 @@ public class AlertManagerImpl implements AlertManager {
         // Send to proxy and Discord if enabled
         plugin.getProxyMessenger().sendAlert(craftedAlert.getX());
         plugin.getDiscordManager().sendAlert(check, details);
-        plugin.getDatabaseService().saveAlert(check, details);
+        plugin.getDatabaseService().storeAlert(check, details);
     }
 
     /**

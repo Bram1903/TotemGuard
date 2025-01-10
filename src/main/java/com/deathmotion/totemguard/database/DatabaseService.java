@@ -45,194 +45,280 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class DatabaseService {
-    private static final int SAVE_INTERVAL_SECONDS = 10;
-    private static final String UUID_FIELD = "uuid";
-    private static final String WHEN_CREATED_FIELD = "whenCreated";
-    private static final String PLAYER_FIELD = "player";
+    private static final int AUTOSAVE_PERIOD = 10;
+    private static final String PLAYER_UUID_COLUMN = "uuid";
+    private static final String CREATION_TIMESTAMP_COLUMN = "whenCreated";
+    private static final String PLAYER_COLUMN = "player";
 
     private final TotemGuard plugin;
     private final Database database;
-    private final ZoneId zoneId;
-    private final BlockingQueue<BaseDomain> entitiesToSave = new LinkedBlockingQueue<>();
+    private final ZoneId systemZone;
+    private final BlockingQueue<BaseDomain> pendingEntities;
 
+    /**
+     * Initializes the DatabaseService, schedules periodic bulk saves, and sets up required references.
+     *
+     * @param plugin The main plugin instance.
+     */
     public DatabaseService(TotemGuard plugin) {
         this.plugin = plugin;
         this.database = plugin.getDatabaseManager().getDatabase();
-        this.zoneId = ZoneId.systemDefault();
+        this.systemZone = ZoneId.systemDefault();
+        this.pendingEntities = new LinkedBlockingQueue<>();
 
-        // Periodic bulk save
-        FoliaScheduler.getAsyncScheduler().runAtFixedRate(plugin, (o -> bulkSave()), SAVE_INTERVAL_SECONDS, SAVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        // Schedule asynchronous periodic saves
+        FoliaScheduler.getAsyncScheduler().runAtFixedRate(
+                plugin,
+                (unused) -> performBulkSave(),
+                AUTOSAVE_PERIOD,
+                AUTOSAVE_PERIOD,
+                TimeUnit.SECONDS
+        );
     }
 
-    private void bulkSave() {
-        List<BaseDomain> entitiesSnapshot = new ArrayList<>();
-        entitiesToSave.drainTo(entitiesSnapshot);
+    /**
+     * Aggregates all pending entities and saves them in one transaction.
+     */
+    private void performBulkSave() {
+        List<BaseDomain> snapshot = new ArrayList<>();
+        pendingEntities.drainTo(snapshot);
 
-        try (Transaction transaction = database.beginTransaction()) {
-            if (!entitiesSnapshot.isEmpty()) {
-                database.saveAll(entitiesSnapshot);
-            }
-            transaction.commit();
-        } catch (Exception e) {
-            plugin.getLogger().severe("Failed to save entities to the database: " + e.getMessage());
+        if (snapshot.isEmpty()) {
+            return;
+        }
+
+        try (Transaction tx = database.beginTransaction()) {
+            database.saveAll(snapshot);
+            tx.commit();
+        } catch (Exception ex) {
+            plugin.getLogger().severe("Error during bulk save operation: " + ex.getMessage());
         }
     }
 
+    /**
+     * Persists an alert record related to the specified check with the provided details.
+     *
+     * @param check   The check that triggered this alert.
+     * @param details Additional information describing the alert.
+     */
     @Blocking
-    public void saveAlert(Check check, Component details) {
-        DatabaseAlert alert = createAlert(check, details);
-        saveEntity(alert);
+    public void storeAlert(Check check, Component details) {
+        DatabaseAlert newAlert = createAlertFromCheck(check, details);
+        queueEntity(newAlert);
     }
 
+    /**
+     * Persists a punishment record related to the specified check.
+     *
+     * @param check The check that triggered this punishment.
+     */
     @Blocking
-    public void savePunishment(Check check) {
-        DatabasePunishment punishment = createPunishment(check);
-        saveEntity(punishment);
+    public void storePunishment(Check check) {
+        DatabasePunishment newPunishment = createPunishmentFromCheck(check);
+        queueEntity(newPunishment);
     }
 
-    private void saveEntity(BaseDomain entity) {
-        if (!entitiesToSave.offer(entity)) {
-            plugin.getLogger().severe("Failed to enqueue entity for player: " + entity.getPlayer().getUuid());
+    /**
+     * Submits an entity to the queue for a batched, asynchronous save.
+     *
+     * @param entity The entity to save.
+     */
+    private void queueEntity(BaseDomain entity) {
+        boolean offered = pendingEntities.offer(entity);
+        if (!offered) {
+            plugin.getLogger().severe(
+                    "Failed to queue entity for saving. Player UUID: " + entity.getPlayer().getUuid()
+            );
         }
     }
 
-    private DatabaseAlert createAlert(Check check, Component details) {
-        DatabasePlayer databasePlayer = check.getPlayer().databasePlayer;
-        if (databasePlayer == null) {
-            databasePlayer = getOrUpdatePlayer(check.getPlayer());
+    /**
+     * Creates a new {@link DatabaseAlert} from the data in a check and the supplied message details.
+     *
+     * @param check   The check containing basic alert information.
+     * @param details Additional information about the alert, in component form.
+     * @return A newly populated {@link DatabaseAlert}.
+     */
+    private DatabaseAlert createAlertFromCheck(Check check, Component details) {
+        DatabasePlayer dbPlayer = check.getPlayer().databasePlayer;
+        if (dbPlayer == null) {
+            dbPlayer = retrieveOrRefreshPlayer(check.getPlayer());
         }
 
-        DatabaseAlert alert = new DatabaseAlert();
-        alert.setCheckName(check.getCheckName());
-        alert.setPlayer(databasePlayer);
-        alert.setDetails(GsonComponentSerializer.gson().serialize(details));
+        DatabaseAlert alertEntity = new DatabaseAlert();
+        alertEntity.setCheckName(check.getCheckName());
+        alertEntity.setPlayer(dbPlayer);
+        alertEntity.setDetails(GsonComponentSerializer.gson().serialize(details));
 
-        // Automatically handle bidirectional relationship by adding alert to player's alert list
-        databasePlayer.getAlerts().add(alert);
-        return alert;
+        // Maintain relationship consistency
+        dbPlayer.getAlerts().add(alertEntity);
+        return alertEntity;
     }
 
-    private DatabasePunishment createPunishment(Check check) {
-        DatabasePlayer databasePlayer = check.getPlayer().databasePlayer;
-        if (databasePlayer == null) {
-            databasePlayer = getOrUpdatePlayer(check.getPlayer());
+    /**
+     * Creates a new {@link DatabasePunishment} from the data in a check.
+     *
+     * @param check The check containing punishment details.
+     * @return A newly populated {@link DatabasePunishment}.
+     */
+    private DatabasePunishment createPunishmentFromCheck(Check check) {
+        DatabasePlayer dbPlayer = check.getPlayer().databasePlayer;
+        if (dbPlayer == null) {
+            dbPlayer = retrieveOrRefreshPlayer(check.getPlayer());
         }
 
-        DatabasePunishment punishment = new DatabasePunishment();
-        punishment.setCheckName(check.getCheckName());
-        punishment.setPlayer(databasePlayer);
+        DatabasePunishment punishmentEntity = new DatabasePunishment();
+        punishmentEntity.setCheckName(check.getCheckName());
+        punishmentEntity.setPlayer(dbPlayer);
 
-        // Automatically handle bidirectional relationship by adding punishment to player's punishment list
-        databasePlayer.getPunishments().add(punishment);
-        return punishment;
+        // Maintain relationship consistency
+        dbPlayer.getPunishments().add(punishmentEntity);
+        return punishmentEntity;
     }
 
+    /**
+     * Finds an existing player record by UUID or creates one if none exists, and updates its data.
+     *
+     * @param totemPlayer The in-memory representation of the player to update or insert.
+     * @return The updated or newly created {@link DatabasePlayer}.
+     */
     @Blocking
-    public DatabasePlayer getOrUpdatePlayer(TotemPlayer totemPlayer) {
-        Optional<DatabasePlayer> databasePlayer = database.find(DatabasePlayer.class)
+    public DatabasePlayer retrieveOrRefreshPlayer(TotemPlayer totemPlayer) {
+        Optional<DatabasePlayer> found = database.find(DatabasePlayer.class)
                 .where()
-                .eq(UUID_FIELD, totemPlayer.getUniqueId())
+                .eq(PLAYER_UUID_COLUMN, totemPlayer.getUniqueId())
                 .findOneOrEmpty();
 
-        if (databasePlayer.isPresent()) {
-            DatabasePlayer player = databasePlayer.get();
-            player.setClientBrand(totemPlayer.getBrand());
-            player.setLastSeen(Instant.now());
-            player.save();
-
-            return player;
+        if (found.isPresent()) {
+            DatabasePlayer existing = found.get();
+            existing.setClientBrand(totemPlayer.getBrand());
+            existing.save();
+            return existing;
         }
 
         DatabasePlayer newPlayer = new DatabasePlayer();
-        newPlayer.setUuid(totemPlayer.uniqueId);
+        newPlayer.setUuid(totemPlayer.getUniqueId());
         newPlayer.setClientBrand(totemPlayer.getBrand());
-        newPlayer.setLastSeen(Instant.now());
         database.save(newPlayer);
 
         return newPlayer;
     }
 
-    private DatabasePlayer getOrCreatePlayer(UUID uuid) {
+    /**
+     * Fetches an existing player record by UUID or inserts a default record if none is found.
+     *
+     * @param uuid The unique identifier of the player to look for.
+     * @return The found or newly created {@link DatabasePlayer}.
+     */
+    private DatabasePlayer fetchOrCreatePlayer(UUID uuid) {
         return database.find(DatabasePlayer.class)
                 .where()
-                .eq(UUID_FIELD, uuid)
+                .eq(PLAYER_UUID_COLUMN, uuid)
                 .findOneOrEmpty()
-                .orElseGet(() -> {
-                    DatabasePlayer newPlayer = new DatabasePlayer();
-                    newPlayer.setUuid(uuid);
-                    newPlayer.setClientBrand("Unknown");
-                    newPlayer.setLastSeen(Instant.now());
-                    database.save(newPlayer);
-                    return newPlayer;
-                });
+                .orElse(null);
     }
 
+    /**
+     * Retrieves all existing alerts in the database.
+     *
+     * @return A list of all {@link DatabaseAlert} entities.
+     */
     @Blocking
-    public List<DatabaseAlert> getAlerts() {
+    public List<DatabaseAlert> retrieveAlerts() {
         return database.find(DatabaseAlert.class).findList();
     }
 
+    /**
+     * Retrieves all existing punishments in the database.
+     *
+     * @return A list of all {@link DatabasePunishment} entities.
+     */
     @Blocking
-    public List<DatabasePunishment> getPunishments() {
+    public List<DatabasePunishment> retrievePunishments() {
         return database.find(DatabasePunishment.class).findList();
     }
 
+    /**
+     * Returns a pair containing all alerts and punishments associated with a given player UUID.
+     *
+     * @param uuid The unique identifier of the player.
+     * @return A pair where the first list is alerts, and the second list is punishments.
+     */
     @Blocking
-    public Pair<List<DatabaseAlert>, List<DatabasePunishment>> getLogs(UUID uuid) {
-        DatabasePlayer databasePlayer = getOrCreatePlayer(uuid);
+    public Pair<List<DatabaseAlert>, List<DatabasePunishment>> retrieveLogs(UUID uuid) {
+        DatabasePlayer player = fetchOrCreatePlayer(uuid);
+        if (player == null) return null;
 
         List<DatabaseAlert> alerts = database.find(DatabaseAlert.class)
                 .where()
-                .eq(PLAYER_FIELD, databasePlayer)
+                .eq(PLAYER_COLUMN, player)
                 .findList();
 
         List<DatabasePunishment> punishments = database.find(DatabasePunishment.class)
                 .where()
-                .eq(PLAYER_FIELD, databasePlayer)
+                .eq(PLAYER_COLUMN, player)
                 .findList();
 
         return new Pair<>(alerts, punishments);
     }
 
+    /**
+     * Deletes all alerts and punishments associated with a specific player UUID.
+     *
+     * @param uuid The unique identifier of the player.
+     * @return The total count of deleted entities (alerts + punishments).
+     */
     @Blocking
-    public int clearLogs(UUID uuid) {
-        DatabasePlayer databasePlayer = getOrCreatePlayer(uuid);
+    public int eraseLogs(UUID uuid) {
+        DatabasePlayer player = fetchOrCreatePlayer(uuid);
+        if (player == null) return -1;
 
-        int deletedAlerts = database.find(DatabaseAlert.class)
+        int removedAlerts = database.find(DatabaseAlert.class)
                 .where()
-                .eq(PLAYER_FIELD, databasePlayer)
-                .delete();
-        int deletedPunishments = database.find(DatabasePunishment.class)
-                .where()
-                .eq(PLAYER_FIELD, databasePlayer)
+                .eq(PLAYER_COLUMN, player)
                 .delete();
 
-        return deletedAlerts + deletedPunishments;
+        int removedPunishments = database.find(DatabasePunishment.class)
+                .where()
+                .eq(PLAYER_COLUMN, player)
+                .delete();
+
+        return removedAlerts + removedPunishments;
     }
 
+    /**
+     * Deletes logs (alerts and punishments) older than 30 days from the current date.
+     *
+     * @return The total number of deleted records.
+     */
     @Blocking
-    public int trimDatabase() {
-        Instant thirtyDaysAgo = LocalDateTime.now().minusDays(30).atZone(zoneId).toInstant();
+    public int optimizeDatabase() {
+        Instant cutoff = LocalDateTime.now().minusDays(30).atZone(systemZone).toInstant();
 
-        int deletedAlerts = database.find(DatabaseAlert.class)
+        int oldAlerts = database.find(DatabaseAlert.class)
                 .where()
-                .lt(WHEN_CREATED_FIELD, thirtyDaysAgo)
+                .lt(CREATION_TIMESTAMP_COLUMN, cutoff)
                 .delete();
 
-        int deletedPunishments = database.find(DatabasePunishment.class)
+        int oldPunishments = database.find(DatabasePunishment.class)
                 .where()
-                .lt(WHEN_CREATED_FIELD, thirtyDaysAgo)
+                .lt(CREATION_TIMESTAMP_COLUMN, cutoff)
                 .delete();
 
-        return deletedAlerts + deletedPunishments;
+        return oldAlerts + oldPunishments;
     }
 
+    /**
+     * Removes all player, alert, and punishment records from the database.
+     *
+     * @return The total number of entities deleted.
+     */
     @Blocking
-    public int clearDatabase() {
-        int totalAlerts = database.find(DatabaseAlert.class).findCount();
-        int totalPunishments = database.find(DatabasePunishment.class).findCount();
-        int deletedPlayers = database.find(DatabasePlayer.class).delete();
+    public int wipeDatabase() {
+        int alertCount = database.find(DatabaseAlert.class).findCount();
+        int punishmentCount = database.find(DatabasePunishment.class).findCount();
+        int playersRemoved = database.find(DatabasePlayer.class).delete();
 
-        return totalAlerts + totalPunishments + deletedPlayers;
+        return alertCount + punishmentCount + playersRemoved;
     }
 }
