@@ -21,7 +21,7 @@ dependencies {
     // Loaded during runtime
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.lettuce)
-    compileOnly(libs.commandapi)
+    implementation(files("./libs/CommandAPI.jar"))
     compileOnly(libs.expiringmap)
     compileOnly(libs.discord.webhooks)
 
@@ -97,7 +97,7 @@ tasks {
     // 1.17           = Java 16
     // 1.18 - 1.20.4  = Java 17
     // 1-20.5+        = Java 21
-    val version = "1.21.4"
+    val version = "1.21.3"
     val javaVersion = JavaLanguageVersion.of(21)
 
     val jvmArgsExternal = listOf(
