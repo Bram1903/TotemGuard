@@ -19,11 +19,12 @@
 package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.AsyncOfflinePlayerArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -52,21 +53,23 @@ public class TestCommand {
                 .executes(this::onCommand);
     }
 
-
     private void onCommand(CommandSender sender, CommandArguments args) {
         CompletableFuture<OfflinePlayer> target = (CompletableFuture<OfflinePlayer>) args.get("target");
         if (target == null) return;
 
-        sender.sendMessage("Searching for player...");
+        sender.sendMessage(Component.text("Searching for player...", NamedTextColor.GRAY));
         target.thenAccept(offlinePlayer -> {
             if (!offlinePlayer.hasPlayedBefore() && !offlinePlayer.isOnline()) {
-                sender.sendMessage("Player has never played before.");
+                sender.sendMessage(Component.text("Player never joined before", NamedTextColor.RED));
                 return;
             }
 
-            sender.sendMessage("Player found: " + offlinePlayer.getName());
+            sender.sendMessage(Component.text("Offline player " + offlinePlayer.getName() + " found", NamedTextColor.GREEN));
         }).exceptionally(throwable -> {
-            sender.sendMessage("An error occurred while trying to find the player.");
+            Throwable cause = throwable.getCause();
+            Throwable rootCause = cause instanceof RuntimeException ? cause.getCause() : cause;
+
+            sender.sendMessage(Component.text(rootCause.getMessage(), NamedTextColor.RED));
             return null;
         });
     }
