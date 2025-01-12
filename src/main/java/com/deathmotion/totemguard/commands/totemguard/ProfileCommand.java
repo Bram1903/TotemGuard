@@ -70,7 +70,7 @@ public class ProfileCommand {
             return;
         }
 
-        if (!target.hasPlayedBefore()) {
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
             sender.sendMessage(commandMessengerService.targetNeverJoined());
             return;
         }
