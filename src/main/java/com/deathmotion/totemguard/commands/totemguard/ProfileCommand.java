@@ -93,7 +93,7 @@ public class ProfileCommand {
             long loadTime = System.currentTimeMillis() - startTime;
             SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
 
-            sender.sendMessage(messengerService.getProfileMessageService().createProfileMessage(target.getName(), alertsToday, punishments, loadTime, safetyStatus));
+            sender.sendMessage(messengerService.getProfileMessageService().createProfileMessage(target.getName(), alerts, punishments, loadTime, safetyStatus));
         });
     }
 

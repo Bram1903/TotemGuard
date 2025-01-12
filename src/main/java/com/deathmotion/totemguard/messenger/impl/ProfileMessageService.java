@@ -113,11 +113,15 @@ public class ProfileMessageService {
                 .toList();
 
         StringBuilder summaryBuilder = new StringBuilder();
+        int currentIndex = 0;
+        int totalEntries = sortedEntries.size();
+
         for (Map.Entry<String, Long> entry : sortedEntries) {
-            summaryBuilder
-                    .append(alertSummaryTemplate
-                            .replace("%check_name%", entry.getKey())
-                            .replace("%violations%", String.valueOf(entry.getValue())));
+            summaryBuilder.append(alertSummaryTemplate.replace("%check_name%", entry.getKey()).replace("%violations%", String.valueOf(entry.getValue())));
+            currentIndex++;
+            if (currentIndex < totalEntries) {
+                summaryBuilder.append("\n");
+            }
         }
 
         return messengerService.format(summaryBuilder.toString());
@@ -153,6 +157,7 @@ public class ProfileMessageService {
                 .toList();
 
         summary = summary.append(Component.join(JoinConfiguration.separator(Component.newline()), punishmentComponents));
+
         if (punishments.size() > 3) {
             summary = summary.append(messengerService.format(andMoreToBeDisplayed));
         }
