@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.models;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.api.interfaces.TotemUser;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.manager.CheckManager;
@@ -59,7 +60,17 @@ public class TotemPlayer implements TotemUser {
         for (AbstractCheck value : checkManager.allChecks.values()) value.reload();
     }
 
-    public void loadDatabasePlayer() {
+    public void handlePlayerLogin(Player player) {
+        this.bukkitPlayer = player;
+
+        if (!TotemGuard.getInstance().getPlayerDataManager().shouldCheck(user)) {
+            TotemGuard.getInstance().getPlayerDataManager().remove(user);
+            return;
+        }
+
+        // Trigger the BadPacketsB check here, as it will otherwise still be in the configuration state
+        this.checkManager.getPacketCheck(BadPacketsB.class).handle(getBrand());
+
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseService().retrieveOrRefreshPlayer(this)));
     }
 

@@ -21,13 +21,13 @@ package com.deathmotion.totemguard.manager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataManager {
@@ -40,8 +40,8 @@ public class PlayerDataManager {
     }
 
     public boolean shouldCheck(User user) {
-        UUID uuid = user.getUUID();
-        if (uuid == null) return false;
+        if (!ChannelHelper.isOpen(user.getChannel())) return false;
+        if (user.getUUID() == null) return false;
 
         if (plugin.getConfigManager().getSettings().isBypass()) {
             // Has exempt permission
