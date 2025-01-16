@@ -100,6 +100,9 @@ public class Messages {
         @Comment("\n/totemguard profile")
         private ProfileCommand profileCommand = new ProfileCommand();
 
+        @Comment("\n/totemguard database")
+        private DatabaseCommand databaseCommand = new DatabaseCommand();
+
         @Configuration
         @Getter
         public static class GenericCommands {
@@ -164,6 +167,38 @@ public class Messages {
                 private String showingLastPunishments = "&7&oShowing the last 3 punishments:";
 
                 private String andMoreToBeDisplayed = "&7&o... and more not displayed";
+            }
+        }
+
+        @Configuration
+        @Getter
+        public static class DatabaseCommand {
+            @Comment("Message when the database clearing has started.")
+            private String clearingStarted = "%prefix% &aDatabase clearing started...";
+
+            @Comment("\nMessage when the database trimming has started.")
+            private String trimmingStarted = "%prefix% &aDatabase trimming started...";
+
+            @Comment("\nInvalid confirmation code has been provided.")
+            private String invalidConfirmationCode = "%prefix% &cInvalid code. Please use the code provided.";
+
+            @Comment("\nAction Confirmation Format")
+            private ActionConfirmationFormat actionConfirmationFormat = new ActionConfirmationFormat();
+
+            @Configuration
+            @Getter
+            public static class ActionConfirmationFormat {
+                private String actionConfirmationFormat = """
+                        &c&l[WARNING]: &7You are about to %action% the database.
+                        &7This action is irreversible.
+                        
+                        &7Type: %command%
+                        &7 or click %confirm_button% to confirm.
+                        """;
+
+                private String confirmButton = "&6&l[CONFIRM]";
+                private String confirmHover = "&7Click to run %command%";
+                private String confirmCommand = "/totemguard database %action% %code%";
             }
         }
     }

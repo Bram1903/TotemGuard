@@ -16,34 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands;
+package com.deathmotion.totemguard.commands.totemguard;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.totemguard.*;
+import com.deathmotion.totemguard.commands.totemguard.database.ClearCommand;
+import com.deathmotion.totemguard.commands.totemguard.database.TrimCommand;
 import dev.jorel.commandapi.CommandAPICommand;
 
-public class TotemGuardCommand {
+public class DatabaseCommand {
 
     private final TotemGuard plugin;
 
-    public TotemGuardCommand(TotemGuard plugin) {
+    public DatabaseCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        init();
     }
 
-    public void init() {
-        new CommandAPICommand("totemguard")
-                .withAliases("tg")
+    public CommandAPICommand init() {
+        return new CommandAPICommand("database")
+                .withPermission("TotemGuard.Database")
                 .withSubcommands(
-                        new ReloadCommand(plugin).init(),
-                        new CheckCommand(plugin).init(),
-                        new AlertsCommand(plugin).init(),
-                        new ProfileCommand(plugin).init(),
-                        new DatabaseCommand(plugin).init()
-                )
-                .executes((sender, args) -> {
-                    sender.sendMessage(plugin.getMessengerService().totemGuardInfo());
-                })
-                .register();
+                        new ClearCommand(plugin).init(),
+                        new TrimCommand(plugin).init()
+                );
     }
 }
