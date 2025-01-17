@@ -108,7 +108,6 @@ public class Messages {
         public static class GenericCommands {
             private String specifyPlayer = "%prefix% &cPlease specify a player.";
             private String pluginReloaded = "%prefix% &aThe plugin has been reloaded!";
-            private String offlinePlayerNotFound = "%prefix% &cThe offline player could not be found.";
             private String targetNeverJoined = "%prefix% &cTarget has never joined the server.";
             private String noDatabasePlayerFound = "%prefix% &cNo database player found for %player%.";
         }

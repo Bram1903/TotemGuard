@@ -37,6 +37,9 @@ public class TotemGuardLoader implements PluginLoader {
         // Add repositories
         resolver.addRepository(new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2").build());
 
+        // Temporary until CommandAPI creates a new release
+        resolver.addRepository(new RemoteRepository.Builder("oss.sonatype.org-snapshot", "default", "https://s01.oss.sonatype.org/content/repositories/snapshots").build());
+
         // Add filtered dependencies
         for (Library library : Library.getFilteredLibraries()) {
             resolver.addDependency(new Dependency(new DefaultArtifact(library.getMavenDependency()), "runtime"));

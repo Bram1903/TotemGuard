@@ -12,6 +12,9 @@ repositories {
     maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
     maven { url = uri("https://repo.codemc.io/repository/maven-releases/") }
     maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
+
+    // Temporary for CommandAPI until a new release is made
+    maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots") }
 }
 
 java {

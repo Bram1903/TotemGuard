@@ -45,10 +45,6 @@ public class CommandMessengerService {
         return messengerService.format(commandMessages().getGenericCommands().getPluginReloaded().replace("%prefix%", messengerService.getPrefix()));
     }
 
-    public Component offlinePlayerNotFound() {
-        return messengerService.format(commandMessages().getGenericCommands().getOfflinePlayerNotFound().replace("%prefix%", messengerService.getPrefix()));
-    }
-
     public Component targetNeverJoined() {
         return messengerService.format(commandMessages().getGenericCommands().getTargetNeverJoined().replace("%prefix%", messengerService.getPrefix()));
     }

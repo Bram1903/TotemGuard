@@ -28,17 +28,20 @@ import com.deathmotion.totemguard.models.impl.SafetyStatus;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.OfflinePlayerArgument;
+import dev.jorel.commandapi.arguments.AsyncOfflinePlayerArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 public class ProfileCommand {
 
@@ -59,23 +62,37 @@ public class ProfileCommand {
     public CommandAPICommand init() {
         return new CommandAPICommand("profile")
                 .withPermission("TotemGuard.Profile")
-                .withArguments(new OfflinePlayerArgument("target").replaceSuggestions(ArgumentSuggestions.strings(info -> Bukkit.getOnlinePlayers().stream().map(Player::getName).toArray(String[]::new))))
+                .withArguments(new AsyncOfflinePlayerArgument("target").replaceSuggestions(
+                        ArgumentSuggestions.stringsAsync(info -> CompletableFuture.supplyAsync(() ->
+                                Stream.of(Bukkit.getOfflinePlayers())
+                                        .map(OfflinePlayer::getName)
+                                        .toArray(String[]::new)
+                        ))
+                ))
                 .executes(this::onCommand);
     }
 
     private void onCommand(CommandSender sender, CommandArguments args) {
-        OfflinePlayer target = (OfflinePlayer) args.get("target");
-        if (target == null) {
-            sender.sendMessage(commandMessengerService.offlinePlayerNotFound());
-            return;
-        }
+        CompletableFuture<OfflinePlayer> target = (CompletableFuture<OfflinePlayer>) args.get("target");
 
-        if (!target.hasPlayedBefore() && !target.isOnline()) {
-            sender.sendMessage(commandMessengerService.targetNeverJoined());
-            return;
-        }
+        sender.sendMessage(commandMessengerService.loadingProfile(args.getRaw("target")));
+        target.thenAccept(offlinePlayer -> {
+            if (!offlinePlayer.hasPlayedBefore() && !offlinePlayer.isOnline()) {
+                sender.sendMessage(commandMessengerService.targetNeverJoined());
+                return;
+            }
 
-        sender.sendMessage(commandMessengerService.loadingProfile(target.getName()));
+            handleCommand(sender, offlinePlayer);
+        }).exceptionally(throwable -> {
+            Throwable cause = throwable.getCause();
+            Throwable rootCause = cause instanceof RuntimeException ? cause.getCause() : cause;
+
+            sender.sendMessage(Component.text(rootCause.getMessage(), NamedTextColor.RED));
+            return null;
+        });
+    }
+
+    private void handleCommand(CommandSender sender, OfflinePlayer target) {
         long startTime = System.currentTimeMillis();
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {

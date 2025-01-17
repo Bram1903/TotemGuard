@@ -46,8 +46,8 @@ public enum Library {
     MYSQL("mysql", "mysql-connector-java", "8.0.30"),
 
     // CommandAPI (Loads different versions based on the server version)
-    COMMANDAPI_MOJANG_MAPPED("dev.jorel", "commandapi-bukkit-shade-mojang-mapped", "9.7.0"),
-    COMMANDAPI("dev.jorel", "commandapi-bukkit-shade", "9.7.0");
+    COMMANDAPI_MOJANG_MAPPED("dev.jorel", "commandapi-bukkit-shade-mojang-mapped", "9.7.1-SNAPSHOT"),
+    COMMANDAPI("dev.jorel", "commandapi-bukkit-shade", "9.7.1-SNAPSHOT");
 
     private final String group;
     private final String name;
