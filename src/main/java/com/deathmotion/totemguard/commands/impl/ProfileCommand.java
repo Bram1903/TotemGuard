@@ -16,9 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.totemguard;
+package com.deathmotion.totemguard.commands.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.commands.CommandSuggestionUtil;
+import com.deathmotion.totemguard.commands.OfflinePlayerCommandHandler;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.database.entities.DatabaseAlert;
 import com.deathmotion.totemguard.database.entities.DatabasePunishment;
@@ -27,13 +29,9 @@ import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
 import com.deathmotion.totemguard.models.impl.SafetyStatus;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.AsyncOfflinePlayerArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 
@@ -41,7 +39,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 public class ProfileCommand {
 
@@ -63,33 +60,17 @@ public class ProfileCommand {
         return new CommandAPICommand("profile")
                 .withPermission("TotemGuard.Profile")
                 .withArguments(new AsyncOfflinePlayerArgument("target").replaceSuggestions(
-                        ArgumentSuggestions.stringsAsync(info -> CompletableFuture.supplyAsync(() ->
-                                Stream.of(Bukkit.getOfflinePlayers())
-                                        .map(OfflinePlayer::getName)
-                                        .toArray(String[]::new)
-                        ))
+                        CommandSuggestionUtil.getOfflinePlayerNameSuggestions()
                 ))
                 .executes(this::onCommand);
     }
 
     private void onCommand(CommandSender sender, CommandArguments args) {
         CompletableFuture<OfflinePlayer> target = (CompletableFuture<OfflinePlayer>) args.get("target");
+        String targetRawName = args.getRaw("target");
+        sender.sendMessage(commandMessengerService.loadingProfile(targetRawName));
 
-        sender.sendMessage(commandMessengerService.loadingProfile(args.getRaw("target")));
-        target.thenAccept(offlinePlayer -> {
-            if (!offlinePlayer.hasPlayedBefore() && !offlinePlayer.isOnline()) {
-                sender.sendMessage(commandMessengerService.targetNeverJoined());
-                return;
-            }
-
-            handleCommand(sender, offlinePlayer);
-        }).exceptionally(throwable -> {
-            Throwable cause = throwable.getCause();
-            Throwable rootCause = cause instanceof RuntimeException ? cause.getCause() : cause;
-
-            sender.sendMessage(Component.text(rootCause.getMessage(), NamedTextColor.RED));
-            return null;
-        });
+        OfflinePlayerCommandHandler.handlePlayerTarget(sender, target, this::handleCommand);
     }
 
     private void handleCommand(CommandSender sender, OfflinePlayer target) {

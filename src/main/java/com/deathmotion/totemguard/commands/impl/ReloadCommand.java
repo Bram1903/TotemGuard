@@ -16,27 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.totemguard;
+package com.deathmotion.totemguard.commands.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.totemguard.database.ClearCommand;
-import com.deathmotion.totemguard.commands.totemguard.database.TrimCommand;
+import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
 import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.executors.CommandArguments;
+import org.bukkit.command.CommandSender;
 
-public class DatabaseCommand {
-
+public class ReloadCommand {
     private final TotemGuard plugin;
+    private final CommandMessengerService commandMessengerService;
 
-    public DatabaseCommand(TotemGuard plugin) {
+    public ReloadCommand(TotemGuard plugin) {
         this.plugin = plugin;
+        this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
     }
 
     public CommandAPICommand init() {
-        return new CommandAPICommand("database")
-                .withPermission("TotemGuard.Database")
-                .withSubcommands(
-                        new ClearCommand(plugin).init(),
-                        new TrimCommand(plugin).init()
-                );
+        return new CommandAPICommand("reload")
+                .withPermission("TotemGuard.Reload")
+                .executes(this::onCommand);
+    }
+
+    private void onCommand(CommandSender sender, CommandArguments args) {
+        plugin.getConfigManager().reload();
+        sender.sendMessage(commandMessengerService.pluginReloaded());
     }
 }

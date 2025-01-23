@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.totemguard.database;
+package com.deathmotion.totemguard.commands.impl.database;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.totemguard.database.util.ValidationHelper;
-import com.deathmotion.totemguard.commands.totemguard.database.util.ValidationType;
+import com.deathmotion.totemguard.commands.impl.database.util.ValidationHelper;
+import com.deathmotion.totemguard.commands.impl.database.util.ValidationType;
 import com.deathmotion.totemguard.messenger.impl.DatabaseMessageService;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.IntegerArgument;
@@ -30,20 +30,20 @@ import org.bukkit.command.CommandSender;
 
 import java.util.Optional;
 
-public class ClearCommand {
+public class TrimCommand {
     private final TotemGuard plugin;
     private final DatabaseMessageService databaseMessageService;
     private final ValidationHelper validationHelper;
 
-    public ClearCommand(TotemGuard plugin) {
+    public TrimCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseMessageService = plugin.getMessengerService().getDatabaseMessageService();
         this.validationHelper = ValidationHelper.getInstance();
     }
 
     public CommandAPICommand init() {
-        return new CommandAPICommand("clear")
-                .withPermission("TotemGuard.Database.Clear")
+        return new CommandAPICommand("trim")
+                .withPermission("TotemGuard.Database.Trim")
                 .withOptionalArguments(new IntegerArgument("code"))
                 .executes(this::onCommand);
     }
@@ -52,7 +52,7 @@ public class ClearCommand {
         Optional<Integer> optionalCode = args.getOptional("code").map(value -> (Integer) value);
 
         if (optionalCode.isEmpty()) {
-            sender.sendMessage(validationHelper.generateCodeMessage(ValidationType.CLEAR));
+            sender.sendMessage(validationHelper.generateCodeMessage(ValidationType.TRIM));
             return;
         }
 
@@ -61,7 +61,7 @@ public class ClearCommand {
             return;
         }
 
-        sender.sendMessage(databaseMessageService.clearingStartedComponent());
+        sender.sendMessage(databaseMessageService.trimmingStartedComponent());
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             sender.sendMessage("To be implemented");
         });

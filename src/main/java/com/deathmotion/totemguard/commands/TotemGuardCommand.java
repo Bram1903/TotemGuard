@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.totemguard.*;
+import com.deathmotion.totemguard.commands.impl.*;
 import dev.jorel.commandapi.CommandAPICommand;
 
 public class TotemGuardCommand {
@@ -39,7 +39,8 @@ public class TotemGuardCommand {
                         new CheckCommand(plugin).init(),
                         new AlertsCommand(plugin).init(),
                         new ProfileCommand(plugin).init(),
-                        new DatabaseCommand(plugin).init()
+                        new DatabaseCommand(plugin).init(),
+                        new ClearLogsCommand(plugin).init()
                 )
                 .executes((sender, args) -> {
                     sender.sendMessage(plugin.getMessengerService().totemGuardInfo());
