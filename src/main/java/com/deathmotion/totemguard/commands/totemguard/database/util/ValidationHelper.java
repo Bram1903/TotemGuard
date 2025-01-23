@@ -26,10 +26,9 @@ import java.util.Random;
 
 public class ValidationHelper {
 
+    private static ValidationHelper instance;
     private final DatabaseMessageService databaseMessageService;
     private final Random random;
-
-    private static ValidationHelper instance;
     private Integer generatedCode;
 
     private ValidationHelper() {
