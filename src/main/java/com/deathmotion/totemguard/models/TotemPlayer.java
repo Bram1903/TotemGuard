@@ -40,8 +40,9 @@ public class TotemPlayer implements TotemUser {
     public final TotemData totemData;
     public final UUID uniqueId;
     public final User user;
-    public DigAndPickupState digAndPickupState;
+
     public Player bukkitPlayer;
+    public DigAndPickupState digAndPickupState;
 
     @Nullable
     public DatabasePlayer databasePlayer;
