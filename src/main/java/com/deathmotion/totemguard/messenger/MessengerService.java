@@ -41,6 +41,7 @@ public class MessengerService {
     private final ProfileMessageService profileMessageService;
     private final DatabaseMessageService databaseMessageService;
     private final ClearLogsMessageService clearLogsMessageService;
+    private final StatsMessageService statsMessageService;
 
     public MessengerService(TotemGuard plugin) {
         this.configManager = plugin.getConfigManager();
@@ -51,6 +52,7 @@ public class MessengerService {
         this.profileMessageService = new ProfileMessageService(plugin, this);
         this.databaseMessageService = new DatabaseMessageService(plugin, this);
         this.clearLogsMessageService = new ClearLogsMessageService(plugin, this);
+        this.statsMessageService = new StatsMessageService(plugin, this);
     }
 
     public Component format(String text) {

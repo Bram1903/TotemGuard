@@ -106,6 +106,9 @@ public class Messages {
         @Comment("\n/totemguard clearlogs")
         private ClearLogsCommand clearLogsCommand = new ClearLogsCommand();
 
+        @Comment("\n/totemguard stats")
+        private StatsCommand statsCommand = new StatsCommand();
+
         @Configuration
         @Getter
         public static class GenericCommands {
@@ -218,6 +221,52 @@ public class Messages {
 
             @Comment("\nMessage when the logs have been cleared.")
             private String logsCleared = "%prefix% &aCleared %amount% logs for %player% in %duration%ms.";
+        }
+
+        @Configuration
+        @Getter
+        public static class StatsCommand {
+            @Comment("Message when the stats are starting to get loaded.")
+            private String loadingStats = "%prefix% &7Loading stats...";
+
+            @Comment("\nStats Format: The format for the message returned when checking the server stats.")
+            private StatsFormat statsFormat = new StatsFormat();
+
+            @Configuration
+            @Getter
+            public static class StatsFormat {
+                private String statsFormat = """
+                        &6&lTotemGuard Stats
+                        &7&lTotal Punishments: &6%total_punishments%
+                        &7&lTotal Alerts: &6%total_alerts%
+                        
+                        &6&l> Punishments <
+                        %punishment_summary%
+                        
+                        &6&l> Alerts <
+                        %alert_summary%
+                        """;
+
+                @Comment("\nStats Punishment Summary: The format for the punishment summary in the stats. Will replace %punishment_summary%.")
+                private String punishmentSummary = """
+                        &7&lLast 30 days: &6%punishment_last_30%
+                        &7&lLast 7 days: &6%punishment_last_7%
+                        &7&lLast 24 hours: &6%punishment_last_24h%
+                        """;
+
+                @Comment("\nStats Alert Summary: The format for the alert summary in the stats. Will replace %alert_summary%.")
+                private String alertSummary = """
+                        &7&lLast 30 days: &6%alerts_last_30%
+                        &7&lLast 7 days: &6%alerts_last_7%
+                        &7&lLast 24 hours: &6%alerts_last_24h%
+                        """;
+
+                @Comment("\nStats No Punishments Found: The message returned when no punishments are found. Will replace %punishment_summary% if no punishments are found.")
+                private String noPunishmentsFound = "&7&oNo punishments found.";
+
+                @Comment("\nStats No Alerts Found: The message returned when no alerts are found. Will replace %alert_summary% if no alerts are found.")
+                private String noAlertsFound = "&7&oNo alerts found.";
+            }
         }
     }
 }
