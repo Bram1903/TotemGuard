@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.commands.impl;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.config.Checks;
-import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
+import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;

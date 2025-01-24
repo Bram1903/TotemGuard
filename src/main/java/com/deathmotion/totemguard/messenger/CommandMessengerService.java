@@ -16,12 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.messenger.impl;
+package com.deathmotion.totemguard.messenger;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.manager.ConfigManager;
-import com.deathmotion.totemguard.messenger.MessengerService;
 import net.kyori.adventure.text.Component;
 
 public class CommandMessengerService {

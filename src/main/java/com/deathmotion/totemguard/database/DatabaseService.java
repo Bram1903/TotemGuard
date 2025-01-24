@@ -69,7 +69,7 @@ public class DatabaseService {
         // Schedule asynchronous periodic saves
         FoliaScheduler.getAsyncScheduler().runAtFixedRate(
                 plugin,
-                (unused) -> performBulkSave(),
+                (o) -> performBulkSave(),
                 AUTOSAVE_PERIOD,
                 AUTOSAVE_PERIOD,
                 TimeUnit.SECONDS

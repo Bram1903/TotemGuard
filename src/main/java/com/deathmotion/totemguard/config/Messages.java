@@ -103,6 +103,9 @@ public class Messages {
         @Comment("\n/totemguard database")
         private DatabaseCommand databaseCommand = new DatabaseCommand();
 
+        @Comment("\n/totemguard clearlogs")
+        private ClearLogsCommand clearLogsCommand = new ClearLogsCommand();
+
         @Configuration
         @Getter
         public static class GenericCommands {
@@ -199,6 +202,16 @@ public class Messages {
                 private String confirmHover = "&7Click to run %command%";
                 private String confirmCommand = "/totemguard database %action% %code%";
             }
+        }
+
+        @Configuration
+        @Getter
+        public static class ClearLogsCommand {
+            @Comment("Message when the logs are starting to get cleared.")
+            private String clearingLogs = "%prefix% &7Clearing logs...";
+
+            @Comment("\nMessage when the logs have been cleared.")
+            private String logsCleared = "%prefix% &aCleared %amount% logs for %player% in %duration%ms.";
         }
     }
 }

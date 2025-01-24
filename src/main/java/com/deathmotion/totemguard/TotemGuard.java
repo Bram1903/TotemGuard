@@ -50,13 +50,14 @@ public final class TotemGuard extends JavaPlugin {
     private AlertManagerImpl alertManager;
     private PunishmentManager punishmentManager;
     private DiscordManager discordManager;
-    @Setter
-    private ProxyAlertMessenger proxyMessenger;
     private PlayerDataManager playerDataManager;
     private DatabaseManager databaseManager;
     private DatabaseService databaseService;
     private UpdateChecker updateChecker;
     private TotemGuardAPIImpl totemGuardAPI;
+
+    @Setter
+    private ProxyAlertMessenger proxyMessenger;
 
     @Override
     public void onLoad() {

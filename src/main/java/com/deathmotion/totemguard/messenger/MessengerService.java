@@ -31,17 +31,16 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
+@Getter
 public class MessengerService {
     private final ConfigManager configManager;
 
     private final PlaceHolderService placeHolderService;
     private final AlertMessageService alertMessageService;
-    @Getter
     private final CommandMessengerService commandMessengerService;
-    @Getter
     private final ProfileMessageService profileMessageService;
-    @Getter
     private final DatabaseMessageService databaseMessageService;
+    private final ClearLogsMessageService clearLogsMessageService;
 
     public MessengerService(TotemGuard plugin) {
         this.configManager = plugin.getConfigManager();
@@ -51,6 +50,7 @@ public class MessengerService {
         this.commandMessengerService = new CommandMessengerService(plugin, this);
         this.profileMessageService = new ProfileMessageService(plugin, this);
         this.databaseMessageService = new DatabaseMessageService(plugin, this);
+        this.clearLogsMessageService = new ClearLogsMessageService(plugin, this);
     }
 
     public Component format(String text) {

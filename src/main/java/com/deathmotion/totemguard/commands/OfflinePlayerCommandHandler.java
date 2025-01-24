@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
+import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import lombok.experimental.UtilityClass;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

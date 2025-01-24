@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.commands.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.messenger.impl.CommandMessengerService;
+import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.executors.CommandArguments;
 import org.bukkit.command.CommandSender;
