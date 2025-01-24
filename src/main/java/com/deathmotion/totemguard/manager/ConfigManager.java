@@ -56,6 +56,7 @@ public class ConfigManager {
 
     public void reload() {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
+            plugin.getProxyMessenger().stop();
             loadConfigurations();
             setupProxyMessenger();
 
