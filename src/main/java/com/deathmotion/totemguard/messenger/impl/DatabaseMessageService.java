@@ -52,6 +52,20 @@ public class DatabaseMessageService {
         return messengerService.format(getDatabaseCommandMessages().getInvalidConfirmationCode().replace("%prefix%", messengerService.getPrefix()));
     }
 
+    public Component clearingCompleted(int amount, long duration) {
+        return messengerService.format(getDatabaseCommandMessages().getClearingCompleted()
+                .replace("%prefix%", messengerService.getPrefix())
+                .replace("%amount%", String.valueOf(amount))
+                .replace("%duration%", String.valueOf(duration)));
+    }
+
+    public Component trimmingCompleted(int amount, long duration) {
+        return messengerService.format(getDatabaseCommandMessages().getTrimmingCompleted()
+                .replace("%prefix%", messengerService.getPrefix())
+                .replace("%amount%", String.valueOf(amount))
+                .replace("%duration%", String.valueOf(duration)));
+    }
+
     public Component confirmationMessage(ValidationType type, int code) {
         Messages.CommandMessages.DatabaseCommand.ActionConfirmationFormat format = getDatabaseCommandMessages().getActionConfirmationFormat();
         String messageFormat = format.getActionConfirmationFormat();

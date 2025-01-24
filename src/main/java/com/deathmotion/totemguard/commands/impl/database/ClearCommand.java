@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.commands.impl.database;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.impl.database.util.ValidationHelper;
 import com.deathmotion.totemguard.commands.impl.database.util.ValidationType;
+import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.messenger.impl.DatabaseMessageService;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.IntegerArgument;
@@ -32,11 +33,13 @@ import java.util.Optional;
 
 public class ClearCommand {
     private final TotemGuard plugin;
+    private final DatabaseService databaseService;
     private final DatabaseMessageService databaseMessageService;
     private final ValidationHelper validationHelper;
 
     public ClearCommand(TotemGuard plugin) {
         this.plugin = plugin;
+        this.databaseService = plugin.getDatabaseService();
         this.databaseMessageService = plugin.getMessengerService().getDatabaseMessageService();
         this.validationHelper = ValidationHelper.getInstance();
     }
@@ -63,7 +66,11 @@ public class ClearCommand {
 
         sender.sendMessage(databaseMessageService.clearingStartedComponent());
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            sender.sendMessage("To be implemented");
+            long startTime = System.currentTimeMillis();
+            int totalRemovedLogs = databaseService.wipeDatabase();
+            long loadTime = System.currentTimeMillis() - startTime;
+
+            sender.sendMessage(databaseMessageService.clearingCompleted(totalRemovedLogs, loadTime));
         });
     }
 }

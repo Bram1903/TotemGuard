@@ -184,6 +184,12 @@ public class Messages {
             @Comment("\nInvalid confirmation code has been provided.")
             private String invalidConfirmationCode = "%prefix% &cInvalid code. Please use the code provided.";
 
+            @Comment("\nDatabase clearing completed")
+            private String clearingCompleted = "%prefix% &aCleared %amount% database entries in %duration%ms.";
+
+            @Comment("\nDatabase trimming completed")
+            private String trimmingCompleted = "%prefix% &aTrimmed %amount% database entries in %duration%ms.";
+
             @Comment("\nAction Confirmation Format")
             private ActionConfirmationFormat actionConfirmationFormat = new ActionConfirmationFormat();
 
