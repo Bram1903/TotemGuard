@@ -36,17 +36,18 @@ public class ClearLogsCommand {
 
     private void onCommand(CommandSender sender, CommandArguments args) {
         CompletableFuture<OfflinePlayer> target = (CompletableFuture<OfflinePlayer>) args.get("target");
+        String targetRawName = args.getRaw("target");
         sender.sendMessage(clearLogsMessageService.clearingStarted());
 
-        OfflinePlayerCommandHandler.handlePlayerTarget(sender, target, this::handleCommand);
+        OfflinePlayerCommandHandler.handlePlayerTarget(sender, target, targetRawName, this::handleCommand);
     }
 
-    private void handleCommand(CommandSender sender, OfflinePlayer offlinePlayer) {
+    private void handleCommand(CommandSender sender, OfflinePlayer offlinePlayer, String rawUsername) {
         long startTime = System.currentTimeMillis();
         int deletedRecords = databaseService.eraseLogs(offlinePlayer.getUniqueId());
 
         if (deletedRecords == -1) {
-            sender.sendMessage(commandMessengerService.noDatabasePlayerFound(offlinePlayer.getName()));
+            sender.sendMessage(commandMessengerService.noDatabasePlayerFound(rawUsername));
             return;
         }
 

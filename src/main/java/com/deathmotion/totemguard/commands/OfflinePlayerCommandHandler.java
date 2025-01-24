@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.messenger.CommandMessengerService;
+import com.deathmotion.totemguard.messenger.MessengerService;
 import lombok.experimental.UtilityClass;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -31,27 +31,20 @@ import java.util.concurrent.CompletableFuture;
 @UtilityClass
 public class OfflinePlayerCommandHandler {
 
-    public static void handlePlayerTarget(CommandSender sender, CompletableFuture<OfflinePlayer> targetFuture, PlayerCommandAction action) {
-        final CommandMessengerService commandMessengerService = TotemGuard.getInstance().getMessengerService().getCommandMessengerService();
-        targetFuture.thenAccept(offlinePlayer -> {
-            if (!offlinePlayer.hasPlayedBefore() && !offlinePlayer.isOnline()) {
-                sender.sendMessage(commandMessengerService.targetNeverJoined());
-                return;
-            }
-
-            action.execute(sender, offlinePlayer);
-        }).exceptionally(throwable -> {
+    public static void handlePlayerTarget(CommandSender sender, CompletableFuture<OfflinePlayer> targetFuture,String rawUsername, PlayerCommandAction action) {
+        targetFuture.thenAccept(offlinePlayer -> action.execute(sender, offlinePlayer, rawUsername)).exceptionally(throwable -> {
             Throwable cause = throwable.getCause();
             Throwable rootCause = cause instanceof RuntimeException ? cause.getCause() : cause;
 
-            sender.sendMessage(Component.text(rootCause.getMessage(), NamedTextColor.RED));
+            MessengerService messengerService = TotemGuard.getInstance().getMessengerService();
+            sender.sendMessage(messengerService.format(messengerService.getPrefix()).append(Component.text(" " + rootCause.getMessage(), NamedTextColor.RED)));
             return null;
         });
     }
 
     @FunctionalInterface
     public interface PlayerCommandAction {
-        void execute(CommandSender sender, OfflinePlayer offlinePlayer);
+        void execute(CommandSender sender, OfflinePlayer offlinePlayer, String rawUsername);
     }
 }
 

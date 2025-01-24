@@ -67,19 +67,19 @@ public class ProfileCommand {
 
     private void onCommand(CommandSender sender, CommandArguments args) {
         CompletableFuture<OfflinePlayer> target = (CompletableFuture<OfflinePlayer>) args.get("target");
-        String targetRawName = args.getRaw("target");
-        sender.sendMessage(commandMessengerService.loadingProfile(targetRawName));
+        String rawUsername = args.getRaw("target");
+        sender.sendMessage(commandMessengerService.loadingProfile(rawUsername));
 
-        OfflinePlayerCommandHandler.handlePlayerTarget(sender, target, this::handleCommand);
+        OfflinePlayerCommandHandler.handlePlayerTarget(sender, target, rawUsername, this::handleCommand);
     }
 
-    private void handleCommand(CommandSender sender, OfflinePlayer target) {
+    private void handleCommand(CommandSender sender, OfflinePlayer target, String rawUsername) {
         long startTime = System.currentTimeMillis();
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             Pair<List<DatabaseAlert>, List<DatabasePunishment>> logs = databaseService.retrieveLogs(target.getUniqueId());
             if (logs == null) {
-                sender.sendMessage(commandMessengerService.noDatabasePlayerFound(target.getName()));
+                sender.sendMessage(commandMessengerService.noDatabasePlayerFound(rawUsername));
                 return;
             }
 
@@ -91,7 +91,7 @@ public class ProfileCommand {
             long loadTime = System.currentTimeMillis() - startTime;
             SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
 
-            sender.sendMessage(messengerService.getProfileMessageService().createProfileMessage(target.getName(), alerts, punishments, loadTime, safetyStatus));
+            sender.sendMessage(messengerService.getProfileMessageService().createProfileMessage(rawUsername, alerts, punishments, loadTime, safetyStatus));
         });
     }
 
