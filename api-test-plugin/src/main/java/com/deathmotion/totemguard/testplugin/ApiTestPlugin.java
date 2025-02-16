@@ -35,6 +35,12 @@ public final class ApiTestPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        if (!(getServer().getPluginManager().isPluginEnabled("TotemGuard"))) {
+            getLogger().severe("TotemGuard is not enabled! This plugin will be disabled.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         api = TotemGuardProvider.getAPI();
 
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
