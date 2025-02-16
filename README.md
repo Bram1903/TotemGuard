@@ -43,9 +43,9 @@ installed on your server.
 
 ## Supported Platforms & Versions
 
-| Platform                                        | Supported Versions |
-|-------------------------------------------------|--------------------|
-| Bukkit, Spigot, Paper, Folia, and related forks | 1.16.5 - 1.21.4    |
+| Platform                        | Supported Versions |
+|---------------------------------|--------------------|
+| Paper, Folia, and related forks | 1.19 - 1.21.4      |
 
 ## Checks
 
@@ -172,16 +172,6 @@ Operators (OPs) have these permissions by default, except `TotemGuard.Debug`:
 
 **Maintainer: [@OutDev](https://github.com/OutDev0)**  
 For their creative ideas and dedicated efforts in maintaining the project.
-
-### Special Thanks to Our Contributors
-
-- **[@Retrooper](https://github.com/retrooper)**  
-  For developing [PacketEvents](https://github.com/retrooper/packetevents), a foundational library integral to the
-  project's success.
-
-- **[@MattMX](https://github.com/Matt-MX)**  
-  For supporting development by providing server access and contributing valuable insights
-  through [PvPHub](https://github.com/PvPHubLLC).
 
 ## License
 
