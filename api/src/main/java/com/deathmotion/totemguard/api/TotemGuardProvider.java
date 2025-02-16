@@ -18,10 +18,13 @@
 
 package com.deathmotion.totemguard.api;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Singleton manager for the TotemGuard API.
  */
 public final class TotemGuardProvider {
+
     private static TotemGuardAPI api;
 
     private TotemGuardProvider() {
@@ -35,7 +38,7 @@ public final class TotemGuardProvider {
      */
     public static TotemGuardAPI getAPI() {
         if (api == null) {
-            throw new IllegalStateException("TotemGuard API is not initialized! Ensure the implementation is set before calling getInstance().");
+            throw new IllegalStateException("TotemGuard API has not been initialized.");
         }
         return api;
     }
@@ -44,10 +47,10 @@ public final class TotemGuardProvider {
      * Sets the global API instance.
      * Can only be set once.
      *
-     * @param instance The api implementation instance.
+     * @param instance The API implementation instance.
      * @throws IllegalStateException if the API has already been initialized.
      */
-    public static void setAPI(TotemGuardAPI instance) {
+    public static void setAPI(@NotNull TotemGuardAPI instance) {
         if (api != null) {
             throw new IllegalStateException("TotemGuard API instance is already set and cannot be modified.");
         }
