@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard;
 
+import com.deathmotion.totemguard.api.TotemGuardProvider;
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
@@ -54,7 +55,6 @@ public final class TotemGuard extends JavaPlugin {
     private DatabaseManager databaseManager;
     private DatabaseService databaseService;
     private UpdateChecker updateChecker;
-    private TotemGuardAPIImpl totemGuardAPI;
 
     @Setter
     private ProxyAlertMessenger proxyMessenger;
@@ -80,7 +80,8 @@ public final class TotemGuard extends JavaPlugin {
         playerDataManager = new PlayerDataManager(this);
         databaseManager = new DatabaseManager(this);
         databaseService = new DatabaseService(this);
-        totemGuardAPI = new TotemGuardAPIImpl(this);
+
+        TotemGuardProvider.setAPI(new TotemGuardAPIImpl(this));
         updateChecker = new UpdateChecker(this);
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit(this));

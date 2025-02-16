@@ -19,13 +19,13 @@
 package com.deathmotion.totemguard.testplugin;
 
 import com.deathmotion.totemguard.api.TotemGuardAPI;
+import com.deathmotion.totemguard.api.TotemGuardProvider;
 import com.deathmotion.totemguard.testplugin.events.AlertsToggleEventTest;
 import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
 import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
 import com.deathmotion.totemguard.testplugin.events.UpdateFoundEventTest;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 @Getter
@@ -35,21 +35,14 @@ public final class ApiTestPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        RegisteredServiceProvider<TotemGuardAPI> provider = Bukkit.getServicesManager().getRegistration(TotemGuardAPI.class);
-        if (provider != null) {
-            api = provider.getProvider();
-            getLogger().info("TotemGuard API provider found.");
-        } else {
-            getLogger().severe("Could not find TotemGuard API provider.");
-            this.getServer().getPluginManager().disablePlugin(this);
-        }
+        api = TotemGuardProvider.getAPI();
 
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new AlertsToggleEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new UpdateFoundEventTest(this), this);
 
-        getLogger().info("Successfully hooked into TotemGuard API.");
+        getLogger().info("Successfully hooked into TotemGuard v" + api.getVersion());
     }
 
     @Override

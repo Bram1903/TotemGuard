@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 @UtilityClass
 public class OfflinePlayerCommandHandler {
 
-    public static void handlePlayerTarget(CommandSender sender, CompletableFuture<OfflinePlayer> targetFuture,String rawUsername, PlayerCommandAction action) {
+    public static void handlePlayerTarget(CommandSender sender, CompletableFuture<OfflinePlayer> targetFuture, String rawUsername, PlayerCommandAction action) {
         targetFuture.thenAccept(offlinePlayer -> action.execute(sender, offlinePlayer, rawUsername)).exceptionally(throwable -> {
             Throwable cause = throwable.getCause();
             Throwable rootCause = cause instanceof RuntimeException ? cause.getCause() : cause;
