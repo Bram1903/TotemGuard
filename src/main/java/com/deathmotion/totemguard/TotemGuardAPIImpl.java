@@ -38,6 +38,6 @@ public class TotemGuardAPIImpl implements TotemGuardAPI {
 
     @Override
     public AlertManager getAlertManager() {
-        return TotemGuard.getInstance().getAlertManager();
+        return plugin.getAlertManager();
     }
 }
