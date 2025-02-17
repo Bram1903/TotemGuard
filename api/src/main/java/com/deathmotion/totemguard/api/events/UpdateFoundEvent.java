@@ -1,6 +1,6 @@
 /*
  * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- * Copyright (C) 2024 Bram and contributors
+ * Copyright (C) 2025 Bram and contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
