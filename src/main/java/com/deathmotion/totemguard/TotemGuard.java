@@ -31,12 +31,12 @@ import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.messenger.MessengerService;
+import com.deathmotion.totemguard.util.PaperUtil;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -45,6 +45,13 @@ public final class TotemGuard extends JavaPlugin {
 
     @Getter
     private static TotemGuard instance;
+
+    private final boolean paper;
+
+    public TotemGuard() {
+        instance = this;
+        paper = PaperUtil.isPaper();
+    }
 
     private BukkitLibraryManager libraryManager;
     private CommandAPILoader commandAPILoader;
@@ -64,8 +71,6 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        instance = this;
-
         getLogger().info("Loading libraries...");
         long start = System.currentTimeMillis();
         libraryManager = new BukkitLibraryManager(this);
@@ -112,7 +117,7 @@ public final class TotemGuard extends JavaPlugin {
         if (configManager.getSettings().isDebug()) {
             String debugMessage = "[TG DEBUG] " + message;
             getLogger().info(debugMessage);
-            Bukkit.broadcast(Component.text(debugMessage), "TotemGuard.Debug");
+            Bukkit.broadcast(debugMessage, "TotemGuard.Debug");
         }
     }
 

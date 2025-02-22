@@ -2,6 +2,7 @@ package com.deathmotion.totemguard.bootstrap;
 
 import com.alessiodp.libby.Library;
 import com.alessiodp.libby.LibraryManager;
+import com.deathmotion.totemguard.TotemGuard;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import lombok.experimental.UtilityClass;
@@ -58,7 +59,7 @@ public class LibraryLoader {
         );
 
         // Check if running on PaperMC and if the server version is newer than 1.20.4
-        if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThan(ServerVersion.V_1_20_4) && isPaperMC()) {
+        if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThan(ServerVersion.V_1_20_4) && TotemGuard.getInstance().isPaper()) {
             libraryManager.loadLibraries(
                     Library.builder()
                             .groupId("dev{}jorel")
@@ -78,19 +79,6 @@ public class LibraryLoader {
                             .resolveTransitiveDependencies(true)
                             .build()
             );
-        }
-    }
-
-    private boolean isPaperMC() {
-        return hasClass("com.destroystokyo.paper.PaperConfig") || hasClass("io.papermc.paper.configuration.Configuration");
-    }
-
-    private boolean hasClass(String className) {
-        try {
-            Class.forName(className);
-            return true;
-        } catch (ClassNotFoundException ignored) {
-            return false;
         }
     }
 }
