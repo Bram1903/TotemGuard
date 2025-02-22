@@ -20,37 +20,20 @@ package com.deathmotion.totemguard.bootstrap;
 
 import com.alessiodp.libby.Library;
 import com.alessiodp.libby.LibraryManager;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 
 @UtilityClass
 public class LibraryLoader {
-  public void loadLibraries(final @NotNull LibraryManager libraryManager) {
-    libraryManager.addMavenCentral();
-    libraryManager.addRepository("https://s01.oss.sonatype.org/content/repositories/snapshots");
-    libraryManager.loadLibraries(
-            Library.builder()
-                    .groupId("de{}exlll")
-                    .artifactId("configlib-yaml")
-                    .version("4.5.0")
-                    .build()
-    );
-
-    if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThan(ServerVersion.V_1_20_4)) {
-      Library.builder()
-              .groupId("dev{}jorel")
-              .artifactId("commandapi-bukkit-shade-mojang-mapped")
-              .version("9.7.1-SNAPSHOT")
-              .build();
+    public void loadLibraries(final @NotNull LibraryManager libraryManager) {
+        libraryManager.addMavenCentral();
+        libraryManager.addRepository("https://s01.oss.sonatype.org/content/repositories/snapshots");
+        libraryManager.loadLibraries(
+                Library.builder()
+                        .groupId("de{}exlll")
+                        .artifactId("configlib-yaml")
+                        .version("4.5.0")
+                        .build()
+        );
     }
-    else {
-      Library.builder()
-              .groupId("dev{}jorel")
-              .artifactId("commandapi-bukkit-shade")
-              .version("9.7.1-SNAPSHOT")
-              .build();
-    }
-  }
 }

@@ -1,15 +1,18 @@
 name: TotemGuard
 version: ${version}
 main: com.deathmotion.totemguard.TotemGuard
-api-version: '1.16'
+loader: com.deathmotion.totemguard.bootstrap.TotemGuardLoader
+api-version: '1.19'
 folia-supported: true
 authors: [ Bram, OutDev ]
-description: TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem.
+description: ${description}
 load: POSTWORLD
-depend:
-  - packetevents
-softdepend:
-  - BetterReload
+dependencies:
+  server:
+    packetevents:
+      load: BEFORE
+      required: true
+      join-classpath: true
 permissions:
   TotemGuard.*:
     description: Gives access to all TotemGuard permissions.
@@ -23,6 +26,7 @@ permissions:
       TotemGuard.Stats: true
       TotemGuard.ClearLogs: true
       TotemGuard.Bypass: true
+      TotemGuard.Track: true
       TotemGuard.Update: true
       TotemGuard.Top: true
       TotemGuard.ManualBan: true
@@ -34,6 +38,7 @@ permissions:
       TotemGuard.Check: true
       TotemGuard.Alerts: true
       TotemGuard.Profile: true
+      TotemGuard.Track: true
   TotemGuard.Database.*:
     description: Gives access to all TotemGuard Database permissions.
     default: op
@@ -74,7 +79,7 @@ permissions:
     description: Allows the player to see the top players based on violations.
     default: op
   TotemGuard.ManualBan:
-    description: Allows the player to manually ban a player as if banned by TotemGuard.
+    description: Allows the player to manually ban a player as TotemGuard.
     default: op
   TotemGuard.Database.Trim:
     description: Allows the player to trim the database.
