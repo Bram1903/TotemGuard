@@ -19,9 +19,9 @@
 package com.deathmotion.totemguard;
 
 import com.alessiodp.libby.BukkitLibraryManager;
-import com.alessiodp.libby.LibraryManager;
 import com.deathmotion.totemguard.api.TotemGuardProvider;
 import com.deathmotion.totemguard.bootstrap.LibraryLoader;
+import com.deathmotion.totemguard.commands.CommandAPILoader;
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
@@ -33,9 +33,6 @@ import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
-import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIBukkitConfig;
-import dev.jorel.commandapi.CommandAPILogger;
 import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,6 +47,7 @@ public final class TotemGuard extends JavaPlugin {
     private static TotemGuard instance;
 
     private BukkitLibraryManager libraryManager;
+    private CommandAPILoader commandAPILoader;
 
     private ConfigManager configManager;
     private MessengerService messengerService;
@@ -71,16 +69,11 @@ public final class TotemGuard extends JavaPlugin {
         libraryManager = new BukkitLibraryManager(this);
         LibraryLoader.loadLibraries(libraryManager);
 
-        CommandAPI.setLogger(CommandAPILogger.fromJavaLogger(getLogger()));
-        CommandAPIBukkitConfig config = new CommandAPIBukkitConfig(this);
-        config.usePluginNamespace();
-        CommandAPI.onLoad(config);
+        commandAPILoader = new CommandAPILoader(this);
     }
 
     @Override
     public void onEnable() {
-        instance = this;
-
         configManager = new ConfigManager(this);
         messengerService = new MessengerService(this);
         alertManager = new AlertManagerImpl(this);
@@ -98,7 +91,7 @@ public final class TotemGuard extends JavaPlugin {
         PacketEvents.getAPI().getEventManager().registerListener(new CheckManagerPacketListener());
         getServer().getPluginManager().registerEvents(new CheckManagerBukkitListener(), this);
 
-        CommandAPI.onEnable();
+        commandAPILoader.enable();
         new TotemGuardCommand(this);
         enableBStats();
     }
@@ -108,7 +101,7 @@ public final class TotemGuard extends JavaPlugin {
         if (proxyMessenger != null) proxyMessenger.stop();
         if (databaseManager != null) databaseManager.close();
 
-        CommandAPI.onDisable();
+        commandAPILoader.disable();
     }
 
     public void debug(String message) {

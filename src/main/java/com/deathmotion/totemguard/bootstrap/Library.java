@@ -67,7 +67,7 @@ public enum Library {
         Library commandApiLibrary = getServerVersion().isNewerThan(TGVersion.fromString("1.20.4"))
                 ? COMMANDAPI_MOJANG_MAPPED
                 : COMMANDAPI;
-        return new Library[]{DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, EBEAN_CORE, EBEAN_DATASOURCE, EBEAN_MIGRATION, EBEAN_H2, EBEAN_MYSQL, H2, MYSQL, commandApiLibrary};
+        return new Library[]{DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, EBEAN_CORE, EBEAN_DATASOURCE, EBEAN_MIGRATION, EBEAN_H2, EBEAN_MYSQL, H2, MYSQL};
     }
 
     /**
