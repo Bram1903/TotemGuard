@@ -10,6 +10,7 @@ plugins {
 
 dependencies {
     implementation(project(":api"))
+    implementation(libs.libby.bukkit)
 
     // Provided dependencies
     compileOnly(libs.paper)
@@ -67,6 +68,8 @@ tasks {
     shadowJar {
         archiveFileName = "${rootProject.name}-${ext["versionNoHash"]}.jar"
         archiveClassifier = null
+
+        relocate("com.alessiodp.libby", "com.deathmotion.totemguard.libs.libby")
     }
 
     assemble {

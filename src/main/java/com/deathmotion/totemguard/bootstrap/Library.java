@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 
 @Getter
 public enum Library {
-    CONFIGLIB("de.exlll", "configlib-yaml", "4.5.0"),
     DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0"),
     LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
     EXPIRINGMAP("net.jodah", "expiringmap", "0.5.11"),
@@ -68,7 +67,7 @@ public enum Library {
         Library commandApiLibrary = getServerVersion().isNewerThan(TGVersion.fromString("1.20.4"))
                 ? COMMANDAPI_MOJANG_MAPPED
                 : COMMANDAPI;
-        return new Library[]{CONFIGLIB, DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, EBEAN_CORE, EBEAN_DATASOURCE, EBEAN_MIGRATION, EBEAN_H2, EBEAN_MYSQL, H2, MYSQL, commandApiLibrary};
+        return new Library[]{DISCORD_WEBHOOK, LETTUCE, EXPIRINGMAP, EBEAN_CORE, EBEAN_DATASOURCE, EBEAN_MIGRATION, EBEAN_H2, EBEAN_MYSQL, H2, MYSQL, commandApiLibrary};
     }
 
     /**

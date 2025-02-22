@@ -10,6 +10,7 @@ lettuce = "6.5.1.RELEASE"
 commandapi = "9.7.1-SNAPSHOT"
 expiringmap = "0.5.11"
 ebean = "15.8.0"
+libby = "2.0.0-SNAPSHOT"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
@@ -20,6 +21,7 @@ discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
 commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade", version.ref = "commandapi" }
 expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
+libby-bukkit = { module = "com.alessiodp.libby:libby-bukkit", version.ref = "libby" }
 
 # Database
 ebean-core = { group = "io.ebean", name = "ebean-core", version.ref = "ebean" }

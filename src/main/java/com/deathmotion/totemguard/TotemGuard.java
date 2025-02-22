@@ -18,7 +18,10 @@
 
 package com.deathmotion.totemguard;
 
+import com.alessiodp.libby.BukkitLibraryManager;
+import com.alessiodp.libby.LibraryManager;
 import com.deathmotion.totemguard.api.TotemGuardProvider;
+import com.deathmotion.totemguard.bootstrap.LibraryLoader;
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.database.DatabaseService;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
@@ -46,6 +49,8 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
+    private BukkitLibraryManager libraryManager;
+
     private ConfigManager configManager;
     private MessengerService messengerService;
     private AlertManagerImpl alertManager;
@@ -61,6 +66,11 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onLoad() {
+        instance = this;
+
+        libraryManager = new BukkitLibraryManager(this);
+        LibraryLoader.loadLibraries(libraryManager);
+
         CommandAPI.setLogger(CommandAPILogger.fromJavaLogger(getLogger()));
         CommandAPIBukkitConfig config = new CommandAPIBukkitConfig(this);
         config.usePluginNamespace();

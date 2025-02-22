@@ -54,13 +54,14 @@ public class Check implements AbstractCheck {
 
         if (checkClass.isAnnotationPresent(CheckData.class)) {
             final CheckData checkData = checkClass.getAnnotation(CheckData.class);
+
             this.checkName = checkData.name();
             this.checkSettings = TotemGuard.getInstance().getConfigManager().getChecks().getCheckSettings(checkName);
             this.description = checkData.description();
             this.experimental = checkData.experimental();
-
-            this.color = getColors();
         }
+
+        this.color = getColors();
     }
 
     public void reload() {
