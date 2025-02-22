@@ -14,6 +14,7 @@ dependencies {
 
     // Provided dependencies
     compileOnly(libs.paper)
+    compileOnly(libs.bundles.adventure)
     compileOnly(libs.packetevents.spigot)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
@@ -70,6 +71,7 @@ tasks {
         archiveClassifier = null
 
         relocate("com.alessiodp.libby", "com.deathmotion.totemguard.libs.libby")
+        relocate("net.kyori.adventure.text.serializer", "io.github.retrooper.packetevents.adventure.serializer")
     }
 
     assemble {

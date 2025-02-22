@@ -1,4 +1,5 @@
 [versions]
+adventure = "4.18.0"
 paper = "1.21.4-R0.1-SNAPSHOT"
 packetevents = "2.7.1-SNAPSHOT"
 lombok = "1.18.36"
@@ -13,6 +14,13 @@ ebean = "15.8.0"
 libby = "2.0.0-SNAPSHOT"
 
 [libraries]
+adventure-api = { group = "net.kyori", name = "adventure-api", version.ref = "adventure" }
+adventure-nbt = { group = "net.kyori", name = "adventure-nbt", version.ref = "adventure" }
+adventure-key = { group = "net.kyori", name = "adventure-key", version.ref = "adventure" }
+adventure-text-serializer-gson = { group = "net.kyori", name = "adventure-text-serializer-gson", version.ref = "adventure" }
+adventure-text-serializer-legacy = { group = "net.kyori", name = "adventure-text-serializer-legacy", version.ref = "adventure" }
+adventure-text-serializer-json-legacy = { group = "net.kyori", name = "adventure-text-serializer-json-legacy-impl", version.ref = "adventure" }
+
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
@@ -30,6 +38,10 @@ ebean-processor = { group = "io.ebean", name = "querybean-generator", version.re
 ebean-test = { group = "io.ebean", name = "ebean-test", version.ref = "ebean" }
 ebean-h2 = { group = "io.ebean", name = "ebean-h2", version.ref = "ebean" }
 ebean-mysql = { group = "io.ebean", name = "ebean-mysql", version.ref = "ebean" }
+
+[bundles]
+adventure = [ "adventure-api", "adventure-nbt", "adventure-key" ]
+adventure-serializers = [ "adventure-text-serializer-gson", "adventure-text-serializer-json-legacy", "adventure-text-serializer-legacy" ]
 
 [plugins]
 ebean = { id = "io.ebean", version.ref = "ebean" }
