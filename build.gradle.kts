@@ -10,7 +10,8 @@ plugins {
 
 dependencies {
     implementation(project(":api"))
-    implementation(libs.libby.bukkit)
+    implementation(files("libs/libby-core.jar"))
+    implementation(files("libs/libby-bukkit.jar"))
 
     // Provided dependencies
     compileOnly(libs.paper)
@@ -72,6 +73,16 @@ tasks {
 
         relocate("com.alessiodp.libby", "com.deathmotion.totemguard.libs.libby")
         relocate("net.kyori.adventure.text.serializer", "io.github.retrooper.packetevents.adventure.serializer")
+
+        relocate("de.exlll.configlib", "com.deathmotion.totemguard.libs.configlib")
+        relocate("dev.jorel.commandapi", "com.deathmotion.totemguard.libs.commandapi")
+        relocate("io.lettuce.core", "com.deathmotion.totemguard.libs.lettuce")
+        relocate("net.jodah.expiringmap", "com.deathmotion.totemguard.libs.expiringmap")
+
+        relocate("io.ebean", "com.deathmotion.totemguard.libs.ebean")
+
+        relocate("org.h2", "com.deathmotion.totemguard.libs.h2")
+        relocate("com.mysql.cj", "com.deathmotion.totemguard.libs.mysql")
     }
 
     assemble {

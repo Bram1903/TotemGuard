@@ -66,8 +66,10 @@ public final class TotemGuard extends JavaPlugin {
     public void onLoad() {
         instance = this;
 
+        getLogger().info("Loading libraries...");
         libraryManager = new BukkitLibraryManager(this);
         LibraryLoader.loadLibraries(libraryManager);
+        getLogger().info("Libraries loaded");
 
         commandAPILoader = new CommandAPILoader(this);
     }
