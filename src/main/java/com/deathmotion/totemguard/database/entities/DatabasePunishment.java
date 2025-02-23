@@ -18,12 +18,13 @@
 
 package com.deathmotion.totemguard.database.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import com.j256.ormlite.table.DatabaseTable;
+import lombok.Getter;
+import lombok.Setter;
 
-@Entity
-@Table(name = "totemguard_punishment", indexes = @Index(columnList = "totemguard_player_uuid", name = "idx_punishment_player_uuid"))
+@Getter
+@Setter
+@DatabaseTable(tableName = "totemguard_punishment")
 public class DatabasePunishment extends BaseDomain {
 }
 

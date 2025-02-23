@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.commands.impl;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.CommandSuggestionUtil;
 import com.deathmotion.totemguard.commands.OfflinePlayerCommandHandler;
-import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.database.entities.DatabaseAlert;
 import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
@@ -43,14 +43,14 @@ import java.util.concurrent.CompletableFuture;
 public class ProfileCommand {
 
     private final TotemGuard plugin;
-    private final DatabaseService databaseService;
+    private final DatabaseProvider databaseProvider;
     private final MessengerService messengerService;
     private final CommandMessengerService commandMessengerService;
     private final ZoneId zoneId;
 
     public ProfileCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        this.databaseService = plugin.getDatabaseService();
+        this.databaseProvider = plugin.getDatabaseProvider();
         this.messengerService = plugin.getMessengerService();
         this.commandMessengerService = messengerService.getCommandMessengerService();
         zoneId = ZoneId.systemDefault();
@@ -77,7 +77,7 @@ public class ProfileCommand {
         long startTime = System.currentTimeMillis();
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            Pair<List<DatabaseAlert>, List<DatabasePunishment>> logs = databaseService.retrieveLogs(target.getUniqueId());
+            Pair<List<DatabaseAlert>, List<DatabasePunishment>> logs = databaseProvider.getGenericService().retrieveLogs(target.getUniqueId());
             if (logs == null) {
                 sender.sendMessage(commandMessengerService.noDatabasePlayerFound(rawUsername));
                 return;

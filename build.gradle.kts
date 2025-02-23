@@ -18,7 +18,6 @@ dependencies {
     compileOnly(libs.packetevents.spigot)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
-    annotationProcessor(libs.ebean.processor)
 
     // Loaded during runtime
     compileOnly(libs.configlib.yaml)
@@ -26,16 +25,7 @@ dependencies {
     compileOnly(libs.commandapi)
     compileOnly(libs.expiringmap)
     compileOnly(libs.discord.webhooks)
-
-    // Database Dependencies (loaded during runtime)
-    compileOnly(libs.ebean.core)
-    compileOnly(libs.ebean.h2)
-    compileOnly(libs.ebean.mysql)
-
-    // Testing dependencies
-    testImplementation(libs.ebean.test)
-    testImplementation(libs.ebean.h2)
-    testImplementation(libs.ebean.mysql)
+    compileOnly(libs.ormlite)
 }
 
 group = "com.deathmotion.totemguard"
@@ -70,17 +60,18 @@ tasks {
         archiveFileName = "${rootProject.name}-${ext["versionNoHash"]}.jar"
         archiveClassifier = null
 
-        relocate("com.alessiodp.libby", "com.deathmotion.totemguard.libs.libby")
+        relocate("com.alessiodp.libby", "com.deathmotion.totemguard.shaded.libby")
 
         relocate("de.exlll.configlib", "com.deathmotion.totemguard.libs.configlib")
         relocate("dev.jorel.commandapi", "com.deathmotion.totemguard.libs.commandapi")
         relocate("io.lettuce.core", "com.deathmotion.totemguard.libs.lettuce")
         relocate("net.jodah.expiringmap", "com.deathmotion.totemguard.libs.expiringmap")
 
-        relocate("io.ebean", "com.deathmotion.totemguard.libs.ebean")
-
+        // Database libraries
+        relocate("com.j256.ormlite", "com.deathmotion.totemguard.libs.ormlite")
+        relocate("com.mysql", "com.deathmotion.totemguard.libs.mysql")
+        relocate("org.mariadb", "com.deathmotion.totemguard.libs.mariadb")
         relocate("org.h2", "com.deathmotion.totemguard.libs.h2")
-        relocate("com.mysql.cj", "com.deathmotion.totemguard.libs.mysql")
     }
 
     assemble {

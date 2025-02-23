@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.commands.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.database.entities.DatabaseAlert;
 import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 import com.deathmotion.totemguard.messenger.impl.StatsMessageService;
@@ -35,13 +35,13 @@ import java.util.List;
 public class StatsCommand {
 
     private final TotemGuard plugin;
-    private final DatabaseService databaseService;
+    private final DatabaseProvider databaseProvider;
     private final StatsMessageService statsMessageService;
     private final ZoneId zoneId;
 
     public StatsCommand(TotemGuard plugin) {
         this.plugin = plugin;
-        this.databaseService = plugin.getDatabaseService();
+        this.databaseProvider = plugin.getDatabaseProvider();
         this.statsMessageService = plugin.getMessengerService().getStatsMessageService();
         this.zoneId = ZoneId.systemDefault();
     }
@@ -56,8 +56,8 @@ public class StatsCommand {
         sender.sendMessage(statsMessageService.statsLoading());
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            List<DatabasePunishment> punishments = databaseService.retrievePunishments();
-            List<DatabaseAlert> alerts = databaseService.retrieveAlerts();
+            List<DatabasePunishment> punishments = databaseProvider.getPunishmentRepository().retrievePunishments();
+            List<DatabaseAlert> alerts = databaseProvider.getAlertRepository().retrieveAlerts();
 
             int punishmentCount = punishments.size();
             int alertCount = alerts.size();

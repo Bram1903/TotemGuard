@@ -18,37 +18,34 @@
 
 package com.deathmotion.totemguard.database.entities;
 
-import io.ebean.Model;
-import io.ebean.annotation.WhenCreated;
-import jakarta.persistence.*;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "totemguard_player", indexes = @Index(columnList = "uuid", name = "idx_player_uuid"))
-public class DatabasePlayer extends Model {
-    @Id
-    @Column(nullable = false, unique = true, length = 36)
+@DatabaseTable(tableName = "totemguard_player")
+public class DatabasePlayer {
+
+    @DatabaseField(canBeNull = false, unique = true, width = 36, id = true)
     private UUID uuid;
 
-    @Column(name = "client_brand", length = 63)
+    @DatabaseField(columnName = "client_brand", width = 63)
     private String clientBrand = "Unknown";
 
-    @Column(nullable = false, updatable = false)
-    @WhenCreated
-    private Instant whenCreated;
+    @DatabaseField(canBeNull = false, columnName = "when_created", index = true)
+    private long whenCreated;
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DatabaseAlert> alerts = new ArrayList<>();
+    public Instant getWhenCreated() {
+        return Instant.ofEpochMilli(whenCreated);
+    }
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DatabasePunishment> punishments = new ArrayList<>();
+    public void setWhenCreated(Instant whenCreated) {
+        this.whenCreated = whenCreated.toEpochMilli();
+    }
 }
 

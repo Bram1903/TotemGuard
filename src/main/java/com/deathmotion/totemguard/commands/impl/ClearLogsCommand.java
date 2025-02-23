@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.commands.impl;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.CommandSuggestionUtil;
 import com.deathmotion.totemguard.commands.OfflinePlayerCommandHandler;
-import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.impl.ClearLogsMessageService;
 import dev.jorel.commandapi.CommandAPICommand;
@@ -33,12 +33,12 @@ import org.bukkit.command.CommandSender;
 import java.util.concurrent.CompletableFuture;
 
 public class ClearLogsCommand {
-    private final DatabaseService databaseService;
+    private final DatabaseProvider databaseProvider;
     private final CommandMessengerService commandMessengerService;
     private final ClearLogsMessageService clearLogsMessageService;
 
     public ClearLogsCommand(TotemGuard plugin) {
-        this.databaseService = plugin.getDatabaseService();
+        this.databaseProvider = plugin.getDatabaseProvider();
         this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
         this.clearLogsMessageService = plugin.getMessengerService().getClearLogsMessageService();
     }
@@ -62,7 +62,7 @@ public class ClearLogsCommand {
 
     private void handleCommand(CommandSender sender, OfflinePlayer offlinePlayer, String rawUsername) {
         long startTime = System.currentTimeMillis();
-        int deletedRecords = databaseService.eraseLogs(offlinePlayer.getUniqueId());
+        int deletedRecords = databaseProvider.getGenericService().eraseLogs(offlinePlayer.getUniqueId());
 
         if (deletedRecords == -1) {
             sender.sendMessage(commandMessengerService.noDatabasePlayerFound(rawUsername));

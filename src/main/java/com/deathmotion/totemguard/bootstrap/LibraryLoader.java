@@ -26,37 +26,19 @@ public class LibraryLoader {
                         .artifactId("lettuce-core")
                         .version("6.5.1.RELEASE")
                         .relocate("io{}lettuce{}core", "com{}deathmotion{}totemguard{}libs{}lettuce")
-                        .resolveTransitiveDependencies(false)
                         .build(),
                 Library.builder()
                         .groupId("net{}jodah")
                         .artifactId("expiringmap")
                         .version("0.5.11")
                         .relocate("net{}jodah{}expiringmap", "com{}deathmotion{}totemguard{}libs{}expiringmap")
-                        .resolveTransitiveDependencies(false)
                         .build(),
                 Library.builder()
-                        .groupId("io{}ebean")
-                        .artifactId("ebean")
-                        .version("15.9.0")
-                        .relocate("io{}ebean", "com{}deathmotion{}totemguard{}libs{}ebean")
-                        .resolveTransitiveDependencies(true)
-                        .build(),
-                Library.builder()
-                        .groupId("com{}h2database")
-                        .artifactId("h2")
-                        .version("2.3.232")
-                        .relocate("org{}h2", "com{}deathmotion{}totemguard{}libs{}h2")
-                        .resolveTransitiveDependencies(false)
-                        .build(),
-                Library.builder()
-                        .groupId("mysql")
-                        .artifactId("mysql-connector-java")
-                        .version("8.0.30")
-                        .relocate("com{}mysql{}cj", "com{}deathmotion{}totemguard{}libs{}mysql")
-                        .resolveTransitiveDependencies(false)
-                        .build()
-        );
+                        .groupId("com{}j256{}ormlite")
+                        .artifactId("ormlite-jdbc")
+                        .version("6.1")
+                        .relocate("com{}j256{}ormlite", "com{}deathmotion{}totemguard{}libs{}ormlite")
+                        .build());
 
         // Check if running on PaperMC and if the server version is newer than 1.20.4
         if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThan(ServerVersion.V_1_20_4) && TotemGuard.getInstance().isPaper()) {

@@ -16,23 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import io.ebean.annotation.Platform;
-import io.ebean.dbmigration.DbMigration;
+package com.deathmotion.totemguard.database.adapters;
 
-import java.io.IOException;
+import com.j256.ormlite.jdbc.db.MysqlDatabaseType;
+import org.jetbrains.annotations.NotNull;
 
-public class MigrationGenerator {
+public final class MysqlDatabaseTypeAdapter extends MysqlDatabaseType {
 
-    /**
-     * Generate the DDL for the next DB migration.
-     */
-    public static void main(String[] args) throws IOException {
-
-        DbMigration dbMigration = DbMigration.create();
-        dbMigration.addPlatform(Platform.H2);
-        dbMigration.addPlatform(Platform.MYSQL);
-
-        dbMigration.setName("migrationName");
-        dbMigration.generateMigration();
+    @Override
+    protected String @NotNull [] getDriverClassNames() {
+        return new String[]{"com.deathmotion.totemguard.libs.mysql.cj.jdbc.Driver"};
     }
 }

@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.api.TotemGuardProvider;
 import com.deathmotion.totemguard.bootstrap.LibraryLoader;
 import com.deathmotion.totemguard.commands.CommandAPILoader;
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
-import com.deathmotion.totemguard.database.DatabaseService;
+import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
 import com.deathmotion.totemguard.events.packets.CheckManagerPacketListener;
 import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
@@ -57,13 +57,14 @@ public final class TotemGuard extends JavaPlugin {
     private CommandAPILoader commandAPILoader;
 
     private ConfigManager configManager;
+    private DatabaseProvider databaseProvider;
+
     private MessengerService messengerService;
     private AlertManagerImpl alertManager;
     private PunishmentManager punishmentManager;
     private DiscordManager discordManager;
     private PlayerDataManager playerDataManager;
-    private DatabaseManager databaseManager;
-    private DatabaseService databaseService;
+
     private UpdateChecker updateChecker;
 
     @Setter
@@ -84,14 +85,14 @@ public final class TotemGuard extends JavaPlugin {
     @Override
     public void onEnable() {
         configManager = new ConfigManager(this);
+        databaseProvider = new DatabaseProvider(this);
+
         messengerService = new MessengerService(this);
         alertManager = new AlertManagerImpl(this);
         punishmentManager = new PunishmentManager(this);
         discordManager = new DiscordManager(this);
         proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
         playerDataManager = new PlayerDataManager(this);
-        databaseManager = new DatabaseManager(this);
-        databaseService = new DatabaseService(this);
 
         TotemGuardProvider.setAPI(new TotemGuardAPIImpl(this));
         updateChecker = new UpdateChecker(this);
@@ -108,7 +109,7 @@ public final class TotemGuard extends JavaPlugin {
     @Override
     public void onDisable() {
         if (proxyMessenger != null) proxyMessenger.stop();
-        if (databaseManager != null) databaseManager.close();
+        if (databaseProvider != null) databaseProvider.close();
 
         commandAPILoader.disable();
     }

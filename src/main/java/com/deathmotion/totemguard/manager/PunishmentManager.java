@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.manager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.PunishEvent;
 import com.deathmotion.totemguard.checks.Check;
+import com.deathmotion.totemguard.database.DatabaseProvider;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 
@@ -33,11 +34,13 @@ import java.util.concurrent.TimeUnit;
 
 public class PunishmentManager {
     private final TotemGuard plugin;
+    private final DatabaseProvider databaseProvider;
 
     private final Set<UUID> toBePunished = ConcurrentHashMap.newKeySet();
 
     public PunishmentManager(TotemGuard plugin) {
         this.plugin = plugin;
+        this.databaseProvider = plugin.getDatabaseProvider();
     }
 
     public void punishPlayer(Check check, Component details) {
@@ -71,7 +74,7 @@ public class PunishmentManager {
     private void executePunishment(Check check, Component details) {
         runPunishmentCommands(check);
         plugin.getDiscordManager().sendPunishment(check, details);
-        plugin.getDatabaseService().storePunishment(check);
+        databaseProvider.getPunishmentRepository().storePunishment(check);
     }
 
     private void runPunishmentCommands(Check check) {

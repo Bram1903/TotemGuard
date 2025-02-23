@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.events.AlertsToggleEvent;
 import com.deathmotion.totemguard.api.interfaces.AlertManager;
 import com.deathmotion.totemguard.checks.Check;
+import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import lombok.Getter;
@@ -38,10 +39,12 @@ public class AlertManagerImpl implements AlertManager {
     private final ConcurrentHashMap<UUID, Player> enabledAlerts;
 
     private final TotemGuard plugin;
+    private final DatabaseProvider databaseProvider;
     private final MessengerService messageService;
 
     public AlertManagerImpl(TotemGuard pluginInstance) {
         this.plugin = pluginInstance;
+        this.databaseProvider = pluginInstance.getDatabaseProvider();
         this.messageService = pluginInstance.getMessengerService();
         this.enabledAlerts = new ConcurrentHashMap<>();
     }
@@ -67,7 +70,7 @@ public class AlertManagerImpl implements AlertManager {
         // Send to proxy and Discord if enabled
         plugin.getProxyMessenger().sendAlert(craftedAlert.getX());
         plugin.getDiscordManager().sendAlert(check, details);
-        plugin.getDatabaseService().storeAlert(check, details);
+        databaseProvider.getAlertRepository().storeAlert(check);
     }
 
     /**

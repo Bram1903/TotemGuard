@@ -16,32 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.database.entities;
+package com.deathmotion.totemguard.database.adapters;
 
-import com.j256.ormlite.field.DatabaseField;
-import lombok.Getter;
-import lombok.Setter;
+import com.j256.ormlite.jdbc.db.H2DatabaseType;
+import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
-import java.util.Date;
+public final class H2DatabaseTypeAdapter extends H2DatabaseType {
 
-@Getter
-@Setter
-public abstract class BaseDomain {
-
-    @DatabaseField(generatedId = true)
-    private Long id;
-
-    @DatabaseField(canBeNull = false, width = 30)
-    private String checkName;
-
-    @DatabaseField(canBeNull = false, columnName = "when_created", index = true)
-    private Date whenCreated;
-
-    @DatabaseField(canBeNull = false, foreign = true, foreignAutoRefresh = true, columnName = "totemguard_player_uuid")
-    private DatabasePlayer player;
-
-    public Instant getWhenCreated() {
-        return whenCreated.toInstant();
+    @Override
+    protected String @NotNull [] getDriverClassNames() {
+        return new String[]{"com.deathmotion.totemguard.libs.h2.Driver"};
     }
 }
