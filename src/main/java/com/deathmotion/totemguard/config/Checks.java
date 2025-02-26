@@ -60,8 +60,13 @@ public class Checks {
     @Comment("\nBadPacketsC")
     private BadPacketsC badPacketsC = new BadPacketsC();
 
+    @Comment("\nExploitA")
+    private ExploitA exploitA = new ExploitA();
+
     @Comment("\nManualTotemA")
     private ManualTotemA manualTotemA = new ManualTotemA();
+
+
 
     public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
@@ -74,6 +79,7 @@ public class Checks {
             case "BadPacketsA" -> badPacketsA;
             case "BadPacketsB" -> badPacketsB;
             case "BadPacketsC" -> badPacketsC;
+            case "ExploitA" -> exploitA;
             case "ManualTotemA" -> manualTotemA;
             default ->
                     throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
@@ -216,6 +222,14 @@ public class Checks {
     public static class BadPacketsC extends CheckSettings {
         public BadPacketsC() {
             super(true, 20, 3);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class ExploitA extends CheckSettings {
+        public ExploitA() {
+            super(false, 30, 4);
         }
     }
 

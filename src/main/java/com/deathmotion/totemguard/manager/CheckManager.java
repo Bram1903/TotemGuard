@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.checks.impl.autototem.*;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
+import com.deathmotion.totemguard.checks.impl.exploit.ExploitA;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
@@ -57,6 +58,7 @@ public class CheckManager {
                 .put(AutoTotemC.class, new AutoTotemC(player))
                 .put(AutoTotemE.class, new AutoTotemE(player))
                 .put(AutoTotemF.class, new AutoTotemF(player))
+                .put(ExploitA.class, new ExploitA(player))
                 .build();
 
         genericChecks = new ImmutableClassToInstanceMap.Builder<GenericCheck>()
