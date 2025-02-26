@@ -48,7 +48,6 @@ public class LibraryLoader {
                             .artifactId("commandapi-bukkit-shade-mojang-mapped")
                             .version("9.7.1-SNAPSHOT")
                             .relocate("dev{}jorel{}commandapi", "com{}deathmotion{}totemguard{}libs{}commandapi")
-                            .resolveTransitiveDependencies(true)
                             .build()
             );
         } else {
@@ -58,7 +57,6 @@ public class LibraryLoader {
                             .artifactId("commandapi-bukkit-shade")
                             .version("9.7.1-SNAPSHOT")
                             .relocate("dev{}jorel{}commandapi", "com{}deathmotion{}totemguard{}libs{}commandapi")
-                            .resolveTransitiveDependencies(true)
                             .build()
             );
         }

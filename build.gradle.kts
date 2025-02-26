@@ -5,7 +5,6 @@ plugins {
     `tg-version`
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
-    alias(libs.plugins.ebean)
 }
 
 dependencies {

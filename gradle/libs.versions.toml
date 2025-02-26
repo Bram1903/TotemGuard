@@ -1,5 +1,4 @@
 [versions]
-adventure = "4.18.0"
 paper = "1.21.4-R0.1-SNAPSHOT"
 packetevents = "2.7.1-SNAPSHOT"
 lombok = "1.18.36"
@@ -11,7 +10,6 @@ lettuce = "6.5.1.RELEASE"
 commandapi = "9.7.1-SNAPSHOT"
 expiringmap = "0.5.11"
 ormlite = "6.1"
-ebean = "15.9.0"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
@@ -24,15 +22,6 @@ commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade", version.re
 expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
 ormlite = { group = "com.j256.ormlite", name = "ormlite-jdbc", version.ref = "ormlite" }
 
-# Database
-ebean-core = { group = "io.ebean", name = "ebean-core", version.ref = "ebean" }
-ebean-processor = { group = "io.ebean", name = "querybean-generator", version.ref = "ebean" }
-
-ebean-test = { group = "io.ebean", name = "ebean-test", version.ref = "ebean" }
-ebean-h2 = { group = "io.ebean", name = "ebean-h2", version.ref = "ebean" }
-ebean-mysql = { group = "io.ebean", name = "ebean-mysql", version.ref = "ebean" }
-
 [plugins]
-ebean = { id = "io.ebean", version.ref = "ebean" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
