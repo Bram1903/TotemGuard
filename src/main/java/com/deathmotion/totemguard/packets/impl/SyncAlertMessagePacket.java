@@ -22,8 +22,8 @@ import com.deathmotion.totemguard.packets.Packet;
 import com.deathmotion.totemguard.packets.Packets;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
-import io.github.retrooper.packetevents.adventure.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
 public class SyncAlertMessagePacket extends Packet<Component> {
 
