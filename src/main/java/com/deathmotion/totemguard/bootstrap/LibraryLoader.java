@@ -26,6 +26,7 @@ public class LibraryLoader {
                         .artifactId("lettuce-core")
                         .version("6.5.1.RELEASE")
                         .relocate("io{}lettuce{}core", "com{}deathmotion{}totemguard{}libs{}lettuce")
+                        .resolveTransitiveDependencies(true)
                         .build(),
                 Library.builder()
                         .groupId("net{}jodah")

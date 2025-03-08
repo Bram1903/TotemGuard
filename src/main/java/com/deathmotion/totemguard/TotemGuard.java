@@ -28,15 +28,13 @@ import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
 import com.deathmotion.totemguard.events.packets.CheckManagerPacketListener;
 import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.manager.*;
-import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
-import com.deathmotion.totemguard.messaging.ProxyAlertMessenger;
 import com.deathmotion.totemguard.messenger.MessengerService;
+import com.deathmotion.totemguard.redis.RedisService;
 import com.deathmotion.totemguard.util.PaperUtil;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -47,28 +45,22 @@ public final class TotemGuard extends JavaPlugin {
     private static TotemGuard instance;
 
     private final boolean paper;
-
-    public TotemGuard() {
-        instance = this;
-        paper = PaperUtil.isPaper();
-    }
-
     private BukkitLibraryManager libraryManager;
     private CommandAPILoader commandAPILoader;
-
     private ConfigManager configManager;
     private DatabaseProvider databaseProvider;
-
     private MessengerService messengerService;
     private AlertManagerImpl alertManager;
     private PunishmentManager punishmentManager;
     private DiscordManager discordManager;
     private PlayerDataManager playerDataManager;
-
+    private RedisService redisService;
     private UpdateChecker updateChecker;
 
-    @Setter
-    private ProxyAlertMessenger proxyMessenger;
+    public TotemGuard() {
+        instance = this;
+        paper = PaperUtil.isPaper();
+    }
 
     @Override
     public void onLoad() {
@@ -91,8 +83,8 @@ public final class TotemGuard extends JavaPlugin {
         alertManager = new AlertManagerImpl(this);
         punishmentManager = new PunishmentManager(this);
         discordManager = new DiscordManager(this);
-        proxyMessenger = AlertMessengerRegistry.getMessenger(configManager.getSettings().getProxy().getMethod(), this).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!"));
         playerDataManager = new PlayerDataManager(this);
+        redisService = new RedisService(this);
 
         TotemGuardProvider.setAPI(new TotemGuardAPIImpl(this));
         updateChecker = new UpdateChecker(this);
@@ -108,7 +100,7 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (proxyMessenger != null) proxyMessenger.stop();
+        if (redisService != null) redisService.stop();
         if (databaseProvider != null) databaseProvider.close();
 
         commandAPILoader.disable();

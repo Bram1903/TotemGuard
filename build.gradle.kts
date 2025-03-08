@@ -124,7 +124,7 @@ tasks {
 
         downloadPlugins {
             from(sharedPlugins)
-            url("https://ci.ender.zone/job/EssentialsX/lastSuccessfulBuild/artifact/jars/EssentialsX-2.21.0-dev+173-5a839c4.jar")
+            url("https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsX-2.20.1.jar")
             url("https://download.luckperms.net/1570/bukkit/loader/LuckPerms-Bukkit-5.4.153.jar")
         }
 

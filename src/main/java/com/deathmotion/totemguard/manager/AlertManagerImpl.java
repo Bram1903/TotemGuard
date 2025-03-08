@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.api.interfaces.AlertManager;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.MessengerService;
+import com.deathmotion.totemguard.redis.packet.impl.SyncAlertMessagePacket;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -68,7 +69,7 @@ public class AlertManagerImpl implements AlertManager {
         }
 
         // Send to proxy and Discord if enabled
-        plugin.getProxyMessenger().sendAlert(craftedAlert.getX());
+        plugin.getRedisService().publish(new SyncAlertMessagePacket(), craftedAlert.getX());
         plugin.getDiscordManager().sendAlert(check, details);
         databaseProvider.getAlertRepository().storeAlert(check);
     }

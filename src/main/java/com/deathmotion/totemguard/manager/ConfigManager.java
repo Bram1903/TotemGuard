@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.config.Checks;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.config.Webhooks;
-import com.deathmotion.totemguard.messaging.AlertMessengerRegistry;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import de.exlll.configlib.NameFormatters;
@@ -56,9 +55,8 @@ public class ConfigManager {
 
     public void reload() {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            plugin.getProxyMessenger().stop();
             loadConfigurations();
-            setupProxyMessenger();
+            plugin.getRedisService().reload();
 
             // Reload checks for all players
             for (TotemPlayer totemPlayer : TotemGuard.getInstance().getPlayerDataManager().getEntries()) {
@@ -73,14 +71,6 @@ public class ConfigManager {
         checks = loadConfigFile(getChecksFile(), Checks.class, properties, "Failed to load checks file");
         messages = loadConfigFile(getMessagesFile(), Messages.class, properties, "Failed to load messages file");
         webhooks = loadConfigFile(getWebhookFile(), Webhooks.class, properties, "Failed to load webhooks file");
-    }
-
-    private void setupProxyMessenger() {
-        plugin.setProxyMessenger(AlertMessengerRegistry.getMessenger(
-                settings.getProxy().getMethod(),
-                plugin
-        ).orElseThrow(() -> new RuntimeException("Unknown proxy messaging method in config.yml!")));
-        plugin.getProxyMessenger().start();
     }
 
     private File getSettingsFile() {

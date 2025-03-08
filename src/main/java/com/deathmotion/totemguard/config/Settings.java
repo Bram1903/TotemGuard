@@ -42,8 +42,8 @@ public class Settings {
     @Comment("\nAnnounce client brand: Whether the client brand should be announced upon a player joining.")
     private boolean announceClientBrand = false;
 
-    @Comment("\nProxy Alert Settings:")
-    private ProxyAlerts proxy = new ProxyAlerts();
+    @Comment("\nRedis Configuration")
+    private Redis redis = new Redis();
 
     @Comment("\nUpdate Checker Settings:")
     private UpdateChecker updateChecker = new UpdateChecker();
@@ -56,36 +56,20 @@ public class Settings {
 
     @Configuration
     @Getter
-    public static class ProxyAlerts {
-        @Comment({
-                "Proxy messaging method",
-                "How should messages be sent and received from sibling servers?",
-                "Options:",
-                " - plugin-messaging (Will use plugin messaging through player connections.)",
-                " - redis (Requires further configuration in the 'redis' section below.)"
-        })
-        private String method = "plugin-messaging";
+    public static class Redis {
+        @Comment("Enable and/or disable Redis.")
+        private boolean enabled = false;
 
-        @Comment("\nChannel: The channel to send and receive alerts.")
+        @Comment("\nSync Alerts: Whether alerts should be synced across servers.")
+        private boolean syncAlerts = true;
+
+        @Comment("\nChannel: The redis channel the packets will be sent over.")
         private String channel = "totemguard";
 
-        @Comment("\nWhen enabled, the plugin will send alerts to other servers connected to the proxy.")
-        private boolean send = true;
-
-        @Comment("\nWhen enabled, the plugin will receive alerts from other servers connected to the proxy.")
-        private boolean receive = true;
-
-        @Comment("\nRedis Configuration")
-        private RedisConfiguration redis = new RedisConfiguration();
-
-        @Configuration
-        @Getter
-        public static class RedisConfiguration {
-            private String host = "localhost";
-            private int port = 6379;
-            private String username = "default";
-            private String password = "yourPassword";
-        }
+        private String host = "localhost";
+        private int port = 6379;
+        private String username = "default";
+        private String password = "yourPassword";
     }
 
     @Configuration
