@@ -16,15 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.packets.impl;
+package com.deathmotion.totemguard.redis.packet.impl;
 
-import com.deathmotion.totemguard.packets.Packet;
-import com.deathmotion.totemguard.packets.Packets;
+import com.deathmotion.totemguard.redis.packet.Packet;
+import com.deathmotion.totemguard.redis.packet.Packets;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
+/**
+ * Packet implementation for synchronizing alert messages.
+ */
 public class SyncAlertMessagePacket extends Packet<Component> {
 
     public SyncAlertMessagePacket() {
@@ -32,12 +35,15 @@ public class SyncAlertMessagePacket extends Packet<Component> {
     }
 
     @Override
-    public Component read(ByteArrayDataInput bytes) {
-        return GsonComponentSerializer.gson().deserialize(bytes.readUTF());
+    public Component read(ByteArrayDataInput input) {
+        String serializedComponent = input.readUTF();
+        return GsonComponentSerializer.gson().deserialize(serializedComponent);
     }
 
     @Override
-    public void write(ByteArrayDataOutput bytes, Component obj) {
-        bytes.writeUTF(GsonComponentSerializer.gson().serialize(obj));
+    public void writeData(ByteArrayDataOutput output, Component component) {
+        String serializedComponent = GsonComponentSerializer.gson().serialize(component);
+        output.writeUTF(serializedComponent);
     }
 }
+

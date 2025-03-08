@@ -26,6 +26,7 @@ public class LibraryLoader {
                         .artifactId("lettuce-core")
                         .version("6.5.1.RELEASE")
                         .relocate("io{}lettuce{}core", "com{}deathmotion{}totemguard{}libs{}lettuce")
+                        .resolveTransitiveDependencies(true)
                         .build(),
                 Library.builder()
                         .groupId("net{}jodah")
@@ -48,7 +49,6 @@ public class LibraryLoader {
                             .artifactId("commandapi-bukkit-shade-mojang-mapped")
                             .version("9.7.1-SNAPSHOT")
                             .relocate("dev{}jorel{}commandapi", "com{}deathmotion{}totemguard{}libs{}commandapi")
-                            .resolveTransitiveDependencies(true)
                             .build()
             );
         } else {
@@ -58,7 +58,6 @@ public class LibraryLoader {
                             .artifactId("commandapi-bukkit-shade")
                             .version("9.7.1-SNAPSHOT")
                             .relocate("dev{}jorel{}commandapi", "com{}deathmotion{}totemguard{}libs{}commandapi")
-                            .resolveTransitiveDependencies(true)
                             .build()
             );
         }

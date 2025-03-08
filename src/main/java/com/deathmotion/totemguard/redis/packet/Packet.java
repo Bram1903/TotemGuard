@@ -16,13 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.packets;
+package com.deathmotion.totemguard.redis.packet;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import lombok.Getter;
 
+/**
+ * Abstract representation of a Packet that can be serialized and deserialized.
+ *
+ * @param <T> the type of data carried by the packet
+ */
 @Getter
 public abstract class Packet<T> {
 
@@ -32,22 +37,33 @@ public abstract class Packet<T> {
         this.packetId = packetId;
     }
 
-    public ByteArrayDataOutput invoke(T obj) {
-        return write(obj);
+    /**
+     * Writes the packet data to a ByteArrayDataOutput stream.
+     *
+     * @param obj the packet payload
+     * @return the data output containing the serialized packet
+     */
+    public ByteArrayDataOutput write(T obj) {
+        ByteArrayDataOutput output = ByteStreams.newDataOutput();
+        output.writeInt(packetId);
+        writeData(output, obj);
+        return output;
     }
 
-    private ByteArrayDataOutput write(T obj) {
-        ByteArrayDataOutput bytes = ByteStreams.newDataOutput();
-        writeId(bytes);
-        write(bytes, obj);
-        return bytes;
-    }
+    /**
+     * Reads the packet payload from a ByteArrayDataInput stream.
+     *
+     * @param input the data input containing the serialized packet
+     * @return the deserialized packet payload
+     */
+    public abstract T read(ByteArrayDataInput input);
 
-    public abstract T read(ByteArrayDataInput bytes);
-
-    public abstract void write(ByteArrayDataOutput bytes, T obj);
-
-    private void writeId(ByteArrayDataOutput bytes) {
-        bytes.writeInt(packetId);
-    }
+    /**
+     * Writes the packet payload to the output stream.
+     *
+     * @param output the data output stream
+     * @param obj    the packet payload
+     */
+    public abstract void writeData(ByteArrayDataOutput output, T obj);
 }
+

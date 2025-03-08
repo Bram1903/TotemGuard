@@ -16,15 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.messaging;
+package com.deathmotion.totemguard.redis.packet;
 
-import net.kyori.adventure.text.Component;
-import org.jetbrains.annotations.NotNull;
+@FunctionalInterface
+public interface PacketProcessor<T> {
 
-public interface ProxyAlertMessenger {
-    void start();
+    default void handleAny(Object value) {
+        //noinspection unchecked
+        handle((T) value);
+    }
 
-    void stop();
-
-    void sendAlert(@NotNull Component alert);
+    void handle(T value);
 }

@@ -16,24 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.packets;
+package com.deathmotion.totemguard.redis.packet;
 
-import com.deathmotion.totemguard.packets.impl.SyncAlertMessagePacket;
+import com.deathmotion.totemguard.redis.packet.impl.SyncAlertMessagePacket;
 import lombok.Getter;
+
+import java.util.function.Supplier;
 
 @Getter
 public enum Packets {
 
-    SYNC_ALERT_MESSAGE(SyncAlertMessagePacket.class);
+    SYNC_ALERT_MESSAGE(SyncAlertMessagePacket::new);
 
-    private final Class<?> clazz;
+    private final Supplier<Packet<?>> packetSupplier;
 
-    Packets(Class<?> clazz) {
-        this.clazz = clazz;
+    Packets(Supplier<Packet<?>> packetSupplier) {
+        this.packetSupplier = packetSupplier;
+    }
+
+    public Packet<?> getPacket() {
+        return packetSupplier.get();
     }
 
     public int getId() {
         return -(ordinal() + 1);
     }
 }
+
 
