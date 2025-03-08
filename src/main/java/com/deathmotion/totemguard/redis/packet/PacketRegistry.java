@@ -48,8 +48,7 @@ public class PacketRegistry {
         processors.get(packetId).remove(processor);
     }
 
-    public void handlePacket(byte[] messageBytes) {
-        ByteArrayDataInput dataInput = ByteStreams.newDataInput(messageBytes);
+    public void handlePacket(ByteArrayDataInput dataInput) {
         int packetId = dataInput.readInt();
         if (!packets.containsKey(packetId)) throw new IllegalArgumentException("Invalid packet ID: " + packetId);
 

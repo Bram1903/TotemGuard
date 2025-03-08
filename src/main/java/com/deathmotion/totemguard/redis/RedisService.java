@@ -24,7 +24,9 @@ import com.deathmotion.totemguard.interfaces.Reloadable;
 import com.deathmotion.totemguard.redis.handlers.SyncAlertMessageHandler;
 import com.deathmotion.totemguard.redis.packet.Packet;
 import com.deathmotion.totemguard.redis.packet.PacketRegistry;
+import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
@@ -32,18 +34,21 @@ import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.pubsub.RedisPubSubAdapter;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 public class RedisService extends RedisPubSubAdapter<byte[], byte[]> implements Reloadable {
     private final TotemGuard plugin;
     private final PacketRegistry registry;
     private final List<Reloadable> handlers = new ArrayList<>();
+    private final String identifier;
 
     private @Nullable RedisClient client = null;
     private @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubsub = null;
@@ -53,6 +58,7 @@ public class RedisService extends RedisPubSubAdapter<byte[], byte[]> implements 
     public RedisService(TotemGuard plugin) {
         this.plugin = plugin;
         this.registry = new PacketRegistry();
+        this.identifier = UUID.randomUUID().toString();
 
         start();
         handlers.add(new SyncAlertMessageHandler(plugin, registry));
@@ -92,19 +98,36 @@ public class RedisService extends RedisPubSubAdapter<byte[], byte[]> implements 
             return;
         if (!Arrays.equals(channelBytes, this.channel)) return;
 
-        registry.handlePacket(messageBytes);
+        ByteArrayDataInput out = ByteStreams.newDataInput(messageBytes);
+        final String from = out.readUTF();
+
+        // Shouldn't repeat if we receive from ourselves
+        if (from.equals(this.identifier)) {
+            return;
+        }
+
+        registry.handlePacket(out);
     }
 
     /**
-     * Publishes a packet with the given payload.
+     * Publishes a packet with the given payload. The identifier is prepended so that recipients can
+     * ignore packets sent by this instance.
      *
      * @param packet the packet type
      * @param obj    the payload
      * @param <T>    the type of the payload
      */
     public <T> void publish(Packet<T> packet, T obj) {
+        // Write the packet payload.
         ByteArrayDataOutput dataOutput = packet.write(obj);
-        publish(dataOutput.toByteArray());
+        byte[] payload = dataOutput.toByteArray();
+
+        // Prepend our identifier.
+        ByteArrayDataOutput finalOutput = ByteStreams.newDataOutput();
+        finalOutput.writeUTF(this.identifier);
+        finalOutput.write(payload);
+
+        publish(finalOutput.toByteArray());
     }
 
     /**
