@@ -37,7 +37,6 @@ public interface AlertManager {
      * Enable or disable alerts for a player.
      *
      * @param player The player to toggle alerts for.
-     * @return
      */
     boolean toggleAlerts(Player player);
 
@@ -45,7 +44,6 @@ public interface AlertManager {
      * Enable alerts for a player.
      *
      * @param player The player to enable alerts for.
-     * @return
      */
     boolean enableAlerts(Player player);
 }
