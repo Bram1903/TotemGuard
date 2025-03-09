@@ -82,8 +82,6 @@ For a much more detailed explanation of the checks, see [the wiki!](https://gith
 - **Cross Server Alerts** - Easily send and retrieve alerts across multiple servers, through either plugin messaging or
   Redis.
 - **Bedrock Exception** - Automatically ignores Bedrock Edition players to prevent false positives.
-- **BetterReload Support** - Integrates with [BetterReload](https://modrinth.com/plugin/betterreload) for seamless
-  configuration reloading.
 
 ## Commands
 
