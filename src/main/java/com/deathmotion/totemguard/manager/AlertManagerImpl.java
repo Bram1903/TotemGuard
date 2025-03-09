@@ -69,7 +69,7 @@ public class AlertManagerImpl implements AlertManager {
         }
 
         // Send to proxy and Discord if enabled
-        plugin.getRedisService().publish(new SyncAlertMessagePacket(), craftedAlert.getX());
+        plugin.getRedisService().publish(new SyncAlertMessagePacket(), new SyncAlertMessagePacket.AlertComponents(craftedAlert.getX(), craftedAlert.getY()));
         plugin.getDiscordManager().sendAlert(check, details);
         databaseProvider.getAlertRepository().storeAlert(check);
     }
@@ -79,8 +79,13 @@ public class AlertManagerImpl implements AlertManager {
      *
      * @param message The text component to be broadcast.
      */
-    public void sendAlert(Component message) {
-        enabledAlerts.values().forEach(player -> player.sendMessage(message));
+    public void sendAlert(SyncAlertMessagePacket.AlertComponents message) {
+        // Optionally log to console
+        if (plugin.getConfigManager().getSettings().isConsoleAlerts()) {
+            plugin.getServer().getConsoleSender().sendMessage(message.consoleAlert);
+        }
+
+        enabledAlerts.values().forEach(player -> player.sendMessage(message.gameAlert));
     }
 
     /**

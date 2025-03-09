@@ -23,12 +23,13 @@ import com.deathmotion.totemguard.interfaces.Reloadable;
 import com.deathmotion.totemguard.redis.packet.PacketProcessor;
 import com.deathmotion.totemguard.redis.packet.PacketRegistry;
 import com.deathmotion.totemguard.redis.packet.Packets;
+import com.deathmotion.totemguard.redis.packet.impl.SyncAlertMessagePacket;
 import net.kyori.adventure.text.Component;
 
 /**
  * Handler for processing synchronization of alert messages.
  */
-public class SyncAlertMessageHandler implements PacketProcessor<Component>, Reloadable {
+public class SyncAlertMessageHandler implements PacketProcessor<SyncAlertMessagePacket.AlertComponents>, Reloadable {
 
     private final TotemGuard plugin;
     private final PacketRegistry registry;
@@ -41,8 +42,8 @@ public class SyncAlertMessageHandler implements PacketProcessor<Component>, Relo
     }
 
     @Override
-    public void handle(Component component) {
-        plugin.getAlertManager().sendAlert(component);
+    public void handle(SyncAlertMessagePacket.AlertComponents alertComponents) {
+        plugin.getAlertManager().sendAlert(alertComponents);
     }
 
     @Override

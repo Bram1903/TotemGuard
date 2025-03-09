@@ -22,28 +22,40 @@ import com.deathmotion.totemguard.redis.packet.Packet;
 import com.deathmotion.totemguard.redis.packet.Packets;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
+import lombok.AllArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
 /**
  * Packet implementation for synchronizing alert messages.
  */
-public class SyncAlertMessagePacket extends Packet<Component> {
+public class SyncAlertMessagePacket extends Packet<SyncAlertMessagePacket.AlertComponents> {
+
+    @AllArgsConstructor
+    public static class AlertComponents {
+        public Component gameAlert;
+        public Component consoleAlert;
+    }
 
     public SyncAlertMessagePacket() {
         super(Packets.SYNC_ALERT_MESSAGE.getId());
     }
 
     @Override
-    public Component read(ByteArrayDataInput input) {
-        String serializedComponent = input.readUTF();
-        return GsonComponentSerializer.gson().deserialize(serializedComponent);
+    public AlertComponents read(ByteArrayDataInput input) {
+        String gameAlert = input.readUTF();
+        String consoleAlert = input.readUTF();
+
+        return new AlertComponents(GsonComponentSerializer.gson().deserialize(gameAlert), GsonComponentSerializer.gson().deserialize(consoleAlert));
     }
 
     @Override
-    public void writeData(ByteArrayDataOutput output, Component component) {
-        String serializedComponent = GsonComponentSerializer.gson().serialize(component);
-        output.writeUTF(serializedComponent);
+    public void writeData(ByteArrayDataOutput output, AlertComponents alertComponents) {
+        String gameAlert = GsonComponentSerializer.gson().serialize(alertComponents.gameAlert);
+        String consoleAlert = GsonComponentSerializer.gson().serialize(alertComponents.consoleAlert);
+
+        output.writeUTF(gameAlert);
+        output.writeUTF(consoleAlert);
     }
 }
 
