@@ -19,14 +19,15 @@
 package com.deathmotion.totemguard.redis.packet;
 
 import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteStreams;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PacketRegistry {
+
     private final ConcurrentMap<Integer, Packet<?>> packets = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, List<PacketProcessor<?>>> processors = new ConcurrentHashMap<>();
 
@@ -37,28 +38,28 @@ public class PacketRegistry {
     }
 
     public <T> void registerProcessor(int packetId, PacketProcessor<T> processor) {
-        if (packets.containsKey(packetId)) {
-            processors.computeIfAbsent(packetId, k -> new ArrayList<>()).add(processor);
-        } else {
+        Packet<?> packet = packets.get(packetId);
+        if (packet == null) {
             throw new IllegalArgumentException("Invalid packet ID: " + packetId);
         }
+
+        processors.computeIfAbsent(packetId, k -> new CopyOnWriteArrayList<>()).add(processor);
     }
 
     public void unregister(int packetId, PacketProcessor<?> processor) {
-        processors.get(packetId).remove(processor);
+        Optional.ofNullable(processors.get(packetId)).ifPresent(list -> list.remove(processor));
     }
 
     public void handlePacket(ByteArrayDataInput dataInput) {
         int packetId = dataInput.readInt();
-        if (!packets.containsKey(packetId)) throw new IllegalArgumentException("Invalid packet ID: " + packetId);
 
-        if (processors.containsKey(packetId)) {
-            // We only read the packet if there are processors registered for it
-            Object packet = packets.get(packetId).read(dataInput);
-
-            for (PacketProcessor<?> processor : processors.get(packetId)) {
-                processor.handleAny(packet);
-            }
+        Packet<?> packet = packets.get(packetId);
+        if (packet == null) {
+            throw new IllegalArgumentException("Invalid packet ID: " + packetId);
         }
+
+        Object packetData = packet.read(dataInput);
+        Optional.ofNullable(processors.get(packetId)).ifPresent(list -> list.forEach(processor -> processor.handleAny(packetData)));
     }
 }
+
