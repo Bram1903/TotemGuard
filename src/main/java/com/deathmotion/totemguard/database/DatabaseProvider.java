@@ -59,7 +59,7 @@ public class DatabaseProvider {
 
     private void init() {
         Settings.Database databaseSettings = plugin.getConfigManager().getSettings().getDatabase();
-        DatabaseType databaseType = databaseSettings.getType();
+        DatabaseType databaseType = DatabaseType.fromString(databaseSettings.getType());
 
         if (!loadedDatabaseDrivers.contains(databaseType.getDisplayName())) {
             plugin.getLogger().info(String.format("Loading %s driver version %s", databaseType.getDisplayName(), databaseType.getDatabaseDriver().getVersion()));
@@ -68,7 +68,7 @@ public class DatabaseProvider {
         }
 
 
-        setConnectionSource(databaseSettings);
+        setConnectionSource(databaseSettings, databaseType);
 
         try {
             TableUtils.createTableIfNotExists(connectionSource, DatabasePlayer.class);
@@ -107,9 +107,7 @@ public class DatabaseProvider {
         if (punishmentRepository != null) punishmentRepository = null;
     }
 
-    private void setConnectionSource(Settings.Database databaseSettings) {
-        DatabaseType databaseType = databaseSettings.getType();
-
+    private void setConnectionSource(Settings.Database databaseSettings, DatabaseType databaseType) {
         String jdbcURL = switch (databaseType) {
             case H2 ->
                     String.format(databaseType.getConnectionString(), plugin.getDataFolder().getAbsolutePath() + "/db/data");

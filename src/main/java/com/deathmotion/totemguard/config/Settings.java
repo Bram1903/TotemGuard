@@ -89,7 +89,7 @@ public class Settings {
     @Getter
     public static class Database {
         @Comment("Database Type: The type of database to use. (h2, mysql, mariadb)")
-        private DatabaseType Type = DatabaseType.H2;
+        private String Type = DatabaseType.H2.getDisplayName();
 
         @Comment("\nDatabase Host: The host of the database.")
         private String Host = "localhost";

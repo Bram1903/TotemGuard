@@ -60,4 +60,13 @@ public enum DatabaseType {
 
     @Setter
     private boolean loaded;
+
+    public static DatabaseType fromString(String type) {
+        for (DatabaseType databaseType : DatabaseType.values()) {
+            if (databaseType.displayName.equalsIgnoreCase(type)) {
+                return databaseType;
+            }
+        }
+        throw new IllegalArgumentException("Invalid database type: " + type);
+    }
 }
