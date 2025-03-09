@@ -31,12 +31,6 @@ import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
  */
 public class SyncAlertMessagePacket extends Packet<SyncAlertMessagePacket.AlertComponents> {
 
-    @AllArgsConstructor
-    public static class AlertComponents {
-        public Component gameAlert;
-        public Component consoleAlert;
-    }
-
     public SyncAlertMessagePacket() {
         super(Packets.SYNC_ALERT_MESSAGE.getId());
     }
@@ -56,6 +50,12 @@ public class SyncAlertMessagePacket extends Packet<SyncAlertMessagePacket.AlertC
 
         output.writeUTF(gameAlert);
         output.writeUTF(consoleAlert);
+    }
+
+    @AllArgsConstructor
+    public static class AlertComponents {
+        public Component gameAlert;
+        public Component consoleAlert;
     }
 }
 

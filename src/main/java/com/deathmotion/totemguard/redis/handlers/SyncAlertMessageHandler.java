@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.redis.packet.PacketProcessor;
 import com.deathmotion.totemguard.redis.packet.PacketRegistry;
 import com.deathmotion.totemguard.redis.packet.Packets;
 import com.deathmotion.totemguard.redis.packet.impl.SyncAlertMessagePacket;
-import net.kyori.adventure.text.Component;
 
 /**
  * Handler for processing synchronization of alert messages.
