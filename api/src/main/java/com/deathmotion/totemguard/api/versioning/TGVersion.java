@@ -199,6 +199,24 @@ public class TGVersion implements Comparable<TGVersion> {
                 Objects.equals(this.snapshotCommit, other.snapshotCommit);
     }
 
+
+    /**
+     * Checks if the provided object is equal to this {@link TGVersion},
+     * comparing only major, minor, patch, and snapshot fields, ignoring the snapshot commit.
+     *
+     * @param obj the object to compare.
+     * @return true if the provided object is equal to this {@link TGVersion} excluding the snapshot commit, false otherwise.
+     */
+    public boolean equalsWithoutCommit(@NotNull final Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof TGVersion other)) return false;
+
+        return this.major == other.major &&
+                this.minor == other.minor &&
+                this.patch == other.patch &&
+                this.snapshot == other.snapshot;
+    }
+
     /**
      * Checks if this version is newer than the provided version.
      *

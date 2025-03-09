@@ -18,10 +18,15 @@
 
 package com.deathmotion.totemguard.redis.packet;
 
+import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.util.TGVersions;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import lombok.Getter;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * Abstract representation of a Packet that can be serialized and deserialized.
@@ -65,5 +70,42 @@ public abstract class Packet<T> {
      * @param obj    the packet payload
      */
     public abstract void writeData(ByteArrayDataOutput output, T obj);
+
+    /**
+     * Writes the current version to the output stream.
+     *
+     * @param output the data output stream
+     */
+    public static void writeVersion(ByteArrayDataOutput output) {
+        TGVersion version = TGVersions.CURRENT;
+
+        // Write major and minor as bytes (0-255 range assumed)
+        output.writeByte(version.major());
+        output.writeByte(version.minor());
+
+        // Combine patch and snapshot flag into a single byte
+        int patchAndSnapshot = (version.snapshot() ? 0x80 : 0) | (version.patch() & 0x7F);
+        output.writeByte(patchAndSnapshot);
+    }
+
+    /**
+     * Reads the version from the input stream.
+     *
+     * @param input the data input stream
+     * @return the version read from the stream
+     */
+    public static TGVersion readVersion(ByteArrayDataInput input) {
+        // Read major and minor versions (1 byte each)
+        int major = input.readUnsignedByte();
+        int minor = input.readUnsignedByte();
+
+        // Read patch and snapshot from a single byte
+        int patchAndSnapshot = input.readUnsignedByte();
+        boolean snapshot = (patchAndSnapshot & 0x80) != 0; // Extract snapshot flag
+        int patch = patchAndSnapshot & 0x7F; // Extract patch (0-127)
+
+        return new TGVersion(major, minor, patch, snapshot);
+    }
+
 }
 

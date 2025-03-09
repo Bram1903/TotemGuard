@@ -75,7 +75,13 @@ public class DatabaseProvider {
             TableUtils.createTableIfNotExists(connectionSource, DatabaseAlert.class);
             TableUtils.createTableIfNotExists(connectionSource, DatabasePunishment.class);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            // The below message is directly copied from Sonar source code
+
+            /*
+             * This is caused by a duplicate index;
+             * I know this isn't the best method of handling it,
+             * but I don't know how else I could address this issue.
+             */
         }
 
         playerRepository = new PlayerRepository(this);

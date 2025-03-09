@@ -19,11 +19,13 @@
 package com.deathmotion.totemguard.redis;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.interfaces.Reloadable;
 import com.deathmotion.totemguard.redis.handlers.SyncAlertMessageHandler;
 import com.deathmotion.totemguard.redis.packet.Packet;
 import com.deathmotion.totemguard.redis.packet.PacketRegistry;
+import com.deathmotion.totemguard.util.TGVersions;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
@@ -41,6 +43,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import static com.deathmotion.totemguard.redis.packet.Packet.readVersion;
+import static com.deathmotion.totemguard.redis.packet.Packet.writeVersion;
 
 @Getter
 public class RedisService extends RedisPubSubAdapter<byte[], byte[]> implements Reloadable {
@@ -105,6 +110,12 @@ public class RedisService extends RedisPubSubAdapter<byte[], byte[]> implements 
             return;
         }
 
+        TGVersion version = readVersion(out);
+        if (!TGVersions.CURRENT.equalsWithoutCommit(version)) {
+            plugin.getLogger().warning("Received packet from Redis with incompatible version. Make sure all instances are running the same version.");
+            return;
+        }
+
         registry.handlePacket(out);
     }
 
@@ -124,6 +135,7 @@ public class RedisService extends RedisPubSubAdapter<byte[], byte[]> implements 
         // Prepend our identifier.
         ByteArrayDataOutput finalOutput = ByteStreams.newDataOutput();
         finalOutput.writeUTF(this.identifier);
+        writeVersion(finalOutput);
         finalOutput.write(payload);
 
         publish(finalOutput.toByteArray());
