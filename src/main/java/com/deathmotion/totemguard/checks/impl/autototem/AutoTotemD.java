@@ -34,6 +34,7 @@ import net.kyori.adventure.text.Component;
 @CheckData(name = "AutoTotemD", description = "Suspicious re-totem packet sequence")
 public class AutoTotemD extends Check implements PacketCheck {
 
+    // TODO(Bram): Add configuration for these values
     private static final long EXPECTED_AVERAGE_TIME = 50; // Expected average time in ms
     private static final long ACCEPTABLE_VARIATION = 20; // Allowable deviation in ms (e.g., ±20ms)
 
