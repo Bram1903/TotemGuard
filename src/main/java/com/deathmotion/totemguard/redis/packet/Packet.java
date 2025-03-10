@@ -25,9 +25,6 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import lombok.Getter;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-
 /**
  * Abstract representation of a Packet that can be serialized and deserialized.
  *
@@ -50,6 +47,7 @@ public abstract class Packet<T> {
      */
     public ByteArrayDataOutput write(T obj) {
         ByteArrayDataOutput output = ByteStreams.newDataOutput();
+        writeVersion(output);
         output.writeInt(packetId);
         writeData(output, obj);
         return output;
@@ -76,7 +74,7 @@ public abstract class Packet<T> {
      *
      * @param output the data output stream
      */
-    public static void writeVersion(ByteArrayDataOutput output) {
+    private void writeVersion(ByteArrayDataOutput output) {
         TGVersion version = TGVersions.CURRENT;
 
         // Write major and minor as bytes (0-255 range assumed)
@@ -86,25 +84,6 @@ public abstract class Packet<T> {
         // Combine patch and snapshot flag into a single byte
         int patchAndSnapshot = (version.snapshot() ? 0x80 : 0) | (version.patch() & 0x7F);
         output.writeByte(patchAndSnapshot);
-    }
-
-    /**
-     * Reads the version from the input stream.
-     *
-     * @param input the data input stream
-     * @return the version read from the stream
-     */
-    public static TGVersion readVersion(ByteArrayDataInput input) {
-        // Read major and minor versions (1 byte each)
-        int major = input.readUnsignedByte();
-        int minor = input.readUnsignedByte();
-
-        // Read patch and snapshot from a single byte
-        int patchAndSnapshot = input.readUnsignedByte();
-        boolean snapshot = (patchAndSnapshot & 0x80) != 0; // Extract snapshot flag
-        int patch = patchAndSnapshot & 0x7F; // Extract patch (0-127)
-
-        return new TGVersion(major, minor, patch, snapshot);
     }
 
 }

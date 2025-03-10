@@ -18,6 +18,9 @@
 
 package com.deathmotion.totemguard.redis.packet;
 
+import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.util.TGVersions;
 import com.google.common.io.ByteArrayDataInput;
 
 import java.util.List;
@@ -51,15 +54,44 @@ public class PacketRegistry {
     }
 
     public void handlePacket(ByteArrayDataInput dataInput) {
-        int packetId = dataInput.readInt();
-
-        Packet<?> packet = packets.get(packetId);
-        if (packet == null) {
-            throw new IllegalArgumentException("Invalid packet ID: " + packetId);
+        TGVersion version = readVersion(dataInput);
+        if (!TGVersions.CURRENT.equalsWithoutCommit(version)) {
+            TotemGuard.getInstance().getLogger().warning(
+                    "TotemGuard packet version mismatch: received version " + version +
+                            " (expected " + TGVersions.CURRENT + "). " +
+                            "Ensure all servers are running the latest version of TotemGuard."
+            );
+            return;
         }
 
+        int packetId = dataInput.readInt();
+        Packet<?> packet = packets.get(packetId);
+        if (packet == null) throw new IllegalArgumentException("Invalid packet ID: " + packetId);
+
+        List<PacketProcessor<?>> processorsForPacket = processors.get(packetId);
+        if (processorsForPacket == null || processorsForPacket.isEmpty()) return;
+
         Object packetData = packet.read(dataInput);
-        Optional.ofNullable(processors.get(packetId)).ifPresent(list -> list.forEach(processor -> processor.handleAny(packetData)));
+        processorsForPacket.forEach(processor -> processor.handleAny(packetData));
+    }
+
+    /**
+     * Reads the version from the input stream.
+     *
+     * @param input the data input stream
+     * @return the version read from the stream
+     */
+    private TGVersion readVersion(ByteArrayDataInput input) {
+        // Read major and minor versions (1 byte each)
+        int major = input.readUnsignedByte();
+        int minor = input.readUnsignedByte();
+
+        // Read patch and snapshot from a single byte
+        int patchAndSnapshot = input.readUnsignedByte();
+        boolean snapshot = (patchAndSnapshot & 0x80) != 0; // Extract snapshot flag
+        int patch = patchAndSnapshot & 0x7F; // Extract patch (0-127)
+
+        return new TGVersion(major, minor, patch, snapshot);
     }
 }
 
