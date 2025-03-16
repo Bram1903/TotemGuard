@@ -64,13 +64,7 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        getLogger().info("Loading libraries...");
-        long start = System.currentTimeMillis();
-        libraryManager = new BukkitLibraryManager(this);
-        LibraryLoader.loadLibraries(libraryManager);
-        long end = System.currentTimeMillis();
-        getLogger().info("Libraries loaded in " + (end - start) + "ms");
-
+        loadLibraries();
         commandAPILoader = new CommandAPILoader(this);
     }
 
@@ -112,6 +106,15 @@ public final class TotemGuard extends JavaPlugin {
             getLogger().info(debugMessage);
             Bukkit.broadcast(debugMessage, "TotemGuard.Debug");
         }
+    }
+
+    private void loadLibraries() {
+        getLogger().info("Loading libraries...");
+        long start = System.currentTimeMillis();
+        libraryManager = new BukkitLibraryManager(this);
+        LibraryLoader.loadLibraries(libraryManager);
+        long end = System.currentTimeMillis();
+        getLogger().info("Libraries loaded in " + (end - start) + "ms");
     }
 
     private void enableBStats() {
