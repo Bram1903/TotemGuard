@@ -20,9 +20,9 @@ package com.deathmotion.totemguard.events.packets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import com.github.retrooper.packetevents.event.PacketListenerAbstract;
-import com.github.retrooper.packetevents.event.UserDisconnectEvent;
-import com.github.retrooper.packetevents.event.UserLoginEvent;
+import com.github.retrooper.packetevents.event.*;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -38,8 +38,15 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
     }
 
     @Override
+    public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() == PacketType.Login.Server.LOGIN_SUCCESS) {
+            // Do this after send to avoid sending packets before the PLAY state
+            event.getTasksAfterSend().add(() -> TotemGuard.getInstance().getPlayerDataManager().addUser(event.getUser()));
+        }
+    }
+
+    @Override
     public void onUserLogin(UserLoginEvent event) {
-        TotemGuard.getInstance().getPlayerDataManager().addUser(event.getUser());
         Player player = event.getPlayer();
 
         if (player.hasPermission("TotemGuard.Alerts") && player.hasPermission("TotemGuard.Alerts.EnableOnJoin")) {
