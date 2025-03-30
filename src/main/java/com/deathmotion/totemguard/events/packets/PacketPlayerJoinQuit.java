@@ -20,8 +20,10 @@ package com.deathmotion.totemguard.events.packets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import com.github.retrooper.packetevents.event.*;
-import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.event.UserDisconnectEvent;
+import com.github.retrooper.packetevents.event.UserLoginEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.Bukkit;
