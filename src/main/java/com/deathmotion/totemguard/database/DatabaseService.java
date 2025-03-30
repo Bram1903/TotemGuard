@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 import com.deathmotion.totemguard.database.repository.impl.AlertRepository;
 import com.deathmotion.totemguard.database.repository.impl.PlayerRepository;
 import com.deathmotion.totemguard.database.repository.impl.PunishmentRepository;
-import com.deathmotion.totemguard.util.datastructure.Pair;
+import com.deathmotion.totemguard.models.impl.ProfileData;
 import org.jetbrains.annotations.Blocking;
 
 import java.time.Instant;
@@ -44,7 +44,7 @@ public class DatabaseService {
         this.punishmentRepository = databaseProvider.getPunishmentRepository();
     }
 
-    public Pair<List<DatabaseAlert>, List<DatabasePunishment>> retrieveLogs(UUID uuid) {
+    public ProfileData retrieveProfileData(UUID uuid) {
         DatabasePlayer player = playerRepository.fetchOrCreatePlayer(uuid);
         if (player == null) {
             return null;
@@ -53,7 +53,7 @@ public class DatabaseService {
         List<DatabaseAlert> alerts = alertRepository.findAlertsByPlayer(player);
         List<DatabasePunishment> punishments = punishmentRepository.findPunishmentsByPlayer(player);
 
-        return new Pair<>(alerts, punishments);
+        return new ProfileData(player.getClientBrand(), alerts, punishments);
     }
 
     public int eraseLogs(UUID uuid) {

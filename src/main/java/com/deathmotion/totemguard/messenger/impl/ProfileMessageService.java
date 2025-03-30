@@ -52,7 +52,7 @@ public class ProfileMessageService {
     }
 
     public Component createProfileMessage(String username,
-                                          List<DatabaseAlert> alerts,
+                                          String clientBrand, List<DatabaseAlert> alerts,
                                           List<DatabasePunishment> punishments,
                                           long loadTime,
                                           SafetyStatus safetyStatus) {
@@ -68,6 +68,7 @@ public class ProfileMessageService {
         String filledTemplate = replacePlaceholders(
                 profileTemplate,
                 username,
+                clientBrand,
                 alerts,
                 punishments,
                 loadTime,
@@ -83,13 +84,14 @@ public class ProfileMessageService {
 
     public String replacePlaceholders(String text,
                                       String username,
-                                      List<DatabaseAlert> alerts,
+                                      String clientBrand, List<DatabaseAlert> alerts,
                                       List<DatabasePunishment> punishments,
                                       long loadTime,
                                       SafetyStatus safetyStatus) {
 
         return text
                 .replace("%player%", username)
+                .replace("%client_brand%", clientBrand)
                 .replace("%safety_status%", messengerService.unformat(safetyStatus.toComponent()))
                 .replace("%total_alerts%", String.valueOf(alerts.size()))
                 .replace("%total_punishments%", String.valueOf(punishments.size()))

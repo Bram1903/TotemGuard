@@ -26,8 +26,8 @@ import com.deathmotion.totemguard.database.entities.DatabaseAlert;
 import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.MessengerService;
+import com.deathmotion.totemguard.models.impl.ProfileData;
 import com.deathmotion.totemguard.models.impl.SafetyStatus;
-import com.deathmotion.totemguard.util.datastructure.Pair;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.AsyncOfflinePlayerArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
@@ -77,21 +77,21 @@ public class ProfileCommand {
         long startTime = System.currentTimeMillis();
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            Pair<List<DatabaseAlert>, List<DatabasePunishment>> logs = databaseProvider.getGenericService().retrieveLogs(target.getUniqueId());
-            if (logs == null) {
+            ProfileData profileData = databaseProvider.getGenericService().retrieveProfileData(target.getUniqueId());
+            if (profileData == null) {
                 sender.sendMessage(commandMessengerService.noDatabasePlayerFound(rawUsername));
                 return;
             }
 
-            List<DatabaseAlert> alerts = logs.getX();
-            List<DatabasePunishment> punishments = logs.getY();
+            List<DatabaseAlert> alerts = profileData.databaseAlertList();
+            List<DatabasePunishment> punishments = profileData.databasePunishmentList();
 
             List<DatabaseAlert> alertsToday = filterAlertsToday(alerts);
 
             long loadTime = System.currentTimeMillis() - startTime;
             SafetyStatus safetyStatus = SafetyStatus.getSafetyStatus(alertsToday.size(), punishments.size());
 
-            sender.sendMessage(messengerService.getProfileMessageService().createProfileMessage(rawUsername, alerts, punishments, loadTime, safetyStatus));
+            sender.sendMessage(messengerService.getProfileMessageService().createProfileMessage(rawUsername, profileData.clientBrand(), alerts, punishments, loadTime, safetyStatus));
         });
     }
 

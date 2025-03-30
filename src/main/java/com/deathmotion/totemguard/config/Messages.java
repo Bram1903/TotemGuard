@@ -149,6 +149,7 @@ public class Messages {
                 private String profileFormat = """
                         &6&lTotemGuard Profile
                         &7&lPlayer: &6%player%
+                        &7&lBrand: &6%client_brand%
                         &7&lSafety Status: %safety_status%
                         &7&lTotal Alerts: &6%total_alerts%
                         &7&lTotal Punishments: &6%total_punishments%
