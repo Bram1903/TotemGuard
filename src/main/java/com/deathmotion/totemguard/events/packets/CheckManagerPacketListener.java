@@ -34,9 +34,15 @@ public class CheckManagerPacketListener extends PacketListenerAbstract {
 
     @Override
     public void onPacketReceive(final PacketReceiveEvent event) {
-        if (event.getConnectionState() != ConnectionState.PLAY) return;
         TotemPlayer player = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getUser());
         if (player == null) return;
+
+        if (event.getConnectionState() != ConnectionState.PLAY) {
+            // Allow checks to listen to configuration packets
+            if (event.getConnectionState() != ConnectionState.CONFIGURATION) return;
+            player.checkManager.onPacketReceive(event);
+            return;
+        }
 
         player.checkManager.onPacketReceive(event);
     }

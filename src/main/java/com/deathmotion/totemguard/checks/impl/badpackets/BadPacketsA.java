@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import net.kyori.adventure.text.Component;
 
@@ -39,22 +39,21 @@ public class BadPacketsA extends Check implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!isPluginMessage(event.getPacketType())) {
-            return;
+        if (event.getPacketType() == PacketType.Play.Client.PLUGIN_MESSAGE) {
+            WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
+            handle(packet.getChannelName());
+        } else if (event.getPacketType() == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
+            WrapperConfigClientPluginMessage packet = new WrapperConfigClientPluginMessage(event);
+            handle(packet.getChannelName());
         }
+    }
 
-        // Parse the packet and extract the channel name
-        WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
-        String channel = packet.getChannelName();
+    private void handle(String channel) {
         if (channel == null || !channel.toLowerCase().contains(SUSPICIOUS_CHANNEL_KEYWORD)) {
             return;
         }
 
         fail(getCheckDetails(channel));
-    }
-
-    private boolean isPluginMessage(PacketTypeCommon packetType) {
-        return packetType == PacketType.Play.Client.PLUGIN_MESSAGE || packetType == PacketType.Configuration.Client.PLUGIN_MESSAGE;
     }
 
     private Component getCheckDetails(String channel) {
