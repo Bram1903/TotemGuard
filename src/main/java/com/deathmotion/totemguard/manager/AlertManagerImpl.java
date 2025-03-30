@@ -104,6 +104,7 @@ public class AlertManagerImpl implements AlertManager {
 
         // Check whether this toggling action is allowed by any external event listeners
         if (!canToggleAlerts(player, willEnable)) {
+            player.sendMessage(messageService.toggleAlertsBlockedExternal());
             return false;
         }
 

@@ -21,20 +21,24 @@ package com.deathmotion.totemguard.commands.impl;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.manager.AlertManagerImpl;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
+import com.deathmotion.totemguard.messenger.MessengerService;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import dev.jorel.commandapi.executors.CommandArguments;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class AlertsCommand {
 
+    private final MessengerService messengerService;
     private final CommandMessengerService commandMessengerService;
     private final AlertManagerImpl alertManager;
 
     public AlertsCommand(TotemGuard plugin) {
+        this.messengerService = plugin.getMessengerService();
         this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
         this.alertManager = plugin.getAlertManager();
     }
@@ -54,7 +58,7 @@ public class AlertsCommand {
         }
 
         Player target = (Player) args.get("player");
-        executeToggleAlerts(sender, target);
+        executeToggleAlerts(target, target);
     }
 
     private void handlePlayerCommand(Player player, CommandArguments args) {
@@ -63,19 +67,29 @@ public class AlertsCommand {
             return;
         }
 
-        if (!player.hasPermission("TotemGuard.Alerts.Others")) {
-            player.sendMessage("You do not have permission to toggle alerts for other players!");
+        Player target = (Player) args.get("player");
+        if (target.getUniqueId().equals(player.getUniqueId())) {
+            alertManager.toggleAlerts(player);
             return;
         }
 
-        Player target = (Player) args.get("player");
+        if (!player.hasPermission("TotemGuard.Alerts.Others")) {
+            player.sendMessage(messengerService.toggleAlertsOtherNoPermission());
+            return;
+        }
+
         executeToggleAlerts(player, target);
     }
 
     private void executeToggleAlerts(CommandSender sender, Player target) {
         boolean success = alertManager.toggleAlerts(target);
+        if (!success) {
+            sender.sendMessage(messengerService.toggleAlertsBlockedExternal());
+            return;
+        }
 
-        String message = success ? "Alerts toggled for " + target.getName() : "Failed to toggle alerts for " + target.getName() + ". This could be due to the API event being cancelled.";
+        boolean enabled = alertManager.hasAlertsEnabled(target);
+        Component message = enabled ? messengerService.toggleAlertsOther(true, target.getName()) : messengerService.toggleAlertsOther(false, target.getName());
         sender.sendMessage(message);
     }
 }

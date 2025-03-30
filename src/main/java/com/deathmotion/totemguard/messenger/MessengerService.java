@@ -81,6 +81,28 @@ public class MessengerService {
         return format(message);
     }
 
+    public Component toggleAlertsOther(boolean enabled, String player) {
+        String message = enabled
+                ? configManager.getMessages().getAlertsEnabledOther()
+                : configManager.getMessages().getAlertsDisabledOther();
+
+        message = message.replace("%prefix%", getPrefix()).replace("%player%", player);
+
+        return format(message);
+    }
+
+    public Component toggleAlertsOtherNoPermission() {
+        String message = configManager.getMessages().getNoPermissionToggleOther();
+        message = message.replace("%prefix%", getPrefix());
+        return format(message);
+    }
+
+    public Component toggleAlertsBlockedExternal() {
+        String message = configManager.getMessages().getAlertToggleBlocked();
+        message = message.replace("%prefix%", getPrefix());
+        return format(message);
+    }
+
     public Component totemGuardInfo() {
         Component versionComponent = Component.text()
                 .append(Component.text(" Running ", NamedTextColor.WHITE))

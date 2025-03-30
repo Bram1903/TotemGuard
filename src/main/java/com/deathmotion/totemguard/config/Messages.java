@@ -39,6 +39,10 @@ public class Messages {
     @Comment("")
     private String alertsEnabled = "%prefix% &aAlerts enabled";
     private String alertsDisabled = "%prefix% &cAlerts disabled";
+    private String alertsEnabledOther = "%prefix% &aAlerts enabled for %player%";
+    private String alertsDisabledOther = "%prefix% &cAlerts disabled for %player%";
+    private String noPermissionToggleOther = "%prefix% &cYou do not have permission to toggle alerts for other players.";
+    private String alertToggleBlocked = "%prefix% &cAn external event handler is blocking your alert toggle.";
     private String alertBrand = "%prefix% &6%player% &7joined using: &6%client_brand%";
 
     @Comment("\nCommand Messages")
