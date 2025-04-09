@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 public class LibraryLoader {
     public void loadLibraries(final @NotNull LibraryManager libraryManager) {
         libraryManager.addMavenCentral();
-        libraryManager.addRepository("https://s01.oss.sonatype.org/content/repositories/snapshots");
+        libraryManager.addRepository("https://repo.codemc.org/repository/maven-public/");
         libraryManager.loadLibraries(
                 Library.builder()
                         .groupId("de{}exlll")
@@ -24,7 +24,7 @@ public class LibraryLoader {
                 Library.builder()
                         .groupId("io{}lettuce")
                         .artifactId("lettuce-core")
-                        .version("6.5.1.RELEASE")
+                        .version("6.5.5.RELEASE")
                         .relocate("io{}lettuce{}core", "com{}deathmotion{}totemguard{}libs{}lettuce")
                         .resolveTransitiveDependencies(true)
                         .build(),
@@ -47,7 +47,7 @@ public class LibraryLoader {
                     Library.builder()
                             .groupId("dev{}jorel")
                             .artifactId("commandapi-bukkit-shade-mojang-mapped")
-                            .version("9.7.1-SNAPSHOT")
+                            .version("10.0.0")
                             .relocate("dev{}jorel{}commandapi", "com{}deathmotion{}totemguard{}libs{}commandapi")
                             .build()
             );
@@ -56,7 +56,7 @@ public class LibraryLoader {
                     Library.builder()
                             .groupId("dev{}jorel")
                             .artifactId("commandapi-bukkit-shade")
-                            .version("9.7.1-SNAPSHOT")
+                            .version("10.0.0")
                             .relocate("dev{}jorel{}commandapi", "com{}deathmotion{}totemguard{}libs{}commandapi")
                             .build()
             );
