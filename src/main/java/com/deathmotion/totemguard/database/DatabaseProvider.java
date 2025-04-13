@@ -28,6 +28,8 @@ import com.deathmotion.totemguard.database.repository.impl.AlertRepository;
 import com.deathmotion.totemguard.database.repository.impl.PlayerRepository;
 import com.deathmotion.totemguard.database.repository.impl.PunishmentRepository;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.logger.Level;
+import com.j256.ormlite.logger.Logger;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 import lombok.Getter;
@@ -71,6 +73,7 @@ public class DatabaseProvider {
         setConnectionSource(databaseSettings, databaseType);
 
         try {
+            Logger.setGlobalLogLevel(Level.WARNING);
             TableUtils.createTableIfNotExists(connectionSource, DatabasePlayer.class);
             TableUtils.createTableIfNotExists(connectionSource, DatabaseAlert.class);
             TableUtils.createTableIfNotExists(connectionSource, DatabasePunishment.class);
