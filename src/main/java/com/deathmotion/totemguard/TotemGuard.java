@@ -27,7 +27,6 @@ import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.redis.RedisService;
-import com.deathmotion.totemguard.util.PaperUtil;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.github.retrooper.packetevents.PacketEvents;
 import dev.jorel.commandapi.CommandAPI;
@@ -44,7 +43,6 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
-    private final boolean paper;
     private ConfigManager configManager;
     private DatabaseProvider databaseProvider;
     private MessengerService messengerService;
@@ -57,7 +55,6 @@ public final class TotemGuard extends JavaPlugin {
 
     public TotemGuard() {
         instance = this;
-        paper = PaperUtil.isPaper();
     }
 
     @Override

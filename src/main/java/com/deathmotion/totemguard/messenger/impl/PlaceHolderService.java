@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.messenger.impl;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import io.github.retrooper.packetevents.util.SpigotReflectionUtil;
+import com.deathmotion.totemguard.util.TpsUtil;
 
 public class PlaceHolderService {
     private final MessengerService messengerService;
@@ -34,7 +34,7 @@ public class PlaceHolderService {
         TotemPlayer player = check.getPlayer();
 
         return text
-                .replace("%tps%", String.format("%.2f", SpigotReflectionUtil.getTPS()))
+                .replace("%tps%", String.format("%.2f", TpsUtil.getInstance().getTps(player.bukkitPlayer.getLocation())))
                 .replace("%client_version%", player.getVersionName())
                 .replace("%client_brand%", player.getBrand())
                 .replace("%player%", player.getName())
