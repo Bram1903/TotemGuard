@@ -73,16 +73,15 @@ public final class TotemGuard extends JavaPlugin {
 
         configManager = new ConfigManager(this);
         databaseProvider = new DatabaseProvider(this);
-
         messengerService = new MessengerService(this);
         alertManager = new AlertManagerImpl(this);
         punishmentManager = new PunishmentManager(this);
         discordManager = new DiscordManager(this);
         playerDataManager = new PlayerDataManager(this);
         redisService = new RedisService(this);
+        updateChecker = new UpdateChecker(this);
 
         TotemGuardProvider.setAPI(new TotemGuardAPIImpl(this));
-        updateChecker = new UpdateChecker(this);
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit(this));
         PacketEvents.getAPI().getEventManager().registerListener(new CheckManagerPacketListener());

@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.api.TotemGuardProvider;
 import com.deathmotion.totemguard.testplugin.events.AlertsToggleEventTest;
 import com.deathmotion.totemguard.testplugin.events.FlagEventTest;
 import com.deathmotion.totemguard.testplugin.events.PunishEventTest;
-import com.deathmotion.totemguard.testplugin.events.UpdateFoundEventTest;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -46,7 +45,6 @@ public final class ApiTestPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new FlagEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new PunishEventTest(this), this);
         Bukkit.getPluginManager().registerEvents(new AlertsToggleEventTest(this), this);
-        Bukkit.getPluginManager().registerEvents(new UpdateFoundEventTest(this), this);
 
         getLogger().info("Successfully hooked into TotemGuard v" + api.getVersion());
     }

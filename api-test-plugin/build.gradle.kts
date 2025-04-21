@@ -23,6 +23,10 @@ tasks {
     shadowJar {
         archiveFileName = "APITestPlugin.jar"
         archiveClassifier = null
+
+        manifest {
+            attributes["paperweight-mappings-namespace"] = "mojang"
+        }
     }
 
     assemble {

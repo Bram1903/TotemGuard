@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.util;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.api.events.UpdateFoundEvent;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.config.Settings;
 import com.google.gson.Gson;
@@ -97,11 +96,6 @@ public class UpdateChecker {
     }
 
     private void notifyUpdateAvailable(TGVersion currentVersion, TGVersion newVersion) {
-        if (settings.isApi()) {
-            UpdateFoundEvent event = new UpdateFoundEvent(newVersion);
-            plugin.getServer().getPluginManager().callEvent(event);
-        }
-
         if (settings.getUpdateChecker().isPrintToConsole()) {
             plugin.getServer().getConsoleSender().sendMessage(Component.text("[TotemGuard] ", NamedTextColor.DARK_GREEN)
                     .append(Component.text("Update available! ", NamedTextColor.BLUE))
