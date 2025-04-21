@@ -56,6 +56,7 @@ public class ConfigManager {
     public void reload() {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             loadConfigurations();
+            plugin.getDatabaseProvider().reload();
             plugin.getRedisService().reload();
 
             // Reload checks for all players
