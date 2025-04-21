@@ -5,6 +5,7 @@ import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 
 import java.util.List;
 
-public record ProfileData(String clientBrand, List<DatabaseAlert> databaseAlertList, List<DatabasePunishment> databasePunishmentList) {
+public record ProfileData(String clientBrand, List<DatabaseAlert> databaseAlertList,
+                          List<DatabasePunishment> databasePunishmentList) {
 
 }

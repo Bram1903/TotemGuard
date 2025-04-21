@@ -9,8 +9,6 @@ plugins {
 
 dependencies {
     implementation(project(":api"))
-    implementation(files("libs/libby-core.jar"))
-    implementation(files("libs/libby-bukkit.jar"))
 
     // Provided dependencies
     compileOnly(libs.paper)
@@ -59,18 +57,9 @@ tasks {
         archiveFileName = "${rootProject.name}-${ext["versionNoHash"]}.jar"
         archiveClassifier = null
 
-        relocate("com.alessiodp.libby", "com.deathmotion.totemguard.shaded.libby")
-
-        relocate("de.exlll.configlib", "com.deathmotion.totemguard.libs.configlib")
-        relocate("dev.jorel.commandapi", "com.deathmotion.totemguard.libs.commandapi")
-        relocate("io.lettuce.core", "com.deathmotion.totemguard.libs.lettuce")
-        relocate("net.jodah.expiringmap", "com.deathmotion.totemguard.libs.expiringmap")
-
-        // Database libraries
-        relocate("com.j256.ormlite", "com.deathmotion.totemguard.libs.ormlite")
-        relocate("com.mysql", "com.deathmotion.totemguard.libs.mysql")
-        relocate("org.mariadb", "com.deathmotion.totemguard.libs.mariadb")
-        relocate("org.h2", "com.deathmotion.totemguard.libs.h2")
+        manifest {
+            attributes["paperweight-mappings-namespace"] = "mojang"
+        }
     }
 
     assemble {
@@ -101,8 +90,8 @@ tasks {
     // 1.17           = Java 16
     // 1.18 - 1.20.4  = Java 17
     // 1-20.5+        = Java 21
-    val version = "1.21.5"
-    val javaVersion = JavaLanguageVersion.of(21)
+    val version = "1.20"
+    val javaVersion = JavaLanguageVersion.of(17)
 
     val jvmArgsExternal = listOf(
         "-Dcom.mojang.eula.agree=true"

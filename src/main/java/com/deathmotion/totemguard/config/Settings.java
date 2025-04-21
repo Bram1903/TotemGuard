@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.config;
 
-import com.deathmotion.totemguard.database.DatabaseType;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
@@ -89,7 +88,7 @@ public class Settings {
     @Getter
     public static class Database {
         @Comment("Database Type: The type of database to use. (h2, mysql, mariadb)")
-        private String Type = DatabaseType.H2.getDisplayName();
+        private String Type = "h2";
 
         @Comment("\nDatabase Host: The host of the database.")
         private String Host = "localhost";

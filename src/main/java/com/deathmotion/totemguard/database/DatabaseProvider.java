@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.database;
 
-import com.alessiodp.libby.LibraryManager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.config.Settings;
 import com.deathmotion.totemguard.database.entities.DatabaseAlert;
@@ -27,7 +26,11 @@ import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 import com.deathmotion.totemguard.database.repository.impl.AlertRepository;
 import com.deathmotion.totemguard.database.repository.impl.PlayerRepository;
 import com.deathmotion.totemguard.database.repository.impl.PunishmentRepository;
+import com.j256.ormlite.db.BaseDatabaseType;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.db.H2DatabaseType;
+import com.j256.ormlite.jdbc.db.MariaDbDatabaseType;
+import com.j256.ormlite.jdbc.db.MysqlDatabaseType;
 import com.j256.ormlite.logger.Level;
 import com.j256.ormlite.logger.Logger;
 import com.j256.ormlite.support.ConnectionSource;
@@ -37,12 +40,12 @@ import lombok.Getter;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Getter
 public class DatabaseProvider {
 
     private final TotemGuard plugin;
-    private final LibraryManager libraryManager;
 
     private final List<String> loadedDatabaseDrivers = new ArrayList<>();
 
@@ -55,22 +58,12 @@ public class DatabaseProvider {
 
     public DatabaseProvider(TotemGuard plugin) {
         this.plugin = plugin;
-        this.libraryManager = plugin.getLibraryManager();
         init();
     }
 
     private void init() {
         Settings.Database databaseSettings = plugin.getConfigManager().getSettings().getDatabase();
-        DatabaseType databaseType = DatabaseType.fromString(databaseSettings.getType());
-
-        if (!loadedDatabaseDrivers.contains(databaseType.getDisplayName())) {
-            plugin.getLogger().info(String.format("Loading %s driver version %s", databaseType.getDisplayName(), databaseType.getDatabaseDriver().getVersion()));
-            libraryManager.loadLibrary(databaseType.getDatabaseDriver());
-            loadedDatabaseDrivers.add(databaseType.getDisplayName());
-        }
-
-
-        setConnectionSource(databaseSettings, databaseType);
+        setConnectionSource(databaseSettings);
 
         try {
             Logger.setGlobalLogLevel(Level.WARNING);
@@ -116,16 +109,26 @@ public class DatabaseProvider {
         if (punishmentRepository != null) punishmentRepository = null;
     }
 
-    private void setConnectionSource(Settings.Database databaseSettings, DatabaseType databaseType) {
-        String jdbcURL = switch (databaseType) {
-            case H2 ->
-                    String.format(databaseType.getConnectionString(), plugin.getDataFolder().getAbsolutePath() + "/db/data");
-            case MYSQL, MARIADB ->
-                    String.format(databaseType.getConnectionString(), databaseSettings.getHost(), databaseSettings.getPort(), databaseSettings.getName());
+    private void setConnectionSource(Settings.Database databaseSettings) {
+        String jdbcURL;
+        BaseDatabaseType databaseType = switch (databaseSettings.getType().toLowerCase(Locale.ROOT)) {
+            case "h2" -> {
+                jdbcURL = String.format("jdbc:h2:file:%s", plugin.getDataFolder().getAbsolutePath() + "/db/data");
+                yield new H2DatabaseType();
+            }
+            case "mysql" -> {
+                jdbcURL = String.format("jdbc:mysql://%s:%d/%s", databaseSettings.getHost(), databaseSettings.getPort(), databaseSettings.getName());
+                yield new MysqlDatabaseType();
+            }
+            case "mariadb" -> {
+                jdbcURL = String.format("jdbc:mariadb://%s:%d/%s", databaseSettings.getHost(), databaseSettings.getPort(), databaseSettings.getName());
+                yield new MariaDbDatabaseType();
+            }
+            default -> throw new IllegalArgumentException("Unsupported database type: " + databaseSettings.getType());
         };
 
         try {
-            connectionSource = new JdbcConnectionSource(jdbcURL, databaseSettings.getUsername(), databaseSettings.getPassword(), databaseType.getDatabaseType());
+            connectionSource = new JdbcConnectionSource(jdbcURL, databaseSettings.getUsername(), databaseSettings.getPassword(), databaseType);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
