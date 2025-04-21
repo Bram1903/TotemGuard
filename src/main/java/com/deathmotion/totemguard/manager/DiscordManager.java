@@ -28,7 +28,6 @@ import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.config.Webhooks;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.TpsUtil;
-import io.github.retrooper.packetevents.util.SpigotReflectionUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
