@@ -1,13 +1,13 @@
 [versions]
-paper = "1.21.4-R0.1-SNAPSHOT"
-packetevents = "2.8.0-SNAPSHOT"
-lombok = "1.18.36"
-shadow = "8.3.5"
+paper = "1.21.5-R0.1-SNAPSHOT"
+packetevents = "2.8.0"
+lombok = "1.18.38"
+shadow = "8.3.6"
 run-paper = "2.3.1"
 configlib = "4.5.0"
 discord-webhooks = "0.8.0"
 lettuce = "6.5.5.RELEASE"
-commandapi = "10.0.0"
+commandapi = "10.0.1"
 expiringmap = "0.5.11"
 ormlite = "6.1"
 
