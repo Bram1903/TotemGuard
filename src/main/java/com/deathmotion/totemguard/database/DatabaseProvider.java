@@ -28,6 +28,8 @@ import com.deathmotion.totemguard.database.repository.impl.PlayerRepository;
 import com.deathmotion.totemguard.database.repository.impl.PunishmentRepository;
 import com.j256.ormlite.db.BaseDatabaseType;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
+import com.j256.ormlite.jdbc.JdbcSingleConnectionSource;
 import com.j256.ormlite.jdbc.db.H2DatabaseType;
 import com.j256.ormlite.jdbc.db.MariaDbDatabaseType;
 import com.j256.ormlite.jdbc.db.MysqlDatabaseType;
@@ -110,27 +112,48 @@ public class DatabaseProvider {
     }
 
     private void setConnectionSource(Settings.Database databaseSettings) {
-        String jdbcURL;
+        String rawUrl;
         BaseDatabaseType databaseType = switch (databaseSettings.getType().toLowerCase(Locale.ROOT)) {
             case "h2" -> {
-                jdbcURL = String.format("jdbc:h2:file:%s", plugin.getDataFolder().getAbsolutePath() + "/db/data");
+                rawUrl = String.format(
+                        "jdbc:h2:file:%s;DB_CLOSE_DELAY=-1",
+                        plugin.getDataFolder().getAbsolutePath() + "/db/data"
+                );
                 yield new H2DatabaseType();
             }
             case "mysql" -> {
-                jdbcURL = String.format("jdbc:mysql://%s:%d/%s", databaseSettings.getHost(), databaseSettings.getPort(), databaseSettings.getName());
+                rawUrl = String.format(
+                        "jdbc:mysql://%s:%d/%s?autoReconnect=true&useSSL=false",
+                        databaseSettings.getHost(),
+                        databaseSettings.getPort(),
+                        databaseSettings.getName()
+                );
                 yield new MysqlDatabaseType();
             }
             case "mariadb" -> {
-                jdbcURL = String.format("jdbc:mariadb://%s:%d/%s", databaseSettings.getHost(), databaseSettings.getPort(), databaseSettings.getName());
+                rawUrl = String.format(
+                        "jdbc:mariadb://%s:%d/%s?autoReconnect=true&useSSL=false",
+                        databaseSettings.getHost(),
+                        databaseSettings.getPort(),
+                        databaseSettings.getName()
+                );
                 yield new MariaDbDatabaseType();
             }
-            default -> throw new IllegalArgumentException("Unsupported database type: " + databaseSettings.getType());
+            default -> throw new IllegalArgumentException(
+                    "Unsupported database type: " + databaseSettings.getType()
+            );
         };
 
         try {
-            connectionSource = new JdbcConnectionSource(jdbcURL, databaseSettings.getUsername(), databaseSettings.getPassword(), databaseType);
+            connectionSource = new JdbcConnectionSource(
+                    rawUrl,
+                    databaseSettings.getUsername(),
+                    databaseSettings.getPassword(),
+                    databaseType
+            );
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
+
 }
