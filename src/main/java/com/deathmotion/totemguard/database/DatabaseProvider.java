@@ -28,8 +28,6 @@ import com.deathmotion.totemguard.database.repository.impl.PlayerRepository;
 import com.deathmotion.totemguard.database.repository.impl.PunishmentRepository;
 import com.j256.ormlite.db.BaseDatabaseType;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
-import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
-import com.j256.ormlite.jdbc.JdbcSingleConnectionSource;
 import com.j256.ormlite.jdbc.db.H2DatabaseType;
 import com.j256.ormlite.jdbc.db.MariaDbDatabaseType;
 import com.j256.ormlite.jdbc.db.MysqlDatabaseType;
