@@ -145,15 +145,6 @@ public class AlertManagerImpl implements AlertManager {
     }
 
     /**
-     * Removes a player's UUID from the alert list, effectively disabling alerts for them.
-     *
-     * @param playerId The player's UUID to remove from active alerts.
-     */
-    public void removePlayer(UUID playerId) {
-        enabledAlerts.remove(playerId);
-    }
-
-    /**
      * Checks if a given player has alerts enabled.
      *
      * @param player The player to check.
