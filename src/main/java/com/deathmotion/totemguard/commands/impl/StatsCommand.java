@@ -20,30 +20,28 @@ package com.deathmotion.totemguard.commands.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.database.DatabaseProvider;
-import com.deathmotion.totemguard.database.entities.DatabaseAlert;
-import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 import com.deathmotion.totemguard.messenger.impl.StatsMessageService;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.executors.CommandArguments;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.command.CommandSender;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.List;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class StatsCommand {
 
     private final TotemGuard plugin;
     private final DatabaseProvider databaseProvider;
     private final StatsMessageService statsMessageService;
-    private final ZoneId zoneId;
 
     public StatsCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseProvider = plugin.getDatabaseProvider();
         this.statsMessageService = plugin.getMessengerService().getStatsMessageService();
-        this.zoneId = ZoneId.systemDefault();
     }
 
     public CommandAPICommand init() {
@@ -55,42 +53,97 @@ public class StatsCommand {
     private void onCommand(CommandSender sender, CommandArguments args) {
         sender.sendMessage(statsMessageService.statsLoading());
 
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            List<DatabasePunishment> punishments = databaseProvider.getPunishmentRepository().retrievePunishments();
-            List<DatabaseAlert> alerts = databaseProvider.getAlertRepository().retrieveAlerts();
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, task -> {
+            Instant now      = Instant.now();
+            Instant dayAgo   = now.minus(1,  ChronoUnit.DAYS);
+            Instant weekAgo  = now.minus(7,  ChronoUnit.DAYS);
+            Instant monthAgo = now.minus(30, ChronoUnit.DAYS);
 
-            int punishmentCount = punishments.size();
-            int alertCount = alerts.size();
+            ExecutorService dbExec = Executors.newFixedThreadPool(4);
 
-            long punishmentsLast30Days = countPunishmentsSince(punishments, 30);
-            long punishmentsLast7Days = countPunishmentsSince(punishments, 7);
-            long punishmentsLastDay = countPunishmentsSince(punishments, 1);
+            CompletableFuture<Long> totalPunishments = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getPunishmentRepository().countAllPunishments();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
+            CompletableFuture<Long> punishments30 = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getPunishmentRepository().countPunishmentsSince(monthAgo);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
+            CompletableFuture<Long> punishments7 = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getPunishmentRepository().countPunishmentsSince(weekAgo);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
+            CompletableFuture<Long> punishments1 = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getPunishmentRepository().countPunishmentsSince(dayAgo);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
 
-            long alertsLast30Days = countAlertsSince(alerts, 30);
-            long alertsLast7Days = countAlertsSince(alerts, 7);
-            long alertsLastDay = countAlertsSince(alerts, 1);
+            CompletableFuture<Long> totalAlerts = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getAlertRepository().countAllAlerts();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
+            CompletableFuture<Long> alerts30 = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getAlertRepository().countAlertsSince(monthAgo);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
+            CompletableFuture<Long> alerts7 = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getAlertRepository().countAlertsSince(weekAgo);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
+            CompletableFuture<Long> alerts1 = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return databaseProvider.getAlertRepository().countAlertsSince(dayAgo);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, dbExec);
 
-            sender.sendMessage(statsMessageService.stats(punishmentCount, alertCount, punishmentsLast30Days, punishmentsLast7Days, punishmentsLastDay, alertsLast30Days, alertsLast7Days, alertsLastDay));
+            // 4) when all done, unbox to int and send
+            CompletableFuture
+                    .allOf(
+                            totalPunishments, punishments30, punishments7, punishments1,
+                            totalAlerts,      alerts30,      alerts7,      alerts1
+                    )
+                    .whenComplete((__, ex) -> {
+                        if (ex != null) {
+                            sender.sendMessage("§cFailed to load stats: " + ex.getCause().getMessage());
+                        } else {
+                            // stats(punishmentCount, alertCount, p30, p7, p1, a30, a7, a1)
+                            sender.sendMessage(statsMessageService.stats(
+                                    totalPunishments.join().intValue(),
+                                    totalAlerts.join().intValue(),
+                                    punishments30.join().intValue(),
+                                    punishments7.join().intValue(),
+                                    punishments1.join().intValue(),
+                                    alerts30.join().intValue(),
+                                    alerts7.join().intValue(),
+                                    alerts1.join().intValue()
+                            ));
+                        }
+                        dbExec.shutdown();
+                    });
         });
     }
-
-    private long countPunishmentsSince(List<DatabasePunishment> punishments, int days) {
-        LocalDate dateThreshold = LocalDate.now().minusDays(days);
-        return punishments.stream()
-                .filter(punishment -> punishment.getWhenCreated()
-                        .atZone(zoneId)
-                        .toLocalDate()
-                        .isAfter(dateThreshold))
-                .count();
-    }
-
-    private long countAlertsSince(List<DatabaseAlert> alerts, int days) {
-        LocalDate dateThreshold = LocalDate.now().minusDays(days);
-        return alerts.stream()
-                .filter(alert -> alert.getWhenCreated()
-                        .atZone(zoneId)
-                        .toLocalDate()
-                        .isAfter(dateThreshold))
-                .count();
-    }
 }
+

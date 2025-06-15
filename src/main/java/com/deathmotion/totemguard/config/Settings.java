@@ -104,5 +104,8 @@ public class Settings {
 
         @Comment("\nDatabase Password: The password of the database.")
         private String Password = "password";
+
+        @Comment("\nDatabase Connection Pool Size: The size of the connection pool.")
+        private int connectionPoolSize = 4;
     }
 }

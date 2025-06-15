@@ -32,6 +32,7 @@ public enum Library {
 
     // Database
     ORMLITE("com.j256.ormlite", "ormlite-jdbc", "6.1"),
+    HIKARI_CP("com.zaxxer", "HikariCP", "6.3.0"),
     MYSQL("com.mysql", "mysql-connector-j", "9.0.0"),
     MARIADB("org.mariadb.jdbc", "mariadb-java-client", "3.4.1"),
     H2("com.h2database", "h2", "2.2.220");

@@ -10,6 +10,7 @@ lettuce = "6.5.5.RELEASE"
 commandapi = "10.0.1"
 expiringmap = "0.5.11"
 ormlite = "6.1"
+hikaricp = "6.3.0"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
@@ -21,6 +22,7 @@ lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce"
 commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade", version.ref = "commandapi" }
 expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
 ormlite = { group = "com.j256.ormlite", name = "ormlite-jdbc", version.ref = "ormlite" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

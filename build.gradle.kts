@@ -23,6 +23,7 @@ dependencies {
     compileOnly(libs.expiringmap)
     compileOnly(libs.discord.webhooks)
     compileOnly(libs.ormlite)
+    compileOnly(libs.hikaricp)
 }
 
 group = "com.deathmotion.totemguard"

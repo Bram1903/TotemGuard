@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.database.repository.BaseRepository;
 import com.j256.ormlite.stmt.DeleteBuilder;
 import com.j256.ormlite.stmt.QueryBuilder;
 
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -47,17 +48,11 @@ public class PunishmentRepository extends BaseRepository<DatabasePunishment, UUI
         if (dbPlayer == null) {
             dbPlayer = databaseProvider.getPlayerRepository().retrieveOrRefreshPlayer(check.getPlayer());
         }
-
         DatabasePunishment punishment = new DatabasePunishment();
         punishment.setCheckName(check.getCheckName());
         punishment.setWhenCreated(Date.from(Instant.now()));
         punishment.setPlayer(dbPlayer);
-
         save(punishment);
-    }
-
-    public List<DatabasePunishment> retrievePunishments() {
-        return findAll();
     }
 
     public List<DatabasePunishment> findPunishmentsByPlayer(DatabasePlayer player) {
@@ -86,5 +81,31 @@ public class PunishmentRepository extends BaseRepository<DatabasePunishment, UUI
 
     public int deleteAllPunishments() {
         return execute(() -> dao.deleteBuilder().delete());
+    }
+
+    public long countAllPunishments() throws SQLException {
+        return dao.countOf();
+    }
+
+    public long countPunishmentsSince(Instant cutoff) throws SQLException {
+        QueryBuilder<DatabasePunishment, UUID> qb = dao.queryBuilder();
+        qb.setCountOf(true)
+                .where().ge(CREATION_TIMESTAMP_COLUMN, Date.from(cutoff));
+        return dao.countOf(qb.prepare());
+    }
+
+    public long countPunishmentsForPlayer(UUID playerUuid) throws SQLException {
+        QueryBuilder<DatabasePunishment, UUID> qb = dao.queryBuilder();
+        qb.setCountOf(true)
+                .where().eq(PLAYER_COLUMN, playerUuid);
+        return dao.countOf(qb.prepare());
+    }
+
+    public List<DatabasePunishment> findRecentPunishmentsForPlayer(UUID playerUuid, int limit) throws SQLException {
+        QueryBuilder<DatabasePunishment, UUID> qb = dao.queryBuilder();
+        qb.where().eq(PLAYER_COLUMN, playerUuid);
+        qb.orderBy(CREATION_TIMESTAMP_COLUMN, false);
+        qb.limit((long) limit);
+        return qb.query();
     }
 }

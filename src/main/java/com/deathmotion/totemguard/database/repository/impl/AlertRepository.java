@@ -26,12 +26,14 @@ import com.deathmotion.totemguard.database.repository.BaseRepository;
 import com.j256.ormlite.stmt.DeleteBuilder;
 import com.j256.ormlite.stmt.QueryBuilder;
 
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 public class AlertRepository extends BaseRepository<DatabaseAlert, UUID> {
+
     private static final String PLAYER_COLUMN = "totemguard_player_uuid";
     private static final String CREATION_TIMESTAMP_COLUMN = "when_created";
     private final DatabaseProvider databaseProvider;
@@ -42,25 +44,15 @@ public class AlertRepository extends BaseRepository<DatabaseAlert, UUID> {
     }
 
     public void storeAlert(Check check) {
-        // Make sure we have a valid player in the database
         DatabasePlayer dbPlayer = check.getPlayer().databasePlayer;
         if (dbPlayer == null) {
-            // If not present, retrieve or refresh
             dbPlayer = databaseProvider.getPlayerRepository().retrieveOrRefreshPlayer(check.getPlayer());
         }
-
-        // Create and populate the new alert
         DatabaseAlert alert = new DatabaseAlert();
         alert.setCheckName(check.getCheckName());
         alert.setWhenCreated(Date.from(Instant.now()));
         alert.setPlayer(dbPlayer);
-
-        // Save alert to the DB
         save(alert);
-    }
-
-    public List<DatabaseAlert> retrieveAlerts() {
-        return findAll();
     }
 
     public List<DatabaseAlert> findAlertsByPlayer(DatabasePlayer player) {
@@ -89,5 +81,39 @@ public class AlertRepository extends BaseRepository<DatabaseAlert, UUID> {
 
     public int deleteAllAlerts() {
         return execute(() -> dao.deleteBuilder().delete());
+    }
+
+    public long countAllAlerts() throws SQLException {
+        return dao.countOf();
+    }
+
+    public long countAlertsSince(Instant cutoff) throws SQLException {
+        QueryBuilder<DatabaseAlert, UUID> qb = dao.queryBuilder();
+        qb.setCountOf(true)
+                .where().ge(CREATION_TIMESTAMP_COLUMN, Date.from(cutoff));
+        return dao.countOf(qb.prepare());
+    }
+
+    public long countAlertsForPlayer(UUID playerUuid) throws SQLException {
+        QueryBuilder<DatabaseAlert, UUID> qb = dao.queryBuilder();
+        qb.setCountOf(true).where().eq(PLAYER_COLUMN, playerUuid);
+        return dao.countOf(qb.prepare());
+    }
+
+    public long countAlertsSinceForPlayer(UUID playerUuid, Instant cutoff) throws SQLException {
+        QueryBuilder<DatabaseAlert, UUID> qb = dao.queryBuilder();
+        qb.setCountOf(true)
+                .where()
+                .eq(PLAYER_COLUMN, playerUuid)
+                .and().ge(CREATION_TIMESTAMP_COLUMN, Date.from(cutoff));
+        return dao.countOf(qb.prepare());
+    }
+
+    public List<DatabaseAlert> findRecentAlertsForPlayer(UUID playerUuid, int limit) throws SQLException {
+        QueryBuilder<DatabaseAlert, UUID> qb = dao.queryBuilder();
+        qb.where().eq(PLAYER_COLUMN, playerUuid);
+        qb.orderBy(CREATION_TIMESTAMP_COLUMN, false);
+        qb.limit((long) limit);
+        return qb.query();
     }
 }

@@ -27,29 +27,25 @@ import com.deathmotion.totemguard.database.repository.impl.AlertRepository;
 import com.deathmotion.totemguard.database.repository.impl.PlayerRepository;
 import com.deathmotion.totemguard.database.repository.impl.PunishmentRepository;
 import com.j256.ormlite.db.BaseDatabaseType;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.DataSourceConnectionSource;
 import com.j256.ormlite.jdbc.db.H2DatabaseType;
 import com.j256.ormlite.jdbc.db.MariaDbDatabaseType;
 import com.j256.ormlite.jdbc.db.MysqlDatabaseType;
-import com.j256.ormlite.logger.Level;
 import com.j256.ormlite.logger.Logger;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.Getter;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
 
 @Getter
-public class DatabaseProvider {
-
+public final class DatabaseProvider {
     private final TotemGuard plugin;
-
-    private final List<String> loadedDatabaseDrivers = new ArrayList<>();
-
-    @Getter
+    private HikariDataSource dataSource;
     private ConnectionSource connectionSource;
     private PlayerRepository playerRepository;
     private AlertRepository alertRepository;
@@ -62,11 +58,17 @@ public class DatabaseProvider {
     }
 
     private void init() {
-        Settings.Database databaseSettings = plugin.getConfigManager().getSettings().getDatabase();
-        setConnectionSource(databaseSettings);
+        Settings.Database cfg = plugin.getConfigManager().getSettings().getDatabase();
+        this.dataSource = createDataSource(cfg);
 
         try {
-            Logger.setGlobalLogLevel(Level.WARNING);
+            this.connectionSource = new DataSourceConnectionSource(dataSource, getDatabaseType(cfg.getType()));
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to initialize ConnectionSource", e);
+        }
+
+        try {
+            Logger.setGlobalLogLevel(com.j256.ormlite.logger.Level.WARNING);
             TableUtils.createTableIfNotExists(connectionSource, DatabasePlayer.class);
             TableUtils.createTableIfNotExists(connectionSource, DatabaseAlert.class);
             TableUtils.createTableIfNotExists(connectionSource, DatabasePunishment.class);
@@ -80,12 +82,11 @@ public class DatabaseProvider {
              */
         }
 
-        playerRepository = new PlayerRepository(this);
-        alertRepository = new AlertRepository(this);
-        punishmentRepository = new PunishmentRepository(this);
-        genericService = new DatabaseService(this);
-
-        plugin.getLogger().info("Database repository initialized");
+        this.playerRepository = new PlayerRepository(this);
+        this.alertRepository = new AlertRepository(this);
+        this.punishmentRepository = new PunishmentRepository(this);
+        this.genericService = new DatabaseService(this);
+        plugin.getLogger().info("Database provider initialized");
     }
 
     public void reload() {
@@ -94,64 +95,68 @@ public class DatabaseProvider {
     }
 
     public void close() {
-        if (connectionSource != null) {
-            try {
-                connectionSource.close();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            connectionSource = null;
-        }
-
-        if (playerRepository != null) playerRepository = null;
-        if (alertRepository != null) alertRepository = null;
-        if (punishmentRepository != null) punishmentRepository = null;
-    }
-
-    private void setConnectionSource(Settings.Database databaseSettings) {
-        String rawUrl;
-        BaseDatabaseType databaseType = switch (databaseSettings.getType().toLowerCase(Locale.ROOT)) {
-            case "h2" -> {
-                rawUrl = String.format(
-                        "jdbc:h2:file:%s;DB_CLOSE_DELAY=-1",
-                        plugin.getDataFolder().getAbsolutePath() + "/db/data"
-                );
-                yield new H2DatabaseType();
-            }
-            case "mysql" -> {
-                rawUrl = String.format(
-                        "jdbc:mysql://%s:%d/%s?autoReconnect=true&useSSL=false",
-                        databaseSettings.getHost(),
-                        databaseSettings.getPort(),
-                        databaseSettings.getName()
-                );
-                yield new MysqlDatabaseType();
-            }
-            case "mariadb" -> {
-                rawUrl = String.format(
-                        "jdbc:mariadb://%s:%d/%s?autoReconnect=true&useSSL=false",
-                        databaseSettings.getHost(),
-                        databaseSettings.getPort(),
-                        databaseSettings.getName()
-                );
-                yield new MariaDbDatabaseType();
-            }
-            default -> throw new IllegalArgumentException(
-                    "Unsupported database type: " + databaseSettings.getType()
-            );
-        };
-
         try {
-            connectionSource = new JdbcConnectionSource(
-                    rawUrl,
-                    databaseSettings.getUsername(),
-                    databaseSettings.getPassword(),
-                    databaseType
-            );
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            if (connectionSource != null) {
+                connectionSource.close();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Error closing ConnectionSource", e);
+        }
+        if (dataSource != null) {
+            dataSource.close();
         }
     }
 
+    private HikariDataSource createDataSource(Settings.Database cfg) {
+        HikariConfig config = new HikariConfig();
+        // Register driver explicitly to ensure DriverManager can find it
+        String type = cfg.getType().toLowerCase(Locale.ROOT);
+        switch (type) {
+            case "h2" -> config.setDriverClassName("org.h2.Driver");
+            case "mysql" -> config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+            case "mariadb" -> config.setDriverClassName("org.mariadb.jdbc.Driver");
+            default -> throw new IllegalArgumentException("Unsupported DB type: " + cfg.getType());
+        }
+        config.setJdbcUrl(getJdbcUrl(cfg));
+        config.setUsername(cfg.getUsername());
+        config.setPassword(cfg.getPassword());
+
+        // Ensure pool keeps all connections open indefinitely
+        config.setMaximumPoolSize(cfg.getConnectionPoolSize());
+        config.setMinimumIdle(cfg.getConnectionPoolSize());
+        config.setIdleTimeout(0);
+        config.setMaxLifetime(0);
+        return new HikariDataSource(config);
+    }
+
+    private String getJdbcUrl(Settings.Database cfg) {
+        return switch (cfg.getType().toLowerCase(Locale.ROOT)) {
+            case "h2" -> String.format(
+                    "jdbc:h2:file:%s;DB_CLOSE_DELAY=-1",
+                    plugin.getDataFolder().getAbsolutePath() + "/db/data"
+            );
+            case "mysql" -> String.format(
+                    // Enable driver auto-reconnect
+                    "jdbc:mysql://%s:%d/%s?autoReconnect=true&useSSL=false",
+                    cfg.getHost(), cfg.getPort(), cfg.getName()
+            );
+            case "mariadb" -> String.format(
+                    // Enable driver auto-reconnect
+                    "jdbc:mariadb://%s:%d/%s?autoReconnect=true&useSSL=false",
+                    cfg.getHost(), cfg.getPort(), cfg.getName()
+            );
+            default -> throw new IllegalArgumentException("Unsupported DB type: " + cfg.getType());
+        };
+    }
+
+    private BaseDatabaseType getDatabaseType(String type) {
+        return switch (type.toLowerCase(Locale.ROOT)) {
+            case "h2" -> new H2DatabaseType();
+            case "mysql" -> new MysqlDatabaseType();
+            case "mariadb" -> new MariaDbDatabaseType();
+            default -> throw new IllegalArgumentException("Unsupported DB type: " + type);
+        };
+    }
 }
+
+

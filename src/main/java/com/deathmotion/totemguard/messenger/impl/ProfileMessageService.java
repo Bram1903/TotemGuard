@@ -52,14 +52,16 @@ public class ProfileMessageService {
     }
 
     public Component createProfileMessage(String username,
-                                          String clientBrand, List<DatabaseAlert> alerts,
-                                          List<DatabasePunishment> punishments,
+                                          String clientBrand,
+                                          int totalAlerts,
+                                          int totalPunishments,
                                           long loadTime,
-                                          SafetyStatus safetyStatus) {
+                                          SafetyStatus safetyStatus,
+                                          List<DatabaseAlert> alerts,
+                                          List<DatabasePunishment> punishments) {
 
         Messages messages = plugin.getConfigManager().getMessages();
-        Messages.CommandMessages.ProfileCommand.ProfileFormat format =
-                messages.getCommandMessages().getProfileCommand().getProfileFormat();
+        Messages.CommandMessages.ProfileCommand.ProfileFormat format = messages.getCommandMessages().getProfileCommand().getProfileFormat();
 
         String profileTemplate = format.getProfileFormat();
         Component alertSummary = buildAlertSummary(alerts, format.getAlertSummary(), format.getNoAlertsFound());
@@ -69,8 +71,8 @@ public class ProfileMessageService {
                 profileTemplate,
                 username,
                 clientBrand,
-                alerts,
-                punishments,
+                totalAlerts,
+                totalPunishments,
                 loadTime,
                 safetyStatus
         );
@@ -84,8 +86,9 @@ public class ProfileMessageService {
 
     public String replacePlaceholders(String text,
                                       String username,
-                                      String clientBrand, List<DatabaseAlert> alerts,
-                                      List<DatabasePunishment> punishments,
+                                      String clientBrand,
+                                      int totalAlerts,
+                                      int totalPunishments,
                                       long loadTime,
                                       SafetyStatus safetyStatus) {
 
@@ -93,8 +96,8 @@ public class ProfileMessageService {
                 .replace("%player%", username)
                 .replace("%client_brand%", clientBrand)
                 .replace("%safety_status%", messengerService.unformat(safetyStatus.toComponent()))
-                .replace("%total_alerts%", String.valueOf(alerts.size()))
-                .replace("%total_punishments%", String.valueOf(punishments.size()))
+                .replace("%total_alerts%", String.valueOf(totalAlerts))
+                .replace("%total_punishments%", String.valueOf(totalPunishments))
                 .replace("%load_time%", String.valueOf(loadTime));
     }
 
