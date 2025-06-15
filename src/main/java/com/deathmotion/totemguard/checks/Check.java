@@ -40,10 +40,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Check implements AbstractCheck {
     protected final TotemPlayer player;
     private final AtomicInteger violations = new AtomicInteger();
+
     protected Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
     protected Messages messages = TotemGuard.getInstance().getConfigManager().getMessages();
     protected Pair<TextColor, TextColor> color;
     protected AbstractCheckSettings checkSettings;
+
     private String checkName;
     private String description;
     private boolean experimental;
@@ -93,6 +95,10 @@ public class Check implements AbstractCheck {
     }
 
     public boolean shouldFail() {
+        if (!checkSettings.isEnabled()) {
+            return false;
+        }
+
         if (settings.isApi()) {
             FlagEvent event = new FlagEvent(player, this);
             Bukkit.getPluginManager().callEvent(event);
