@@ -54,9 +54,9 @@ public class StatsCommand {
         sender.sendMessage(statsMessageService.statsLoading());
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, task -> {
-            Instant now      = Instant.now();
-            Instant dayAgo   = now.minus(1,  ChronoUnit.DAYS);
-            Instant weekAgo  = now.minus(7,  ChronoUnit.DAYS);
+            Instant now = Instant.now();
+            Instant dayAgo = now.minus(1, ChronoUnit.DAYS);
+            Instant weekAgo = now.minus(7, ChronoUnit.DAYS);
             Instant monthAgo = now.minus(30, ChronoUnit.DAYS);
 
             ExecutorService dbExec = Executors.newFixedThreadPool(4);
@@ -123,7 +123,7 @@ public class StatsCommand {
             CompletableFuture
                     .allOf(
                             totalPunishments, punishments30, punishments7, punishments1,
-                            totalAlerts,      alerts30,      alerts7,      alerts1
+                            totalAlerts, alerts30, alerts7, alerts1
                     )
                     .whenComplete((__, ex) -> {
                         if (ex != null) {
