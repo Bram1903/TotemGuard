@@ -113,7 +113,7 @@ public class Checks {
         private int clickTimeDifference = 75;
 
         public AutoTotemA() {
-            super(true, 2);
+            super(true, 4);
         }
     }
 
@@ -130,7 +130,7 @@ public class Checks {
         private int ConsecutiveLowSDCount = 3;
 
         public AutoTotemB() {
-            super(true, 6);
+            super(true, 12);
         }
     }
 
@@ -144,7 +144,7 @@ public class Checks {
         private int ConsecutiveViolations = 3;
 
         public AutoTotemC() {
-            super(true, 3);
+            super(false, 6);
         }
     }
 
@@ -161,7 +161,7 @@ public class Checks {
         private int Tolerance = 5;
 
         public AutoTotemD() {
-            super(true, 2);
+            super(true, 3);
         }
     }
 
@@ -175,7 +175,7 @@ public class Checks {
         private double AverageStDeviationThreshold = 10.0;
 
         public AutoTotemE() {
-            super(true, 4);
+            super(false, 4);
         }
     }
 
@@ -186,7 +186,7 @@ public class Checks {
         private int TimeDifference = 1500;
 
         public AutoTotemF() {
-            super(false, 6);
+            super(false, 20);
         }
     }
 
@@ -215,7 +215,7 @@ public class Checks {
     @Getter
     public static class BadPacketsC extends CheckSettings {
         public BadPacketsC() {
-            super(true, 20, 3);
+            super(false, 20, 10);
         }
     }
 
