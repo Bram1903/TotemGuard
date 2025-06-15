@@ -33,6 +33,7 @@ import lombok.Getter;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.logging.Level;
 
 @Getter
@@ -72,6 +73,26 @@ public class ConfigManager {
         checks = loadConfigFile(getChecksFile(), Checks.class, properties, "Failed to load checks file");
         messages = loadConfigFile(getMessagesFile(), Messages.class, properties, "Failed to load messages file");
         webhooks = loadConfigFile(getWebhookFile(), Webhooks.class, properties, "Failed to load webhooks file");
+
+        String cmd = settings.getCommand();
+        cmd = cmd.toLowerCase(Locale.ROOT);
+        if (!cmd.matches("[a-z]+")) {
+            plugin.getLogger().severe("Invalid command '" + cmd + "'. It must consist of lowercase letters only. " +
+                    "Please change it in the config.yml file. Falling back to default command 'totemguard'.");
+
+            cmd = "totemguard";
+        }
+        settings.setCommand(cmd);
+
+        String alias = settings.getCommandAlias();
+        alias = alias.toLowerCase(Locale.ROOT);
+        if (!alias.matches("[a-z]+")) {
+            plugin.getLogger().severe("Invalid command alias '" + alias + "'. It must consist of lowercase letters only. " +
+                    "Please change it in the config.yml file. Falling back to default alias 'tg'.");
+
+            alias = "tg";
+        }
+        settings.setCommandAlias(alias);
     }
 
     private File getSettingsFile() {

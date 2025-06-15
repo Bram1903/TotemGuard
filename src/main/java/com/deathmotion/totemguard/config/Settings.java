@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.config;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;
+import lombok.Setter;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Configuration
@@ -31,6 +32,14 @@ public class Settings {
 
     @Comment("\nServer Name: The name of the server. (Used for alerts, webhooks, API, etc.)")
     private String server = "Default";
+
+    @Comment("\nName of the root command for TotemGuard. (This requires a server restart to take effect.)")
+    @Setter
+    private String command = "totemguard";
+
+    @Comment("\nAlias for the root command. This allows using a shorter command. (Requires a server restart to take effect.)")
+    @Setter
+    private String commandAlias = "tg";
 
     @Comment("\nBypass: Whether players with the permission 'totemguard.bypass' can bypass checks.")
     private boolean bypass = false;
@@ -44,11 +53,11 @@ public class Settings {
     @Comment("\nRedis Configuration")
     private Redis redis = new Redis();
 
-    @Comment("\nUpdate Checker Settings:")
-    private UpdateChecker updateChecker = new UpdateChecker();
-
     @Comment("\nDatabase Settings:")
     private Database database = new Database();
+
+    @Comment("\nUpdate Checker Settings:")
+    private UpdateChecker updateChecker = new UpdateChecker();
 
     @Comment("\nDebug: Enables debug mode (Advanced Users Only).")
     private boolean debug = false;

@@ -59,16 +59,17 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onLoad() {
+        configManager = new ConfigManager(this);
+
         CommandAPI.setLogger(CommandAPILogger.fromJavaLogger(getLogger()));
         CommandAPIBukkitConfig config = new CommandAPIBukkitConfig(this);
+        config.setNamespace(configManager.getSettings().getCommand());
         CommandAPI.onLoad(config);
     }
 
     @Override
     public void onEnable() {
         CommandAPI.onEnable();
-
-        configManager = new ConfigManager(this);
         databaseProvider = new DatabaseProvider(this);
         messengerService = new MessengerService(this);
         alertManager = new AlertManagerImpl(this);
