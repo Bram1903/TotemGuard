@@ -22,6 +22,7 @@ permissions:
       TotemGuard.Check: true
       TotemGuard.Alerts: true
       TotemGuard.Alerts.Others: true
+      TotemGuard.Alerts.EnableOnJoin: true
       TotemGuard.Profile: true
       TotemGuard.Stats: true
       TotemGuard.ClearLogs: true
