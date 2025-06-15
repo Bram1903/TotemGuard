@@ -361,7 +361,7 @@ public class CheckCommand {
      */
     private void restorePlayerState(Player player, double health, ItemStack[] inventoryContents, int foodLevel, float saturation, Collection<PotionEffect> effects) {
         // Schedule restoration on the global region scheduler (main thread) to avoid concurrency issues.
-        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
+        FoliaScheduler.getEntityScheduler().run(player, plugin, (o) -> {
             player.setHealth(health);
             player.setFoodLevel(foodLevel);
             player.setSaturation(saturation);
@@ -372,7 +372,7 @@ public class CheckCommand {
 
             // Restore the original inventory contents.
             player.getInventory().setContents(inventoryContents);
-        });
+        }, null);
     }
 }
 
