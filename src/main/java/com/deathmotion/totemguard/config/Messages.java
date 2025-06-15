@@ -209,8 +209,7 @@ public class Messages {
                         &7This action is irreversible.
                         
                         &7Type: %command%
-                        &7 or click %confirm_button% to confirm.
-                        """;
+                        &7 or click %confirm_button% to confirm.""";
 
                 private String confirmButton = "&6&l[CONFIRM]";
                 private String confirmHover = "&7Click to run %command%";
@@ -249,22 +248,19 @@ public class Messages {
                         %punishment_summary%
                         
                         &6&l> Alerts <
-                        %alert_summary%
-                        """;
+                        %alert_summary%""";
 
                 @Comment("\nStats Punishment Summary: The format for the punishment summary in the stats. Will replace %punishment_summary%.")
                 private String punishmentSummary = """
                         &7&lLast 30 days: &6%punishment_last_30%
                         &7&lLast 7 days: &6%punishment_last_7%
-                        &7&lLast 24 hours: &6%punishment_last_24h%
-                        """;
+                        &7&lLast 24 hours: &6%punishment_last_24h%""";
 
                 @Comment("\nStats Alert Summary: The format for the alert summary in the stats. Will replace %alert_summary%.")
                 private String alertSummary = """
                         &7&lLast 30 days: &6%alerts_last_30%
                         &7&lLast 7 days: &6%alerts_last_7%
-                        &7&lLast 24 hours: &6%alerts_last_24h%
-                        """;
+                        &7&lLast 24 hours: &6%alerts_last_24h%""";
 
                 @Comment("\nStats No Punishments Found: The message returned when no punishments are found. Will replace %punishment_summary% if no punishments are found.")
                 private String noPunishmentsFound = "&7&oNo punishments found.";
