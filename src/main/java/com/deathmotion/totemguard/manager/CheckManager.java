@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.checks.impl.autototem.*;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
@@ -48,6 +49,7 @@ public class CheckManager {
                 .put(BadPacketsA.class, new BadPacketsA(player))
                 .put(BadPacketsB.class, new BadPacketsB(player))
                 .put(BadPacketsC.class, new BadPacketsC(player))
+                .put(BadPacketsD.class, new BadPacketsD(player))
                 .put(AutoTotemD.class, new AutoTotemD(player))
                 .build();
 

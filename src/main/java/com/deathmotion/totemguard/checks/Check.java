@@ -78,6 +78,10 @@ public class Check implements AbstractCheck {
         this.color = getColors();
     }
 
+    public void fail() {
+        fail(Component.empty());
+    }
+
     public void fail(Component details) {
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (O) -> {
             if (!shouldFail()) return;
