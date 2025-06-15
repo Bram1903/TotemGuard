@@ -45,8 +45,8 @@ public class BadPacketsD extends Check implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
-
+//        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
+//
 //        final WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
 //        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.PICKUP) return;
 //

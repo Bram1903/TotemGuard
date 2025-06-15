@@ -114,7 +114,6 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
                 .append(Component.newline())
                 .append(Component.text("Main Hand: ", color.getX()))
                 .append(Component.text(getMainHandItemString(), color.getY()))
-                .append(Component.newline())
                 .build();
 
         StringBuilder states = new StringBuilder();
@@ -130,8 +129,10 @@ public class AutoTotemA extends Check implements BukkitEventCheck {
 
         // If any states are active, add them to the component
         if (!states.isEmpty()) {
-            states.setLength(states.length() - 2);
-            component = component.append(Component.text("States: ", color.getX()))
+            states.setLength(states.length() - 2); // Remove trailing comma and space
+            component = component
+                    .append(Component.newline())
+                    .append(Component.text("States: ", color.getX()))
                     .append(Component.text(states.toString(), color.getY()));
         }
 

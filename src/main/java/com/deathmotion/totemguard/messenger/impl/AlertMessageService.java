@@ -42,6 +42,11 @@ public class AlertMessageService {
 
         alertHoverTemplate = messengerService.replacePlaceholders(alertHoverTemplate, check);
 
+        // Remove the check details placeholder and the line under it if the details are empty
+        if (details.equals(Component.empty())) {
+            alertHoverTemplate = alertHoverTemplate.replaceAll("(?m)^%check_details%\\R.*(\\R)?", "");
+        }
+
         Component hoverMessage = messengerService.format(alertHoverTemplate.replace("%check_details%", messengerService.unformat(details)));
         Component alertMessage = messengerService.format(messengerService.replacePlaceholders(alertTemplate, check));
         Component consoleMessage = messengerService.format(messengerService.replacePlaceholders(alertConsoleTemplate, check));

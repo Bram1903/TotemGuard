@@ -52,6 +52,9 @@ permissions:
   TotemGuard.Alerts:
     description: Allows the player to use /totemguard alerts.
     default: op
+  TotemGuard.Alerts.EnableOnJoin:
+    description: Allows the player to enable alerts on join.
+    default: op
   TotemGuard.Alerts.Others:
     description: Allows the player to use /totemguard alerts <player>.
     default: op
