@@ -98,7 +98,7 @@ tasks {
     )
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
-        url("https://ci.codemc.io/job/retrooper/job/packetevents/lastSuccessfulBuild/artifact/spigot/build/libs/packetevents-spigot-2.8.0-SNAPSHOT.jar")
+        url("https://github.com/retrooper/packetevents/releases/download/v2.8.0/packetevents-spigot-2.8.0.jar")
         url("https://github.com/ViaVersion/ViaVersion/releases/download/5.3.1/ViaVersion-5.3.1.jar")
         url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.3.1/ViaBackwards-5.3.1.jar")
     }
@@ -114,7 +114,7 @@ tasks {
         downloadPlugins {
             from(sharedPlugins)
             url("https://github.com/EssentialsX/Essentials/releases/download/2.21.0/EssentialsX-2.21.0.jar")
-            url("https://download.luckperms.net/1575/bukkit/loader/LuckPerms-Bukkit-5.4.158.jar")
+            url("https://download.luckperms.net/1589/bukkit/loader/LuckPerms-Bukkit-5.5.4.jar")
         }
 
         jvmArgs = jvmArgsExternal
