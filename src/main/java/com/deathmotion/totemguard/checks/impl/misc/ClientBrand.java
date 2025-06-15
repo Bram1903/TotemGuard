@@ -22,19 +22,23 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.ChatUtil;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 // This class has mostly been copied from https://github.com/GrimAnticheat/Grim/blob/2.0/src/main/java/ac/grim/grimac/checks/impl/misc/ClientBrand.java
 public class ClientBrand extends Check implements PacketCheck {
+
+    private static final String CHANNEL = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
+
     @Getter
     private String brand = "vanilla";
     private boolean hasBrand = false;
@@ -55,8 +59,7 @@ public class ClientBrand extends Check implements PacketCheck {
     }
 
     private void handle(String channel, byte[] data) {
-        final String expectedChannel = player.user.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
-        if (!channel.equals(expectedChannel)) return;
+        if (!channel.equals(ClientBrand.CHANNEL)) return;
 
         if (data.length > 64 || data.length == 0) {
             brand = "sent " + data.length + " bytes as brand";
@@ -64,9 +67,8 @@ public class ClientBrand extends Check implements PacketCheck {
             byte[] minusLength = new byte[data.length - 1];
             System.arraycopy(data, 1, minusLength, 0, minusLength.length);
 
-            brand = new String(minusLength).replace(" (Velocity)", ""); //removes velocity's brand suffix
-            brand = ChatColor.stripColor(brand); //strip color codes from client brand
-
+            brand = new String(minusLength).replace(" (Velocity)", ""); // removes velocity's brand suffix
+            brand = ChatUtil.stripColor(brand); // strip color codes from client brand
             announceBrand();
         }
 

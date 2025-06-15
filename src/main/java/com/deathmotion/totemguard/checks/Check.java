@@ -41,8 +41,8 @@ public class Check implements AbstractCheck {
     protected final TotemPlayer player;
     private final AtomicInteger violations = new AtomicInteger();
 
-    protected Settings settings = TotemGuard.getInstance().getConfigManager().getSettings();
-    protected Messages messages = TotemGuard.getInstance().getConfigManager().getMessages();
+    protected Settings settings;
+    protected Messages messages;
     protected Pair<TextColor, TextColor> color;
     protected AbstractCheckSettings checkSettings;
 
@@ -53,6 +53,9 @@ public class Check implements AbstractCheck {
     public Check(TotemPlayer player) {
         this.player = player;
         final Class<?> checkClass = this.getClass();
+
+        settings = TotemGuard.getInstance().getConfigManager().getSettings();
+        messages = TotemGuard.getInstance().getConfigManager().getMessages();
 
         if (checkClass.isAnnotationPresent(CheckData.class)) {
             final CheckData checkData = checkClass.getAnnotation(CheckData.class);
