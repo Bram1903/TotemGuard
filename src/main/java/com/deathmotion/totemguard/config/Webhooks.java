@@ -51,7 +51,7 @@ public class Webhooks {
         private String title;
 
         @Comment("\nWebhook Profile Image: Sets the image of the embed's profile.")
-        private String profileImage = "https://i.imgur.com/hqaGO5H.png";
+        private String profileImage = "https://imgur.com/a/9IUVips";
 
         @Comment("\nWebhook Timestamp: Displays the time that this embed was sent at.")
         private boolean timestamp = true;
