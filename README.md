@@ -20,10 +20,11 @@ specific needs.
 TotemGuard requires the [PacketEvents](https://modrinth.com/plugin/packetevents) library to function. Ensure it is
 installed on your server.
 
+### Sponsors
+[![JProfiler](docs/jProfiler.png)](https://www.ej-technologies.com/jprofiler)
+
 ## Table of Contents
 
-- [Overview](#overview)
-    - [Prerequisites](#prerequisites)
 - [Showcase](#showcase)
 - [Supported Platforms & Versions](#supported-platforms--versions)
 - [Checks](#checks)
