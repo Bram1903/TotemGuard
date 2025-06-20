@@ -60,6 +60,9 @@ public class Checks {
     @Comment("\nBadPacketsC")
     private BadPacketsC badPacketsC = new BadPacketsC();
 
+    @Comment("\nBadPacketsD")
+    private BadPacketsD badPacketsD = new BadPacketsD();
+
     @Comment("\nManualTotemA")
     private ManualTotemA manualTotemA = new ManualTotemA();
 
@@ -74,6 +77,7 @@ public class Checks {
             case "BadPacketsA" -> badPacketsA;
             case "BadPacketsB" -> badPacketsB;
             case "BadPacketsC" -> badPacketsC;
+            case "BadPacketsD" -> badPacketsD;
             case "ManualTotemA" -> manualTotemA;
             default ->
                     throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
@@ -216,6 +220,14 @@ public class Checks {
     public static class BadPacketsC extends CheckSettings {
         public BadPacketsC() {
             super(false, 20, 10);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class BadPacketsD extends CheckSettings {
+        public BadPacketsD() {
+            super(true, 20, 1);
         }
     }
 

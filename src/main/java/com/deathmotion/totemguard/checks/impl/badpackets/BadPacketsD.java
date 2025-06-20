@@ -18,30 +18,29 @@
 
 package com.deathmotion.totemguard.checks.impl.badpackets;
 
-import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.CheckData;
 import com.deathmotion.totemguard.checks.type.GenericCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import net.kyori.adventure.text.Component;
 
-@CheckData(name = "BadPacketsB", description = "Suspicious client brand")
-public class BadPacketsB extends Check implements GenericCheck {
+@CheckData(name = "BadPacketsD", description = "Tries to impersonate Lunar Client")
+public class BadPacketsD extends Check implements GenericCheck {
 
-    public BadPacketsB(final TotemPlayer player) {
+    public BadPacketsD(final TotemPlayer player) {
         super(player);
     }
 
     public void handle() {
         String clientBrand = player.getBrand();
-        if (TotemGuard.getInstance().getConfigManager().getChecks().getBadPacketsB().getBannedBrands().contains(clientBrand.toLowerCase())) {
+        if ((clientBrand.toLowerCase().contains("lunarclient")) && !player.isUsingLunarClient) {
             fail(createDetails(clientBrand));
         }
     }
 
     private Component createDetails(String clientBrand) {
         return Component.text()
-                .append(Component.text("Client Brand: ", color.getX()))
+                .append(Component.text("Fake Lunar Client Brand: ", color.getX()))
                 .append(Component.text(clientBrand, color.getY()))
                 .build();
     }

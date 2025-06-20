@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.manager.CheckManager;
@@ -34,6 +35,7 @@ import org.bukkit.entity.Player;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class TotemPlayer implements TotemUser {
     public final CheckManager checkManager;
@@ -42,6 +44,7 @@ public class TotemPlayer implements TotemUser {
     public final User user;
 
     public Player bukkitPlayer;
+    public boolean isUsingLunarClient;
     public DigAndPickupState digAndPickupState;
 
     @Nullable
@@ -69,13 +72,18 @@ public class TotemPlayer implements TotemUser {
             return;
         }
 
-        // Trigger the BadPacketsB check here, as it will otherwise still be in the configuration state
-        this.checkManager.getPacketCheck(BadPacketsB.class).handle(getBrand());
+        // Trigger BadPacketsB here, as it will otherwise still be in the configuration state
+        this.checkManager.getGenericCheck(BadPacketsB.class).handle();
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseProvider().getPlayerRepository().retrieveOrRefreshPlayer(this)));
+        FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), (o -> {
+            if (bukkitPlayer != null) {
+                this.checkManager.getGenericCheck(BadPacketsD.class).handle();
+            }
+        }), 2, TimeUnit.SECONDS);
     }
 
     public String getBrand() {
-        return checkManager.getPacketCheck(ClientBrand.class).getBrand();
+        return this.checkManager.getPacketCheck(ClientBrand.class).getBrand();
     }
 
     @Override

@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.TotemGuardProvider;
 import com.deathmotion.totemguard.commands.TotemGuardCommand;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
+import com.deathmotion.totemguard.events.lunarclient.ApolloPlayerProtoListener;
 import com.deathmotion.totemguard.events.packets.CheckManagerPacketListener;
 import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.manager.*;
@@ -83,7 +84,11 @@ public final class TotemGuard extends JavaPlugin {
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit(this));
         PacketEvents.getAPI().getEventManager().registerListener(new CheckManagerPacketListener());
+
         getServer().getPluginManager().registerEvents(new CheckManagerBukkitListener(), this);
+
+        // Needed for the Lunar Client specific check
+        new ApolloPlayerProtoListener(this);
 
         new TotemGuardCommand(this);
         enableBStats();
