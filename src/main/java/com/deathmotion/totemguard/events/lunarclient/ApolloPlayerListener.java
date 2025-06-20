@@ -25,9 +25,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerRegisterChannelEvent;
 
-public class ApolloPlayerProtoListener implements Listener {
+public class ApolloPlayerListener implements Listener {
 
-    public ApolloPlayerProtoListener(TotemGuard plugin) {
+    public ApolloPlayerListener(TotemGuard plugin) {
         Bukkit.getServer().getMessenger().registerOutgoingPluginChannel(plugin, "lunar:apollo");
         Bukkit.getServer().getMessenger().registerIncomingPluginChannel(plugin, "lunar:apollo", (s, player, bytes) -> {});
         Bukkit.getPluginManager().registerEvents(this, plugin);
