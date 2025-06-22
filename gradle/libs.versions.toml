@@ -1,5 +1,5 @@
 [versions]
-paper = "1.21.5-R0.1-SNAPSHOT"
+paper = "1.21.6-R0.1-SNAPSHOT"
 packetevents = "2.8.0"
 lombok = "1.18.38"
 shadow = "8.3.6"
