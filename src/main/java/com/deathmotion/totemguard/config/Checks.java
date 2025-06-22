@@ -227,7 +227,7 @@ public class Checks {
     @Getter
     public static class BadPacketsD extends CheckSettings {
         public BadPacketsD() {
-            super(true, 20, 1);
+            super(false, 20, 1);
         }
     }
 
