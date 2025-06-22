@@ -1,21 +1,3 @@
-/*
- * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- * Copyright (C) 2025 Bram and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package com.deathmotion.totemguard.bootstrap;
 
 import com.deathmotion.totemguard.api.versioning.TGVersion;
@@ -33,40 +15,66 @@ import org.jetbrains.annotations.NotNull;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TotemGuardLoader implements PluginLoader {
 
     private static final TGVersion MIN_MOJANG_MAPPED_VERSION = TGVersion.fromString("1.20.5");
 
+    // Use JitPack as the backup repository
+    private static final RemoteRepository BACKUP_REPO = new RemoteRepository.Builder(
+            "jitpack", "default",
+            "https://jitpack.io"
+    ).build();
+
+    private static final List<RemoteRepository> REPOSITORIES = List.of(
+            new RemoteRepository.Builder(
+                    "google-maven-central", "default",
+                    "https://maven-central.storage-download.googleapis.com/maven2"
+            ).build(),
+            BACKUP_REPO
+    );
+
     @Override
     public void classloader(@NotNull PluginClasspathBuilder classpathBuilder) {
-        MavenLibraryResolver resolver = new MavenLibraryResolver();
+        TGVersion serverVersion = getServerVersion();
 
-        // Add Maven Central repository
-        resolver.addRepository(new RemoteRepository.Builder("central", "default", MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR).build());
-
-        // Add all dependencies except CommandAPI ones
-        List<Library> libraries = new ArrayList<>(EnumSet.allOf(Library.class));
-        libraries.remove(Library.COMMAND_API);
-        libraries.remove(Library.COMMAND_API_MOJANG_MAPPED);
-
-        // Add correct CommandAPI variant based on server version
-        TGVersion version = getServerVersion();
-        libraries.add(version.isNewerThan(MIN_MOJANG_MAPPED_VERSION)
+        var commandApi = serverVersion.isNewerThan(MIN_MOJANG_MAPPED_VERSION)
                 ? Library.COMMAND_API_MOJANG_MAPPED
-                : Library.COMMAND_API);
+                : Library.COMMAND_API;
 
-        for (Library lib : libraries) {
-            resolver.addDependency(new Dependency(new DefaultArtifact(lib.getMavenDependency()), "runtime"));
-        }
+        var baseLibs = EnumSet.allOf(Library.class).stream()
+                .filter(lib -> lib != Library.COMMAND_API && lib != Library.COMMAND_API_MOJANG_MAPPED)
+                .collect(Collectors.toList());
+        baseLibs.add(commandApi);
+
+        var configLib = Library.CONFIGLIB;
+        baseLibs.remove(configLib);
+
+        MavenLibraryResolver baseResolver = new MavenLibraryResolver();
+        REPOSITORIES.forEach(baseResolver::addRepository);
+        baseLibs.forEach(lib -> baseResolver.addDependency(
+                new Dependency(new DefaultArtifact(lib.getMavenDependency()), "runtime")
+        ));
 
         try {
-            classpathBuilder.addLibrary(resolver);
+            classpathBuilder.addLibrary(baseResolver);
         } catch (LibraryLoadingException e) {
-            throw new RuntimeException("Failed to load Maven dependencies", e);
+            throw new RuntimeException("Failed to load base dependencies", e);
+        }
+
+        MavenLibraryResolver configResolver = new MavenLibraryResolver();
+        configResolver.addRepository(BACKUP_REPO);
+        configResolver.addDependency(
+                new Dependency(new DefaultArtifact(configLib.getMavenDependency()), "runtime")
+        );
+
+        try {
+            classpathBuilder.addLibrary(configResolver);
+        } catch (LibraryLoadingException e) {
+            throw new RuntimeException("Failed to load ConfigLib from JitPack repository", e);
         }
     }
 

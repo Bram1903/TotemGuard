@@ -22,7 +22,7 @@ import lombok.Getter;
 
 @Getter
 public enum Library {
-    CONFIGLIB("de.exlll", "configlib-yaml", "4.5.0"),
+    CONFIGLIB("com.github.Exlll.ConfigLib", "configlib-yaml", "v4.6.1"),
     LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
     DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0"),
     EXPIRING_MAP("net.jodah", "expiringmap", "0.5.11"),
