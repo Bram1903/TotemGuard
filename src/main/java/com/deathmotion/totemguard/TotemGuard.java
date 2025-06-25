@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.redis.RedisService;
 import com.deathmotion.totemguard.util.UpdateChecker;
+import com.deathmotion.totemguard.util.VersionResolver;
 import com.github.retrooper.packetevents.PacketEvents;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIBukkitConfig;
@@ -43,6 +44,8 @@ public final class TotemGuard extends JavaPlugin {
 
     @Getter
     private static TotemGuard instance;
+
+    private boolean isSupportedVersion = true;
 
     private ConfigManager configManager;
     private DatabaseProvider databaseProvider;
@@ -60,6 +63,11 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onLoad() {
+        if (!new VersionResolver().isSupportedVersion()) {
+            isSupportedVersion = false;
+            return;
+        }
+
         configManager = new ConfigManager(this);
 
         CommandAPI.setLogger(CommandAPILogger.fromJavaLogger(getLogger()));
@@ -70,6 +78,13 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        if (!isSupportedVersion) {
+            getLogger().severe("Minecraft version " + Bukkit.getMinecraftVersion() + " is not supported by TotemGuard.");
+            getLogger().severe("We highly recommend updating your server to at least " + VersionResolver.getMinimumSupportedVersion().getReleaseName() + " or later.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         CommandAPI.onEnable();
         databaseProvider = new DatabaseProvider(this);
         messengerService = new MessengerService(this);
