@@ -10,8 +10,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public interface JsonSerializable {
-    @NotNull JsonElement toJson();
-
     static @NotNull JsonArray serializeArray(@Nullable JsonSerializable @NotNull [] serializableArray) {
         JsonArray array = new JsonArray();
 
@@ -31,4 +29,6 @@ public interface JsonSerializable {
 
         return array;
     }
+
+    @NotNull JsonElement toJson();
 }
