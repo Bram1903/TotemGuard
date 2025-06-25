@@ -43,25 +43,34 @@ public class TpsUtil {
     }
 
     public double getTps(Location location) {
+        double rawTps;
+
         if (isFolia) {
             CompletableFuture<Double> future = new CompletableFuture<>();
 
-            FoliaScheduler.getRegionScheduler().execute(TotemGuard.getInstance(), location, () -> {
-                try {
-                    future.complete(Bukkit.getTPS()[0]);
-                } catch (Throwable t) {
-                    future.completeExceptionally(t);
-                }
-            });
+            FoliaScheduler.getRegionScheduler().execute(
+                    TotemGuard.getInstance(),
+                    location,
+                    () -> {
+                        try {
+                            future.complete(Bukkit.getTPS()[0]);
+                        } catch (Throwable t) {
+                            future.completeExceptionally(t);
+                        }
+                    }
+            );
 
             try {
-                return future.get(); // This blocks until the task completes
+                rawTps = future.get();
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
-                return -1.0;
+                rawTps = -1.0;
             }
         } else {
-            return SpigotReflectionUtil.getTPS();
+            rawTps = SpigotReflectionUtil.getTPS();
         }
+
+        return Math.min(rawTps, 20.0);
     }
+
 }

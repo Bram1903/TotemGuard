@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -90,17 +91,14 @@ public class Embed implements JsonSerializable {
         return this;
     }
 
+
     @Contract(value = "_ -> this", mutates = "this")
-    public @NotNull Embed addFields(@NotNull EmbedField @NotNull ... fields) {
-        if (fields.length == 0) return this;
-        if (fields() == null) return fields(fields);
-
-        EmbedField[] newFields = new EmbedField[fields().length + fields.length];
-
-        System.arraycopy(fields(), 0, newFields, 0, fields().length);
-        System.arraycopy(fields, fields().length, newFields, fields().length, fields.length);
-
-        return fields(newFields);
+    public @NotNull Embed addFields(EmbedField... toAdd) {
+        if (toAdd.length == 0) return this;
+        if (fields() == null) return fields(toAdd);
+        EmbedField[] extended = Arrays.copyOf(fields(), fields().length + toAdd.length);
+        System.arraycopy(toAdd, 0, extended, fields().length, toAdd.length);
+        return fields(extended);
     }
 
     public @NotNull JsonObject toJson() {

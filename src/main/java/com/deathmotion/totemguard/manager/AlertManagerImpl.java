@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.redis.packet.impl.SyncAlertMessagePacket;
 import com.deathmotion.totemguard.util.datastructure.Pair;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -70,7 +71,7 @@ public class AlertManagerImpl implements AlertManager {
 
         // Send to proxy and Discord if enabled
         plugin.getRedisService().publish(new SyncAlertMessagePacket(), new SyncAlertMessagePacket.AlertComponents(craftedAlert.getX(), craftedAlert.getY()));
-        plugin.getDiscordManager().sendAlert(check, details);
+        plugin.getDiscordManager().sendAlert(check, PlainTextComponentSerializer.plainText().serialize(details));
         databaseProvider.getAlertRepository().storeAlert(check);
     }
 

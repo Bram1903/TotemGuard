@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,7 @@ public class PunishmentManager {
 
     private void executePunishment(Check check, Component details) {
         runPunishmentCommands(check);
-        plugin.getDiscordManager().sendPunishment(check, details);
+        plugin.getDiscordManager().sendPunishment(check, PlainTextComponentSerializer.plainText().serialize(details));
         databaseProvider.getPunishmentRepository().storePunishment(check);
     }
 
