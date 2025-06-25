@@ -215,19 +215,11 @@ public class DiscordManager {
             httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).whenComplete((resp, err) -> {
                 try {
                     if (err != null) {
-                        plugin.getLogger().warning(
-                                "Webhook send failed: " + err.getMessage()
-                        );
+                        plugin.getLogger().warning("Webhook send failed: " + err.getMessage());
                     } else if (resp.statusCode() == 429) {
-                        resp.headers().firstValue("X-RateLimit-Reset")
-                                .ifPresent(r -> rateLimitedUntil.set(
-                                        Long.parseLong(r) * 1000L
-                                ));
+                        resp.headers().firstValue("X-RateLimit-Reset").ifPresent(r -> rateLimitedUntil.set(Long.parseLong(r) * 1000L));
                     } else if (resp.statusCode() >= 400) {
-                        plugin.getLogger().warning(
-                                "Discord webhook error " +
-                                        resp.statusCode() + ": " + resp.body()
-                        );
+                        plugin.getLogger().warning("Discord webhook error " + resp.statusCode() + ": " + resp.body());
                     }
                 } finally {
                     if (err != null || resp == null || resp.statusCode() != 429) {
