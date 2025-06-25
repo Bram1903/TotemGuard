@@ -9,6 +9,7 @@ plugins {
 
 dependencies {
     implementation(project(":api"))
+    implementation(libs.commandapi)
 
     // Provided dependencies
     compileOnly(libs.paper)
@@ -19,7 +20,6 @@ dependencies {
     // Loaded during runtime
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.lettuce)
-    compileOnly(libs.commandapi)
     compileOnly(libs.expiringmap)
     compileOnly(libs.discord.webhooks)
     compileOnly(libs.ormlite)
@@ -57,6 +57,9 @@ tasks {
     shadowJar {
         archiveFileName = "${rootProject.name}-${ext["versionNoHash"]}.jar"
         archiveClassifier = null
+        exclude("META-INF/maven/**")
+
+        relocate("dev.jorel.commandapi", "com.deathmotion.totemguard.shaded.commandapi")
 
         manifest {
             attributes["paperweight-mappings-namespace"] = "mojang"
@@ -91,7 +94,7 @@ tasks {
     // 1.17           = Java 16
     // 1.18 - 1.20.4  = Java 17
     // 1-20.5+        = Java 21
-    val version = "1.21.4"
+    val version = "1.21.6"
     val javaVersion = JavaLanguageVersion.of(21)
 
     val jvmArgsExternal = listOf(
@@ -100,8 +103,8 @@ tasks {
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
         url("https://github.com/retrooper/packetevents/releases/download/v2.8.0/packetevents-spigot-2.8.0.jar")
-        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.3.1/ViaVersion-5.3.1.jar")
-        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.3.1/ViaBackwards-5.3.1.jar")
+        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.4.0/ViaVersion-5.4.0.jar")
+        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.4.0/ViaBackwards-5.4.0.jar")
     }
 
     runServer {

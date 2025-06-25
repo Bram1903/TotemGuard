@@ -27,9 +27,6 @@ public enum Library {
     DISCORD_WEBHOOK("club.minnced", "discord-webhooks", "0.8.0"),
     EXPIRING_MAP("net.jodah", "expiringmap", "0.5.11"),
 
-    COMMAND_API_MOJANG_MAPPED("dev.jorel", "commandapi-bukkit-shade-mojang-mapped", "10.0.1"),
-    COMMAND_API("dev.jorel", "commandapi-bukkit-shade", "10.0.1"),
-
     // Database
     ORMLITE("com.j256.ormlite", "ormlite-jdbc", "6.1"),
     HIKARI_CP("com.zaxxer", "HikariCP", "6.3.0"),
