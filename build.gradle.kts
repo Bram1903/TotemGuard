@@ -21,7 +21,6 @@ dependencies {
     compileOnly(libs.configlib.yaml)
     compileOnly(libs.lettuce)
     compileOnly(libs.expiringmap)
-    compileOnly(libs.discord.webhooks)
     compileOnly(libs.ormlite)
     compileOnly(libs.hikaricp)
 }
@@ -94,7 +93,7 @@ tasks {
     // 1.17           = Java 16
     // 1.18 - 1.20.4  = Java 17
     // 1-20.5+        = Java 21
-    val version = "1.21.6"
+    val version = "1.21.4"
     val javaVersion = JavaLanguageVersion.of(21)
 
     val jvmArgsExternal = listOf(

@@ -172,6 +172,9 @@ Operators (OPs) have these permissions by default, except `TotemGuard.Debug`:
 **Maintainer: [@OutDev](https://github.com/OutDev0)**  
 For their creative ideas and dedicated efforts in maintaining the project.
 
+- **[@Retrooper](https://github.com/retrooper)**: Author of [PacketEvents](https://github.com/retrooper/packetevents).
+- **[@GrimAntiCheat](https://github.com/GrimAnticheat/Grim)**: Used as reference while coding the base, and for the webhooks.
+
 ## License
 
 This project is licensed under the [GPL3 License](LICENSE).

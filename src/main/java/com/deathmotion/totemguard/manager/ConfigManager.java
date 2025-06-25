@@ -59,6 +59,7 @@ public class ConfigManager {
             loadConfigurations();
             plugin.getDatabaseProvider().reload();
             plugin.getRedisService().reload();
+            plugin.getDiscordManager().reload();
 
             // Reload checks for all players
             for (TotemPlayer totemPlayer : TotemGuard.getInstance().getPlayerDataManager().getEntries()) {

@@ -5,7 +5,6 @@ lombok = "1.18.38"
 shadow = "8.3.6"
 run-paper = "2.3.1"
 configlib = "4.6.1"
-discord-webhooks = "0.8.0"
 lettuce = "6.5.5.RELEASE"
 commandapi = "10.1.0"
 expiringmap = "0.5.11"
@@ -17,7 +16,6 @@ paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" 
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
 configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
-discord-webhooks = { group = "club.minnced", name = "discord-webhooks", version.ref = "discord-webhooks" }
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
 commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade-mojang-mapped", version.ref = "commandapi" }
 expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
