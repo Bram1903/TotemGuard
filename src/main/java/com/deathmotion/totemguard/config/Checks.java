@@ -51,6 +51,9 @@ public class Checks {
     @Comment("\nAutoTotemF")
     private AutoTotemF autoTotemF = new AutoTotemF();
 
+    @Comment("\nAutoTotemG")
+    private AutoTotemG autoTotemG = new AutoTotemG();
+
     @Comment("\nBadPacketsA")
     private BadPacketsA badPacketsA = new BadPacketsA();
 
@@ -74,6 +77,7 @@ public class Checks {
             case "AutoTotemD" -> autoTotemD;
             case "AutoTotemE" -> autoTotemE;
             case "AutoTotemF" -> autoTotemF;
+            case "AutoTotemG" -> autoTotemG;
             case "BadPacketsA" -> badPacketsA;
             case "BadPacketsB" -> badPacketsB;
             case "BadPacketsC" -> badPacketsC;
@@ -191,6 +195,14 @@ public class Checks {
 
         public AutoTotemF() {
             super(false, 20);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class AutoTotemG extends CheckSettings {
+        public AutoTotemG() {
+            super(false, 1);
         }
     }
 

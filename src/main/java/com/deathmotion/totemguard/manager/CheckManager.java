@@ -57,6 +57,7 @@ public class CheckManager {
                 .put(AutoTotemC.class, new AutoTotemC(player))
                 .put(AutoTotemE.class, new AutoTotemE(player))
                 .put(AutoTotemF.class, new AutoTotemF(player))
+                .put(AutoTotemG.class, new AutoTotemG(player))
                 .build();
 
         genericChecks = new ImmutableClassToInstanceMap.Builder<GenericCheck>()
