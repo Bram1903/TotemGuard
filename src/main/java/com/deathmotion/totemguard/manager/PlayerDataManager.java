@@ -39,14 +39,13 @@ public class PlayerDataManager {
         this.plugin = plugin;
     }
 
-    public boolean shouldCheck(User user) {
+    public boolean shouldCheck(User user, Player bukkitPlayer) {
         if (!ChannelHelper.isOpen(user.getChannel())) return false;
         if (user.getUUID() == null) return false;
 
         if (plugin.getConfigManager().getSettings().isBypass()) {
             // Has exempt permission
-            Player player = Bukkit.getPlayer(user.getUUID());
-            if (player != null && player.hasPermission("TotemGuard.Bypass")) {
+            if (bukkitPlayer != null && bukkitPlayer.hasPermission("TotemGuard.Bypass")) {
                 return false;
             }
         }
@@ -69,11 +68,9 @@ public class PlayerDataManager {
     }
 
     public void addUser(final User user) {
-        if (shouldCheck(user)) {
-            TotemPlayer player = new TotemPlayer(user);
-            playerDataMap.put(user, player);
-            plugin.debug("Added " + user.getName() + " to the player data map.");
-        }
+        TotemPlayer player = new TotemPlayer(user);
+        playerDataMap.put(user, player);
+        plugin.debug("Added " + user.getName() + " to the player data map.");
     }
 
     public void remove(final User player) {

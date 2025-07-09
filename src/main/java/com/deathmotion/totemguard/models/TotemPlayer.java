@@ -67,7 +67,7 @@ public class TotemPlayer implements TotemUser {
     public void handlePlayerLogin(Player player) {
         this.bukkitPlayer = player;
 
-        if (!TotemGuard.getInstance().getPlayerDataManager().shouldCheck(user)) {
+        if (!TotemGuard.getInstance().getPlayerDataManager().shouldCheck(user, bukkitPlayer)) {
             TotemGuard.getInstance().getPlayerDataManager().remove(user);
             return;
         }
