@@ -1,6 +1,6 @@
 [versions]
 paper = "1.21.6-R0.1-SNAPSHOT"
-packetevents = "2.8.0"
+packetevents = "2.9.1"
 lombok = "1.18.38"
 shadow = "8.3.6"
 run-paper = "2.3.1"
