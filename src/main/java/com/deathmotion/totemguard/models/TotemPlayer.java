@@ -75,11 +75,7 @@ public class TotemPlayer implements TotemUser {
         // Trigger BadPacketsB here, as it will otherwise still be in the configuration state
         this.checkManager.getGenericCheck(BadPacketsB.class).handle();
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseProvider().getPlayerRepository().retrieveOrRefreshPlayer(this)));
-        FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), (o -> {
-            if (bukkitPlayer != null) {
-                this.checkManager.getGenericCheck(BadPacketsD.class).handle();
-            }
-        }), 2, TimeUnit.SECONDS);
+        FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), (o -> this.checkManager.getGenericCheck(BadPacketsD.class).handle()), 2, TimeUnit.SECONDS);
     }
 
     public String getBrand() {
