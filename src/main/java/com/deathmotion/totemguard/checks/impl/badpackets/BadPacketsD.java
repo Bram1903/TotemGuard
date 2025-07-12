@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.checks.type.GenericCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import net.kyori.adventure.text.Component;
 
-@CheckData(name = "BadPacketsD", description = "Tries to impersonate Lunar Client")
+@CheckData(name = "BadPacketsD", description = "Tries to impersonate Lunar Client", experimental = true)
 public class BadPacketsD extends Check implements GenericCheck {
 
     public BadPacketsD(final TotemPlayer player) {
