@@ -57,6 +57,7 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract implements List
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
+        if (user == null) return;
 
         if (player.hasPermission("TotemGuard.Alerts") && player.hasPermission("TotemGuard.Alerts.EnableOnJoin")) {
             FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
