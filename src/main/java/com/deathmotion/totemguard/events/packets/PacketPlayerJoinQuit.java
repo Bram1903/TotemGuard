@@ -20,29 +20,24 @@ package com.deathmotion.totemguard.events.packets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.event.UserDisconnectEvent;
+import com.github.retrooper.packetevents.event.UserLoginEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.concurrent.TimeUnit;
 
-public class PacketPlayerJoinQuit extends PacketListenerAbstract implements Listener {
+public class PacketPlayerJoinQuit extends PacketListenerAbstract {
 
     private final TotemGuard plugin;
 
     public PacketPlayerJoinQuit(TotemGuard plugin) {
         this.plugin = plugin;
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     @Override
@@ -53,12 +48,12 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract implements List
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
+    @Override
+    public void onUserLogin(UserLoginEvent event) {
+        User user = event.getUser();
         if (user == null) return;
 
+        Player player = event.getPlayer();
         if (player.hasPermission("TotemGuard.Alerts") && player.hasPermission("TotemGuard.Alerts.EnableOnJoin")) {
             FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
                 TotemGuard.getInstance().getAlertManager().toggleAlerts(player);
