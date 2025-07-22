@@ -28,7 +28,7 @@ dependencies {
 group = "com.deathmotion.totemguard"
 description = "TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem."
 val fullVersion = "2.0.4"
-val snapshot = true
+val snapshot = false
 
 fun getVersionMeta(includeHash: Boolean): String {
     if (!snapshot) {
