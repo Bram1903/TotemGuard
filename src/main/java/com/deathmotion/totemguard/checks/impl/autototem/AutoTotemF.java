@@ -35,6 +35,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 @CheckData(name = "AutoTotemF", description = "Invalid interaction", experimental = true)
@@ -64,7 +65,13 @@ public class AutoTotemF extends Check implements BukkitEventCheck {
         if (inventory == null || inventory.getType() != InventoryType.PLAYER) return;
         if (!ValidClickTypes.isClickTypeValid((event.getClick()))) return;
 
-        if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.TOTEM_OF_UNDYING) {
+        ItemStack item = event.getCurrentItem();
+        int hotbar = event.getHotbarButton();
+        ItemStack hotbarItem = null;
+        if (hotbar >= 0) {
+            hotbarItem = player.bukkitPlayer.getInventory().getItem(hotbar);
+        }
+        if ((item != null && item.getType() == Material.TOTEM_OF_UNDYING) || (hotbarItem != null && hotbarItem.getType() == Material.TOTEM_OF_UNDYING)) {
             inventoryClickTime = System.currentTimeMillis();
         }
     }

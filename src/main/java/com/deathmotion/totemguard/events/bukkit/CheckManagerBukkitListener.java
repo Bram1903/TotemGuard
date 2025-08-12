@@ -63,7 +63,12 @@ public class CheckManagerBukkitListener implements Listener {
 
         if (totemPlayer.totemData.isExpectingTotemSwap()) {
             ItemStack item = event.getCurrentItem();
-            if (item != null && item.getType() == Material.TOTEM_OF_UNDYING) {
+            int hotbar = event.getHotbarButton();
+            ItemStack hotbarItem = null;
+            if (hotbar >= 0) {
+                hotbarItem = player.getInventory().getItem(hotbar);
+            }
+            if ((item != null && item.getType() == Material.TOTEM_OF_UNDYING) || (hotbarItem != null && hotbarItem.getType() == Material.TOTEM_OF_UNDYING)) {
                 callTotemCycleHandlers(totemPlayer);
             }
         }
@@ -86,10 +91,13 @@ public class CheckManagerBukkitListener implements Listener {
         TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getPlayer());
         if (totemPlayer == null) return;
 
-        if (!totemPlayer.totemData.isExpectingTotemSwap()) return;
-        if (event.getOffHandItem().getType() != Material.TOTEM_OF_UNDYING) return;
+        if (totemPlayer.totemData.isExpectingTotemSwap()) {
+            if (event.getOffHandItem().getType() == Material.TOTEM_OF_UNDYING) {
+                callTotemCycleHandlers(totemPlayer);
+            }
+        }
 
-        callTotemCycleHandlers(totemPlayer);
+        totemPlayer.checkManager.onBukkitEvent(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
