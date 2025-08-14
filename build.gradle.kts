@@ -1,5 +1,3 @@
-import java.io.ByteArrayOutputStream
-
 plugins {
     totemguard.`java-conventions`
     `tg-version`
@@ -34,15 +32,16 @@ fun getVersionMeta(includeHash: Boolean): String {
     if (!snapshot) {
         return ""
     }
+
     var commitHash = ""
     if (includeHash && file(".git").isDirectory) {
-        val stdout = ByteArrayOutputStream()
-        exec {
+        val result = providers.exec {
             commandLine("git", "rev-parse", "--short", "HEAD")
-            standardOutput = stdout
-        }
-        commitHash = "+${stdout.toString().trim()}"
+        }.standardOutput.asText.get().trim()
+
+        commitHash = "+$result"
     }
+
     return "$commitHash-SNAPSHOT"
 }
 version = "$fullVersion${getVersionMeta(true)}"
@@ -73,18 +72,24 @@ tasks {
         dependsOn(generateVersionsFile)
     }
 
+    withType<Test> {
+        failOnNoDiscoveredTests = false
+    }
+
     generateVersionsFile {
         packageName = "com.deathmotion.totemguard.util"
     }
 
     processResources {
-        inputs.property("version", ext["versionNoHash"])
-        inputs.property("description", project.description)
+        inputs.properties(
+            "version" to ext["versionNoHash"].toString(),
+            "description" to (project.description ?: "")
+        )
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
-                "version" to ext["versionNoHash"],
-                "description" to project.description
+                "version" to ext["versionNoHash"].toString(),
+                "description" to (project.description ?: "")
             )
         }
     }
