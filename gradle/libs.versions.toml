@@ -1,27 +1,13 @@
 [versions]
-paper = "1.21.6-R0.1-SNAPSHOT"
-packetevents = "2.9.4"
+paper-api = "1.21.8-R0.1-SNAPSHOT"
 lombok = "1.18.38"
-shadow = "9.0.1"
-run-paper = "2.3.1"
-configlib = "4.6.1"
-lettuce = "6.5.5.RELEASE"
-commandapi = "10.1.2"
-expiringmap = "0.5.11"
-ormlite = "6.1"
-hikaricp = "6.3.0"
+shadow = "9.1.0"
+run-paper = "3.0.0"
 
 [libraries]
-paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
-packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
+paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
-configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
-lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
-commandapi = { group = "dev.jorel", name = "commandapi-bukkit-shade-mojang-mapped", version.ref = "commandapi" }
-expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
-ormlite = { group = "com.j256.ormlite", name = "ormlite-jdbc", version.ref = "ormlite" }
-hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
 
 [plugins]
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

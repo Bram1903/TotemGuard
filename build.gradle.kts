@@ -1,51 +1,30 @@
 plugins {
-    totemguard.`java-conventions`
-    `tg-version`
+    `java-library`
+    `maven-publish`
     alias(libs.plugins.shadow)
     alias(libs.plugins.run.paper)
 }
 
-dependencies {
-    implementation(project(":api"))
-    implementation(libs.commandapi)
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven("https://repo.papermc.io/repository/maven-public/")
+}
 
-    // Provided dependencies
-    compileOnly(libs.paper)
-    compileOnly(libs.packetevents.spigot)
+java {
+    disableAutoTargetJvm()
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+dependencies {
+    compileOnly(libs.paper.api)
+    compileOnly(files("libs/TotemGuardAPI.jar"))
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
-
-    // Loaded during runtime
-    compileOnly(libs.configlib.yaml)
-    compileOnly(libs.lettuce)
-    compileOnly(libs.expiringmap)
-    compileOnly(libs.ormlite)
-    compileOnly(libs.hikaricp)
 }
 
-group = "com.deathmotion.totemguard"
-description = "TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem."
-val fullVersion = "2.0.5"
-val snapshot = true
-
-fun getVersionMeta(includeHash: Boolean): String {
-    if (!snapshot) {
-        return ""
-    }
-
-    var commitHash = ""
-    if (includeHash && file(".git").isDirectory) {
-        val result = providers.exec {
-            commandLine("git", "rev-parse", "--short", "HEAD")
-        }.standardOutput.asText.get().trim()
-
-        commitHash = "+$result"
-    }
-
-    return "$commitHash-SNAPSHOT"
-}
-version = "$fullVersion${getVersionMeta(true)}"
-ext["versionNoHash"] = "$fullVersion${getVersionMeta(false)}"
+group = "com.deathmotion.totemguard.example"
+version = "1.0.0"
 
 tasks {
     jar {
@@ -53,15 +32,8 @@ tasks {
     }
 
     shadowJar {
-        archiveFileName = "${rootProject.name}-${ext["versionNoHash"]}.jar"
+        archiveFileName = "${rootProject.name}.jar"
         archiveClassifier = null
-        exclude("META-INF/maven/**")
-
-        relocate("dev.jorel.commandapi", "com.deathmotion.totemguard.shaded.commandapi")
-
-        manifest {
-            attributes["paperweight-mappings-namespace"] = "mojang"
-        }
     }
 
     assemble {
@@ -69,30 +41,29 @@ tasks {
     }
 
     withType<JavaCompile> {
-        dependsOn(generateVersionsFile)
+        options.encoding = Charsets.UTF_8.name()
+        options.release = 21
     }
 
     withType<Test> {
         failOnNoDiscoveredTests = false
     }
 
-    generateVersionsFile {
-        packageName = "com.deathmotion.totemguard.util"
+    withType<Javadoc>() {
+        options.encoding = Charsets.UTF_8.name()
     }
 
     processResources {
-        inputs.properties(
-            "version" to ext["versionNoHash"].toString(),
-            "description" to (project.description ?: "")
-        )
+        inputs.property("version", project.version)
 
-        filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
+        filesMatching("plugin.yml") {
             expand(
-                "version" to ext["versionNoHash"].toString(),
-                "description" to (project.description ?: "")
+                "version" to rootProject.version,
             )
         }
     }
+
+    defaultTasks("build")
 
     // 1.8.8 - 1.16.5 = Java 8
     // 1.17           = Java 16
@@ -105,12 +76,6 @@ tasks {
         "-Dcom.mojang.eula.agree=true"
     )
 
-    val sharedPlugins = runPaper.downloadPluginsSpec {
-        url("https://cdn.modrinth.com/data/HYKaKraK/versions/Ks05ZluI/packetevents-spigot-2.9.3.jar")
-        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.4.1/ViaVersion-5.4.1.jar")
-        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.4.1/ViaBackwards-5.4.1.jar")
-    }
-
     runServer {
         minecraftVersion(version)
         runDirectory = rootDir.resolve("run/paper/$version")
@@ -120,24 +85,10 @@ tasks {
         }
 
         downloadPlugins {
-            from(sharedPlugins)
-            url("https://github.com/EssentialsX/Essentials/releases/download/2.21.0/EssentialsX-2.21.0.jar")
-            url("https://download.luckperms.net/1589/bukkit/loader/LuckPerms-Bukkit-5.5.4.jar")
-        }
-
-        jvmArgs = jvmArgsExternal
-    }
-
-    runPaper.folia.registerTask {
-        minecraftVersion(version)
-        runDirectory = rootDir.resolve("run/folia/$version")
-
-        javaLauncher = project.javaToolchains.launcherFor {
-            languageVersion = javaVersion
-        }
-
-        downloadPlugins {
-            from(sharedPlugins)
+            url("https://github.com/Bram1903/TotemGuard/releases/download/v2.0.4/TotemGuard-2.0.4.jar")
+            url("https://cdn.modrinth.com/data/HYKaKraK/versions/Kee6pozk/packetevents-spigot-2.9.5.jar")
+            url("https://github.com/ViaVersion/ViaVersion/releases/download/5.4.2/ViaVersion-5.4.2.jar")
+            url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.4.2/ViaBackwards-5.4.2.jar")
         }
 
         jvmArgs = jvmArgsExternal
