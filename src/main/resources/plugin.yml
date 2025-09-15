@@ -1,0 +1,8 @@
+name: TotemGuardApiExample
+version: ${version}
+main: com.deathmotion.totemguard.example.TotemGuardApiExample
+api-version: '1.21'
+authors: [ Bram ]
+description: Simple example plugin showing how to interact with the TotemGuard API.
+load: POSTWORLD
+depend: [ TotemGuard ]
