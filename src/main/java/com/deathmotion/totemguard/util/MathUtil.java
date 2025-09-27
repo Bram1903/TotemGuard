@@ -54,6 +54,10 @@ public class MathUtil {
                 .sum();
     }
 
+    public static int floor(double d) {
+        return (int) Math.floor(d);
+    }
+
     /**
      * Finds the outliers in a dataset based on the Interquartile Range (IQR).
      *

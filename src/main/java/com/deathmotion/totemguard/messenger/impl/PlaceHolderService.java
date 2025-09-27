@@ -39,6 +39,8 @@ public class PlaceHolderService {
                 .replace("%client_brand%", player.getBrand())
                 .replace("%player%", player.getName())
                 .replace("%ping%", String.valueOf(player.getKeepAlivePing()))
+                .replace("%t_ping%", String.valueOf(player.pingData.getTransactionPing()))
+                .replace("%k_ping%", String.valueOf(player.getKeepAlivePing()))
                 .replace("%check_name%", check.getCheckName())
                 .replace("%check_description%", check.getDescription())
                 .replace("%server%", check.getSettings().getServer())

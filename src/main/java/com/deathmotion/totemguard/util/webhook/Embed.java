@@ -51,7 +51,8 @@ public class Embed implements JsonSerializable {
         if ((element = json.get("image")) != null) imageURL(element.getAsJsonObject().get("url").getAsString());
         if ((element = json.get("thumbnail")) != null) imageURL(element.getAsJsonObject().get("url").getAsString());
         if ((element = json.get("author")) != null) author(new EmbedAuthor(element));
-        if ((element = json.get("fields")) != null) fields(JsonSerializable.deserializeArray(element.getAsJsonArray(), EmbedField[]::new, EmbedField::new));
+        if ((element = json.get("fields")) != null)
+            fields(JsonSerializable.deserializeArray(element.getAsJsonArray(), EmbedField[]::new, EmbedField::new));
     }
 
     @Contract(value = "_ -> this", mutates = "this")

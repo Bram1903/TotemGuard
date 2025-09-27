@@ -104,7 +104,7 @@ public class DiscordManager {
                     new EmbedField("**Violations**", violations, true),
                     new EmbedField("**Brand**", p.getBrand(), true),
                     new EmbedField("**Version**", p.user.getClientVersion().getReleaseName(), true),
-                    new EmbedField("**Ping**", String.valueOf(p.getKeepAlivePing()), true),
+                    new EmbedField("**Ping**", "(K: " + p.getKeepAlivePing() + " | T: " + p.pingData.getTransactionPing() + " )", true),
                     new EmbedField("**TPS**", String.format("%.2f", TpsUtil.getInstance().getTps(p.bukkitPlayer.getLocation())), true),
                     new EmbedField("**Details**", "```" + detailsPlain + "```", false)
             );

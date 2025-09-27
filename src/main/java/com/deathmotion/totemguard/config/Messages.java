@@ -62,7 +62,7 @@ public class Messages {
                 &7TPS: &6%tps%&8 |&7 Client Version: &6%client_version%&8 |&7 Client Brand: &6%client_brand%
                 
                 &7Player: &6%player%
-                &7Ping: &6%ping%ms
+                &7Ping: &6(K: %k_ping%ms | T: %t_ping%ms)
                 
                 &7Check: &6%check_name%
                 &7Description: &6%check_description%

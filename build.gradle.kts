@@ -107,8 +107,9 @@ tasks {
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
         url("https://cdn.modrinth.com/data/HYKaKraK/versions/Ks05ZluI/packetevents-spigot-2.9.3.jar")
-        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.4.1/ViaVersion-5.4.1.jar")
-        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.4.1/ViaBackwards-5.4.1.jar")
+        url("https://cdn.modrinth.com/data/LJNGWSvH/versions/Si4engmg/grimac-bukkit-2.3.72-293f6ea.jar")
+        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.4.2/ViaVersion-5.4.2.jar")
+        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.4.2/ViaBackwards-5.4.2.jar")
     }
 
     runServer {

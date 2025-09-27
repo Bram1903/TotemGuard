@@ -48,6 +48,7 @@ public class CheckManager {
                 .put(ClientBrand.class, new ClientBrand(player))
                 .put(BadPacketsA.class, new BadPacketsA(player))
                 .put(BadPacketsC.class, new BadPacketsC(player))
+                .put(BadPacketsD.class, new BadPacketsD(player))
                 .put(AutoTotemD.class, new AutoTotemD(player))
                 .build();
 
@@ -62,7 +63,6 @@ public class CheckManager {
 
         genericChecks = new ImmutableClassToInstanceMap.Builder<GenericCheck>()
                 .put(BadPacketsB.class, new BadPacketsB(player))
-                .put(BadPacketsD.class, new BadPacketsD(player))
                 .put(ManualTotemA.class, new ManualTotemA(player))
                 .build();
 

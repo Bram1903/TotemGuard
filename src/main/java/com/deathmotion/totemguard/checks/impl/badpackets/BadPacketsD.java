@@ -18,23 +18,39 @@
 
 package com.deathmotion.totemguard.checks.impl.badpackets;
 
+import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.CheckData;
-import com.deathmotion.totemguard.checks.type.GenericCheck;
+import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 
+import java.util.concurrent.TimeUnit;
+
 @CheckData(name = "BadPacketsD", description = "Tries to impersonate Lunar Client", experimental = true)
-public class BadPacketsD extends Check implements GenericCheck {
+public class BadPacketsD extends Check implements PacketCheck {
+
+    private boolean hasBeenChecked = false;
 
     public BadPacketsD(final TotemPlayer player) {
         super(player);
     }
 
-    public void handle() {
-        String clientBrand = player.getBrand();
-        if ((clientBrand.toLowerCase().contains("lunarclient")) && !player.isUsingLunarClient) {
-            fail(createDetails(clientBrand));
+    @Override
+    public void onPacketReceive(final PacketReceiveEvent event) {
+        if (hasBeenChecked) return;
+
+        if (event.getPacketType() == PacketType.Play.Client.PLAYER_ROTATION) {
+            hasBeenChecked = true;
+            FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), (o -> {
+                String clientBrand = player.getBrand();
+                if ((clientBrand.toLowerCase().contains("lunarclient")) && !player.isUsingLunarClient) {
+                    fail(createDetails(clientBrand));
+                }
+            }), player.getPing() + 5 * 5L, TimeUnit.MILLISECONDS);
         }
     }
 

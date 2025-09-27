@@ -22,11 +22,11 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
-import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.manager.CheckManager;
 import com.deathmotion.totemguard.models.impl.DigAndPickupState;
+import com.deathmotion.totemguard.models.impl.PingData;
 import com.deathmotion.totemguard.models.impl.TotemData;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -35,11 +35,11 @@ import org.bukkit.entity.Player;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 public class TotemPlayer implements TotemUser {
     public final CheckManager checkManager;
     public final TotemData totemData;
+    public final PingData pingData;
     public final UUID uniqueId;
     public final User user;
 
@@ -56,6 +56,7 @@ public class TotemPlayer implements TotemUser {
 
         checkManager = new CheckManager(this);
         totemData = new TotemData();
+        pingData = new PingData(this);
         digAndPickupState = new DigAndPickupState();
     }
 
@@ -75,7 +76,6 @@ public class TotemPlayer implements TotemUser {
         // Trigger BadPacketsB here, as it will otherwise still be in the configuration state
         this.checkManager.getGenericCheck(BadPacketsB.class).handle();
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseProvider().getPlayerRepository().retrieveOrRefreshPlayer(this)));
-        FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), (o -> this.checkManager.getGenericCheck(BadPacketsD.class).handle()), 2, TimeUnit.SECONDS);
     }
 
     public String getBrand() {
@@ -101,5 +101,14 @@ public class TotemPlayer implements TotemUser {
     public int getKeepAlivePing() {
         if (bukkitPlayer == null) return -1;
         return PacketEvents.getAPI().getPlayerManager().getPing(bukkitPlayer);
+    }
+
+    public int getPing() {
+        int transactionPing = pingData.getTransactionPing();
+        if (transactionPing == -1) {
+            return getKeepAlivePing();
+        } else {
+            return transactionPing;
+        }
     }
 }

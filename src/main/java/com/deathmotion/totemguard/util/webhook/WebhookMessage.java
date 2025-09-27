@@ -24,7 +24,8 @@ public class WebhookMessage implements JsonSerializable {
     private @Nullable Boolean tts;
     private @NotNull Embed @Nullable [] embeds;
 
-    public WebhookMessage() {}
+    public WebhookMessage() {
+    }
 
     public WebhookMessage(@NotNull JsonObject json) {
         JsonElement element;
@@ -32,7 +33,8 @@ public class WebhookMessage implements JsonSerializable {
         if ((element = json.get("username")) != null) username(element.getAsString());
         if ((element = json.get("avatar_url")) != null) avatar(element.getAsString());
         if ((element = json.get("tts")) != null) tts(element.getAsBoolean());
-        if ((element = json.get("embeds")) != null) embeds(JsonSerializable.deserializeArray(element.getAsJsonArray(), Embed[]::new, Embed::new));
+        if ((element = json.get("embeds")) != null)
+            embeds(JsonSerializable.deserializeArray(element.getAsJsonArray(), Embed[]::new, Embed::new));
     }
 
     @Contract(value = "_ -> this", mutates = "this")
