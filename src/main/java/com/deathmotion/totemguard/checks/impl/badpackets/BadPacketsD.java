@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class BadPacketsD extends Check implements PacketCheck {
 
     private boolean hasBeenChecked = false;
+    private byte positionPacketReceived = 0;
 
     public BadPacketsD(final TotemPlayer player) {
         super(player);
@@ -43,14 +44,16 @@ public class BadPacketsD extends Check implements PacketCheck {
     public void onPacketReceive(final PacketReceiveEvent event) {
         if (hasBeenChecked) return;
 
-        if (event.getPacketType() == PacketType.Play.Client.PLAYER_ROTATION) {
+        if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) {
+            if (positionPacketReceived++ <= 2) return;
             hasBeenChecked = true;
+
             FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), (o -> {
                 String clientBrand = player.getBrand();
                 if ((clientBrand.toLowerCase().contains("lunarclient")) && !player.isUsingLunarClient) {
                     fail(createDetails(clientBrand));
                 }
-            }), player.getPing() + 5 * 5L, TimeUnit.MILLISECONDS);
+            }), (player.getPing() + 5) * 5L, TimeUnit.MILLISECONDS);
         }
     }
 
