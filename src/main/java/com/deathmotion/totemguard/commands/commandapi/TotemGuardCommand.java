@@ -39,15 +39,11 @@ public class TotemGuardCommand {
                 .withSubcommands(
                         new ReloadCommand(plugin).init(),
                         new CheckCommand(plugin).init(),
-                        new AlertsCommand(plugin).init(),
                         new ProfileCommand(plugin).init(),
                         new DatabaseCommand(plugin).init(),
                         new ClearLogsCommand(plugin).init(),
                         new StatsCommand(plugin).init()
                 )
-                .executes((sender, args) -> {
-                    sender.sendMessage(plugin.getMessengerService().totemGuardInfo());
-                })
                 .register();
     }
 }

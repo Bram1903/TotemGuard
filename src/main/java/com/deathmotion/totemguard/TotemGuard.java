@@ -87,7 +87,6 @@ public final class TotemGuard extends JavaPlugin {
         }
 
         CommandAPI.onEnable();
-        cloudCommandManager = new CloudCommandManager(this);
 
         databaseProvider = new DatabaseProvider(this);
         messengerService = new MessengerService(this);
@@ -109,7 +108,9 @@ public final class TotemGuard extends JavaPlugin {
         // Needed for the Lunar Client specific check
         new ApolloPlayerListener(this);
 
+        cloudCommandManager = new CloudCommandManager(this);
         new TotemGuardCommand(this);
+
         enableBStats();
     }
 

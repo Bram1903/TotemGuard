@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.commands.cloud;
 
 import org.bukkit.command.CommandSender;
 import org.incendo.cloud.Command;
+import org.incendo.cloud.description.Description;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
 import java.util.Locale;
@@ -33,7 +34,7 @@ public final class CommandDefaults {
     }
 
     public static Command.Builder<CommandSender> root(final LegacyPaperCommandManager<CommandSender> manager) {
-        return manager.commandBuilder(ROOT, ALIASES);
+        return manager.commandBuilder(ROOT, Description.of("The root command for TotemGuard."), ALIASES);
     }
 
     /**

@@ -56,7 +56,7 @@ public class AlertsToggleEvent extends Event implements Cancellable {
      * @param enabled {@code true} if alerts are being enabled; {@code false} if they are being disabled
      */
     public AlertsToggleEvent(Player player, boolean enabled) {
-        super(true);
+        super(false);
         this.player = player;
         this.enabled = enabled;
     }

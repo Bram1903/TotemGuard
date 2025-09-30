@@ -55,9 +55,7 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
 
         Player player = event.getPlayer();
         if (player.hasPermission("TotemGuard.Alerts") && player.hasPermission("TotemGuard.Alerts.EnableOnJoin")) {
-            FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-                TotemGuard.getInstance().getAlertManager().toggleAlerts(player);
-            });
+            TotemGuard.getInstance().getAlertManager().toggleAlerts(player);
         }
 
         if (plugin.getConfigManager().getSettings().getUpdateChecker().isNotifyInGame() && plugin.getUpdateChecker().isUpdateAvailable()) {
