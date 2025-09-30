@@ -25,6 +25,11 @@ import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerPosition;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerPositionAndRotation;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerRotation;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 
@@ -34,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 public class BadPacketsD extends Check implements PacketCheck {
 
     private boolean hasBeenChecked = false;
-    private byte positionPacketReceived = 0;
+    private Location lastLocation;
 
     public BadPacketsD(final TotemPlayer player) {
         super(player);
@@ -44,20 +49,55 @@ public class BadPacketsD extends Check implements PacketCheck {
     public void onPacketReceive(final PacketReceiveEvent event) {
         if (hasBeenChecked) return;
 
-        if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) {
-            if (positionPacketReceived++ <= 2) return;
-            hasBeenChecked = true;
+        final Location loc = extractLocation(event);
+        if (loc == null) return;
 
-            FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), (o -> {
-                String clientBrand = player.getBrand();
-                if ((clientBrand.toLowerCase().contains("lunarclient")) && !player.isUsingLunarClient) {
-                    fail(createDetails(clientBrand));
-                }
-            }), (player.getPing() + 5) * 5L, TimeUnit.MILLISECONDS);
+        if (lastLocation == null) {
+            lastLocation = loc;
+            return;
+        }
+
+        if (positionChanged(lastLocation, loc)) {
+            handle();
         }
     }
 
-    private Component createDetails(String clientBrand) {
+    private Location extractLocation(final PacketReceiveEvent event) {
+        final PacketTypeCommon type = event.getPacketType();
+
+        if (type == PacketType.Play.Client.PLAYER_POSITION) {
+            return new WrapperPlayClientPlayerPosition(event).getLocation();
+        }
+        if (type == PacketType.Play.Client.PLAYER_ROTATION) {
+            return new WrapperPlayClientPlayerRotation(event).getLocation();
+        }
+        if (type == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) {
+            return new WrapperPlayClientPlayerPositionAndRotation(event).getLocation();
+        }
+        return null;
+    }
+
+    private boolean positionChanged(final Location a, final Location b) {
+        return a.getX() != b.getX() || a.getY() != b.getY() || a.getZ() != b.getZ();
+    }
+
+    private void handle() {
+        hasBeenChecked = true;
+
+        final long ping = Math.max(0L, player.getPing());
+        final long calculatedDelayMs = (ping + 5L) * 5L;
+
+        FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), o -> {
+            final String clientBrand = player.getBrand();
+            final boolean claimsLunar = clientBrand.toLowerCase().contains("lunarclient");
+
+            if (claimsLunar && !player.isUsingLunarClient) {
+                fail(createDetails(clientBrand));
+            }
+        }, calculatedDelayMs, TimeUnit.MILLISECONDS);
+    }
+
+    private Component createDetails(final String clientBrand) {
         return Component.text()
                 .append(Component.text("Fake Lunar Client Brand: ", color.getX()))
                 .append(Component.text(clientBrand, color.getY()))
