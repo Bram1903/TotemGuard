@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands;
+package com.deathmotion.totemguard.commands.commandapi;
 
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import lombok.experimental.UtilityClass;

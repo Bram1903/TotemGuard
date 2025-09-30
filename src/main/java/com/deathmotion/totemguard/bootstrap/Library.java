@@ -22,6 +22,7 @@ import lombok.Getter;
 
 @Getter
 public enum Library {
+    CLOUD("org.incendo", "cloud-paper", "2.0.0-beta.10"),
     CONFIGLIB("com.github.Exlll.ConfigLib", "configlib-yaml", "v4.6.1"),
     LETTUCE("io.lettuce", "lettuce-core", "6.5.1.RELEASE"),
     EXPIRING_MAP("net.jodah", "expiringmap", "0.5.11"),

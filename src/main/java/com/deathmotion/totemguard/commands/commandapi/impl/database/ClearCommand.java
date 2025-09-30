@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.impl.database;
+package com.deathmotion.totemguard.commands.commandapi.impl.database;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.impl.database.util.ValidationHelper;
-import com.deathmotion.totemguard.commands.impl.database.util.ValidationType;
+import com.deathmotion.totemguard.commands.commandapi.impl.database.util.ValidationHelper;
+import com.deathmotion.totemguard.commands.commandapi.impl.database.util.ValidationType;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.impl.DatabaseMessageService;
 import dev.jorel.commandapi.CommandAPICommand;

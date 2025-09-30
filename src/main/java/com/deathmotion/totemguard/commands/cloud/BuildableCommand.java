@@ -16,27 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.impl;
+package com.deathmotion.totemguard.commands.cloud;
 
-import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.impl.database.ClearCommand;
-import com.deathmotion.totemguard.commands.impl.database.TrimCommand;
-import dev.jorel.commandapi.CommandAPICommand;
+import org.incendo.cloud.paper.PaperCommandManager;
+import org.incendo.cloud.paper.util.sender.Source;
 
-public class DatabaseCommand {
-
-    private final TotemGuard plugin;
-
-    public DatabaseCommand(TotemGuard plugin) {
-        this.plugin = plugin;
-    }
-
-    public CommandAPICommand init() {
-        return new CommandAPICommand("database")
-                .withPermission("TotemGuard.Database")
-                .withSubcommands(
-                        new ClearCommand(plugin).init(),
-                        new TrimCommand(plugin).init()
-                );
-    }
+public interface BuildableCommand {
+    void register(PaperCommandManager<Source> commandManager);
 }

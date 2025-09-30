@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.impl.database.util;
+package com.deathmotion.totemguard.commands.commandapi.impl.database.util;
 
 public enum ValidationType {
     CLEAR,

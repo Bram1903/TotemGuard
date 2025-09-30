@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.impl;
+package com.deathmotion.totemguard.commands.commandapi.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.CommandSuggestionUtil;
-import com.deathmotion.totemguard.commands.OfflinePlayerCommandHandler;
+import com.deathmotion.totemguard.commands.commandapi.CommandSuggestionUtil;
+import com.deathmotion.totemguard.commands.commandapi.OfflinePlayerCommandHandler;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.impl.ClearLogsMessageService;
