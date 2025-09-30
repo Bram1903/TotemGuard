@@ -97,7 +97,8 @@ tasks {
     val runtimeDeps: List<Provider<MinimalExternalModuleDependency>> = listOf(
         libs.mysql,
         libs.mariadb,
-        libs.h2
+        libs.h2,
+        libs.adventure.text.serializer.plain
     )
 
     // Two-space indented lines that begin with "- "
