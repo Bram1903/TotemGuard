@@ -18,7 +18,9 @@
 
 package com.deathmotion.totemguard.commands.cloud;
 
+import com.deathmotion.totemguard.commands.cloud.impl.ConsoleOnlyCommand;
 import com.deathmotion.totemguard.commands.cloud.impl.HelloWorldCommand;
+import com.deathmotion.totemguard.commands.cloud.impl.PlayerOnlyCommand;
 import com.google.common.collect.ImmutableList;
 import org.bukkit.command.CommandSender;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
@@ -26,7 +28,9 @@ import org.incendo.cloud.paper.LegacyPaperCommandManager;
 public class CommandBuilder {
 
     private static final ImmutableList<BuildableCommand> COMMANDS = ImmutableList.of(
-            new HelloWorldCommand()
+            new HelloWorldCommand(),
+            new PlayerOnlyCommand(),
+            new ConsoleOnlyCommand()
     );
 
     public CommandBuilder(LegacyPaperCommandManager<CommandSender> commandManager) {
