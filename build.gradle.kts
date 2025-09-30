@@ -14,12 +14,6 @@ val compileOnlyDeps: List<Provider<MinimalExternalModuleDependency>> = listOf(
     libs.hikaricp
 )
 
-val runtimeDeps: List<Provider<MinimalExternalModuleDependency>> = listOf(
-    libs.mysql,
-    libs.mariadb,
-    libs.h2
-)
-
 dependencies {
     implementation(project(":api"))
     implementation(libs.commandapi)
@@ -100,6 +94,12 @@ tasks {
         return if (v.isNullOrBlank()) "$g:$a" else "$g:$a:$v"
     }
 
+    val runtimeDeps: List<Provider<MinimalExternalModuleDependency>> = listOf(
+        libs.mysql,
+        libs.mariadb,
+        libs.h2
+    )
+
     // Two-space indented lines that begin with "- "
     val librariesBlock = "\n" + compileOnlyDeps.joinToString("\n") { """  - "${it.gav()}"""" }
     val runtimeLibrariesBlock = "\n" + runtimeDeps.joinToString("\n") { """  - "${it.gav()}"""" }
@@ -125,7 +125,7 @@ tasks {
     // 1.17           = Java 16
     // 1.18 - 1.20.4  = Java 17
     // 1-20.5+        = Java 21
-    val version = "1.16.5"
+    val version = "1.21.8"
     val javaVersion = JavaLanguageVersion.of(21)
 
     val jvmArgsExternal = listOf(
