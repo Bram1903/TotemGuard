@@ -28,6 +28,7 @@ public final class CommandDefaults {
     public static final String ROOT = "totemguard";
     public static final String[] ALIASES = {"tg"};
     public static final String PERMISSION_PREFIX = "totemguard.";
+
     private CommandDefaults() {
     }
 
@@ -36,7 +37,7 @@ public final class CommandDefaults {
     }
 
     /**
-     * Normalizes and prefixes permission nodes, e.g. perm("hello") -> "totemguard.command.hello"
+     * Normalizes and prefixes permission nodes, e.g. perm("hello") -> "totemguard.hello"
      */
     public static String perm(final String node) {
         String n = node.trim()
