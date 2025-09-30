@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.manager.AlertManagerImpl;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
@@ -33,88 +34,80 @@ import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.description.Description;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
-public class AlertsCommand extends AbstractCommand {
+public final class AlertsCommand extends AbstractCommand {
 
-    private final TotemGuard plugin;
     private final MessengerService messengerService;
     private final CommandMessengerService commandMessengerService;
     private final AlertManagerImpl alertManager;
 
-    public AlertsCommand(TotemGuard plugin) {
-        this.plugin = plugin;
+    public AlertsCommand(final TotemGuard plugin) {
         this.messengerService = plugin.getMessengerService();
         this.commandMessengerService = messengerService.getCommandMessengerService();
         this.alertManager = plugin.getAlertManager();
     }
 
+    private static boolean isSelf(@NonNull final Player player, @NonNull final Player target) {
+        return player.getUniqueId().equals(target.getUniqueId());
+    }
+
     @Override
-    public void register(LegacyPaperCommandManager<CommandSender> commandManager) {
+    public void register(final LegacyPaperCommandManager<CommandSender> commandManager) {
         commandManager.command(root(commandManager)
                 .literal("alerts", Description.of("Toggle alerts for yourself or another player"))
-                .optional(
-                        "target",
-                        PlayerArgument.playerParser(),
-                        PlayerArgument.onlinePlayerSuggestions()
-                )
-                .permission("TotemGuard.Alerts")
-                .handler(this::genericHandler)
+                .optional("target", PlayerArgument.playerParser(), PlayerArgument.onlinePlayerSuggestions())
+                .permission(perm("alerts"))
+                .handler(this::handle)
         );
     }
 
-    private void genericHandler(@NonNull CommandContext<CommandSender> ctx) {
+    private void handle(@NonNull final CommandContext<CommandSender> ctx) {
         final CommandSender sender = ctx.sender();
-        Player target = ctx.getOrDefault("target", null);
+        final Player target = ctx.getOrDefault("target", null);
 
         if (sender instanceof ConsoleCommandSender console) {
             handleConsole(console, target);
             return;
         }
+
         if (sender instanceof Player player) {
             handlePlayer(player, target);
             return;
         }
 
-        sender.sendMessage("§cThis command can only be used by players or from the console.");
+        sender.sendMessage(Component.text("This command can only be used by players or from the console.", NamedTextColor.RED));
     }
 
-    private void handleConsole(@NonNull ConsoleCommandSender console, Player target) {
+    private void handleConsole(@NonNull final ConsoleCommandSender console, final Player target) {
         if (target == null) {
             console.sendMessage(commandMessengerService.specifyPlayer());
             return;
         }
-        executeToggleAlerts(console, target);
+        toggleForTarget(console, target);
     }
 
-    private void handlePlayer(@NonNull Player player, Player target) {
-        // No target => toggle self
-        if (target == null || target.getUniqueId().equals(player.getUniqueId())) {
+    private void handlePlayer(@NonNull final Player player, final Player target) {
+        if (target == null || isSelf(player, target)) {
             alertManager.toggleAlerts(player);
             return;
         }
 
-        // Targeting someone else requires extra permission
-        if (!player.hasPermission("TotemGuard.Alerts.Others")) {
+        if (!player.hasPermission(perm("alerts.others"))) {
             player.sendMessage(messengerService.toggleAlertsOtherNoPermission());
             return;
         }
 
-        executeToggleAlerts(player, target);
+        toggleForTarget(player, target);
     }
 
-    /**
-     * Shared execution with Folia + messages, mirrors your old implementation.
-     */
-    private void executeToggleAlerts(CommandSender sender, Player target) {
-        boolean success = alertManager.toggleAlerts(target);
+    private void toggleForTarget(@NonNull final CommandSender sender, @NonNull final Player target) {
+        final boolean success = alertManager.toggleAlerts(target);
         if (!success) {
             sender.sendMessage(messengerService.toggleAlertsBlockedExternal());
             return;
         }
 
-        boolean enabled = alertManager.hasAlertsEnabled(target);
-        Component msg = enabled
-                ? messengerService.toggleAlertsOther(true, target.getName())
-                : messengerService.toggleAlertsOther(false, target.getName());
-        sender.sendMessage(msg);
+        final boolean nowEnabled = alertManager.hasAlertsEnabled(target);
+        final Component feedback = messengerService.toggleAlertsOther(nowEnabled, target.getName());
+        sender.sendMessage(feedback);
     }
 }
