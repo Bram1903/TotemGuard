@@ -1,7 +1,6 @@
 package com.deathmotion.totemguard.util;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.config.formatter.Formatter;
 import lombok.experimental.UtilityClass;
 import net.kyori.adventure.text.Component;
 

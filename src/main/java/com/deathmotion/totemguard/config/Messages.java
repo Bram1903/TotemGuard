@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.config;
 
-import com.deathmotion.totemguard.config.formatter.Formatter;
+import com.deathmotion.totemguard.util.Formatter;
 import de.exlll.configlib.Comment;
 import de.exlll.configlib.Configuration;
 import lombok.Getter;

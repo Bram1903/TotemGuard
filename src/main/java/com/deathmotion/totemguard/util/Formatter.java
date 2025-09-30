@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.config.formatter;
+package com.deathmotion.totemguard.util;
 
 import lombok.AccessLevel;
 import lombok.Getter;
