@@ -16,29 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud.impl;
+package com.deathmotion.totemguard.commands.cloud;
 
-import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
-import lombok.NonNull;
 import org.bukkit.command.CommandSender;
-import org.incendo.cloud.context.CommandContext;
-import org.incendo.cloud.description.Description;
+import org.incendo.cloud.Command;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
-public class HelloWorldCommand extends AbstractCommand {
-
-    @Override
-    public void register(LegacyPaperCommandManager<CommandSender> commandManager) {
-        commandManager.command(
-                root(commandManager)
-                        .literal("hello", Description.of("Says hello world"))
-                        .permission(perm("hello"))
-                        .handler(this::handleHelloWorldCommand)
-        );
+public abstract class AbstractCommand implements BuildableCommand {
+    protected Command.Builder<CommandSender> root(final LegacyPaperCommandManager<CommandSender> manager) {
+        return CommandDefaults.root(manager);
     }
 
-    private void handleHelloWorldCommand(@NonNull CommandContext<CommandSender> context) {
-        CommandSender sender = context.sender();
-        sender.sendMessage("Hello world!");
+    protected String perm(final String node) {
+        return CommandDefaults.perm(node);
     }
 }
