@@ -20,15 +20,15 @@ package com.deathmotion.totemguard.commands.cloud.impl;
 
 import com.deathmotion.totemguard.commands.cloud.BuildableCommand;
 import lombok.NonNull;
+import org.bukkit.command.CommandSender;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.description.Description;
-import org.incendo.cloud.paper.PaperCommandManager;
-import org.incendo.cloud.paper.util.sender.Source;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
 public class HelloWorldCommand implements BuildableCommand {
 
     @Override
-    public void register(PaperCommandManager<Source> commandManager) {
+    public void register(LegacyPaperCommandManager<CommandSender> commandManager) {
         commandManager.command(
                 commandManager.commandBuilder("totemguard", "tg")
                         .literal("hello", Description.of("Says hello world"))
@@ -37,8 +37,8 @@ public class HelloWorldCommand implements BuildableCommand {
         );
     }
 
-    private void handleHelloWorldCommand(@NonNull CommandContext<Source> context) {
-        Source sender = context.sender();
-        sender.source().sendMessage("Hello world!");
+    private void handleHelloWorldCommand(@NonNull CommandContext<CommandSender> context) {
+        CommandSender sender = context.sender();
+        sender.sendMessage("Hello world!");
     }
 }

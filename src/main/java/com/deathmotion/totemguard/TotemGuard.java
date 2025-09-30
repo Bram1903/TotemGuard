@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.api.TotemGuardProvider;
-import com.deathmotion.totemguard.commands.cloud.CommandBuilder;
 import com.deathmotion.totemguard.commands.commandapi.TotemGuardCommand;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
@@ -40,10 +39,6 @@ import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.incendo.cloud.execution.ExecutionCoordinator;
-import org.incendo.cloud.paper.PaperCommandManager;
-import org.incendo.cloud.paper.util.sender.PaperSimpleSenderMapper;
-import org.incendo.cloud.paper.util.sender.Source;
 
 @Getter
 public final class TotemGuard extends JavaPlugin {
@@ -54,7 +49,7 @@ public final class TotemGuard extends JavaPlugin {
     private boolean isSupportedVersion = true;
 
     private ConfigManager configManager;
-    private PaperCommandManager<Source> commandManager;
+    private CloudCommandManager cloudCommandManager;
     private DatabaseProvider databaseProvider;
     private MessengerService messengerService;
     private AlertManagerImpl alertManager;
@@ -92,11 +87,7 @@ public final class TotemGuard extends JavaPlugin {
         }
 
         CommandAPI.onEnable();
-
-        commandManager = PaperCommandManager.builder(PaperSimpleSenderMapper.simpleSenderMapper())
-                .executionCoordinator(ExecutionCoordinator.simpleCoordinator())
-                .buildOnEnable(this);
-        new CommandBuilder(commandManager);
+        cloudCommandManager = new CloudCommandManager(this);
 
         databaseProvider = new DatabaseProvider(this);
         messengerService = new MessengerService(this);

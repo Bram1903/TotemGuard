@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.commands.cloud;
 
-import org.incendo.cloud.paper.PaperCommandManager;
-import org.incendo.cloud.paper.util.sender.Source;
+import org.bukkit.command.CommandSender;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
 public interface BuildableCommand {
-    void register(PaperCommandManager<Source> commandManager);
+    void register(LegacyPaperCommandManager<CommandSender> commandManager);
 }

@@ -7,7 +7,7 @@ import org.bukkit.Bukkit;
 public class VersionResolver {
 
     @Getter
-    private static final ServerVersion minimumSupportedVersion = ServerVersion.V_1_20_6;
+    private static final ServerVersion minimumSupportedVersion = ServerVersion.V_1_16_5;
 
     public boolean isSupportedVersion() {
         ServerVersion v = resolveVersionNoCache();

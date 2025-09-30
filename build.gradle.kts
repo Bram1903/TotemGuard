@@ -5,6 +5,21 @@ plugins {
     alias(libs.plugins.run.paper)
 }
 
+val compileOnlyDeps: List<Provider<MinimalExternalModuleDependency>> = listOf(
+    libs.cloud,
+    libs.configlib.yaml,
+    libs.lettuce,
+    libs.expiringmap,
+    libs.ormlite,
+    libs.hikaricp
+)
+
+val runtimeDeps: List<Provider<MinimalExternalModuleDependency>> = listOf(
+    libs.mysql,
+    libs.mariadb,
+    libs.h2
+)
+
 dependencies {
     implementation(project(":api"))
     implementation(libs.commandapi)
@@ -16,12 +31,7 @@ dependencies {
     annotationProcessor(libs.lombok)
 
     // Loaded during runtime
-    compileOnly(libs.cloud)
-    compileOnly(libs.configlib.yaml)
-    compileOnly(libs.lettuce)
-    compileOnly(libs.expiringmap)
-    compileOnly(libs.ormlite)
-    compileOnly(libs.hikaricp)
+    compileOnlyDeps.forEach { compileOnly(it) }
 }
 
 group = "com.deathmotion.totemguard"
@@ -81,16 +91,32 @@ tasks {
         packageName = "com.deathmotion.totemguard.util"
     }
 
+    // helper to turn a version-catalog dep into "group:name:version"
+    fun Provider<MinimalExternalModuleDependency>.gav(): String {
+        val d = get()
+        val g = d.module.group
+        val a = d.module.name
+        val v = d.version
+        return if (v.isNullOrBlank()) "$g:$a" else "$g:$a:$v"
+    }
+
+    // Two-space indented lines that begin with "- "
+    val librariesBlock = "\n" + compileOnlyDeps.joinToString("\n") { """  - "${it.gav()}"""" }
+    val runtimeLibrariesBlock = "\n" + runtimeDeps.joinToString("\n") { """  - "${it.gav()}"""" }
+    val combinedLibrariesBlock = librariesBlock + runtimeLibrariesBlock
+
     processResources {
         inputs.properties(
             "version" to ext["versionNoHash"].toString(),
-            "description" to (project.description ?: "")
+            "description" to (project.description ?: ""),
+            "libraries" to combinedLibrariesBlock
         )
 
         filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
             expand(
                 "version" to ext["versionNoHash"].toString(),
-                "description" to (project.description ?: "")
+                "description" to (project.description ?: ""),
+                "libraries" to combinedLibrariesBlock
             )
         }
     }
@@ -99,15 +125,16 @@ tasks {
     // 1.17           = Java 16
     // 1.18 - 1.20.4  = Java 17
     // 1-20.5+        = Java 21
-    val version = "1.21.8"
+    val version = "1.16.5"
     val javaVersion = JavaLanguageVersion.of(21)
 
     val jvmArgsExternal = listOf(
-        "-Dcom.mojang.eula.agree=true"
+        "-Dcom.mojang.eula.agree=true",
+        "-DPaper.IgnoreJavaVersion=true"
     )
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
-        url("https://cdn.modrinth.com/data/HYKaKraK/versions/Ks05ZluI/packetevents-spigot-2.9.3.jar")
+        url("https://cdn.modrinth.com/data/HYKaKraK/versions/Kee6pozk/packetevents-spigot-2.9.5.jar")
         url("https://cdn.modrinth.com/data/LJNGWSvH/versions/zxYV337v/grimac-bukkit-2.3.72-c10e74c.jar")
         url("https://github.com/ViaVersion/ViaVersion/releases/download/5.4.2/ViaVersion-5.4.2.jar")
         url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.4.2/ViaBackwards-5.4.2.jar")
