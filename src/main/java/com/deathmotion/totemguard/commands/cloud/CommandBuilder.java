@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.commands.cloud;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.cloud.impl.AlertsCommand;
 import com.deathmotion.totemguard.commands.cloud.impl.CheckCommand;
+import com.deathmotion.totemguard.commands.cloud.impl.ClearLogsCommand;
 import com.google.common.collect.ImmutableList;
 import org.bukkit.command.CommandSender;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
@@ -30,7 +31,8 @@ public class CommandBuilder {
     private static final ImmutableList<BuildableCommand> COMMANDS = ImmutableList.of(
             new TotemGuardCommand(),
             new AlertsCommand(TotemGuard.getInstance()),
-            new CheckCommand(TotemGuard.getInstance())
+            new CheckCommand(TotemGuard.getInstance()),
+            new ClearLogsCommand(TotemGuard.getInstance())
     );
 
     public CommandBuilder(LegacyPaperCommandManager<CommandSender> commandManager) {
