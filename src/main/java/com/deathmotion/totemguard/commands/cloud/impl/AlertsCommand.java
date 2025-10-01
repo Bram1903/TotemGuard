@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.commands.cloud.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
-import com.deathmotion.totemguard.commands.cloud.arguments.PlayerArgument;
+import com.deathmotion.totemguard.commands.cloud.arguments.PlayerSuggestion;
 import com.deathmotion.totemguard.manager.AlertManagerImpl;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.MessengerService;
@@ -30,6 +30,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.incendo.cloud.bukkit.parser.PlayerParser;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.description.Description;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
@@ -54,8 +55,8 @@ public final class AlertsCommand extends AbstractCommand {
     public void register(final LegacyPaperCommandManager<CommandSender> commandManager) {
         commandManager.command(root(commandManager)
                 .literal("alerts", Description.of("Toggle alerts for yourself or another player"))
-                .optional("target", PlayerArgument.playerParser(), PlayerArgument.onlinePlayerSuggestions())
-                .permission(perm("alerts"))
+                .optional("target", PlayerParser.playerParser(), PlayerSuggestion.onlinePlayerSuggestions())
+                .permission(perm("Alerts"))
                 .handler(this::handle)
         );
     }

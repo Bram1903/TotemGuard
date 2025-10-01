@@ -38,7 +38,6 @@ public class TotemGuardCommand {
                 .withAliases(settings.getCommandAlias())
                 .withSubcommands(
                         new ReloadCommand(plugin).init(),
-                        new CheckCommand(plugin).init(),
                         new ProfileCommand(plugin).init(),
                         new DatabaseCommand(plugin).init(),
                         new ClearLogsCommand(plugin).init(),

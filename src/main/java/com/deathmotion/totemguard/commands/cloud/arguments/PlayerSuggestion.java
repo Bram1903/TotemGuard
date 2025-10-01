@@ -22,10 +22,8 @@ import lombok.experimental.UtilityClass;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.incendo.cloud.bukkit.parser.PlayerParser;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.context.CommandInput;
-import org.incendo.cloud.parser.ParserDescriptor;
 import org.incendo.cloud.suggestion.Suggestion;
 import org.incendo.cloud.suggestion.SuggestionProvider;
 
@@ -34,14 +32,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @UtilityClass
-public class PlayerArgument {
-
-    public ParserDescriptor<CommandSender, Player> playerParser() {
-        return PlayerParser.playerParser();
-    }
+public class PlayerSuggestion {
 
     public SuggestionProvider<CommandSender> onlinePlayerSuggestions() {
-        return PlayerArgument::suggestOnlinePlayers;
+        return PlayerSuggestion::suggestOnlinePlayers;
     }
 
     private CompletableFuture<List<Suggestion>> suggestOnlinePlayers(
