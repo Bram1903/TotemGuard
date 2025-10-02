@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.messenger.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.commandapi.impl.database.util.ValidationType;
+import com.deathmotion.totemguard.commands.cloud.impl.database.util.ValidationType;
 import com.deathmotion.totemguard.config.Messages;
 import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.MessengerService;

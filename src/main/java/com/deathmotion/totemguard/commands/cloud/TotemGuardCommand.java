@@ -6,7 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
-public class TotemGuardCommand extends AbstractCommand {
+public final class TotemGuardCommand extends AbstractCommand {
 
     @Override
     public void register(LegacyPaperCommandManager<CommandSender> commandManager) {

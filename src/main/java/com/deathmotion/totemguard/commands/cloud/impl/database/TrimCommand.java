@@ -16,61 +16,68 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.commandapi.impl.database;
+package com.deathmotion.totemguard.commands.cloud.impl.database;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.commandapi.impl.database.util.ValidationHelper;
-import com.deathmotion.totemguard.commands.commandapi.impl.database.util.ValidationType;
+import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
+import com.deathmotion.totemguard.commands.cloud.impl.database.util.ValidationHelper;
+import com.deathmotion.totemguard.commands.cloud.impl.database.util.ValidationType;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.impl.DatabaseMessageService;
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.IntegerArgument;
-import dev.jorel.commandapi.executors.CommandArguments;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.command.CommandSender;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.description.Description;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
+import org.incendo.cloud.parser.standard.IntegerParser;
 
-import java.util.Optional;
+public final class TrimCommand extends AbstractCommand {
 
-public class ClearCommand {
     private final TotemGuard plugin;
     private final DatabaseProvider databaseProvider;
     private final DatabaseMessageService databaseMessageService;
     private final ValidationHelper validationHelper;
 
-    public ClearCommand(TotemGuard plugin) {
+    public TrimCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseProvider = plugin.getDatabaseProvider();
         this.databaseMessageService = plugin.getMessengerService().getDatabaseMessageService();
         this.validationHelper = ValidationHelper.getInstance();
     }
 
-    public CommandAPICommand init() {
-        return new CommandAPICommand("clear")
-                .withPermission("TotemGuard.Database.Clear")
-                .withOptionalArguments(new IntegerArgument("code"))
-                .executes(this::onCommand);
+    @Override
+    public void register(final LegacyPaperCommandManager<CommandSender> commandManager) {
+        commandManager.command(root(commandManager)
+                .literal("database", Description.of("Database related commands"))
+                .literal("trim", Description.of("Clears the entire database"))
+                .optional("code", IntegerParser.integerParser())
+                .permission(perm("Database.Trim"))
+                .handler(this::handle)
+        );
     }
 
-    private void onCommand(CommandSender sender, CommandArguments args) {
-        Optional<Integer> optionalCode = args.getOptional("code").map(value -> (Integer) value);
+    private void handle(@NonNull final CommandContext<CommandSender> ctx) {
+        final CommandSender sender = ctx.sender();
+        final Integer code = ctx.getOrDefault("code", null);
 
-        if (optionalCode.isEmpty()) {
-            sender.sendMessage(validationHelper.generateCodeMessage(ValidationType.CLEAR));
+        if (code == null) {
+            sender.sendMessage(validationHelper.generateCodeMessage(ValidationType.TRIM));
             return;
         }
 
-        if (!validationHelper.validateCode(optionalCode.get())) {
+        if (!validationHelper.validateCode(code)) {
             sender.sendMessage(databaseMessageService.invalidConfirmationCode());
             return;
         }
 
-        sender.sendMessage(databaseMessageService.clearingStartedComponent());
+        sender.sendMessage(databaseMessageService.trimmingStartedComponent());
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             long startTime = System.currentTimeMillis();
-            int totalRemovedLogs = databaseProvider.getGenericService().wipeDatabase();
+            int totalRemovedLogs = databaseProvider.getGenericService().optimizeDatabase();
             long loadTime = System.currentTimeMillis() - startTime;
 
-            sender.sendMessage(databaseMessageService.clearingCompleted(totalRemovedLogs, loadTime));
+            sender.sendMessage(databaseMessageService.trimmingCompleted(totalRemovedLogs, loadTime));
         });
     }
 }
