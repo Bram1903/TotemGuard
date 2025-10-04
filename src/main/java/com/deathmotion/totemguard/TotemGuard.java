@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard;
 
 import com.deathmotion.totemguard.api.TotemGuardProvider;
-import com.deathmotion.totemguard.commands.commandapi.TotemGuardCommand;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.events.bukkit.CheckManagerBukkitListener;
 import com.deathmotion.totemguard.events.lunarclient.ApolloPlayerListener;
@@ -32,9 +31,6 @@ import com.deathmotion.totemguard.redis.RedisService;
 import com.deathmotion.totemguard.util.UpdateChecker;
 import com.deathmotion.totemguard.util.VersionResolver;
 import com.github.retrooper.packetevents.PacketEvents;
-import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIBukkitConfig;
-import dev.jorel.commandapi.CommandAPILogger;
 import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -71,10 +67,6 @@ public final class TotemGuard extends JavaPlugin {
         }
 
         configManager = new ConfigManager(this);
-        CommandAPI.setLogger(CommandAPILogger.fromJavaLogger(getLogger()));
-        CommandAPIBukkitConfig config = new CommandAPIBukkitConfig(this);
-        config.setNamespace(configManager.getSettings().getCommand());
-        CommandAPI.onLoad(config);
     }
 
     @Override
@@ -85,8 +77,6 @@ public final class TotemGuard extends JavaPlugin {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
-
-        CommandAPI.onEnable();
 
         databaseProvider = new DatabaseProvider(this);
         messengerService = new MessengerService(this);
@@ -109,7 +99,6 @@ public final class TotemGuard extends JavaPlugin {
         new ApolloPlayerListener(this);
 
         cloudCommandManager = new CloudCommandManager(this);
-        new TotemGuardCommand(this);
 
         enableBStats();
     }
@@ -118,8 +107,6 @@ public final class TotemGuard extends JavaPlugin {
     public void onDisable() {
         if (redisService != null) redisService.stop();
         if (databaseProvider != null) databaseProvider.close();
-
-        CommandAPI.onDisable();
     }
 
     public void debug(String message) {

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.commandapi.impl;
+package com.deathmotion.totemguard.commands.cloud.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.commandapi.CommandSuggestionUtil;
-import com.deathmotion.totemguard.commands.commandapi.OfflinePlayerCommandHandler;
+import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
+import com.deathmotion.totemguard.commands.cloud.arguments.PlayerSuggestion;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.database.entities.DatabaseAlert;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
@@ -28,21 +28,27 @@ import com.deathmotion.totemguard.database.entities.DatabasePunishment;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.models.impl.SafetyStatus;
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.AsyncOfflinePlayerArgument;
-import dev.jorel.commandapi.executors.CommandArguments;
+import com.deathmotion.totemguard.util.MessageUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.description.Description;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
+import org.incendo.cloud.parser.standard.StringParser;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
-public class ProfileCommand {
+public final class ProfileCommand extends AbstractCommand {
 
     private final TotemGuard plugin;
     private final DatabaseProvider db;
@@ -58,30 +64,35 @@ public class ProfileCommand {
         this.zoneId = ZoneId.systemDefault();
     }
 
-    public CommandAPICommand init() {
-        return new CommandAPICommand("profile")
-                .withPermission("TotemGuard.Profile")
-                .withArguments(new AsyncOfflinePlayerArgument("target")
-                        .replaceSuggestions(CommandSuggestionUtil.getOfflinePlayerNameSuggestions()))
-                .executes(this::onCommand);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void onCommand(CommandSender sender, CommandArguments args) {
-        CompletableFuture<OfflinePlayer> targetF = (CompletableFuture<OfflinePlayer>) args.get("target");
-        String rawName = args.getRaw("target");
-        sender.sendMessage(cms.loadingProfile(rawName));
-
-        OfflinePlayerCommandHandler.handlePlayerTarget(
-                sender, targetF, rawName, this::doProfileLookup
+    @Override
+    public void register(final LegacyPaperCommandManager<CommandSender> commandManager) {
+        commandManager.command(root(commandManager)
+                .literal("profile", Description.of("Gets the profile of a player"))
+                .required("target", StringParser.stringParser(), PlayerSuggestion.onlinePlayerSuggestions())
+                .permission(perm("Profile"))
+                .handler(this::handle)
         );
     }
 
-    private void doProfileLookup(CommandSender sender, OfflinePlayer target, String rawName) {
-        long start = System.currentTimeMillis();
+    private void handle(@NonNull final CommandContext<CommandSender> ctx) {
+        final CommandSender sender = ctx.sender();
+        final String username = ctx.get("target");
+        sender.sendMessage(cms.loadingProfile(username));
 
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, task -> {
+        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             try {
+                long startTime = System.currentTimeMillis();
+
+                OfflinePlayer target = Arrays.stream(Bukkit.getOfflinePlayers())
+                        .filter(p -> p.getName() != null && p.getName().equalsIgnoreCase(username))
+                        .findFirst()
+                        .orElse(null);
+
+                if (target == null) {
+                    sender.sendMessage(MessageUtil.getPrefix().append(Component.text(" Player not found", NamedTextColor.RED)));
+                    return;
+                }
+
                 UUID uuid = target.getUniqueId();
                 Instant dayStart = LocalDate.now(zoneId)
                         .atStartOfDay(zoneId)
@@ -100,7 +111,7 @@ public class ProfileCommand {
                 List<DatabaseAlert> alerts = db.getAlertRepository().findRecentAlertsForPlayer(uuid, 20);
                 List<DatabasePunishment> punishments = db.getPunishmentRepository().findRecentPunishmentsForPlayer(uuid, 20);
 
-                long loadTime = System.currentTimeMillis() - start;
+                long loadTime = System.currentTimeMillis() - startTime;
                 SafetyStatus status = SafetyStatus.getSafetyStatus(
                         (int) alertsToday,
                         (int) totalPunishments
@@ -109,7 +120,7 @@ public class ProfileCommand {
                 sender.sendMessage(messenger
                         .getProfileMessageService()
                         .createProfileMessage(
-                                rawName,
+                                username,
                                 brand,
                                 (int) totalAlerts,
                                 (int) totalPunishments,
@@ -119,7 +130,6 @@ public class ProfileCommand {
                                 punishments
                         )
                 );
-
             } catch (Exception e) {
                 sender.sendMessage("§cFailed to load profile: " + e.getMessage());
             }

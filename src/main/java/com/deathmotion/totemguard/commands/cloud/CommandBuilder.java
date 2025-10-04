@@ -19,9 +19,7 @@
 package com.deathmotion.totemguard.commands.cloud;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.cloud.impl.AlertsCommand;
-import com.deathmotion.totemguard.commands.cloud.impl.CheckCommand;
-import com.deathmotion.totemguard.commands.cloud.impl.ClearLogsCommand;
+import com.deathmotion.totemguard.commands.cloud.impl.*;
 import com.deathmotion.totemguard.commands.cloud.impl.database.ClearCommand;
 import com.deathmotion.totemguard.commands.cloud.impl.database.TrimCommand;
 import com.google.common.collect.ImmutableList;
@@ -36,7 +34,10 @@ public final class CommandBuilder {
             new CheckCommand(TotemGuard.getInstance()),
             new ClearLogsCommand(TotemGuard.getInstance()),
             new ClearCommand(TotemGuard.getInstance()),
-            new TrimCommand(TotemGuard.getInstance())
+            new TrimCommand(TotemGuard.getInstance()),
+            new ProfileCommand(TotemGuard.getInstance()),
+            new StatsCommand(TotemGuard.getInstance()),
+            new ReloadCommand(TotemGuard.getInstance())
     );
 
     public CommandBuilder(LegacyPaperCommandManager<CommandSender> commandManager) {

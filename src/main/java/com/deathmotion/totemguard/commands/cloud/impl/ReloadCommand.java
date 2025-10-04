@@ -16,15 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.commandapi.impl;
+package com.deathmotion.totemguard.commands.cloud.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.executors.CommandArguments;
 import org.bukkit.command.CommandSender;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.description.Description;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
-public class ReloadCommand {
+public final class ReloadCommand extends AbstractCommand {
+
     private final TotemGuard plugin;
     private final CommandMessengerService commandMessengerService;
 
@@ -33,13 +37,17 @@ public class ReloadCommand {
         this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
     }
 
-    public CommandAPICommand init() {
-        return new CommandAPICommand("reload")
-                .withPermission("TotemGuard.Reload")
-                .executes(this::onCommand);
+    @Override
+    public void register(final LegacyPaperCommandManager<CommandSender> commandManager) {
+        commandManager.command(root(commandManager)
+                .literal("reload", Description.of("Reloads the plugin"))
+                .permission(perm("Reload"))
+                .handler(this::handle)
+        );
     }
 
-    private void onCommand(CommandSender sender, CommandArguments args) {
+    private void handle(@NonNull final CommandContext<CommandSender> ctx) {
+        CommandSender sender = ctx.sender();
         plugin.getConfigManager().reload();
         sender.sendMessage(commandMessengerService.pluginReloaded());
     }

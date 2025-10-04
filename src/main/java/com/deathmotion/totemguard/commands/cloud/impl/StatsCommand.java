@@ -16,15 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.commandapi.impl;
+package com.deathmotion.totemguard.commands.cloud.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.impl.StatsMessageService;
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.executors.CommandArguments;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.command.CommandSender;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.description.Description;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class StatsCommand {
+public final class StatsCommand extends AbstractCommand {
 
     private final TotemGuard plugin;
     private final DatabaseProvider databaseProvider;
@@ -44,13 +47,17 @@ public class StatsCommand {
         this.statsMessageService = plugin.getMessengerService().getStatsMessageService();
     }
 
-    public CommandAPICommand init() {
-        return new CommandAPICommand("stats")
-                .withPermission("TotemGuard.Stats")
-                .executes(this::onCommand);
+    @Override
+    public void register(final LegacyPaperCommandManager<CommandSender> commandManager) {
+        commandManager.command(root(commandManager)
+                .literal("stats", Description.of("Shows global stats"))
+                .permission(perm("Stats"))
+                .handler(this::handle)
+        );
     }
 
-    private void onCommand(CommandSender sender, CommandArguments args) {
+    private void handle(@NonNull final CommandContext<CommandSender> ctx) {
+        CommandSender sender = ctx.sender();
         sender.sendMessage(statsMessageService.statsLoading());
 
         FoliaScheduler.getAsyncScheduler().runNow(plugin, task -> {
@@ -146,4 +153,3 @@ public class StatsCommand {
         });
     }
 }
-

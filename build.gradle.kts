@@ -16,7 +16,6 @@ val compileOnlyDeps: List<Provider<MinimalExternalModuleDependency>> = listOf(
 
 dependencies {
     implementation(project(":api"))
-    implementation(libs.commandapi)
 
     // Provided dependencies
     compileOnly(libs.paper)
@@ -61,8 +60,6 @@ tasks {
         archiveFileName = "${rootProject.name}-${ext["versionNoHash"]}.jar"
         archiveClassifier = null
         exclude("META-INF/maven/**")
-
-        relocate("dev.jorel.commandapi", "com.deathmotion.totemguard.shaded.commandapi")
 
         manifest {
             attributes["paperweight-mappings-namespace"] = "mojang"
