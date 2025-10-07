@@ -106,7 +106,7 @@ tasks {
     )
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
-        url("https://cdn.modrinth.com/data/HYKaKraK/versions/Kee6pozk/packetevents-spigot-2.9.5.jar")
+        url("https://ci.codemc.io/job/retrooper/job/packetevents/766/artifact/build/libs/packetevents-spigot-2.10.0-SNAPSHOT.jar")
         url("https://github.com/ViaVersion/ViaVersion/releases/download/5.5.0/ViaVersion-5.5.0.jar")
         url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.5.0/ViaBackwards-5.5.0.jar")
     }
