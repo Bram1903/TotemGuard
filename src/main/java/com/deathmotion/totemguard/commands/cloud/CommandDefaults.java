@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.commands.cloud;
 
+import com.deathmotion.totemguard.TotemGuard;
+import com.deathmotion.totemguard.manager.ConfigManager;
 import org.bukkit.command.CommandSender;
 import org.incendo.cloud.Command;
 import org.incendo.cloud.description.Description;
@@ -26,11 +28,14 @@ import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import java.util.Locale;
 
 public final class CommandDefaults {
-    public static final String ROOT = "totemguard";
-    public static final String[] ALIASES = {"tg"};
+    private static final ConfigManager CONFIG = TotemGuard.getInstance().getConfigManager();
+
+    public static final String ROOT = CONFIG.getSettings().getCommand();
+    public static final String[] ALIASES = new String[]{ CONFIG.getSettings().getCommandAlias() };
     public static final String PERMISSION_PREFIX = "totemguard.";
 
     private CommandDefaults() {
+        // prevent instantiation
     }
 
     public static Command.Builder<CommandSender> root(final LegacyPaperCommandManager<CommandSender> manager) {
@@ -45,7 +50,9 @@ public final class CommandDefaults {
                 .toLowerCase(Locale.ROOT)
                 .replace(' ', '.')
                 .replace("..", ".");
-        if (n.startsWith(".")) n = n.substring(1);
+        if (n.startsWith(".")) {
+            n = n.substring(1);
+        }
         return PERMISSION_PREFIX + n;
     }
 }
