@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud.arguments;
+package com.deathmotion.totemguard.commands.arguments;
 
 import lombok.experimental.UtilityClass;
 import org.bukkit.Bukkit;

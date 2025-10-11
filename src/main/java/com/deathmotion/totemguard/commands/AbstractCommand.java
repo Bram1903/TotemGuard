@@ -16,11 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud;
+package com.deathmotion.totemguard.commands;
 
 import org.bukkit.command.CommandSender;
+import org.incendo.cloud.Command;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 
-public interface BuildableCommand {
-    void register(LegacyPaperCommandManager<CommandSender> commandManager);
+public abstract class AbstractCommand implements BuildableCommand {
+    protected Command.Builder<CommandSender> root(final LegacyPaperCommandManager<CommandSender> manager) {
+        return CommandDefaults.root(manager);
+    }
+
+    protected String perm(final String node) {
+        return CommandDefaults.perm(node);
+    }
 }

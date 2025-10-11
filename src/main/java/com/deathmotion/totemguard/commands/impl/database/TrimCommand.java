@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud.impl.database;
+package com.deathmotion.totemguard.commands.impl.database;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
-import com.deathmotion.totemguard.commands.cloud.impl.database.util.ValidationHelper;
-import com.deathmotion.totemguard.commands.cloud.impl.database.util.ValidationType;
+import com.deathmotion.totemguard.commands.AbstractCommand;
+import com.deathmotion.totemguard.commands.impl.database.util.ValidationHelper;
+import com.deathmotion.totemguard.commands.impl.database.util.ValidationType;
 import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.impl.DatabaseMessageService;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -32,14 +32,14 @@ import org.incendo.cloud.description.Description;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import org.incendo.cloud.parser.standard.IntegerParser;
 
-public final class ClearCommand extends AbstractCommand {
+public final class TrimCommand extends AbstractCommand {
 
     private final TotemGuard plugin;
     private final DatabaseProvider databaseProvider;
     private final DatabaseMessageService databaseMessageService;
     private final ValidationHelper validationHelper;
 
-    public ClearCommand(TotemGuard plugin) {
+    public TrimCommand(TotemGuard plugin) {
         this.plugin = plugin;
         this.databaseProvider = plugin.getDatabaseProvider();
         this.databaseMessageService = plugin.getMessengerService().getDatabaseMessageService();
@@ -50,9 +50,9 @@ public final class ClearCommand extends AbstractCommand {
     public void register(final LegacyPaperCommandManager<CommandSender> commandManager) {
         commandManager.command(root(commandManager)
                 .literal("database", Description.of("Database related commands"))
-                .literal("clear", Description.of("Clears the entire database"))
+                .literal("trim", Description.of("Clears the entire database"))
                 .optional("code", IntegerParser.integerParser())
-                .permission(perm("Database.Clear"))
+                .permission(perm("Database.Trim"))
                 .handler(this::handle)
         );
     }
@@ -62,7 +62,7 @@ public final class ClearCommand extends AbstractCommand {
         final Integer code = ctx.getOrDefault("code", null);
 
         if (code == null) {
-            sender.sendMessage(validationHelper.generateCodeMessage(ValidationType.CLEAR));
+            sender.sendMessage(validationHelper.generateCodeMessage(ValidationType.TRIM));
             return;
         }
 
@@ -71,13 +71,13 @@ public final class ClearCommand extends AbstractCommand {
             return;
         }
 
-        sender.sendMessage(databaseMessageService.clearingStartedComponent());
+        sender.sendMessage(databaseMessageService.trimmingStartedComponent());
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             long startTime = System.currentTimeMillis();
-            int totalRemovedLogs = databaseProvider.getGenericService().wipeDatabase();
+            int totalRemovedLogs = databaseProvider.getGenericService().optimizeDatabase();
             long loadTime = System.currentTimeMillis() - startTime;
 
-            sender.sendMessage(databaseMessageService.clearingCompleted(totalRemovedLogs, loadTime));
+            sender.sendMessage(databaseMessageService.trimmingCompleted(totalRemovedLogs, loadTime));
         });
     }
 }

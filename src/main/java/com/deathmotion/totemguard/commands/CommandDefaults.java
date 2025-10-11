@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud;
+package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.manager.ConfigManager;

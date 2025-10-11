@@ -16,9 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud.impl.database.util;
+package com.deathmotion.totemguard.commands;
 
-public enum ValidationType {
-    CLEAR,
-    TRIM
+import org.bukkit.command.CommandSender;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
+
+public interface BuildableCommand {
+    void register(LegacyPaperCommandManager<CommandSender> commandManager);
 }

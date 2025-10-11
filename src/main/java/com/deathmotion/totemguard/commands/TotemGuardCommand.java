@@ -1,4 +1,4 @@
-package com.deathmotion.totemguard.commands.cloud;
+package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
 import lombok.NonNull;

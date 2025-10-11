@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.manager;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.cloud.CommandBuilder;
+import com.deathmotion.totemguard.commands.CommandBuilder;
 import org.bukkit.command.CommandSender;
 import org.incendo.cloud.brigadier.BrigadierSetting;
 import org.incendo.cloud.brigadier.CloudBrigadierManager;

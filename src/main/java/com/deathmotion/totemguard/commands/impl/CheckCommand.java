@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud.impl;
+package com.deathmotion.totemguard.commands.impl;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
-import com.deathmotion.totemguard.commands.cloud.AbstractCommand;
-import com.deathmotion.totemguard.commands.cloud.arguments.PlayerSuggestion;
+import com.deathmotion.totemguard.commands.AbstractCommand;
+import com.deathmotion.totemguard.commands.arguments.PlayerSuggestion;
 import com.deathmotion.totemguard.config.Checks;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.models.TotemPlayer;

@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.commands.cloud;
+package com.deathmotion.totemguard.commands;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.commands.cloud.impl.*;
-import com.deathmotion.totemguard.commands.cloud.impl.database.ClearCommand;
-import com.deathmotion.totemguard.commands.cloud.impl.database.TrimCommand;
+import com.deathmotion.totemguard.commands.impl.*;
+import com.deathmotion.totemguard.commands.impl.database.ClearCommand;
+import com.deathmotion.totemguard.commands.impl.database.TrimCommand;
 import com.google.common.collect.ImmutableList;
 import org.bukkit.command.CommandSender;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
