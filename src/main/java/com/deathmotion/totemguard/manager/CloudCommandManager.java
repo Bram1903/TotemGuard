@@ -50,13 +50,14 @@ public final class CloudCommandManager {
             registerBrigadier();
         } else {
             log.info(() -> "Brigadier not available on this platform.");
-        }
 
-        if (commandManager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
-            commandManager.registerAsynchronousCompletions();
-            log.info(() -> "Asynchronous command completions enabled.");
+            if (commandManager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
+                commandManager.registerAsynchronousCompletions();
+                log.info(() -> "Asynchronous command completions enabled.");
+            }
         }
     }
+
 
     private void registerBrigadier() {
         commandManager.registerBrigadier();
