@@ -23,11 +23,13 @@ import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.commands.AbstractCommand;
 import com.deathmotion.totemguard.commands.arguments.PlayerSuggestion;
 import com.deathmotion.totemguard.config.Checks;
+import com.deathmotion.totemguard.manager.ConfigManager;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import io.github.retrooper.packetevents.util.folia.TaskWrapper;
 import net.jodah.expiringmap.ExpiringMap;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -56,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 public final class CheckCommand extends AbstractCommand {
 
     private final TotemGuard plugin;
+    private final ConfigManager configManager;
     private final CommandMessengerService commandMessengerService;
 
     /**
@@ -75,6 +78,7 @@ public final class CheckCommand extends AbstractCommand {
 
     public CheckCommand(TotemGuard plugin) {
         this.plugin = plugin;
+        this.configManager = plugin.getConfigManager();
         this.commandMessengerService = plugin.getMessengerService().getCommandMessengerService();
     }
 
@@ -93,7 +97,7 @@ public final class CheckCommand extends AbstractCommand {
         final CommandSender sender = ctx.sender();
         final Player target = ctx.getOrDefault("target", null);
 
-        final Checks.ManualTotemA settings = plugin.getConfigManager().getChecks().getManualTotemA();
+        final Checks.ManualTotemA settings = configManager.getChecks().getManualTotemA();
 
         // Get the custom duration if supplied, otherwise use the default config value.
         final int checkDuration = ctx.getOrDefault("duration", settings.getCheckTime());
@@ -313,7 +317,14 @@ public final class CheckCommand extends AbstractCommand {
 
             // If the check duration has elapsed, the player "passes" the check.
             if (elapsedTime >= checkTime) {
-                sender.sendMessage(commandMessengerService.targetPassedCheck(target.getName()));
+                Component checkFinishedMessage = commandMessengerService.targetPassedCheck(target.getName());
+
+                if (configManager.getSettings().isAnnounceCheckCommand()) {
+                    plugin.getAlertManager().sendMessage(checkFinishedMessage);
+                } else {
+                    sender.sendMessage(checkFinishedMessage);
+                }
+
                 restorePlayerState(target, originalHealth, originalInventory, originalFoodLevel, originalSaturation, originalEffects);
                 taskWrapper[0].cancel();
                 return;

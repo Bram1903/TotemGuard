@@ -131,7 +131,7 @@ public class Messages {
             private String playerInvulnerable = "%prefix% &cTarget is invulnerable.";
             private String playerNoTotem = "%prefix% &cTarget does not have a totem in their hands.";
             private String targetNoDamage = "%prefix% &cTarget did not receive any damage. Are they protected by a plugin or in a safe zone?";
-            private String targetPassed = "%prefix% &a%player% has successfully passed the check.";
+            private String targetPassed = "%prefix% &a%player% has successfully passed the manual check.";
         }
 
         @Configuration

@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
+import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.manager.CheckManager;
@@ -35,6 +36,7 @@ import org.bukkit.entity.Player;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class TotemPlayer implements TotemUser {
     public final CheckManager checkManager;
@@ -44,6 +46,7 @@ public class TotemPlayer implements TotemUser {
     public final User user;
 
     public Player bukkitPlayer;
+    public boolean delayedChecksRan;
     public boolean isUsingLunarClient;
     public DigAndPickupState digAndPickupState;
 
@@ -73,9 +76,23 @@ public class TotemPlayer implements TotemUser {
             return;
         }
 
-        // Trigger BadPacketsB here, as it will otherwise still be in the configuration state
-        this.checkManager.getGenericCheck(BadPacketsB.class).handle();
-        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> databasePlayer = TotemGuard.getInstance().getDatabaseProvider().getPlayerRepository().retrieveOrRefreshPlayer(this)));
+        FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> {
+            databasePlayer = TotemGuard.getInstance().getDatabaseProvider().getPlayerRepository().retrieveOrRefreshPlayer(this);
+        }));
+    }
+
+    public void runDelayedChecks() {
+        if (delayedChecksRan) return;
+        delayedChecksRan = true;
+
+        final long ping = Math.max(0L, getPing());
+        final long calculatedDelayMs = (ping + 5L) * 5L;
+
+        FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), o -> {
+            this.checkManager.getGenericCheck(BadPacketsB.class).handle();
+            this.checkManager.getGenericCheck(BadPacketsD.class).handle();
+            this.checkManager.triggerSignChecks();
+        }, calculatedDelayMs, TimeUnit.MILLISECONDS);
     }
 
     public String getBrand() {

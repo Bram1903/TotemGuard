@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.manager;
 
+import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.checks.impl.autototem.*;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
@@ -26,20 +27,26 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
+import com.deathmotion.totemguard.checks.impl.mods.AccurateBlockPlacement;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
 import com.deathmotion.totemguard.checks.type.GenericCheck;
+import com.deathmotion.totemguard.checks.type.SignCheck;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.event.Event;
+
+import java.util.concurrent.TimeUnit;
 
 public class CheckManager {
 
     public ClassToInstanceMap<AbstractCheck> allChecks;
     ClassToInstanceMap<PacketCheck> packetChecks;
+    ClassToInstanceMap<SignCheck> signChecks;
     ClassToInstanceMap<BukkitEventCheck> bukkitEventChecks;
     ClassToInstanceMap<GenericCheck> genericChecks;
 
@@ -48,8 +55,11 @@ public class CheckManager {
                 .put(ClientBrand.class, new ClientBrand(player))
                 .put(BadPacketsA.class, new BadPacketsA(player))
                 .put(BadPacketsC.class, new BadPacketsC(player))
-                .put(BadPacketsD.class, new BadPacketsD(player))
                 .put(AutoTotemD.class, new AutoTotemD(player))
+                .build();
+
+        signChecks = new ImmutableClassToInstanceMap.Builder<SignCheck>()
+                .put(AccurateBlockPlacement.class, new AccurateBlockPlacement(player))
                 .build();
 
         bukkitEventChecks = new ImmutableClassToInstanceMap.Builder<BukkitEventCheck>()
@@ -63,6 +73,7 @@ public class CheckManager {
 
         genericChecks = new ImmutableClassToInstanceMap.Builder<GenericCheck>()
                 .put(BadPacketsB.class, new BadPacketsB(player))
+                .put(BadPacketsD.class, new BadPacketsD(player))
                 .put(ManualTotemA.class, new ManualTotemA(player))
                 .build();
 
@@ -73,8 +84,28 @@ public class CheckManager {
                 .build();
     }
 
+    public void triggerSignChecks() {
+        long delayMs = 0L;
+        final long ticksBetweenChecks = 2L;
+
+        for (SignCheck check : signChecks.values()) {
+            FoliaScheduler.getAsyncScheduler().runDelayed(
+                    TotemGuard.getInstance(),
+                    o -> check.placeSign(),
+                    delayMs,
+                    TimeUnit.MILLISECONDS
+            );
+
+            delayMs += ticksBetweenChecks * 50;
+        }
+    }
+
     public void onPacketReceive(final PacketReceiveEvent packet) {
         for (PacketCheck check : packetChecks.values()) {
+            check.onPacketReceive(packet);
+        }
+
+        for (SignCheck check : signChecks.values()) {
             check.onPacketReceive(packet);
         }
     }
@@ -100,6 +131,11 @@ public class CheckManager {
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {
         return (T) packetChecks.get(check);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends SignCheck> T getKeybindExploitCheck(Class<T> check) {
+        return (T) signChecks.get(check);
     }
 
     @SuppressWarnings("unchecked")

@@ -20,16 +20,22 @@ package com.deathmotion.totemguard.events.packets;
 
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.PacketTypeSets;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
 public class CheckManagerPacketListener extends PacketListenerAbstract {
 
     public CheckManagerPacketListener() {
         super(PacketListenerPriority.LOW);
+    }
+
+    private static boolean isPlayerTriggeredPacket(final PacketTypeCommon packetType) {
+        return PacketTypeSets.PLAYER_TRIGGERED.contains(packetType);
     }
 
     @Override
@@ -42,6 +48,10 @@ public class CheckManagerPacketListener extends PacketListenerAbstract {
             if (event.getConnectionState() != ConnectionState.CONFIGURATION) return;
             player.checkManager.onPacketReceive(event);
             return;
+        }
+
+        if (isPlayerTriggeredPacket(event.getPacketType())) {
+            player.runDelayedChecks();
         }
 
         player.checkManager.onPacketReceive(event);

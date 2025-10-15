@@ -90,6 +90,17 @@ public class AlertManagerImpl implements AlertManager {
     }
 
     /**
+        * Sends a generic message to all players with alerts enabled.
+     */
+    public void sendMessage(Component message) {
+        if (plugin.getConfigManager().getSettings().isConsoleAlerts()) {
+            plugin.getServer().getConsoleSender().sendMessage(message);
+        }
+
+        enabledAlerts.values().forEach(player -> player.sendMessage(message));
+    }
+
+    /**
      * Toggles the alert status for a given player. If alerts are currently enabled for them,
      * they will be disabled; if disabled, they will be enabled. An AlertsToggleEvent is fired
      * if API usage is enabled, and if the event is not canceled.
