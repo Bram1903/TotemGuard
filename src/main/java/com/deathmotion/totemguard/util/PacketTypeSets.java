@@ -34,9 +34,6 @@ public final class PacketTypeSets {
             PacketType.Play.Client.USE_ITEM,
             PacketType.Play.Client.STEER_VEHICLE,
             PacketType.Play.Client.CLICK_WINDOW,
-            PacketType.Play.Client.CLOSE_WINDOW,
-            PacketType.Play.Client.CHAT_MESSAGE,
-            PacketType.Play.Client.CHAT_COMMAND,
-            PacketType.Play.Client.CHAT_COMMAND_UNSIGNED
+            PacketType.Play.Client.CLOSE_WINDOW
     );
 }
