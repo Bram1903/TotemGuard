@@ -66,6 +66,11 @@ For a much more detailed explanation of the checks, see [the wiki!](https://gith
 - **BadPacketsA** - Opt-out message in a mod configuration channel
 - **BadPacketsB** - Banned client brand
 - **BadPacketsC** - Same slot change packet
+- **BadPacketsD** - Player is faking the usage of Lunar Client
+
+### Mods
+
+- **AccurateBlockPlacement** - Usage of the Accurate Block Placement Reborn mod: https://modrinth.com/mod/accurate-block-placement-reborn
 
 ### ManualTotem
 
