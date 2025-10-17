@@ -26,6 +26,7 @@ import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
 public class CheckManagerPacketListener extends PacketListenerAbstract {
@@ -62,6 +63,10 @@ public class CheckManagerPacketListener extends PacketListenerAbstract {
         if (event.getConnectionState() != ConnectionState.PLAY) return;
         TotemPlayer player = TotemGuard.getInstance().getPlayerDataManager().getPlayer(event.getUser());
         if (player == null) return;
+
+        if (event.getPacketType() == PacketType.Play.Server.BUNDLE) {
+            player.sendingBundlePacket = !player.sendingBundlePacket;
+        }
 
         player.checkManager.onPacketSend(event);
     }

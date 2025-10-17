@@ -53,6 +53,8 @@ public class TotemPlayer implements TotemUser {
     @Nullable
     public DatabasePlayer databasePlayer;
 
+    public boolean sendingBundlePacket;
+
     public TotemPlayer(User user) {
         this.uniqueId = user.getUUID();
         this.user = user;
