@@ -50,7 +50,7 @@ public final class SignUtil {
     public void placeSign(TotemPlayer totemPlayer, UUID packetSecret, List<String> keybinds) {
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> {
             boolean wasSendingBundlePacket = totemPlayer.sendingBundlePacket;
-            Location bukkitLocation = totemPlayer.bukkitPlayer.getLocation().clone().add(0, totemPlayer.bukkitPlayer.getHeight() + 0.3, 0);
+            Location bukkitLocation = totemPlayer.bukkitPlayer.getLocation();
             WrappedBlockState originalBlockState = SpigotConversionUtil.fromBukkitBlockData(bukkitLocation.getBlock().getState().getBlockData());
             Vector3i location = SpigotConversionUtil.fromBukkitLocation(bukkitLocation).getPosition().toVector3i();
             NBTCompound exploitMessage = buildSignMessage(packetSecret, keybinds);
