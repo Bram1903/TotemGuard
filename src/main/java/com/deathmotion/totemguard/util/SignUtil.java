@@ -28,10 +28,7 @@ import com.github.retrooper.packetevents.protocol.world.blockentity.BlockEntityT
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.util.Vector3i;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockEntityData;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenSignEditor;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.experimental.UtilityClass;
@@ -52,22 +49,26 @@ public final class SignUtil {
 
     public void placeSign(TotemPlayer totemPlayer, UUID packetSecret, List<String> keybinds) {
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> {
+            boolean wasSendingBundlePacket = totemPlayer.sendingBundlePacket;
             Location bukkitLocation = totemPlayer.bukkitPlayer.getLocation().clone().add(0, totemPlayer.bukkitPlayer.getHeight() + 0.3, 0);
             WrappedBlockState originalBlockState = SpigotConversionUtil.fromBukkitBlockData(bukkitLocation.getBlock().getState().getBlockData());
             Vector3i location = SpigotConversionUtil.fromBukkitLocation(bukkitLocation).getPosition().toVector3i();
             NBTCompound exploitMessage = buildSignMessage(packetSecret, keybinds);
 
+            WrapperPlayServerBundle bundlePacket = new WrapperPlayServerBundle();
             WrapperPlayServerBlockChange placeSignPacket = new WrapperPlayServerBlockChange(location, WrappedBlockState.getDefaultState(StateTypes.OAK_SIGN));
             WrapperPlayServerBlockEntityData updateSignContentPacket = new WrapperPlayServerBlockEntityData(location, BlockEntityTypes.SIGN, exploitMessage);
             WrapperPlayServerOpenSignEditor openSignPacket = new WrapperPlayServerOpenSignEditor(location, true);
             WrapperPlayServerCloseWindow closeSignPacket = new WrapperPlayServerCloseWindow();
             WrapperPlayServerBlockChange revertOriginalBlockState = new WrapperPlayServerBlockChange(location, originalBlockState);
 
+            if (!wasSendingBundlePacket) totemPlayer.user.sendPacket(bundlePacket);
             totemPlayer.user.sendPacket(placeSignPacket);
             totemPlayer.user.sendPacket(updateSignContentPacket);
             totemPlayer.user.sendPacket(openSignPacket);
             totemPlayer.user.sendPacket(closeSignPacket);
             totemPlayer.user.sendPacket(revertOriginalBlockState);
+            if (!wasSendingBundlePacket) totemPlayer.user.sendPacket(bundlePacket);
         }));
     }
 
