@@ -15,7 +15,7 @@ hikaricp = "7.0.2"
 mysql = "9.4.0"
 mariadb = "3.5.6"
 h2 = "2.4.240"
-adventure-text-serializer-plain = "4.23.0"
+adventure-text-serializer-plain = "4.25.0"
 
 [libraries]
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
