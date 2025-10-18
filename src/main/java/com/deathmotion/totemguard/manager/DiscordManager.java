@@ -105,18 +105,23 @@ public class DiscordManager {
                     new EmbedField("**Brand**", p.getBrand(), true),
                     new EmbedField("**Version**", p.user.getClientVersion().getReleaseName(), true),
                     new EmbedField("**Ping**", "(K: " + p.getKeepAlivePing() + " | T: " + p.pingData.getTransactionPing() + ")", true),
-                    new EmbedField("**TPS**", String.format("%.2f", TpsUtil.getInstance().getTps(p.bukkitPlayer.getLocation())), true),
-                    new EmbedField("**Details**", "```" + detailsPlain + "```", false)
+                    new EmbedField("**TPS**", String.format("%.2f", TpsUtil.getInstance().getTps(p.bukkitPlayer.getLocation())), true)
             );
+
+            if (!detailsPlain.isEmpty()) {
+                embed.addFields(
+                        new EmbedField("**Details**", "```" + detailsPlain + "```", false)
+                );
+            }
         }
 
         if (client.config.isTimestamp()) {
             embed.timestamp(Instant.now());
         }
         if (client.config.isFooter()) {
-            embed.footer(
-                    new EmbedFooter("Server: " + plugin.getConfigManager().getSettings().getServer())
-            );
+            embed.footer(new EmbedFooter(
+                    "Server: " + plugin.getConfigManager().getSettings().getServer()
+            ));
         }
 
         WebhookMessage msg = new WebhookMessage()
@@ -126,7 +131,6 @@ public class DiscordManager {
 
         client.enqueue(buildRequest(msg, client.config.getUri()));
     }
-
 
     private HttpRequest buildRequest(WebhookMessage message, URI uri) {
         return HttpRequest.newBuilder()
