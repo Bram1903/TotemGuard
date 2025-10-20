@@ -275,7 +275,7 @@ public class Checks {
     public static class AccurateBlockPlacement extends CheckSettings {
 
         public AccurateBlockPlacement() {
-            super(true, 1, List.of("kick %player% [TotemGuard] Unauthorised Mod Detected"));
+            super(false, 1, List.of("kick %player% [TotemGuard] Unauthorised Mod Detected"));
         }
     }
 }
