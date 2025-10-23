@@ -46,6 +46,7 @@ public class TotemPlayer implements TotemUser {
     public final User user;
 
     public Player bukkitPlayer;
+    public boolean firstChunkReceived;
     public boolean delayedChecksRan;
     public boolean isUsingLunarClient;
     public DigAndPickupState digAndPickupState;
@@ -83,18 +84,33 @@ public class TotemPlayer implements TotemUser {
         }));
     }
 
+    private void scheduleCheck(Runnable task) {
+        long ping = Math.max(0L, getPing());
+        long delay = (ping + 5L) * 5L;
+
+        FoliaScheduler.getAsyncScheduler().runDelayed(
+                TotemGuard.getInstance(),
+                ignored -> task.run(),
+                delay,
+                TimeUnit.MILLISECONDS
+        );
+    }
+
     public void runDelayedChecks() {
-        if (delayedChecksRan) return;
+        if (firstChunkReceived) return;
+        firstChunkReceived = true;
+
+        scheduleCheck(() -> {
+            checkManager.getGenericCheck(BadPacketsB.class).handle();
+            checkManager.triggerSignChecks();
+        });
+    }
+
+    public void runExtraDelayedChecks() {
+        if (!firstChunkReceived || delayedChecksRan) return;
         delayedChecksRan = true;
 
-        final long ping = Math.max(0L, getPing());
-        final long calculatedDelayMs = (ping + 5L) * 5L;
-
-        FoliaScheduler.getAsyncScheduler().runDelayed(TotemGuard.getInstance(), o -> {
-            this.checkManager.getGenericCheck(BadPacketsB.class).handle();
-            this.checkManager.getGenericCheck(BadPacketsD.class).handle();
-            this.checkManager.triggerSignChecks();
-        }, calculatedDelayMs, TimeUnit.MILLISECONDS);
+        scheduleCheck(() -> checkManager.getGenericCheck(BadPacketsD.class).handle());
     }
 
     public String getBrand() {
