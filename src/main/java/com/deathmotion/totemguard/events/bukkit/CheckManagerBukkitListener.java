@@ -44,7 +44,7 @@ public class CheckManagerBukkitListener implements Listener {
         TotemPlayer totemPlayer = TotemGuard.getInstance().getPlayerDataManager().getPlayer(player);
         if (totemPlayer == null) return;
 
-        totemPlayer.runDelayedChecks();
+        totemPlayer.runFirstChunkLoadedChecks();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

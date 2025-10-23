@@ -52,7 +52,7 @@ public class CheckManagerPacketListener extends PacketListenerAbstract {
         }
 
         if (isPlayerTriggeredPacket(event.getPacketType())) {
-            player.runExtraDelayedChecks();
+            player.runDelayedChecks();
         }
 
         player.checkManager.onPacketReceive(event);

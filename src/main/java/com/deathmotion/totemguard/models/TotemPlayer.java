@@ -96,7 +96,7 @@ public class TotemPlayer implements TotemUser {
         );
     }
 
-    public void runDelayedChecks() {
+    public void runFirstChunkLoadedChecks() {
         if (firstChunkReceived) return;
         firstChunkReceived = true;
 
@@ -106,7 +106,7 @@ public class TotemPlayer implements TotemUser {
         });
     }
 
-    public void runExtraDelayedChecks() {
+    public void runDelayedChecks() {
         if (!firstChunkReceived || delayedChecksRan) return;
         delayedChecksRan = true;
 
