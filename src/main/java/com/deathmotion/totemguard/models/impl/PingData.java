@@ -18,21 +18,14 @@
 
 package com.deathmotion.totemguard.models.impl;
 
-import com.deathmotion.totemguard.TotemGuard;
-import com.deathmotion.totemguard.models.TotemPlayer;
 import com.deathmotion.totemguard.util.MathUtil;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PingData {
-    private final TotemPlayer player;
     private final ConcurrentHashMap<Integer, Long> transactionSentMap = new ConcurrentHashMap<>();
 
     private long transactionPing = -1;
-
-    public PingData(TotemPlayer player) {
-        this.player = player;
-    }
 
     public void addTransactionSent(int id) {
         transactionSentMap.put(id, System.nanoTime());
@@ -41,7 +34,6 @@ public class PingData {
     public void addTransactionResponse(int id) {
         Long sent = transactionSentMap.remove(id);
         if (sent == null) {
-            TotemGuard.getInstance().getLogger().warning("Player " + player.getName() + " sent a response for an unknown transaction");
             transactionSentMap.entrySet().removeIf(entry -> System.nanoTime() - entry.getValue() > 60_000_000_000L);
             return;
         }

@@ -62,7 +62,7 @@ public class TotemPlayer implements TotemUser {
 
         checkManager = new CheckManager(this);
         totemData = new TotemData();
-        pingData = new PingData(this);
+        pingData = new PingData();
         digAndPickupState = new DigAndPickupState();
     }
 
