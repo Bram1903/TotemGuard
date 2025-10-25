@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.checks;
 
 import com.deathmotion.totemguard.checks.type.SignCheck;
-import com.deathmotion.totemguard.util.SignUtil;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.SignUtil;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientUpdateSign;
@@ -62,8 +62,15 @@ public abstract class ModCheck extends Check implements SignCheck {
     @Override
     public void onPacketReceive(final PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.UPDATE_SIGN) return;
+        String[] lines;
 
-        if (SignUtil.isSignContentValid(packetSecret, new WrapperPlayClientUpdateSign(event).getTextLines(), keys)) {
+        try {
+            lines = new WrapperPlayClientUpdateSign(event).getTextLines();
+        } catch (Exception e) {
+            return;
+        }
+
+        if (SignUtil.isSignContentValid(packetSecret, lines, keys)) {
             fail();
         }
     }
