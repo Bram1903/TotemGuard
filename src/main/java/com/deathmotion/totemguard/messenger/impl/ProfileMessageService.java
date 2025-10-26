@@ -142,11 +142,13 @@ public class ProfileMessageService {
             return messengerService.format(noPunishmentsTemplate);
         }
 
-        // Prepare summary components
         Component summary = Component.empty();
         if (punishments.size() > 3) {
-            summary = summary.append(messengerService.format(showingLastPunishments));
+            summary = summary
+                    .append(messengerService.format(showingLastPunishments))
+                    .append(Component.newline());
         }
+
 
         List<DatabasePunishment> recentPunishments = punishments.stream()
                 .sorted(Comparator.comparing(DatabasePunishment::getWhenCreated).reversed())
@@ -164,6 +166,7 @@ public class ProfileMessageService {
         summary = summary.append(Component.join(JoinConfiguration.separator(Component.newline()), punishmentComponents));
 
         if (punishments.size() > 3) {
+            summary = summary.append(Component.newline());
             summary = summary.append(messengerService.format(andMoreToBeDisplayed));
         }
 
