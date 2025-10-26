@@ -29,10 +29,10 @@ import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.models.impl.SafetyStatus;
 import com.deathmotion.totemguard.util.MessageUtil;
+import com.deathmotion.totemguard.util.PlayerUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -44,7 +44,6 @@ import org.incendo.cloud.parser.standard.StringParser;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,17 +82,13 @@ public final class ProfileCommand extends AbstractCommand {
             try {
                 long startTime = System.currentTimeMillis();
 
-                OfflinePlayer target = Arrays.stream(Bukkit.getOfflinePlayers())
-                        .filter(p -> p.getName() != null && p.getName().equalsIgnoreCase(username))
-                        .findFirst()
-                        .orElse(null);
-
-                if (target == null) {
+                OfflinePlayer offlinePlayer = PlayerUtil.getOfflinePlayer(username);
+                if (!offlinePlayer.isOnline() && !offlinePlayer.hasPlayedBefore()) {
                     sender.sendMessage(MessageUtil.getPrefix().append(Component.text(" Player not found", NamedTextColor.RED)));
                     return;
                 }
 
-                UUID uuid = target.getUniqueId();
+                UUID uuid = offlinePlayer.getUniqueId();
                 Instant dayStart = LocalDate.now(zoneId)
                         .atStartOfDay(zoneId)
                         .toInstant();

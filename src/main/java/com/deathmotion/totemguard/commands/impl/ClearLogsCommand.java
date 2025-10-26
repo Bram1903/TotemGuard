@@ -25,10 +25,10 @@ import com.deathmotion.totemguard.database.DatabaseProvider;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.impl.ClearLogsMessageService;
 import com.deathmotion.totemguard.util.MessageUtil;
+import com.deathmotion.totemguard.util.PlayerUtil;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -36,8 +36,6 @@ import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.description.Description;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import org.incendo.cloud.parser.standard.StringParser;
-
-import java.util.Arrays;
 
 public final class ClearLogsCommand extends AbstractCommand {
 
@@ -72,12 +70,8 @@ public final class ClearLogsCommand extends AbstractCommand {
         FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
             long startTime = System.currentTimeMillis();
 
-            OfflinePlayer offlinePlayer = Arrays.stream(Bukkit.getOfflinePlayers())
-                    .filter(p -> p.getName() != null && p.getName().equalsIgnoreCase(username))
-                    .findFirst()
-                    .orElse(null);
-
-            if (offlinePlayer == null) {
+            OfflinePlayer offlinePlayer = PlayerUtil.getOfflinePlayer(username);
+            if (!offlinePlayer.isOnline() && !offlinePlayer.hasPlayedBefore()) {
                 sender.sendMessage(MessageUtil.getPrefix().append(Component.text(" Player not found", NamedTextColor.RED)));
                 return;
             }
