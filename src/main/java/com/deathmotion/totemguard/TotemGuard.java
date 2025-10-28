@@ -28,8 +28,8 @@ import com.deathmotion.totemguard.events.packets.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.manager.*;
 import com.deathmotion.totemguard.messenger.MessengerService;
 import com.deathmotion.totemguard.redis.RedisService;
+import com.deathmotion.totemguard.util.CompatibilityUtil;
 import com.deathmotion.totemguard.util.UpdateChecker;
-import com.deathmotion.totemguard.util.VersionResolver;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.bstats.bukkit.Metrics;
 import lombok.Getter;
@@ -42,7 +42,7 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
-    private boolean isSupportedVersion = true;
+    private CompatibilityUtil compatibilityUtil;
 
     private ConfigManager configManager;
     private CloudCommandManager cloudCommandManager;
@@ -61,8 +61,8 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        if (!new VersionResolver().isSupportedVersion()) {
-            isSupportedVersion = false;
+        compatibilityUtil = new CompatibilityUtil();
+        if (!compatibilityUtil.checkCompatibility()) {
             return;
         }
 
@@ -71,9 +71,7 @@ public final class TotemGuard extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        if (!isSupportedVersion) {
-            getLogger().severe("Minecraft version " + Bukkit.getMinecraftVersion() + " is not supported by TotemGuard.");
-            getLogger().severe("We highly recommend updating your server to at least " + VersionResolver.getMinimumSupportedVersion().getReleaseName() + " or later.");
+        if (!compatibilityUtil.isCompatible()) {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
