@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.commands.AbstractCommand;
 import com.deathmotion.totemguard.commands.arguments.PlayerSuggestion;
 import com.deathmotion.totemguard.database.DatabaseProvider;
+import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.messenger.CommandMessengerService;
 import com.deathmotion.totemguard.messenger.impl.ClearLogsMessageService;
 import com.deathmotion.totemguard.util.MessageUtil;
@@ -36,6 +37,8 @@ import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.description.Description;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import org.incendo.cloud.parser.standard.StringParser;
+
+import java.util.UUID;
 
 public final class ClearLogsCommand extends AbstractCommand {
 
@@ -71,12 +74,15 @@ public final class ClearLogsCommand extends AbstractCommand {
             long startTime = System.currentTimeMillis();
 
             OfflinePlayer offlinePlayer = PlayerUtil.getOfflinePlayer(username);
-            if (!offlinePlayer.isOnline() && !offlinePlayer.hasPlayedBefore()) {
+            UUID uuid = offlinePlayer.getUniqueId();
+
+            DatabasePlayer databasePlayer = databaseProvider.getPlayerRepository().findByUuid(uuid).orElse(null);
+            if (databasePlayer == null) {
                 sender.sendMessage(MessageUtil.getPrefix().append(Component.text(" Player not found", NamedTextColor.RED)));
                 return;
             }
 
-            int deletedRecords = databaseProvider.getGenericService().eraseLogs(offlinePlayer.getUniqueId());
+            int deletedRecords = databaseProvider.getGenericService().eraseLogs(uuid);
 
             if (deletedRecords == -1) {
                 sender.sendMessage(commandMessengerService.noDatabasePlayerFound(username));

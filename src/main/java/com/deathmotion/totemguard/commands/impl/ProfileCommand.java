@@ -83,20 +83,19 @@ public final class ProfileCommand extends AbstractCommand {
                 long startTime = System.currentTimeMillis();
 
                 OfflinePlayer offlinePlayer = PlayerUtil.getOfflinePlayer(username);
-                if (!offlinePlayer.isOnline() && !offlinePlayer.hasPlayedBefore()) {
+                UUID uuid = offlinePlayer.getUniqueId();
+
+                DatabasePlayer databasePlayer = db.getPlayerRepository().findByUuid(uuid).orElse(null);
+                if (databasePlayer == null) {
                     sender.sendMessage(MessageUtil.getPrefix().append(Component.text(" Player not found", NamedTextColor.RED)));
                     return;
                 }
 
-                UUID uuid = offlinePlayer.getUniqueId();
                 Instant dayStart = LocalDate.now(zoneId)
                         .atStartOfDay(zoneId)
                         .toInstant();
 
-                String brand = db.getPlayerRepository()
-                        .findByUuid(uuid)
-                        .map(DatabasePlayer::getClientBrand)
-                        .orElse("");
+                String brand = databasePlayer.getClientBrand() != null ? databasePlayer.getClientBrand() : "";
 
                 long totalAlerts = db.getAlertRepository().countAlertsForPlayer(uuid);
                 long totalPunishments = db.getPunishmentRepository().countPunishmentsForPlayer(uuid);
