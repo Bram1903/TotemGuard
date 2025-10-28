@@ -22,28 +22,18 @@ import com.deathmotion.totemguard.TotemGuard;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.util.PEVersion;
-import lombok.Getter;
 import org.bukkit.Bukkit;
 
 import java.util.logging.Logger;
 
 public final class CompatibilityUtil {
 
-    @Getter
     private static final boolean IS_PAPER = hasClass("com.destroystokyo.paper.PaperConfig") || hasClass("io.papermc.paper.configuration.Configuration");
-    @Getter
     private static final ServerVersion MIN_SERVER_VERSION = ServerVersion.V_1_16_5;
-    @Getter
     private static final PEVersion MIN_PE_VERSION = PEVersion.fromString("2.9.5");
 
-    @Getter
-    private final boolean supportedPlatform;
-    @Getter
-    private final boolean supportedServerVersion;
-
-    public CompatibilityUtil() {
-        this.supportedPlatform = IS_PAPER;
-        this.supportedServerVersion = detectServerVersionSupported();
+    public static void init() {
+        // Just to make sure the ServerVersion class gets loaded before PacketEvents disables itself for incompatibility
     }
 
     private static boolean hasClass(final String className) {
@@ -114,16 +104,12 @@ public final class CompatibilityUtil {
         logger.severe("=====================================================");
     }
 
-    public boolean checkCompatibility() {
-        return supportedPlatform && supportedServerVersion;
-    }
-
-    public boolean isCompatible() {
-        if (!supportedPlatform) {
+    public static boolean isCompatible() {
+        if (!IS_PAPER) {
             logUnsupportedPlatform();
             return false;
         }
-        if (!supportedServerVersion) {
+        if (!detectServerVersionSupported()) {
             logUnsupportedServerVersion();
             return false;
         }

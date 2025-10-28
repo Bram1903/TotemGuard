@@ -42,8 +42,6 @@ public final class TotemGuard extends JavaPlugin {
     @Getter
     private static TotemGuard instance;
 
-    private CompatibilityUtil compatibilityUtil;
-
     private ConfigManager configManager;
     private CloudCommandManager cloudCommandManager;
     private DatabaseProvider databaseProvider;
@@ -57,25 +55,17 @@ public final class TotemGuard extends JavaPlugin {
 
     public TotemGuard() {
         instance = this;
-    }
-
-    @Override
-    public void onLoad() {
-        compatibilityUtil = new CompatibilityUtil();
-        if (!compatibilityUtil.checkCompatibility()) {
-            return;
-        }
-
-        configManager = new ConfigManager(this);
+        CompatibilityUtil.init();
     }
 
     @Override
     public void onEnable() {
-        if (!compatibilityUtil.isCompatible()) {
+        if (!CompatibilityUtil.isCompatible()) {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
 
+        configManager = new ConfigManager(this);
         databaseProvider = new DatabaseProvider(this);
         messengerService = new MessengerService(this);
         alertManager = new AlertManagerImpl(this);
