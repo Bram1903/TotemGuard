@@ -30,7 +30,7 @@ public final class CompatibilityUtil {
 
     private static final boolean IS_PAPER = hasClass("com.destroystokyo.paper.PaperConfig") || hasClass("io.papermc.paper.configuration.Configuration");
     private static final ServerVersion MIN_SERVER_VERSION = ServerVersion.V_1_16_5;
-    private static final PEVersion MIN_PE_VERSION = PEVersion.fromString("2.9.5");
+    private static final PEVersion MIN_PE_VERSION = PEVersion.fromString("2.10.0");
 
     public static void init() {
         // Just to make sure the ServerVersion class gets loaded before PacketEvents disables itself for incompatibility
