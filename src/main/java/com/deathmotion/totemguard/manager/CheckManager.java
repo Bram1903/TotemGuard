@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.checks.impl.mods.AccurateBlockPlacement;
+import com.deathmotion.totemguard.checks.impl.mods.ElytraSwapper;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
 import com.deathmotion.totemguard.checks.type.GenericCheck;
 import com.deathmotion.totemguard.checks.type.SignCheck;
@@ -60,6 +61,7 @@ public class CheckManager {
 
         signChecks = new ImmutableClassToInstanceMap.Builder<SignCheck>()
                 .put(AccurateBlockPlacement.class, new AccurateBlockPlacement(player))
+                .put(ElytraSwapper.class, new ElytraSwapper(player))
                 .build();
 
         bukkitEventChecks = new ImmutableClassToInstanceMap.Builder<BukkitEventCheck>()

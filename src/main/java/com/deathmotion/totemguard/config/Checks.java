@@ -72,6 +72,9 @@ public class Checks {
     @Comment("\n\n======\n Mod Detections\n======\n\n Accurate Block Placement Reborn (https://modrinth.com/mod/accurate-block-placement-reborn)")
     private AccurateBlockPlacement accurateBlockPlacementReborn = new AccurateBlockPlacement();
 
+    @Comment("\nElytra Swapper Mods")
+    private ElytraSwapper elytraSwapper = new ElytraSwapper();
+
     public AbstractCheckSettings getCheckSettings(String checkName) {
         return switch (checkName) {
             case "AutoTotemA" -> autoTotemA;
@@ -87,6 +90,7 @@ public class Checks {
             case "BadPacketsD" -> badPacketsD;
             case "ManualTotemA" -> manualTotemA;
             case "AccurateBlockPlacement" -> accurateBlockPlacementReborn;
+            case "ElytraSwapper" -> elytraSwapper;
             default ->
                     throw new IllegalStateException("Check " + checkName + " does not have a corresponding configuration.");
         };
@@ -275,6 +279,15 @@ public class Checks {
     public static class AccurateBlockPlacement extends CheckSettings {
 
         public AccurateBlockPlacement() {
+            super(false, 1, List.of("kick %player% [TotemGuard] Unauthorised Mod Detected"));
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class ElytraSwapper extends CheckSettings {
+
+        public ElytraSwapper() {
             super(false, 1, List.of("kick %player% [TotemGuard] Unauthorised Mod Detected"));
         }
     }
