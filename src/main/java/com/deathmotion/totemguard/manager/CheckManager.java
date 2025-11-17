@@ -21,14 +21,12 @@ package com.deathmotion.totemguard.manager;
 import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.api.interfaces.AbstractCheck;
 import com.deathmotion.totemguard.checks.impl.autototem.*;
-import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsA;
-import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
-import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsC;
-import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
+import com.deathmotion.totemguard.checks.impl.badpackets.*;
 import com.deathmotion.totemguard.checks.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
 import com.deathmotion.totemguard.checks.impl.mods.AccurateBlockPlacement;
 import com.deathmotion.totemguard.checks.impl.mods.ElytraSwapper;
+import com.deathmotion.totemguard.checks.impl.mods.Tweakeroo;
 import com.deathmotion.totemguard.checks.type.BukkitEventCheck;
 import com.deathmotion.totemguard.checks.type.GenericCheck;
 import com.deathmotion.totemguard.checks.type.SignCheck;
@@ -57,6 +55,7 @@ public class CheckManager {
                 .put(BadPacketsA.class, new BadPacketsA(player))
                 .put(BadPacketsC.class, new BadPacketsC(player))
                 .put(AutoTotemD.class, new AutoTotemD(player))
+                .put(Tweakeroo.class, new Tweakeroo(player))
                 .build();
 
         signChecks = new ImmutableClassToInstanceMap.Builder<SignCheck>()

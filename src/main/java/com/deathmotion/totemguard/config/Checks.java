@@ -69,7 +69,10 @@ public class Checks {
     @Comment("\nManualTotemA")
     private ManualTotemA manualTotemA = new ManualTotemA();
 
-    @Comment("\n\n======\n Mod Detections\n======\n\n Accurate Block Placement Reborn (https://modrinth.com/mod/accurate-block-placement-reborn)")
+    @Comment("\n\n======\n Mod Detections\n======\n\n Tweakeroo (https://modrinth.com/mod/tweakeroo)")
+    private Tweakeroo tweakeroo = new Tweakeroo();
+
+    @Comment("\nAccurate Block Placement Reborn (https://modrinth.com/mod/accurate-block-placement-reborn)")
     private AccurateBlockPlacement accurateBlockPlacementReborn = new AccurateBlockPlacement();
 
     @Comment("\nElytra Swapper Mods")
@@ -89,6 +92,7 @@ public class Checks {
             case "BadPacketsC" -> badPacketsC;
             case "BadPacketsD" -> badPacketsD;
             case "ManualTotemA" -> manualTotemA;
+            case "Tweakeroo" -> tweakeroo;
             case "AccurateBlockPlacement" -> accurateBlockPlacementReborn;
             case "ElytraSwapper" -> elytraSwapper;
             default ->
@@ -271,6 +275,15 @@ public class Checks {
 
         public ManualTotemA() {
             super(false, 4);
+        }
+    }
+
+    @Configuration
+    @Getter
+    public static class Tweakeroo extends CheckSettings {
+
+        public Tweakeroo() {
+            super(false, 1, List.of("kick %player% [TotemGuard] Unauthorised Mod Detected"));
         }
     }
 
