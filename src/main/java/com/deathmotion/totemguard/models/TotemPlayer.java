@@ -46,6 +46,7 @@ public class TotemPlayer implements TotemUser {
     public final User user;
 
     public Player bukkitPlayer;
+    private boolean hasLoggedIn;
     public boolean firstChunkReceived;
     public boolean delayedChecksRan;
     public boolean isUsingLunarClient;
@@ -79,6 +80,8 @@ public class TotemPlayer implements TotemUser {
             return;
         }
 
+        hasLoggedIn = true;
+
         FoliaScheduler.getAsyncScheduler().runNow(TotemGuard.getInstance(), (o -> {
             databasePlayer = TotemGuard.getInstance().getDatabaseProvider().getPlayerRepository().retrieveOrRefreshPlayer(this);
         }));
@@ -97,6 +100,9 @@ public class TotemPlayer implements TotemUser {
     }
 
     public void runFirstChunkLoadedChecks() {
+        // Make sure this check doesn't run before the player is fully logged in
+        if (!hasLoggedIn) return;
+
         if (firstChunkReceived) return;
         firstChunkReceived = true;
 
