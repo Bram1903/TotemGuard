@@ -70,6 +70,7 @@ public class CheckManager {
                 .put(AutoTotemE.class, new AutoTotemE(player))
                 .put(AutoTotemF.class, new AutoTotemF(player))
                 .put(AutoTotemG.class, new AutoTotemG(player))
+                .put(AutoTotemH.class, new AutoTotemH(player))
                 .build();
 
         genericChecks = new ImmutableClassToInstanceMap.Builder<GenericCheck>()
