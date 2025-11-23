@@ -241,15 +241,15 @@ public class Checks {
         private int minCheckTime = 1500;
 
         @Comment("\nStandard Deviation Threshold: The threshold for the standard deviation.")
-        private double StandardDeviationThreshold = 50.0;
+        private double StandardDeviationThreshold = 35.0;
 
         @Comment("\nMean Threshold: The threshold for the mean.")
-        private double MeanThreshold = 250.0;
+        private double MeanThreshold = 100.0;
 
         @Comment("\nConsecutive Low SD Count: The amount of consecutive low standard deviations before flagging.")
-        private int ConsecutiveLowSDCount = 3;
+        private int ConsecutiveLowSDCount = 2;
         public AutoTotemH() {
-            super(false, 4);
+            super(true, 4);
         }
     }
 

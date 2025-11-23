@@ -32,10 +32,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-@CheckData(name = "AutoTotemH", description = "Consistent click standard deviation")
+@CheckData(name = "AutoTotemH", description = "Consistent click standard deviation", experimental = true)
 public class AutoTotemH extends Check implements BukkitEventCheck {
 
     private final ConcurrentLinkedDeque<Long> clickDifferences = new ConcurrentLinkedDeque<>();
@@ -90,8 +89,8 @@ public class AutoTotemH extends Check implements BukkitEventCheck {
                     long diff = Math.abs(System.currentTimeMillis() - lastClickTime);
                     clickDifferences.add(diff);
 
-                    // Keep last 20 entries
-                    while (clickDifferences.size() > 20) {
+                    // Keep last 10 entries
+                    while (clickDifferences.size() > 10) {
                         clickDifferences.poll();
                     }
 
@@ -113,7 +112,7 @@ public class AutoTotemH extends Check implements BukkitEventCheck {
      * Validates whether the behavior is suspicious by comparing relevant time difference intervals.
      */
     private void evaluateSuspicion() {
-        if (clickDifferences.size() < 5) return;
+        if (clickDifferences.size() < 4) return;
 
         double standardDeviation = MathUtil.getStandardDeviation(clickDifferences);
         double mean = MathUtil.getMean(clickDifferences);
