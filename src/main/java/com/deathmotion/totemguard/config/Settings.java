@@ -23,6 +23,8 @@ import de.exlll.configlib.Configuration;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @SuppressWarnings("FieldMayBeFinal")
 @Configuration
 @Getter
@@ -37,9 +39,9 @@ public class Settings {
     @Setter
     private String command = "totemguard";
 
-    @Comment("\nAlias for the root command. This allows using a shorter command. (Requires a server restart to take effect.)")
+    @Comment("\nAliases for the root command. This allows using shorter commands. (Requires a server restart to take effect.)")
     @Setter
-    private String commandAlias = "tg";
+    private List<String> commandAliases = List.of("tg");
 
     @Comment("\nBypass: Whether players with the permission 'totemguard.bypass' can bypass checks.")
     private boolean bypass = false;
