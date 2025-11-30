@@ -33,6 +33,8 @@ import lombok.Getter;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
 
@@ -85,16 +87,25 @@ public class ConfigManager {
         }
         settings.setCommand(cmd);
 
-        String alias = settings.getCommandAlias();
-        alias = alias.toLowerCase(Locale.ROOT);
-        if (!alias.matches("[a-z]+")) {
-            plugin.getLogger().severe("Invalid command alias '" + alias + "'. It must consist of lowercase letters only. " +
-                    "Please change it in the config.yml file. Falling back to default alias 'tg'.");
-
-            alias = "tg";
+        // Validate and clean command aliases
+        List<String> cleanedAliases = new ArrayList<>();
+        for (String alias : settings.getCommandAliases()) {
+            String cleanedAlias = alias.toLowerCase(Locale.ROOT);
+            if (cleanedAlias.matches("[a-z]+")) {
+                cleanedAliases.add(cleanedAlias);
+            } else {
+                plugin.getLogger().warning("Invalid command alias '" + alias + "'. It must consist of lowercase letters only. Skipping this alias.");
+            }
         }
-        settings.setCommandAlias(alias);
+
+        if (cleanedAliases.isEmpty()) {
+            plugin.getLogger().warning("No valid command aliases found. Adding default alias 'tg'.");
+            cleanedAliases.add("tg");
+        }
+
+        settings.setCommandAliases(cleanedAliases);
     }
+
 
     private File getSettingsFile() {
         return new File(plugin.getDataFolder(), "config.yml");

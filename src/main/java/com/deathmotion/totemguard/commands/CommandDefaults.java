@@ -31,7 +31,7 @@ public final class CommandDefaults {
     private static final ConfigManager CONFIG = TotemGuard.getInstance().getConfigManager();
 
     public static final String ROOT = CONFIG.getSettings().getCommand();
-    public static final String[] ALIASES = new String[]{ CONFIG.getSettings().getCommandAlias() };
+    public static final String[] ALIASES = CONFIG.getSettings().getCommandAliases().toArray(new String[0]);
     public static final String PERMISSION_PREFIX = "totemguard.";
 
     private CommandDefaults() {
