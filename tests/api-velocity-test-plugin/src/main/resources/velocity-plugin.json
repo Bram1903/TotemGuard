@@ -1,0 +1,16 @@
+{
+  "id": "apitestplugin",
+  "name": "APITestPlugin",
+  "version": "${version}",
+  "description": "A test plugin for the TotemGuard API.",
+  "authors": [
+    "Bram"
+  ],
+  "dependencies": [
+    {
+      "id": "totemguard",
+      "optional": false
+    }
+  ],
+  "main": "com.deathmotion.totemguard.velocity.testplugin.ApiTestPlugin"
+}

@@ -19,10 +19,17 @@
 package com.deathmotion.totemguard.api.versioning;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.Objects;
 
+/**
+ * Represents the TotemGuard version using Semantic Versioning.
+ * Supports version comparison, cloning, and provides a string representation.
+ * Snapshot versioning is also supported.
+ * Generally a snapshot version is published before the release version,
+ * and thus, is considered "older" than the release version.
+ */
 public class TGVersion implements Comparable<TGVersion> {
 
     private final int major;
@@ -100,7 +107,8 @@ public class TGVersion implements Comparable<TGVersion> {
         String[] largeParts = versionWithoutSnapshot.split("\\+");
         String[] parts = largeParts.length > 0 ? largeParts[0].split("\\.") : null;
 
-        if (largeParts.length < 1 || largeParts.length > 2 || parts.length < 2 || parts.length > 3) {
+        if (largeParts.length < 1 || largeParts.length > 2
+                || parts.length < 2 || parts.length > 3) {
             throw new IllegalArgumentException("Version string must be in the format 'major.minor[.patch][+commit][-SNAPSHOT]', found '" + version + "' instead");
         }
 
@@ -190,31 +198,14 @@ public class TGVersion implements Comparable<TGVersion> {
     @Override
     public boolean equals(@NotNull final Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof TGVersion other)) return false;
+        if (!(obj instanceof TGVersion)) return false;
+        TGVersion other = (TGVersion) obj;
 
         return this.major == other.major &&
                 this.minor == other.minor &&
                 this.patch == other.patch &&
                 this.snapshot == other.snapshot &&
                 Objects.equals(this.snapshotCommit, other.snapshotCommit);
-    }
-
-
-    /**
-     * Checks if the provided object is equal to this {@link TGVersion},
-     * comparing only major, minor, patch, and snapshot fields, ignoring the snapshot commit.
-     *
-     * @param obj the object to compare.
-     * @return true if the provided object is equal to this {@link TGVersion} excluding the snapshot commit, false otherwise.
-     */
-    public boolean equalsWithoutCommit(@NotNull final Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof TGVersion other)) return false;
-
-        return this.major == other.major &&
-                this.minor == other.minor &&
-                this.patch == other.patch &&
-                this.snapshot == other.snapshot;
     }
 
     /**
@@ -259,11 +250,24 @@ public class TGVersion implements Comparable<TGVersion> {
 
     /**
      * Converts the {@link TGVersion} to a string representation.
+     * If this is a stable release, the snapshot and the commit will not be included in the representation.
      *
-     * @return a string representation of the version.
+     * @return string representation of the version.
      */
     @Override
     public String toString() {
-        return major + "." + minor + "." + patch + (snapshot ? "-SNAPSHOT" : "");
+        return major + "." + minor + "." + patch + (snapshot && snapshotCommit != null ? ("+" + snapshotCommit + "-SNAPSHOT") : "");
+    }
+
+    /**
+     * Converts the {@link TGVersion} to a string representation with a guarantee
+     * that it will not have the commit attached to it.
+     * Useful for accessing the string representation for metrics
+     * as detailed information, such as the commit, is not required.
+     *
+     * @return guaranteed string representation without commit.
+     */
+    public String toStringWithoutSnapshot() {
+        return major + "." + minor + "." + patch;
     }
 }

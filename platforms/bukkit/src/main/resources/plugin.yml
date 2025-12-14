@@ -1,0 +1,11 @@
+name: TotemGuard
+authors:
+  - Bram
+  - OutDev
+main: com.deathmotion.totemguard.bukkit.TGBukkit
+version: ${version}
+api-version: '1.13'
+folia-supported: true
+load: POSTWORLD
+depend:
+  - packetevents

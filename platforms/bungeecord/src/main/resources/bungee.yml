@@ -1,0 +1,9 @@
+name: TotemGuard
+authors:
+  - Bram
+  - OutDev
+description: TODO
+main: com.deathmotion.totemguard.bungee.TGBungee
+version: ${version}
+depends:
+  - packetevents

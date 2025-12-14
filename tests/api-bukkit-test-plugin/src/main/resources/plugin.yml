@@ -1,0 +1,10 @@
+name: APITestPlugin
+version: ${version}
+main: com.deathmotion.totemguard.bukkit.testplugin.ApiTestPlugin
+api-version: '1.13'
+folia-supported: true
+author: Bram
+description: A test plugin for the TotemGuard API
+load: POSTWORLD
+softdepend:
+  - TotemGuard

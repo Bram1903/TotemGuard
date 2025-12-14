@@ -2,16 +2,18 @@ plugins {
     java
 }
 
-group = rootProject.group
 version = rootProject.version
-description = project.description
 
 repositories {
-    mavenLocal()
     mavenCentral()
-    maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
-    maven { url = uri("https://repo.codemc.io/repository/maven-releases/") }
-    maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
+    maven("https://repo.codemc.io/repository/maven-releases/")
+    maven("https://repo.codemc.io/repository/maven-snapshots/")
+}
+
+dependencies {
+    compileOnly("org.jetbrains:annotations:26.0.2-1")
+    compileOnly("org.projectlombok:lombok:1.18.42")
+    annotationProcessor("org.projectlombok:lombok:1.18.42")
 }
 
 java {
@@ -22,8 +24,24 @@ java {
 tasks {
     withType<JavaCompile> {
         options.encoding = Charsets.UTF_8.name()
-        options.release = 17
+        options.release = 8
+    }
+
+    withType<Test> {
+        failOnNoDiscoveredTests = false
     }
 
     defaultTasks("build")
+
+    processResources {
+        inputs.properties(
+            "version" to rootProject.ext["versionNoHash"].toString()
+        )
+
+        filesMatching(listOf("plugin.yml")) {
+            expand(
+                "version" to rootProject.ext["versionNoHash"].toString()
+            )
+        }
+    }
 }

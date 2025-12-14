@@ -1,0 +1,16 @@
+{
+  "id": "totemguard",
+  "name": "TotemGuard",
+  "version": "${version}",
+  "authors": [
+    "Bram",
+    "OutDev"
+  ],
+  "dependencies": [
+    {
+      "id": "packetevents",
+      "optional": false
+    }
+  ],
+  "main": "com.deathmotion.totemguard.velocity.TGVelocity"
+}

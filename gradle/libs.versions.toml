@@ -1,39 +1,31 @@
 [versions]
-paper = "1.21.8-R0.1-SNAPSHOT"
-packetevents = "2.10.1"
-lombok = "1.18.38"
-shadow = "9.0.1"
-run-paper = "3.0.2"
-configlib = "4.6.1"
-lettuce = "6.8.1.RELEASE"
-cloud = "2.0.0-beta.13"
-expiringmap = "0.5.11"
-ormlite = "6.1"
-hikaricp = "7.0.2"
+packetevents = "2.11.0"
+adventure = "4.25.0"
+paper = "1.21.11-R0.1-SNAPSHOT"
+velocity = "3.4.0-SNAPSHOT"
+bungeecord = "1.21-R0.5-SNAPSHOT"
+sponge = "14.0.0"
 
-# Runtime only
-mysql = "9.4.0"
-mariadb = "3.5.6"
-h2 = "2.4.240"
-adventure-text-serializer-plain = "4.25.0"
+shadow = "9.2.2"
+run-paper = "3.0.2"
+spongeGradle = "2.3.0"
 
 [libraries]
+packetevents-api = { group = "com.github.retrooper", name = "packetevents-api", version.ref = "packetevents" }
+adventure-api = { group = "net.kyori", name = "adventure-api", version.ref = "adventure" }
+adventure-text-serializer-gson = { group = "net.kyori", name = "adventure-text-serializer-gson", version.ref = "adventure" }
+adventure-text-serializer-legacy = { group = "net.kyori", name = "adventure-text-serializer-legacy", version.ref = "adventure" }
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
-packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
-lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
-configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
-lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
-cloud = { group = "org.incendo", name = "cloud-paper", version.ref = "cloud" }
-expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
-ormlite = { group = "com.j256.ormlite", name = "ormlite-jdbc", version.ref = "ormlite" }
-hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
+velocity = { group = "com.velocitypowered", name = "velocity-api", version.ref = "velocity" }
+bungeecord = { group = "net.md-5", name = "bungeecord-api", version.ref = "bungeecord" }
+sponge = { group = "org.spongepowered", name = "spongeapi", version.ref = "sponge" }
 
-# Runtime only
-mysql = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql" }
-mariadb = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version.ref = "mariadb" }
-h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
-adventure-text-serializer-plain = { group = "net.kyori", name = "adventure-text-serializer-plain", version.ref = "adventure-text-serializer-plain" }
+[bundles]
+adventure = [ "adventure-api" ]
+adventure-serializers = [ "adventure-text-serializer-gson", "adventure-text-serializer-legacy" ]
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
+run-velocity = { id = "xyz.jpenilla.run-velocity", version.ref = "run-paper" }
+spongeGradle = { id = "org.spongepowered.gradle.plugin", version.ref = "spongeGradle" }

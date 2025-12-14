@@ -18,24 +18,26 @@
 
 package com.deathmotion.totemguard.api;
 
-import com.deathmotion.totemguard.api.interfaces.AlertManager;
+import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * This is the main API class for TotemGuard.
+ * Primary access point for the TotemGuard API.
  */
 public interface TotemGuardAPI {
-    /**
-     * Get the version of TotemGuard.
-     *
-     * @return The version of TotemGuard.
-     */
-    TGVersion getVersion();
 
     /**
-     * Get the alert manager.
+     * Returns the current TotemGuard version.
      *
-     * @return The alert manager.
+     * @return the API version
      */
-    AlertManager getAlertManager();
+    @NotNull TGVersion getVersion();
+
+    /**
+     * Returns the event repository used for event subscription and dispatch.
+     *
+     * @return the event repository
+     */
+    @NotNull EventRepository getEventRepository();
 }
