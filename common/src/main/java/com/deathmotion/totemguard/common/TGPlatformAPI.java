@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuardAPI;
 import com.deathmotion.totemguard.api.event.EventRepository;
+import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import org.jetbrains.annotations.NotNull;
@@ -40,5 +41,10 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     @Override
     public @NotNull EventRepository getEventRepository() {
         return platform.getEventRepository();
+    }
+
+    @Override
+    public @NotNull UserRepository getUserRepository() {
+        return platform.getPlayerRepository();
     }
 }

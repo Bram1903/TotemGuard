@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.api.event.impl;
 
-import com.deathmotion.totemguard.api.models.TGUser;
+import com.deathmotion.totemguard.api.user.TGUser;
 
 /**
  * Called when a TotemGuard user joins the server.

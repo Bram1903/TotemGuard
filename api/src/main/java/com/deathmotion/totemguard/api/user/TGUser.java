@@ -16,36 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api;
+package com.deathmotion.totemguard.api.user;
 
-import com.deathmotion.totemguard.api.event.EventRepository;
-import com.deathmotion.totemguard.api.user.UserRepository;
-import com.deathmotion.totemguard.api.versioning.TGVersion;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.UUID;
+
 /**
- * Primary access point for the TotemGuard API.
+ * Represents a user within TotemGuard.
  */
-public interface TotemGuardAPI {
+public interface TGUser {
+    /**
+     * Returns the unique identifier (UUID) of this user.
+     *
+     * @return the UUID of the user.
+     */
+    @NotNull UUID getUuid();
 
     /**
-     * Returns the current TotemGuard version.
+     * Returns the username of this user.
      *
-     * @return the API version
+     * @return the user's name as a non-null string.
      */
-    @NotNull TGVersion getVersion();
-
-    /**
-     * Returns the event repository used for event subscription and dispatch.
-     *
-     * @return the event repository
-     */
-    @NotNull EventRepository getEventRepository();
-
-    /**
-     * Returns the user repository used for user management.
-     *
-     * @return the user repository
-     */
-    @NotNull UserRepository getUserRepository();
+    @NotNull String getName();
 }

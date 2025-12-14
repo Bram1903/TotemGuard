@@ -19,40 +19,40 @@
 package com.deathmotion.totemguard.common.event.packet;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.manager.PlayerManager;
+import com.deathmotion.totemguard.common.player.PlayerRepository;
 import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
 public class PacketPlayerJoinQuit extends PacketListenerAbstract {
 
-    private final PlayerManager playerManager;
+    private final PlayerRepository playerRepository;
 
     public PacketPlayerJoinQuit() {
-        this.playerManager = TGPlatform.getInstance().getPlayerManager();
+        this.playerRepository = TGPlatform.getInstance().getPlayerRepository();
     }
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Login.Server.LOGIN_SUCCESS) {
-            event.getTasksAfterSend().add(() -> playerManager.onLoginPacket(event.getUser()));
+            event.getTasksAfterSend().add(() -> playerRepository.onLoginPacket(event.getUser()));
         }
     }
 
     @Override
     public void onUserConnect(UserConnectEvent event) {
-        if (event.getUser().getConnectionState() == ConnectionState.PLAY && !playerManager.isExempt(event.getUser())) {
+        if (event.getUser().getConnectionState() == ConnectionState.PLAY && !playerRepository.isExempt(event.getUser().getUUID())) {
             event.setCancelled(true);
         }
     }
 
     @Override
     public void onUserLogin(UserLoginEvent event) {
-        playerManager.onLogin(event.getUser());
+        playerRepository.onLogin(event.getUser());
     }
 
     @Override
     public void onUserDisconnect(UserDisconnectEvent event) {
-        playerManager.onPlayerDisconnect(event.getUser());
+        playerRepository.onPlayerDisconnect(event.getUser());
     }
 }

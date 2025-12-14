@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.api.event.impl;
 
 import com.deathmotion.totemguard.api.event.Event;
-import com.deathmotion.totemguard.api.models.TGUser;
+import com.deathmotion.totemguard.api.user.TGUser;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

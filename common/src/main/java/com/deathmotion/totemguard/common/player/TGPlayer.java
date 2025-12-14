@@ -19,9 +19,8 @@
 package com.deathmotion.totemguard.common.player;
 
 import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
-import com.deathmotion.totemguard.api.models.TGUser;
+import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.manager.PlayerManager;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
@@ -58,19 +57,19 @@ public class TGPlayer implements TGUser {
 
     public void onLogin() {
         TGPlatform platform = TGPlatform.getInstance();
-        PlayerManager playerManager = platform.getPlayerManager();
+        PlayerRepository playerRepository = platform.getPlayerRepository();
 
         PlatformUserCreation platformUserCreation = platform.getPlatformUserFactory().create(uuid);
         if (platformUserCreation == null) {
-            playerManager.removeUser(user);
+            playerRepository.removeUser(uuid);
             return;
         }
 
         platformUser = platformUserCreation.getPlatformUser();
         platformPlayer = platformUserCreation.getPlatformPlayer();
 
-        if (!playerManager.shouldCheck(user, platformUser)) {
-            playerManager.removeUser(user);
+        if (!playerRepository.shouldCheck(user, platformUser)) {
+            playerRepository.removeUser(uuid);
             return;
         }
 

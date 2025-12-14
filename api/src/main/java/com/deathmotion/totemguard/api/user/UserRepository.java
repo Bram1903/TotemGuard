@@ -16,27 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.models;
+package com.deathmotion.totemguard.api.user;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents a user within TotemGuard.
+ * Repository interface for accessing {@link TGUser} instances.
  */
-public interface TGUser {
-    /**
-     * Returns the unique identifier (UUID) of this user.
-     *
-     * @return the UUID of the user.
-     */
-    @NotNull UUID getUuid();
+public interface UserRepository {
 
     /**
-     * Returns the username of this user.
+     * Retrieves a user by their unique UUID.
      *
-     * @return the user's name as a non-null string.
+     * @param uuid the UUID of the user
+     * @return the {@link TGUser} if found, or {@code null} if no such user exists
      */
-    @NotNull String getName();
+    @Nullable TGUser getUser(String uuid);
 }
