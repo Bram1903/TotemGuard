@@ -37,8 +37,8 @@ public class PlayerManager {
     private final ConcurrentHashMap<User, TGPlayer> players = new ConcurrentHashMap<>();
     private final Collection<User> exemptUsers = ConcurrentHashMap.newKeySet();
 
-    public PlayerManager(TGPlatform platform) {
-        this.platform = platform;
+    public PlayerManager() {
+        this.platform = TGPlatform.getInstance();
     }
 
     public void onLoginPacket(final @NotNull User user) {

@@ -28,8 +28,8 @@ public final class TGPlatformAPI implements TotemGuardAPI {
 
     private final TGPlatform platform;
 
-    public TGPlatformAPI(TGPlatform platform) {
-        this.platform = platform;
+    public TGPlatformAPI() {
+        this.platform = TGPlatform.getInstance();
     }
 
     @Override

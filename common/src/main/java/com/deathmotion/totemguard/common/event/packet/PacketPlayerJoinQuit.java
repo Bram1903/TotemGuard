@@ -28,8 +28,8 @@ public class PacketPlayerJoinQuit extends PacketListenerAbstract {
 
     private final PlayerManager playerManager;
 
-    public PacketPlayerJoinQuit(TGPlatform platform) {
-        this.playerManager = platform.getPlayerManager();
+    public PacketPlayerJoinQuit() {
+        this.playerManager = TGPlatform.getInstance().getPlayerManager();
     }
 
     @Override

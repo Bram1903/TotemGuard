@@ -34,36 +34,34 @@ public abstract class TGPlatform {
     @Getter
     private static TGPlatform instance;
 
-    @Getter
     private final boolean isProxy;
-
-    private Logger logger;
-    private TGPlatformAPI api;
+    private final Logger logger;
 
     private EventRepositoryImpl eventRepository;
     private PlayerManager playerManager;
 
+    private TGPlatformAPI api;
+
     public TGPlatform() {
-        this.isProxy = false;
+        this(false);
     }
 
     public TGPlatform(boolean isProxy) {
+        instance = this;
         this.isProxy = isProxy;
+        logger = Logger.getLogger("TotemGuard");
     }
 
     public void commonOnInitialize() {
-        instance = this;
     }
 
     public void commonOnEnable() {
-        logger = Logger.getLogger("TotemGuard");
-
         eventRepository = new EventRepositoryImpl();
-        playerManager = new PlayerManager(this);
+        playerManager = new PlayerManager();
 
-        PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit(this));
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
 
-        api = new TGPlatformAPI(this);
+        api = new TGPlatformAPI();
         TotemGuard.init(api);
         logger.info("TotemGuard enabled.");
     }
