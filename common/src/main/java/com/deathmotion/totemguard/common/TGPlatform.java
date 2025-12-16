@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.common;
 import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
-import com.deathmotion.totemguard.common.player.PlayerRepository;
+import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
@@ -41,7 +41,7 @@ public abstract class TGPlatform {
     private final Logger logger;
 
     private EventRepositoryImpl eventRepository;
-    private PlayerRepository playerRepository;
+    private PlayerRepositoryImpl playerRepository;
 
     private TGPlatformAPI api;
 
@@ -60,7 +60,7 @@ public abstract class TGPlatform {
 
     public void commonOnEnable() {
         eventRepository = new EventRepositoryImpl();
-        playerRepository = new PlayerRepository();
+        playerRepository = new PlayerRepositoryImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
 

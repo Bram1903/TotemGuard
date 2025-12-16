@@ -19,14 +19,14 @@
 package com.deathmotion.totemguard.common.event.packet;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.player.PlayerRepository;
+import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
 public class PacketPlayerJoinQuit extends PacketListenerAbstract {
 
-    private final PlayerRepository playerRepository;
+    private final PlayerRepositoryImpl playerRepository;
 
     public PacketPlayerJoinQuit() {
         this.playerRepository = TGPlatform.getInstance().getPlayerRepository();

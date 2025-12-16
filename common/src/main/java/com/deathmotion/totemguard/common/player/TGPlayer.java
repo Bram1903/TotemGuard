@@ -57,7 +57,7 @@ public class TGPlayer implements TGUser {
 
     public void onLogin() {
         TGPlatform platform = TGPlatform.getInstance();
-        PlayerRepository playerRepository = platform.getPlayerRepository();
+        PlayerRepositoryImpl playerRepository = platform.getPlayerRepository();
 
         PlatformUserCreation platformUserCreation = platform.getPlatformUserFactory().create(uuid);
         if (platformUserCreation == null) {

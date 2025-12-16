@@ -15,7 +15,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public final class PlayerRepository implements UserRepository {
+public final class PlayerRepositoryImpl implements UserRepository {
 
     private static final String BYPASS_PERMISSION = "TotemGuard.Bypass";
 
