@@ -56,6 +56,7 @@ public abstract class ModCheck extends Check implements SignCheck {
 
     @Override
     public void placeSign() {
+        if (!checkSettings.isEnabled()) return;
         SignUtil.placeSign(player, packetSecret, keys);
     }
 
