@@ -29,7 +29,8 @@ ext["versionNoHash"] = "$fullVersion${getVersionMeta(false)}"
 subprojects {
     plugins.withId("com.github.johnrengelman.shadow") {
         tasks.withType<ShadowJar>().configureEach {
-            // Apply the same relocation everywhere
+            relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
+            relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
             relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
         }
     }

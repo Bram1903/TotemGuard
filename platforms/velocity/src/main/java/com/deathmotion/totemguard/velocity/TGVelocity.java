@@ -19,40 +19,49 @@
 package com.deathmotion.totemguard.velocity;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.velocity.player.VelocityPlatformUserFactory;
+import com.deathmotion.totemguard.velocity.sender.VelocitySenderFactory;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
+import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import lombok.Getter;
 import org.bstats.charts.SimplePie;
 import org.bstats.velocity.Metrics;
+import org.incendo.cloud.CommandManager;
+import org.incendo.cloud.execution.ExecutionCoordinator;
+import org.incendo.cloud.velocity.VelocityCommandManager;
 
 import java.nio.file.Path;
 
+@Getter
 public class TGVelocity {
 
     private final ProxyServer server;
+    private final PluginContainer pluginContainer;
     private final Path dataDirectory;
     private final Metrics.Factory metricsFactory;
 
-    @Getter
     private final TGVelocityPlatform tg;
-
-    @Getter
+    private final VelocitySenderFactory senderFactory;
     private final VelocityPlatformUserFactory platformUserFactory;
+    private CommandManager<Sender> commandManager;
 
     @Inject
-    public TGVelocity(ProxyServer server, @DataDirectory Path dataDirectory, Metrics.Factory metricsFactory) {
+    public TGVelocity(ProxyServer server, PluginContainer pluginContainer, @DataDirectory Path dataDirectory, Metrics.Factory metricsFactory) {
         this.server = server;
+        this.pluginContainer = pluginContainer;
         this.dataDirectory = dataDirectory;
         this.metricsFactory = metricsFactory;
 
-        this.platformUserFactory = new VelocityPlatformUserFactory(server);
         this.tg = new TGVelocityPlatform(this);
+        this.senderFactory = new VelocitySenderFactory();
+        this.platformUserFactory = new VelocityPlatformUserFactory(server);
     }
 
     @Subscribe
@@ -67,7 +76,20 @@ public class TGVelocity {
         tg.commonOnDisable();
     }
 
-    private void enableBStats() {
+    CommandManager<Sender> getCommandManager() {
+        if (commandManager == null) {
+            commandManager = new VelocityCommandManager<>(
+                    pluginContainer,
+                    server,
+                    ExecutionCoordinator.simpleCoordinator(),
+                    senderFactory
+            );
+        }
+
+        return commandManager;
+    }
+
+    void enableBStats() {
         try {
             Metrics metrics = metricsFactory.make(this, TGPlatform.getBStatsId());
             metrics.addCustomChart(new SimplePie("tg_version", TGVersions.CURRENT::toStringWithoutSnapshot));

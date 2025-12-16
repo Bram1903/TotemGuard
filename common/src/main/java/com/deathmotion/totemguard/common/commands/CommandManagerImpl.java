@@ -16,34 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.velocity;
+package com.deathmotion.totemguard.common.commands;
 
-import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
+import com.deathmotion.totemguard.common.commands.impl.TestCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;
 
-public class TGVelocityPlatform extends TGPlatform {
+public class CommandManagerImpl {
 
-    private final TGVelocity plugin;
+    CommandManager<Sender> commandManager;
 
-    public TGVelocityPlatform(TGVelocity plugin) {
-        super(true);
-        this.plugin = plugin;
+    public CommandManagerImpl(CommandManager<Sender> commandManager) {
+        this.commandManager = commandManager;
+        registerCommands();
     }
 
-    @Override
-    protected CommandManager<Sender> getCommandManager() {
-        return plugin.getTg().getCommandManager();
-    }
-
-    @Override
-    protected void enableBStats() {
-        plugin.enableBStats();
-    }
-
-    @Override
-    public PlatformUserFactory getPlatformUserFactory() {
-        return plugin.getPlatformUserFactory();
+    public void registerCommands() {
+        new TestCommand().register(commandManager);
     }
 }

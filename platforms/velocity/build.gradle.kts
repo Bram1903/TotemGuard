@@ -14,6 +14,7 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation(libs.bstats.velocity)
+    implementation(libs.cloud.velocity)
     compileOnly(libs.velocity)
     annotationProcessor(libs.velocity)
 }

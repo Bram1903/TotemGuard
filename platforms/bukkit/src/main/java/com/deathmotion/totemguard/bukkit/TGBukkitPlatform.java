@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
+import com.deathmotion.totemguard.common.platform.sender.Sender;
 import lombok.Getter;
 
 @Getter
@@ -29,6 +30,16 @@ public class TGBukkitPlatform extends TGPlatform {
 
     public TGBukkitPlatform(TGBukkit plugin) {
         this.plugin = plugin;
+    }
+
+    @Override
+    protected org.incendo.cloud.CommandManager<Sender> getCommandManager() {
+        return plugin.getCommandManager();
+    }
+
+    @Override
+    protected void enableBStats() {
+        plugin.enableBStats();
     }
 
     @Override

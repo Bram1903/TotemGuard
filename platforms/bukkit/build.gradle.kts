@@ -13,7 +13,9 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation(libs.bstats.bukkit)
+    implementation(libs.cloud.paper)
     compileOnly(libs.paper)
+    compileOnly(libs.packetevents.spigot)
 }
 
 tasks {

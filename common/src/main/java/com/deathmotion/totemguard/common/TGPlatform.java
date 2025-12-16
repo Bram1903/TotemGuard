@@ -19,12 +19,15 @@
 package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuard;
+import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
-import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
+import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
+import org.incendo.cloud.CommandManager;
 
 import java.util.logging.Logger;
 
@@ -32,16 +35,15 @@ import java.util.logging.Logger;
 public abstract class TGPlatform {
 
     @Getter
-    private static TGPlatform instance;
-
-    @Getter
     private static final int bStatsId = 23179;
-
+    @Getter
+    private static TGPlatform instance;
     private final boolean isProxy;
     private final Logger logger;
 
     private EventRepositoryImpl eventRepository;
     private PlayerRepositoryImpl playerRepository;
+    private CommandManagerImpl commandManager;
 
     private TGPlatformAPI api;
 
@@ -61,6 +63,7 @@ public abstract class TGPlatform {
     public void commonOnEnable() {
         eventRepository = new EventRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
+        commandManager = new CommandManagerImpl(getCommandManager());
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
 
@@ -68,12 +71,18 @@ public abstract class TGPlatform {
         api = new TGPlatformAPI();
         TotemGuard.init(api);
 
+        enableBStats();
+
         logger.info("TotemGuard enabled.");
     }
 
     public void commonOnDisable() {
         logger.info("TotemGuard disabled.");
     }
+
+    protected abstract CommandManager<Sender> getCommandManager();
+
+    protected abstract void enableBStats();
 
     public abstract PlatformUserFactory getPlatformUserFactory();
 }
