@@ -12,6 +12,7 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
+    implementation(libs.bstats.bukkit)
     compileOnly(libs.paper)
 }
 

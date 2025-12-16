@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.velocity;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.velocity.player.VelocityPlatformUserFactory;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
@@ -26,6 +28,8 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import lombok.Getter;
+import org.bstats.charts.SimplePie;
+import org.bstats.velocity.Metrics;
 
 import java.nio.file.Path;
 
@@ -33,6 +37,7 @@ public class TGVelocity {
 
     private final ProxyServer server;
     private final Path dataDirectory;
+    private final Metrics.Factory metricsFactory;
 
     @Getter
     private final TGVelocityPlatform tg;
@@ -41,9 +46,10 @@ public class TGVelocity {
     private final VelocityPlatformUserFactory platformUserFactory;
 
     @Inject
-    public TGVelocity(ProxyServer server, @DataDirectory Path dataDirectory) {
+    public TGVelocity(ProxyServer server, @DataDirectory Path dataDirectory, Metrics.Factory metricsFactory) {
         this.server = server;
         this.dataDirectory = dataDirectory;
+        this.metricsFactory = metricsFactory;
 
         this.platformUserFactory = new VelocityPlatformUserFactory(server);
         this.tg = new TGVelocityPlatform(this);
@@ -53,10 +59,21 @@ public class TGVelocity {
     public void onProxyInitialization(ProxyInitializeEvent ignoredEvent) {
         tg.commonOnInitialize();
         tg.commonOnEnable();
+        enableBStats();
     }
 
     @Subscribe()
     public void onProxyShutdown(ProxyShutdownEvent ignoredEvent) {
         tg.commonOnDisable();
+    }
+
+    private void enableBStats() {
+        try {
+            Metrics metrics = metricsFactory.make(this, TGPlatform.getBStatsId());
+            metrics.addCustomChart(new SimplePie("tg_version", TGVersions.CURRENT::toStringWithoutSnapshot));
+            metrics.addCustomChart(new SimplePie("tg_platform", () -> "Velocity"));
+        } catch (Exception e) {
+            tg.getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
+        }
     }
 }

@@ -34,6 +34,9 @@ public abstract class TGPlatform {
     @Getter
     private static TGPlatform instance;
 
+    @Getter
+    private static final int bStatsId = 23179;
+
     private final boolean isProxy;
     private final Logger logger;
 
@@ -61,8 +64,10 @@ public abstract class TGPlatform {
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
 
+        // Load the API
         api = new TGPlatformAPI();
         TotemGuard.init(api);
+
         logger.info("TotemGuard enabled.");
     }
 

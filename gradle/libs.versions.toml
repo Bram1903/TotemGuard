@@ -6,6 +6,8 @@ velocity = "3.4.0-SNAPSHOT"
 bungeecord = "1.21-R0.5-SNAPSHOT"
 sponge = "14.0.0"
 
+bstats = "3.1.0"
+
 shadow = "9.2.2"
 run-paper = "3.0.2"
 spongeGradle = "2.3.0"
@@ -19,6 +21,11 @@ paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" 
 velocity = { group = "com.velocitypowered", name = "velocity-api", version.ref = "velocity" }
 bungeecord = { group = "net.md-5", name = "bungeecord-api", version.ref = "bungeecord" }
 sponge = { group = "org.spongepowered", name = "spongeapi", version.ref = "sponge" }
+
+bstats-bukkit = { group = "org.bstats", name = "bstats-bukkit", version.ref = "bstats" }
+bstats-bungeecord = { group = "org.bstats", name = "bstats-bungeecord", version.ref = "bstats" }
+bstats-velocity = { group = "org.bstats", name = "bstats-velocity", version.ref = "bstats" }
+bstats-sponge = { group = "org.bstats", name = "bstats-sponge", version.ref = "bstats" }
 
 [bundles]
 adventure = [ "adventure-api" ]

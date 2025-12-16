@@ -19,7 +19,11 @@
 package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUserFactory;
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import lombok.Getter;
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bukkit.plugin.java.JavaPlugin;
 
 @Getter
@@ -38,10 +42,21 @@ public class TGBukkit extends JavaPlugin {
     @Override
     public void onEnable() {
         tg.commonOnEnable();
+        enableBStats();
     }
 
     @Override
     public void onDisable() {
         tg.commonOnDisable();
+    }
+
+    private void enableBStats() {
+        try {
+            Metrics metrics = new Metrics(this, TGPlatform.getBStatsId());
+            metrics.addCustomChart(new SimplePie("tg_version", TGVersions.CURRENT::toStringWithoutSnapshot));
+            metrics.addCustomChart(new SimplePie("tg_platform", () -> "Bukkit"));
+        } catch (Exception e) {
+            tg.getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
+        }
     }
 }

@@ -1,3 +1,9 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+plugins {
+    alias(libs.plugins.shadow)
+}
+
 val fullVersion = "3.0.0"
 val snapshot = true
 
@@ -19,3 +25,12 @@ fun getVersionMeta(includeHash: Boolean): String {
 }
 version = "$fullVersion${getVersionMeta(true)}"
 ext["versionNoHash"] = "$fullVersion${getVersionMeta(false)}"
+
+subprojects {
+    plugins.withId("com.github.johnrengelman.shadow") {
+        tasks.withType<ShadowJar>().configureEach {
+            // Apply the same relocation everywhere
+            relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
+        }
+    }
+}

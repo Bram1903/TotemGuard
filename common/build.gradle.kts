@@ -1,16 +1,22 @@
 plugins {
+    `java-library`
     totemguard.`java-conventions`
+    alias(libs.plugins.shadow)
     `tg-version`
 }
 
 dependencies {
-    implementation(project(":api"))
+    api(project(":api"))
     compileOnly(libs.packetevents.api)
     compileOnly(libs.bundles.adventure)
     compileOnly(libs.bundles.adventure.serializers)
 }
 
 tasks {
+    shadowJar {
+        relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
+    }
+
     withType<JavaCompile> {
         dependsOn(generateVersionsFile)
     }
