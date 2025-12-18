@@ -13,7 +13,7 @@ java {
 tasks {
     jar {
         archiveFileName = "${rootProject.name}API-${version}.jar"
-        archiveClassifier = "default"
+        archiveClassifier = null
     }
 
     compileJava {
@@ -43,8 +43,8 @@ tasks {
 publishing {
     publications {
         create<MavenPublication>("api") {
-            groupId = project.group as String
-            artifactId = "TotemGuardAPI"
+            groupId = "com.deathmotion"
+            artifactId = "${rootProject.name}-api".lowercase()
             version = version as String
             from(components["java"])
 
@@ -57,6 +57,10 @@ publishing {
                     developer {
                         id = "bram"
                         name = "Bram"
+                    }
+                    developer {
+                        id = "outdev"
+                        name = "OutDev"
                     }
                 }
 
