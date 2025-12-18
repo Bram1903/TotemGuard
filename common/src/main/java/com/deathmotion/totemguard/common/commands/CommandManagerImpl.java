@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.commands;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.impl.TestCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;
@@ -26,8 +27,8 @@ public class CommandManagerImpl {
 
     CommandManager<Sender> commandManager;
 
-    public CommandManagerImpl(CommandManager<Sender> commandManager) {
-        this.commandManager = commandManager;
+    public CommandManagerImpl() {
+        this.commandManager = TGPlatform.getInstance().getCommandManager();
         registerCommands();
     }
 

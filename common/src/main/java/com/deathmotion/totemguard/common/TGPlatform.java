@@ -63,7 +63,7 @@ public abstract class TGPlatform {
     public void commonOnEnable() {
         eventRepository = new EventRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
-        commandManager = new CommandManagerImpl(getCommandManager());
+        commandManager = new CommandManagerImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
 
@@ -80,7 +80,7 @@ public abstract class TGPlatform {
         logger.info("TotemGuard disabled.");
     }
 
-    protected abstract CommandManager<Sender> getCommandManager();
+    public abstract CommandManager<Sender> getCommandManager();
 
     protected abstract void enableBStats();
 
