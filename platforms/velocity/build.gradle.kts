@@ -39,7 +39,7 @@ tasks {
         velocityVersion(libs.versions.velocity.get())
 
         downloadPlugins {
-            url("https://cdn.modrinth.com/data/HYKaKraK/versions/BMvG9QW5/packetevents-velocity-2.10.0.jar")
+            url("https://cdn.modrinth.com/data/HYKaKraK/versions/j6ReItdt/packetevents-velocity-2.11.0.jar")
         }
     }
 }

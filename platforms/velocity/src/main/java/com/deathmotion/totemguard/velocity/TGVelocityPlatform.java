@@ -34,7 +34,7 @@ public class TGVelocityPlatform extends TGPlatform {
 
     @Override
     public CommandManager<Sender> getCommandManager() {
-        return plugin.getTg().getCommandManager();
+        return plugin.getCommandManager();
     }
 
     @Override
