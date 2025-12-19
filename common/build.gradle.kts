@@ -9,7 +9,9 @@ dependencies {
     compileOnly(libs.packetevents.api)
     compileOnly(libs.bundles.adventure)
     compileOnly(libs.bundles.adventure.serializers)
+    compileOnly(libs.guava)
     compileOnly(libs.cloud.core)
+    implementation(libs.configurate.yaml)
 }
 
 tasks {

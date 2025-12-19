@@ -29,6 +29,8 @@ ext["versionNoHash"] = "$fullVersion${getVersionMeta(false)}"
 subprojects {
     plugins.withId("com.github.johnrengelman.shadow") {
         tasks.withType<ShadowJar>().configureEach {
+            relocate("org.spongepowered.configurate", "com.deathmotion.totemguard.common.libs.configurate")
+            relocate("net.kyori.option", "com.deathmotion.totemguard.common.libs.configurate.kyori.option")
             relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
             relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
             relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")

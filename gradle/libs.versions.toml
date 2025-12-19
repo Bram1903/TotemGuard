@@ -1,6 +1,8 @@
 [versions]
 packetevents = "2.11.0"
 adventure = "4.25.0"
+configurate = "4.2.0"
+guava = "33.3.1-jre"
 paper = "1.21.11-R0.1-SNAPSHOT"
 velocity = "3.4.0-SNAPSHOT"
 bungeecord = "1.21-R0.5-SNAPSHOT"
@@ -21,6 +23,8 @@ packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spi
 adventure-api = { group = "net.kyori", name = "adventure-api", version.ref = "adventure" }
 adventure-text-serializer-gson = { group = "net.kyori", name = "adventure-text-serializer-gson", version.ref = "adventure" }
 adventure-text-serializer-legacy = { group = "net.kyori", name = "adventure-text-serializer-legacy", version.ref = "adventure" }
+configurate-yaml = { group = "org.spongepowered", name = "configurate-yaml", version.ref = "configurate" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 velocity = { group = "com.velocitypowered", name = "velocity-api", version.ref = "velocity" }
 bungeecord = { group = "net.md-5", name = "bungeecord-api", version.ref = "bungeecord" }
