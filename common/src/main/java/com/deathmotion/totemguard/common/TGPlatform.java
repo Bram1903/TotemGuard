@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
+import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
@@ -41,6 +42,8 @@ public abstract class TGPlatform {
     private final boolean isProxy;
     private final Logger logger;
 
+    private ConfigRepositoryImpl configRepository;
+
     private EventRepositoryImpl eventRepository;
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
@@ -58,6 +61,7 @@ public abstract class TGPlatform {
     }
 
     public void commonOnInitialize() {
+        configRepository = new ConfigRepositoryImpl();
     }
 
     public void commonOnEnable() {
@@ -82,7 +86,9 @@ public abstract class TGPlatform {
 
     public abstract CommandManager<Sender> getCommandManager();
 
-    protected abstract void enableBStats();
+    public abstract void enableBStats();
 
     public abstract PlatformUserFactory getPlatformUserFactory();
+
+    public abstract String getPluginDirectory();
 }

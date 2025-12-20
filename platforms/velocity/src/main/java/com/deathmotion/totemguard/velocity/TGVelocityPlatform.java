@@ -38,12 +38,17 @@ public class TGVelocityPlatform extends TGPlatform {
     }
 
     @Override
-    protected void enableBStats() {
+    public void enableBStats() {
         plugin.enableBStats();
     }
 
     @Override
     public PlatformUserFactory getPlatformUserFactory() {
         return plugin.getPlatformUserFactory();
+    }
+
+    @Override
+    public String getPluginDirectory() {
+        return this.plugin.getDataDirectory().toAbsolutePath().toString();
     }
 }

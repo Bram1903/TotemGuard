@@ -38,12 +38,17 @@ public class TGBukkitPlatform extends TGPlatform {
     }
 
     @Override
-    protected void enableBStats() {
+    public void enableBStats() {
         plugin.enableBStats();
     }
 
     @Override
     public PlatformUserFactory getPlatformUserFactory() {
         return plugin.getBukkitPlatformUserFactory();
+    }
+
+    @Override
+    public String getPluginDirectory() {
+        return this.plugin.getDataFolder().getAbsolutePath();
     }
 }
