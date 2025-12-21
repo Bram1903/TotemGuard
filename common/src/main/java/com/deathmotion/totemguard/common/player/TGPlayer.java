@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.player;
 import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
@@ -34,25 +35,26 @@ import java.util.UUID;
 /**
  * Represents a player in TotemGuard. This object is bound to a single player and gets removed once the player leaves the server / proxy.
  */
+@Getter
 public class TGPlayer implements TGUser {
 
-    @Getter
     private final UUID uuid;
-    @Getter
     private final User user;
-
-    @Getter
+    private final CheckManagerImpl checkManager;
+    private boolean hasLoggedIn;
     private PlatformUser platformUser;
 
     /**
      * Only available when the plugin is run on a backend server (so not a proxy).
      */
-    @Getter
     private @Nullable PlatformPlayer platformPlayer;
+
+    public boolean sendingBundlePacket;
 
     public TGPlayer(@NotNull User user) {
         this.uuid = user.getUUID();
         this.user = user;
+        this.checkManager = new CheckManagerImpl(this);
     }
 
     public void onLogin() {
@@ -61,7 +63,7 @@ public class TGPlayer implements TGUser {
 
         PlatformUserCreation platformUserCreation = platform.getPlatformUserFactory().create(uuid);
         if (platformUserCreation == null) {
-            playerRepository.removeUser(uuid);
+            playerRepository.removeUser(user);
             return;
         }
 
@@ -69,11 +71,12 @@ public class TGPlayer implements TGUser {
         platformPlayer = platformUserCreation.getPlatformPlayer();
 
         if (!playerRepository.shouldCheck(user, platformUser)) {
-            playerRepository.removeUser(uuid);
+            playerRepository.removeUser(user);
             return;
         }
 
-        TGPlatform.getInstance().getEventRepository().post(new TGUserJoinEvent(this));
+        hasLoggedIn = true;
+        platform.getEventRepository().post(new TGUserJoinEvent(this));
     }
 
     @Override

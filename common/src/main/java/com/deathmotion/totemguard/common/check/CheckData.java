@@ -16,22 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.user;
+package com.deathmotion.totemguard.common.check;
 
-import org.jetbrains.annotations.Nullable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.util.UUID;
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface CheckData {
+    String description() default "No description provided";
 
-/**
- * Repository interface for accessing {@link TGUser} instances.
- */
-public interface UserRepository {
-
-    /**
-     * Retrieves a user by their unique UUID.
-     *
-     * @param uuid the UUID of the user
-     * @return the {@link TGUser} if found, or {@code null} if no such user exists
-     */
-    @Nullable TGUser getUser(UUID uuid);
+    boolean experimental() default false;
 }

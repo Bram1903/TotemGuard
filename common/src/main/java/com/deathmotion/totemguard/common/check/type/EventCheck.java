@@ -16,20 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.bukkit.testplugin.events;
+package com.deathmotion.totemguard.common.check.type;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
-import com.deathmotion.totemguard.bukkit.testplugin.ApiTestPlugin;
+import com.deathmotion.totemguard.api.check.Check;
+import com.deathmotion.totemguard.api.event.Event;
 
 import java.util.function.Consumer;
 
-public final class ACUserQuitEventListener implements Consumer<TGUserQuitEvent> {
-
+public interface EventCheck<T extends Event> extends Consumer<T>, Check {
     @Override
-    public void accept(TGUserQuitEvent event) {
-        ApiTestPlugin.getInstance().getLogger().info("User " + event.getUser().getName() + " quit the server.");
-    }
-
+    void accept(T event);
 }
-
 

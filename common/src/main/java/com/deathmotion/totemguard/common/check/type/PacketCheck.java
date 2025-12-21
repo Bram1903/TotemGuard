@@ -16,18 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.bukkit.testplugin.events;
+package com.deathmotion.totemguard.common.check.type;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
-import com.deathmotion.totemguard.bukkit.testplugin.ApiTestPlugin;
+import com.deathmotion.totemguard.api.check.Check;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 
-import java.util.function.Consumer;
-
-public final class ACUserJoinEventListener implements Consumer<TGUserJoinEvent> {
-
-    @Override
-    public void accept(TGUserJoinEvent event) {
-        ApiTestPlugin.getInstance().getLogger().info("User " + event.getUser().getName() + " joined the server.");
+public interface PacketCheck extends Check {
+    default void onPacketReceive(final PacketReceiveEvent event) {
     }
 
+    default void onPacketSend(final PacketSendEvent event) {
+    }
 }

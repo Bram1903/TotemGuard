@@ -16,22 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.user;
+package com.deathmotion.totemguard.bukkit.testplugin.events;
 
-import org.jetbrains.annotations.Nullable;
+import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
+import com.deathmotion.totemguard.bukkit.testplugin.ApiTestPlugin;
 
-import java.util.UUID;
+import java.util.function.Consumer;
 
-/**
- * Repository interface for accessing {@link TGUser} instances.
- */
-public interface UserRepository {
+public final class TGUserQuitEventListener implements Consumer<TGUserQuitEvent> {
 
-    /**
-     * Retrieves a user by their unique UUID.
-     *
-     * @param uuid the UUID of the user
-     * @return the {@link TGUser} if found, or {@code null} if no such user exists
-     */
-    @Nullable TGUser getUser(UUID uuid);
+    @Override
+    public void accept(TGUserQuitEvent event) {
+        ApiTestPlugin.getInstance().getLogger().info("User " + event.getUser().getName() + " quit the server.");
+    }
+
 }
+
+

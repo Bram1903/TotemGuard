@@ -19,10 +19,12 @@
 package com.deathmotion.totemguard.bukkit.testplugin;
 
 import com.deathmotion.totemguard.api.TotemGuard;
+import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
-import com.deathmotion.totemguard.bukkit.testplugin.events.ACUserJoinEventListener;
-import com.deathmotion.totemguard.bukkit.testplugin.events.ACUserQuitEventListener;
+import com.deathmotion.totemguard.bukkit.testplugin.events.TGFlagEventListener;
+import com.deathmotion.totemguard.bukkit.testplugin.events.TGUserJoinEventListener;
+import com.deathmotion.totemguard.bukkit.testplugin.events.TGUserQuitEventListener;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -44,8 +46,9 @@ public final class ApiTestPlugin extends JavaPlugin {
         TotemGuard.getAsync().thenAccept(api -> {
             getLogger().info("Hooked into TotemGuard version " + api.getVersion() + ".");
 
-            listeners.add(api.getEventRepository().subscribe(TGUserJoinEvent.class, new ACUserJoinEventListener()));
-            listeners.add(api.getEventRepository().subscribe(TGUserQuitEvent.class, new ACUserQuitEventListener()));
+            listeners.add(api.getEventRepository().subscribe(TGUserJoinEvent.class, new TGUserJoinEventListener()));
+            listeners.add(api.getEventRepository().subscribe(TGUserQuitEvent.class, new TGUserQuitEventListener()));
+            listeners.add(api.getEventRepository().subscribe(TGFlagEvent.class, new TGFlagEventListener()));
         });
     }
 

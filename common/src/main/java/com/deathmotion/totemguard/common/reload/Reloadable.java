@@ -16,22 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.user;
+package com.deathmotion.totemguard.common.reload;
 
-import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
-
-/**
- * Repository interface for accessing {@link TGUser} instances.
- */
-public interface UserRepository {
-
-    /**
-     * Retrieves a user by their unique UUID.
-     *
-     * @param uuid the UUID of the user
-     * @return the {@link TGUser} if found, or {@code null} if no such user exists
-     */
-    @Nullable TGUser getUser(UUID uuid);
+public interface Reloadable {
+    void reload();
 }
