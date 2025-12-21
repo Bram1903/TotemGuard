@@ -7,3 +7,9 @@
 
 # The version of the messages file. DO NOT TOUCH!!!
 config_version: 1
+
+prefix: "&6&lTG &8»"
+
+alerts-enabled: "%prefix% &aAlerts enabled"
+alerts-disabled: "%prefix% &cAlerts disabled"
+alert-brand: "%prefix% &6%player% &7joined using: &6%client_brand%"

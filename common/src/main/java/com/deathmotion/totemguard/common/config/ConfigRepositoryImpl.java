@@ -20,6 +20,10 @@ package com.deathmotion.totemguard.common.config;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.codec.MessageFormat;
+import com.deathmotion.totemguard.common.config.model.Checks;
+import com.deathmotion.totemguard.common.config.model.Config;
+import com.deathmotion.totemguard.common.config.model.Messages;
+import lombok.Getter;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
@@ -34,17 +38,18 @@ import java.time.format.DateTimeFormatter;
 
 public final class ConfigRepositoryImpl {
 
-    private static final DateTimeFormatter BROKEN_TS =
-            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+    private static final DateTimeFormatter BROKEN_TS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
-    private ConfigurationNode config;
-    private ConfigurationNode messages;
-    private ConfigurationNode checks;
+    @Getter
+    private Config config;
+    @Getter
+    private Messages messages;
+    @Getter
+    private Checks checks;
 
     public boolean reload() {
         try {
-            final ConfigurationNode config =
-                    loadOrDisable("config.yml", ConfigLoaderFactory.yaml("config.yml"));
+            final ConfigurationNode config = loadOrDisable("config.yml", ConfigLoaderFactory.yaml("config.yml"));
             if (config == null) {
                 return false;
             }
@@ -56,61 +61,30 @@ public final class ConfigRepositoryImpl {
                 TGPlatform.getInstance().getLogger().severe("Invalid formatter in config.yml defaulting to NATIVE.");
             }
 
-            final ConfigurationNode messages =
+            final ConfigurationNode messagesNode =
                     loadOrDisable(
                             "messages.yml",
                             ConfigLoaderFactory.messagesYaml("messages.yml", format)
                     );
-            if (messages == null) {
+            if (messagesNode == null) {
                 return false;
             }
 
-            final ConfigurationNode checks =
-                    loadOrDisable("checks.yml", ConfigLoaderFactory.yaml("checks.yml"));
-            if (checks == null) {
+            messages = new Messages(messagesNode);
+
+            final ConfigurationNode checksNode = loadOrDisable("checks.yml", ConfigLoaderFactory.yaml("checks.yml"));
+            if (checksNode == null) {
                 return false;
             }
-
-            // Commit only after everything succeeded
-            this.config = config;
-            this.messages = messages;
-            this.checks = checks;
 
             return true;
 
         } catch (final Throwable t) {
-            disable("Unexpected error while reloading configuration.", t);
+            disable("Unexpected error while loading configuration.", t);
             return false;
         }
     }
 
-    public ConfigurationNode config() {
-        ensureLoaded(config, "config.yml");
-        return config;
-    }
-
-    public ConfigurationNode messages() {
-        ensureLoaded(messages, "messages.yml");
-        return messages;
-    }
-
-    public ConfigurationNode checks() {
-        ensureLoaded(checks, "checks.yml");
-        return checks;
-    }
-
-    private static void ensureLoaded(final ConfigurationNode node, final String name) {
-        if (node == null) {
-            throw new IllegalStateException("Configuration not loaded yet: " + name);
-        }
-    }
-
-    /**
-     * Loads a configuration file, attempting recovery (move broken file + restore defaults)
-     * on Configurate parsing errors.
-     *
-     * @return loaded node, or null if the plugin was disabled
-     */
     private static ConfigurationNode loadOrDisable(
             final String fileName,
             final YamlConfigurationLoader loader
