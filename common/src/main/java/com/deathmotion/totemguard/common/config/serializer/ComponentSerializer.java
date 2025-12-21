@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.config.serializer;
 
+import com.deathmotion.totemguard.common.config.codec.ComponentCodec;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jspecify.annotations.NonNull;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
@@ -29,17 +29,21 @@ import java.lang.reflect.Type;
 
 public final class ComponentSerializer implements TypeSerializer<Component> {
 
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private final ComponentCodec codec;
+
+    public ComponentSerializer(final ComponentCodec codec) {
+        this.codec = codec;
+    }
 
     @Override
     public Component deserialize(final @NonNull Type type, final @NonNull ConfigurationNode node) {
         final String serialized = node.getString("");
-        return miniMessage.deserialize(serialized);
+        return codec.deserialize(serialized);
     }
 
     @Override
     public void serialize(final @NonNull Type type, final Component obj, final @NonNull ConfigurationNode node) throws SerializationException {
-        final String serialized = miniMessage.serialize(obj);
-        node.set(serialized);
+        node.set(codec.serialize(obj));
     }
 }
+

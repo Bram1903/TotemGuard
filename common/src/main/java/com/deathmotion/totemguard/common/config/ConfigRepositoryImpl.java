@@ -19,25 +19,171 @@
 package com.deathmotion.totemguard.common.config;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.config.serializer.ComponentSerializer;
-import net.kyori.adventure.text.Component;
-import org.spongepowered.configurate.ConfigurationOptions;
-import org.spongepowered.configurate.serialize.TypeSerializerCollection;
+import com.deathmotion.totemguard.common.config.codec.MessageFormat;
+import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.serialize.SerializationException;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-public class ConfigRepositoryImpl {
+public final class ConfigRepositoryImpl {
 
-    private final YamlConfigurationLoader loader;
+    private static final DateTimeFormatter BROKEN_TS =
+            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
-    public ConfigRepositoryImpl() {
-        this.loader = YamlConfigurationLoader.builder()
-                .path(Paths.get(TGPlatform.getInstance().getPluginDirectory()))
-                .defaultOptions(ConfigurationOptions.defaults().serializers(TypeSerializerCollection.defaults()
-                        .childBuilder()
-                        .registerExact(Component.class, new ComponentSerializer())
-                        .build()))
-                .build();
+    private ConfigurationNode config;
+    private ConfigurationNode messages;
+    private ConfigurationNode checks;
+
+    public boolean reload() {
+        try {
+            final ConfigurationNode config =
+                    loadOrDisable("config.yml", ConfigLoaderFactory.yaml("config.yml"));
+            if (config == null) {
+                return false;
+            }
+
+            final MessageFormat format;
+            try {
+                format = config.node("messages", "format")
+                        .get(MessageFormat.class, MessageFormat.NATIVE);
+            } catch (final SerializationException e) {
+                disable("Invalid value for messages.format in config.yml.", e);
+                return false;
+            }
+
+            final ConfigurationNode messages =
+                    loadOrDisable(
+                            "messages.yml",
+                            ConfigLoaderFactory.messagesYaml("messages.yml", format)
+                    );
+            if (messages == null) {
+                return false;
+            }
+
+            final ConfigurationNode checks =
+                    loadOrDisable("checks.yml", ConfigLoaderFactory.yaml("checks.yml"));
+            if (checks == null) {
+                return false;
+            }
+
+            // Commit only after everything succeeded
+            this.config = config;
+            this.messages = messages;
+            this.checks = checks;
+
+            return true;
+
+        } catch (final Throwable t) {
+            disable("Unexpected error while reloading configuration.", t);
+            return false;
+        }
+    }
+
+    public ConfigurationNode config() {
+        ensureLoaded(config, "config.yml");
+        return config;
+    }
+
+    public ConfigurationNode messages() {
+        ensureLoaded(messages, "messages.yml");
+        return messages;
+    }
+
+    public ConfigurationNode checks() {
+        ensureLoaded(checks, "checks.yml");
+        return checks;
+    }
+
+    private static void ensureLoaded(final ConfigurationNode node, final String name) {
+        if (node == null) {
+            throw new IllegalStateException("Configuration not loaded yet: " + name);
+        }
+    }
+
+    /**
+     * Loads a configuration file, attempting recovery (move broken file + restore defaults)
+     * on Configurate parsing errors.
+     *
+     * @return loaded node, or null if the plugin was disabled
+     */
+    private static ConfigurationNode loadOrDisable(
+            final String fileName,
+            final YamlConfigurationLoader loader
+    ) {
+        final Path target = ConfigLoaderFactory.resolve(fileName);
+
+        try {
+            if (Files.notExists(target)) {
+                restoreDefault(fileName, target);
+            }
+
+            return loader.load();
+
+        } catch (final ConfigurateException firstFailure) {
+            try {
+                if (Files.exists(target)) {
+                    final Path broken = brokenName(target);
+                    Files.move(target, broken, StandardCopyOption.REPLACE_EXISTING);
+
+                    TGPlatform.getInstance().getLogger().warning(
+                            "Configuration " + fileName +
+                                    " is broken, moved to " + broken.getFileName() +
+                                    " and restoring defaults."
+                    );
+                }
+
+                restoreDefault(fileName, target);
+                return loader.load();
+
+            } catch (final Throwable t) {
+                t.addSuppressed(firstFailure);
+                disable("Failed to restore/load default configuration for " + fileName + ".", t);
+                return null;
+            }
+
+        } catch (final Throwable t) {
+            disable("Unexpected error while loading " + fileName + ".", t);
+            return null;
+        }
+    }
+
+    private static void restoreDefault(final String fileName, final Path target)
+            throws IOException {
+        Files.createDirectories(target.getParent());
+
+        try (var in = TGPlatform.class
+                .getClassLoader()
+                .getResourceAsStream(fileName)) {
+
+            if (in == null) {
+                throw new IOException("Default resource not found: " + fileName);
+            }
+
+            Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static Path brokenName(final Path original) {
+        final String name = original.getFileName().toString();
+        final int dot = name.lastIndexOf('.');
+        final String base = dot > 0 ? name.substring(0, dot) : name;
+        final String ext = dot > 0 ? name.substring(dot) : "";
+        return original.resolveSibling(
+                base + "_broken_" + LocalDateTime.now().format(BROKEN_TS) + ext
+        );
+    }
+
+    private static void disable(final String message, final Throwable cause) {
+        final TGPlatform platform = TGPlatform.getInstance();
+        platform.getLogger().severe(message);
+        platform.getLogger().severe(String.valueOf(cause.getMessage()));
+        platform.disablePlugin();
     }
 }

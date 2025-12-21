@@ -51,4 +51,9 @@ public class TGVelocityPlatform extends TGPlatform {
     public String getPluginDirectory() {
         return this.plugin.getDataDirectory().toAbsolutePath().toString();
     }
+
+    @Override
+    public void disablePlugin() {
+        throw new UnsupportedOperationException("Cannot disable Velocity plugins programmatically.");
+    }
 }

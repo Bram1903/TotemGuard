@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 
 @Getter
 public class TGBukkitPlatform extends TGPlatform {
@@ -50,5 +51,10 @@ public class TGBukkitPlatform extends TGPlatform {
     @Override
     public String getPluginDirectory() {
         return this.plugin.getDataFolder().getAbsolutePath();
+    }
+
+    @Override
+    public void disablePlugin() {
+        Bukkit.getPluginManager().disablePlugin(plugin);
     }
 }

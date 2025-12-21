@@ -61,10 +61,14 @@ public abstract class TGPlatform {
     }
 
     public void commonOnInitialize() {
-        configRepository = new ConfigRepositoryImpl();
     }
 
     public void commonOnEnable() {
+        configRepository = new ConfigRepositoryImpl();
+        if (!configRepository.reload()) {
+            return;
+        }
+
         eventRepository = new EventRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
         commandManager = new CommandManagerImpl();
@@ -91,4 +95,6 @@ public abstract class TGPlatform {
     public abstract PlatformUserFactory getPlatformUserFactory();
 
     public abstract String getPluginDirectory();
+
+    public abstract void disablePlugin();
 }
