@@ -49,13 +49,11 @@ public final class ConfigRepositoryImpl {
                 return false;
             }
 
-            final MessageFormat format;
+            MessageFormat format = MessageFormat.NATIVE;
             try {
-                format = config.node("messages", "format")
-                        .get(MessageFormat.class, MessageFormat.NATIVE);
+                format = config.node("formatter").get(MessageFormat.class, MessageFormat.NATIVE);
             } catch (final SerializationException e) {
-                disable("Invalid value for messages.format in config.yml.", e);
-                return false;
+                TGPlatform.getInstance().getLogger().severe("Invalid formatter in config.yml defaulting to NATIVE.");
             }
 
             final ConfigurationNode messages =
