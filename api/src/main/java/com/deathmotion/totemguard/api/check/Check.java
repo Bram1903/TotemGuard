@@ -59,4 +59,11 @@ public interface Check {
      * @return {@code true} if the check is enabled, {@code false} otherwise
      */
     boolean isEnabled();
+
+    /**
+     * Gets the current number of violations recorded by this check.
+     *
+     * @return the number of violations
+     */
+    int getViolations();
 }
