@@ -21,11 +21,11 @@ package com.deathmotion.totemguard.common.player.processor;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 
-public abstract class OutgoingProcessor {
+public abstract class OutboundProcessor {
 
     protected final TGPlayer player;
 
-    public OutgoingProcessor(TGPlayer player) {
+    public OutboundProcessor(TGPlayer player) {
         this.player = player;
     }
 

@@ -20,8 +20,8 @@ package com.deathmotion.totemguard.common.event.packet;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.processor.IncomingProcessor;
-import com.deathmotion.totemguard.common.player.processor.OutgoingProcessor;
+import com.deathmotion.totemguard.common.player.processor.InboundProcessor;
+import com.deathmotion.totemguard.common.player.processor.OutboundProcessor;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -42,19 +42,19 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         if (event.getConnectionState() != ConnectionState.PLAY) {
             // Allow processors to listen to configuration packets
             if (event.getConnectionState() != ConnectionState.CONFIGURATION) return;
-            for (IncomingProcessor processor : player.getIncomingProcessors()) {
+            for (InboundProcessor processor : player.getInboundProcessors()) {
                 processor.handleIncoming(event);
             }
             return;
         }
 
-        for (IncomingProcessor processor : player.getIncomingProcessors()) {
+        for (InboundProcessor processor : player.getInboundProcessors()) {
             processor.handleIncoming(event);
         }
 
         player.getCheckManager().onPacketReceive(event);
 
-        for (IncomingProcessor processor : player.getIncomingProcessors()) {
+        for (InboundProcessor processor : player.getInboundProcessors()) {
             processor.handleIncomingPost(event);
         }
     }
@@ -65,13 +65,13 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(event.getUser());
         if (player == null) return;
 
-        for (OutgoingProcessor processor : player.getOutgoingProcessors()) {
+        for (OutboundProcessor processor : player.getOutboundProcessors()) {
             processor.handleOutgoing(event);
         }
 
         player.getCheckManager().onPacketSend(event);
 
-        for (OutgoingProcessor processor : player.getOutgoingProcessors()) {
+        for (OutboundProcessor processor : player.getOutboundProcessors()) {
             processor.handleOutgoingPost(event);
         }
     }

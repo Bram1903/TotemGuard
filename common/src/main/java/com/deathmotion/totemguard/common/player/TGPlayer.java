@@ -25,10 +25,10 @@ import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
-import com.deathmotion.totemguard.common.player.processor.IncomingProcessor;
-import com.deathmotion.totemguard.common.player.processor.OutgoingProcessor;
-import com.deathmotion.totemguard.common.player.processor.incoming.ClientBrandProcessor;
-import com.deathmotion.totemguard.common.player.processor.outgoing.BundleProcessor;
+import com.deathmotion.totemguard.common.player.processor.InboundProcessor;
+import com.deathmotion.totemguard.common.player.processor.OutboundProcessor;
+import com.deathmotion.totemguard.common.player.processor.inbound.ClientBrandProcessor;
+import com.deathmotion.totemguard.common.player.processor.outbound.BundleProcessor;
 import com.github.retrooper.packetevents.protocol.player.User;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,8 +49,8 @@ public class TGPlayer implements TGUser {
     private final User user;
     private final CheckManagerImpl checkManager;
 
-    private final List<IncomingProcessor> incomingProcessors;
-    private final List<OutgoingProcessor> outgoingProcessors;
+    private final List<InboundProcessor> inboundProcessors;
+    private final List<OutboundProcessor> outboundProcessors;
 
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
@@ -66,11 +66,11 @@ public class TGPlayer implements TGUser {
         this.user = user;
         this.checkManager = new CheckManagerImpl(this);
 
-        this.incomingProcessors = new ArrayList<>() {{
+        this.inboundProcessors = new ArrayList<>() {{
             add(new ClientBrandProcessor(TGPlayer.this));
         }};
 
-        this.outgoingProcessors = new ArrayList<>() {{
+        this.outboundProcessors = new ArrayList<>() {{
             add(new BundleProcessor(TGPlayer.this));
         }};
     }

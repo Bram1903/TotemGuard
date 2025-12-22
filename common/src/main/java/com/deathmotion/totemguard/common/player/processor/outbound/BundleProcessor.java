@@ -16,14 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.processor.outgoing;
+package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.processor.OutgoingProcessor;
+import com.deathmotion.totemguard.common.player.processor.OutboundProcessor;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
-public class BundleProcessor extends OutgoingProcessor {
+public class BundleProcessor extends OutboundProcessor {
 
     public BundleProcessor(TGPlayer player) {
         super(player);

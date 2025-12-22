@@ -16,10 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.processor.incoming;
+package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.processor.IncomingProcessor;
+import com.deathmotion.totemguard.common.player.processor.InboundProcessor;
 import com.deathmotion.totemguard.common.util.ChatUtil;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -28,7 +28,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 
-public class ClientBrandProcessor extends IncomingProcessor {
+public class ClientBrandProcessor extends InboundProcessor {
 
     private static final String CHANNEL = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
     private boolean hasBrand = false;
