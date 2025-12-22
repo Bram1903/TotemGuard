@@ -25,10 +25,11 @@ import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
-import com.deathmotion.totemguard.common.player.processor.PreProcessor;
-import com.deathmotion.totemguard.common.player.processor.impl.ActionProcessor;
-import com.deathmotion.totemguard.common.player.processor.impl.BundleProcessor;
-import com.deathmotion.totemguard.common.player.processor.impl.ClientBrandProcessor;
+import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
+import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
+import com.deathmotion.totemguard.common.player.processor.inbound.ActionProcessorInbound;
+import com.deathmotion.totemguard.common.player.processor.inbound.ClientBrandProcessorInbound;
+import com.deathmotion.totemguard.common.player.processor.outbound.BundleProcessorInbound;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -57,7 +58,8 @@ public class TGPlayer implements TGUser {
     private final CheckManagerImpl checkManager;
     private final PacketStateData packetStateData;
 
-    private final List<PreProcessor> preProcessors;
+    private final List<ProcessorInbound> processorInbounds;
+    private final List<ProcessorOutbound> processorOutbounds;
 
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
@@ -72,10 +74,13 @@ public class TGPlayer implements TGUser {
         this.checkManager = new CheckManagerImpl(this);
         this.packetStateData = new PacketStateData();
 
-        this.preProcessors = new ArrayList<>() {{
-            add(new BundleProcessor(TGPlayer.this));
-            add(new ClientBrandProcessor(TGPlayer.this));
-            add(new ActionProcessor(TGPlayer.this));
+        this.processorInbounds = new ArrayList<>() {{
+            add(new ClientBrandProcessorInbound(TGPlayer.this));
+            add(new ActionProcessorInbound(TGPlayer.this));
+        }};
+
+        this.processorOutbounds = new ArrayList<>() {{
+            add(new BundleProcessorInbound(TGPlayer.this));
         }};
     }
 

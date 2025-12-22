@@ -16,28 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.processor.impl;
+package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.processor.PreProcessor;
+import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
-public class ActionProcessor extends PreProcessor {
+public class ActionProcessorInbound extends ProcessorInbound {
 
-    public ActionProcessor(TGPlayer player) {
+    public ActionProcessorInbound(TGPlayer player) {
         super(player);
     }
 
     @Override
-    public void handleIncoming(PacketReceiveEvent event) {
+    public void handleInbound(PacketReceiveEvent event) {
         if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
             player.getPacketStateData().setPlacedBlockThisTick(true);
         }
     }
 
     @Override
-    public void handleIncomingPost(PacketReceiveEvent event) {
+    public void handleInboundPost(PacketReceiveEvent event) {
         if (!player.isTickEndPacket(event.getPacketType())) return;
         player.getPacketStateData().setPlacedBlockThisTick(false);
     }

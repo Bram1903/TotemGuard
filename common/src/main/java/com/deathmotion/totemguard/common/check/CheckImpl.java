@@ -72,7 +72,7 @@ public class CheckImpl implements Check, Reloadable {
         violations.incrementAndGet();
 
         // TODO: Replace this with proper flag logic
-        TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed check " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
+        TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
     }
 
     public boolean shouldFail() {

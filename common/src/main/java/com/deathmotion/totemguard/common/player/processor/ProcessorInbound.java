@@ -20,29 +20,20 @@ package com.deathmotion.totemguard.common.player.processor;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.event.PacketSendEvent;
 
-public abstract class PreProcessor {
+public abstract class ProcessorInbound {
 
     protected final TGPlayer player;
 
-    public PreProcessor(TGPlayer player) {
+    public ProcessorInbound(TGPlayer player) {
         this.player = player;
     }
 
-    public void handleIncoming(final PacketReceiveEvent event) {
+    public void handleInbound(final PacketReceiveEvent event) {
 
     }
 
-    public void handleOutgoing(final PacketSendEvent event) {
-
-    }
-
-    public void handleIncomingPost(final PacketReceiveEvent event) {
-
-    }
-
-    public void handleOutgoingPost(final PacketSendEvent event) {
+    public void handleInboundPost(final PacketReceiveEvent event) {
 
     }
 }
