@@ -16,12 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.codec;
+package com.deathmotion.totemguard.common.player.processor;
 
-import net.kyori.adventure.text.Component;
+import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 
-public interface ComponentCodec {
-    Component deserialize(String input);
+public abstract class PreProcessor {
 
-    String serialize(Component component);
+    protected final TGPlayer player;
+
+    public PreProcessor(TGPlayer player) {
+        this.player = player;
+    }
+
+    public void handleIncoming(final PacketReceiveEvent event) {
+
+    }
+
+    public void handleOutgoing(final PacketSendEvent event) {
+
+    }
+
+    public void handleIncomingPost(final PacketReceiveEvent event) {
+
+    }
+
+    public void handleOutgoingPost(final PacketSendEvent event) {
+
+    }
 }

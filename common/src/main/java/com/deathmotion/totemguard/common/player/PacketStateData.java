@@ -16,24 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.processor;
+package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.github.retrooper.packetevents.event.PacketSendEvent;
+import lombok.Getter;
+import lombok.Setter;
 
-public abstract class OutboundProcessor {
+@Getter
+@Setter
+public class PacketStateData {
+    private boolean sendingBundlePacket;
 
-    protected final TGPlayer player;
-
-    public OutboundProcessor(TGPlayer player) {
-        this.player = player;
-    }
-
-    public void handleOutgoing(final PacketSendEvent event) {
-
-    }
-
-    public void handleOutgoingPost(final PacketSendEvent event) {
-
-    }
+    // Actions performed this tick
+    private boolean placedBlockThisTick;
+    private boolean serverOpenedInventoryThisTick;
 }

@@ -16,23 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.processor.outbound;
+package com.deathmotion.totemguard.common.player.processor.impl;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.processor.OutboundProcessor;
-import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.deathmotion.totemguard.common.player.processor.PreProcessor;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
-public class BundleProcessor extends OutboundProcessor {
+public class ActionProcessor extends PreProcessor {
 
-    public BundleProcessor(TGPlayer player) {
+    public ActionProcessor(TGPlayer player) {
         super(player);
     }
 
     @Override
-    public void handleOutgoing(PacketSendEvent event) {
-        if (event.getPacketType() == PacketType.Play.Server.BUNDLE) {
-            player.setSendingBundlePacket(!player.isSendingBundlePacket());
+    public void handleIncoming(PacketReceiveEvent event) {
+        if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
+            player.getPacketStateData().setPlacedBlockThisTick(true);
         }
+    }
+
+    @Override
+    public void handleIncomingPost(PacketReceiveEvent event) {
+        if (!player.isTickEndPacket(event.getPacketType())) return;
+        player.getPacketStateData().setPlacedBlockThisTick(false);
     }
 }

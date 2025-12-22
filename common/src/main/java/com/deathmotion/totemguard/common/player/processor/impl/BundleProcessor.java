@@ -16,24 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.processor;
+package com.deathmotion.totemguard.common.player.processor.impl;
 
+import com.deathmotion.totemguard.common.player.PacketStateData;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.deathmotion.totemguard.common.player.processor.PreProcessor;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
-public abstract class InboundProcessor {
+public class BundleProcessor extends PreProcessor {
 
-    protected final TGPlayer player;
-
-    public InboundProcessor(TGPlayer player) {
-        this.player = player;
+    public BundleProcessor(TGPlayer player) {
+        super(player);
     }
 
-    public void handleIncoming(final PacketReceiveEvent event) {
-
-    }
-
-    public void handleIncomingPost(final PacketReceiveEvent event) {
-
+    @Override
+    public void handleOutgoing(PacketSendEvent event) {
+        if (event.getPacketType() == PacketType.Play.Server.BUNDLE) {
+            final PacketStateData packetStateData = player.getPacketStateData();
+            packetStateData.setSendingBundlePacket(!packetStateData.isSendingBundlePacket());
+        }
     }
 }

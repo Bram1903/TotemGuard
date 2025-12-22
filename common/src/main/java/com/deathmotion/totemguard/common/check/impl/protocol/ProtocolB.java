@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
 @CheckData(description = "Attacked multiple entities in the same tick")
@@ -38,21 +39,21 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() == PacketType.Play.Client.INTERACT_ENTITY) {
+        final PacketTypeCommon packetType = event.getPacketType();
+
+        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
             final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
 
-            if (packet.getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
-                // Shouldn't be possible to attack yourself in vanilla, so no need to check for that
-                final int target = packet.getEntityId();
+            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
+            final int target = packet.getEntityId();
 
-                if (target != this.lastAttackedEntityId && ++this.attacks > 1) {
-                    fail("attacks: " + this.attacks);
-                }
-
-                this.lastAttackedEntityId = target;
+            if (target != lastAttackedEntityId && ++attacks > 1) {
+                fail("attacks: " + attacks);
             }
-        } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END) {
-            this.attacks = 0;
+
+            lastAttackedEntityId = target;
+        } else if (player.isTickEndPacket(packetType)) {
+            attacks = 0;
         }
     }
 }

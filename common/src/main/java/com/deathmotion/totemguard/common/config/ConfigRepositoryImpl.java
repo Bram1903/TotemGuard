@@ -47,44 +47,6 @@ public final class ConfigRepositoryImpl {
     @Getter
     private Checks checks;
 
-    public boolean reload() {
-        try {
-            final ConfigurationNode config = loadOrDisable("config.yml", ConfigLoaderFactory.yaml("config.yml"));
-            if (config == null) {
-                return false;
-            }
-
-            MessageFormat format = MessageFormat.NATIVE;
-            try {
-                format = config.node("formatter").get(MessageFormat.class, MessageFormat.NATIVE);
-            } catch (final SerializationException e) {
-                TGPlatform.getInstance().getLogger().severe("Invalid formatter in config.yml defaulting to NATIVE.");
-            }
-
-            final ConfigurationNode messagesNode =
-                    loadOrDisable(
-                            "messages.yml",
-                            ConfigLoaderFactory.messagesYaml("messages.yml", format)
-                    );
-            if (messagesNode == null) {
-                return false;
-            }
-
-            messages = new Messages(messagesNode);
-
-            final ConfigurationNode checksNode = loadOrDisable("checks.yml", ConfigLoaderFactory.yaml("checks.yml"));
-            if (checksNode == null) {
-                return false;
-            }
-
-            return true;
-
-        } catch (final Throwable t) {
-            disable("Unexpected error while loading configuration.", t);
-            return false;
-        }
-    }
-
     private static ConfigurationNode loadOrDisable(
             final String fileName,
             final YamlConfigurationLoader loader
@@ -157,5 +119,43 @@ public final class ConfigRepositoryImpl {
         platform.getLogger().severe(message);
         platform.getLogger().severe(String.valueOf(cause.getMessage()));
         platform.disablePlugin();
+    }
+
+    public boolean reload() {
+        try {
+            final ConfigurationNode config = loadOrDisable("config.yml", ConfigLoaderFactory.yaml("config.yml"));
+            if (config == null) {
+                return false;
+            }
+
+            MessageFormat format = MessageFormat.NATIVE;
+            try {
+                format = config.node("formatter").get(MessageFormat.class, MessageFormat.NATIVE);
+            } catch (final SerializationException e) {
+                TGPlatform.getInstance().getLogger().severe("Invalid formatter in config.yml defaulting to NATIVE.");
+            }
+
+            final ConfigurationNode messagesNode =
+                    loadOrDisable(
+                            "messages.yml",
+                            ConfigLoaderFactory.messagesYaml("messages.yml", format)
+                    );
+            if (messagesNode == null) {
+                return false;
+            }
+
+            messages = new Messages(messagesNode);
+
+            final ConfigurationNode checksNode = loadOrDisable("checks.yml", ConfigLoaderFactory.yaml("checks.yml"));
+            if (checksNode == null) {
+                return false;
+            }
+
+            return true;
+
+        } catch (final Throwable t) {
+            disable("Unexpected error while loading configuration.", t);
+            return false;
+        }
     }
 }
