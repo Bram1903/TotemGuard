@@ -25,11 +25,18 @@ import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.player.processor.IncomingProcessor;
+import com.deathmotion.totemguard.common.player.processor.OutgoingProcessor;
+import com.deathmotion.totemguard.common.player.processor.incoming.ClientBrandProcessor;
+import com.deathmotion.totemguard.common.player.processor.outgoing.BundleProcessor;
 import com.github.retrooper.packetevents.protocol.player.User;
 import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,20 +48,31 @@ public class TGPlayer implements TGUser {
     private final UUID uuid;
     private final User user;
     private final CheckManagerImpl checkManager;
+
+    private final List<IncomingProcessor> incomingProcessors;
+    private final List<OutgoingProcessor> outgoingProcessors;
+
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
-
-    /**
-     * Only available when the plugin is run on a backend server (so not a proxy).
-     */
     private @Nullable PlatformPlayer platformPlayer;
 
-    public boolean sendingBundlePacket;
+    @Setter
+    private String clientBrand;
+    @Setter
+    private boolean sendingBundlePacket;
 
     public TGPlayer(@NotNull User user) {
         this.uuid = user.getUUID();
         this.user = user;
         this.checkManager = new CheckManagerImpl(this);
+
+        this.incomingProcessors = new ArrayList<>() {{
+            add(new ClientBrandProcessor(TGPlayer.this));
+        }};
+
+        this.outgoingProcessors = new ArrayList<>() {{
+            add(new BundleProcessor(TGPlayer.this));
+        }};
     }
 
     public void onLogin() {

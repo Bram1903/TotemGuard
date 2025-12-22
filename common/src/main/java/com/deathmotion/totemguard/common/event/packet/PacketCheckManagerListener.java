@@ -20,12 +20,13 @@ package com.deathmotion.totemguard.common.event.packet;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.processor.IncomingProcessor;
+import com.deathmotion.totemguard.common.player.processor.OutgoingProcessor;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
 public class PacketCheckManagerListener extends PacketListenerAbstract {
 
@@ -39,13 +40,23 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         if (player == null) return;
 
         if (event.getConnectionState() != ConnectionState.PLAY) {
-            // Allow checks to listen to configuration packets
+            // Allow processors to listen to configuration packets
             if (event.getConnectionState() != ConnectionState.CONFIGURATION) return;
-            player.getCheckManager().onPacketReceive(event);
+            for (IncomingProcessor processor : player.getIncomingProcessors()) {
+                processor.handleIncoming(event);
+            }
             return;
         }
 
+        for (IncomingProcessor processor : player.getIncomingProcessors()) {
+            processor.handleIncoming(event);
+        }
+
         player.getCheckManager().onPacketReceive(event);
+
+        for (IncomingProcessor processor : player.getIncomingProcessors()) {
+            processor.handleIncomingPost(event);
+        }
     }
 
     @Override
@@ -54,10 +65,14 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(event.getUser());
         if (player == null) return;
 
-        if (event.getPacketType() == PacketType.Play.Server.BUNDLE) {
-            player.sendingBundlePacket = !player.sendingBundlePacket;
+        for (OutgoingProcessor processor : player.getOutgoingProcessors()) {
+            processor.handleOutgoing(event);
         }
 
         player.getCheckManager().onPacketSend(event);
+
+        for (OutgoingProcessor processor : player.getOutgoingProcessors()) {
+            processor.handleOutgoingPost(event);
+        }
     }
 }
