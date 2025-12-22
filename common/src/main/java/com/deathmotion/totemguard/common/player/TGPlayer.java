@@ -29,7 +29,6 @@ import com.deathmotion.totemguard.common.player.processor.PreProcessor;
 import com.deathmotion.totemguard.common.player.processor.impl.ActionProcessor;
 import com.deathmotion.totemguard.common.player.processor.impl.BundleProcessor;
 import com.deathmotion.totemguard.common.player.processor.impl.ClientBrandProcessor;
-import com.deathmotion.totemguard.common.player.processor.impl.WindowProcessor;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -77,7 +76,6 @@ public class TGPlayer implements TGUser {
             add(new BundleProcessor(TGPlayer.this));
             add(new ClientBrandProcessor(TGPlayer.this));
             add(new ActionProcessor(TGPlayer.this));
-            add(new WindowProcessor(TGPlayer.this));
         }};
     }
 
