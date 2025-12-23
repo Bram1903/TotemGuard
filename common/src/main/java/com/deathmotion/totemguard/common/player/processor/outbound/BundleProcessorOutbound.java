@@ -24,9 +24,9 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
-public class BundleProcessorInbound extends ProcessorOutbound {
+public class BundleProcessorOutbound extends ProcessorOutbound {
 
-    public BundleProcessorInbound(TGPlayer player) {
+    public BundleProcessorOutbound(TGPlayer player) {
         super(player);
     }
 

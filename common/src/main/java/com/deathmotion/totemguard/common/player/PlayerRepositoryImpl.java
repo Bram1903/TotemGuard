@@ -93,12 +93,22 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     @Override
     public @Nullable TGUser getUser(final @NotNull UUID uuid) {
-        Object channel = PacketEvents.getAPI().getProtocolManager().getChannel(uuid);
-        if (channel == null) return null;
+        for (User user : players.keySet()) {
+            if (user.getUUID().equals(uuid)) {
+                return players.get(user);
+            }
+        }
 
-        User user = PacketEvents.getAPI().getPlayerManager().getUser(channel);
-        if (user == null) return null;
+        return null;
+    }
 
-        return players.get(user);
+    public @Nullable TGPlayer getPlayer(final @NotNull UUID uuid) {
+        for (User user : players.keySet()) {
+            if (user.getUUID().equals(uuid)) {
+                return players.get(user);
+            }
+        }
+
+        return null;
     }
 }

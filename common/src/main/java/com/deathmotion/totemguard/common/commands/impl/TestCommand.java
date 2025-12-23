@@ -18,8 +18,11 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.Command;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
@@ -37,5 +40,17 @@ public class TestCommand implements Command {
 
     private void handleSendAlert(@NotNull CommandContext<Sender> context) {
         context.sender().sendMessage("Test!");
+
+        if (context.sender().isPlayer()) {
+            TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(context.sender().getUniqueId());
+            if  (player != null) {
+                ItemStack[] items = player.getPacketInventory().getItems();
+                for (int i = 0; i < items.length; i++) {
+                    context.sender().sendMessage("Slot " + i + ": " + items[i].toString());
+                }
+            } else {
+                context.sender().sendMessage("Player not found in repository.");
+            }
+        }
     }
 }
