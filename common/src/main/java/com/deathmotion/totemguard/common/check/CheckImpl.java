@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 public class CheckImpl implements Check, Reloadable {
 
     protected final TGPlayer player;
+    protected final Buffer buffer;
 
     @Getter
     private String name;
@@ -43,6 +44,7 @@ public class CheckImpl implements Check, Reloadable {
 
     public CheckImpl(TGPlayer player) {
         this.player = player;
+        this.buffer = new Buffer();
         load();
     }
 
