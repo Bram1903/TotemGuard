@@ -34,7 +34,7 @@ import java.util.Set;
  * This check can be handled post, because we are not canceling the hits, but only monitoring them.
  * By handling it post, we don't have to flag for multiple violations per tick
  */
-@CheckData(description = "Attacked multiple entities in the same tick")
+@CheckData(description = "Attacked multiple entities at the same time")
 public class ProtocolB extends CheckImpl implements PacketCheck {
 
     private final Set<Integer> entities = new HashSet<>();
