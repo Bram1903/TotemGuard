@@ -27,11 +27,17 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
+import java.util.HashSet;
+import java.util.Set;
+
+/*
+ * This check can be handled post, because we are not canceling the hits, but only monitoring them.
+ * By handling it post, we don't have to flag for multiple violations per tick
+ */
 @CheckData(description = "Attacked multiple entities in the same tick")
 public class ProtocolB extends CheckImpl implements PacketCheck {
 
-    private int lastAttackedEntityId;
-    private int attacks;
+    private final Set<Integer> entities = new HashSet<>();
 
     public ProtocolB(TGPlayer player) {
         super(player);
@@ -44,16 +50,23 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
         if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
             final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
 
-            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
-            final int targetEntityId = packet.getEntityId();
-
-            if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
-                fail("attacks: " + attacks);
+            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
+                return;
             }
 
-            lastAttackedEntityId = targetEntityId;
-        } else if (player.isTickEndPacket(packetType)) {
-            attacks = 0;
+            entities.add(packet.getEntityId());
+            return;
+        }
+
+        if (player.isTickEndPacket(packetType)) {
+            final int uniqueTargets = entities.size();
+
+            if (uniqueTargets > 1) {
+                fail("entities=" + uniqueTargets);
+            }
+
+            entities.clear();
         }
     }
 }
+
