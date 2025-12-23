@@ -26,12 +26,9 @@ import com.deathmotion.totemguard.common.reload.Reloadable;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 public class CheckImpl implements Check, Reloadable {
 
     protected final TGPlayer player;
-    private final AtomicInteger violations = new AtomicInteger();
 
     @Getter
     private String name;
@@ -41,6 +38,8 @@ public class CheckImpl implements Check, Reloadable {
     private boolean experimental;
     @Getter
     private boolean enabled = true;
+    @Getter
+    private int violations;
 
     public CheckImpl(TGPlayer player) {
         this.player = player;
@@ -69,7 +68,7 @@ public class CheckImpl implements Check, Reloadable {
 
     public void fail(@Nullable String debug) {
         if (!shouldFail()) return;
-        violations.incrementAndGet();
+        violations++;
 
         // TODO: Replace this with proper flag logic
         TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
@@ -80,10 +79,5 @@ public class CheckImpl implements Check, Reloadable {
         event = (TGFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
 
         return !event.isCancelled();
-    }
-
-    @Override
-    public int getViolations() {
-        return violations.get();
     }
 }
