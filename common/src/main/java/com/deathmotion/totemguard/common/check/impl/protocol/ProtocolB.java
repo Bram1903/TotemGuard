@@ -45,13 +45,13 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
             final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
 
             if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
-            final int target = packet.getEntityId();
+            final int targetEntityId = packet.getEntityId();
 
-            if (target != lastAttackedEntityId && ++attacks > 1) {
+            if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
                 fail("attacks: " + attacks);
             }
 
-            lastAttackedEntityId = target;
+            lastAttackedEntityId = targetEntityId;
         } else if (player.isTickEndPacket(packetType)) {
             attacks = 0;
         }
