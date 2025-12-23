@@ -32,11 +32,12 @@ public class CheckImpl implements Check, Reloadable {
     protected final Buffer buffer;
 
     @Getter
-    private String name;
+    private final String name;
     @Getter
-    private String description;
+    private final String description;
     @Getter
-    private boolean experimental;
+    private final boolean experimental;
+
     @Getter
     private boolean enabled = true;
     @Getter
@@ -45,6 +46,17 @@ public class CheckImpl implements Check, Reloadable {
     public CheckImpl(TGPlayer player) {
         this.player = player;
         this.buffer = new Buffer();
+
+        final Class<?> checkClass = this.getClass();
+        if (!checkClass.isAnnotationPresent(CheckData.class)) {
+            throw new IllegalStateException("Check class " + checkClass.getName() + " is missing the @CheckData annotation!");
+        }
+        final CheckData checkData = checkClass.getAnnotation(CheckData.class);
+
+        this.name = checkClass.getSimpleName();
+        this.description = checkData.description();
+        this.experimental = checkData.experimental();
+
         load();
     }
 
@@ -54,14 +66,7 @@ public class CheckImpl implements Check, Reloadable {
     }
 
     public void load() {
-        final Class<?> checkClass = this.getClass();
-
-        if (!checkClass.isAnnotationPresent(CheckData.class)) return;
-        final CheckData checkData = checkClass.getAnnotation(CheckData.class);
-
-        this.name = checkClass.getSimpleName();
-        this.description = checkData.description();
-        this.experimental = checkData.experimental();
+        // Load check settings from config
     }
 
     public void fail() {
