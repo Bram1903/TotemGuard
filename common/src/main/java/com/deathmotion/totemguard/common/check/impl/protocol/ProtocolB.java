@@ -55,10 +55,7 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
             }
 
             entities.add(packet.getEntityId());
-            return;
-        }
-
-        if (player.isTickEndPacket(packetType)) {
+        } else if (player.isTickEndPacket(packetType)) {
             final int uniqueTargets = entities.size();
 
             if (uniqueTargets > 1) {
