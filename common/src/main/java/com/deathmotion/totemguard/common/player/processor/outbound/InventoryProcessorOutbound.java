@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -40,16 +41,14 @@ public class InventoryProcessorOutbound extends ProcessorOutbound {
     public void handleOutboundPost(PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.WINDOW_ITEMS && !event.isCancelled()) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
-            if (packet.getWindowId() != PacketInventory.PLAYER_WINDOW_ID) return;
+            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             packetInventory.ResyncInventory(packet.getCarriedItem(), packet.getItems());
-        }
-        else if (event.getPacketType() == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
             packetInventory.setItem(packet.getSlot(), packet.getStack());
-        }
-        else if (event.getPacketType() == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-            if (packet.getWindowId() != PacketInventory.PLAYER_WINDOW_ID) return;
+            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             packetInventory.setItem(packet.getSlot(), packet.getItem());
         }
     }

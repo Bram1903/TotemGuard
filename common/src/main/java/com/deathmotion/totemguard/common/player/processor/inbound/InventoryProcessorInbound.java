@@ -18,8 +18,9 @@
 
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
-import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -27,11 +28,9 @@ import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 
 import java.util.Map;
-import java.util.Optional;
 
 public class InventoryProcessorInbound extends ProcessorInbound {
 
@@ -46,8 +45,7 @@ public class InventoryProcessorInbound extends ProcessorInbound {
     public void handleInboundPost(PacketReceiveEvent event) {
         if (event.getPacketType() == PacketType.Play.Client.USE_ITEM && !event.isCancelled()) {
             WrapperPlayClientUseItem packet = new WrapperPlayClientUseItem(event);
-        }
-        else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING && !event.isCancelled()) {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
             DiggingAction action = packet.getAction();
 
@@ -62,15 +60,13 @@ public class InventoryProcessorInbound extends ProcessorInbound {
                     packetInventory.swapItemToOffhand();
                 }
             }
-        }
-        else if (event.getPacketType() == PacketType.Play.Client.HELD_ITEM_CHANGE && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Client.HELD_ITEM_CHANGE && !event.isCancelled()) {
             WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
             int slot = packet.getSlot();
 
             if (slot > 8 || slot < 0) return;
             packetInventory.setSelectedSlot(slot);
-        }
-        else if (event.getPacketType() == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION && !event.isCancelled()) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
 
             // TODO: We need to keep track of the player's gamemode properly for this to work
@@ -80,10 +76,9 @@ public class InventoryProcessorInbound extends ProcessorInbound {
 
             if (!valid) return;
             packetInventory.setItem(packet.getSlot(), packet.getItemStack());
-        }
-        else if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW && !event.isCancelled()) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-            if (packet.getWindowId() != PacketInventory.PLAYER_WINDOW_ID) return;
+            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
             packet.getSlots().ifPresent(slots -> {
                 for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {

@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.Command;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import net.kyori.adventure.text.Component;
@@ -32,6 +33,24 @@ import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
 public class InventoryCommand implements Command {
+
+    private static Component labeledSlot(String label, int slot, PacketInventory inv) {
+        return Component.text(label + ": ", NamedTextColor.GRAY)
+                .append(formatItem(inv.getItem(slot), NamedTextColor.WHITE))
+                .append(Component.text(" (slot " + slot + ")", NamedTextColor.DARK_GRAY))
+                .append(Component.newline());
+    }
+
+    private static Component formatItem(ItemStack item, NamedTextColor color) {
+        if (item == null || item.isEmpty()) {
+            return Component.text("Empty", NamedTextColor.DARK_GRAY);
+        }
+
+        String typeName = item.getType().getName().getKey();
+        int amount = item.getAmount();
+
+        return Component.text(typeName + " x" + amount, color);
+    }
 
     @Override
     public void register(CommandManager<Sender> manager) {
@@ -82,24 +101,24 @@ public class InventoryCommand implements Command {
                 .append(Component.newline());
 
         msg = msg.append(Component.text("Armor", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
-        msg = msg.append(labeledSlot("  Helmet", PacketInventory.SLOT_HELMET, inv));
-        msg = msg.append(labeledSlot("  Chest", PacketInventory.SLOT_CHESTPLATE, inv));
-        msg = msg.append(labeledSlot("  Legs", PacketInventory.SLOT_LEGGINGS, inv));
-        msg = msg.append(labeledSlot("  Boots", PacketInventory.SLOT_BOOTS, inv));
+        msg = msg.append(labeledSlot("  Helmet", InventoryConstants.SLOT_HELMET, inv));
+        msg = msg.append(labeledSlot("  Chest", InventoryConstants.SLOT_CHESTPLATE, inv));
+        msg = msg.append(labeledSlot("  Legs", InventoryConstants.SLOT_LEGGINGS, inv));
+        msg = msg.append(labeledSlot("  Boots", InventoryConstants.SLOT_BOOTS, inv));
         msg = msg.append(Component.newline());
 
         msg = msg.append(Component.text("Crafting", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
-        msg = msg.append(labeledSlot("  Result", PacketInventory.SLOT_CRAFT_RESULT, inv));
-        msg = msg.append(labeledSlot("  Slot 1", PacketInventory.SLOT_CRAFT_1, inv));
-        msg = msg.append(labeledSlot("  Slot 2", PacketInventory.SLOT_CRAFT_2, inv));
-        msg = msg.append(labeledSlot("  Slot 3", PacketInventory.SLOT_CRAFT_3, inv));
-        msg = msg.append(labeledSlot("  Slot 4", PacketInventory.SLOT_CRAFT_4, inv));
+        msg = msg.append(labeledSlot("  Result", InventoryConstants.SLOT_CRAFT_RESULT, inv));
+        msg = msg.append(labeledSlot("  Slot 1", InventoryConstants.SLOT_CRAFT_1, inv));
+        msg = msg.append(labeledSlot("  Slot 2", InventoryConstants.SLOT_CRAFT_2, inv));
+        msg = msg.append(labeledSlot("  Slot 3", InventoryConstants.SLOT_CRAFT_3, inv));
+        msg = msg.append(labeledSlot("  Slot 4", InventoryConstants.SLOT_CRAFT_4, inv));
         msg = msg.append(Component.newline());
 
         msg = msg.append(Component.text("Hotbar", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
         int selected = inv.getSelectedSlot();
         for (int i = 0; i < 9; i++) {
-            int slot = PacketInventory.HOTBAR_START + i;
+            int slot = InventoryConstants.HOTBAR_START + i;
             boolean isSelected = (i == selected);
 
             msg = msg.append(Component.text("  [" + i + "] ", NamedTextColor.GRAY))
@@ -116,7 +135,7 @@ public class InventoryCommand implements Command {
                 .append(Component.newline());
 
         for (int row = 0; row < 3; row++) {
-            int base = PacketInventory.ITEMS_START + (row * 9);
+            int base = InventoryConstants.ITEMS_START + (row * 9);
 
             msg = msg.append(Component.text("  Row " + (row + 1), NamedTextColor.GRAY))
                     .append(Component.newline());
@@ -131,23 +150,5 @@ public class InventoryCommand implements Command {
         }
 
         context.sender().sendMessage(msg);
-    }
-
-    private static Component labeledSlot(String label, int slot, PacketInventory inv) {
-        return Component.text(label + ": ", NamedTextColor.GRAY)
-                .append(formatItem(inv.getItem(slot), NamedTextColor.WHITE))
-                .append(Component.text(" (slot " + slot + ")", NamedTextColor.DARK_GRAY))
-                .append(Component.newline());
-    }
-
-    private static Component formatItem(ItemStack item, NamedTextColor color) {
-        if (item == null || item.isEmpty()) {
-            return Component.text("Empty", NamedTextColor.DARK_GRAY);
-        }
-
-        String typeName = item.getType().getName().getKey();
-        int amount = item.getAmount();
-
-        return Component.text(typeName + " x" + amount, color);
     }
 }

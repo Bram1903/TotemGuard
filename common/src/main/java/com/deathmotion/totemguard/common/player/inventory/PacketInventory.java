@@ -26,27 +26,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class PacketInventory {
-    public static final int PLAYER_WINDOW_ID = 0;
-    public static final int INVENTORY_SIZE = 46;
-
-    public static final int SLOT_CRAFT_RESULT = 0;
-    public static final int SLOT_CRAFT_1 = 1;
-    public static final int SLOT_CRAFT_2 = 2;
-    public static final int SLOT_CRAFT_3 = 3;
-    public static final int SLOT_CRAFT_4 = 4;
-
-    public static final int SLOT_HELMET = 5;
-    public static final int SLOT_CHESTPLATE = 6;
-    public static final int SLOT_LEGGINGS = 7;
-    public static final int SLOT_BOOTS = 8;
-
-    public static final int ITEMS_START = 9;
-    public static final int ITEMS_END = 35;
-
-    public static final int HOTBAR_START = 36;
-    public static final int HOTBAR_END = 44;
-
-    public static final int SLOT_OFFHAND = 45;
 
     @Getter
     private final ItemStack[] items;
@@ -60,9 +39,9 @@ public class PacketInventory {
     private ItemStack carriedItem = ItemStack.EMPTY;
 
     public PacketInventory() {
-        this.items = new ItemStack[INVENTORY_SIZE];
+        this.items = new ItemStack[InventoryConstants.INVENTORY_SIZE];
 
-        for (int i = 0; i < INVENTORY_SIZE; i++) {
+        for (int i = 0; i < InventoryConstants.INVENTORY_SIZE; i++) {
             items[i] = ItemStack.EMPTY;
         }
     }
@@ -70,20 +49,20 @@ public class PacketInventory {
     public void ResyncInventory(Optional<ItemStack> carriedItem, List<ItemStack> itemStacks) {
         this.carriedItem = carriedItem.orElse(ItemStack.EMPTY);
 
-        for (int i = 0; i < INVENTORY_SIZE && i < itemStacks.size(); i++) {
+        for (int i = 0; i < InventoryConstants.INVENTORY_SIZE && i < itemStacks.size(); i++) {
             items[i] = itemStacks.get(i);
         }
     }
 
     public void setItem(int slot, ItemStack stack) {
-        if (slot < 0 || slot >= INVENTORY_SIZE) {
+        if (slot < 0 || slot >= InventoryConstants.INVENTORY_SIZE) {
             return;
         }
         items[slot] = stack == null ? ItemStack.EMPTY : stack;
     }
 
     public ItemStack getItem(int slot) {
-        if (slot < 0 || slot >= INVENTORY_SIZE) {
+        if (slot < 0 || slot >= InventoryConstants.INVENTORY_SIZE) {
             return ItemStack.EMPTY;
         }
         return items[slot];
@@ -93,7 +72,7 @@ public class PacketInventory {
      * Converts the selected hotbar index (0..8) into the container slot (36..44).
      */
     public int getSelectedContainerSlot() {
-        return HOTBAR_START + selectedSlot;
+        return InventoryConstants.HOTBAR_START + selectedSlot;
     }
 
     public ItemStack getMainHandItem() {
@@ -105,21 +84,21 @@ public class PacketInventory {
     }
 
     public ItemStack getOffhandItem() {
-        return getItem(SLOT_OFFHAND);
+        return getItem(InventoryConstants.SLOT_OFFHAND);
     }
 
     public void setOffhandItem(ItemStack stack) {
-        setItem(SLOT_OFFHAND, stack);
+        setItem(InventoryConstants.SLOT_OFFHAND, stack);
     }
 
     public void swapItemToOffhand() {
         int mainHandSlot = getSelectedContainerSlot();
 
         ItemStack mainHandItem = getItem(mainHandSlot);
-        ItemStack offHandItem = getItem(SLOT_OFFHAND);
+        ItemStack offHandItem = getItem(InventoryConstants.SLOT_OFFHAND);
 
         setItem(mainHandSlot, offHandItem);
-        setItem(SLOT_OFFHAND, mainHandItem);
+        setItem(InventoryConstants.SLOT_OFFHAND, mainHandItem);
     }
 
     public ItemStack removeItem(int slot, int amount) {

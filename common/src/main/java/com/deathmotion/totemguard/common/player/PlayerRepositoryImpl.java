@@ -5,7 +5,6 @@ import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.jetbrains.annotations.NotNull;
