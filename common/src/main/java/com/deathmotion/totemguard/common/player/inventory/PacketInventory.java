@@ -35,7 +35,7 @@ public class PacketInventory {
 
     @Getter
     @Setter
-    private Optional<ItemStack> carriedItem = Optional.empty();
+    private ItemStack carriedItem = ItemStack.EMPTY;
 
     @Getter
     private final ItemStack[] items;
@@ -49,7 +49,8 @@ public class PacketInventory {
     }
 
     public void ResyncInventory(Optional<ItemStack> carriedItem, List<ItemStack> itemStacks) {
-        this.carriedItem = carriedItem;
+        this.carriedItem = carriedItem.orElse(ItemStack.EMPTY);
+
         for (int i = 0; i < INVENTORY_SIZE && i < itemStacks.size(); i++) {
             items[i] = itemStacks.get(i);
         }

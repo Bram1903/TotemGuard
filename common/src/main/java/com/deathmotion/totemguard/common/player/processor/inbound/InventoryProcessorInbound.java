@@ -91,7 +91,7 @@ public class InventoryProcessorInbound extends ProcessorInbound {
                 }
             });
 
-            packetInventory.setCarriedItem(Optional.of(packet.getCarriedItemStack()));
+            packetInventory.setCarriedItem(packet.getCarriedItemStack());
         }
     }
 }
