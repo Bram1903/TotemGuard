@@ -18,7 +18,11 @@
 
 package com.deathmotion.totemguard.common.player.inventory;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,6 +30,8 @@ import java.util.List;
 import java.util.Optional;
 
 public class PacketInventory {
+
+    private final TGPlayer player;
 
     @Getter
     private final ItemStack[] items;
@@ -38,7 +44,8 @@ public class PacketInventory {
     @Setter
     private ItemStack carriedItem = ItemStack.EMPTY;
 
-    public PacketInventory() {
+    public PacketInventory(TGPlayer player) {
+        this.player = player;
         this.items = new ItemStack[InventoryConstants.INVENTORY_SIZE];
 
         for (int i = 0; i < InventoryConstants.INVENTORY_SIZE; i++) {
@@ -49,16 +56,34 @@ public class PacketInventory {
     public void ResyncInventory(Optional<ItemStack> carriedItem, List<ItemStack> itemStacks) {
         this.carriedItem = carriedItem.orElse(ItemStack.EMPTY);
 
-        for (int i = 0; i < InventoryConstants.INVENTORY_SIZE && i < itemStacks.size(); i++) {
-            items[i] = itemStacks.get(i);
+        for (int i = 0; i < InventoryConstants.INVENTORY_SIZE; i++) {
+            items[i] = (i < itemStacks.size() && itemStacks.get(i) != null)
+                    ? itemStacks.get(i)
+                    : ItemStack.EMPTY;
         }
     }
 
-    public void setItem(int slot, ItemStack stack) {
+    public void setItem(int slot, ItemStack stack, ChangeOrigin origin) {
         if (slot < 0 || slot >= InventoryConstants.INVENTORY_SIZE) {
             return;
         }
-        items[slot] = stack == null ? ItemStack.EMPTY : stack;
+
+        ItemStack newStack = (stack == null) ? ItemStack.EMPTY : stack;
+        ItemStack oldStack = items[slot];
+
+        items[slot] = newStack;
+
+        if (origin == ChangeOrigin.CLIENT && slot == InventoryConstants.SLOT_OFFHAND && isTotem(newStack) && !isTotem(oldStack)) {
+            Long lastUse = player.getLastTotemUse();
+            if (lastUse == null) {
+                return;
+            }
+
+            long replenishTime = System.currentTimeMillis();
+            TGPlatform.getInstance()
+                    .getEventRepository()
+                    .post(new TotemReplenishedEvent(player, lastUse, replenishTime));
+        }
     }
 
     public ItemStack getItem(int slot) {
@@ -68,9 +93,6 @@ public class PacketInventory {
         return items[slot];
     }
 
-    /**
-     * Converts the selected hotbar index (0..8) into the container slot (36..44).
-     */
     public int getSelectedContainerSlot() {
         return InventoryConstants.HOTBAR_START + selectedSlot;
     }
@@ -79,26 +101,26 @@ public class PacketInventory {
         return getItem(getSelectedContainerSlot());
     }
 
-    public void setMainHandItem(ItemStack stack) {
-        setItem(getSelectedContainerSlot(), stack);
+    public void setMainHandItem(ItemStack stack, ChangeOrigin origin) {
+        setItem(getSelectedContainerSlot(), stack, origin);
     }
 
     public ItemStack getOffhandItem() {
         return getItem(InventoryConstants.SLOT_OFFHAND);
     }
 
-    public void setOffhandItem(ItemStack stack) {
-        setItem(InventoryConstants.SLOT_OFFHAND, stack);
+    public void setOffhandItem(ItemStack stack, ChangeOrigin origin) {
+        setItem(InventoryConstants.SLOT_OFFHAND, stack, origin);
     }
 
-    public void swapItemToOffhand() {
+    public void swapItemToOffhand(ChangeOrigin origin) {
         int mainHandSlot = getSelectedContainerSlot();
 
         ItemStack mainHandItem = getItem(mainHandSlot);
         ItemStack offHandItem = getItem(InventoryConstants.SLOT_OFFHAND);
 
-        setItem(mainHandSlot, offHandItem);
-        setItem(InventoryConstants.SLOT_OFFHAND, mainHandItem);
+        setItem(mainHandSlot, offHandItem, origin);
+        setItem(InventoryConstants.SLOT_OFFHAND, mainHandItem, origin);
     }
 
     public ItemStack removeItem(int slot, int amount) {
@@ -119,5 +141,9 @@ public class PacketInventory {
 
     public void removeItemFromHand() {
         removeItem(getSelectedContainerSlot());
+    }
+
+    private boolean isTotem(ItemStack stack) {
+        return !stack.isEmpty() && stack.getType() == ItemTypes.TOTEM_OF_UNDYING;
     }
 }

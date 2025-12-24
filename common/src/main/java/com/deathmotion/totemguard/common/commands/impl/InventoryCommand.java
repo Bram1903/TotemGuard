@@ -73,7 +73,7 @@ public class InventoryCommand implements Command {
             return;
         }
 
-        PacketInventory inv = player.getPacketInventory();
+        PacketInventory inv = player.getInventory();
 
         Component msg = Component.empty()
                 .append(Component.text("Packet Inventory Overview", NamedTextColor.GREEN, TextDecoration.BOLD))

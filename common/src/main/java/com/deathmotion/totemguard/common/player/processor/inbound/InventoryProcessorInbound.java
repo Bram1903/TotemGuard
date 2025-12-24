@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.ChangeOrigin;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
@@ -34,39 +35,41 @@ import java.util.Map;
 
 public class InventoryProcessorInbound extends ProcessorInbound {
 
-    private final PacketInventory packetInventory;
+    private final PacketInventory inventory;
 
     public InventoryProcessorInbound(TGPlayer player) {
         super(player);
-        this.packetInventory = player.getPacketInventory();
+        this.inventory = player.getInventory();
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
-        if (event.getPacketType() == PacketType.Play.Client.USE_ITEM && !event.isCancelled()) {
+        if (event.isCancelled()) return;
+
+        if (event.getPacketType() == PacketType.Play.Client.USE_ITEM) {
             WrapperPlayClientUseItem packet = new WrapperPlayClientUseItem(event);
-        } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
             DiggingAction action = packet.getAction();
 
             switch (action) {
                 case DROP_ITEM_STACK -> {
-                    packetInventory.removeItemFromHand();
+                    inventory.removeItemFromHand();
                 }
                 case DROP_ITEM -> {
-                    packetInventory.removeItemFromHand(1);
+                    inventory.removeItemFromHand(1);
                 }
                 case SWAP_ITEM_WITH_OFFHAND -> {
-                    packetInventory.swapItemToOffhand();
+                    inventory.swapItemToOffhand(ChangeOrigin.CLIENT);
                 }
             }
-        } else if (event.getPacketType() == PacketType.Play.Client.HELD_ITEM_CHANGE && !event.isCancelled()) {
+        } else if (event.getPacketType() == PacketType.Play.Client.HELD_ITEM_CHANGE) {
             WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
             int slot = packet.getSlot();
 
             if (slot > 8 || slot < 0) return;
-            packetInventory.setSelectedSlot(slot);
-        } else if (event.getPacketType() == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION && !event.isCancelled()) {
+            inventory.setSelectedSlot(slot);
+        } else if (event.getPacketType() == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
 
             // TODO: We need to keep track of the player's gamemode properly for this to work
@@ -75,18 +78,18 @@ public class InventoryProcessorInbound extends ProcessorInbound {
             boolean valid = packet.getSlot() >= 1 && (PacketEvents.getAPI().getServerManager().getVersion().isNewerThan(ServerVersion.V_1_8) ? packet.getSlot() <= 45 : packet.getSlot() < 45);
 
             if (!valid) return;
-            packetInventory.setItem(packet.getSlot(), packet.getItemStack());
-        } else if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW && !event.isCancelled()) {
+            inventory.setItem(packet.getSlot(), packet.getItemStack(), ChangeOrigin.CLIENT);
+        } else if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
             packet.getSlots().ifPresent(slots -> {
                 for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {
-                    packetInventory.setItem(slotEntry.getKey(), slotEntry.getValue());
+                    inventory.setItem(slotEntry.getKey(), slotEntry.getValue(), ChangeOrigin.CLIENT);
                 }
             });
 
-            packetInventory.setCarriedItem(packet.getCarriedItemStack());
+            inventory.setCarriedItem(packet.getCarriedItemStack());
         }
     }
 }

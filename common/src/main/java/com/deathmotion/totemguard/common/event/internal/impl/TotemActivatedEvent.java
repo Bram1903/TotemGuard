@@ -16,16 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.event.internal;
+package com.deathmotion.totemguard.common.event.internal.impl;
 
-import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
+import com.deathmotion.totemguard.common.player.TGPlayer;
+import lombok.Getter;
 
 /**
- * Marker base class for events used only inside TotemGuard.
+ * Fired when a totem of undying is activated for a player.
  *
  * <p>
- * These events are not published to plugins being hooked into the event bus
+ * This event is raised at the moment a totem pop is detected and marks the
+ * starting point for timing-based totem analysis.
  * </p>
  */
-public abstract class InternalEvent extends Event {
+@Getter
+public class TotemActivatedEvent extends InternalPlayerEvent {
+
+    /**
+     * Timestamp (milliseconds since epoch) when the totem was activated.
+     */
+    private final long timestamp;
+
+    public TotemActivatedEvent(TGPlayer player, long timestamp) {
+        super(player);
+        this.timestamp = timestamp;
+    }
 }

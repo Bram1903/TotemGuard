@@ -16,16 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.event.internal;
+package com.deathmotion.totemguard.common.player.inventory;
 
-import com.deathmotion.totemguard.api.event.Event;
-
-/**
- * Marker base class for events used only inside TotemGuard.
- *
- * <p>
- * These events are not published to plugins being hooked into the event bus
- * </p>
- */
-public abstract class InternalEvent extends Event {
+public enum ChangeOrigin {
+    CLIENT,
+    SERVER
 }

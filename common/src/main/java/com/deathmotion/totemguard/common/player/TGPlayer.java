@@ -33,6 +33,7 @@ import com.deathmotion.totemguard.common.player.processor.inbound.ClientBrandPro
 import com.deathmotion.totemguard.common.player.processor.inbound.InventoryProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.outbound.BundleProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.outbound.InventoryProcessorOutbound;
+import com.deathmotion.totemguard.common.player.processor.outbound.TotemActivatedProcessorOutbound;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -59,7 +60,7 @@ public class TGPlayer implements TGUser {
     private final UUID uuid;
     private final User user;
     private final CheckManagerImpl checkManager;
-    private final PacketInventory packetInventory;
+    private final PacketInventory inventory;
     private final PacketStateData packetStateData;
 
     private final List<ProcessorInbound> processorInbounds;
@@ -72,11 +73,15 @@ public class TGPlayer implements TGUser {
     @Setter()
     private String clientBrand;
 
+    @Setter
+    @Nullable
+    private Long lastTotemUse;
+
     public TGPlayer(@NotNull User user) {
         this.uuid = user.getUUID();
         this.user = user;
         this.checkManager = new CheckManagerImpl(this);
-        this.packetInventory = new PacketInventory();
+        this.inventory = new PacketInventory(this);
         this.packetStateData = new PacketStateData();
 
         this.processorInbounds = new ArrayList<>() {{
@@ -87,6 +92,7 @@ public class TGPlayer implements TGUser {
 
         this.processorOutbounds = new ArrayList<>() {{
             add(new BundleProcessorOutbound(TGPlayer.this));
+            add(new TotemActivatedProcessorOutbound(TGPlayer.this));
             add(new InventoryProcessorOutbound(TGPlayer.this));
         }};
     }

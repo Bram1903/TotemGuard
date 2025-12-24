@@ -22,8 +22,15 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Base class for internal events that are related to a single player.
+ */
 @Getter
 @RequiredArgsConstructor
-public class InternalPlayerEvent extends InternalEvent {
+public abstract class InternalPlayerEvent extends InternalEvent {
+
+    /**
+     * Player this event belongs to.
+     */
     private final TGPlayer player;
 }
