@@ -29,16 +29,35 @@ public class PacketInventory {
     public static final int PLAYER_WINDOW_ID = 0;
     public static final int INVENTORY_SIZE = 46;
 
+    public static final int SLOT_CRAFT_RESULT = 0;
+    public static final int SLOT_CRAFT_1 = 1;
+    public static final int SLOT_CRAFT_2 = 2;
+    public static final int SLOT_CRAFT_3 = 3;
+    public static final int SLOT_CRAFT_4 = 4;
+
+    public static final int SLOT_HELMET = 5;
+    public static final int SLOT_CHESTPLATE = 6;
+    public static final int SLOT_LEGGINGS = 7;
+    public static final int SLOT_BOOTS = 8;
+
+    public static final int ITEMS_START = 9;
+    public static final int ITEMS_END = 35;
+
+    public static final int HOTBAR_START = 36;
+    public static final int HOTBAR_END = 44;
+
+    public static final int SLOT_OFFHAND = 45;
+
+    @Getter
+    private final ItemStack[] items;
+
     @Getter
     @Setter
-    private int selectedSlot;
+    private int selectedSlot; // 0..8
 
     @Getter
     @Setter
     private ItemStack carriedItem = ItemStack.EMPTY;
-
-    @Getter
-    private final ItemStack[] items;
 
     public PacketInventory() {
         this.items = new ItemStack[INVENTORY_SIZE];
@@ -57,23 +76,56 @@ public class PacketInventory {
     }
 
     public void setItem(int slot, ItemStack stack) {
+        if (slot < 0 || slot >= INVENTORY_SIZE) {
+            return;
+        }
         items[slot] = stack == null ? ItemStack.EMPTY : stack;
     }
 
     public ItemStack getItem(int slot) {
+        if (slot < 0 || slot >= INVENTORY_SIZE) {
+            return ItemStack.EMPTY;
+        }
         return items[slot];
     }
 
-    public void swapItemToOffhand() {
-        ItemStack mainHandItem = getItem(selectedSlot);
-        ItemStack offHandItem = getItem(45);
+    /**
+     * Converts the selected hotbar index (0..8) into the container slot (36..44).
+     */
+    public int getSelectedContainerSlot() {
+        return HOTBAR_START + selectedSlot;
+    }
 
-        setItem(selectedSlot, offHandItem);
-        setItem(45, mainHandItem);
+    public ItemStack getMainHandItem() {
+        return getItem(getSelectedContainerSlot());
+    }
+
+    public void setMainHandItem(ItemStack stack) {
+        setItem(getSelectedContainerSlot(), stack);
+    }
+
+    public ItemStack getOffhandItem() {
+        return getItem(SLOT_OFFHAND);
+    }
+
+    public void setOffhandItem(ItemStack stack) {
+        setItem(SLOT_OFFHAND, stack);
+    }
+
+    public void swapItemToOffhand() {
+        int mainHandSlot = getSelectedContainerSlot();
+
+        ItemStack mainHandItem = getItem(mainHandSlot);
+        ItemStack offHandItem = getItem(SLOT_OFFHAND);
+
+        setItem(mainHandSlot, offHandItem);
+        setItem(SLOT_OFFHAND, mainHandItem);
     }
 
     public ItemStack removeItem(int slot, int amount) {
-        return slot >= 0 && slot < items.length && !items[slot].isEmpty() && amount > 0 ? items[slot].split(amount) : ItemStack.EMPTY;
+        return slot >= 0 && slot < items.length && !items[slot].isEmpty() && amount > 0
+                ? items[slot].split(amount)
+                : ItemStack.EMPTY;
     }
 
     public void removeItem(int slot) {
@@ -83,10 +135,10 @@ public class PacketInventory {
     }
 
     public ItemStack removeItemFromHand(int amount) {
-        return removeItem(selectedSlot, amount);
+        return removeItem(getSelectedContainerSlot(), amount);
     }
 
     public void removeItemFromHand() {
-        removeItem(selectedSlot);
+        removeItem(getSelectedContainerSlot());
     }
 }
