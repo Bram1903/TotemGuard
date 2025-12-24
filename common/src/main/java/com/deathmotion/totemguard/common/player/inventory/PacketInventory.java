@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.player.inventory;
 
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,10 +29,16 @@ public class PacketInventory {
     public static final int PLAYER_WINDOW_ID = 0;
     public static final int INVENTORY_SIZE = 46;
 
-    private final ItemStack[] items;
+    @Getter
+    @Setter
+    private int selectedSlot;
 
     @Getter
+    @Setter
     private Optional<ItemStack> carriedItem = Optional.empty();
+
+    @Getter
+    private final ItemStack[] items;
 
     public PacketInventory() {
         this.items = new ItemStack[INVENTORY_SIZE];
@@ -56,11 +63,29 @@ public class PacketInventory {
         return items[slot];
     }
 
-    public ItemStack[] getItems() {
-        return items;
+    public void swapItemToOffhand() {
+        ItemStack mainHandItem = getItem(selectedSlot);
+        ItemStack offHandItem = getItem(45);
+
+        setItem(selectedSlot, offHandItem);
+        setItem(45, mainHandItem);
     }
 
     public ItemStack removeItem(int slot, int amount) {
         return slot >= 0 && slot < items.length && !items[slot].isEmpty() && amount > 0 ? items[slot].split(amount) : ItemStack.EMPTY;
+    }
+
+    public void removeItem(int slot) {
+        if (slot >= 0 && slot < items.length) {
+            items[slot] = ItemStack.EMPTY;
+        }
+    }
+
+    public ItemStack removeItemFromHand(int amount) {
+        return removeItem(selectedSlot, amount);
+    }
+
+    public void removeItemFromHand() {
+        removeItem(selectedSlot);
     }
 }
