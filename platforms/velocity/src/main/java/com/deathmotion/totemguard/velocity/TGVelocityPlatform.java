@@ -21,15 +21,24 @@ package com.deathmotion.totemguard.velocity;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.velocity.scheduler.VelocityScheduler;
 import org.incendo.cloud.CommandManager;
 
 public class TGVelocityPlatform extends TGPlatform {
 
     private final TGVelocity plugin;
+    private final VelocityScheduler scheduler;
 
     public TGVelocityPlatform(TGVelocity plugin) {
         super(true);
         this.plugin = plugin;
+        this.scheduler = new VelocityScheduler(plugin, plugin.getServer());
+    }
+
+    @Override
+    public Scheduler getScheduler() {
+        return scheduler;
     }
 
     @Override

@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.util.Scheduler;
 import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
 import org.incendo.cloud.CommandManager;
@@ -89,6 +90,8 @@ public abstract class TGPlatform {
     public void commonOnDisable() {
         logger.info("TotemGuard disabled.");
     }
+
+    public abstract Scheduler getScheduler();
 
     public abstract CommandManager<Sender> getCommandManager();
 

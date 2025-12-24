@@ -18,9 +18,11 @@
 
 package com.deathmotion.totemguard.bukkit;
 
+import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.util.Scheduler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 
@@ -28,9 +30,16 @@ import org.bukkit.Bukkit;
 public class TGBukkitPlatform extends TGPlatform {
 
     private final TGBukkit plugin;
+    private final Scheduler scheduler;
 
     public TGBukkitPlatform(TGBukkit plugin) {
         this.plugin = plugin;
+        this.scheduler = new BukkitScheduler(plugin);
+    }
+
+    @Override
+    public Scheduler getScheduler() {
+        return scheduler;
     }
 
     @Override
