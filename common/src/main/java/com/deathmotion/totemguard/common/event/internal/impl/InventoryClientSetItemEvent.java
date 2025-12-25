@@ -24,17 +24,50 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import lombok.Getter;
 
 /**
- * Called when the client sets an item in their inventory (not removing items, or items set by the server).
+ * Fired when the client explicitly sets an item in one of its inventory slots.
+ * <p>
+ * This event is only triggered for client-originated changes (e.g. clicks, swaps),
+ * and not for server-driven updates or item removals.
  */
 @Getter
 public class InventoryClientSetItemEvent extends InternalPlayerEvent {
 
+    /**
+     * The inventory slot that was modified.
+     */
     private final int slot;
+
+    /**
+     * The item previously in the slot.
+     */
     private final ItemStack oldStack;
+
+    /**
+     * The item set by the client.
+     */
     private final ItemStack newStack;
+
+    /**
+     * Time when the change occurred, in milliseconds since epoch.
+     */
     private final long timestampMillis;
 
-    public InventoryClientSetItemEvent(TGPlayer player, int slot, ItemStack oldStack, ItemStack newStack, long timestampMillis) {
+    /**
+     * Creates a new client inventory set-item event.
+     *
+     * @param player          the player who performed the action
+     * @param slot            the modified inventory slot
+     * @param oldStack        the item previously in the slot
+     * @param newStack        the item set by the client
+     * @param timestampMillis time of the change in milliseconds
+     */
+    public InventoryClientSetItemEvent(
+            TGPlayer player,
+            int slot,
+            ItemStack oldStack,
+            ItemStack newStack,
+            long timestampMillis
+    ) {
         super(player);
 
         this.slot = slot;

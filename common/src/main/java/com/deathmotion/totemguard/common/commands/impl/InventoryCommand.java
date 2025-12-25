@@ -79,9 +79,9 @@ public class InventoryCommand implements Command {
                 .append(Component.text("Packet Inventory Overview", NamedTextColor.GREEN, TextDecoration.BOLD))
                 .append(Component.newline())
                 .append(Component.text("Selected hotbar index: ", NamedTextColor.GRAY))
-                .append(Component.text(String.valueOf(inv.getSelectedSlot()), NamedTextColor.YELLOW))
+                .append(Component.text(String.valueOf(inv.getSelectedHotbarIndex()), NamedTextColor.YELLOW))
                 .append(Component.text(" (container slot ", NamedTextColor.GRAY))
-                .append(Component.text(String.valueOf(inv.getSelectedContainerSlot()), NamedTextColor.YELLOW))
+                .append(Component.text(String.valueOf(inv.getMainHandSlot()), NamedTextColor.YELLOW))
                 .append(Component.text(")", NamedTextColor.GRAY))
                 .append(Component.newline())
                 .append(Component.text("Carried: ", NamedTextColor.GRAY))
@@ -116,7 +116,7 @@ public class InventoryCommand implements Command {
         msg = msg.append(Component.newline());
 
         msg = msg.append(Component.text("Hotbar", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
-        int selected = inv.getSelectedSlot();
+        int selected = inv.getSelectedHotbarIndex();
         for (int i = 0; i < 9; i++) {
             int slot = InventoryConstants.HOTBAR_START + i;
             boolean isSelected = (i == selected);

@@ -33,7 +33,7 @@ public class TotemReplenishedListener implements Consumer<InventoryClientSetItem
         var player = event.getPlayer();
         int slot = event.getSlot();
 
-        if (slot != player.getInventory().getSelectedContainerSlot() && slot != InventoryConstants.SLOT_OFFHAND) return;
+        if (slot != player.getInventory().getMainHandSlot() && slot != InventoryConstants.SLOT_OFFHAND) return;
         if (event.getNewStack().getType() != ItemTypes.TOTEM_OF_UNDYING) return;
 
         var lastTotemUse = player.getLastTotemUse();

@@ -68,7 +68,7 @@ public class InventoryProcessorInbound extends ProcessorInbound {
             int slot = packet.getSlot();
 
             if (slot > 8 || slot < 0) return;
-            inventory.setSelectedSlot(slot);
+            inventory.setSelectedHotbarIndex(slot);
         } else if (event.getPacketType() == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
 

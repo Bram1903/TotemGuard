@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryClientSetItemEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
-import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -38,7 +37,7 @@ public class PacketInventory {
 
     @Getter
     @Setter
-    private int selectedSlot; // 0..8
+    private int selectedHotbarIndex; // 0..8
 
     @Getter
     @Setter
@@ -84,16 +83,16 @@ public class PacketInventory {
         return items[slot];
     }
 
-    public int getSelectedContainerSlot() {
-        return InventoryConstants.HOTBAR_START + selectedSlot;
+    public int getMainHandSlot() {
+        return InventoryConstants.HOTBAR_START + selectedHotbarIndex;
     }
 
     public ItemStack getMainHandItem() {
-        return getItem(getSelectedContainerSlot());
+        return getItem(getMainHandSlot());
     }
 
     public void setMainHandItem(ItemStack stack, ChangeOrigin origin) {
-        setItem(getSelectedContainerSlot(), stack, origin);
+        setItem(getMainHandSlot(), stack, origin);
     }
 
     public ItemStack getOffhandItem() {
@@ -105,7 +104,7 @@ public class PacketInventory {
     }
 
     public void swapItemToOffhand(ChangeOrigin origin) {
-        int mainHandSlot = getSelectedContainerSlot();
+        int mainHandSlot = getMainHandSlot();
 
         ItemStack mainHandItem = getItem(mainHandSlot);
         ItemStack offHandItem = getItem(InventoryConstants.SLOT_OFFHAND);
@@ -127,14 +126,10 @@ public class PacketInventory {
     }
 
     public ItemStack removeItemFromHand(int amount) {
-        return removeItem(getSelectedContainerSlot(), amount);
+        return removeItem(getMainHandSlot(), amount);
     }
 
     public void removeItemFromHand() {
-        removeItem(getSelectedContainerSlot());
-    }
-
-    private boolean isTotem(ItemStack stack) {
-        return !stack.isEmpty() && stack.getType() == ItemTypes.TOTEM_OF_UNDYING;
+        removeItem(getMainHandSlot());
     }
 }
