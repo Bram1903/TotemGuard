@@ -69,16 +69,17 @@ public class CheckImpl implements Check, Reloadable {
         // Load check settings from config
     }
 
-    public void fail() {
-        fail(null);
+    public boolean fail() {
+        return fail(null);
     }
 
-    public void fail(@Nullable String debug) {
-        if (!shouldFail()) return;
+    public boolean fail(@Nullable String debug) {
+        if (!shouldFail()) return false;
         violations++;
 
         // TODO: Replace this with proper flag logic
         TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
+        return true;
     }
 
     public boolean shouldFail() {

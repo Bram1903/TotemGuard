@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetPlayerInventory;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
@@ -41,15 +42,16 @@ public class InventoryProcessorOutbound extends ProcessorOutbound {
     @Override
     public void handleOutboundPost(PacketSendEvent event) {
         if (event.isCancelled()) return;
+        final PacketTypeCommon packetType = event.getPacketType();
 
-        if (event.getPacketType() == PacketType.Play.Server.WINDOW_ITEMS && !event.isCancelled()) {
+        if (packetType == PacketType.Play.Server.WINDOW_ITEMS && !event.isCancelled()) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             inventory.ResyncInventory(packet.getCarriedItem(), packet.getItems());
-        } else if (event.getPacketType() == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
+        } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
             inventory.setItem(packet.getSlot(), packet.getStack(), ChangeOrigin.SERVER);
-        } else if (event.getPacketType() == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
+        } else if (packetType == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             inventory.setItem(packet.getSlot(), packet.getItem(), ChangeOrigin.SERVER);

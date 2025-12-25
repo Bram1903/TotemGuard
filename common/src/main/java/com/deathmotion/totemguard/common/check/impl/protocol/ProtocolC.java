@@ -24,28 +24,39 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
-@CheckData(description = "Duplicated slot place packet")
-public class ProtocolA extends CheckImpl implements PacketCheck {
+@CheckData(description = "Attacked multiple entities in the same tick")
+public class ProtocolC extends CheckImpl implements PacketCheck {
 
-    private int lastSlot = -1;
+    private int lastAttackedEntityId;
+    private int attacks;
 
-    public ProtocolA(TGPlayer player) {
+    public ProtocolC(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.HELD_ITEM_CHANGE) return;
+        final PacketTypeCommon packetType = event.getPacketType();
 
-        final int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
-        if (slot == lastSlot) {
-            if (fail("current slot: " + slot + ", last slot: " + lastSlot)) {
-                event.setCancelled(true);
+        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
+            final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
+
+            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
+            final int targetEntityId = packet.getEntityId();
+
+            if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
+                if (fail("attacks: " + attacks)) {
+                    event.setCancelled(true);
+                }
             }
-        }
 
-        lastSlot = slot;
+            lastAttackedEntityId = targetEntityId;
+        } else if (player.isTickEndPacket(packetType)) {
+            attacks = 0;
+        }
     }
 }
+

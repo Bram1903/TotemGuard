@@ -28,8 +28,12 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.wrapper.play.client.*;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCreativeInventoryAction;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 
 import java.util.Map;
 
@@ -45,10 +49,11 @@ public class InventoryProcessorInbound extends ProcessorInbound {
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
         if (event.isCancelled()) return;
+        final PacketTypeCommon packetType = event.getPacketType();
 
-        if (event.getPacketType() == PacketType.Play.Client.USE_ITEM) {
+        if (packetType == PacketType.Play.Client.USE_ITEM) {
             // TODO?
-        } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
+        } else if (packetType == PacketType.Play.Client.PLAYER_DIGGING) {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
             DiggingAction action = packet.getAction();
 
@@ -63,13 +68,13 @@ public class InventoryProcessorInbound extends ProcessorInbound {
                     inventory.swapItemToOffhand(ChangeOrigin.CLIENT);
                 }
             }
-        } else if (event.getPacketType() == PacketType.Play.Client.HELD_ITEM_CHANGE) {
+        } else if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
             WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
             int slot = packet.getSlot();
 
             if (slot > 8 || slot < 0) return;
             inventory.setSelectedHotbarIndex(slot);
-        } else if (event.getPacketType() == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
+        } else if (packetType == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
 
             // TODO: We need to keep track of the player's gamemode properly for this to work
@@ -79,7 +84,7 @@ public class InventoryProcessorInbound extends ProcessorInbound {
 
             if (!valid) return;
             inventory.setItem(packet.getSlot(), packet.getItemStack(), ChangeOrigin.CLIENT);
-        } else if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
+        } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 

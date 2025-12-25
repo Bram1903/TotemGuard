@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.check;
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolA;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolB;
+import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolC;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -37,6 +38,7 @@ public class CheckManagerImpl {
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
                 .put(ProtocolA.class, new ProtocolA(player))
                 .put(ProtocolB.class, new ProtocolB(player))
+                .put(ProtocolC.class, new ProtocolC(player))
                 .build();
 
         allChecks = new ImmutableClassToInstanceMap.Builder<Check>()
