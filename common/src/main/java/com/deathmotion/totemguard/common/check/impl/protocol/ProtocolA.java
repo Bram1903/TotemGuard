@@ -47,7 +47,7 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
         }
 
         if (slot < 0 || slot > 8) {
-            if (fail("slot:" + slot)) {
+            if (fail("slot: " + slot)) {
                 event.setCancelled(true);
             }
         }
