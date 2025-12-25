@@ -55,17 +55,20 @@ public class AutoTotemA extends CheckImpl implements ExtendedCheck {
         if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
         PacketInventory inventory = player.getInventory();
-        boolean isCarryingTotem = inventory.getCarriedItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
         int slot = packet.getSlot();
 
-        if (slot == InventoryConstants.SLOT_OFFHAND || slot == inventory.getMainHandSlot() && isCarryingTotem) {
+        if (slot == InventoryConstants.SLOT_OFFHAND || slot == inventory.getMainHandSlot()) {
+            if (inventory.getItem(slot).getType() != ItemTypes.TOTEM_OF_UNDYING) {
+                return;
+            }
+
             if (lastTotemClickTimestamp != null && lastTotemActivatedTimestamp != null) {
                 handle();
             }
             return;
         }
 
-        if (isCarryingTotem) {
+        if (inventory.getCarriedItem().getType() == ItemTypes.TOTEM_OF_UNDYING) {
             lastTotemClickTimestamp = System.currentTimeMillis();
         }
     }
