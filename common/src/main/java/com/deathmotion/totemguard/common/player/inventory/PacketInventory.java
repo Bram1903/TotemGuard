@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.player.inventory;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
+import com.deathmotion.totemguard.common.event.internal.impl.InventoryClientSetItemEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -70,20 +70,11 @@ public class PacketInventory {
 
         ItemStack newStack = (stack == null) ? ItemStack.EMPTY : stack;
         ItemStack oldStack = items[slot];
-
         items[slot] = newStack;
 
-        if (origin == ChangeOrigin.CLIENT && slot == InventoryConstants.SLOT_OFFHAND && isTotem(newStack) && !isTotem(oldStack)) {
-            Long lastUse = player.getLastTotemUse();
-            if (lastUse == null) {
-                return;
-            }
-
-            long replenishTime = System.currentTimeMillis();
-            TGPlatform.getInstance()
-                    .getEventRepository()
-                    .post(new TotemReplenishedEvent(player, lastUse, replenishTime));
-        }
+        if (origin != ChangeOrigin.CLIENT) return;
+        InventoryClientSetItemEvent event = new InventoryClientSetItemEvent(player, slot, oldStack, newStack, System.currentTimeMillis());
+        TGPlatform.getInstance().getEventRepository().post(event);
     }
 
     public ItemStack getItem(int slot) {
