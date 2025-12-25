@@ -88,6 +88,33 @@ public class EventRepositoryImpl implements EventRepository {
         };
     }
 
+    public @NotNull EventSubscription subscribeAllIncludingInternal(
+            @NotNull Consumer<? super Event> listener
+    ) {
+        return subscribeAllIncludingInternal(EventOrder.NORMAL, listener);
+    }
+
+    public @NotNull EventSubscription subscribeAllIncludingInternal(
+            @NotNull EventOrder order,
+            @NotNull Consumer<? super Event> listener
+    ) {
+        final Key key = new Key(AnyIncludingInternal.class, order, listener);
+        final Consumer<? super Event> boxed = boxedByKey.computeIfAbsent(key, k -> listener);
+
+        Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>> perType = listeners.computeIfAbsent(AnyIncludingInternal.class, k -> new EnumMap<>(EventOrder.class));
+
+        CopyOnWriteArrayList<Consumer<? super Event>> bucket =
+                perType.computeIfAbsent(order, k -> new CopyOnWriteArrayList<>());
+
+        if (!bucket.contains(boxed)) bucket.add(boxed);
+
+        return () -> {
+            boolean removed = bucket.remove(boxed);
+            if (removed) boxedByKey.remove(key, boxed);
+        };
+    }
+
+
     @Override
     public <T extends Event> boolean unsubscribe(
             @NotNull Class<T> eventType,
@@ -131,6 +158,8 @@ public class EventRepositoryImpl implements EventRepository {
         for (EventOrder order : EventOrder.values()) {
             dispatchBucketFor(event.getClass(), order, event);
 
+            dispatchBucketFor(AnyIncludingInternal.class, order, event);
+
             // Prevent internal events from reaching other plugins' global (any-event) listeners
             if (!internal) {
                 dispatchBucketFor(Event.class, order, event);
@@ -155,12 +184,11 @@ public class EventRepositoryImpl implements EventRepository {
         }
     }
 
-    private static final class Key {
-        private final Class<?> type;
-        private final EventOrder order;
-        private final Consumer<?> original;
+    private static final class AnyIncludingInternal {
+    }
 
-        Key(Class<?> type, EventOrder order, Consumer<?> original) {
+    private record Key(Class<?> type, EventOrder order, Consumer<?> original) {
+        private Key(Class<?> type, EventOrder order, Consumer<?> original) {
             this.type = Objects.requireNonNull(type, "type");
             this.order = Objects.requireNonNull(order, "order");
             this.original = Objects.requireNonNull(original, "original");
@@ -169,8 +197,7 @@ public class EventRepositoryImpl implements EventRepository {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof Key)) return false;
-            Key key = (Key) o;
+            if (!(o instanceof Key key)) return false;
             return type.equals(key.type) && order == key.order && original == key.original;
         }
 

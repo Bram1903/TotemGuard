@@ -22,24 +22,36 @@ public final class Buffer {
 
     private double value;
 
+    private static double clamp(double value) {
+        if (value > Double.MAX_VALUE) {
+            return Double.MAX_VALUE;
+        } else if (value < -Double.MAX_VALUE) {
+            return -Double.MAX_VALUE;
+        }
+
+        return value;
+    }
+
     public double get() {
         return value;
     }
 
     public double increase() {
-        return increaseBy(1.0);
+        return increase(1.0);
     }
 
-    public double increaseBy(double amount) {
-        return value += amount;
+    public double increase(double amount) {
+        value = clamp(value + amount);
+        return value;
     }
 
     public double decrease() {
-        return decreaseBy(1.0);
+        return decrease(1.0);
     }
 
-    public double decreaseBy(double amount) {
-        return value -= amount;
+    public double decrease(double amount) {
+        value = clamp(value - amount);
+        return value;
     }
 
     public void reset() {
@@ -47,10 +59,11 @@ public final class Buffer {
     }
 
     public void set(double amount) {
-        value = amount;
+        value = clamp(amount);
     }
 
     public void multiply(double multiplier) {
-        value *= multiplier;
+        value = clamp(value * multiplier);
     }
 }
+

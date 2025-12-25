@@ -16,14 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.type;
+package com.deathmotion.totemguard.common.event.internal.listeners;
 
-import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 
-public interface EventCheck extends Check {
+import java.util.function.Consumer;
 
-    <T extends Event> void handleEvent(T event);
+public class EventCheckManagerListener implements Consumer<Event> {
+
+    @Override
+    public void accept(Event event) {
+        if (!(event instanceof InternalPlayerEvent internalEvent)) return;
+        internalEvent.getPlayer().getCheckManager().onEvent(internalEvent);
+    }
 }
-
-

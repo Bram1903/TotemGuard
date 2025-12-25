@@ -19,9 +19,12 @@
 package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api.check.Check;
+import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolA;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolB;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolC;
+import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -33,8 +36,13 @@ public class CheckManagerImpl {
 
     public ClassToInstanceMap<Check> allChecks;
     ClassToInstanceMap<PacketCheck> packetChecks;
+    ClassToInstanceMap<ExtendedCheck> extendedChecks;
 
     public CheckManagerImpl(TGPlayer player) {
+        extendedChecks = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>()
+                .put(AutoTotemA.class, new AutoTotemA(player))
+                .build();
+
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
                 .put(ProtocolA.class, new ProtocolA(player))
                 .put(ProtocolB.class, new ProtocolB(player))
@@ -43,11 +51,17 @@ public class CheckManagerImpl {
 
         allChecks = new ImmutableClassToInstanceMap.Builder<Check>()
                 .putAll(packetChecks)
+                .putAll(extendedChecks)
                 .build();
     }
 
     public void onPacketReceive(final PacketReceiveEvent packet) {
         for (PacketCheck check : packetChecks.values()) {
+            if (!check.isEnabled()) continue;
+            check.onPacketReceive(packet);
+        }
+
+        for (PacketCheck check : extendedChecks.values()) {
             if (!check.isEnabled()) continue;
             check.onPacketReceive(packet);
         }
@@ -58,10 +72,23 @@ public class CheckManagerImpl {
             if (!check.isEnabled()) continue;
             check.onPacketSend(packet);
         }
+
+        for (PacketCheck check : extendedChecks.values()) {
+            if (!check.isEnabled()) continue;
+            check.onPacketSend(packet);
+        }
     }
+
+    public <T extends Event> void onEvent(final T event) {
+        for (ExtendedCheck check : extendedChecks.values()) {
+            if (!check.isEnabled()) continue;
+            check.handleEvent(event);
+        }
+    }
+
 
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {
-        return (T) packetChecks.get(check);
+        return (T) allChecks.get(check);
     }
 }

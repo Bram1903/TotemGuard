@@ -47,7 +47,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     }
 
     @Override
-    public void handleInboundPost(PacketReceiveEvent event) {
+    public void handleInbound(PacketReceiveEvent event) {
         if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 

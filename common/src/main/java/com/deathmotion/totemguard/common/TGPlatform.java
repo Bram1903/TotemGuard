@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryClientSetItemEvent;
+import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckManagerListener;
 import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
@@ -82,6 +83,7 @@ public abstract class TGPlatform {
 
         //noinspection resource
         eventRepository.subscribe(InventoryClientSetItemEvent.class, new TotemReplenishedListener());
+        eventRepository.subscribeAllIncludingInternal(new EventCheckManagerListener());
 
         // Load the API
         api = new TGPlatformAPI();

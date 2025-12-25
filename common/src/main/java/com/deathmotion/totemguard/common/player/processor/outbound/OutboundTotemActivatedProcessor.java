@@ -22,10 +22,13 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
-import com.deathmotion.totemguard.common.util.PacketUtil;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus;
 
 public class OutboundTotemActivatedProcessor extends ProcessorOutbound {
+
+    private final static int TOTEM_USE_STATUS = 35;
 
     public OutboundTotemActivatedProcessor(TGPlayer player) {
         super(player);
@@ -33,7 +36,12 @@ public class OutboundTotemActivatedProcessor extends ProcessorOutbound {
 
     @Override
     public void handleOutbound(PacketSendEvent event) {
-        if (!PacketUtil.isTotemPacket(event, player.getUser().getEntityId())) return;
+        if (event.isCancelled()) return;
+
+        if (event.getPacketType() != PacketType.Play.Server.ENTITY_STATUS) return;
+        WrapperPlayServerEntityStatus packet = new WrapperPlayServerEntityStatus(event);
+        if (packet.getEntityId() != player.getUser().getEntityId()) return;
+        if (packet.getStatus() != TOTEM_USE_STATUS) return;
 
         long currentTime = System.currentTimeMillis();
         player.setLastTotemUse(currentTime);

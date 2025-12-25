@@ -40,7 +40,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     }
 
     @Override
-    public void handleOutboundPost(PacketSendEvent event) {
+    public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
