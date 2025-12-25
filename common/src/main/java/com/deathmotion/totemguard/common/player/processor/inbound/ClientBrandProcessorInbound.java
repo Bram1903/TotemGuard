@@ -39,6 +39,8 @@ public class ClientBrandProcessorInbound extends ProcessorInbound {
 
     @Override
     public void handleInbound(PacketReceiveEvent event) {
+        if (hasBrand) return;
+
         if (event.getPacketType() == PacketType.Play.Client.PLUGIN_MESSAGE) {
             WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
             handle(packet.getChannelName(), packet.getData());
@@ -54,14 +56,16 @@ public class ClientBrandProcessorInbound extends ProcessorInbound {
         String brand = "vanilla";
 
         if (data.length > 64 || data.length == 0) {
-            brand = "sent " + data.length + " bytes as brand";
-        } else if (!hasBrand) {
-            byte[] minusLength = new byte[data.length - 1];
-            System.arraycopy(data, 1, minusLength, 0, minusLength.length);
-
-            brand = new String(minusLength).replace(" (Velocity)", ""); // removes velocity's brand suffix
-            brand = ChatUtil.stripColor(brand); // strip color codes from client brand
+            player.setClientBrand(brand);
+            hasBrand = true;
+            return;
         }
+
+        byte[] minusLength = new byte[data.length - 1];
+        System.arraycopy(data, 1, minusLength, 0, minusLength.length);
+
+        brand = new String(minusLength).replace(" (Velocity)", ""); // removes velocity's brand suffix
+        brand = ChatUtil.stripColor(brand); // strip color codes from client brand
 
         player.setClientBrand(brand);
         hasBrand = true;
