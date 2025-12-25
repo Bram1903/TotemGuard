@@ -47,7 +47,7 @@ public class InventoryProcessorInbound extends ProcessorInbound {
         if (event.isCancelled()) return;
 
         if (event.getPacketType() == PacketType.Play.Client.USE_ITEM) {
-            WrapperPlayClientUseItem packet = new WrapperPlayClientUseItem(event);
+            // TODO?
         } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
             DiggingAction action = packet.getAction();
