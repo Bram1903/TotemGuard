@@ -31,7 +31,7 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@CheckData(description = "Invalid click time difference")
+@CheckData(description = "Impossible click time difference")
 public class AutoTotemA extends CheckImpl implements ExtendedCheck {
 
     private Long lastTotemActivatedTimestamp;
