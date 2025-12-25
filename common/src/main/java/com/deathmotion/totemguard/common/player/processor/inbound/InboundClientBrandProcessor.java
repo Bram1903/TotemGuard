@@ -28,12 +28,12 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 
-public class ClientBrandProcessorInbound extends ProcessorInbound {
+public class InboundClientBrandProcessor extends ProcessorInbound {
 
     private static final String CHANNEL = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
     private boolean hasBrand = false;
 
-    public ClientBrandProcessorInbound(TGPlayer player) {
+    public InboundClientBrandProcessor(TGPlayer player) {
         super(player);
     }
 

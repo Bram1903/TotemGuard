@@ -26,11 +26,11 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus;
 
-public class TotemActivatedProcessorOutbound extends ProcessorOutbound {
+public class OutboundTotemActivatedProcessor extends ProcessorOutbound {
 
     private final static int TOTEM_USE_STATUS = 35;
 
-    public TotemActivatedProcessorOutbound(TGPlayer player) {
+    public OutboundTotemActivatedProcessor(TGPlayer player) {
         super(player);
     }
 

@@ -37,11 +37,11 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 
 import java.util.Map;
 
-public class InventoryProcessorInbound extends ProcessorInbound {
+public class InboundInventoryProcessor extends ProcessorInbound {
 
     private final PacketInventory inventory;
 
-    public InventoryProcessorInbound(TGPlayer player) {
+    public InboundInventoryProcessor(TGPlayer player) {
         super(player);
         this.inventory = player.getInventory();
     }

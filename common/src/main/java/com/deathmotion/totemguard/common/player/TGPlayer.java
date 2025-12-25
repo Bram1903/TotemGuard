@@ -28,12 +28,12 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
-import com.deathmotion.totemguard.common.player.processor.inbound.ActionProcessorInbound;
-import com.deathmotion.totemguard.common.player.processor.inbound.ClientBrandProcessorInbound;
-import com.deathmotion.totemguard.common.player.processor.inbound.InventoryProcessorInbound;
-import com.deathmotion.totemguard.common.player.processor.outbound.BundleProcessorOutbound;
-import com.deathmotion.totemguard.common.player.processor.outbound.InventoryProcessorOutbound;
-import com.deathmotion.totemguard.common.player.processor.outbound.TotemActivatedProcessorOutbound;
+import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
+import com.deathmotion.totemguard.common.player.processor.inbound.InboundClientBrandProcessor;
+import com.deathmotion.totemguard.common.player.processor.inbound.InboundInventoryProcessor;
+import com.deathmotion.totemguard.common.player.processor.outbound.OutboundBundleProcessor;
+import com.deathmotion.totemguard.common.player.processor.outbound.OutboundInventoryProcessor;
+import com.deathmotion.totemguard.common.player.processor.outbound.OutboundTotemActivatedProcessor;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -85,15 +85,15 @@ public class TGPlayer implements TGUser {
         this.packetStateData = new PacketStateData();
 
         this.processorInbounds = new ArrayList<>() {{
-            add(new InventoryProcessorInbound(TGPlayer.this));
-            add(new ClientBrandProcessorInbound(TGPlayer.this));
-            add(new ActionProcessorInbound(TGPlayer.this));
+            add(new InboundInventoryProcessor(TGPlayer.this));
+            add(new InboundClientBrandProcessor(TGPlayer.this));
+            add(new InboundActionProcessor(TGPlayer.this));
         }};
 
         this.processorOutbounds = new ArrayList<>() {{
-            add(new BundleProcessorOutbound(TGPlayer.this));
-            add(new TotemActivatedProcessorOutbound(TGPlayer.this));
-            add(new InventoryProcessorOutbound(TGPlayer.this));
+            add(new OutboundBundleProcessor(TGPlayer.this));
+            add(new OutboundTotemActivatedProcessor(TGPlayer.this));
+            add(new OutboundInventoryProcessor(TGPlayer.this));
         }};
     }
 

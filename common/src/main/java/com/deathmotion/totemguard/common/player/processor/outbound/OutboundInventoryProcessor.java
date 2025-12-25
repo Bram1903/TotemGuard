@@ -30,11 +30,11 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSe
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 
-public class InventoryProcessorOutbound extends ProcessorOutbound {
+public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private final PacketInventory inventory;
 
-    public InventoryProcessorOutbound(TGPlayer player) {
+    public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
         this.inventory = player.getInventory();
     }
