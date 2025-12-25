@@ -26,7 +26,7 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 
-@CheckData(description = "Duplicated slot place packet")
+@CheckData(description = "Invalid slot place packet")
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
     private int lastSlot = -1;
@@ -38,10 +38,16 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.HELD_ITEM_CHANGE) return;
-
         final int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
+
         if (slot == lastSlot) {
             if (fail("current slot: " + slot + ", last slot: " + lastSlot)) {
+                event.setCancelled(true);
+            }
+        }
+
+        if (slot < 0 || slot > 8) {
+            if (fail("slot:" + slot)) {
                 event.setCancelled(true);
             }
         }
