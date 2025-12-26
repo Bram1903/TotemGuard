@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.event.internal.impl;
 
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.SetSlotAction;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import lombok.Getter;
 
@@ -48,31 +49,39 @@ public class InventoryClientSetItemEvent extends InternalPlayerEvent {
     private final ItemStack newStack;
 
     /**
+     * The action performed to set the item (e.g., click, swap).
+     */
+    private final SetSlotAction action;
+
+    /**
      * Time when the change occurred, in milliseconds since epoch.
      */
-    private final long timestampMillis;
+    private final long timestamp;
 
     /**
      * Creates a new client inventory set-item event.
      *
-     * @param player          the player who performed the action
-     * @param slot            the modified inventory slot
-     * @param oldStack        the item previously in the slot
-     * @param newStack        the item set by the client
-     * @param timestampMillis time of the change in milliseconds
+     * @param player    the player who performed the action
+     * @param slot      the modified inventory slot
+     * @param oldStack  the item previously in the slot
+     * @param newStack  the item set by the client
+     * @param action    the action performed to set the item
+     * @param timestamp time of the change in milliseconds
      */
     public InventoryClientSetItemEvent(
             TGPlayer player,
             int slot,
             ItemStack oldStack,
             ItemStack newStack,
-            long timestampMillis
+            SetSlotAction action,
+            long timestamp
     ) {
         super(player);
 
         this.slot = slot;
         this.oldStack = oldStack;
         this.newStack = newStack;
-        this.timestampMillis = timestampMillis;
+        this.action = action;
+        this.timestamp = timestamp;
     }
 }

@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolA;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolB;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolC;
+import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -36,10 +37,11 @@ public class CheckManagerImpl {
 
     public ClassToInstanceMap<Check> allChecks;
     ClassToInstanceMap<PacketCheck> packetChecks;
+    ClassToInstanceMap<EventCheck> eventChecks;
     ClassToInstanceMap<ExtendedCheck> extendedChecks;
 
     public CheckManagerImpl(TGPlayer player) {
-        extendedChecks = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>()
+        eventChecks = new ImmutableClassToInstanceMap.Builder<EventCheck>()
                 .put(AutoTotemA.class, new AutoTotemA(player))
                 .build();
 
@@ -49,9 +51,12 @@ public class CheckManagerImpl {
                 .put(ProtocolC.class, new ProtocolC(player))
                 .build();
 
+        extendedChecks = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>()
+                .build();
+
         allChecks = new ImmutableClassToInstanceMap.Builder<Check>()
                 .putAll(packetChecks)
-                .putAll(extendedChecks)
+                .putAll(eventChecks)
                 .build();
     }
 
@@ -80,6 +85,11 @@ public class CheckManagerImpl {
     }
 
     public <T extends Event> void onEvent(final T event) {
+        for (EventCheck check : eventChecks.values()) {
+            if (!check.isEnabled()) continue;
+            check.handleEvent(event);
+        }
+
         for (ExtendedCheck check : extendedChecks.values()) {
             if (!check.isEnabled()) continue;
             check.handleEvent(event);

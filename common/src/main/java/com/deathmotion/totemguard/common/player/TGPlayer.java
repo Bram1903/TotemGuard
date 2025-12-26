@@ -59,8 +59,8 @@ public class TGPlayer implements TGUser {
 
     private final UUID uuid;
     private final User user;
-    private final CheckManagerImpl checkManager;
     private final PacketInventory inventory;
+    private final CheckManagerImpl checkManager;
     private final PacketStateData packetStateData;
 
     private final List<ProcessorInbound> processorInbounds;
@@ -80,8 +80,8 @@ public class TGPlayer implements TGUser {
     public TGPlayer(@NotNull User user) {
         this.uuid = user.getUUID();
         this.user = user;
-        this.checkManager = new CheckManagerImpl(this);
         this.inventory = new PacketInventory(this);
+        this.checkManager = new CheckManagerImpl(this);
         this.packetStateData = new PacketStateData();
 
         this.processorInbounds = new ArrayList<>() {{

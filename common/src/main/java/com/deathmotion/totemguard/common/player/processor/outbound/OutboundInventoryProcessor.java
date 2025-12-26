@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.ChangeOrigin;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.player.inventory.SetSlotAction;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -50,11 +51,11 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             inventory.ResyncInventory(packet.getCarriedItem(), packet.getItems());
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            inventory.setItem(packet.getSlot(), packet.getStack(), ChangeOrigin.SERVER, event.getTimestamp());
+            inventory.setItem(packet.getSlot(), packet.getStack(), ChangeOrigin.SERVER, SetSlotAction.SERVER_UPDATE, event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setItem(packet.getSlot(), packet.getItem(), ChangeOrigin.SERVER, event.getTimestamp());
+            inventory.setItem(packet.getSlot(), packet.getItem(), ChangeOrigin.SERVER, SetSlotAction.SERVER_UPDATE, event.getTimestamp());
         }
     }
 }

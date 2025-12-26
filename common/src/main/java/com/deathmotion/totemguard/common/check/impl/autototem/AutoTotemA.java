@@ -21,18 +21,14 @@ package com.deathmotion.totemguard.common.check.impl.autototem;
 import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
-import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
+import com.deathmotion.totemguard.common.check.type.EventCheck;
+import com.deathmotion.totemguard.common.event.internal.impl.InventoryClientSetItemEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import com.deathmotion.totemguard.common.player.inventory.SetSlotAction;
 
 @CheckData(description = "Impossible click time difference")
-public class AutoTotemA extends CheckImpl implements ExtendedCheck {
+public class AutoTotemA extends CheckImpl implements EventCheck {
 
     private Long lastTotemActivatedTimestamp;
     private Long lastTotemClickTimestamp;
@@ -43,48 +39,52 @@ public class AutoTotemA extends CheckImpl implements ExtendedCheck {
 
     @Override
     public <T extends Event> void handleEvent(T event) {
-        if (!(event instanceof TotemActivatedEvent totemActivatedEvent)) return;
-        lastTotemActivatedTimestamp = totemActivatedEvent.getTimestamp();
-    }
-
-    @Override
-    public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
-
-        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-        if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-
-        PacketInventory inventory = player.getInventory();
-        int slot = packet.getSlot();
-
-        if (slot == InventoryConstants.SLOT_OFFHAND || slot == inventory.getMainHandSlot()) {
-            if (inventory.getItem(slot).getType() != ItemTypes.TOTEM_OF_UNDYING) {
-                return;
-            }
-
-            if (lastTotemClickTimestamp != null && lastTotemActivatedTimestamp != null) {
-                handle(event.getTimestamp());
-            }
+        if (event instanceof TotemActivatedEvent totemActivatedEvent) {
+            onTotemActivated(totemActivatedEvent);
             return;
         }
 
-        if (inventory.getCarriedItem().getType() == ItemTypes.TOTEM_OF_UNDYING) {
-            lastTotemClickTimestamp = event.getTimestamp();
+        if (event instanceof InventoryClientSetItemEvent setItemEvent) {
+            onInventorySetItem(setItemEvent);
         }
     }
 
-    private void handle(long now) {
-        long timeSinceClick = Math.abs(now - lastTotemClickTimestamp);
-        long timeSinceTotemUse = Math.abs(now - lastTotemActivatedTimestamp);
+    private void onTotemActivated(TotemActivatedEvent event) {
+        lastTotemActivatedTimestamp = event.getTimestamp();
+    }
 
-        if (timeSinceClick <= 75 && timeSinceTotemUse <= 1500) {
+    private void onInventorySetItem(InventoryClientSetItemEvent event) {
+        if (event.getAction() != SetSlotAction.CLICK) return;
+
+        final int slot = event.getSlot();
+        final long now = event.getTimestamp();
+
+        if (inventory.isHandSlot(slot) && inventory.isTotemInSlot(slot)) {
+            tryEvaluate(now);
+            return;
+        }
+
+        if (inventory.isCarryingTotem()) {
+            lastTotemClickTimestamp = now;
+        }
+    }
+
+    private void tryEvaluate(long now) {
+        if (lastTotemClickTimestamp == null || lastTotemActivatedTimestamp == null) {
+            return;
+        }
+
+        final long clickDiff = Math.abs(now - lastTotemClickTimestamp);
+        final long useDiff = Math.abs(now - lastTotemActivatedTimestamp);
+
+        if (clickDiff <= 75 && useDiff <= 1500) {
             if (buffer.increase(5) >= 10) {
-                fail("click time: " + timeSinceClick + "ms, totemUseTimeDiff: " + timeSinceTotemUse + "ms");
+                fail("click time: " + clickDiff + "ms, totemUseTimeDiff: " + useDiff + "ms");
             }
         } else {
             buffer.decrease();
         }
 
-        this.lastTotemActivatedTimestamp = null;
+        lastTotemActivatedTimestamp = null;
     }
 }

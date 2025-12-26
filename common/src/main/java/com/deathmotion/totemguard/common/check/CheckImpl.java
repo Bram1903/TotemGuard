@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.reload.Reloadable;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 public class CheckImpl implements Check, Reloadable {
 
     protected final TGPlayer player;
+    protected final PacketInventory inventory;
     protected final Buffer buffer;
 
     @Getter
@@ -45,6 +47,7 @@ public class CheckImpl implements Check, Reloadable {
 
     public CheckImpl(TGPlayer player) {
         this.player = player;
+        this.inventory = player.getInventory();
         this.buffer = new Buffer();
 
         final Class<?> checkClass = this.getClass();
@@ -69,11 +72,11 @@ public class CheckImpl implements Check, Reloadable {
         // Load check settings from config
     }
 
-    public boolean fail() {
+    protected boolean fail() {
         return fail(null);
     }
 
-    public boolean fail(@Nullable String debug) {
+    protected boolean fail(@Nullable String debug) {
         if (!shouldFail()) return false;
         violations++;
 
@@ -82,7 +85,7 @@ public class CheckImpl implements Check, Reloadable {
         return true;
     }
 
-    public boolean shouldFail() {
+    protected boolean shouldFail() {
         TGFlagEvent event = new TGFlagEvent(player, this);
         event = (TGFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
 

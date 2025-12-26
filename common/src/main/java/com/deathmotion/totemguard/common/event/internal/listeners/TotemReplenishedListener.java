@@ -40,7 +40,7 @@ public class TotemReplenishedListener implements Consumer<InventoryClientSetItem
         if (lastTotemUse == null) return;
         player.setLastTotemUse(null);
 
-        long replenishedAt = event.getTimestampMillis();
+        long replenishedAt = event.getTimestamp();
 
         TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
                 player,
