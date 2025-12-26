@@ -65,7 +65,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
                     inventory.removeItemFromHand(1);
                 }
                 case SWAP_ITEM_WITH_OFFHAND -> {
-                    inventory.swapItemToOffhand(ChangeOrigin.CLIENT);
+                    inventory.swapItemToOffhand(ChangeOrigin.CLIENT, event.getTimestamp());
                 }
             }
         } else if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
@@ -83,14 +83,14 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             boolean valid = packet.getSlot() >= 1 && (PacketEvents.getAPI().getServerManager().getVersion().isNewerThan(ServerVersion.V_1_8) ? packet.getSlot() <= 45 : packet.getSlot() < 45);
 
             if (!valid) return;
-            inventory.setItem(packet.getSlot(), packet.getItemStack(), ChangeOrigin.CLIENT);
+            inventory.setItem(packet.getSlot(), packet.getItemStack(), ChangeOrigin.CLIENT, event.getTimestamp());
         } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
             packet.getSlots().ifPresent(slots -> {
                 for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {
-                    inventory.setItem(slotEntry.getKey(), slotEntry.getValue(), ChangeOrigin.CLIENT);
+                    inventory.setItem(slotEntry.getKey(), slotEntry.getValue(), ChangeOrigin.CLIENT, event.getTimestamp());
                 }
             });
 

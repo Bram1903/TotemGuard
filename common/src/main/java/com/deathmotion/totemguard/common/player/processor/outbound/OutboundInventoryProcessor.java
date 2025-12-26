@@ -50,11 +50,11 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             inventory.ResyncInventory(packet.getCarriedItem(), packet.getItems());
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            inventory.setItem(packet.getSlot(), packet.getStack(), ChangeOrigin.SERVER);
+            inventory.setItem(packet.getSlot(), packet.getStack(), ChangeOrigin.SERVER, event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setItem(packet.getSlot(), packet.getItem(), ChangeOrigin.SERVER);
+            inventory.setItem(packet.getSlot(), packet.getItem(), ChangeOrigin.SERVER, event.getTimestamp());
         }
     }
 }

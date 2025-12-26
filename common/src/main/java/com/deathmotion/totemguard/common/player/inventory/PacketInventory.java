@@ -62,7 +62,7 @@ public class PacketInventory {
         }
     }
 
-    public void setItem(int slot, ItemStack stack, ChangeOrigin origin) {
+    public void setItem(int slot, ItemStack stack, ChangeOrigin origin, long timestampMillis) {
         if (slot < 0 || slot >= InventoryConstants.INVENTORY_SIZE) {
             return;
         }
@@ -72,7 +72,7 @@ public class PacketInventory {
         items[slot] = newStack;
 
         if (origin != ChangeOrigin.CLIENT) return;
-        InventoryClientSetItemEvent event = new InventoryClientSetItemEvent(player, slot, oldStack, newStack, System.currentTimeMillis());
+        InventoryClientSetItemEvent event = new InventoryClientSetItemEvent(player, slot, oldStack, newStack, timestampMillis);
         TGPlatform.getInstance().getEventRepository().post(event);
     }
 
@@ -91,26 +91,26 @@ public class PacketInventory {
         return getItem(getMainHandSlot());
     }
 
-    public void setMainHandItem(ItemStack stack, ChangeOrigin origin) {
-        setItem(getMainHandSlot(), stack, origin);
+    public void setMainHandItem(ItemStack stack, ChangeOrigin origin, long timestampMillis) {
+        setItem(getMainHandSlot(), stack, origin, timestampMillis);
     }
 
     public ItemStack getOffhandItem() {
         return getItem(InventoryConstants.SLOT_OFFHAND);
     }
 
-    public void setOffhandItem(ItemStack stack, ChangeOrigin origin) {
-        setItem(InventoryConstants.SLOT_OFFHAND, stack, origin);
+    public void setOffhandItem(ItemStack stack, ChangeOrigin origin, long timestampMillis) {
+        setItem(InventoryConstants.SLOT_OFFHAND, stack, origin, timestampMillis);
     }
 
-    public void swapItemToOffhand(ChangeOrigin origin) {
+    public void swapItemToOffhand(ChangeOrigin origin, long timestampMillis) {
         int mainHandSlot = getMainHandSlot();
 
         ItemStack mainHandItem = getItem(mainHandSlot);
         ItemStack offHandItem = getItem(InventoryConstants.SLOT_OFFHAND);
 
-        setItem(mainHandSlot, offHandItem, origin);
-        setItem(InventoryConstants.SLOT_OFFHAND, mainHandItem, origin);
+        setItem(mainHandSlot, offHandItem, origin, timestampMillis);
+        setItem(InventoryConstants.SLOT_OFFHAND, mainHandItem, origin, timestampMillis);
     }
 
     public ItemStack removeItem(int slot, int amount) {

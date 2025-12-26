@@ -43,8 +43,7 @@ public class OutboundTotemActivatedProcessor extends ProcessorOutbound {
         if (packet.getEntityId() != player.getUser().getEntityId()) return;
         if (packet.getStatus() != TOTEM_USE_STATUS) return;
 
-        long currentTime = System.currentTimeMillis();
-        player.setLastTotemUse(currentTime);
-        TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, currentTime));
+        player.setLastTotemUse(event.getTimestamp());
+        TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, event.getTimestamp()));
     }
 }

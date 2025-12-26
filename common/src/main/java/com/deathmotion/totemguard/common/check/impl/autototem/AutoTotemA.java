@@ -63,18 +63,17 @@ public class AutoTotemA extends CheckImpl implements ExtendedCheck {
             }
 
             if (lastTotemClickTimestamp != null && lastTotemActivatedTimestamp != null) {
-                handle();
+                handle(event.getTimestamp());
             }
             return;
         }
 
         if (inventory.getCarriedItem().getType() == ItemTypes.TOTEM_OF_UNDYING) {
-            lastTotemClickTimestamp = System.currentTimeMillis();
+            lastTotemClickTimestamp = event.getTimestamp();
         }
     }
 
-    private void handle() {
-        long now = System.currentTimeMillis();
+    private void handle(long now) {
         long timeSinceClick = Math.abs(now - lastTotemClickTimestamp);
         long timeSinceTotemUse = Math.abs(now - lastTotemActivatedTimestamp);
 
