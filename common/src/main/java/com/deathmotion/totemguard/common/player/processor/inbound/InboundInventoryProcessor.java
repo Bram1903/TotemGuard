@@ -19,10 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.inventory.ChangeOrigin;
-import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
-import com.deathmotion.totemguard.common.player.inventory.SetSlotAction;
+import com.deathmotion.totemguard.common.player.inventory.*;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -30,11 +27,10 @@ import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCreativeInventoryAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import com.github.retrooper.packetevents.protocol.player.InteractionHand;
+import com.github.retrooper.packetevents.wrapper.play.client.*;
 
 import java.util.Map;
 
@@ -53,7 +49,36 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.USE_ITEM) {
-            // TODO?
+            WrapperPlayClientUseItem packet = new WrapperPlayClientUseItem(event);
+
+            int usedItemSlot = packet.getHand() == InteractionHand.MAIN_HAND
+                    ? inventory.getMainHandSlot()
+                    : InventoryConstants.SLOT_OFFHAND;
+
+            ItemStack usedItem = inventory.getItem(usedItemSlot);
+
+            EquipmentType equipmentType = EquipmentType.getEquipmentSlotForItem(usedItem);
+            if (equipmentType == null) return;
+
+            int slot;
+            switch (equipmentType) {
+                case HEAD -> slot = InventoryConstants.SLOT_HELMET;
+                case CHEST -> slot = InventoryConstants.SLOT_CHESTPLATE;
+                case LEGS -> slot = InventoryConstants.SLOT_LEGGINGS;
+                case FEET -> slot = InventoryConstants.SLOT_BOOTS;
+                default -> {
+                    return;
+                }
+            }
+
+            ItemStack currentEquippedItem = inventory.getItem(slot);
+            // Only 1.19.4+ clients support swapping with non-empty items
+            if (player.getClientVersion().isOlderThan(ClientVersion.V_1_19_4) && !currentEquippedItem.isEmpty()) return;
+
+            // TODO: When the armor stack has an amount greater than one, we need to properly handle it
+
+            inventory.setItem(usedItemSlot, currentEquippedItem, ChangeOrigin.CLIENT, SetSlotAction.SWAP, event.getTimestamp());
+            inventory.setItem(slot, usedItem, ChangeOrigin.CLIENT, SetSlotAction.SWAP, event.getTimestamp());
         } else if (packetType == PacketType.Play.Client.PLAYER_DIGGING) {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
             DiggingAction action = packet.getAction();
