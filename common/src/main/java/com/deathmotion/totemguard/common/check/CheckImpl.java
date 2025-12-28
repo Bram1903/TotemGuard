@@ -56,7 +56,7 @@ public class CheckImpl implements Check, Reloadable {
         }
         final CheckData checkData = checkClass.getAnnotation(CheckData.class);
 
-        this.name = checkClass.getSimpleName();
+        this.name = checkData.name().isBlank() ? checkClass.getSimpleName() : checkData.name();
         this.description = checkData.description();
         this.experimental = checkData.experimental();
 

@@ -26,6 +26,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface CheckData {
+    String name() default "";
+
     String description() default "No description provided";
 
     boolean experimental() default false;
