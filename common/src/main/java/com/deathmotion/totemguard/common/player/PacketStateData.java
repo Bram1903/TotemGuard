@@ -40,5 +40,4 @@ public class PacketStateData {
 
     // Actions performed this tick
     private boolean placedBlockThisTick;
-    private boolean serverOpenedInventoryThisTick;
 }

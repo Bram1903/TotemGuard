@@ -42,12 +42,8 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         boolean sprinting = player.getPacketStateData().isSprinting();
         boolean sneaking = player.getPacketStateData().isSneaking();
 
-        if (sprinting) {
-            fail("sprinting");
-        }
-
-        if (sneaking) {
-            fail("sneaking");
+        if (sprinting || sneaking) {
+            fail("sprinting=" + sprinting + ", sneaking=" + sneaking);
         }
     }
 

@@ -45,23 +45,16 @@ public class InboundActionProcessor extends ProcessorInbound {
             WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
 
             switch (packet.getAction()) {
-                case START_SNEAKING -> {
-                    player.getPacketStateData().setSneaking(true);
-                }
-                case STOP_SNEAKING -> {
-                    player.getPacketStateData().setSneaking(false);
-                }
-                case START_SPRINTING -> {
-                    player.getPacketStateData().setSprinting(true);
-                }
-                case STOP_SPRINTING -> {
-                    player.getPacketStateData().setSprinting(false);
-                }
+                case START_SNEAKING -> player.getPacketStateData().setSneaking(true);
+                case STOP_SNEAKING -> player.getPacketStateData().setSneaking(false);
+                case START_SPRINTING -> player.getPacketStateData().setSprinting(true);
+                case STOP_SPRINTING -> player.getPacketStateData().setSprinting(false);
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
                 WrapperPlayClientPlayerInput input = new WrapperPlayClientPlayerInput(event);
-                player.getPacketStateData().setSneaking(input.isShift());
+                PacketStateData data = player.getPacketStateData();
+                data.setSneaking(input.isShift());
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {
             WrapperPlayClientPlayerAbilities packet = new WrapperPlayClientPlayerAbilities(event);
