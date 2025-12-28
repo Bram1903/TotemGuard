@@ -70,6 +70,7 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         }
 
         player.getCheckManager().onPacketSend(event);
+        player.triggerInventoryEvent();
 
         for (ProcessorOutbound processor : player.getProcessorOutbounds()) {
             processor.handleOutboundPost(event);
