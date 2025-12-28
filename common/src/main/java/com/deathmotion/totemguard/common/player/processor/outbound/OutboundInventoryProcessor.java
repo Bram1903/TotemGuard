@@ -27,6 +27,7 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetCursorItem;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetPlayerInventory;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
@@ -60,6 +61,9 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             inventory.setItem(packet.getSlot(), packet.getItem(), event.getTimestamp());
+        } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM && !event.isCancelled()) {
+            WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
+            inventory.setCarriedItem(packet.getStack(), Issuer.SERVER, event.getTimestamp());
         }
     }
 }
