@@ -61,22 +61,19 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
             final long now = inventorySlot.getUpdated();
 
             if (inventory.isHandSlot(slot) && inventory.isTotemInSlot(slot)) {
-                tryEvaluate(now);
+                if (lastTotemClickTimestamp != null && lastTotemActivatedTimestamp != null) {
+                    evaluate(now);
+                }
                 return;
             }
+        }
 
-            if (event.getUpdatedCarriedItem() != null && inventory.isCarryingTotem()) {
-                lastTotemClickTimestamp = now;
-                return;
-            }
+        if (event.getUpdatedCarriedItem() != null && inventory.isCarryingTotem()) {
+            lastTotemClickTimestamp = event.getUpdatedCarriedItem().getTimestamp();
         }
     }
 
-    private void tryEvaluate(long now) {
-        if (lastTotemClickTimestamp == null || lastTotemActivatedTimestamp == null) {
-            return;
-        }
-
+    private void evaluate(long now) {
         final long clickDiff = Math.abs(now - lastTotemClickTimestamp);
         final long useDiff = Math.abs(now - lastTotemActivatedTimestamp);
 
