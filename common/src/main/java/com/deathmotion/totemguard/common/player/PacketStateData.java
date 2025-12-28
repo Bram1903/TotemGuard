@@ -18,12 +18,24 @@
 
 package com.deathmotion.totemguard.common.player;
 
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class PacketStateData {
+    private GameMode gameMode;
+
+    private float health;
+    private int food;
+    private float foodSaturation;
+
+    private boolean isSprinting;
+    private boolean isSneaking;
+    private boolean canFly;
+    private boolean isFlying;
+
     private boolean sendingBundlePacket;
 
     // Actions performed this tick

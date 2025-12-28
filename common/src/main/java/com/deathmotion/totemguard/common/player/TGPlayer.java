@@ -33,9 +33,7 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundClientBrandProcessor;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundInventoryProcessor;
-import com.deathmotion.totemguard.common.player.processor.outbound.OutboundBundleProcessor;
-import com.deathmotion.totemguard.common.player.processor.outbound.OutboundInventoryProcessor;
-import com.deathmotion.totemguard.common.player.processor.outbound.OutboundTotemActivatedProcessor;
+import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -96,6 +94,9 @@ public class TGPlayer implements TGUser {
 
         this.processorOutbounds = new ArrayList<>() {{
             add(new OutboundBundleProcessor(TGPlayer.this));
+            add(new OutboundSpawnProcessor(TGPlayer.this));
+            add(new OutboundActionProcessor(TGPlayer.this));
+            add(new OutboundHealthProcessor(TGPlayer.this));
             add(new OutboundTotemActivatedProcessor(TGPlayer.this));
             add(new OutboundInventoryProcessor(TGPlayer.this));
         }};
