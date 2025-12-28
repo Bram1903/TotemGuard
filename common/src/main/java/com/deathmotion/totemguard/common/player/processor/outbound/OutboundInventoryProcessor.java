@@ -19,12 +19,12 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.inventory.ChangeOrigin;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
-import com.deathmotion.totemguard.common.player.inventory.SetSlotAction;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetPlayerInventory;
@@ -48,14 +48,19 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS && !event.isCancelled()) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.ResyncInventory(packet.getCarriedItem(), packet.getItems());
+            long timestamp = event.getTimestamp();
+            inventory.setCarriedItem(packet.getCarriedItem().orElse(ItemStack.EMPTY), Issuer.SERVER, timestamp);
+
+            for (int slot = 0; slot < packet.getItems().size(); slot++) {
+                inventory.setItem(slot, packet.getItems().get(slot), timestamp);
+            }
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            inventory.setItem(packet.getSlot(), packet.getStack(), ChangeOrigin.SERVER, SetSlotAction.SERVER_UPDATE, event.getTimestamp());
+            inventory.setItem(packet.getSlot(), packet.getStack(), event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setItem(packet.getSlot(), packet.getItem(), ChangeOrigin.SERVER, SetSlotAction.SERVER_UPDATE, event.getTimestamp());
+            inventory.setItem(packet.getSlot(), packet.getItem(), event.getTimestamp());
         }
     }
 }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.inventory;
+package com.deathmotion.totemguard.common.player.inventory.enums;
 
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;

@@ -18,70 +18,98 @@
 
 package com.deathmotion.totemguard.common.player.inventory;
 
-import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryClientSetItemEvent;
-import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class PacketInventory {
 
-    private final TGPlayer player;
-
     @Getter
-    private final ItemStack[] items;
-
+    private final CarriedItem carriedItem = new CarriedItem();
+    @Getter
+    private final Map<Integer, InventorySlot> slots;
+    @Getter
+    private final Set<InventorySlot> updatedSlots = new HashSet<>();
     @Getter
     @Setter
     private int selectedHotbarIndex; // 0..8
-
+    /*
+     * The last issuer that made a change to the inventory
+     */
     @Getter
     @Setter
-    private ItemStack carriedItem = ItemStack.EMPTY;
+    private Issuer lastIssuer = Issuer.SERVER;
 
-    public PacketInventory(TGPlayer player) {
-        this.player = player;
-        this.items = new ItemStack[InventoryConstants.INVENTORY_SIZE];
+    public PacketInventory() {
+        this.slots = new HashMap<>(InventoryConstants.INVENTORY_SIZE);
 
         for (int i = 0; i < InventoryConstants.INVENTORY_SIZE; i++) {
-            items[i] = ItemStack.EMPTY;
+            this.slots.put(i, new InventorySlot(this, i));
         }
     }
 
-    public void ResyncInventory(Optional<ItemStack> carriedItem, List<ItemStack> itemStacks) {
-        this.carriedItem = carriedItem.orElse(ItemStack.EMPTY);
-
-        for (int i = 0; i < InventoryConstants.INVENTORY_SIZE; i++) {
-            items[i] = (i < itemStacks.size() && itemStacks.get(i) != null)
-                    ? itemStacks.get(i)
-                    : ItemStack.EMPTY;
-        }
-    }
-
-    public void setItem(int slot, ItemStack stack, ChangeOrigin origin, SetSlotAction action, long timestampMillis) {
-        if (slot < 0 || slot >= InventoryConstants.INVENTORY_SIZE) {
-            return;
-        }
-
-        ItemStack newStack = (stack == null) ? ItemStack.EMPTY : stack;
-        ItemStack oldStack = items[slot];
-        items[slot] = newStack;
-
-        if (origin != ChangeOrigin.CLIENT) return;
-        InventoryClientSetItemEvent event = new InventoryClientSetItemEvent(player, slot, oldStack, newStack, action, timestampMillis);
-        TGPlatform.getInstance().getEventRepository().post(event);
+    public void setCarriedItem(ItemStack carriedItem, Issuer issuer, long timestampMillis) {
+        this.lastIssuer = issuer;
+        this.carriedItem.update(carriedItem, issuer, timestampMillis);
     }
 
     public ItemStack getItem(int slot) {
-        if (slot < 0 || slot >= InventoryConstants.INVENTORY_SIZE) {
+        InventorySlot invSlot = slotOrNull(slot);
+        if (invSlot == null) {
             return ItemStack.EMPTY;
         }
-        return items[slot];
+
+        return invSlot.getItem();
+    }
+
+    public void setItem(int slot, ItemStack stack, long timestampMillis) {
+        InventorySlot invSlot = slotOrNull(slot);
+        if (invSlot == null) {
+            return;
+        }
+
+        this.lastIssuer = Issuer.CLIENT;
+        invSlot.update(stack, timestampMillis);
+    }
+
+    public void setItem(int slot, ItemStack stack, Issuer issuer, SlotAction action, long timestampMillis) {
+        InventorySlot invSlot = slotOrNull(slot);
+        if (invSlot == null) {
+            return;
+        }
+
+        this.lastIssuer = issuer;
+        invSlot.update(stack, issuer, action, timestampMillis);
+    }
+
+    public void dropItem(int slot, long timestampMillis) {
+        InventorySlot invSlot = slotOrNull(slot);
+        if (invSlot == null) {
+            return;
+        }
+
+        this.lastIssuer = Issuer.CLIENT;
+        invSlot.drop(timestampMillis);
+    }
+
+    public void dropItem(int slot, int amount, long timestampMillis) {
+        InventorySlot invSlot = slotOrNull(slot);
+        if (invSlot == null) {
+            return;
+        }
+
+        this.lastIssuer = Issuer.CLIENT;
+        invSlot.drop(amount, timestampMillis);
     }
 
     public int getMainHandSlot() {
@@ -92,46 +120,26 @@ public class PacketInventory {
         return getItem(getMainHandSlot());
     }
 
-    public void setMainHandItem(ItemStack stack, ChangeOrigin origin, SetSlotAction action, long timestampMillis) {
-        setItem(getMainHandSlot(), stack, origin, action, timestampMillis);
-    }
-
     public ItemStack getOffhandItem() {
         return getItem(InventoryConstants.SLOT_OFFHAND);
     }
 
-    public void setOffhandItem(ItemStack stack, ChangeOrigin origin, SetSlotAction action, long timestampMillis) {
-        setItem(InventoryConstants.SLOT_OFFHAND, stack, origin, action, timestampMillis);
-    }
-
-    public void swapItemToOffhand(ChangeOrigin origin, long timestampMillis) {
+    public void swapItemToOffhand(Issuer origin, long timestamp) {
         int mainHandSlot = getMainHandSlot();
 
         ItemStack mainHandItem = getItem(mainHandSlot);
-        ItemStack offHandItem = getItem(InventoryConstants.SLOT_OFFHAND);
+        ItemStack offhandItem = getItem(InventoryConstants.SLOT_OFFHAND);
 
-        setItem(mainHandSlot, offHandItem, origin, SetSlotAction.SWAP, timestampMillis);
-        setItem(InventoryConstants.SLOT_OFFHAND, mainHandItem, origin, SetSlotAction.SWAP, timestampMillis);
+        setItem(mainHandSlot, offhandItem, origin, SlotAction.SWAP, timestamp);
+        setItem(InventoryConstants.SLOT_OFFHAND, mainHandItem, origin, SlotAction.SWAP, timestamp);
     }
 
-    public ItemStack removeItem(int slot, int amount) {
-        return slot >= 0 && slot < items.length && !items[slot].isEmpty() && amount > 0
-                ? items[slot].split(amount)
-                : ItemStack.EMPTY;
+    public void dropItemFromHand(int amount, long timestamp) {
+        dropItem(getMainHandSlot(), amount, timestamp);
     }
 
-    public void removeItem(int slot) {
-        if (slot >= 0 && slot < items.length) {
-            items[slot] = ItemStack.EMPTY;
-        }
-    }
-
-    public ItemStack removeItemFromHand(int amount) {
-        return removeItem(getMainHandSlot(), amount);
-    }
-
-    public void removeItemFromHand() {
-        removeItem(getMainHandSlot());
+    public void dropItemFromHand(long timestamp) {
+        dropItem(getMainHandSlot(), timestamp);
     }
 
     public boolean isHandSlot(int slot) {
@@ -143,6 +151,17 @@ public class PacketInventory {
     }
 
     public boolean isCarryingTotem() {
-        return getCarriedItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
+        return carriedItem.getCurrentItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
+    }
+
+    private InventorySlot slot(int slot) {
+        return this.slots.get(slot);
+    }
+
+    private InventorySlot slotOrNull(int slot) {
+        if (slot < 0 || slot >= InventoryConstants.INVENTORY_SIZE) {
+            return null;
+        }
+        return this.slots.get(slot);
     }
 }

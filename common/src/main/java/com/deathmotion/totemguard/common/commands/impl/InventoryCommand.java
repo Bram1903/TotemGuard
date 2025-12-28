@@ -85,7 +85,7 @@ public class InventoryCommand implements Command {
                 .append(Component.text(")", NamedTextColor.GRAY))
                 .append(Component.newline())
                 .append(Component.text("Carried: ", NamedTextColor.GRAY))
-                .append(formatItem(inv.getCarriedItem(), NamedTextColor.WHITE))
+                .append(formatItem(inv.getCarriedItem().getCurrentItem(), NamedTextColor.WHITE))
                 .append(Component.newline())
                 .append(Component.text("────────────────────────────", NamedTextColor.DARK_GRAY))
                 .append(Component.newline())

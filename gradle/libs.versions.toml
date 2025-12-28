@@ -41,9 +41,9 @@ bstats-velocity = { group = "org.bstats", name = "bstats-velocity", version.ref 
 bstats-sponge = { group = "org.bstats", name = "bstats-sponge", version.ref = "bstats" }
 
 [bundles]
-adventure = [ "adventure-api" ]
-adventure-serializers = [ "adventure-text-serializer-gson", "adventure-text-serializer-legacy" ]
-adventure-minimessage = [ "minimessage" ]
+adventure = ["adventure-api"]
+adventure-serializers = ["adventure-text-serializer-gson", "adventure-text-serializer-legacy"]
+adventure-minimessage = ["minimessage"]
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

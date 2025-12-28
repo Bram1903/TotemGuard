@@ -16,10 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.inventory;
+package com.deathmotion.totemguard.common.player.inventory.enums;
 
-public enum SetSlotAction {
+public enum SlotAction {
     CLICK,
     SWAP,
-    SERVER_UPDATE
+    DROP,
+    IRRELEVANT;
+
+    public boolean isSetSlot() {
+        return this == CLICK || this == SWAP;
+    }
 }

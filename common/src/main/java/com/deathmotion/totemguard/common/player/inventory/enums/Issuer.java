@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.inventory;
+package com.deathmotion.totemguard.common.player.inventory.enums;
 
-public enum ChangeOrigin {
+public enum Issuer {
     CLIENT,
     SERVER
 }

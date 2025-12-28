@@ -33,9 +33,8 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
             case UNKNOWN -> false;
         };
 
-        if (!wrong) return;
-        if (fail("Invalid button " + button + " for click type " + clickType)) {
-            event.setCancelled(true);
+        if (wrong) {
+            fail("button: " + button + ", click type: " + clickType);
         }
     }
 }

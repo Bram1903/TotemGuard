@@ -19,35 +19,39 @@
 package com.deathmotion.totemguard.common.event.internal.listeners;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryClientSetItemEvent;
+import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 
 import java.util.function.Consumer;
 
-public class TotemReplenishedListener implements Consumer<InventoryClientSetItemEvent> {
+public class TotemReplenishedListener implements Consumer<InventoryChangedEvent> {
 
     @Override
-    public void accept(InventoryClientSetItemEvent event) {
+    public void accept(InventoryChangedEvent event) {
         var player = event.getPlayer();
-        int slot = event.getSlot();
 
-        if (slot != player.getInventory().getMainHandSlot() && slot != InventoryConstants.SLOT_OFFHAND) return;
-        if (event.getNewStack().getType() != ItemTypes.TOTEM_OF_UNDYING) return;
+        for (InventorySlot inventorySlot : event.getChangedSlots()) {
+            int slot = inventorySlot.getSlot();
+            if (slot != player.getInventory().getMainHandSlot() && slot != InventoryConstants.SLOT_OFFHAND) return;
+            if (inventorySlot.getItem().getType() != ItemTypes.TOTEM_OF_UNDYING) return;
 
-        var lastTotemUse = player.getLastTotemUse();
-        if (lastTotemUse == null) return;
-        player.setLastTotemUse(null);
+            var lastTotemUse = player.getLastTotemUse();
+            if (lastTotemUse == null) continue;
+            player.setLastTotemUse(null);
 
-        long replenishedAt = event.getTimestamp();
+            long replenishedAt = inventorySlot.getUpdated();
 
-        TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
-                player,
-                lastTotemUse,
-                replenishedAt
-        );
+            TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
+                    player,
+                    lastTotemUse,
+                    replenishedAt
+            );
 
-        TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
+            TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
+            return;
+        }
     }
 }

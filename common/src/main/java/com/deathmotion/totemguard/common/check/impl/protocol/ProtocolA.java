@@ -41,15 +41,11 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
         final int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
 
         if (slot == lastSlot) {
-            if (fail("current slot: " + slot + ", last slot: " + lastSlot)) {
-                event.setCancelled(true);
-            }
+            fail("current slot: " + slot + ", last slot: " + lastSlot);
         }
 
         if (slot < 0 || slot > 8) {
-            if (fail("slot: " + slot)) {
-                event.setCancelled(true);
-            }
+            fail("slot: " + slot);
         }
 
         lastSlot = slot;

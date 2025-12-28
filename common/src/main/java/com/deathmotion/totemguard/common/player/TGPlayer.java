@@ -22,10 +22,12 @@ import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
+import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
@@ -57,6 +59,7 @@ import static com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayC
 @Getter
 public class TGPlayer implements TGUser {
 
+    private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
     private final PacketInventory inventory;
@@ -78,9 +81,10 @@ public class TGPlayer implements TGUser {
     private Long lastTotemUse;
 
     public TGPlayer(@NotNull User user) {
+        this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
-        this.inventory = new PacketInventory(this);
+        this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
         this.packetStateData = new PacketStateData();
 
@@ -118,6 +122,33 @@ public class TGPlayer implements TGUser {
         hasLoggedIn = true;
         platform.getEventRepository().post(new TGUserJoinEvent(this));
     }
+
+    public void triggerInventoryEvent() {
+        CarriedItem carriedItem = inventory.getCarriedItem();
+        boolean carriedItemUpdated = carriedItem != null && carriedItem.isUpdated();
+
+        if (!carriedItemUpdated && inventory.getUpdatedSlots().isEmpty()) {
+            return;
+        }
+
+        var updatedSlotsSnapshot = new ArrayList<>(inventory.getUpdatedSlots());
+        var issuer = inventory.getLastIssuer();
+
+        InventoryChangedEvent event = new InventoryChangedEvent(
+                this,
+                carriedItemUpdated ? carriedItem : null,
+                updatedSlotsSnapshot,
+                issuer
+        );
+
+        platform.getEventRepository().post(event);
+
+        if (carriedItemUpdated) {
+            carriedItem.hasUpdated();
+        }
+        inventory.getUpdatedSlots().clear();
+    }
+
 
     @Override
     public @NotNull String getName() {
