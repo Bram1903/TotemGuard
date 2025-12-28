@@ -43,6 +43,7 @@ public class InboundActionProcessor extends ProcessorInbound {
             player.getPacketStateData().setPlacedBlockThisTick(true);
         } else if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
             WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
+            if (packet.getEntityId() != player.getUser().getEntityId()) return;
 
             switch (packet.getAction()) {
                 case START_SNEAKING -> player.getPacketStateData().setSneaking(true);
@@ -52,9 +53,9 @@ public class InboundActionProcessor extends ProcessorInbound {
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
-                WrapperPlayClientPlayerInput input = new WrapperPlayClientPlayerInput(event);
+                WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
                 PacketStateData data = player.getPacketStateData();
-                data.setSneaking(input.isShift());
+                data.setSneaking(packet.isShift());
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {
             WrapperPlayClientPlayerAbilities packet = new WrapperPlayClientPlayerAbilities(event);
