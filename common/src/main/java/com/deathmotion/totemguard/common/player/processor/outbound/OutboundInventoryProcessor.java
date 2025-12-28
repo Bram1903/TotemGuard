@@ -50,7 +50,6 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             long timestamp = event.getTimestamp();
             inventory.setCarriedItem(packet.getCarriedItem().orElse(ItemStack.EMPTY), Issuer.SERVER, timestamp);
-
             for (int slot = 0; slot < packet.getItems().size(); slot++) {
                 inventory.setItem(slot, packet.getItems().get(slot), timestamp);
             }
