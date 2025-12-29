@@ -53,20 +53,14 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
-            final ItemStack carried = packet.getCarriedItem().orElse(ItemStack.EMPTY);
-            final List<ItemStack> items = new ArrayList<>(packet.getItems());
-
             player.getLatencyHandler().afterNextAck(() -> {
                 long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
-                inventory.setCarriedItem(carried, Issuer.SERVER, appliedAt);
-                for (int slot = 0; slot < items.size(); slot++) {
-                    inventory.setItem(slot, items.get(slot), appliedAt);
+                inventory.setCarriedItem(packet.getCarriedItem().orElse(ItemStack.EMPTY), -1, Issuer.SERVER, appliedAt);
+                for (int slot = 0; slot < packet.getItems().size(); slot++) {
+                    inventory.setItem(slot, packet.getItems().get(slot), appliedAt);
                 }
             });
-            return;
-        }
-
-        if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
+        } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
 
             final int slot = packet.getSlot();
@@ -76,10 +70,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                 long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
                 inventory.setItem(slot, stack, appliedAt);
             });
-            return;
-        }
-
-        if (packetType == PacketType.Play.Server.SET_SLOT) {
+        } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
@@ -90,17 +81,14 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                 long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
                 inventory.setItem(slot, stack, appliedAt);
             });
-            return;
-        }
-
-        if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
+        } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
 
             final ItemStack stack = packet.getStack();
 
             player.getLatencyHandler().afterNextAck(() -> {
                 long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
-                inventory.setCarriedItem(stack, Issuer.SERVER, appliedAt);
+                inventory.setCarriedItem(stack, -1, Issuer.SERVER, appliedAt);
             });
         }
     }

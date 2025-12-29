@@ -58,9 +58,9 @@ public class PacketInventory {
         }
     }
 
-    public void setCarriedItem(ItemStack carriedItem, Issuer issuer, long timestampMillis) {
+    public void setCarriedItem(ItemStack carriedItem, int slot, Issuer issuer, long timestampMillis) {
         this.lastIssuer = issuer;
-        this.carriedItem.update(carriedItem, issuer, timestampMillis);
+        this.carriedItem.update(carriedItem, slot, issuer, timestampMillis);
     }
 
     public ItemStack getItem(int slot) {

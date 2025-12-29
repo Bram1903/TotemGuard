@@ -26,15 +26,19 @@ import lombok.Getter;
 @Getter
 public class CarriedItem {
     private ItemStack currentItem = ItemStack.EMPTY;
-    private Issuer issuer;
+    private int slot = -1;
+    private Issuer issuer = Issuer.SERVER;
     private long timestamp = System.currentTimeMillis();
     private boolean isUpdated;
 
     private SlotState previous;
 
-    public void update(ItemStack newItem, Issuer issuer, long timestamp) {
+    public void update(ItemStack newItem, int slot, Issuer issuer, long timestamp) {
         this.previous = new SlotState(this.currentItem, issuer, SlotAction.IRRELEVANT, this.timestamp);
+
         this.currentItem = newItem;
+        this.slot = slot;
+        this.issuer = issuer;
         this.timestamp = timestamp;
         this.isUpdated = true;
     }

@@ -71,7 +71,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setCarriedItem(packet.getCarriedItemStack(), Issuer.CLIENT, event.getTimestamp());
+            inventory.setCarriedItem(packet.getCarriedItemStack(), packet.getSlot(), Issuer.CLIENT, event.getTimestamp());
             packet.getSlots().ifPresent(slots -> {
                 for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {
                     inventory.setItem(slotEntry.getKey(), slotEntry.getValue(), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
