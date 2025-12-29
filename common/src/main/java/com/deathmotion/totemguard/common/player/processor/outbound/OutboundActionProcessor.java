@@ -36,7 +36,10 @@ public class OutboundActionProcessor extends ProcessorOutbound {
         if (event.getPacketType() != PacketType.Play.Server.PLAYER_ABILITIES) return;
         WrapperPlayServerPlayerAbilities packet = new WrapperPlayServerPlayerAbilities(event);
         PacketStateData data = player.getPacketStateData();
-        data.setCanFly(packet.isFlightAllowed());
-        data.setFlying(packet.isFlying());
+
+        player.getLatencyHandler().afterNextAck(() -> {
+            data.setCanFly(packet.isFlightAllowed());
+            data.setFlying(packet.isFlying());
+        });
     }
 }

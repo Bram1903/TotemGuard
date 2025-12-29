@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
+import com.deathmotion.totemguard.common.player.PacketStateData;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -34,9 +35,24 @@ public class OutboundHealthProcessor extends ProcessorOutbound {
     public void handleOutbound(PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.UPDATE_HEALTH) {
             WrapperPlayServerUpdateHealth packet = new WrapperPlayServerUpdateHealth(event);
-            player.getPacketStateData().setHealth(packet.getHealth());
-            player.getPacketStateData().setFood(packet.getFood());
-            player.getPacketStateData().setFoodSaturation(packet.getFoodSaturation());
+
+            PacketStateData data = player.getPacketStateData();
+
+            // Only if the food changes, I care to make it lag compensated for ProtocolD
+            // We don't want to send transaction packets without reason
+            if (data.getFood() != packet.getFood()) {
+                player.getLatencyHandler().afterNextAck(() -> {
+                    data.setHealth(packet.getHealth());
+                    data.setFood(packet.getFood());
+                    data.setFoodSaturation(packet.getFoodSaturation());
+                });
+
+                return;
+            }
+
+            data.setHealth(packet.getHealth());
+            data.setFood(packet.getFood());
+            data.setFoodSaturation(packet.getFoodSaturation());
         }
     }
 }

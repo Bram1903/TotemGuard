@@ -32,6 +32,9 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSe
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private final PacketInventory inventory;
@@ -46,24 +49,60 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
-        if (packetType == PacketType.Play.Server.WINDOW_ITEMS && !event.isCancelled()) {
+        if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            long timestamp = event.getTimestamp();
-            inventory.setCarriedItem(packet.getCarriedItem().orElse(ItemStack.EMPTY), Issuer.SERVER, timestamp);
-            for (int slot = 0; slot < packet.getItems().size(); slot++) {
-                inventory.setItem(slot, packet.getItems().get(slot), timestamp);
-            }
-        } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY && !event.isCancelled()) {
+
+            final ItemStack carried = packet.getCarriedItem().orElse(ItemStack.EMPTY);
+            final List<ItemStack> items = new ArrayList<>(packet.getItems());
+
+            player.getLatencyHandler().afterNextAck(() -> {
+                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
+                inventory.setCarriedItem(carried, Issuer.SERVER, appliedAt);
+                for (int slot = 0; slot < items.size(); slot++) {
+                    inventory.setItem(slot, items.get(slot), appliedAt);
+                }
+            });
+            return;
+        }
+
+        if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            inventory.setItem(packet.getSlot(), packet.getStack(), event.getTimestamp());
-        } else if (packetType == PacketType.Play.Server.SET_SLOT && !event.isCancelled()) {
+
+            final int slot = packet.getSlot();
+            final ItemStack stack = packet.getStack();
+
+            player.getLatencyHandler().afterNextAck(() -> {
+                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
+                inventory.setItem(slot, stack, appliedAt);
+            });
+            return;
+        }
+
+        if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setItem(packet.getSlot(), packet.getItem(), event.getTimestamp());
-        } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM && !event.isCancelled()) {
+
+            final int slot = packet.getSlot();
+            final ItemStack stack = packet.getItem();
+
+            player.getLatencyHandler().afterNextAck(() -> {
+                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
+                inventory.setItem(slot, stack, appliedAt);
+            });
+            return;
+        }
+
+        if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
-            inventory.setCarriedItem(packet.getStack(), Issuer.SERVER, event.getTimestamp());
+
+            final ItemStack stack = packet.getStack();
+
+            player.getLatencyHandler().afterNextAck(() -> {
+                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
+                inventory.setCarriedItem(stack, Issuer.SERVER, appliedAt);
+            });
         }
     }
+
 }

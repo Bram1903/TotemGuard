@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
@@ -60,6 +61,7 @@ public class TGPlayer implements TGUser {
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
+    private final LatencyHandler latencyHandler;
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
     private final PacketStateData packetStateData;
@@ -82,6 +84,7 @@ public class TGPlayer implements TGUser {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
+        this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
         this.packetStateData = new PacketStateData();
@@ -97,8 +100,8 @@ public class TGPlayer implements TGUser {
             add(new OutboundSpawnProcessor(TGPlayer.this));
             add(new OutboundActionProcessor(TGPlayer.this));
             add(new OutboundHealthProcessor(TGPlayer.this));
-            add(new OutboundTotemActivatedProcessor(TGPlayer.this));
             add(new OutboundInventoryProcessor(TGPlayer.this));
+            add(new OutboundTotemActivatedProcessor(TGPlayer.this));
         }};
     }
 

@@ -22,13 +22,14 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 
-public class OutboundTotemActivatedProcessor extends ProcessorOutbound {
+public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
 
     public OutboundTotemActivatedProcessor(TGPlayer player) {
         super(player);
@@ -39,16 +40,22 @@ public class OutboundTotemActivatedProcessor extends ProcessorOutbound {
         if (event.isCancelled()) return;
         if (event.getPacketType() != PacketType.Play.Server.SET_SLOT) return;
 
-        WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
+        final WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
         if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
-        int slot = packet.getSlot();
-        ItemStack itemStack = packet.getItem();
-        boolean isCarryingTotem = player.getInventory().isTotemInSlot(slot);
+        final int slot = packet.getSlot();
+        final ItemStack itemStack = packet.getItem();
+        final boolean wasCarryingTotem = player.getInventory().isTotemInSlot(slot);
 
-        if (isCarryingTotem && itemStack.isEmpty()) {
-            player.setLastTotemUse(event.getTimestamp());
-            TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, event.getTimestamp()));
+        if (wasCarryingTotem && itemStack.isEmpty()) {
+            final LatencyHandler latency = player.getLatencyHandler();
+
+            player.getLatencyHandler().afterNextAck(() -> {
+                final long ackMillis = latency.getLastAckAtMillis();
+
+                player.setLastTotemUse(ackMillis);
+                TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, ackMillis));
+            });
         }
     }
 }

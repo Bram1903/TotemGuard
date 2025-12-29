@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEve
 import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckManagerListener;
 import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
+import com.deathmotion.totemguard.common.event.packet.PacketPingListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -79,6 +80,7 @@ public abstract class TGPlatform {
         commandManager = new CommandManagerImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketPingListener());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());
 
         //noinspection resource
