@@ -25,7 +25,6 @@ import com.deathmotion.totemguard.common.reload.Reloadable;
 public class AlertManagerImpl implements AlertManager, Reloadable {
 
 
-
     @Override
     public void reload() {
 

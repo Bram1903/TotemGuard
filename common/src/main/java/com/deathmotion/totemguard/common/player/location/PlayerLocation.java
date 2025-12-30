@@ -16,13 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.mods;
+package com.deathmotion.totemguard.common.player.location;
 
-import java.util.List;
+import com.github.retrooper.packetevents.protocol.world.Location;
+import lombok.Getter;
+import lombok.Setter;
 
-public record ModSignature(
-        String name,
-        List<String> translationKeys,
-        List<String> pluginMessageKeywords
-) {
+@Getter
+@Setter
+public class PlayerLocation {
+    private Location location;
+
+    public boolean hasLocation() {
+        return location != null;
+    }
 }

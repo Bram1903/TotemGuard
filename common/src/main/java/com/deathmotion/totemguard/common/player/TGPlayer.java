@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
-import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
@@ -30,11 +29,13 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
+import com.deathmotion.totemguard.common.player.location.PlayerLocation;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundClientBrandProcessor;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundInventoryProcessor;
+import com.deathmotion.totemguard.common.player.processor.inbound.InboundLocationProcessor;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -50,7 +51,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying.isFlying;
 
@@ -66,6 +66,8 @@ public class TGPlayer implements TGUser {
     private final LatencyHandler latencyHandler;
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
+
+    private final PlayerLocation location;
     private final Data data;
 
     private final List<ProcessorInbound> processorInbounds;
@@ -89,12 +91,14 @@ public class TGPlayer implements TGUser {
         this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
+        this.location = new PlayerLocation();
         this.data = new Data();
 
         this.processorInbounds = new ArrayList<>() {{
             add(new InboundInventoryProcessor(TGPlayer.this));
             add(new InboundClientBrandProcessor(TGPlayer.this));
             add(new InboundActionProcessor(TGPlayer.this));
+            add(new InboundLocationProcessor(TGPlayer.this));
         }};
 
         this.processorOutbounds = new ArrayList<>() {{
@@ -127,10 +131,6 @@ public class TGPlayer implements TGUser {
 
         hasLoggedIn = true;
         platform.getEventRepository().post(new TGUserJoinEvent(this));
-
-        TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(() -> {
-            checkManager.getPacketCheck(Mod.class).handle();
-        }, 50, TimeUnit.MILLISECONDS);
     }
 
     public void triggerInventoryEvent() {

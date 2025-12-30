@@ -32,9 +32,6 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSe
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private final PacketInventory inventory;
