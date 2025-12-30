@@ -35,13 +35,9 @@ import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientUpdateSign;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockEntityData;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBundle;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenSignEditor;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 import net.kyori.adventure.text.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -93,21 +89,19 @@ public class Mod extends CheckImpl implements PacketCheck {
     }
 
     private void handle() {
-        TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
-            List<SentEntry> entries = collectEntries();
-            if (entries.isEmpty()) return;
+        List<SentEntry> entries = collectEntries();
+        if (entries.isEmpty()) return;
 
-            List<NBTUtil.SignPayload<SentEntry>> payloads = NBTUtil.packTranslatablesIntoSigns(
-                    entries,
-                    SentEntry::key,
-                    this::newSignId,
-                    SIGN_LINE_LIMIT,
-                    DELIM
-            );
+        List<NBTUtil.SignPayload<SentEntry>> payloads = NBTUtil.packTranslatablesIntoSigns(
+                entries,
+                SentEntry::key,
+                this::newSignId,
+                SIGN_LINE_LIMIT,
+                DELIM
+        );
 
-            sendPayloads(payloads);
-            TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(this::evictOldSignIds, 10, TimeUnit.SECONDS);
-        });
+        sendPayloads(payloads);
+        TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(this::evictOldSignIds, 10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -122,7 +116,7 @@ public class Mod extends CheckImpl implements PacketCheck {
             handlePluginMessage(packet.getChannelName(), packet.getData());
         } else if (type == PacketType.Play.Client.UPDATE_SIGN) {
             handleUpdateSign(event);
-        } else if (WrapperPlayClientPlayerFlying.isFlying(type)) {
+        } else if (type == PacketType.Play.Client.TELEPORT_CONFIRM) {
             triggerOnce();
         }
     }
@@ -130,7 +124,9 @@ public class Mod extends CheckImpl implements PacketCheck {
     private void triggerOnce() {
         if (isTriggered) return;
         isTriggered = true;
-        TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(this::handle, 350, TimeUnit.MILLISECONDS);
+
+        // For some reason if we run this too quickly, the sign doesn't get updated
+        TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(this::handle, 2, TimeUnit.SECONDS);
     }
 
     private List<SentEntry> collectEntries() {
@@ -169,6 +165,7 @@ public class Mod extends CheckImpl implements PacketCheck {
             WrapperPlayServerBlockChange place = new WrapperPlayServerBlockChange(pos, WrappedBlockState.getDefaultState(StateTypes.OAK_SIGN));
             WrapperPlayServerBlockEntityData data = new WrapperPlayServerBlockEntityData(pos, BlockEntityTypes.SIGN, signNbt);
             WrapperPlayServerOpenSignEditor open = new WrapperPlayServerOpenSignEditor(pos, true);
+            WrapperPlayServerCloseWindow closeWindow = new WrapperPlayServerCloseWindow();
 
             boolean wasSendingBundle = player.getData().isSendingBundlePacket();
 
@@ -176,6 +173,7 @@ public class Mod extends CheckImpl implements PacketCheck {
             user.sendPacket(place);
             user.sendPacket(data);
             user.sendPacket(open);
+            user.sendPacket(closeWindow);
             if (!wasSendingBundle) user.sendPacket(bundle);
         }
     }
@@ -298,6 +296,13 @@ public class Mod extends CheckImpl implements PacketCheck {
                 }
             }
         }
+    }
+
+    public record ModSignature(
+            String name,
+            List<String> translationKeys,
+            List<String> pluginMessageKeywords
+    ) {
     }
 
     private record Split(String head, String tail) {}
