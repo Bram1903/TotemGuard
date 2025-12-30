@@ -25,7 +25,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PlayerLocation {
-    private Location location;
+    private volatile Location location;
 
     public boolean hasLocation() {
         return location != null;

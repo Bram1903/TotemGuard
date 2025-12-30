@@ -147,6 +147,21 @@ public class Mod extends CheckImpl implements PacketCheck {
     private void sendPayloads(List<NBTUtil.SignPayload<SentEntry>> payloads) {
         User user = player.getUser();
 
+        if (payloads.size() > 1028) {
+            TGPlatform.getInstance().getLogger().warning("Mod check: Too many sign payloads to send to " + user.getName() + ", skipping mod check.");
+            return;
+        }
+
+        WrapperPlayServerBundle bundle = new WrapperPlayServerBundle();
+        Vector3i pos = player.getLocation()
+                .getLocation()
+                .getPosition()
+                .toVector3i()
+                .add(0, 2, 0);
+
+        boolean wasSendingBundle = player.getData().isSendingBundlePacket();
+        if (!wasSendingBundle) user.sendPacket(bundle);
+
         for (NBTUtil.SignPayload<SentEntry> payload : payloads) {
             if (payload.entriesInOrder().isEmpty()) continue;
 
@@ -155,27 +170,20 @@ public class Mod extends CheckImpl implements PacketCheck {
             List<Component> lines = payload.lines();
             NBTCompound signNbt = NBTUtil.buildSignNbt(lines, player.getClientVersion());
 
-            WrapperPlayServerBundle bundle = new WrapperPlayServerBundle();
-            Vector3i pos = player.getLocation()
-                    .getLocation()
-                    .getPosition()
-                    .toVector3i()
-                    .add(0, 2, 0);
-
             WrapperPlayServerBlockChange place = new WrapperPlayServerBlockChange(pos, WrappedBlockState.getDefaultState(StateTypes.OAK_SIGN));
             WrapperPlayServerBlockEntityData data = new WrapperPlayServerBlockEntityData(pos, BlockEntityTypes.SIGN, signNbt);
             WrapperPlayServerOpenSignEditor open = new WrapperPlayServerOpenSignEditor(pos, true);
             WrapperPlayServerCloseWindow closeWindow = new WrapperPlayServerCloseWindow();
 
-            boolean wasSendingBundle = player.getData().isSendingBundlePacket();
-
-            if (!wasSendingBundle) user.sendPacket(bundle);
             user.sendPacket(place);
             user.sendPacket(data);
             user.sendPacket(open);
             user.sendPacket(closeWindow);
-            if (!wasSendingBundle) user.sendPacket(bundle);
         }
+
+        // TODO: Set back the block to the original state
+
+        if (!wasSendingBundle) user.sendPacket(bundle);
     }
 
     private void handleUpdateSign(PacketReceiveEvent event) {
