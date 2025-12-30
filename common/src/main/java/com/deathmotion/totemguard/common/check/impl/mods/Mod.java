@@ -31,18 +31,16 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
 public class Mod extends CheckImpl implements PacketCheck {
 
     private static final String REGISTER_CHANNEL = "minecraft:register";
 
-    private static final List<ModSignature> SIGNATURES = List.of(
-            new ModSignature("accurateblockplacement",
-                    List.of("net.clayborn.accurateblockplacement.togglevanillaplacement"),
-                    List.of()),
-            new ModSignature("autototem", List.of(), List.of("autototem")),
-            new ModSignature("tweakeroo", List.of(), List.of("servux:tweaks"))
+    private static final Map<String, List<String>> pluginMessageKeywords = Map.of(
+            "autototem", List.of("autototem"),
+            "tweakeroo", List.of("servux:tweaks")
     );
 
     public Mod(TGPlayer player) {
@@ -79,10 +77,10 @@ public class Mod extends CheckImpl implements PacketCheck {
     }
 
     private void checkKeywords(String value) {
-        for (ModSignature sig : SIGNATURES) {
-            for (String keyword : sig.pluginMessageKeywords()) {
-                if (keyword != null && !keyword.isEmpty() && value.contains(keyword.toLowerCase())) {
-                    fail(sig.name());
+        for (Map.Entry<String, List<String>> entry : pluginMessageKeywords.entrySet()) {
+            for (String keyword : entry.getValue()) {
+                if (value.contains(keyword)) {
+                    this.fail(entry.getKey());
                     return;
                 }
             }
