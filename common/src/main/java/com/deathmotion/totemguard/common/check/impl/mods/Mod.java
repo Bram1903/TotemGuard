@@ -30,21 +30,31 @@ import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperCon
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
-public class Mod extends CheckImpl implements PacketCheck {
+public final class Mod extends CheckImpl implements PacketCheck {
 
     private static final String REGISTER_CHANNEL = "minecraft:register";
 
-    private static final Map<String, List<String>> pluginMessageKeywords = Map.of(
+    private static final Map<String, List<String>> PLUGIN_MESSAGE_KEYWORDS = Map.of(
             "autototem", List.of("autototem"),
             "tweakeroo", List.of("servux:tweaks")
     );
 
+    private final Set<String> flaggedMods = new HashSet<>();
+    private final Set<String> pendingDetections = new HashSet<>();
+
     public Mod(TGPlayer player) {
         super(player);
+    }
+
+    public void handle() {
+        flushDetections();
     }
 
     @Override
@@ -63,27 +73,56 @@ public class Mod extends CheckImpl implements PacketCheck {
     private void handlePluginMessage(String channel, byte[] data) {
         if (channel == null) return;
 
-        String normalized = channel.toLowerCase();
+        String normalizedChannel = normalize(channel);
 
-        if (REGISTER_CHANNEL.equals(normalized)) {
+        if (REGISTER_CHANNEL.equals(normalizedChannel)) {
             String payload = new String(data, StandardCharsets.UTF_8);
             for (String entry : payload.split("\0")) {
-                checkKeywords(entry.toLowerCase());
+                detectFromValue(normalize(entry));
             }
-            return;
+        } else {
+            detectFromValue(normalizedChannel);
         }
 
-        checkKeywords(normalized);
+        flushDetections();
     }
 
-    private void checkKeywords(String value) {
-        for (Map.Entry<String, List<String>> entry : pluginMessageKeywords.entrySet()) {
-            for (String keyword : entry.getValue()) {
+    private void detectFromValue(String value) {
+        for (Map.Entry<String, List<String>> modEntry : PLUGIN_MESSAGE_KEYWORDS.entrySet()) {
+            String modName = modEntry.getKey();
+
+            if (flaggedMods.contains(modName)) {
+                continue;
+            }
+
+            for (String keyword : modEntry.getValue()) {
                 if (value.contains(keyword)) {
-                    this.fail(entry.getKey());
-                    return;
+                    pendingDetections.add(modName);
+                    break; // no need to check other keywords for this mod
                 }
             }
         }
+    }
+
+    private void flushDetections() {
+        if (!player.isHasLoggedIn()) {
+            return;
+        }
+
+        if (pendingDetections.isEmpty()) {
+            return;
+        }
+
+        for (String mod : pendingDetections) {
+            if (flaggedMods.add(mod)) {
+                fail(mod);
+            }
+        }
+
+        pendingDetections.clear();
+    }
+
+    private static String normalize(String value) {
+        return value == null ? null : value.toLowerCase(Locale.ROOT);
     }
 }

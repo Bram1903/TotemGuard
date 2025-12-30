@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
+import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
@@ -126,6 +127,8 @@ public class TGPlayer implements TGUser {
 
         hasLoggedIn = true;
         platform.getEventRepository().post(new TGUserJoinEvent(this));
+
+        checkManager.getPacketCheck(Mod.class).handle();
     }
 
     public void triggerInventoryEvent() {
