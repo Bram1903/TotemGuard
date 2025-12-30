@@ -29,13 +29,11 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
-import com.deathmotion.totemguard.common.player.location.PlayerLocation;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundClientBrandProcessor;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundInventoryProcessor;
-import com.deathmotion.totemguard.common.player.processor.inbound.InboundLocationProcessor;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -67,7 +65,6 @@ public class TGPlayer implements TGUser {
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
 
-    private final PlayerLocation location;
     private final Data data;
 
     private final List<ProcessorInbound> processorInbounds;
@@ -91,14 +88,12 @@ public class TGPlayer implements TGUser {
         this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
-        this.location = new PlayerLocation();
         this.data = new Data();
 
         this.processorInbounds = new ArrayList<>() {{
             add(new InboundInventoryProcessor(TGPlayer.this));
             add(new InboundClientBrandProcessor(TGPlayer.this));
             add(new InboundActionProcessor(TGPlayer.this));
-            add(new InboundLocationProcessor(TGPlayer.this));
         }};
 
         this.processorOutbounds = new ArrayList<>() {{
