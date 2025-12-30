@@ -20,8 +20,8 @@ package com.deathmotion.totemguard.api.event.impl;
 
 import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.api.user.TGUser;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents an event that involves an {@link TGUser}.
@@ -29,12 +29,15 @@ import lombok.RequiredArgsConstructor;
  * This is a base class for all TotemGuard events that are associated
  * with a specific user.
  */
-@Getter
 @RequiredArgsConstructor
 public abstract class TGUserEvent extends Event {
+
+    private final TGUser user;
 
     /**
      * The TotemGuard user involved in this event.
      */
-    private final TGUser user;
+    public @NotNull TGUser getUser() {
+        return user;
+    }
 }

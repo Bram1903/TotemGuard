@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.protocol;
 
-import com.deathmotion.totemguard.api.check.CheckCategory;
+import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -27,7 +27,7 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 
-@CheckData(description = "Invalid slot place packet", category = CheckCategory.PROTOCOL)
+@CheckData(description = "Invalid slot place packet", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
     private int lastSlot = -1;

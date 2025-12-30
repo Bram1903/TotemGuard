@@ -24,40 +24,67 @@ import com.deathmotion.totemguard.api.user.TGUser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Represents an event fired when a {@link TGUser} is flagged by an {@link Check}.
- * <p>
- * This event is fired before the flag is fully processed and can be
- * {@link Cancellable cancelled} by listeners to prevent further handling
- */
-public class TGFlagEvent extends TGUserEvent implements Cancellable {
-
+public class TGAlertEvent extends TGUserEvent implements Cancellable {
 
     private final Check check;
     private final String debug;
+    private String alertMessage;
 
     private boolean cancelled;
 
     /**
-     * Constructs a new flag event for the given user and check.
+     * Creates a new alert event for the given user and check.
      *
-     * @param user  the user that was flagged
-     * @param check the check responsible for the flag
-     * @param debug optional debug information
+     * @param user         the alerted user
+     * @param check        the check responsible for the alert
+     * @param debug        optional debug information (may be {@code null})
+     * @param alertMessage the alert message to be sent to viewers with alerts enabled
      */
-    public TGFlagEvent(TGUser user, Check check, String debug) {
+    public TGAlertEvent(@NotNull TGUser user,
+                        @NotNull Check check,
+                        @Nullable String debug,
+                        @NotNull String alertMessage) {
         super(user);
         this.check = check;
         this.debug = debug;
+        this.alertMessage = alertMessage;
         this.cancelled = false;
     }
 
+    /**
+     * Returns the check responsible for this alert.
+     *
+     * @return the check responsible for the alert
+     */
     public @NotNull Check getCheck() {
         return check;
     }
 
+    /**
+     * Returns the optional debug information for this alert.
+     *
+     * @return the debug information, or {@code null} if none was provided
+     */
     public @Nullable String getDebug() {
         return debug;
+    }
+
+    /**
+     * Returns the alert message that will be sent to viewers with alerts enabled.
+     *
+     * @return the alert message
+     */
+    public @NotNull String getAlertMessage() {
+        return alertMessage;
+    }
+
+    /**
+     * Sets the alert message that will be sent to viewers with alerts enabled.
+     *
+     * @param alertMessage the new alert message
+     */
+    public void setAlertMessage(@NotNull String alertMessage) {
+        this.alertMessage = alertMessage;
     }
 
     @Override

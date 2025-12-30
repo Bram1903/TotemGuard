@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import kotlin.streams.asSequence
+
 plugins {
     totemguard.`java-conventions`
     `maven-publish`
@@ -9,6 +12,40 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
+val forbidLombokAccessors by tasks.registering {
+    group = "verification"
+    description = "Fails the build if Lombok @Getter/@Setter is used in main sources."
+
+    val mainJava = project.layout.projectDirectory.dir("src/main/java")
+    inputs.dir(mainJava)
+
+    doLast {
+        val root = mainJava.asFile.toPath()
+        if (!Files.exists(root)) return@doLast
+
+        val forbidden = Regex("""(?m)^\s*@(?:lombok\.)?(Getter|Setter)\b""")
+
+        val violations: List<String> = Files.walk(root).use { paths ->
+            paths.asSequence()
+                .filter { Files.isRegularFile(it) && it.toString().endsWith(".java") }.mapNotNull { path ->
+                    val text = Files.readString(path)
+                    if (forbidden.containsMatchIn(text)) path.toString() else null
+                }
+                .toList()
+        }
+
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                buildString {
+                    appendLine("Forbidden Lombok annotations found (@Getter/@Setter). Remove them from the API module:")
+                    violations.forEach { appendLine(" - $it") }
+                }
+            )
+        }
+    }
+}
+
 
 tasks {
     jar {
@@ -22,6 +59,7 @@ tasks {
     }
 
     compileJava {
+        dependsOn(forbidLombokAccessors)
         options.compilerArgs.add("-parameters")
         options.compilerArgs.add("-g")
 

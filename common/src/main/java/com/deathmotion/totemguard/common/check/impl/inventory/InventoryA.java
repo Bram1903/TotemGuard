@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.inventory;
 
-import com.deathmotion.totemguard.api.check.CheckCategory;
+import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -27,7 +27,7 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
-@CheckData(description = "Interacted with inventory while sprinting/sneaking", category = CheckCategory.INVENTORY)
+@CheckData(description = "Interacted with inventory while sprinting/sneaking", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
 
     public InventoryA(TGPlayer player) {

@@ -50,7 +50,7 @@ public interface Check {
      *
      * @return the check category
      */
-    CheckCategory getCategory();
+    CheckType getType();
 
     /**
      * Indicates whether this check is considered experimental.

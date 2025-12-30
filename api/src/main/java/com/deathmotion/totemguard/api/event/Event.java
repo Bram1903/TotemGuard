@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.api.event;
 
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Base type for all events dispatched through the event system.
@@ -32,7 +31,7 @@ public abstract class Event {
      *
      * @return the event name
      */
-    public @NotNull String getName() {
+    public String getName() {
         return getClass().getSimpleName();
     }
 }

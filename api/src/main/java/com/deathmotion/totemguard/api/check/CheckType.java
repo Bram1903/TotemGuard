@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.api.check;
 
-public enum CheckCategory {
+public enum CheckType {
     UNSPECIFIED,
     AUTO_TOTEM,
     INVENTORY,

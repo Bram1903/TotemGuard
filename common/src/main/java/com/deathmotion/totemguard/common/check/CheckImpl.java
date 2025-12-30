@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.check.CheckCategory;
+import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -39,7 +39,7 @@ public class CheckImpl implements Check, Reloadable {
     @Getter
     private final String description;
     @Getter
-    private final CheckCategory category;
+    private final CheckType type;
     @Getter
     private final boolean experimental;
 
@@ -61,7 +61,7 @@ public class CheckImpl implements Check, Reloadable {
 
         this.name = checkData.name().isBlank() ? checkClass.getSimpleName() : checkData.name();
         this.description = checkData.description();
-        this.category = checkData.category();
+        this.type = checkData.type();
         this.experimental = checkData.experimental();
 
         load();
@@ -81,7 +81,7 @@ public class CheckImpl implements Check, Reloadable {
     }
 
     protected boolean fail(@Nullable String debug) {
-        if (!shouldFail()) return false;
+        if (!shouldFail(debug)) return false;
         violations++;
 
         // TODO: Replace this with proper flag logic
@@ -89,8 +89,8 @@ public class CheckImpl implements Check, Reloadable {
         return true;
     }
 
-    protected boolean shouldFail() {
-        TGFlagEvent event = new TGFlagEvent(player, this);
+    protected boolean shouldFail(@Nullable String debug) {
+        TGFlagEvent event = new TGFlagEvent(player, this, debug);
         event = (TGFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
 
         return !event.isCancelled();

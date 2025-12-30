@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.protocol;
 
-import com.deathmotion.totemguard.api.check.CheckCategory;
+import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -27,7 +27,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
-@CheckData(description = "Sprinting while hungry", category = CheckCategory.PROTOCOL)
+@CheckData(description = "Sprinting while hungry", type = CheckType.PROTOCOL)
 public class ProtocolD extends CheckImpl implements PacketCheck {
 
     public ProtocolD(TGPlayer player) {

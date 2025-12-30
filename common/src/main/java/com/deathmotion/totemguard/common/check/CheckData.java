@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check;
 
-import com.deathmotion.totemguard.api.check.CheckCategory;
+import com.deathmotion.totemguard.api.check.CheckType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -32,7 +32,7 @@ public @interface CheckData {
 
     String description() default "No description provided";
 
-    CheckCategory category() default CheckCategory.UNSPECIFIED;
+    CheckType type() default CheckType.UNSPECIFIED;
 
     boolean experimental() default false;
 }
