@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
-import com.deathmotion.totemguard.common.player.PacketStateData;
+import com.deathmotion.totemguard.common.player.Data;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -40,26 +40,26 @@ public class InboundActionProcessor extends ProcessorInbound {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            player.getPacketStateData().setPlacedBlockThisTick(true);
+            player.getData().setPlacedBlockThisTick(true);
         } else if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
             WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
             if (packet.getEntityId() != player.getUser().getEntityId()) return;
 
             switch (packet.getAction()) {
-                case START_SNEAKING -> player.getPacketStateData().setSneaking(true);
-                case STOP_SNEAKING -> player.getPacketStateData().setSneaking(false);
-                case START_SPRINTING -> player.getPacketStateData().setSprinting(true);
-                case STOP_SPRINTING -> player.getPacketStateData().setSprinting(false);
+                case START_SNEAKING -> player.getData().setSneaking(true);
+                case STOP_SNEAKING -> player.getData().setSneaking(false);
+                case START_SPRINTING -> player.getData().setSprinting(true);
+                case STOP_SPRINTING -> player.getData().setSprinting(false);
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
                 WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
-                PacketStateData data = player.getPacketStateData();
+                Data data = player.getData();
                 data.setSneaking(packet.isShift());
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {
             WrapperPlayClientPlayerAbilities packet = new WrapperPlayClientPlayerAbilities(event);
-            PacketStateData data = player.getPacketStateData();
+            Data data = player.getData();
             data.setFlying(packet.isFlying() && data.isCanFly());
         }
     }
@@ -67,6 +67,6 @@ public class InboundActionProcessor extends ProcessorInbound {
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
         if (!player.isTickEndPacket(event.getPacketType())) return;
-        player.getPacketStateData().setPlacedBlockThisTick(false);
+        player.getData().setPlacedBlockThisTick(false);
     }
 }

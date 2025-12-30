@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
+import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolA;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolB;
 import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolC;
@@ -53,6 +54,7 @@ public class CheckManagerImpl {
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(InventoryA.class, new InventoryA(player))
+                .put(Mod.class, new Mod(player))
                 .build();
 
         extendedChecks = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>()

@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
-import com.deathmotion.totemguard.common.player.PacketStateData;
+import com.deathmotion.totemguard.common.player.Data;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
@@ -37,7 +37,7 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (!WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) return;
-        PacketStateData data = player.getPacketStateData();
+        Data data = player.getData();
         if (data.isCanFly()) return;
 
         if (data.getFood() < 6.0F && data.isSprinting()) {

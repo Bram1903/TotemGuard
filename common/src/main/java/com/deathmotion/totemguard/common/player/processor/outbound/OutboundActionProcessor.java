@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
-import com.deathmotion.totemguard.common.player.PacketStateData;
+import com.deathmotion.totemguard.common.player.Data;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -35,7 +35,7 @@ public class OutboundActionProcessor extends ProcessorOutbound {
     public void handleOutbound(PacketSendEvent event) {
         if (event.getPacketType() != PacketType.Play.Server.PLAYER_ABILITIES) return;
         WrapperPlayServerPlayerAbilities packet = new WrapperPlayServerPlayerAbilities(event);
-        PacketStateData data = player.getPacketStateData();
+        Data data = player.getData();
 
         player.getLatencyHandler().afterNextAck(() -> {
             data.setCanFly(packet.isFlightAllowed());

@@ -16,28 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player;
+package com.deathmotion.totemguard.common.check.impl.mods;
 
-import com.github.retrooper.packetevents.protocol.player.GameMode;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.List;
 
-@Getter
-@Setter
-public class PacketStateData {
-    private GameMode gameMode;
-
-    private float health;
-    private int food;
-    private float foodSaturation;
-
-    private boolean isSprinting;
-    private boolean isSneaking;
-    private boolean canFly;
-    private boolean isFlying;
-
-    private boolean sendingBundlePacket;
-
-    // Actions performed this tick
-    private boolean placedBlockThisTick;
-}
+public record ModSignature(
+        String name,
+        List<String> translationKeys,
+        List<String> pluginMessageKeywords
+) {}

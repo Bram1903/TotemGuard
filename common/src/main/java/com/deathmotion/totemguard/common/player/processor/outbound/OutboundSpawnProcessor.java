@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
-import com.deathmotion.totemguard.common.player.PacketStateData;
+import com.deathmotion.totemguard.common.player.Data;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -42,11 +42,11 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.JOIN_GAME) {
             // On join, we don't really care about lag compensation
             WrapperPlayServerJoinGame packet = new WrapperPlayServerJoinGame(event);
-            PacketStateData data = player.getPacketStateData();
+            Data data = player.getData();
             data.setGameMode(packet.getGameMode());
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
-            PacketStateData data = player.getPacketStateData();
+            Data data = player.getData();
 
             // Make sure to delay this since it's a respawn packet
             player.getLatencyHandler().afterNextAckDelayed(event, () -> {

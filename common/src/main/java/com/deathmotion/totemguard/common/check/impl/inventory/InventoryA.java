@@ -40,8 +40,8 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         // We don't really care about checking for players in creative mode
         if (packetType != PacketType.Play.Client.CLICK_WINDOW) return;
 
-        boolean sprinting = player.getPacketStateData().isSprinting();
-        boolean sneaking = player.getPacketStateData().isSneaking();
+        boolean sprinting = player.getData().isSprinting();
+        boolean sneaking = player.getData().isSneaking();
 
         if (sprinting || sneaking) {
             fail("sprinting=" + sprinting + ", sneaking=" + sneaking);

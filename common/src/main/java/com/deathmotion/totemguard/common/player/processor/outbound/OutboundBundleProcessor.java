@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
-import com.deathmotion.totemguard.common.player.PacketStateData;
+import com.deathmotion.totemguard.common.player.Data;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -33,8 +33,8 @@ public class OutboundBundleProcessor extends ProcessorOutbound {
     @Override
     public void handleOutbound(PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.BUNDLE) {
-            final PacketStateData packetStateData = player.getPacketStateData();
-            packetStateData.setSendingBundlePacket(!packetStateData.isSendingBundlePacket());
+            final Data data = player.getData();
+            data.setSendingBundlePacket(!data.isSendingBundlePacket());
         }
     }
 }

@@ -16,12 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api.check;
+package com.deathmotion.totemguard.common.player;
 
-public enum CheckType {
-    UNSPECIFIED,
-    AUTO_TOTEM,
-    INVENTORY,
-    PROTOCOL,
-    MOD
+import com.github.retrooper.packetevents.protocol.player.GameMode;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class Data {
+    private GameMode gameMode;
+
+    private float health;
+    private int food;
+    private float foodSaturation;
+
+    private boolean isSprinting;
+    private boolean isSneaking;
+    private boolean canFly;
+    private boolean isFlying;
+
+    private volatile boolean sendingBundlePacket;
+
+    // Actions performed this tick
+    private boolean placedBlockThisTick;
 }
