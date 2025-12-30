@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.common.util;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.check.impl.mods.ModSignature;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.nbt.*;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -29,12 +28,10 @@ import net.kyori.adventure.text.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public final class NBTUtil {
 
     private static final int SIGN_LINES = 4;
-    private static final int CHUNK_SIZE = 3;
 
     private static final String NBT_FRONT_TEXT = "front_text";
     private static final String NBT_BACK_TEXT = "back_text";
@@ -48,21 +45,128 @@ public final class NBTUtil {
 
     private NBTUtil() {}
 
-    public static List<Component> buildLines(String batchId, List<Map.Entry<ModSignature, String>> batch) {
-        List<Component> out = new ArrayList<>(SIGN_LINES);
-        out.add(Component.text(batchId));
-        for (int i = 0; i < 3; i++) {
-            out.add(i < batch.size() ? Component.translatable(batch.get(i).getValue()) : Component.empty());
+    public record SignPayload<T>(String signId, List<Component> lines, List<T> entriesInOrder) {}
+
+    @FunctionalInterface
+    public interface KeyExtractor<T> {
+        String getKey(T t);
+    }
+
+    @FunctionalInterface
+    public interface IdSupplier {
+        String get();
+    }
+
+    public static <T> List<SignPayload<T>> packTranslatablesIntoSigns(
+            List<T> entries,
+            KeyExtractor<T> keyExtractor,
+            IdSupplier idSupplier,
+            int maxLineChars,
+            char delim
+    ) {
+        List<SignPayload<T>> out = new ArrayList<>();
+        int idx = 0;
+
+        while (idx < entries.size()) {
+            PackResult<T> r = packOneSign(entries, idx, keyExtractor, idSupplier.get(), maxLineChars, delim);
+            idx = r.nextIndex;
+
+            if (r.sentOrder.isEmpty()) {
+                if (idx == r.startIndex) idx = idx + 1;
+                continue;
+            }
+
+            out.add(new SignPayload<>(r.signId, r.lines, r.sentOrder));
         }
+
         return out;
     }
 
-    public static <T> List<List<T>> chunk(List<T> list) {
-        List<List<T>> out = new ArrayList<>();
-        for (int i = 0; i < list.size(); i += CHUNK_SIZE) {
-            out.add(list.subList(i, Math.min(list.size(), i + CHUNK_SIZE)));
+    private record PackResult<T>(int startIndex, int nextIndex, String signId, List<Component> lines, List<T> sentOrder) { }
+
+    private static <T> PackResult<T> packOneSign(
+            List<T> entries,
+            int startIdx,
+            KeyExtractor<T> keyExtractor,
+            String signId,
+            int maxLineChars,
+            char delim
+    ) {
+        List<Component> lines = new ArrayList<>(SIGN_LINES);
+        List<T> sentOrder = new ArrayList<>();
+        int idx = startIdx;
+
+        for (int line = 0; line < SIGN_LINES; line++) {
+            LinePack<T> lp = packOneLine(entries, idx, keyExtractor, signId, line, maxLineChars, delim);
+            lines.add(lp.component);
+            sentOrder.addAll(lp.sent);
+            idx = lp.nextIndex;
+            if (idx >= entries.size()) break;
         }
-        return out;
+
+        while (lines.size() < SIGN_LINES) lines.add(Component.empty());
+
+        return new PackResult<>(startIdx, idx, signId, List.copyOf(lines), List.copyOf(sentOrder));
+    }
+
+    private record LinePack<T>(Component component, List<T> sent, int nextIndex) { }
+
+    private static <T> LinePack<T> packOneLine(
+            List<T> entries,
+            int startIdx,
+            KeyExtractor<T> keyExtractor,
+            String signId,
+            int lineIndex,
+            int maxLineChars,
+            char delim
+    ) {
+        Component comp = Component.empty();
+        int used = 0;
+        boolean hasAny = false;
+
+        if (lineIndex == 0) {
+            comp = comp.append(Component.text(signId));
+            used = signId.length();
+        }
+
+        List<T> sent = new ArrayList<>();
+        int idx = startIdx;
+
+        while (idx < entries.size()) {
+            T entry = entries.get(idx);
+            String key = keyExtractor.getKey(entry);
+
+            if (key == null || key.isBlank()) {
+                idx++;
+                continue;
+            }
+
+            if (key.length() >= maxLineChars) {
+                idx++;
+                continue;
+            }
+
+            boolean needDelim = (lineIndex == 0) || hasAny;
+            int needed = key.length() + (needDelim ? 1 : 0);
+
+            if (used + needed > maxLineChars) {
+                break;
+            }
+
+            if (needDelim) {
+                comp = comp.append(Component.text(String.valueOf(delim)));
+                used += 1;
+            }
+
+            comp = comp.append(Component.translatable(key));
+            used += key.length();
+
+            sent.add(entry);
+            idx++;
+            hasAny = true;
+        }
+
+        return new LinePack<>(comp, sent, idx);
     }
 
     public static NBTCompound buildSignNbt(List<Component> lines, ClientVersion clientVersion) {

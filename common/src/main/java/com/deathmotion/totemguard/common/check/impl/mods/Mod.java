@@ -37,6 +37,7 @@ import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientUpdateSign;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockEntityData;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBundle;
@@ -46,46 +47,45 @@ import net.kyori.adventure.text.Component;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
 public class Mod extends CheckImpl implements PacketCheck {
 
-    private static final Logger LOGGER = Logger.getLogger(Mod.class.getName());
-
     private static final String REGISTER_CHANNEL = "minecraft:register";
-    private static final int MAX_KEYS_PER_SIGN = 3;
+
+    private static final int SIGN_LINES = 4;
+    private static final int SIGN_LINE_LIMIT = 384;
+
+    private static final char DELIM = '␟';
+    private static final Pattern SIGN_ID_PATTERN = Pattern.compile("^[0-9a-z]+$");
+
+    private static final long SIGN_TTL_NANOS = TimeUnit.SECONDS.toNanos(15);
 
     private static final List<ModSignature> SIGNATURES = List.of(
-            new ModSignature(
-                    "vanilla",
-                    List.of("key.jump"),
-                    List.of()
-            ),
-            new ModSignature(
-                    "accurateblockplacement",
+            new ModSignature("accurateblockplacement",
                     List.of("net.clayborn.accurateblockplacement.togglevanillaplacement"),
-                    List.of()
-            ),
-            new ModSignature(
-                    "autototem",
-                    List.of(),
-                    List.of("autototem")
-            ),
-            new ModSignature(
-                    "tweakeroo",
-                    List.of(),
-                    List.of("servux:tweaks")
-            )
+                    List.of()),
+            new ModSignature("autototem", List.of(), List.of("autototem")),
+            new ModSignature("tweakeroo", List.of(), List.of("servux:tweaks"))
     );
 
-    private final ConcurrentHashMap<String, ModSignature> batchIdToSignature = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, List<String>> batchIdToKeys = new ConcurrentHashMap<>();
+    private record SentEntry(ModSignature signature, String key) {}
 
+    private static final class SentSign {
+        final List<SentEntry> entriesInOrder;
+        final long createdAtNanos;
+
+        SentSign(List<SentEntry> entriesInOrder) {
+            this.entriesInOrder = entriesInOrder;
+            this.createdAtNanos = System.nanoTime();
+        }
+    }
+
+    private final ConcurrentHashMap<String, SentSign> signIdToSent = new ConcurrentHashMap<>();
     private boolean isTriggered = false;
 
     public Mod(TGPlayer player) {
@@ -94,63 +94,19 @@ public class Mod extends CheckImpl implements PacketCheck {
 
     private void handle() {
         TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
-            for (ModSignature sig : SIGNATURES) {
-                List<String> keys = sig.translationKeys();
-                if (keys == null || keys.isEmpty()) continue;
+            List<SentEntry> entries = collectEntries();
+            if (entries.isEmpty()) return;
 
-                int limit = Math.min(keys.size(), MAX_KEYS_PER_SIGN);
-                if (keys.size() > MAX_KEYS_PER_SIGN) {
-                    LOGGER.warning("[TotemGuard] ModSignature '" + sig.name() + "' has " + keys.size()
-                            + " translation keys; only the first " + MAX_KEYS_PER_SIGN + " will be sent.");
-                }
+            List<NBTUtil.SignPayload<SentEntry>> payloads = NBTUtil.packTranslatablesIntoSigns(
+                    entries,
+                    SentEntry::key,
+                    this::newSignId,
+                    SIGN_LINE_LIMIT,
+                    DELIM
+            );
 
-                List<Map.Entry<ModSignature, String>> batch = new ArrayList<>(limit);
-                for (int i = 0; i < limit; i++) {
-                    String key = keys.get(i);
-                    if (key == null || key.isEmpty()) continue;
-                    batch.add(Map.entry(sig, key));
-                }
-                if (batch.isEmpty()) continue;
-
-                boolean wasSendingBundle = player.getData().isSendingBundlePacket();
-
-                String batchId = UUID.randomUUID().toString();
-                batchIdToSignature.put(batchId, sig);
-
-                List<String> sentKeys = new ArrayList<>(batch.size());
-                for (Map.Entry<ModSignature, String> e : batch) sentKeys.add(e.getValue());
-                batchIdToKeys.put(batchId, List.copyOf(sentKeys));
-
-                List<Component> lines = NBTUtil.buildLines(batchId, batch);
-                NBTCompound signNbt = NBTUtil.buildSignNbt(lines, player.getClientVersion());
-
-                WrapperPlayServerBundle bundle = new WrapperPlayServerBundle();
-
-                Vector3i blockPosition = player.getLocation()
-                        .getLocation()
-                        .getPosition()
-                        .toVector3i()
-                        .add(0, 2, 0);
-
-                WrappedBlockState signState = WrappedBlockState.getDefaultState(StateTypes.OAK_SIGN).clone();
-                signState.setRotation(0);
-
-                WrapperPlayServerBlockChange signPlace =
-                        new WrapperPlayServerBlockChange(blockPosition, signState);
-
-                WrapperPlayServerBlockEntityData modifySignData =
-                        new WrapperPlayServerBlockEntityData(blockPosition, BlockEntityTypes.SIGN, signNbt);
-
-                WrapperPlayServerOpenSignEditor openSignEditor =
-                        new WrapperPlayServerOpenSignEditor(blockPosition, true);
-
-                User user = player.getUser();
-                if (!wasSendingBundle) user.sendPacket(bundle);
-                user.sendPacket(signPlace);
-                user.sendPacket(modifySignData);
-                user.sendPacket(openSignEditor);
-                if (!wasSendingBundle) user.sendPacket(bundle);
-            }
+            sendPayloads(payloads);
+            TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(this::evictOldSignIds, 10, TimeUnit.SECONDS);
         });
     }
 
@@ -164,11 +120,157 @@ public class Mod extends CheckImpl implements PacketCheck {
         } else if (type == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             WrapperConfigClientPluginMessage packet = new WrapperConfigClientPluginMessage(event);
             handlePluginMessage(packet.getChannelName(), packet.getData());
-        } else if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
-            if (isTriggered) return;
-            isTriggered = true;
-            TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(this::handle, 50, TimeUnit.MILLISECONDS);
+        } else if (type == PacketType.Play.Client.UPDATE_SIGN) {
+            handleUpdateSign(event);
+        } else if (WrapperPlayClientPlayerFlying.isFlying(type)) {
+            triggerOnce();
         }
+    }
+
+    private void triggerOnce() {
+        if (isTriggered) return;
+        isTriggered = true;
+        TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(this::handle, 350, TimeUnit.MILLISECONDS);
+    }
+
+    private List<SentEntry> collectEntries() {
+        List<SentEntry> all = new ArrayList<>();
+        for (ModSignature sig : SIGNATURES) {
+            List<String> keys = sig.translationKeys();
+            if (keys == null || keys.isEmpty()) continue;
+
+            for (String key : keys) {
+                if (key == null || key.isBlank()) continue;
+                if (key.length() >= SIGN_LINE_LIMIT) continue;
+                all.add(new SentEntry(sig, key));
+            }
+        }
+        return all;
+    }
+
+    private void sendPayloads(List<NBTUtil.SignPayload<SentEntry>> payloads) {
+        User user = player.getUser();
+
+        for (NBTUtil.SignPayload<SentEntry> payload : payloads) {
+            if (payload.entriesInOrder().isEmpty()) continue;
+
+            signIdToSent.put(payload.signId(), new SentSign(payload.entriesInOrder()));
+
+            List<Component> lines = payload.lines();
+            NBTCompound signNbt = NBTUtil.buildSignNbt(lines, player.getClientVersion());
+
+            WrapperPlayServerBundle bundle = new WrapperPlayServerBundle();
+            Vector3i pos = player.getLocation()
+                    .getLocation()
+                    .getPosition()
+                    .toVector3i()
+                    .add(0, 2, 0);
+
+            WrapperPlayServerBlockChange place = new WrapperPlayServerBlockChange(pos, WrappedBlockState.getDefaultState(StateTypes.OAK_SIGN));
+            WrapperPlayServerBlockEntityData data = new WrapperPlayServerBlockEntityData(pos, BlockEntityTypes.SIGN, signNbt);
+            WrapperPlayServerOpenSignEditor open = new WrapperPlayServerOpenSignEditor(pos, true);
+
+            boolean wasSendingBundle = player.getData().isSendingBundlePacket();
+
+            if (!wasSendingBundle) user.sendPacket(bundle);
+            user.sendPacket(place);
+            user.sendPacket(data);
+            user.sendPacket(open);
+            if (!wasSendingBundle) user.sendPacket(bundle);
+        }
+    }
+
+    private void handleUpdateSign(PacketReceiveEvent event) {
+        String[] lines = readUpdateSignLines(event);
+        if (lines == null || lines.length < 1) return;
+
+        Split first = splitFirst(lines[0]);
+        if (first == null) return;
+
+        SentSign sent = consumeSentSign(first.head);
+        if (sent == null) return;
+
+        List<String> received = flattenReceived(first.tail, lines);
+        evaluateResponse(sent, received);
+    }
+
+    private String[] readUpdateSignLines(PacketReceiveEvent event) {
+        try {
+            return new WrapperPlayClientUpdateSign(event).getTextLines();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Split splitFirst(String line0) {
+        if (line0 == null || line0.isEmpty()) return null;
+
+        int idx = line0.indexOf(DELIM);
+        String signId = (idx < 0) ? line0 : line0.substring(0, idx);
+
+        if (signId.isEmpty() || !SIGN_ID_PATTERN.matcher(signId).matches()) return null;
+
+        String tail = (idx < 0) ? "" : line0.substring(idx + 1);
+        return new Split(signId, tail);
+    }
+
+    private SentSign consumeSentSign(String signId) {
+        return signIdToSent.remove(signId);
+    }
+
+    private List<String> flattenReceived(String tailLine0, String[] lines) {
+        List<String> out = new ArrayList<>();
+
+        if (tailLine0 != null && !tailLine0.isEmpty()) {
+            splitAllInto(tailLine0, out);
+        }
+
+        for (int i = 1; i < Math.min(SIGN_LINES, lines.length); i++) {
+            String li = lines[i];
+            if (li == null || li.isEmpty()) continue;
+            splitAllInto(li, out);
+        }
+
+        return out;
+    }
+
+    private void evaluateResponse(SentSign sent, List<String> received) {
+        int n = Math.min(received.size(), sent.entriesInOrder.size());
+        for (int i = 0; i < n; i++) {
+            SentEntry entry = sent.entriesInOrder.get(i);
+            String rendered = received.get(i);
+            if (rendered == null) continue;
+
+            if (!rendered.trim().equals(entry.key.trim())) {
+                fail(entry.signature.name());
+                return;
+            }
+        }
+    }
+
+    private void splitAllInto(String s, List<String> out) {
+        int start = 0;
+        int len = s.length();
+        for (int i = 0; i <= len; i++) {
+            if (i == len || s.charAt(i) == DELIM) {
+                if (i > start) out.add(s.substring(start, i));
+                start = i + 1;
+            }
+        }
+    }
+
+    private String newSignId() {
+        String id = Integer.toUnsignedString(ThreadLocalRandom.current().nextInt(), 36);
+        for (int i = 0; i < 16; i++) {
+            if (!signIdToSent.containsKey(id)) return id;
+            id = Integer.toUnsignedString(ThreadLocalRandom.current().nextInt(), 36);
+        }
+        return id + Integer.toUnsignedString(ThreadLocalRandom.current().nextInt(), 36);
+    }
+
+    private void evictOldSignIds() {
+        long now = System.nanoTime();
+        signIdToSent.entrySet().removeIf(e -> (now - e.getValue().createdAtNanos) > SIGN_TTL_NANOS);
     }
 
     private void handlePluginMessage(String channel, byte[] data) {
@@ -197,4 +299,6 @@ public class Mod extends CheckImpl implements PacketCheck {
             }
         }
     }
+
+    private record Split(String head, String tail) {}
 }
