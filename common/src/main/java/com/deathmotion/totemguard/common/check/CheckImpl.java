@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api.check.Check;
+import com.deathmotion.totemguard.api.check.CheckCategory;
 import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -37,6 +38,8 @@ public class CheckImpl implements Check, Reloadable {
     private final String name;
     @Getter
     private final String description;
+    @Getter
+    private final CheckCategory category;
     @Getter
     private final boolean experimental;
 
@@ -58,6 +61,7 @@ public class CheckImpl implements Check, Reloadable {
 
         this.name = checkData.name().isBlank() ? checkClass.getSimpleName() : checkData.name();
         this.description = checkData.description();
+        this.category = checkData.category();
         this.experimental = checkData.experimental();
 
         load();

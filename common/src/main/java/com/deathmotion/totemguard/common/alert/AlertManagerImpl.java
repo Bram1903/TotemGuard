@@ -16,23 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check;
+package com.deathmotion.totemguard.common.alert;
 
-import com.deathmotion.totemguard.api.check.CheckCategory;
+import com.deathmotion.totemguard.api.alert.AlertManager;
+import com.deathmotion.totemguard.api.user.TGUser;
+import com.deathmotion.totemguard.common.reload.Reloadable;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public class AlertManagerImpl implements AlertManager, Reloadable {
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface CheckData {
-    String name() default "";
 
-    String description() default "No description provided";
 
-    CheckCategory category() default CheckCategory.UNSPECIFIED;
+    @Override
+    public void reload() {
 
-    boolean experimental() default false;
+    }
+
+    @Override
+    public boolean hasAlertsEnabled(TGUser user) {
+        return user.hasAlertsEnabled();
+    }
+
+    @Override
+    public boolean setAlertsEnabled(TGUser user, boolean enabled) {
+        return user.setAlertsEnabled(enabled);
+    }
 }

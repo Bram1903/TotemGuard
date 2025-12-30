@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.autototem;
 
+import com.deathmotion.totemguard.api.check.CheckCategory;
 import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
@@ -29,7 +30,7 @@ import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 
-@CheckData(description = "Impossible click time difference")
+@CheckData(description = "Impossible click time difference", category = CheckCategory.AUTO_TOTEM)
 public class AutoTotemA extends CheckImpl implements EventCheck {
 
     private Long lastTotemActivatedTimestamp;

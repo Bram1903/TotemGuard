@@ -16,23 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check;
+package com.deathmotion.totemguard.api.alert;
 
-import com.deathmotion.totemguard.api.check.CheckCategory;
+import com.deathmotion.totemguard.api.user.TGUser;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public interface AlertManager {
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface CheckData {
-    String name() default "";
+    /*
+     * Checks if alerts are enabled for the specified user
+     *
+     * @param user The user to check
+     */
+    boolean hasAlertsEnabled(TGUser user);
 
-    String description() default "No description provided";
-
-    CheckCategory category() default CheckCategory.UNSPECIFIED;
-
-    boolean experimental() default false;
+    /*
+     * Sets whether alerts are enabled for the specified user
+     *
+     * @param the user to set alerts for
+     * @param enabled Whether alerts should be enabled or disabled
+     */
+    boolean setAlertsEnabled(TGUser user, boolean enabled);
 }

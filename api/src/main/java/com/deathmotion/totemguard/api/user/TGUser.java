@@ -39,4 +39,19 @@ public interface TGUser {
      * @return the user's name as a non-null string.
      */
     @NotNull String getName();
+
+    /**
+     * Returns whether this user has alerts enabled.
+     *
+     * @return whether this user has alerts enabled.
+     */
+    boolean hasAlertsEnabled();
+
+    /*
+     * Enables or disables alerts for this user.
+     *
+     * @param alertsEnabled true to enable alerts, false to disable
+     * @return true if the alerts are now enabled, false otherwise
+     */
+    boolean setAlertsEnabled(boolean alertsEnabled);
 }

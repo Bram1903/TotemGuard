@@ -159,6 +159,16 @@ public class TGPlayer implements TGUser {
         return user.getName();
     }
 
+    @Override
+    public boolean hasAlertsEnabled() {
+        return false;
+    }
+
+    @Override
+    public boolean setAlertsEnabled(boolean alertsEnabled) {
+        return false;
+    }
+
     public ClientVersion getClientVersion() {
         // If temporarily null, assume server version...
         return Objects.requireNonNullElseGet(user.getClientVersion(), () -> ClientVersion.getById(PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion()));

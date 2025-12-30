@@ -1,5 +1,6 @@
 package com.deathmotion.totemguard.common.check.impl.protocol;
 
+import com.deathmotion.totemguard.api.check.CheckCategory;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -9,7 +10,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
 // Copied this check from GrimAC (Inventory related, and I don't want our packet based inventory to get out of sync)
-@CheckData(description = "Invalid button for window click type")
+@CheckData(description = "Invalid button for window click type", category = CheckCategory.PROTOCOL)
 public class ProtocolB extends CheckImpl implements PacketCheck {
 
     public ProtocolB(TGPlayer player) {

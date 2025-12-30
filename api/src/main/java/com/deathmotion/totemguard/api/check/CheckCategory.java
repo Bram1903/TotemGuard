@@ -16,23 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check;
+package com.deathmotion.totemguard.api.check;
 
-import com.deathmotion.totemguard.api.check.CheckCategory;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface CheckData {
-    String name() default "";
-
-    String description() default "No description provided";
-
-    CheckCategory category() default CheckCategory.UNSPECIFIED;
-
-    boolean experimental() default false;
+public enum CheckCategory {
+    UNSPECIFIED,
+    AUTO_TOTEM,
+    INVENTORY,
+    PROTOCOL
 }

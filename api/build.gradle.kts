@@ -16,6 +16,11 @@ tasks {
         archiveClassifier = null
     }
 
+    withType<JavaCompile> {
+        options.encoding = Charsets.UTF_8.name()
+        options.release = 8
+    }
+
     compileJava {
         options.compilerArgs.add("-parameters")
         options.compilerArgs.add("-g")

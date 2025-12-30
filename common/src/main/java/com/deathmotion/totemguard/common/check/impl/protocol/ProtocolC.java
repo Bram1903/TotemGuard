@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.protocol;
 
+import com.deathmotion.totemguard.api.check.CheckCategory;
 import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -27,7 +28,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
-@CheckData(description = "Attacked multiple entities in the same tick")
+@CheckData(description = "Attacked multiple entities in the same tick", category = CheckCategory.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
 
     private int lastAttackedEntityId;

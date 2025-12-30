@@ -44,6 +44,15 @@ public interface Check {
     String getDescription();
 
     /**
+     * Gets the category of this check.
+     * <p>
+     * For example, auto totem, inventory, protocol, etc
+     *
+     * @return the check category
+     */
+    CheckCategory getCategory();
+
+    /**
      * Indicates whether this check is considered experimental.
      * <p>
      * Experimental checks may be incomplete, unstable, or subject to change,
