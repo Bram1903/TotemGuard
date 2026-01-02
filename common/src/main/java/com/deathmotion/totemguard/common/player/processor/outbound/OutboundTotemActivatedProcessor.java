@@ -49,11 +49,11 @@ public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
 
         if (wasCarryingTotem && itemStack.isEmpty()) {
             final LatencyHandler latency = player.getLatencyHandler();
+            player.setLastTotemUse(event.getTimestamp());
 
-            player.getLatencyHandler().afterNextAck(() -> {
+            latency.afterNextAck(() -> {
                 final long ackMillis = latency.getLastAckAtMillis();
-
-                player.setLastTotemUse(ackMillis);
+                player.setLastTotemUseCompensated(ackMillis);
                 TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, ackMillis));
             });
         }

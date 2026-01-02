@@ -49,44 +49,20 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-
-            player.getLatencyHandler().afterNextAck(() -> {
-                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
-                inventory.setCarriedItem(packet.getCarriedItem().orElse(ItemStack.EMPTY), -1, Issuer.SERVER, appliedAt);
-                for (int slot = 0; slot < packet.getItems().size(); slot++) {
-                    inventory.setItem(slot, packet.getItems().get(slot), appliedAt);
-                }
-            });
+            inventory.setCarriedItem(packet.getCarriedItem().orElse(ItemStack.EMPTY), -1, Issuer.SERVER, event.getTimestamp());
+            for (int slot = 0; slot < packet.getItems().size(); slot++) {
+                inventory.setItem(slot, packet.getItems().get(slot), event.getTimestamp());
+            }
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-
-            final int slot = packet.getSlot();
-            final ItemStack stack = packet.getStack();
-
-            player.getLatencyHandler().afterNextAck(() -> {
-                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
-                inventory.setItem(slot, stack, appliedAt);
-            });
+            inventory.setItem(packet.getSlot(), packet.getStack(), event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-
-            final int slot = packet.getSlot();
-            final ItemStack stack = packet.getItem();
-
-            player.getLatencyHandler().afterNextAck(() -> {
-                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
-                inventory.setItem(slot, stack, appliedAt);
-            });
+            inventory.setItem(packet.getSlot(), packet.getItem(), event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
-
-            final ItemStack stack = packet.getStack();
-
-            player.getLatencyHandler().afterNextAck(() -> {
-                long appliedAt = player.getLatencyHandler().getLastAckAtMillis();
-                inventory.setCarriedItem(stack, -1, Issuer.SERVER, appliedAt);
-            });
+            inventory.setCarriedItem(packet.getStack(), -1, Issuer.SERVER, event.getTimestamp());
         }
     }
 

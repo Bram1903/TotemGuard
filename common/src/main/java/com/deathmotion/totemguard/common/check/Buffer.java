@@ -25,10 +25,10 @@ public final class Buffer {
     private static double clamp(double value) {
         if (value > Double.MAX_VALUE) {
             return Double.MAX_VALUE;
-        } else if (value < -Double.MAX_VALUE) {
-            return -Double.MAX_VALUE;
         }
-
+        if (value < 0.0) {
+            return 0.0;
+        }
         return value;
     }
 
@@ -66,4 +66,5 @@ public final class Buffer {
         value = clamp(value * multiplier);
     }
 }
+
 

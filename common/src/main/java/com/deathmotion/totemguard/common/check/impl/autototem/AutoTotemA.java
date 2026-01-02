@@ -63,12 +63,12 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
         final long clickedTime = carriedItem.getTimestamp();
         final boolean wasCarryingTotem = carriedItem.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING;
 
-        if (!inventory.isCarryingTotem() && wasCarryingTotem) {
+        if (inventory.isCarryingTotem() && !wasCarryingTotem) {
+            totemPickUpTimestamp = carriedItem.getTimestamp();
+        } else if (!inventory.isCarryingTotem() && wasCarryingTotem) {
             if (inventory.isHandSlot(clickedSlot) && inventory.isTotemInSlot(clickedSlot) && totemPickUpTimestamp != null && lastTotemActivatedTimestamp != null) {
                 evaluate(clickedTime);
             }
-        } else if (inventory.isCarryingTotem() && !wasCarryingTotem) {
-            totemPickUpTimestamp = carriedItem.getTimestamp();
         }
     }
 

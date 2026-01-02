@@ -21,36 +21,81 @@ package com.deathmotion.totemguard.common.event.internal.listeners;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
-import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
-import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 
 import java.util.function.Consumer;
 
 public class TotemReplenishedListener implements Consumer<InventoryChangedEvent> {
 
+    private static final boolean DEBUG = true;
+    private static final long MAX_REASONABLE_DELAY_MS = 5_000;
+
     @Override
     public void accept(InventoryChangedEvent event) {
-        var player = event.getPlayer();
+        if (event.getLastIssuer() == Issuer.SERVER) return;
+
+        TGPlayer player = event.getPlayer();
+        PacketInventory inventory = player.getInventory();
+        String playerName = player.getName();
 
         for (InventorySlot inventorySlot : event.getChangedSlots()) {
             int slot = inventorySlot.getSlot();
-            if (slot != player.getInventory().getMainHandSlot() && slot != InventoryConstants.SLOT_OFFHAND) return;
-            if (inventorySlot.getItem().getType() != ItemTypes.TOTEM_OF_UNDYING) return;
 
-            var lastTotemUse = player.getLastTotemUse();
-            if (lastTotemUse == null) continue;
-            player.setLastTotemUse(null);
+            if (!inventory.isHandSlot(slot) || !inventory.isTotemInSlot(slot)) {
+                continue;
+            }
+
+            Long lastTotemUseCompensated = player.getLastTotemUseCompensated();
+            Long lastTotemUse = player.getLastTotemUse();
+
+            if (lastTotemUse == null) {
+                if (DEBUG) {
+                    TGPlatform.getInstance().getLogger().warning(String.format(
+                            "[TotemReplenished] player=%s FOUND totem in hand slot=%d but lastTotemUse is null (updated=%d)",
+                            playerName, slot, inventorySlot.getUpdated()
+                    ));
+                }
+                continue;
+            }
+
+            if (lastTotemUseCompensated == null) {
+                TGPlatform.getInstance().getLogger().warning(
+                        "[TotemReplenished] Skipping replenishment for player " + playerName +
+                                ": lastTotemUseCompensated is null (lastTotemUse=" + lastTotemUse + ")"
+                );
+                continue;
+            }
 
             long replenishedAt = inventorySlot.getUpdated();
 
+            long deltaRaw = replenishedAt - lastTotemUse;
+            long deltaComp = replenishedAt - lastTotemUseCompensated;
+            long deltaDiff = deltaRaw - deltaComp;
+
+            // Sanity logging: huge/negative values indicate mismatched time bases or stale timestamps
+            if (DEBUG && (deltaComp < 0 || deltaComp > MAX_REASONABLE_DELAY_MS)) {
+                TGPlatform.getInstance().getLogger().warning(String.format(
+                        "[TotemReplenished] player=%s UNUSUAL deltaC=%dms (delta=%dms diff=%dms) slot=%d intervalsSize=%d",
+                        playerName, deltaComp, deltaRaw, deltaDiff, slot,
+                        player.getTotemData().getIntervals().size()
+                ));
+            }
+
+            player.getTotemData().getIntervals().add(deltaComp);
+
             TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
                     player,
-                    lastTotemUse,
+                    lastTotemUseCompensated,
                     replenishedAt
             );
-
             TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
+
+            player.setLastTotemUseCompensated(null);
+            player.setLastTotemUse(null);
+
             return;
         }
     }

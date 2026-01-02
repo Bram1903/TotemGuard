@@ -16,40 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.util.datastructure;
+package com.deathmotion.totemguard.common.player;
 
+import com.deathmotion.totemguard.common.util.datastructure.EvictingList;
 import lombok.Getter;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+public class TotemData {
 
-@Getter
-public class EvictingList<T> extends LinkedList<T> {
-    private final int maxSize;
+    @Getter
+    private final EvictingList<Long> intervals = new EvictingList<>(50);
 
-    public EvictingList(int maxSize) {
-        this.maxSize = maxSize;
-    }
-
-    public EvictingList(Collection<? extends T> c, int maxSize) {
-        super(c);
-        this.maxSize = maxSize;
-    }
-
-    @Override
-    public boolean add(T t) {
-        if (size() >= maxSize && maxSize > 0) removeFirst();
-        return super.add(t);
-    }
-
-    public List<T> getLast(int count) {
-        if (count <= 0) {
-            return List.of();
-        }
-
-        int fromIndex = Math.max(0, size() - count);
-        return new LinkedList<>(subList(fromIndex, size()));
-    }
 
 }

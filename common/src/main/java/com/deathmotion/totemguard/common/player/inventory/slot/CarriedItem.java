@@ -34,6 +34,8 @@ public class CarriedItem {
     private SlotState previous;
 
     public void update(ItemStack newItem, int slot, Issuer issuer, long timestamp) {
+        if (newItem.equals(this.currentItem)) return;
+
         this.previous = new SlotState(this.currentItem, issuer, SlotAction.IRRELEVANT, this.timestamp);
 
         this.currentItem = newItem;

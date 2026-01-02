@@ -218,7 +218,7 @@ public final class LatencyHandler {
         lastRttNanos = System.nanoTime() - sentNano;
         lastAckAtMillis = System.currentTimeMillis();
 
-        TGPlatform.getInstance().getLogger().info("Received latency packet " + id + " for " + player.getUser().getName() + " in " + getLastRttMillis() + "ms");
+        //TGPlatform.getInstance().getLogger().info("Received latency packet " + id + " for " + player.getUser().getName() + " in " + getLastRttMillis() + "ms");
 
         for (Runnable r : toRun) {
             try {

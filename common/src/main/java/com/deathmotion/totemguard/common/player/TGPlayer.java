@@ -66,6 +66,7 @@ public class TGPlayer implements TGUser {
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
 
+    private final TotemData totemData;
     private final Data data;
 
     private final List<ProcessorInbound> processorInbounds;
@@ -82,6 +83,10 @@ public class TGPlayer implements TGUser {
     @Nullable
     private Long lastTotemUse;
 
+    @Setter
+    @Nullable
+    private Long lastTotemUseCompensated;
+
     public TGPlayer(@NotNull User user) {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
@@ -89,6 +94,7 @@ public class TGPlayer implements TGUser {
         this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
+        this.totemData = new TotemData();
         this.data = new Data();
 
         this.processorInbounds = new ArrayList<>() {{
@@ -100,7 +106,6 @@ public class TGPlayer implements TGUser {
         this.processorOutbounds = new ArrayList<>() {{
             add(new OutboundBundleProcessor(TGPlayer.this));
             add(new OutboundSpawnProcessor(TGPlayer.this));
-            add(new OutboundActionProcessor(TGPlayer.this));
             add(new OutboundHealthProcessor(TGPlayer.this));
             add(new OutboundTotemActivatedProcessor(TGPlayer.this));
             add(new OutboundInventoryProcessor(TGPlayer.this));
@@ -141,20 +146,21 @@ public class TGPlayer implements TGUser {
 
         var updatedSlotsSnapshot = new ArrayList<>(inventory.getUpdatedSlots());
         var issuer = inventory.getLastIssuer();
-
-        InventoryChangedEvent event = new InventoryChangedEvent(
-                this,
-                carriedItemUpdated ? carriedItem : null,
-                updatedSlotsSnapshot,
-                issuer
-        );
-
-        platform.getEventRepository().post(event);
+        var carriedSnapshot = carriedItemUpdated ? carriedItem : null;
 
         if (carriedItemUpdated) {
             carriedItem.hasUpdated();
         }
         inventory.getUpdatedSlots().clear();
+
+        InventoryChangedEvent event = new InventoryChangedEvent(
+                this,
+                carriedSnapshot,
+                updatedSlotsSnapshot,
+                issuer
+        );
+
+        platform.getEventRepository().post(event);
     }
 
 

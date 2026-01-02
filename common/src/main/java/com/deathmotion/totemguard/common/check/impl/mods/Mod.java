@@ -30,11 +30,7 @@ import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperCon
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
 public final class Mod extends CheckImpl implements PacketCheck {
@@ -51,6 +47,10 @@ public final class Mod extends CheckImpl implements PacketCheck {
 
     public Mod(TGPlayer player) {
         super(player);
+    }
+
+    private static String normalize(String value) {
+        return value == null ? null : value.toLowerCase(Locale.ROOT);
     }
 
     public void handle() {
@@ -120,9 +120,5 @@ public final class Mod extends CheckImpl implements PacketCheck {
         }
 
         pendingDetections.clear();
-    }
-
-    private static String normalize(String value) {
-        return value == null ? null : value.toLowerCase(Locale.ROOT);
     }
 }

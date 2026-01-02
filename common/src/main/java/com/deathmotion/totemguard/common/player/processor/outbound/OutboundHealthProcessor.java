@@ -35,20 +35,7 @@ public class OutboundHealthProcessor extends ProcessorOutbound {
     public void handleOutbound(PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.UPDATE_HEALTH) {
             WrapperPlayServerUpdateHealth packet = new WrapperPlayServerUpdateHealth(event);
-
             Data data = player.getData();
-
-            // Only if the food changes, I care to make it lag compensated for ProtocolD
-            // We don't want to send transaction packets without reason
-            if (data.getFood() != packet.getFood()) {
-                player.getLatencyHandler().afterNextAck(() -> {
-                    data.setHealth(packet.getHealth());
-                    data.setFood(packet.getFood());
-                    data.setFoodSaturation(packet.getFoodSaturation());
-                });
-
-                return;
-            }
 
             data.setHealth(packet.getHealth());
             data.setFood(packet.getFood());

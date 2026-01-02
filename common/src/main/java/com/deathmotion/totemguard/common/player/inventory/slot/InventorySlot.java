@@ -55,7 +55,7 @@ public class InventorySlot {
     }
 
     public void update(ItemStack newItem, Issuer issuer, SlotAction slotAction, long timestamp) {
-        // Old logic: always notify on update (no dedup / no "enqueued" flag)
+        if (newItem.equals(this.item)) return;
         this.previous = new SlotState(this.item, this.issuer, this.slotAction, this.updated);
 
         this.item = newItem;
