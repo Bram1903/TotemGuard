@@ -58,7 +58,7 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
                             playerName, slot, inventorySlot.getUpdated()
                     ));
                 }
-                continue;
+                return;
             }
 
             if (lastTotemUseCompensated == null) {
@@ -66,24 +66,26 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
                         "[TotemReplenished] Skipping replenishment for player " + playerName +
                                 ": lastTotemUseCompensated is null (lastTotemUse=" + lastTotemUse + ")"
                 );
-                continue;
+                return;
             }
 
             long replenishedAt = inventorySlot.getUpdated();
 
             long deltaRaw = replenishedAt - lastTotemUse;
             long deltaComp = replenishedAt - lastTotemUseCompensated;
-            long deltaDiff = deltaRaw - deltaComp;
 
             // Sanity logging: huge/negative values indicate mismatched time bases or stale timestamps
             if (DEBUG && (deltaComp < 0 || deltaComp > MAX_REASONABLE_DELAY_MS)) {
                 TGPlatform.getInstance().getLogger().warning(String.format(
-                        "[TotemReplenished] player=%s UNUSUAL deltaC=%dms (delta=%dms diff=%dms) slot=%d intervalsSize=%d",
-                        playerName, deltaComp, deltaRaw, deltaDiff, slot,
+                        "[TotemReplenished] player=%s UNUSUAL deltaC=%dms (delta=%dms) slot=%d intervalsSize=%d",
+                        playerName, deltaComp, deltaRaw, slot,
                         player.getTotemData().getIntervals().size()
                 ));
+
+                return;
             }
 
+            TGPlatform.getInstance().getLogger().info("[TotemReplenished] player=" + playerName + " deltaC=" + deltaComp + "ms");
             player.getTotemData().getIntervals().add(deltaComp);
 
             TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
