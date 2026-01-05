@@ -27,6 +27,9 @@ import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEve
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.player.data.ClickData;
+import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.TotemData;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
@@ -66,8 +69,9 @@ public class TGPlayer implements TGUser {
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
 
-    private final TotemData totemData;
     private final Data data;
+    private final TotemData totemData;
+    private final ClickData clickData;
 
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
@@ -94,8 +98,9 @@ public class TGPlayer implements TGUser {
         this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
-        this.totemData = new TotemData();
         this.data = new Data();
+        this.totemData = new TotemData();
+        this.clickData = new ClickData();
 
         this.processorInbounds = new ArrayList<>() {{
             add(new InboundInventoryProcessor(TGPlayer.this));

@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
-import com.deathmotion.totemguard.common.player.Data;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;

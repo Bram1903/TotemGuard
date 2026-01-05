@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.common.check.impl.autoclicker.AutoClickerA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
@@ -53,6 +54,7 @@ public class CheckManagerImpl {
                 .put(ProtocolA.class, new ProtocolA(player))
                 .put(ProtocolB.class, new ProtocolB(player))
                 .put(ProtocolC.class, new ProtocolC(player))
+                .put(AutoClickerA.class, new AutoClickerA(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(Mod.class, new Mod(player))
                 .build();

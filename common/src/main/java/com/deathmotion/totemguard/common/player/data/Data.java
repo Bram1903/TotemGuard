@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player;
+package com.deathmotion.totemguard.common.player.data;
 
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
@@ -25,6 +25,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Data {
+
     private GameMode gameMode;
 
     private float health;
@@ -39,5 +40,17 @@ public class Data {
     private volatile boolean sendingBundlePacket;
 
     // Actions performed this tick
-    private boolean placedBlockThisTick;
+    private boolean isPlacing;
+    private boolean isAttacking;
+    private boolean isDigging;
+    private boolean isInteracting;
+    private boolean isUsing;
+
+    public boolean isInvalidLeftClick() {
+
+        if (isDigging()) return true;
+        if (isPlacing()) return true;
+
+        return false;
+    }
 }

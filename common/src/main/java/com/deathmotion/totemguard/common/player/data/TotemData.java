@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player;
+package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.util.datastructure.EvictingList;
 import lombok.Getter;
