@@ -31,9 +31,9 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEn
 @CheckData(description = "Duplicated entity action", type = CheckType.PROTOCOL)
 public class ProtocolE extends CheckImpl implements PacketCheck {
 
-    private boolean hasSprinted;
-    private boolean hasSneaked;
-    private boolean hasSendInput;
+    private boolean sentSprint;
+    private boolean sentSneak;
+    private boolean sentInput;
 
     public ProtocolE(TGPlayer player) {
         super(player);
@@ -46,23 +46,29 @@ public class ProtocolE extends CheckImpl implements PacketCheck {
         if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
             final WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
 
+            boolean sprint = false;
+            boolean sneak = false;
+
             switch (packet.getAction()) {
-                case START_SNEAKING, STOP_SNEAKING -> {
-                    if (hasSneaked) fail();
-                    hasSneaked = true;
-                }
-                case START_SPRINTING, STOP_SPRINTING -> {
-                    if (hasSprinted) fail();
-                    hasSprinted = true;
-                }
+                case START_SNEAKING, STOP_SNEAKING -> sneak = true;
+                case START_SPRINTING, STOP_SPRINTING -> sprint = true;
             }
+
+            final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
+            if (alreadySent) {
+                fail();
+            }
+
+            this.sentSprint = sprint;
+            this.sentSneak = sneak;
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
-            if (hasSendInput) fail();
-            hasSendInput = true;
+            if (sentInput) fail();
+            sentInput = true;
         } else if (player.isTickEndPacket(packetType)) {
-            hasSprinted = false;
-            hasSneaked = false;
-            hasSendInput = false;
+            sentSprint = false;
+            sentSneak = false;
+            sentInput = false;
         }
     }
 }
+
