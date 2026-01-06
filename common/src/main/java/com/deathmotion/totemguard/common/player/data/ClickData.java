@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
-import com.deathmotion.totemguard.common.TGPlatform;
 import lombok.Getter;
 
 @Getter

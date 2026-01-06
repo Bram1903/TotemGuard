@@ -113,8 +113,7 @@ public class InboundActionProcessor extends ProcessorInbound {
             }
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             tickData.setClosingInventory(true);
-        }
-        else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
+        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
                 WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
                 data.setSneaking(packet.isShift());
@@ -134,7 +133,7 @@ public class InboundActionProcessor extends ProcessorInbound {
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
-        if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
+        if (player.isTickEndPacket(event.getPacketType())) {
             tickData.reset();
         }
 
