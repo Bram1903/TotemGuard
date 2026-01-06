@@ -129,13 +129,15 @@ public class InboundActionProcessor extends ProcessorInbound {
                 // is by listening for any movement packet. That means if they stand still and swing their arm, it doesn't send "tick" packets
                 clickData.tick();
             }
-
-            tickData.reset();
         }
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
+        if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
+            tickData.reset();
+        }
+
         clickData.checkPost();
     }
 }
