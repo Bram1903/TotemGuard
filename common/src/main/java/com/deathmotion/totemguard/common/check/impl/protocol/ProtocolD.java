@@ -36,7 +36,6 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
     private static final List<Rule> RULES = List.of(
             new Rule("ATTACK + PLACE", t -> t.isAttacking() && t.isPlacing()),
             new Rule("ATTACK + RELEASING", t -> t.isAttacking() && t.isReleasing()),
-
             new Rule("INVENTORY_CLICK + PLACE", t -> t.isClickingInInventory() && t.isPlacing()),
             new Rule("INVENTORY_CLICK + ATTACK", t -> t.isClickingInInventory() && t.isAttacking()),
             new Rule("QUICKMOVE + ATTACK", t -> t.isQuickMoveClicking() && t.isAttacking()),
