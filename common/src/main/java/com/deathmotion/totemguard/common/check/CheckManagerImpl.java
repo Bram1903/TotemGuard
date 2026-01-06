@@ -25,10 +25,7 @@ import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
-import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolA;
-import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolB;
-import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolC;
-import com.deathmotion.totemguard.common.check.impl.protocol.ProtocolD;
+import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -56,6 +53,7 @@ public class CheckManagerImpl {
                 .put(ProtocolB.class, new ProtocolB(player))
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
+                .put(ProtocolE.class, new ProtocolE(player))
                 .put(AutoClickerA.class, new AutoClickerA(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(Mod.class, new Mod(player))
