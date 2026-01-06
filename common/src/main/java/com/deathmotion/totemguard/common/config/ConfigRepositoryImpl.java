@@ -19,89 +19,84 @@
 package com.deathmotion.totemguard.common.config;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.config.codec.MessageFormat;
-import com.deathmotion.totemguard.common.config.model.Checks;
-import com.deathmotion.totemguard.common.config.model.Config;
-import com.deathmotion.totemguard.common.config.model.Messages;
 import lombok.Getter;
+import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
-import org.spongepowered.configurate.ConfigurationNode;
-import org.spongepowered.configurate.serialize.SerializationException;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+@Getter
 public final class ConfigRepositoryImpl {
 
     private static final DateTimeFormatter BROKEN_TS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
-    @Getter
-    private Config config;
-    @Getter
-    private Messages messages;
-    @Getter
-    private Checks checks;
+    private CommentedConfigurationNode config;
+    private CommentedConfigurationNode messages;
+    private CommentedConfigurationNode checks;
 
-    private static ConfigurationNode loadOrDisable(
-            final String fileName,
-            final YamlConfigurationLoader loader
-    ) {
+    private static CommentedConfigurationNode loadYamlWithFallback(final String fileName) {
         final Path target = ConfigLoaderFactory.resolve(fileName);
+        final YamlConfigurationLoader loader = ConfigLoaderFactory.yaml(fileName);
+
+        ensurePresentFromResource(fileName, target);
 
         try {
-            if (Files.notExists(target)) {
-                restoreDefault(fileName, target);
-            }
-
             return loader.load();
-
         } catch (final ConfigurateException firstFailure) {
             try {
-                if (Files.exists(target)) {
-                    final Path broken = brokenName(target);
-                    Files.move(target, broken, StandardCopyOption.REPLACE_EXISTING);
+                moveToBrokenNameIfExists(target);
+                TGPlatform.getInstance().getLogger().warning(
+                        "Configuration " + fileName + " is invalid; restoring defaults."
+                );
 
-                    TGPlatform.getInstance().getLogger().warning(
-                            "Configuration " + fileName +
-                                    " is broken, moved to " + broken.getFileName() +
-                                    " and restoring defaults."
-                    );
-                }
-
-                restoreDefault(fileName, target);
+                ensurePresentFromResource(fileName, target);
                 return loader.load();
-
             } catch (final Throwable t) {
                 t.addSuppressed(firstFailure);
                 disable("Failed to restore/load default configuration for " + fileName + ".", t);
-                return null;
+                return CommentedConfigurationNode.root();
             }
-
         } catch (final Throwable t) {
             disable("Unexpected error while loading " + fileName + ".", t);
-            return null;
+            return CommentedConfigurationNode.root();
         }
     }
 
-    private static void restoreDefault(final String fileName, final Path target)
-            throws IOException {
-        Files.createDirectories(target.getParent());
+    private static void ensurePresentFromResource(final String fileName, final Path target) {
+        try {
+            Files.createDirectories(target.getParent());
 
-        try (var in = TGPlatform.class
-                .getClassLoader()
-                .getResourceAsStream(fileName)) {
-
-            if (in == null) {
-                throw new IOException("Default resource not found: " + fileName);
+            if (Files.exists(target)) {
+                return;
             }
 
-            Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            try (InputStream in = TGPlatform.class.getClassLoader().getResourceAsStream(fileName)) {
+                if (in == null) {
+                    throw new IOException("Default resource not found on classpath: " + fileName);
+                }
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (final IOException e) {
+            disable("Failed to create default configuration file: " + fileName + ".", e);
         }
+    }
+
+    private static void moveToBrokenNameIfExists(final Path target) throws IOException {
+        if (!Files.exists(target)) {
+            return;
+        }
+        final Path broken = brokenName(target);
+        Files.move(target, broken, StandardCopyOption.REPLACE_EXISTING);
+        TGPlatform.getInstance().getLogger().warning(
+                "Moved broken configuration to " + broken.getFileName()
+        );
     }
 
     private static Path brokenName(final Path original) {
@@ -123,39 +118,21 @@ public final class ConfigRepositoryImpl {
 
     public boolean reload() {
         try {
-            final ConfigurationNode config = loadOrDisable("config.yml", ConfigLoaderFactory.yaml("config.yml"));
-            if (config == null) {
-                return false;
-            }
-
-            MessageFormat format = MessageFormat.NATIVE;
-            try {
-                format = config.node("formatter").get(MessageFormat.class, MessageFormat.NATIVE);
-            } catch (final SerializationException e) {
-                TGPlatform.getInstance().getLogger().severe("Invalid formatter in config.yml defaulting to NATIVE.");
-            }
-
-            final ConfigurationNode messagesNode =
-                    loadOrDisable(
-                            "messages.yml",
-                            ConfigLoaderFactory.messagesYaml("messages.yml", format)
-                    );
-            if (messagesNode == null) {
-                return false;
-            }
-
-            messages = new Messages(messagesNode);
-
-            final ConfigurationNode checksNode = loadOrDisable("checks.yml", ConfigLoaderFactory.yaml("checks.yml"));
-            if (checksNode == null) {
-                return false;
-            }
-
+            this.config = loadYamlWithFallback("config.yml");
+            this.messages = loadYamlWithFallback("messages.yml");
+            this.checks = loadYamlWithFallback("checks.yml");
             return true;
-
         } catch (final Throwable t) {
             disable("Unexpected error while loading configuration.", t);
             return false;
         }
+    }
+
+    public String messagePrefix() {
+        return this.messages.node("prefix").getString("&6&lTG &8»");
+    }
+
+    public String message(final String key, final String def) {
+        return this.messages.node(key).getString(def);
     }
 }

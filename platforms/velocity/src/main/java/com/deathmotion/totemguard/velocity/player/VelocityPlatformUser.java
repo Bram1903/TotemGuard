@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.velocity.player;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.velocitypowered.api.proxy.Player;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 
 public class VelocityPlatformUser implements PlatformUser {
 
@@ -34,5 +35,10 @@ public class VelocityPlatformUser implements PlatformUser {
     @Override
     public boolean hasPermission(String permission) {
         return velocityPlayer.hasPermission(permission);
+    }
+
+    @Override
+    public void sendMessage(Component message) {
+        velocityPlayer.sendMessage(message);
     }
 }

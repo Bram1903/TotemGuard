@@ -33,12 +33,12 @@ import java.util.function.Predicate;
 public class ProtocolD extends CheckImpl implements PacketCheck {
 
     private static final List<Rule> RULES = List.of(
-            new Rule("ATTACK + PLACE", t -> t.isAttacking() && t.isPlacing()),
-            new Rule("ATTACK + RELEASING", t -> t.isAttacking() && t.isReleasing()),
-            new Rule("INVENTORY_CLICK + PLACE", t -> t.isClickingInInventory() && t.isPlacing()),
-            new Rule("INVENTORY_CLICK + ATTACK", t -> t.isClickingInInventory() && t.isAttacking()),
-            new Rule("QUICKMOVE + ATTACK", t -> t.isQuickMoveClicking() && t.isAttacking()),
-            new Rule("PICKUP_CLICK + PLACE", t -> t.isPickUpClicking() && t.isPlacing())
+            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing()),
+            new Rule("attack + releasing", t -> t.isAttacking() && t.isReleasing()),
+            new Rule("inventory_click + place", t -> t.isClickingInInventory() && t.isPlacing()),
+            new Rule("inventory_click + attack", t -> t.isClickingInInventory() && t.isAttacking()),
+            new Rule("quickmove + attack", t -> t.isQuickMoveClicking() && t.isAttacking()),
+            new Rule("pickup_click + place", t -> t.isPickUpClicking() && t.isPlacing())
     );
 
     public ProtocolD(TGPlayer player) {
@@ -53,7 +53,7 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
 
         for (Rule rule : RULES) {
             if (rule.predicate().test(t)) {
-                fail("rule=" + rule.name);
+                fail(rule.name);
             }
         }
     }

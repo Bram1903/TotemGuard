@@ -18,6 +18,10 @@
 
 package com.deathmotion.totemguard.common.platform.player;
 
+import net.kyori.adventure.text.Component;
+
 public interface PlatformUser {
     boolean hasPermission(String permission);
+
+    void sendMessage(Component message);
 }

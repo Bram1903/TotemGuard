@@ -47,11 +47,10 @@ public interface TGUser {
      */
     boolean hasAlertsEnabled();
 
-    /*
-     * Enables or disables alerts for this user.
+    /**
+     * Toggles the alert status for this user.
      *
-     * @param alertsEnabled true to enable alerts, false to disable
-     * @return true if the alerts are now enabled, false otherwise
+     * @return the new alert status after toggling.
      */
-    boolean setAlertsEnabled(boolean alertsEnabled);
+    boolean toggleAlerts();
 }

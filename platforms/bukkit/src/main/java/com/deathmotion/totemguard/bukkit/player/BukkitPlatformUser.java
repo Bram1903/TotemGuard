@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.bukkit.player;
 
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
 public class BukkitPlatformUser implements PlatformUser {
@@ -34,5 +35,10 @@ public class BukkitPlatformUser implements PlatformUser {
     @Override
     public boolean hasPermission(String permission) {
         return bukkitPlayer.hasPermission(permission);
+    }
+
+    @Override
+    public void sendMessage(Component message) {
+        bukkitPlayer.sendMessage(message);
     }
 }

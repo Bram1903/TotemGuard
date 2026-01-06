@@ -57,6 +57,7 @@ public class InventoryCommand implements Command {
         manager.command(
                 manager.commandBuilder("totemguard", "tg")
                         .literal("inventory")
+                        .permission("totemguard.inventory")
                         .handler(this::handleInventoryTest)
         );
     }

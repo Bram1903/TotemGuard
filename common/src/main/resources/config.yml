@@ -7,8 +7,3 @@
 
 # The version of the config file. DO NOT TOUCH!!!
 config_version: 1
-
-# What text formatter to use for formatting text (how to read the messages.yml)
-# NATIVE: The default legacy Minecraft text serializer.
-# MINIMESSAGE: The Kyori MiniMessage text serializer.
-formatter: NATIVE

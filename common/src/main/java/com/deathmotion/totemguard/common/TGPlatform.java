@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuard;
+import com.deathmotion.totemguard.common.alert.AlertManagerImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
@@ -51,6 +52,7 @@ public abstract class TGPlatform {
     private ConfigRepositoryImpl configRepository;
 
     private EventRepositoryImpl eventRepository;
+    private AlertManagerImpl alertManager;
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
 
@@ -76,6 +78,7 @@ public abstract class TGPlatform {
         }
 
         eventRepository = new EventRepositoryImpl();
+        alertManager = new AlertManagerImpl();
         playerRepository = new PlayerRepositoryImpl();
         commandManager = new CommandManagerImpl();
 

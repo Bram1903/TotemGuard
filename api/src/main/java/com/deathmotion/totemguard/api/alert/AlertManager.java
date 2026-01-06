@@ -30,10 +30,10 @@ public interface AlertManager {
     boolean hasAlertsEnabled(TGUser user);
 
     /*
-     * Sets whether alerts are enabled for the specified user
+     * Toggles the alert status for the specified user
      *
-     * @param the user to set alerts for
-     * @param enabled Whether alerts should be enabled or disabled
+     * @param user The user to toggle alerts for
+     * @return The new alert status
      */
-    boolean setAlertsEnabled(TGUser user, boolean enabled);
+    boolean toggleAlerts(TGUser user);
 }

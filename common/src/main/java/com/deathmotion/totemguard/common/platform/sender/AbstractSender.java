@@ -3,8 +3,7 @@
 package com.deathmotion.totemguard.common.platform.sender;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -100,12 +99,7 @@ public final class AbstractSender<T> implements Sender {
     }
 
     @Override
-    public @Nullable PlatformUser getPlatformUser() {
-        return TGPlatform.getInstance().getPlatformUserFactory().create(this.getUniqueId()).getPlatformUser();
-    }
-
-    @Override
-    public @Nullable PlatformPlayer getPlatformPlayer() {
-        return TGPlatform.getInstance().getPlatformUserFactory().create(this.getUniqueId()).getPlatformPlayer();
+    public @Nullable TGPlayer getTGPlayer() {
+        return TGPlatform.getInstance().getPlayerRepository().getPlayer(this.uniqueId);
     }
 }

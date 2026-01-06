@@ -30,7 +30,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class CheckImpl implements Check, Reloadable {
 
-    protected final TGPlayer player;
+    public final TGPlayer player;
+
     protected final PacketInventory inventory;
     protected final Buffer buffer;
 
@@ -84,8 +85,8 @@ public class CheckImpl implements Check, Reloadable {
         if (!shouldFail(debug)) return false;
         violations++;
 
-        // TODO: Replace this with proper flag logic
         TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
+        TGPlatform.getInstance().getAlertManager().alert(this, debug);
         return true;
     }
 

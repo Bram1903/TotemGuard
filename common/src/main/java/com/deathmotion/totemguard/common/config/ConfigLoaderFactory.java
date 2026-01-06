@@ -19,14 +19,7 @@
 package com.deathmotion.totemguard.common.config;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.config.codec.ComponentCodec;
-import com.deathmotion.totemguard.common.config.codec.MessageFormat;
-import com.deathmotion.totemguard.common.config.codec.impl.MiniMessageCodec;
-import com.deathmotion.totemguard.common.config.codec.impl.NativeCodec;
-import com.deathmotion.totemguard.common.config.serializer.ComponentSerializer;
-import net.kyori.adventure.text.Component;
 import org.spongepowered.configurate.ConfigurationOptions;
-import org.spongepowered.configurate.serialize.TypeSerializerCollection;
 import org.spongepowered.configurate.yaml.NodeStyle;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
@@ -52,20 +45,6 @@ public final class ConfigLoaderFactory {
         return ConfigurationOptions.defaults();
     }
 
-    public static ConfigurationOptions optionsWithMessageFormat(final MessageFormat format) {
-        final ComponentCodec codec = switch (format) {
-            case NATIVE -> new NativeCodec();
-            case MINI_MESSAGE -> new MiniMessageCodec();
-        };
-
-        final TypeSerializerCollection serializers = TypeSerializerCollection.defaults()
-                .childBuilder()
-                .registerExact(Component.class, new ComponentSerializer(codec))
-                .build();
-
-        return baseOptions().serializers(serializers);
-    }
-
     public static YamlConfigurationLoader yaml(final String fileName) {
         return yaml(fileName, baseOptions());
     }
@@ -77,9 +56,5 @@ public final class ConfigLoaderFactory {
                 .indent(4)
                 .nodeStyle(NodeStyle.BLOCK)
                 .build();
-    }
-
-    public static YamlConfigurationLoader messagesYaml(final String fileName, final MessageFormat format) {
-        return yaml(fileName, optionsWithMessageFormat(format));
     }
 }

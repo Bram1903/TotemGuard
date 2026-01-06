@@ -20,8 +20,7 @@
 
 package com.deathmotion.totemguard.common.platform.sender;
 
-import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -139,17 +138,5 @@ public interface Sender {
      */
     @NotNull Object getNativeSender();
 
-    /**
-     * Gets the PlatformUser tied to a sender
-     *
-     * @return PlatformUser wrapping the underlying native platform-specific user type, null if Sender is not a user
-     */
-    @Nullable PlatformUser getPlatformUser();
-
-    /**
-     * Gets the PlatformPlayer tied to a sender
-     *
-     * @return PlatformPlayer wrapping the underlying native platform-specific player type, null if Sender is not a player
-     */
-    @Nullable PlatformPlayer getPlatformPlayer();
+    @Nullable TGPlayer getTGPlayer();
 }
