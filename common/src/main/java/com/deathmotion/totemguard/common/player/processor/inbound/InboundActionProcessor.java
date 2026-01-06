@@ -21,22 +21,26 @@ package com.deathmotion.totemguard.common.player.processor.inbound;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.ClickData;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.TickData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.github.retrooper.packetevents.protocol.world.BlockFace;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 
 public class InboundActionProcessor extends ProcessorInbound {
 
     private final Data data;
     private final ClickData clickData;
+    private final TickData tickData;
 
     public InboundActionProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
         this.clickData = player.getClickData();
+        this.tickData = player.getTickData();
     }
 
     @Override
@@ -45,41 +49,72 @@ public class InboundActionProcessor extends ProcessorInbound {
 
         if (packetType == PacketType.Play.Client.ANIMATION) {
             // This misses breaking blocks (needs fixing)
-            if (data.isInvalidLeftClick()) return;
+            if (tickData.isInvalidLeftClick()) return;
             clickData.recordLeftClick();
         } else if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            data.setPlacing(true);
+            if (new WrapperPlayClientPlayerBlockPlacement(event).getFace() == BlockFace.OTHER) {
+                tickData.setUsing(true);
+            } else {
+                tickData.setPlacing(true);
+            }
+
             clickData.recordRightClick();
         } else if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
             if (new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
-                data.setAttacking(true);
+                tickData.setAttacking(true);
             } else {
-                data.setInteracting(true);
+                tickData.setInteracting(true);
             }
         } else if (packetType == PacketType.Play.Client.USE_ITEM) {
-            data.setUsing(true);
+            tickData.setUsing(true);
             clickData.recordRightClick();
         } else if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
             WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
             if (packet.getEntityId() != player.getUser().getEntityId()) return;
 
             switch (packet.getAction()) {
-                case START_SNEAKING -> data.setSneaking(true);
-                case STOP_SNEAKING -> data.setSneaking(false);
-                case START_SPRINTING -> data.setSprinting(true);
-                case STOP_SPRINTING -> data.setSprinting(false);
+                case START_SNEAKING -> {
+                    data.setSneaking(true);
+                    tickData.setSneaking(true);
+                }
+                case STOP_SNEAKING -> {
+                    data.setSneaking(false);
+                    tickData.setSneaking(true);
+                }
+                case START_SPRINTING -> {
+                    data.setSprinting(true);
+                    tickData.setSprinting(true);
+                }
+                case STOP_SPRINTING -> {
+                    data.setSprinting(false);
+                    tickData.setSprinting(true);
+                }
+                case LEAVE_BED -> tickData.setLeavingBed(true);
+                case START_JUMPING_WITH_HORSE, STOP_JUMPING_WITH_HORSE -> tickData.setJumpingWithMount(true);
+                case START_FLYING_WITH_ELYTRA -> tickData.setStartingToGlide(true);
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_DIGGING) {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
 
             switch (packet.getAction()) {
-                case START_DIGGING -> data.setDigging(true);
-                case CANCELLED_DIGGING, FINISHED_DIGGING -> data.setDigging(false);
-                case RELEASE_USE_ITEM -> {
-                    data.setUsing(false);
-                }
+                case SWAP_ITEM_WITH_OFFHAND -> tickData.setSwapping(true);
+                case DROP_ITEM, DROP_ITEM_STACK -> tickData.setDropping(true);
+                case RELEASE_USE_ITEM -> tickData.setReleasing(true);
+                case FINISHED_DIGGING, CANCELLED_DIGGING, START_DIGGING -> tickData.setDigging(true);
             }
-        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
+        } else if (packetType == PacketType.Play.Client.PICK_ITEM) {
+            tickData.setPicking(true);
+        } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
+            tickData.setClickingInInventory(true);
+
+            switch (new WrapperPlayClientClickWindow(event).getWindowClickType()) {
+                case QUICK_MOVE -> tickData.setQuickMoveClicking(true);
+                case PICKUP, PICKUP_ALL -> tickData.setPickUpClicking(true);
+            }
+        } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
+            tickData.setClosingInventory(true);
+        }
+        else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
                 WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
                 data.setSneaking(packet.isShift());
@@ -89,25 +124,18 @@ public class InboundActionProcessor extends ProcessorInbound {
             data.setFlying(packet.isFlying() && data.isCanFly());
         } else if (player.isTickEndPacket(packetType)) {
             if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-                // Autoclicker checks will only work on 1.21.2 because I cba to deal with timing issues
-                // Older clients don't send flying packets when not moving, so I don't know when the tick ended
+                // Autoclicker checks will only work on 1.21.2. I cba to deal with timing issues
+                // Older clients don't send a tick end packet, and the only way of knowing when they started a new tick
+                // is by listening for any movement packet. That means if they stand still and swing their arm, it doesn't send "tick" packets
                 clickData.tick();
             }
+
+            tickData.reset();
         }
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
-
-        if (player.isTickEndPacket(packetType)) {
-            data.setPlacing(false);
-            data.setDigging(false);
-            data.setInteracting(false);
-            data.setAttacking(false);
-            data.setUsing(false);
-        }
-
         clickData.checkPost();
     }
 }

@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.data.ClickData;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.TickData;
 import com.deathmotion.totemguard.common.player.data.TotemData;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
@@ -72,6 +73,7 @@ public class TGPlayer implements TGUser {
     private final Data data;
     private final TotemData totemData;
     private final ClickData clickData;
+    private final TickData tickData;
 
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
@@ -101,6 +103,7 @@ public class TGPlayer implements TGUser {
         this.data = new Data();
         this.totemData = new TotemData();
         this.clickData = new ClickData();
+        this.tickData = new TickData();
 
         this.processorInbounds = new ArrayList<>() {{
             add(new InboundInventoryProcessor(TGPlayer.this));

@@ -32,25 +32,10 @@ public class Data {
     private int food;
     private float foodSaturation;
 
-    private boolean isSprinting;
-    private boolean isSneaking;
+    private boolean sprinting;
+    private boolean sneaking;
     private boolean canFly;
     private boolean isFlying;
 
     private volatile boolean sendingBundlePacket;
-
-    // Actions performed this tick
-    private boolean isPlacing;
-    private boolean isAttacking;
-    private boolean isDigging;
-    private boolean isInteracting;
-    private boolean isUsing;
-
-    public boolean isInvalidLeftClick() {
-
-        if (isDigging()) return true;
-        if (isPlacing()) return true;
-
-        return false;
-    }
 }
