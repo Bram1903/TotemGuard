@@ -46,7 +46,7 @@ public class AutoClickerA extends CheckImpl implements PacketCheck {
         int rightClicksPerSecond = clickData.getRightClicksPerSecond();
 
         if (leftClicksPerSecond > 50 || rightClicksPerSecond > 10) {
-            fail("left=" + leftClicksPerSecond + ", right=" + rightClicksPerSecond);
+            //fail("left=" + leftClicksPerSecond + ", right=" + rightClicksPerSecond);
         }
     }
 

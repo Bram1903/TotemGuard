@@ -35,18 +35,12 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
 
     private static final List<Rule> RULES = List.of(
             new Rule("ATTACK + PLACE", t -> t.isAttacking() && t.isPlacing()),
-            new Rule("ATTACK + USING", t -> t.isAttacking() && t.isUsing()),
-            new Rule("ATTACK + INTERACT", t -> t.isAttacking() && t.isInteracting()),
             new Rule("ATTACK + RELEASING", t -> t.isAttacking() && t.isReleasing()),
-            new Rule("ATTACK + SPRINT/SNEAK", t -> t.isAttacking() && (t.isSprinting() || t.isSneaking())),
 
             new Rule("INVENTORY_CLICK + PLACE", t -> t.isClickingInInventory() && t.isPlacing()),
             new Rule("INVENTORY_CLICK + ATTACK", t -> t.isClickingInInventory() && t.isAttacking()),
             new Rule("QUICKMOVE + ATTACK", t -> t.isQuickMoveClicking() && t.isAttacking()),
-            new Rule("PICKUP_CLICK + PLACE", t -> t.isPickUpClicking() && t.isPlacing()),
-
-            new Rule("START_GLIDE + JUMP_WITH_MOUNT", t -> t.isStartingToGlide() && t.isJumpingWithMount()),
-            new Rule("LEAVING_BED + ATTACK", t -> t.isLeavingBed() && t.isAttacking())
+            new Rule("PICKUP_CLICK + PLACE", t -> t.isPickUpClicking() && t.isPlacing())
     );
 
     public ProtocolD(TGPlayer player) {
