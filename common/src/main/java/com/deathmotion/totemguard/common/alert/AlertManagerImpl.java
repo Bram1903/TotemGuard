@@ -25,7 +25,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
-import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.reload.Reloadable;
 import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
@@ -58,24 +58,23 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
     }
 
     @Override
-    public boolean hasAlertsEnabled(TGUser user) {
-        return enabledAlerts.containsKey(user.getUuid());
+    public boolean hasAlertsEnabled(UUID uuid) {
+        return enabledAlerts.containsKey(uuid);
     }
 
     @Override
-    public boolean toggleAlerts(TGUser user) {
-        if (!(user instanceof TGPlayer player)) {
-            throw new IllegalArgumentException("TGUser must be implemented by TGPlayer!");
-        }
-
-        PlatformUser platformUser = player.getPlatformUser();
-
-        UUID uuid = player.getUuid();
+    public boolean toggleAlerts(UUID uuid) {
         if (enabledAlerts.containsKey(uuid)) {
-            enabledAlerts.remove(uuid);
-            sendToggleAlertMessage(platformUser, false);
+            PlatformUser user = enabledAlerts.remove(uuid);
+            if (user != null) {
+                sendToggleAlertMessage(user, false);
+            }
             return false;
         } else {
+            PlatformUserCreation platformUserCreation = TGPlatform.getInstance().getPlatformUserFactory().create(uuid);
+            if (platformUserCreation == null) return false;
+            PlatformUser platformUser = platformUserCreation.getPlatformUser();
+
             enabledAlerts.put(uuid, platformUser);
             sendToggleAlertMessage(platformUser, true);
             return true;

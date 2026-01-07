@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.alert.AlertManagerImpl;
 import com.deathmotion.totemguard.common.commands.Command;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
-import com.deathmotion.totemguard.common.player.TGPlayer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
@@ -53,11 +52,6 @@ public class AlertCommand implements Command {
             return;
         }
 
-        TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(context.sender().getUniqueId());
-        if (player == null) {
-            context.sender().sendMessage(Component.text("Your player data could not be found in the player repository", NamedTextColor.RED));
-        }
-
-        alertManager.toggleAlerts(player);
+        alertManager.toggleAlerts(context.sender().getUniqueId());
     }
 }

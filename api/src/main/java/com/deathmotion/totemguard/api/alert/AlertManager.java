@@ -18,22 +18,24 @@
 
 package com.deathmotion.totemguard.api.alert;
 
-import com.deathmotion.totemguard.api.user.TGUser;
+
+import java.util.UUID;
 
 public interface AlertManager {
 
     /*
-     * Checks if alerts are enabled for the specified user
+     * Checks if the specified user has alerts enabled
      *
-     * @param user The user to check
+     * @param uuid The UUID of the user to check
+     * @return True if the user has alerts enabled, false otherwise
      */
-    boolean hasAlertsEnabled(TGUser user);
+    boolean hasAlertsEnabled(UUID uuid);
 
     /*
      * Toggles the alert status for the specified user
      *
-     * @param user The user to toggle alerts for
-     * @return The new alert status
+     * @param uuid The UUID of the user to toggle alerts for
+     * @return The new alert status after toggling
      */
-    boolean toggleAlerts(TGUser user);
+    boolean toggleAlerts(UUID uuid);
 }
