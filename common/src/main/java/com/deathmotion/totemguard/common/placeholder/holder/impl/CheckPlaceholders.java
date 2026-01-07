@@ -18,26 +18,42 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
+import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class CheckPlaceholders implements InternalPlaceholderHolder {
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
+
+public final class CheckPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
+
+    private static final Map<String, Function<CheckImpl, String>> RESOLVERS;
+
+    static {
+        RESOLVERS = Map.of(
+                "tg_check", CheckImpl::getName,
+                "tg_check_description", CheckImpl::getDescription,
+                "tg_check_type", c -> c.getType().name(),
+                "tg_check_experimental", c -> String.valueOf(c.isExperimental()),
+                "tg_check_enabled", c -> String.valueOf(c.isEnabled())
+        );
+    }
+
+    @Override
+    public @NotNull Collection<String> keys() {
+        return RESOLVERS.keySet();
+    }
 
     @Override
     public @Nullable String resolve(String key, InternalContext ctx) {
         CheckImpl check = ctx.check();
         if (check == null) return null;
 
-        return switch (key) {
-            case "tg_check" -> check.getName();
-            case "tg_check_description" -> check.getDescription();
-            case "tg_check_type" -> check.getType().name();
-            case "tg_check_experimental" -> String.valueOf(check.isExperimental());
-            case "tg_check_enabled" -> String.valueOf(check.isEnabled());
-            default -> null;
-        };
+        Function<CheckImpl, String> fn = RESOLVERS.get(key);
+        return fn != null ? fn.apply(check) : null;
     }
 }
-

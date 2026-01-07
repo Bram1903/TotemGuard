@@ -55,9 +55,8 @@ public abstract class TGPlatform {
     private EventRepositoryImpl eventRepository;
     private AlertManagerImpl alertManager;
     private PlayerRepositoryImpl playerRepository;
-    private CommandManagerImpl commandManager;
-
     private PlaceholderRepositoryImpl placeholderRepository;
+    private CommandManagerImpl commandManager;
 
     private TGPlatformAPI api;
 
@@ -83,8 +82,8 @@ public abstract class TGPlatform {
         eventRepository = new EventRepositoryImpl();
         alertManager = new AlertManagerImpl();
         playerRepository = new PlayerRepositoryImpl();
-        commandManager = new CommandManagerImpl();
         placeholderRepository = new PlaceholderRepositoryImpl();
+        commandManager = new CommandManagerImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPingListener());

@@ -18,24 +18,40 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
+import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class PlayerPlaceholders implements InternalPlaceholderHolder {
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
+
+public final class PlayerPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
+
+    private static final Map<String, Function<TGPlayer, String>> RESOLVERS;
+    static {
+        RESOLVERS = Map.of(
+                "tg_player", TGPlayer::getName,
+                "tg_player_uuid", p -> p.getUuid().toString(),
+                "tg_player_brand", TGPlayer::getClientBrand);
+    }
+
+    @Override
+    public @NotNull Collection<String> keys() {
+        return RESOLVERS.keySet();
+    }
 
     @Override
     public @Nullable String resolve(String key, InternalContext ctx) {
         TGPlayer player = ctx.player();
         if (player == null) return null;
 
-        return switch (key) {
-            case "tg_player" -> player.getName();
-            case "tg_uuid" -> player.getUuid().toString();
-            case "tg_client_brand" -> player.getClientBrand();
-            default -> null;
-        };
+        Function<TGPlayer, String> fn = RESOLVERS.get(key);
+        return fn != null ? fn.apply(player) : null;
     }
 }
+
 

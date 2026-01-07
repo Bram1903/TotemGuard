@@ -18,21 +18,36 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
+import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class PlatformPlaceholders implements InternalPlaceholderHolder {
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
+
+public final class PlatformPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
+
+    private static final Map<String, Function<InternalContext, String>> RESOLVERS;
+    static {
+        RESOLVERS = Map.of("tg_prefix", ctx -> ctx.platform()
+                .getConfigRepository()
+                .getMessages()
+                .getString("&6&lTG &8»"));
+    }
+
+    @Override
+    public @NotNull Collection<String> keys() {
+        return RESOLVERS.keySet();
+    }
 
     @Override
     public @Nullable String resolve(String key, InternalContext ctx) {
-        return switch (key) {
-            case "tg_prefix" -> ctx.platform()
-                    .getConfigRepository()
-                    .getMessages()
-                    .getString("&6&lTG &8»");
-            default -> null;
-        };
+        Function<InternalContext, String> fn = RESOLVERS.get(key);
+        return fn != null ? fn.apply(ctx) : null;
     }
 }
+
 

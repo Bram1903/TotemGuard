@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.placeholder;
 
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
+import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
@@ -36,7 +37,9 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
@@ -131,6 +134,25 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
                                    @Nullable TGPlayer player,
                                    @Nullable CheckImpl check) {
         return replace(message, player, check, Map.of());
+    }
+
+    @Override
+    public @NotNull Set<String> registeredKeys() {
+        java.util.Set<String> keys = new java.util.TreeSet<>();
+
+        for (Object holder : internalHolders.snapshot()) {
+            if (holder instanceof PlaceholderProvider provider) {
+                keys.addAll(provider.keys());
+            }
+        }
+
+        for (Object holder : apiHolders.snapshot()) {
+            if (holder instanceof PlaceholderProvider provider) {
+                keys.addAll(provider.keys());
+            }
+        }
+
+        return Collections.unmodifiableSet(keys);
     }
 
     private @Nullable TGPlayer adaptUser(@Nullable TGUser user) {

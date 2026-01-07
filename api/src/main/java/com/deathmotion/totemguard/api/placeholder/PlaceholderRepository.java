@@ -23,6 +23,8 @@ import com.deathmotion.totemguard.api.user.TGUser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+
 /**
  * Handles placeholder replacement and registration.
  * <p>
@@ -69,6 +71,16 @@ public interface PlaceholderRepository {
      */
     @NotNull
     String replace(@NotNull String message, @Nullable TGUser user, @Nullable Check check);
+
+    /**
+     * Returns all currently registered placeholder keys for holders that implement {@link PlaceholderProvider}.
+     *
+     * <p>Keys are returned without surrounding '%' characters.</p>
+     *
+     * @return an immutable set of registered placeholder keys
+     */
+    @NotNull
+    Set<String> registeredKeys();
 
     /**
      * Register a custom placeholder holder.
