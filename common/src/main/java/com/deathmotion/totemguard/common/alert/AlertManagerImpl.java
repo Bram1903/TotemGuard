@@ -87,18 +87,16 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
         alertQueues.keySet().removeIf(key -> key.playerUuid().equals(uuid));
     }
 
-    public void alert(CheckImpl check, @Nullable String debug) {
+    public void alert(CheckImpl check, int violations, @Nullable String debug) {
         UUID playerUuid = check.player.getUuid();
-
         AlertKey key = new AlertKey(playerUuid, check.getName());
 
         alertQueues.compute(key, (k, tail) -> {
-            CompletableFuture<Void> start = (tail == null)
-                    ? CompletableFuture.completedFuture(null)
-                    : tail;
+            CompletableFuture<Void> start =
+                    (tail == null) ? CompletableFuture.completedFuture(null) : tail;
 
             CompletableFuture<Void> next = start.thenRunAsync(() -> {
-                String alertMessage = AlertBuilder.build(check, debug);
+                String alertMessage = AlertBuilder.build(check, violations, debug);
 
                 TGAlertEvent event = new TGAlertEvent(
                         check.player,
@@ -107,9 +105,7 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
                         alertMessage
                 );
 
-                TGPlatform.getInstance()
-                        .getEventRepository()
-                        .post(event);
+                TGPlatform.getInstance().getEventRepository().post(event);
 
                 if (!event.isCancelled()) {
                     broadcast(event.getAlertMessage());

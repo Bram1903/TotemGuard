@@ -29,13 +29,13 @@ public final class AlertBuilder {
     private AlertBuilder() {
     }
 
-    public static String build(CheckImpl check, @Nullable String debug) {
+    public static String build(CheckImpl check, int violations, @Nullable String debug) {
         // We will pull this from the config later
         String format = "%tg_prefix% &e%tg_player%&7 failed &6%tg_check% &7VL[&6%tg_check_violations%/∞&7]";
         if (debug != null) format += " &7(&8%tg_check_debug%&7)";
 
         Map<String, Object> extras = Map.of(
-                "tg_check_violations", check.getViolations(),
+                "tg_check_violations", violations,
                 "tg_check_debug", debug == null ? "" : debug
         );
 
