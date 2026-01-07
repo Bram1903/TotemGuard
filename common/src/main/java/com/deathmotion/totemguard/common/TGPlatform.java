@@ -33,6 +33,7 @@ import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.util.ConsoleBanner;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
@@ -74,6 +75,8 @@ public abstract class TGPlatform {
     }
 
     public void commonOnEnable() {
+        ConsoleBanner.print();
+
         try {
             configRepository = new ConfigRepositoryImpl();
             configRepository.reload();
@@ -104,12 +107,9 @@ public abstract class TGPlatform {
         TotemGuard.init(api);
 
         enableBStats();
-
-        logger.info("TotemGuard enabled.");
     }
 
     public void commonOnDisable() {
-        logger.info("TotemGuard disabled.");
     }
 
     public abstract Scheduler getScheduler();
