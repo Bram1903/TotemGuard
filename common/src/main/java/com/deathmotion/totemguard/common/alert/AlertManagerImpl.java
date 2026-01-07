@@ -92,8 +92,7 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
         AlertKey key = new AlertKey(playerUuid, check.getName());
 
         alertQueues.compute(key, (k, tail) -> {
-            CompletableFuture<Void> start =
-                    (tail == null) ? CompletableFuture.completedFuture(null) : tail;
+            CompletableFuture<Void> start = (tail == null) ? CompletableFuture.completedFuture(null) : tail;
 
             CompletableFuture<Void> next = start.thenRunAsync(() -> {
                 String alertMessage = AlertBuilder.build(check, violations, debug);

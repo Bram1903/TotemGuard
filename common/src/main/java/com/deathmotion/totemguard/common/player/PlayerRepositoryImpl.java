@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.jetbrains.annotations.NotNull;
@@ -48,9 +49,23 @@ public final class PlayerRepositoryImpl implements UserRepository {
     }
 
     public void onLogin(final @NotNull User user) {
+        final UUID uuid = user.getUUID();
         final TGPlayer player = players.get(user);
+
         if (player != null) {
             player.onLogin();
+            enableAlerts(uuid, player.getPlatformUser());
+        } else {
+            PlatformUserCreation platformUserCreation = platform.getPlatformUserFactory().create(uuid);
+            if (platformUserCreation == null) return;
+            enableAlerts(uuid, platformUserCreation.getPlatformUser());
+        }
+    }
+
+    // TODO: This is temporarily (Will use a proper database implementation in the future
+    private void enableAlerts(UUID uuid, PlatformUser platformUser) {
+        if (platformUser.hasPermission("TotemGuard.Alerts")) {
+            platform.getAlertManager().toggleAlerts(uuid);
         }
     }
 
