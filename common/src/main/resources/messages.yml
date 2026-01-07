@@ -9,7 +9,8 @@
 config_version: 1
 
 prefix: "&6&lTG &8»"
-
-alerts-enabled: "%prefix% &aAlerts enabled"
-alerts-disabled: "%prefix% &cAlerts disabled"
-alert-brand: "%prefix% &6%player% &7joined using: &6%client_brand%"
+alerts:
+  enabled: "%prefix% &aAlerts enabled"
+  disabled: "%prefix% &cAlerts disabled"
+  message: "%prefix% &e%tg_player%&7 failed &6%tg_check% &7VL[&6%tg_check_violations%/∞&7]"
+  debug: " &7(&8%tg_check_debug%&7)"

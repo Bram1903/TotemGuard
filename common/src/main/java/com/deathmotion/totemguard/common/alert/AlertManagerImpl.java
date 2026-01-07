@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.api.event.impl.TGAlertEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
-import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.reload.Reloadable;
@@ -46,15 +45,13 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
 
     private final Executor asyncExecutor = command -> TGPlatform.getInstance().getScheduler().runAsyncTask(command);
 
-    private ConfigRepositoryImpl configRepository;
-
     public AlertManagerImpl() {
         reload();
     }
 
     @Override
     public void reload() {
-        configRepository = TGPlatform.getInstance().getConfigRepository();
+
     }
 
     @Override
@@ -123,9 +120,9 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
 
     private void sendToggleAlertMessage(PlatformUser platformUser, boolean enabled) {
         if (enabled) {
-            platformUser.sendMessage(MessageUtil.formatMessage(configRepository.messagePrefix() + " &aAlerts enabled!"));
+            platformUser.sendMessage(MessageUtil.formatMessage(" &aAlerts enabled!"));
         } else {
-            platformUser.sendMessage(MessageUtil.formatMessage(configRepository.messagePrefix() + " &cAlerts disabled!"));
+            platformUser.sendMessage(MessageUtil.formatMessage(" &cAlerts disabled!"));
         }
     }
 

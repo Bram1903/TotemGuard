@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.alert;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.configurate.ConfigurationNode;
 
 import java.util.Map;
 
@@ -29,19 +30,24 @@ public final class AlertBuilder {
     private AlertBuilder() {
     }
 
-    public static String build(CheckImpl check, int violations, @Nullable String debug) {
-        // We will pull this from the config later
-        String format = "%tg_prefix% &e%tg_player%&7 failed &6%tg_check% &7VL[&6%tg_check_violations%/∞&7]";
-        if (debug != null) format += " &7(&8%tg_check_debug%&7)";
+    public static String build(CheckImpl check, int violations, @Nullable String debugInfo) {
+        ConfigurationNode config = TGPlatform.getInstance()
+                .getConfigRepository()
+                .messages();
+
+        String message = config.node("alerts", "message").getString("%prefix% &e%tg_player%&7 failed &6%tg_check% &7VL[&6%tg_check_violations%/∞&7]");
+
+        if (debugInfo != null) {
+            message += config.node("alerts", "debug").getString(" &7(&8%tg_check_debug%&7)");
+        }
 
         Map<String, Object> extras = Map.of(
                 "tg_check_violations", violations,
-                "tg_check_debug", debug == null ? "" : debug
+                "tg_check_debug", debugInfo == null ? "" : debugInfo
         );
 
         return TGPlatform.getInstance()
                 .getPlaceholderRepository()
-                .replace(format, check.player, check, extras);
+                .replace(message, check.player, check, extras);
     }
-
 }

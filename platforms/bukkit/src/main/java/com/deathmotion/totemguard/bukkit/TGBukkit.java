@@ -41,17 +41,16 @@ public class TGBukkit extends JavaPlugin {
     @Getter
     private static TGBukkit instance;
 
-    private final TGBukkitPlatform tg = new TGBukkitPlatform(this);
+    private TGBukkitPlatform tg;
+
     private BukkitSenderFactory senderFactory;
     private BukkitPlatformUserFactory bukkitPlatformUserFactory;
     private CommandManager<Sender> commandManager;
 
-    public TGBukkit() {
-        instance = this;
-    }
-
     @Override
     public void onLoad() {
+        instance = this;
+        tg = new TGBukkitPlatform(this);
         tg.commonOnInitialize();
     }
 

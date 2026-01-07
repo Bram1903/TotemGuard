@@ -60,8 +60,6 @@ public class MessageUtil {
     }
 
     public @NotNull Component formatMessage(@NotNull String string) {
-        string = string.replace("%prefix%", TGPlatform.getInstance().getConfigRepository().getMessages().getString("&6&lTG &8»"));
-
         Matcher matcher = HEX_PATTERN.matcher(string);
         StringBuilder sb = new StringBuilder(string.length());
 

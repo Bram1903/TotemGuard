@@ -16,45 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config;
+package com.deathmotion.totemguard.common.config.io;
 
-import com.deathmotion.totemguard.common.TGPlatform;
-import org.spongepowered.configurate.ConfigurationOptions;
+import org.spongepowered.configurate.CommentedConfigurationNode;
+import org.spongepowered.configurate.loader.ConfigurationLoader;
 import org.spongepowered.configurate.yaml.NodeStyle;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Objects;
 
-public final class ConfigLoaderFactory {
+public final class YamlLoaderFactory {
 
-    private ConfigLoaderFactory() {
-    }
-
-    public static Path dataDir() {
-        return Paths.get(TGPlatform.getInstance().getPluginDirectory());
-    }
-
-    public static Path resolve(final String fileName) {
-        Objects.requireNonNull(fileName, "fileName");
-        return dataDir().resolve(fileName);
-    }
-
-    public static ConfigurationOptions baseOptions() {
-        return ConfigurationOptions.defaults();
-    }
-
-    public static YamlConfigurationLoader yaml(final String fileName) {
-        return yaml(fileName, baseOptions());
-    }
-
-    public static YamlConfigurationLoader yaml(final String fileName, final ConfigurationOptions options) {
+    public ConfigurationLoader<CommentedConfigurationNode> create(Path path) {
         return YamlConfigurationLoader.builder()
-                .path(resolve(fileName))
-                .defaultOptions(options)
-                .indent(4)
+                .path(path)
                 .nodeStyle(NodeStyle.BLOCK)
                 .build();
     }
 }
+

@@ -32,9 +32,10 @@ public final class PlatformPlaceholders implements InternalPlaceholderHolder, Pl
 
     private static final Map<String, Function<InternalContext, String>> RESOLVERS;
     static {
-        RESOLVERS = Map.of("tg_prefix", ctx -> ctx.platform()
+        RESOLVERS = Map.of("prefix", ctx -> ctx.platform()
                 .getConfigRepository()
-                .getMessages()
+                .messages()
+                .node("prefix")
                 .getString("&6&lTG &8»"));
     }
 
