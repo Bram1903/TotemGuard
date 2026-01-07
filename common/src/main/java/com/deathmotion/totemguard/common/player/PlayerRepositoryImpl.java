@@ -50,6 +50,11 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     public void onLogin(final @NotNull User user) {
         final UUID uuid = user.getUUID();
+        if (uuid == null) {
+            removeUser(user);
+            return;
+        }
+
         final TGPlayer player = players.get(user);
 
         if (player != null) {

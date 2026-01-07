@@ -30,6 +30,7 @@ import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.configurate.CommentedConfigurationNode;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -119,11 +120,17 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
     }
 
     private void sendToggleAlertMessage(PlatformUser platformUser, boolean enabled) {
+        String message;
+        CommentedConfigurationNode messages = TGPlatform.getInstance().getConfigRepository().messages();
+
         if (enabled) {
-            platformUser.sendMessage(MessageUtil.formatMessage(" &aAlerts enabled!"));
+            message = messages.node("alerts", "enabled").getString("%prefix% &aAlerts enabled");
         } else {
-            platformUser.sendMessage(MessageUtil.formatMessage(" &cAlerts disabled!"));
+            message = messages.node("alerts", "disabled").getString("%prefix% &cAlerts disabled");
         }
+
+        message = TGPlatform.getInstance().getPlaceholderRepository().replace(message);
+        platformUser.sendMessage(MessageUtil.formatMessage(message));
     }
 
     private record AlertKey(UUID playerUuid, String check) {
