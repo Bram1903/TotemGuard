@@ -70,15 +70,15 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
                 sendToggleAlertMessage(user, false);
             }
             return false;
-        } else {
-            PlatformUserCreation platformUserCreation = TGPlatform.getInstance().getPlatformUserFactory().create(uuid);
-            if (platformUserCreation == null) return false;
-            PlatformUser platformUser = platformUserCreation.getPlatformUser();
-
-            enabledAlerts.put(uuid, platformUser);
-            sendToggleAlertMessage(platformUser, true);
-            return true;
         }
+
+        PlatformUserCreation creation = TGPlatform.getInstance().getPlatformUserFactory().create(uuid);
+        if (creation == null) return false;
+
+        PlatformUser platformUser = creation.getPlatformUser();
+        enabledAlerts.put(uuid, platformUser);
+        sendToggleAlertMessage(platformUser, true);
+        return true;
     }
 
     public void removeUser(TGUser user) {
@@ -89,51 +89,48 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
 
     public void alert(CheckImpl check, @Nullable String debug) {
         UUID playerUuid = check.player.getUuid();
-        String playerName = check.player.getName();
-        String checkId = check.getName();
-        String checkName = check.getName();
 
-        int violations = check.getViolations();
-
-        String alertMessage = buildAlertMessage(playerName, checkName, violations, debug);
-
-        AlertKey key = new AlertKey(playerUuid, checkId);
+        AlertKey key = new AlertKey(playerUuid, check.getName());
 
         alertQueues.compute(key, (k, tail) -> {
-            CompletableFuture<Void> start = (tail == null) ? CompletableFuture.completedFuture(null) : tail;
+            CompletableFuture<Void> start = (tail == null)
+                    ? CompletableFuture.completedFuture(null)
+                    : tail;
 
             CompletableFuture<Void> next = start.thenRunAsync(() -> {
-                TGAlertEvent event = new TGAlertEvent(check.player, check, debug, alertMessage);
-                TGPlatform.getInstance().getEventRepository().post(event);
+                String alertMessage = AlertBuilder.build(check, debug);
+
+                TGAlertEvent event = new TGAlertEvent(
+                        check.player,
+                        check,
+                        debug,
+                        alertMessage
+                );
+
+                TGPlatform.getInstance()
+                        .getEventRepository()
+                        .post(event);
+
                 if (!event.isCancelled()) {
-                    alert(event.getAlertMessage());
+                    broadcast(event.getAlertMessage());
                 }
             }, asyncExecutor);
 
             next.whenComplete((v, t) -> alertQueues.remove(k, next));
-
             return next;
         });
     }
 
-    private String buildAlertMessage(String playerName, String checkName, int violations, @Nullable String debug) {
-        return configRepository.messagePrefix()
-                + " &e" + playerName
-                + " &7failed &6" + checkName
-                + " &7VL[&6" + violations + "&7/&6∞&7]"
-                + (debug == null ? "" : " &8(" + debug + ")");
-    }
-
-    private void alert(String message) {
-        Component component = MessageUtil.miniMessage(message);
+    private void broadcast(String message) {
+        Component component = MessageUtil.formatMessage(message);
         enabledAlerts.values().forEach(player -> player.sendMessage(component));
     }
 
     private void sendToggleAlertMessage(PlatformUser platformUser, boolean enabled) {
         if (enabled) {
-            platformUser.sendMessage(MessageUtil.miniMessage(configRepository.messagePrefix() + " &aAlerts enabled!"));
+            platformUser.sendMessage(MessageUtil.formatMessage(configRepository.messagePrefix() + " &aAlerts enabled!"));
         } else {
-            platformUser.sendMessage(MessageUtil.miniMessage(configRepository.messagePrefix() + " &cAlerts disabled!"));
+            platformUser.sendMessage(MessageUtil.formatMessage(configRepository.messagePrefix() + " &cAlerts disabled!"));
         }
     }
 

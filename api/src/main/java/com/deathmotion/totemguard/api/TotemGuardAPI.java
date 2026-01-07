@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.api;
 
 import com.deathmotion.totemguard.api.event.EventRepository;
+import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import org.jetbrains.annotations.NotNull;
@@ -48,4 +49,11 @@ public interface TotemGuardAPI {
      * @return the user repository
      */
     @NotNull UserRepository getUserRepository();
+
+    /**
+     * Returns the placeholder repository
+     *
+     * @return the placeholder repository
+     */
+    @NotNull PlaceholderRepository getPlaceholderRepository();
 }

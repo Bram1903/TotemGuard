@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenish
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPingListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
+import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
@@ -56,6 +57,8 @@ public abstract class TGPlatform {
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
 
+    private PlaceholderRepositoryImpl placeholderRepository;
+
     private TGPlatformAPI api;
 
     public TGPlatform() {
@@ -81,6 +84,7 @@ public abstract class TGPlatform {
         alertManager = new AlertManagerImpl();
         playerRepository = new PlayerRepositoryImpl();
         commandManager = new CommandManagerImpl();
+        placeholderRepository = new PlaceholderRepositoryImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPingListener());

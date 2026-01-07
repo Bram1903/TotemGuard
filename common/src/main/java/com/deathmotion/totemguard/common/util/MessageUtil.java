@@ -59,7 +59,7 @@ public class MessageUtil {
         return sb.toString();
     }
 
-    public @NotNull Component miniMessage(@NotNull String string) {
+    public @NotNull Component formatMessage(@NotNull String string) {
         string = string.replace("%prefix%", TGPlatform.getInstance().getConfigRepository().getMessages().getString("&6&lTG &8»"));
 
         Matcher matcher = HEX_PATTERN.matcher(string);
