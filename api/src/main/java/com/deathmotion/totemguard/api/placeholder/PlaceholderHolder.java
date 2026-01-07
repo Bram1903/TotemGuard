@@ -21,14 +21,28 @@ package com.deathmotion.totemguard.api.placeholder;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implemented by external plugins to provide custom placeholders.
+ * Resolves custom placeholders.
+ *
  * <p>
- * The key is WITHOUT surrounding %, e.g. "myplugin_rank" for %myplugin_rank%.
+ * Implementations should return {@code null} when a key is not handled,
+ * allowing other holders or built-in placeholders to resolve it.
+ *
+ * <p>
+ * The {@code key} is provided without surrounding '%' characters.
+ * For example, {@code %myplugin_rank%} will be passed as {@code "myplugin_rank"}.
  */
 @FunctionalInterface
 public interface PlaceholderHolder {
 
-    @Nullable String resolve(String key, PlaceholderContext context);
+    /**
+     * Attempts to resolve a placeholder.
+     *
+     * @param key     placeholder key (without '%')
+     * @param context resolution context (may contain null values)
+     * @return resolved value, or {@code null} if not handled
+     */
+    @Nullable
+    String resolve(String key, PlaceholderContext context);
 }
 
 

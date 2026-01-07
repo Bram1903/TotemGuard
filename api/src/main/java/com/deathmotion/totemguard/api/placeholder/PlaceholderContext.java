@@ -25,25 +25,46 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * Context exposed to external PlaceholderHolders.
+ * Context provided to {@link PlaceholderHolder}s during placeholder resolution.
+ *
  * <p>
- * Everything is optional; depending on the call site, values may be null/missing.
- * Use extras() for extensibility (without breaking the API).
+ * All fields are optional and depend on the call site.
+ * Implementations must handle {@code null} values gracefully.
+ *
+ * <p>
+ * The {@link #extras()} map contains call-specific values supplied by TotemGuard
+ * (for example, alert-related data such as violation counts).
+ * Keys and value types are not fixed and should be accessed defensively.
  */
 public record PlaceholderContext(
         @Nullable TGUser user,
         @Nullable Check check,
         Map<String, Object> extras
 ) {
+
+    /**
+     * Creates a context without any extra values.
+     *
+     * @param user  user context, or {@code null}
+     * @param check check context, or {@code null}
+     */
     public PlaceholderContext(@Nullable TGUser user, @Nullable Check check) {
         this(user, check, Map.of());
     }
 
+    /**
+     * Retrieves a typed value from {@link #extras()}.
+     *
+     * @param key  extra key
+     * @param type expected type
+     * @return the value if present and of the requested type, otherwise {@code null}
+     */
     @SuppressWarnings("unchecked")
     public <T> @Nullable T extra(String key, Class<T> type) {
         Object value = extras.get(key);
         return type.isInstance(value) ? (T) value : null;
     }
 }
+
 
 
