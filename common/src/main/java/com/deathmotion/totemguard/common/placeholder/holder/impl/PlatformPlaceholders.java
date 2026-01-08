@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collection;
 import java.util.Map;
@@ -46,7 +47,7 @@ public final class PlatformPlaceholders implements InternalPlaceholderHolder, Pl
     }
 
     @Override
-    public @Nullable String resolve(String key, InternalContext ctx) {
+    public @Nullable String resolve(@NonNull String key, @NonNull InternalContext ctx) {
         Function<InternalContext, String> fn = RESOLVERS.get(key);
         return fn != null ? fn.apply(ctx) : null;
     }

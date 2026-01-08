@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.placeholder.holder;
 
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,5 +27,5 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface InternalPlaceholderHolder {
 
-    @Nullable String resolve(String key, InternalContext ctx);
+    @Nullable String resolve(@NotNull String key, @NotNull InternalContext ctx);
 }

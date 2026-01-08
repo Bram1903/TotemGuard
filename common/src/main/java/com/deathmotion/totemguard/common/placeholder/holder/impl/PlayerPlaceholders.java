@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderH
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collection;
 import java.util.Map;
@@ -46,7 +47,7 @@ public final class PlayerPlaceholders implements InternalPlaceholderHolder, Plac
     }
 
     @Override
-    public @Nullable String resolve(String key, InternalContext ctx) {
+    public @Nullable String resolve(@NonNull String key, @NonNull InternalContext ctx) {
         TGPlayer player = ctx.player();
         if (player == null) return null;
 

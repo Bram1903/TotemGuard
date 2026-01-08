@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collection;
 import java.util.Map;
@@ -49,7 +50,7 @@ public final class CheckPlaceholders implements InternalPlaceholderHolder, Place
     }
 
     @Override
-    public @Nullable String resolve(String key, InternalContext ctx) {
+    public @Nullable String resolve(@NonNull String key, @NonNull InternalContext ctx) {
         CheckImpl check = ctx.check();
         if (check == null) return null;
 

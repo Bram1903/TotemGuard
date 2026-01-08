@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api.placeholder;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,7 +43,7 @@ public interface PlaceholderHolder {
      * @return resolved value, or {@code null} if not handled
      */
     @Nullable
-    String resolve(String key, PlaceholderContext context);
+    String resolve(@NotNull String key, @NotNull PlaceholderContext context);
 }
 
 

@@ -26,12 +26,13 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 public final class PlaceholderAPIHolder implements PlaceholderHolder {
 
     @Override
-    public @Nullable String resolve(String key, PlaceholderContext context) {
-        if (context == null || context.user() == null) {
+    public @Nullable String resolve(@NonNull String key, @NonNull PlaceholderContext context) {
+        if (context.user() == null) {
             return null;
         }
 
