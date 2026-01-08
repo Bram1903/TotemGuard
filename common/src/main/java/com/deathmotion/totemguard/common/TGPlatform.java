@@ -77,15 +77,8 @@ public abstract class TGPlatform {
     public void commonOnEnable() {
         ConsoleBanner.print();
 
-        try {
-            configRepository = new ConfigRepositoryImpl();
-            configRepository.reload();
-        } catch (Exception e) {
-            logger.severe("Failed to load configuration. Disabling TotemGuard.");
-            logger.severe(e.getMessage());
-            disablePlugin();
-            return;
-        }
+        configRepository = new ConfigRepositoryImpl();
+        configRepository.reload();
 
         eventRepository = new EventRepositoryImpl();
         alertManager = new AlertManagerImpl();

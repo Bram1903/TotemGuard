@@ -31,6 +31,7 @@ import java.util.function.Function;
 public final class PlatformPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
 
     private static final Map<String, Function<InternalContext, String>> RESOLVERS;
+
     static {
         RESOLVERS = Map.of("prefix", ctx -> ctx.platform()
                 .getConfigRepository()

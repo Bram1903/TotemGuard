@@ -32,6 +32,7 @@ import java.util.function.Function;
 public final class PlayerPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
 
     private static final Map<String, Function<TGPlayer, String>> RESOLVERS;
+
     static {
         RESOLVERS = Map.of(
                 "tg_player", TGPlayer::getName,

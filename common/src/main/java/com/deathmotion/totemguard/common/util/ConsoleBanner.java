@@ -1,7 +1,7 @@
 package com.deathmotion.totemguard.common.util;
 
-import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.common.TGPlatform;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;

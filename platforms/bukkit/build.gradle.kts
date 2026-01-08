@@ -8,6 +8,9 @@ repositories {
     maven {
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
+    maven {
+        url = uri("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+    }
 }
 
 dependencies {
@@ -16,6 +19,7 @@ dependencies {
     implementation(libs.cloud.paper)
     compileOnly(libs.paper)
     compileOnly(libs.packetevents.spigot)
+    compileOnly(libs.placeholderapi)
 }
 
 tasks {
@@ -54,6 +58,7 @@ tasks {
         url("https://cdn.modrinth.com/data/HYKaKraK/versions/vSdJEwlO/packetevents-spigot-2.11.1.jar")
         url("https://github.com/ViaVersion/ViaVersion/releases/download/5.7.0/ViaVersion-5.7.0.jar")
         url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.7.0/ViaBackwards-5.7.0.jar")
+        url("https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/2.11.7/PlaceholderAPI-2.11.7.jar")
     }
 
     runServer {

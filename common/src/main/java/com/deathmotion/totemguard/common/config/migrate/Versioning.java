@@ -19,9 +19,10 @@
 package com.deathmotion.totemguard.common.config.migrate;
 
 public final class Versioning {
-    private Versioning() {}
+    public static final Object[] VERSION_KEY = new Object[]{"config_version"};
 
-    public static final Object[] VERSION_KEY = new Object[] {"config_version"};
+    private Versioning() {
+    }
 }
 
 

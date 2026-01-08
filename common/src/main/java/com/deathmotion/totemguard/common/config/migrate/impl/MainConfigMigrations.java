@@ -22,7 +22,8 @@ import com.deathmotion.totemguard.common.config.migrate.Versioning;
 import org.spongepowered.configurate.transformation.ConfigurationTransformation;
 
 public final class MainConfigMigrations {
-    private MainConfigMigrations() {}
+    private MainConfigMigrations() {
+    }
 
     public static ConfigurationTransformation.Versioned create() {
         final int CURRENT = 1;

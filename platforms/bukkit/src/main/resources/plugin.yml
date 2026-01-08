@@ -9,3 +9,5 @@ folia-supported: true
 load: POSTWORLD
 depend:
   - packetevents
+softdepend:
+  - PlaceholderAPI

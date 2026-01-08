@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.bukkit;
 
+import com.deathmotion.totemguard.bukkit.placeholder.PlaceholderAPIHolder;
 import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUserFactory;
 import com.deathmotion.totemguard.bukkit.sender.BukkitSenderFactory;
 import com.deathmotion.totemguard.common.TGPlatform;
@@ -26,6 +27,7 @@ import com.deathmotion.totemguard.common.util.TGVersions;
 import lombok.Getter;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.brigadier.BrigadierSetting;
@@ -76,6 +78,9 @@ public class TGBukkit extends JavaPlugin {
         commandManager = manager;
 
         tg.commonOnEnable();
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            tg.getPlaceholderRepository().registerHolder(new PlaceholderAPIHolder());
+        }
     }
 
     @Override
