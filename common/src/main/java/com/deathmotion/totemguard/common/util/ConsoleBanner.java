@@ -46,7 +46,7 @@ public final class ConsoleBanner {
                 "TotemGuard",
                 "Version    : " + versionString,
                 "Build Time : " + BUILD_FORMAT.format(TGVersions.BUILD_TIMESTAMP),
-                "Edition    : Public",
+                "Edition    : Private",
                 "Authors    : Bram & OutDev"
         );
 

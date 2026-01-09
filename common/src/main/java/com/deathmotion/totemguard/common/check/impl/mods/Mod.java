@@ -24,24 +24,49 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBundle;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
+import net.kyori.adventure.text.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
 public final class Mod extends CheckImpl implements PacketCheck {
 
     private static final String REGISTER_CHANNEL = "minecraft:register";
 
+    private static final int ANVIL_SCREEN = 8;
+
+    private static final int TRANSLATION_BATCH_SIZE = 50;
+    private static final long TRANSLATION_BATCH_DELAY_MS = 150L;
+
+    private static final char START_MARKER = '\uE000';
+    private static final char END_MARKER = '\uE001';
+
     private final Set<String> flaggedMods = new HashSet<>();
     private final Set<String> pendingDetections = new HashSet<>();
 
-    private final Map<String, Map<String, String>> translationIdsByMod = new HashMap<>();
+    private final Map<String, String> translationKeyByProbeId = new HashMap<>();
+    private final Map<String, String> modByProbeId = new HashMap<>();
+
+    private final Object translationLock = new Object();
+    private List<Map.Entry<String, String>> translationEntries = List.of();
+    private int translationIndex = 0;
+    private int translationRunId = 0;
+    private boolean translationActive = false;
 
     public Mod(TGPlayer player) {
         super(player);
@@ -52,61 +77,224 @@ public final class Mod extends CheckImpl implements PacketCheck {
         return value == null ? null : value.toLowerCase(Locale.ROOT);
     }
 
-    private static String nextId() {
+    private static String nextProbeId() {
         String s = Long.toUnsignedString(ThreadLocalRandom.current().nextLong(), 36);
         return (s.length() <= 8) ? s : s.substring(s.length() - 8);
     }
 
-    @Override
-    public void reload() {
-        translationIdsByMod.clear();
-
-        for (Map.Entry<String, ModSignature> entry : ModSignatures.get().entrySet()) {
-            String modId = entry.getKey();
-            ModSignature sig = entry.getValue();
-
-            if (sig.translations().isEmpty()) {
-                continue;
-            }
-
-            Map<String, String> ids = new HashMap<>();
-            for (String key : sig.translations()) {
-                ids.put(nextId(), key);
-            }
-
-            translationIdsByMod.put(modId, ids);
-        }
+    private static int randomWindowId() {
+        return -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
     }
 
-    @SuppressWarnings("unused")
-    public Map<String, Map<String, String>> translationIdsByMod() {
-        return Collections.unmodifiableMap(translationIdsByMod);
+    private static int randomStateId() {
+        return ThreadLocalRandom.current().nextInt();
+    }
+
+    @Override
+    public void reload() {
+        super.reload();
+
+        translationKeyByProbeId.clear();
+        modByProbeId.clear();
+
+        for (Map.Entry<String, ModSignature> entry : ModSignatures.get().entrySet()) {
+            final String modId = entry.getKey();
+            final ModSignature sig = entry.getValue();
+
+            for (String translationKey : sig.translations()) {
+                final String probeId = nextProbeId();
+                translationKeyByProbeId.put(probeId, translationKey);
+                modByProbeId.put(probeId, modId);
+            }
+        }
+
+        synchronized (translationLock) {
+            translationRunId++;
+            translationActive = false;
+            translationEntries = List.of();
+            translationIndex = 0;
+        }
     }
 
     public void handle() {
         flushDetections();
+        startTranslationProbeRunIfNeeded();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        PacketTypeCommon type = event.getPacketType();
+        final PacketTypeCommon type = event.getPacketType();
+
+        if (type == PacketType.Play.Client.NAME_ITEM) {
+            handleTranslationResponse(event);
+            flushDetections();
+            return;
+        }
 
         if (type == PacketType.Play.Client.PLUGIN_MESSAGE) {
             WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
             handlePluginMessage(packet.getChannelName(), packet.getData());
-        } else if (type == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
+            return;
+        }
+
+        if (type == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             WrapperConfigClientPluginMessage packet = new WrapperConfigClientPluginMessage(event);
             handlePluginMessage(packet.getChannelName(), packet.getData());
         }
     }
 
-    private void handlePluginMessage(String channel, byte[] data) {
-        if (channel == null) return;
+    private void startTranslationProbeRunIfNeeded() {
+        final int runId;
+        final boolean shouldRun;
 
-        String normalizedChannel = normalize(channel);
+        synchronized (translationLock) {
+            translationRunId++;
+            runId = translationRunId;
+
+            translationEntries = new ArrayList<>(translationKeyByProbeId.entrySet());
+            translationIndex = 0;
+            translationActive = !translationEntries.isEmpty();
+            shouldRun = translationActive;
+        }
+
+        if (shouldRun) {
+            platform.getScheduler().runAsyncTask(() -> sendTranslationBatch(runId));
+        }
+    }
+
+    private void sendTranslationBatch(int runId) {
+        final List<Map.Entry<String, String>> batch;
+        final boolean hasMore;
+
+        synchronized (translationLock) {
+            if (!translationActive || runId != translationRunId) {
+                return;
+            }
+
+            if (translationIndex >= translationEntries.size()) {
+                translationActive = false;
+                return;
+            }
+
+            int endExclusive = Math.min(translationEntries.size(), translationIndex + TRANSLATION_BATCH_SIZE);
+            batch = new ArrayList<>(translationEntries.subList(translationIndex, endExclusive));
+            translationIndex = endExclusive;
+
+            hasMore = translationIndex < translationEntries.size();
+            if (!hasMore) {
+                translationActive = false;
+            }
+        }
+
+        final boolean wasSendingBundle = player.getData().isSendingBundlePacket();
+        final WrapperPlayServerBundle delimiter = new WrapperPlayServerBundle();
+
+        if (!wasSendingBundle) {
+            player.getUser().sendPacket(delimiter);
+        }
+
+        for (Map.Entry<String, String> entry : batch) {
+            final String probeId = entry.getKey();
+            final String translationKey = entry.getValue();
+
+            final int windowId = randomWindowId();
+            final int stateId = randomStateId();
+
+            sendAnvilProbe(windowId, stateId, probeId, translationKey);
+        }
+
+        if (!wasSendingBundle) {
+            player.getUser().sendPacket(delimiter);
+        }
+
+        if (hasMore) {
+            platform.getScheduler().runAsyncTaskDelayed(
+                    () -> sendTranslationBatch(runId),
+                    TRANSLATION_BATCH_DELAY_MS,
+                    TimeUnit.MILLISECONDS
+            );
+        }
+    }
+
+    private void sendAnvilProbe(int windowId, int stateId, String probeId, String translationKey) {
+        player.getUser().sendPacket(new WrapperPlayServerOpenWindow(
+                windowId,
+                ANVIL_SCREEN,
+                Component.text("Repair & Name"),
+                0,
+                true,
+                0
+        ));
+
+        Component name = Component.text(probeId)
+                .append(Component.text("|"))
+                .append(Component.text(String.valueOf(START_MARKER)))
+                .append(Component.translatable(translationKey))
+                .append(Component.text(String.valueOf(END_MARKER)));
+
+        player.getUser().sendPacket(new WrapperPlayServerSetSlot(
+                windowId,
+                stateId,
+                0,
+                new ItemStack.Builder()
+                        .type(ItemTypes.DIAMOND_SWORD)
+                        .component(ComponentTypes.CUSTOM_NAME, name)
+                        .amount(1)
+                        .build()
+        ));
+
+        player.getUser().sendPacket(new WrapperPlayServerCloseWindow(windowId));
+    }
+
+    private void handleTranslationResponse(PacketReceiveEvent event) {
+        WrapperPlayClientNameItem packet = new WrapperPlayClientNameItem(event);
+
+        final String itemName = packet.getItemName();
+        if (itemName.isBlank()) {
+            return;
+        }
+
+        final int sep = itemName.indexOf('|');
+        if (sep <= 0) {
+            return;
+        }
+
+        final String probeId = itemName.substring(0, sep);
+        final String rendered = itemName.substring(sep + 1);
+
+        final String expectedKey = translationKeyByProbeId.get(probeId);
+        final String modId = modByProbeId.get(probeId);
+        if (expectedKey == null || modId == null) {
+            return;
+        }
+
+        event.setCancelled(true);
+
+        if (rendered.isEmpty() || rendered.charAt(0) != START_MARKER) {
+            return;
+        }
+
+        final int endIdx = rendered.lastIndexOf(END_MARKER);
+        if (endIdx < 0) {
+            return;
+        }
+
+        final String payload = rendered.substring(1, endIdx);
+
+        if (!payload.equals(expectedKey)) {
+            failOnce(modId);
+        }
+    }
+
+    private void handlePluginMessage(String channel, byte[] data) {
+        if (channel == null) {
+            return;
+        }
+
+        final String normalizedChannel = normalize(channel);
 
         if (REGISTER_CHANNEL.equals(normalizedChannel)) {
-            String payload = new String(data, StandardCharsets.UTF_8);
+            final String payload = new String(data, StandardCharsets.UTF_8);
             for (String entry : payload.split("\0")) {
                 detectFromValue(normalize(entry));
             }
@@ -123,15 +311,18 @@ public final class Mod extends CheckImpl implements PacketCheck {
         }
 
         for (Map.Entry<String, ModSignature> modEntry : ModSignatures.get().entrySet()) {
-            String modName = modEntry.getKey();
+            final String modId = modEntry.getKey();
 
-            if (flaggedMods.contains(modName)) {
+            if (flaggedMods.contains(modId)) {
                 continue;
             }
 
             for (String keyword : modEntry.getValue().payloads()) {
+                if (keyword == null || keyword.isBlank()) {
+                    continue;
+                }
                 if (value.contains(keyword)) {
-                    pendingDetections.add(modName);
+                    pendingDetections.add(modId);
                     break;
                 }
             }
@@ -139,20 +330,20 @@ public final class Mod extends CheckImpl implements PacketCheck {
     }
 
     private void flushDetections() {
-        if (!player.isHasLoggedIn()) {
-            return;
-        }
-
         if (pendingDetections.isEmpty()) {
             return;
         }
 
-        for (String mod : pendingDetections) {
-            if (flaggedMods.add(mod)) {
-                fail(mod);
-            }
+        for (String modId : pendingDetections) {
+            failOnce(modId);
         }
 
         pendingDetections.clear();
+    }
+
+    private void failOnce(String modId) {
+        if (flaggedMods.add(modId)) {
+            fail(modId);
+        }
     }
 }

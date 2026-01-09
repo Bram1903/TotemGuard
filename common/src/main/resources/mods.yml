@@ -16,3 +16,11 @@ mods:
   Tweakeroo:
     payloads:
       - "servux:tweaks"
+
+  Meteor:
+    translations:
+      - "key.meteor-client.open-gui"
+
+  AccurateBlockPlacement:
+    translations:
+      - "net.clayborn.accurateblockplacement.togglevanillaplacement"
