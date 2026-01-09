@@ -31,6 +31,7 @@ public final class YamlLoaderFactory {
         return YamlConfigurationLoader.builder()
                 .path(path)
                 .nodeStyle(NodeStyle.BLOCK)
+                .indent(2)
                 .build();
     }
 }

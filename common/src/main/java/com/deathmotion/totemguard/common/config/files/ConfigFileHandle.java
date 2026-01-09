@@ -57,8 +57,13 @@ public final class ConfigFileHandle {
     public void reload() throws IOException {
         CommentedConfigurationNode loaded = nodeIO.load(loader);
 
+        int beforeVersion = loaded.node(com.deathmotion.totemguard.common.config.migrate.Versioning.VERSION_KEY).getInt(0);
         migrations.apply(loaded);
-        nodeIO.save(loader, loaded);
+        int afterVersion = loaded.node(com.deathmotion.totemguard.common.config.migrate.Versioning.VERSION_KEY).getInt(0);
+
+        if (afterVersion != beforeVersion) {
+            nodeIO.save(loader, loaded);
+        }
 
         this.root = loaded;
     }
