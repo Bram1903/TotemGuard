@@ -16,26 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.files;
+package com.deathmotion.totemguard.common.config.migrate.impl;
 
-public enum ConfigFileKey {
-    MAIN("config.yml"),
-    CHECKS("checks.yml"),
-    MESSAGES("messages.yml"),
-    MODS("mods.yml");
+import com.deathmotion.totemguard.common.config.migrate.Versioning;
+import org.spongepowered.configurate.transformation.ConfigurationTransformation;
 
-    private final String fileName;
-
-    ConfigFileKey(String fileName) {
-        this.fileName = fileName;
+public final class ModsMigrations {
+    private ModsMigrations() {
     }
 
-    public String fileName() {
-        return fileName;
-    }
+    public static ConfigurationTransformation.Versioned create() {
+        final int CURRENT = 1;
 
-    public String resourcePath() {
-        return "/" + fileName;
+        return ConfigurationTransformation.versionedBuilder()
+                .versionKey(Versioning.VERSION_KEY)
+                .addVersion(CURRENT, ConfigurationTransformation.empty())
+                .build();
     }
 }
-

@@ -31,26 +31,56 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
 public final class Mod extends CheckImpl implements PacketCheck {
 
     private static final String REGISTER_CHANNEL = "minecraft:register";
 
-    private static final Map<String, List<String>> PLUGIN_MESSAGE_KEYWORDS = Map.of(
-            "autototem", List.of("autototem"),
-            "tweakeroo", List.of("servux:tweaks")
-    );
-
     private final Set<String> flaggedMods = new HashSet<>();
     private final Set<String> pendingDetections = new HashSet<>();
 
+    private final Map<String, Map<String, String>> translationIdsByMod = new HashMap<>();
+
     public Mod(TGPlayer player) {
         super(player);
+        reload();
     }
 
     private static String normalize(String value) {
         return value == null ? null : value.toLowerCase(Locale.ROOT);
+    }
+
+    private static String nextId() {
+        String s = Long.toUnsignedString(ThreadLocalRandom.current().nextLong(), 36);
+        return (s.length() <= 8) ? s : s.substring(s.length() - 8);
+    }
+
+    @Override
+    public void reload() {
+        translationIdsByMod.clear();
+
+        for (Map.Entry<String, ModSignature> entry : ModSignatures.get().entrySet()) {
+            String modId = entry.getKey();
+            ModSignature sig = entry.getValue();
+
+            if (sig.translations().isEmpty()) {
+                continue;
+            }
+
+            Map<String, String> ids = new HashMap<>();
+            for (String key : sig.translations()) {
+                ids.put(nextId(), key);
+            }
+
+            translationIdsByMod.put(modId, ids);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public Map<String, Map<String, String>> translationIdsByMod() {
+        return Collections.unmodifiableMap(translationIdsByMod);
     }
 
     public void handle() {
@@ -88,17 +118,21 @@ public final class Mod extends CheckImpl implements PacketCheck {
     }
 
     private void detectFromValue(String value) {
-        for (Map.Entry<String, List<String>> modEntry : PLUGIN_MESSAGE_KEYWORDS.entrySet()) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+
+        for (Map.Entry<String, ModSignature> modEntry : ModSignatures.get().entrySet()) {
             String modName = modEntry.getKey();
 
             if (flaggedMods.contains(modName)) {
                 continue;
             }
 
-            for (String keyword : modEntry.getValue()) {
+            for (String keyword : modEntry.getValue().payloads()) {
                 if (value.contains(keyword)) {
                     pendingDetections.add(modName);
-                    break; // no need to check other keywords for this mod
+                    break;
                 }
             }
         }

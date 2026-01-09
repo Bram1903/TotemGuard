@@ -16,26 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.files;
+package com.deathmotion.totemguard.common.check.impl.mods;
 
-public enum ConfigFileKey {
-    MAIN("config.yml"),
-    CHECKS("checks.yml"),
-    MESSAGES("messages.yml"),
-    MODS("mods.yml");
+import org.jetbrains.annotations.NotNull;
 
-    private final String fileName;
+import java.util.List;
 
-    ConfigFileKey(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String fileName() {
-        return fileName;
-    }
-
-    public String resourcePath() {
-        return "/" + fileName;
-    }
+public record ModSignature(
+        @NotNull List<String> payloads,
+        @NotNull List<String> translations
+) {
 }
-

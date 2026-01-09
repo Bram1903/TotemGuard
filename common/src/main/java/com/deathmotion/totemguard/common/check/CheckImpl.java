@@ -34,6 +34,7 @@ public class CheckImpl implements Check, Reloadable {
 
     protected final PacketInventory inventory;
     protected final Buffer buffer;
+    protected final TGPlatform platform;
 
     @Getter
     private final String name;
@@ -53,6 +54,7 @@ public class CheckImpl implements Check, Reloadable {
         this.player = player;
         this.inventory = player.getInventory();
         this.buffer = new Buffer();
+        this.platform = TGPlatform.getInstance();
 
         final Class<?> checkClass = this.getClass();
         if (!checkClass.isAnnotationPresent(CheckData.class)) {

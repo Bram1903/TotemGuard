@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.config.files.ConfigFileKey;
 import com.deathmotion.totemguard.common.config.migrate.impl.ChecksMigrations;
 import com.deathmotion.totemguard.common.config.migrate.impl.MainConfigMigrations;
 import com.deathmotion.totemguard.common.config.migrate.impl.MessagesMigrations;
+import com.deathmotion.totemguard.common.config.migrate.impl.ModsMigrations;
 import org.spongepowered.configurate.transformation.ConfigurationTransformation;
 
 public final class MigrationRegistry {
@@ -31,6 +32,7 @@ public final class MigrationRegistry {
             case MAIN -> MainConfigMigrations.create();
             case CHECKS -> ChecksMigrations.create();
             case MESSAGES -> MessagesMigrations.create();
+            case MODS -> ModsMigrations.create();
         };
     }
 }

@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.config;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.check.impl.mods.ModSignatures;
 import com.deathmotion.totemguard.common.config.files.ConfigFileHandle;
 import com.deathmotion.totemguard.common.config.files.ConfigFileKey;
 import com.deathmotion.totemguard.common.config.io.ConfigPaths;
@@ -71,6 +72,8 @@ public final class ConfigRepositoryImpl {
             for (ConfigFileHandle handle : files.values()) {
                 handle.reload();
             }
+
+            ModSignatures.load(mods());
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to load configuration files", e);
         }
@@ -96,6 +99,10 @@ public final class ConfigRepositoryImpl {
 
     public CommentedConfigurationNode messages() {
         return node(ConfigFileKey.MESSAGES);
+    }
+
+    public CommentedConfigurationNode mods() {
+        return node(ConfigFileKey.MODS);
     }
 
     public Path dataDirectory() {
