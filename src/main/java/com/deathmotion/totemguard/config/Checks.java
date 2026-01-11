@@ -249,7 +249,7 @@ public class Checks {
         @Comment("\nConsecutive Low SD Count: The amount of consecutive low standard deviations before flagging.")
         private int ConsecutiveLowSDCount = 2;
         public AutoTotemH() {
-            super(true, 4);
+            super(false, 4);
         }
     }
 
