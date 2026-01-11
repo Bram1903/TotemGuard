@@ -3,23 +3,19 @@ package com.deathmotion.totemguard.common.util;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import lombok.NonNull;
+import lombok.experimental.UtilityClass;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.logging.Logger;
 
+@UtilityClass
 public final class ConsoleBanner {
 
-    private static final DateTimeFormatter BUILD_FORMAT =
-            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
-                    .withZone(ZoneId.systemDefault());
+    private final DateTimeFormatter BUILD_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm").withZone(ZoneId.systemDefault());
 
-    private ConsoleBanner() {
-        // utility class
-    }
-
-    public static void print() {
+    public void print() {
         Logger logger = TGPlatform.getInstance().getLogger();
 
         List<String> totem = List.of(
@@ -54,7 +50,7 @@ public final class ConsoleBanner {
         logger.info(generateBanner(totem, text).toString());
     }
 
-    private static @NonNull StringBuilder generateBanner(List<String> totem, List<String> text) {
+    private @NonNull StringBuilder generateBanner(List<String> totem, List<String> text) {
         int totemHeight = totem.size();
         int textHeight = text.size();
         int textStartRow = (totemHeight - textHeight) / 2;
