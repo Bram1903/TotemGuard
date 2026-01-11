@@ -19,12 +19,13 @@
 package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.commands.Command;
+import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import lombok.NonNull;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -32,7 +33,7 @@ import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
-public class InventoryCommand implements Command {
+public class InventoryCommand extends AbstractCommand {
 
     private static Component labeledSlot(String label, int slot, PacketInventory inv) {
         return Component.text(label + ": ", NamedTextColor.GRAY)
@@ -53,24 +54,24 @@ public class InventoryCommand implements Command {
     }
 
     @Override
-    public void register(CommandManager<Sender> manager) {
+    public void register(@NonNull CommandManager<Sender> manager) {
         manager.command(
-                manager.commandBuilder("totemguard", "tg")
+                base(manager)
                         .literal("inventory")
-                        .permission("totemguard.inventory")
+                        .permission(perm("inventory"))
                         .handler(this::handleInventoryTest)
         );
     }
 
     private void handleInventoryTest(@NotNull CommandContext<Sender> context) {
-        if (!context.sender().isPlayer()) {
-            context.sender().sendMessage(Component.text("You must be a player to use this command!", NamedTextColor.RED));
+        final Sender sender = context.sender();
+        if (!requirePlayer(sender)) {
             return;
         }
 
-        TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(context.sender().getUniqueId());
+        TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(sender.getUniqueId());
         if (player == null) {
-            context.sender().sendMessage(Component.text("Your player data could not be found in the player repository", NamedTextColor.RED));
+            sender.sendMessage(Component.text("Your player data could not be found in the player repository", NamedTextColor.RED));
             return;
         }
 

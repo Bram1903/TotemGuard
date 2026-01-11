@@ -20,15 +20,14 @@ package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.alert.AlertManagerImpl;
-import com.deathmotion.totemguard.common.commands.Command;
+import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
-public class AlertCommand implements Command {
+public class AlertCommand extends AbstractCommand {
 
     private final AlertManagerImpl alertManager;
 
@@ -37,21 +36,21 @@ public class AlertCommand implements Command {
     }
 
     @Override
-    public void register(CommandManager<Sender> manager) {
+    public void register(@NonNull CommandManager<Sender> manager) {
         manager.command(
-                manager.commandBuilder("totemguard", "tg")
+                base(manager)
                         .literal("alerts")
-                        .permission("totemguard.alerts")
+                        .permission(perm("alerts"))
                         .handler(this::toggleAlerts)
         );
     }
 
-    private void toggleAlerts(@NotNull CommandContext<Sender> context) {
-        if (!context.sender().isPlayer()) {
-            context.sender().sendMessage(Component.text("You must be a player to use this command!", NamedTextColor.RED));
+    private void toggleAlerts(final @NotNull CommandContext<Sender> context) {
+        final Sender sender = context.sender();
+        if (!requirePlayer(sender)) {
             return;
         }
 
-        alertManager.toggleAlerts(context.sender().getUniqueId());
+        alertManager.toggleAlerts(sender.getUniqueId());
     }
 }

@@ -19,14 +19,14 @@
 package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.commands.Command;
+import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import lombok.NonNull;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class PlaceholderCommand implements Command {
+public class PlaceholderCommand extends AbstractCommand {
 
     private final PlaceholderRepositoryImpl placeholderRepository;
 
@@ -44,28 +44,28 @@ public class PlaceholderCommand implements Command {
     }
 
     @Override
-    public void register(CommandManager<Sender> manager) {
+    public void register(@NonNull CommandManager<Sender> manager) {
         manager.command(
-                manager.commandBuilder("totemguard", "tg")
+                base(manager)
                         .literal("placeholder")
-                        .permission("totemguard.placeholder")
+                        .permission(perm("placeholder"))
                         .handler(this::executePlaceholderCommand)
         );
 
         manager.command(
-                manager.commandBuilder("totemguard", "tg")
+                base(manager)
                         .literal("placeholder")
                         .literal("list")
-                        .permission("totemguard.placeholder")
+                        .permission(perm("placeholder"))
                         .handler(this::executeList)
         );
 
         manager.command(
-                manager.commandBuilder("totemguard", "tg")
+                base(manager)
                         .literal("placeholder")
                         .literal("parse")
                         .required("message", StringParser.greedyStringParser())
-                        .permission("totemguard.placeholder")
+                        .permission(perm("placeholder"))
                         .handler(this::executeParse)
         );
     }

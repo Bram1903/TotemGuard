@@ -11,8 +11,8 @@ config_version: 1
 mods:
   AutoTotem:
     payloads:
-      - "autototem"
+      - autototem
 
   Tweakeroo:
     payloads:
-      - "servux:tweaks"
+      - servux:tweaks
