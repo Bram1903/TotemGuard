@@ -132,9 +132,9 @@ tasks {
     )
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
-        url("https://cdn.modrinth.com/data/HYKaKraK/versions/yu8xYp9k/packetevents-spigot-2.11.0.jar")
-        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.6.0/ViaVersion-5.6.0.jar")
-        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.6.0/ViaBackwards-5.6.0.jar")
+        url("https://cdn.modrinth.com/data/HYKaKraK/versions/vSdJEwlO/packetevents-spigot-2.11.1.jar")
+        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.7.0/ViaVersion-5.7.0.jar")
+        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.7.0/ViaBackwards-5.7.0.jar")
     }
 
     runServer {
@@ -147,8 +147,8 @@ tasks {
 
         downloadPlugins {
             from(sharedPlugins)
-            url("https://github.com/EssentialsX/Essentials/releases/download/2.21.2/EssentialsX-2.21.2.jar")
-            url("https://download.luckperms.net/1602/bukkit/loader/LuckPerms-Bukkit-5.5.15.jar")
+            url("https://cdn.modrinth.com/data/hXiIvTyT/versions/Oa9ZDzZq/EssentialsX-2.21.2.jar")
+            url("https://cdn.modrinth.com/data/Vebnzrzj/versions/OrIs0S6b/LuckPerms-Bukkit-5.5.17.jar")
         }
 
         jvmArgs = jvmArgsExternal
