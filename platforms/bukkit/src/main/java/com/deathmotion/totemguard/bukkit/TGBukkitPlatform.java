@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.Scheduler;
@@ -33,6 +34,7 @@ public class TGBukkitPlatform extends TGPlatform {
     private final Scheduler scheduler;
 
     public TGBukkitPlatform(TGBukkit plugin) {
+        super(Platform.PAPER);
         this.plugin = plugin;
         this.scheduler = new BukkitScheduler(plugin);
     }
@@ -60,6 +62,16 @@ public class TGBukkitPlatform extends TGPlatform {
     @Override
     public String getPluginDirectory() {
         return this.plugin.getDataFolder().getAbsolutePath();
+    }
+
+    @Override
+    public String getPlatformVersion() {
+        return Bukkit.getMinecraftVersion();
+    }
+
+    @Override
+    public boolean isPluginEnabled(String plugin) {
+        return Bukkit.getPluginManager().isPluginEnabled(plugin);
     }
 
     @Override

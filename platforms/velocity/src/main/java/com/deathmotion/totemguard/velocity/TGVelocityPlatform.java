@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.velocity;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.Scheduler;
@@ -31,7 +32,7 @@ public class TGVelocityPlatform extends TGPlatform {
     private final VelocityScheduler scheduler;
 
     public TGVelocityPlatform(TGVelocity plugin) {
-        super(true);
+        super(Platform.VELOCITY);
         this.plugin = plugin;
         this.scheduler = new VelocityScheduler(plugin, plugin.getServer());
     }
@@ -62,7 +63,20 @@ public class TGVelocityPlatform extends TGPlatform {
     }
 
     @Override
+    public String getPlatformVersion() {
+        final String raw = this.plugin.getServer().getVersion().getVersion();
+        final String s = raw.trim();
+        final int space = s.indexOf(' ');
+        return (space == -1) ? s : s.substring(0, space);
+    }
+
+    @Override
+    public boolean isPluginEnabled(String plugin) {
+        return this.plugin.getServer().getPluginManager().isLoaded(plugin);
+    }
+
+    @Override
     public void disablePlugin() {
-        throw new UnsupportedOperationException("Cannot disable Velocity plugins programmatically.");
+        // Fallback to the general disable method
     }
 }
