@@ -2,6 +2,7 @@ package com.deathmotion.totemguard.common.util;
 
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
+import lombok.NonNull;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -50,6 +51,10 @@ public final class ConsoleBanner {
                 "Authors    : Bram & OutDev"
         );
 
+        logger.info(generateBanner(totem, text).toString());
+    }
+
+    private static @NonNull StringBuilder generateBanner(List<String> totem, List<String> text) {
         int totemHeight = totem.size();
         int textHeight = text.size();
         int textStartRow = (totemHeight - textHeight) / 2;
@@ -71,7 +76,6 @@ public final class ConsoleBanner {
                 banner.append('\n');
             }
         }
-
-        logger.info(banner.toString());
+        return banner;
     }
 }
