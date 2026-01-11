@@ -35,12 +35,22 @@ public class Tweakeroo extends Check implements PacketCheck {
     private static final String REGISTER_CHANNEL = "minecraft:register";
     private static final String TWEAKEROO_CHANNEL = "servux:tweaks";
 
+    private boolean detected;
+
     public Tweakeroo(final TotemPlayer player) {
         super(player);
     }
 
+    public void trigger() {
+        if (detected) {
+            fail();
+        }
+    }
+
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
+        if (detected) return;
+
         if (event.getPacketType() == PacketType.Play.Client.PLUGIN_MESSAGE) {
             WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
             handle(packet.getChannelName(), packet.getData());
@@ -51,15 +61,21 @@ public class Tweakeroo extends Check implements PacketCheck {
     }
 
     private void handle(String channel, byte[] data) {
-        if (channel == null || !channel.equals(REGISTER_CHANNEL)) return;
+        if (!REGISTER_CHANNEL.equals(channel)) return;
 
         String payload = new String(data, StandardCharsets.UTF_8);
         String[] channels = payload.split("\0");
 
         for (String ch : channels) {
-            if (ch.equalsIgnoreCase(TWEAKEROO_CHANNEL)) {
-                fail();
+            if (TWEAKEROO_CHANNEL.equalsIgnoreCase(ch)) {
+                detected = true;
+
+                if (player.isHasLoggedIn()) {
+                    fail();
+                }
+                return;
             }
         }
     }
 }
+

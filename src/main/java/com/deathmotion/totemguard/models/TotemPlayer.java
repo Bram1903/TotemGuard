@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.api.interfaces.TotemUser;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsB;
 import com.deathmotion.totemguard.checks.impl.badpackets.BadPacketsD;
 import com.deathmotion.totemguard.checks.impl.misc.ClientBrand;
+import com.deathmotion.totemguard.checks.impl.mods.Tweakeroo;
 import com.deathmotion.totemguard.database.entities.DatabasePlayer;
 import com.deathmotion.totemguard.manager.CheckManager;
 import com.deathmotion.totemguard.models.impl.DigAndPickupState;
@@ -32,6 +33,7 @@ import com.deathmotion.totemguard.models.impl.TotemData;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import lombok.Getter;
 import org.bukkit.entity.Player;
 
 import javax.annotation.Nullable;
@@ -47,7 +49,9 @@ public class TotemPlayer implements TotemUser {
 
     public Player bukkitPlayer;
 
+    @Getter
     private boolean hasLoggedIn;
+
     private boolean modChecksRan;
 
     public boolean firstChunkReceived;
@@ -84,6 +88,8 @@ public class TotemPlayer implements TotemUser {
         }
 
         hasLoggedIn = true;
+        checkManager.getPacketCheck(Tweakeroo.class).trigger();
+
         if (firstChunkReceived) {
             runDelayedChecks();
         }
