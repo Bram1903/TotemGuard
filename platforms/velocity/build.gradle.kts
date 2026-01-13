@@ -24,14 +24,6 @@ tasks {
         enabled = false
     }
 
-    shadowJar {
-        archiveFileName = "${rootProject.name}-Velocity-${rootProject.ext["versionNoHash"]}.jar"
-        archiveClassifier = null
-        destinationDirectory = rootProject.layout.buildDirectory
-
-        exclude("META-INF/maven/**")
-    }
-
     assemble {
         dependsOn(shadowJar)
     }

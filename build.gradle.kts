@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import java.util.Locale.getDefault
 
 plugins {
     alias(libs.plugins.shadow)
@@ -29,6 +30,17 @@ ext["versionNoHash"] = "$fullVersion${getVersionMeta(false)}"
 subprojects {
     plugins.withId("com.github.johnrengelman.shadow") {
         tasks.withType<ShadowJar>().configureEach {
+            archiveFileName = "${rootProject.name}-${
+                project.name.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(
+                        getDefault()
+                    ) else it.toString()
+                }
+            }-${rootProject.ext["versionNoHash"]}.jar"
+            archiveClassifier = null
+            destinationDirectory = rootProject.layout.buildDirectory
+            exclude("META-INF/maven/**")
+
             // Cloud
             relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
             relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
@@ -46,5 +58,11 @@ subprojects {
 
             minimize()
         }
+    }
+}
+
+tasks {
+    register<Delete>("clean") {
+        delete(rootProject.layout.buildDirectory)
     }
 }
