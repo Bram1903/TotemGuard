@@ -19,6 +19,9 @@
 package com.deathmotion.totemguard.common.alert;
 
 import com.deathmotion.totemguard.api.alert.AlertManager;
+import com.deathmotion.totemguard.api.config.Config;
+import com.deathmotion.totemguard.api.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.api.event.impl.TGAlertEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
@@ -30,7 +33,6 @@ import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.configurate.CommentedConfigurationNode;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -120,16 +122,18 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
     }
 
     private void sendToggleAlertMessage(PlatformUser platformUser, boolean enabled) {
-        String message;
-        CommentedConfigurationNode messages = TGPlatform.getInstance().getConfigRepository().messages();
+        Config messages = TGPlatform.getInstance()
+                .getConfigRepository()
+                .config(ConfigFile.MESSAGES);
 
-        if (enabled) {
-            message = messages.node("alerts", "enabled").getString("%prefix% &aAlerts enabled");
-        } else {
-            message = messages.node("alerts", "disabled").getString("%prefix% &cAlerts disabled");
-        }
+        String message = enabled
+                ? messages.getString(MessagesKeys.ALERTS_ENABLED)
+                : messages.getString(MessagesKeys.ALERTS_DISABLED);
 
-        message = TGPlatform.getInstance().getPlaceholderRepository().replace(message);
+        message = TGPlatform.getInstance()
+                .getPlaceholderRepository()
+                .replace(message);
+
         platformUser.sendMessage(MessageUtil.formatMessage(message));
     }
 

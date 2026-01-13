@@ -30,13 +30,16 @@ import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener
 import com.deathmotion.totemguard.common.event.packet.PacketPingListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
+import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.github.retrooper.packetevents.PacketEvents;
 import lombok.Getter;
+import lombok.Setter;
 import org.incendo.cloud.CommandManager;
 
 import java.util.logging.Logger;
@@ -48,11 +51,13 @@ public abstract class TGPlatform {
     private static final int bStatsId = 23179;
     @Getter
     private static TGPlatform instance;
-    private final boolean isProxy;
+    private final Platform platform;
     private final Logger logger;
 
-    private ConfigRepositoryImpl configRepository;
+    @Setter
+    private boolean enabled = true;
 
+    private ConfigRepositoryImpl configRepository;
     private EventRepositoryImpl eventRepository;
     private AlertManagerImpl alertManager;
     private PlayerRepositoryImpl playerRepository;
@@ -61,13 +66,9 @@ public abstract class TGPlatform {
 
     private TGPlatformAPI api;
 
-    public TGPlatform() {
-        this(false);
-    }
-
-    public TGPlatform(boolean isProxy) {
+    public TGPlatform(Platform platform) {
         instance = this;
-        this.isProxy = isProxy;
+        this.platform = platform;
         logger = Logger.getLogger("TotemGuard");
     }
 
@@ -75,11 +76,15 @@ public abstract class TGPlatform {
     }
 
     public void commonOnEnable() {
+        if (!CompatibilityUtil.isCompatible()) {
+            setEnabled(false);
+            disablePlugin();
+            return;
+        }
+
         ConsoleBanner.print();
 
         configRepository = new ConfigRepositoryImpl();
-        configRepository.reload();
-
         eventRepository = new EventRepositoryImpl();
         alertManager = new AlertManagerImpl();
         playerRepository = new PlayerRepositoryImpl();
@@ -114,6 +119,10 @@ public abstract class TGPlatform {
     public abstract PlatformUserFactory getPlatformUserFactory();
 
     public abstract String getPluginDirectory();
+
+    public abstract String getPlatformVersion();
+
+    public abstract boolean isPluginEnabled(String plugin);
 
     public abstract void disablePlugin();
 }

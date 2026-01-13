@@ -16,23 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.io;
+package com.deathmotion.totemguard.common.config.path;
 
-import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.loader.ConfigurationLoader;
-import org.spongepowered.configurate.yaml.NodeStyle;
-import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
+public record PathId(int id) {
 
-import java.nio.file.Path;
+    public static PathId invalid() {
+        return new PathId(0);
+    }
 
-public final class YamlLoaderFactory {
-
-    public ConfigurationLoader<CommentedConfigurationNode> create(Path path) {
-        return YamlConfigurationLoader.builder()
-                .path(path)
-                .nodeStyle(NodeStyle.BLOCK)
-                .indent(2)
-                .build();
+    public boolean isInvalid() {
+        return id <= 0;
     }
 }
-

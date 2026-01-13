@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
+import com.deathmotion.totemguard.api.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
@@ -36,9 +38,9 @@ public final class PlatformPlaceholders implements InternalPlaceholderHolder, Pl
     static {
         RESOLVERS = Map.of("prefix", ctx -> ctx.platform()
                 .getConfigRepository()
-                .messages()
-                .node("prefix")
-                .getString("&6&lTG &8»"));
+                .config(ConfigFile.MESSAGES)
+                .getString(MessagesKeys.PREFIX)
+        );
     }
 
     @Override

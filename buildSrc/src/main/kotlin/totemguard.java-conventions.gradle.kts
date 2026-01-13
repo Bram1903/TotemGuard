@@ -38,7 +38,7 @@ tasks {
             "version" to rootProject.ext["versionNoHash"].toString()
         )
 
-        filesMatching(listOf("plugin.yml")) {
+        filesMatching(listOf("plugin.yml", "velocity-plugin.json")) {
             expand(
                 "version" to rootProject.ext["versionNoHash"].toString()
             )

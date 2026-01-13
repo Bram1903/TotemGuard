@@ -16,21 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.migrate.impl;
+package com.deathmotion.totemguard.common.config.migration;
 
-import com.deathmotion.totemguard.common.config.migrate.Versioning;
-import org.spongepowered.configurate.transformation.ConfigurationTransformation;
+import java.util.Map;
+import java.util.Objects;
 
-public final class ModsMigrations {
-    private ModsMigrations() {
+public final class MutableYaml {
+
+    private final Map<String, Object> map;
+    private String text;
+
+    public MutableYaml(String text, Map<String, Object> map) {
+        this.text = Objects.requireNonNull(text, "text");
+        this.map = Objects.requireNonNull(map, "map");
     }
 
-    public static ConfigurationTransformation.Versioned create() {
-        final int CURRENT = 1;
+    public String text() {
+        return text;
+    }
 
-        return ConfigurationTransformation.versionedBuilder()
-                .versionKey(Versioning.VERSION_KEY)
-                .addVersion(CURRENT, ConfigurationTransformation.empty())
-                .build();
+    public void text(String newText) {
+        this.text = Objects.requireNonNull(newText, "newText");
+    }
+
+    public Map<String, Object> map() {
+        return map;
     }
 }

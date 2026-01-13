@@ -16,21 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.io;
+package com.deathmotion.totemguard.api.config.key.impl;
 
-import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.loader.ConfigurationLoader;
+import com.deathmotion.totemguard.api.config.key.ConfigValueKey;
 
-import java.io.IOException;
+public final class ConfigKeys {
 
-public final class NodeIO {
+    public static final ConfigValueKey<String> COMMANDS_BASE =
+            ConfigValueKey.required(
+                    "commands.base",
+                    "totemguard"
+            );
 
-    public CommentedConfigurationNode load(ConfigurationLoader<CommentedConfigurationNode> loader) throws IOException {
-        return loader.load();
-    }
+    public static final ConfigValueKey<String> COMMAND_ALIASES =
+            ConfigValueKey.required(
+                    "commands.aliases",
+                    "tg"
+            );
 
-    public void save(ConfigurationLoader<CommentedConfigurationNode> loader, CommentedConfigurationNode root) throws IOException {
-        loader.save(root);
+    private ConfigKeys() {
     }
 }
-

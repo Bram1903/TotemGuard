@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.api.check;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Represents a single check within TotemGuard.
  * <p>
@@ -34,14 +36,14 @@ public interface Check {
      *
      * @return the check name
      */
-    String getName();
+    @NotNull String getName();
 
     /**
      * Gets a short description explaining what this check detects.
      *
      * @return the check description
      */
-    String getDescription();
+    @NotNull String getDescription();
 
     /**
      * Gets the category of this check.
@@ -50,7 +52,7 @@ public interface Check {
      *
      * @return the check category
      */
-    CheckType getType();
+    @NotNull CheckType getType();
 
     /**
      * Indicates whether this check is considered experimental.

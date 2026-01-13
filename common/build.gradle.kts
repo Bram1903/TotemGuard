@@ -11,8 +11,8 @@ dependencies {
     compileOnly(libs.bundles.adventure.serializers)
     compileOnly(libs.bundles.adventure.minimessage)
     compileOnly(libs.guava)
+    compileOnly(libs.snakeyaml)
     compileOnly(libs.cloud.core)
-    implementation(libs.configurate.yaml)
 }
 
 tasks {

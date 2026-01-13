@@ -78,6 +78,8 @@ public class TGBukkit extends JavaPlugin {
         commandManager = manager;
 
         tg.commonOnEnable();
+        if (!tg.isEnabled()) return;
+
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             tg.getPlaceholderRepository().registerHolder(new PlaceholderAPIHolder());
         }

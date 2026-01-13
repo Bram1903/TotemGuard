@@ -16,23 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.migrate.impl;
+package com.deathmotion.totemguard.common.config.migration;
 
-import com.deathmotion.totemguard.common.config.migrate.Versioning;
-import org.spongepowered.configurate.transformation.ConfigurationTransformation;
+public interface ConfigMigration {
+    int fromVersion();
 
-public final class MainConfigMigrations {
-    private MainConfigMigrations() {
-    }
+    int toVersion();
 
-    public static ConfigurationTransformation.Versioned create() {
-        final int CURRENT = 1;
-
-        return ConfigurationTransformation.versionedBuilder()
-                .versionKey(Versioning.VERSION_KEY)
-                .addVersion(CURRENT, ConfigurationTransformation.empty())
-                .build();
-    }
+    void apply(MutableYaml yaml);
 }
-
-

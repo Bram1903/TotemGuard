@@ -18,8 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.mods;
 
-import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.serialize.SerializationException;
+import com.deathmotion.totemguard.api.config.Config;
 
 import java.util.*;
 
@@ -38,35 +37,25 @@ public final class ModSignatures {
         return SIGNATURES;
     }
 
-    public static void load(CommentedConfigurationNode mods) {
-        CommentedConfigurationNode modsNode = mods.node(MODS_ROOT_KEY);
-
+    public static void load(Config mods) {
         Map<String, ModSignature> loaded = new LinkedHashMap<>();
 
-        for (var entry : modsNode.childrenMap().entrySet()) {
-            String modId = String.valueOf(entry.getKey());
-            if (modId.isBlank()) continue;
+        mods.getSection(MODS_ROOT_KEY).ifPresent(modsSection -> {
+            for (String modId : modsSection.asMap().keySet()) {
+                if (modId == null || modId.isBlank()) continue;
 
-            CommentedConfigurationNode modNode = entry.getValue();
-            if (modNode.virtual()) continue;
+                modsSection.getSection(modId).ifPresent(modSection -> {
+                    List<String> payloads = normalizeList(modSection.getStringList(PAYLOAD_KEY));
+                    List<String> translations = normalizeList(modSection.getStringList(TRANSLATIONS_KEY));
 
-            List<String> payloads = normalizeList(readStringList(modNode.node(PAYLOAD_KEY)));
-            List<String> translations = normalizeList(readStringList(modNode.node(TRANSLATIONS_KEY)));
+                    if (payloads.isEmpty() && translations.isEmpty()) return;
 
-            if (payloads.isEmpty() && translations.isEmpty()) continue;
-
-            loaded.put(modId, new ModSignature(payloads, translations));
-        }
+                    loaded.put(modId, new ModSignature(payloads, translations));
+                });
+            }
+        });
 
         SIGNATURES = Map.copyOf(loaded);
-    }
-
-    private static List<String> readStringList(CommentedConfigurationNode node) {
-        try {
-            return node.getList(String.class, List.of());
-        } catch (SerializationException ignored) {
-            return List.of();
-        }
     }
 
     private static List<String> normalizeList(List<String> input) {
@@ -78,4 +67,3 @@ public final class ModSignatures {
                 .toList();
     }
 }
-

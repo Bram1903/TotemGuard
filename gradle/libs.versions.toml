@@ -1,7 +1,7 @@
 [versions]
 packetevents = "2.11.1"
 adventure = "4.25.0"
-configurate = "4.2.0"
+snakeyaml = "2.2"
 guava = "33.3.1-jre"
 paper = "1.21.11-R0.1-SNAPSHOT"
 velocity = "3.4.0-SNAPSHOT"
@@ -25,7 +25,7 @@ adventure-api = { group = "net.kyori", name = "adventure-api", version.ref = "ad
 adventure-text-serializer-gson = { group = "net.kyori", name = "adventure-text-serializer-gson", version.ref = "adventure" }
 adventure-text-serializer-legacy = { group = "net.kyori", name = "adventure-text-serializer-legacy", version.ref = "adventure" }
 minimessage = { group = "net.kyori", name = "adventure-text-minimessage", version.ref = "adventure" }
-configurate-yaml = { group = "org.spongepowered", name = "configurate-yaml", version.ref = "configurate" }
+snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyaml" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 velocity = { group = "com.velocitypowered", name = "velocity-api", version.ref = "velocity" }

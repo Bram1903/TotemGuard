@@ -1,3 +1,4 @@
+
 /*
  * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
  * Copyright (C) 2026 Bram and contributors
@@ -18,10 +19,12 @@
 
 package com.deathmotion.totemguard.common.alert;
 
+import com.deathmotion.totemguard.api.config.Config;
+import com.deathmotion.totemguard.api.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.configurate.ConfigurationNode;
 
 import java.util.Map;
 
@@ -31,14 +34,14 @@ public final class AlertBuilder {
     }
 
     public static String build(CheckImpl check, int violations, @Nullable String debugInfo) {
-        ConfigurationNode config = TGPlatform.getInstance()
+        Config messages = TGPlatform.getInstance()
                 .getConfigRepository()
-                .messages();
+                .config(ConfigFile.MESSAGES);
 
-        String message = config.node("alerts", "message").getString("%prefix% &e%tg_player%&7 failed &6%tg_check% &7VL[&6%tg_check_violations%/∞&7]");
+        String message = messages.getString(MessagesKeys.ALERTS_MESSAGE);
 
         if (debugInfo != null) {
-            message += config.node("alerts", "debug").getString(" &7(&8%tg_check_debug%&7)");
+            message += messages.getString(MessagesKeys.ALERTS_DEBUG);
         }
 
         Map<String, Object> extras = Map.of(

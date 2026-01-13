@@ -16,26 +16,51 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.files;
+package com.deathmotion.totemguard.api.config;
 
-public enum ConfigFileKey {
-    MAIN("config.yml"),
+import org.jetbrains.annotations.NotNull;
+
+/**
+ * Identifies a concrete configuration file managed by TotemGuard.
+ * <p>
+ * The filenames are the resource names inside the plugin JAR and the persisted names
+ * inside the server's configuration directory.
+ */
+public enum ConfigFile {
+
+    /**
+     * Main plugin configuration.
+     */
+    CONFIG("config.yml"),
+
+    /**
+     * Check configuration.
+     */
     CHECKS("checks.yml"),
+
+    /**
+     * User-facing messages (prefixes, alerts, etc.).
+     */
     MESSAGES("messages.yml"),
+
+    /**
+     * Client mod detection configuration.
+     */
     MODS("mods.yml");
 
     private final String fileName;
 
-    ConfigFileKey(String fileName) {
+    ConfigFile(String fileName) {
         this.fileName = fileName;
     }
 
+    /**
+     * Returns the file name for this config (resource name and persisted name).
+     *
+     * @return the config file name
+     */
+    @NotNull
     public String fileName() {
         return fileName;
     }
-
-    public String resourcePath() {
-        return "/" + fileName;
-    }
 }
-
