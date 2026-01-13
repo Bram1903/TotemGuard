@@ -19,23 +19,13 @@
 package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.bukkit.placeholder.PlaceholderAPIHolder;
-import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUserFactory;
-import com.deathmotion.totemguard.bukkit.sender.BukkitSenderFactory;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import lombok.Getter;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.incendo.cloud.CommandManager;
-import org.incendo.cloud.brigadier.BrigadierSetting;
-import org.incendo.cloud.brigadier.CloudBrigadierManager;
-import org.incendo.cloud.bukkit.CloudBukkitCapabilities;
-import org.incendo.cloud.execution.ExecutionCoordinator;
-import org.incendo.cloud.paper.LegacyPaperCommandManager;
-import org.incendo.cloud.setting.Configurable;
 
 @Getter
 public class TGBukkit extends JavaPlugin {
@@ -45,38 +35,16 @@ public class TGBukkit extends JavaPlugin {
 
     private TGBukkitPlatform tg;
 
-    private BukkitSenderFactory senderFactory;
-    private BukkitPlatformUserFactory bukkitPlatformUserFactory;
-    private CommandManager<Sender> commandManager;
-
     @Override
     public void onLoad() {
         instance = this;
+
         tg = new TGBukkitPlatform(this);
         tg.commonOnInitialize();
     }
 
     @Override
     public void onEnable() {
-        senderFactory = new BukkitSenderFactory();
-        bukkitPlatformUserFactory = new BukkitPlatformUserFactory();
-
-        LegacyPaperCommandManager<Sender> manager = new LegacyPaperCommandManager<>(
-                this,
-                ExecutionCoordinator.simpleCoordinator(),
-                senderFactory
-        );
-        if (manager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
-            manager.registerBrigadier();
-            CloudBrigadierManager<Sender, ?> cbm = manager.brigadierManager();
-            Configurable<BrigadierSetting> settings = cbm.settings();
-            settings.set(BrigadierSetting.FORCE_EXECUTABLE, true);
-        } else if (manager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
-            manager.registerAsynchronousCompletions();
-        }
-
-        commandManager = manager;
-
         tg.commonOnEnable();
         if (!tg.isEnabled()) return;
 
@@ -87,7 +55,9 @@ public class TGBukkit extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        tg.commonOnDisable();
+        if (tg != null) {
+            tg.commonOnDisable();
+        }
     }
 
     void enableBStats() {
@@ -96,7 +66,11 @@ public class TGBukkit extends JavaPlugin {
             metrics.addCustomChart(new SimplePie("tg_version", TGVersions.CURRENT::toStringWithoutSnapshot));
             metrics.addCustomChart(new SimplePie("tg_platform", () -> "Bukkit"));
         } catch (Exception e) {
-            tg.getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
+            if (tg != null) {
+                tg.getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
+            } else {
+                getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
+            }
         }
     }
 }

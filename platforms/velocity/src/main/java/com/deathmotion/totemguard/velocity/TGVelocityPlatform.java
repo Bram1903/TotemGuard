@@ -22,19 +22,38 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.velocity.player.VelocityPlatformUserFactory;
 import com.deathmotion.totemguard.velocity.scheduler.VelocityScheduler;
+import com.deathmotion.totemguard.velocity.sender.VelocitySenderFactory;
 import org.incendo.cloud.CommandManager;
+import org.incendo.cloud.execution.ExecutionCoordinator;
+import org.incendo.cloud.velocity.VelocityCommandManager;
 
 public class TGVelocityPlatform extends TGPlatform {
 
     private final TGVelocity plugin;
     private final VelocityScheduler scheduler;
 
+    private final Lazy<VelocitySenderFactory> senderFactory;
+    private final Lazy<VelocityPlatformUserFactory> platformUserFactory;
+    private final Lazy<CommandManager<Sender>> commandManager;
+
     public TGVelocityPlatform(TGVelocity plugin) {
         super(Platform.VELOCITY);
         this.plugin = plugin;
         this.scheduler = new VelocityScheduler(plugin, plugin.getServer());
+
+        this.senderFactory = Lazy.of(VelocitySenderFactory::new);
+        this.platformUserFactory = Lazy.of(() -> new VelocityPlatformUserFactory(plugin.getServer()));
+
+        this.commandManager = Lazy.of(() -> new VelocityCommandManager<>(
+                plugin.getPluginContainer(),
+                plugin.getServer(),
+                ExecutionCoordinator.simpleCoordinator(),
+                senderFactory.get()
+        ));
     }
 
     @Override
@@ -44,7 +63,7 @@ public class TGVelocityPlatform extends TGPlatform {
 
     @Override
     public CommandManager<Sender> getCommandManager() {
-        return plugin.getCommandManager();
+        return commandManager.get();
     }
 
     @Override
@@ -54,17 +73,17 @@ public class TGVelocityPlatform extends TGPlatform {
 
     @Override
     public PlatformUserFactory getPlatformUserFactory() {
-        return plugin.getPlatformUserFactory();
+        return platformUserFactory.get();
     }
 
     @Override
     public String getPluginDirectory() {
-        return this.plugin.getDataDirectory().toAbsolutePath().toString();
+        return plugin.getDataDirectory().toAbsolutePath().toString();
     }
 
     @Override
     public String getPlatformVersion() {
-        final String raw = this.plugin.getServer().getVersion().getVersion();
+        final String raw = plugin.getServer().getVersion().getVersion();
         final String s = raw.trim();
         final int space = s.indexOf(' ');
         return (space == -1) ? s : s.substring(0, space);
@@ -77,6 +96,8 @@ public class TGVelocityPlatform extends TGPlatform {
 
     @Override
     public void disablePlugin() {
-        // Fallback to the general disable method
+        // Velocity has no general "disable this plugin" API.
+        // commonOnEnable() will set enabled=false to prevent further operations.
     }
 }
+

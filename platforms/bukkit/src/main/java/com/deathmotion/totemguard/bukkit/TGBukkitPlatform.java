@@ -18,14 +18,24 @@
 
 package com.deathmotion.totemguard.bukkit;
 
+import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUserFactory;
 import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
+import com.deathmotion.totemguard.bukkit.sender.BukkitSenderFactory;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.incendo.cloud.CommandManager;
+import org.incendo.cloud.brigadier.BrigadierSetting;
+import org.incendo.cloud.brigadier.CloudBrigadierManager;
+import org.incendo.cloud.bukkit.CloudBukkitCapabilities;
+import org.incendo.cloud.execution.ExecutionCoordinator;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
+import org.incendo.cloud.setting.Configurable;
 
 @Getter
 public class TGBukkitPlatform extends TGPlatform {
@@ -33,10 +43,36 @@ public class TGBukkitPlatform extends TGPlatform {
     private final TGBukkit plugin;
     private final Scheduler scheduler;
 
+    private final Lazy<BukkitSenderFactory> senderFactory;
+    private final Lazy<BukkitPlatformUserFactory> platformUserFactory;
+    private final Lazy<CommandManager<Sender>> commandManager;
+
     public TGBukkitPlatform(TGBukkit plugin) {
         super(Platform.PAPER);
         this.plugin = plugin;
         this.scheduler = new BukkitScheduler(plugin);
+
+        this.senderFactory = Lazy.of(BukkitSenderFactory::new);
+        this.platformUserFactory = Lazy.of(BukkitPlatformUserFactory::new);
+
+        this.commandManager = Lazy.of(() -> {
+            LegacyPaperCommandManager<Sender> manager = new LegacyPaperCommandManager<>(
+                    plugin,
+                    ExecutionCoordinator.simpleCoordinator(),
+                    senderFactory.get()
+            );
+
+            if (manager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
+                manager.registerBrigadier();
+                CloudBrigadierManager<Sender, ?> cbm = manager.brigadierManager();
+                Configurable<BrigadierSetting> settings = cbm.settings();
+                settings.set(BrigadierSetting.FORCE_EXECUTABLE, true);
+            } else if (manager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
+                manager.registerAsynchronousCompletions();
+            }
+
+            return manager;
+        });
     }
 
     @Override
@@ -46,7 +82,7 @@ public class TGBukkitPlatform extends TGPlatform {
 
     @Override
     public org.incendo.cloud.CommandManager<Sender> getCommandManager() {
-        return plugin.getCommandManager();
+        return commandManager.get();
     }
 
     @Override
@@ -56,12 +92,12 @@ public class TGBukkitPlatform extends TGPlatform {
 
     @Override
     public PlatformUserFactory getPlatformUserFactory() {
-        return plugin.getBukkitPlatformUserFactory();
+        return platformUserFactory.get();
     }
 
     @Override
     public String getPluginDirectory() {
-        return this.plugin.getDataFolder().getAbsolutePath();
+        return plugin.getDataFolder().getAbsolutePath();
     }
 
     @Override

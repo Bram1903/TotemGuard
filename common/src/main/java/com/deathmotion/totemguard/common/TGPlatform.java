@@ -38,6 +38,7 @@ import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.google.common.base.Stopwatch;
 import lombok.Getter;
 import lombok.Setter;
 import org.incendo.cloud.CommandManager;
@@ -76,6 +77,7 @@ public abstract class TGPlatform {
     }
 
     public void commonOnEnable() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
         if (!CompatibilityUtil.isCompatible()) {
             setEnabled(false);
             disablePlugin();
@@ -105,6 +107,7 @@ public abstract class TGPlatform {
         TotemGuard.init(api);
 
         enableBStats();
+        logger.info("Initialized in " + stopwatch.stop());
     }
 
     public void commonOnDisable() {

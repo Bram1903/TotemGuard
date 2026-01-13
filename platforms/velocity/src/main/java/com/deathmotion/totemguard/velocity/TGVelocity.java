@@ -19,10 +19,7 @@
 package com.deathmotion.totemguard.velocity;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.TGVersions;
-import com.deathmotion.totemguard.velocity.player.VelocityPlatformUserFactory;
-import com.deathmotion.totemguard.velocity.sender.VelocitySenderFactory;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
@@ -33,9 +30,6 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import lombok.Getter;
 import org.bstats.charts.SimplePie;
 import org.bstats.velocity.Metrics;
-import org.incendo.cloud.CommandManager;
-import org.incendo.cloud.execution.ExecutionCoordinator;
-import org.incendo.cloud.velocity.VelocityCommandManager;
 
 import java.nio.file.Path;
 
@@ -48,45 +42,31 @@ public class TGVelocity {
     private final Metrics.Factory metricsFactory;
 
     private final TGVelocityPlatform tg;
-    private final VelocitySenderFactory senderFactory;
-    private final VelocityPlatformUserFactory platformUserFactory;
-    private CommandManager<Sender> commandManager;
 
     @Inject
-    public TGVelocity(ProxyServer server, PluginContainer pluginContainer, @DataDirectory Path dataDirectory, Metrics.Factory metricsFactory) {
+    public TGVelocity(
+            ProxyServer server,
+            PluginContainer pluginContainer,
+            @DataDirectory Path dataDirectory,
+            Metrics.Factory metricsFactory
+    ) {
         this.server = server;
         this.pluginContainer = pluginContainer;
         this.dataDirectory = dataDirectory;
         this.metricsFactory = metricsFactory;
 
         this.tg = new TGVelocityPlatform(this);
-        this.senderFactory = new VelocitySenderFactory();
-        this.platformUserFactory = new VelocityPlatformUserFactory(server);
     }
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent ignoredEvent) {
         tg.commonOnInitialize();
         tg.commonOnEnable();
-        enableBStats();
     }
 
-    @Subscribe()
+    @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent ignoredEvent) {
         tg.commonOnDisable();
-    }
-
-    CommandManager<Sender> getCommandManager() {
-        if (commandManager == null) {
-            commandManager = new VelocityCommandManager<>(
-                    pluginContainer,
-                    server,
-                    ExecutionCoordinator.simpleCoordinator(),
-                    senderFactory
-            );
-        }
-
-        return commandManager;
     }
 
     void enableBStats() {
