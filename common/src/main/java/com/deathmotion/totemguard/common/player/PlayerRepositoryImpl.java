@@ -70,7 +70,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
     // TODO: This is temporarily (Will use a proper database implementation in the future
     private void enableAlerts(UUID uuid, PlatformUser platformUser) {
         if (platformUser.hasPermission("TotemGuard.Alerts")) {
-            platform.getAlertManager().toggleAlerts(uuid);
+            platform.getAlertRepository().toggleAlerts(uuid);
         }
     }
 
@@ -83,7 +83,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         final TGPlayer player = players.remove(user);
         if (player == null) return;
 
-        platform.getAlertManager().removeUser(player);
+        platform.getAlertRepository().removeUser(player);
         platform.getEventRepository().post(new TGUserQuitEvent(player));
     }
 

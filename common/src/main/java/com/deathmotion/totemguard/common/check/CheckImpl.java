@@ -88,7 +88,7 @@ public class CheckImpl implements Check, Reloadable {
         violations++;
 
         TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
-        TGPlatform.getInstance().getAlertManager().alert(this, violations, debug);
+        TGPlatform.getInstance().getAlertRepository().alert(this, violations, debug);
         return true;
     }
 

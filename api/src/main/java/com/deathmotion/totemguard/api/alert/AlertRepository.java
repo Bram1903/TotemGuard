@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.api.alert;
 
 import java.util.UUID;
 
-public interface AlertManager {
+public interface AlertRepository {
 
     /*
      * Checks if the specified user has alerts enabled
