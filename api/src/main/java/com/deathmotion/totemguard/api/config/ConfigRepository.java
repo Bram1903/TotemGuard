@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.api.config;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.file.Path;
 
 /**
@@ -30,7 +32,7 @@ public interface ConfigRepository {
      *
      * @return config directory path
      */
-    Path configDirectory();
+    @NotNull Path configDirectory();
 
     /**
      * Returns an in-memory view of the requested configuration file.
@@ -40,7 +42,7 @@ public interface ConfigRepository {
      * @param file the config file to access
      * @return an in-memory config view
      */
-    Config config(ConfigFile file);
+    @NotNull Config config(@NotNull ConfigFile file);
 
     /**
      * Reloads a single configuration file from disk.
@@ -49,7 +51,7 @@ public interface ConfigRepository {
      *
      * @param file the config file to reload
      */
-    void reload(ConfigFile file);
+    void reload(@NotNull ConfigFile file);
 
     /**
      * Reloads all known configuration files from disk.

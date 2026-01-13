@@ -20,11 +20,6 @@ package com.deathmotion.totemguard.api.config.key.impl;
 
 import com.deathmotion.totemguard.api.config.key.ConfigValueKey;
 
-/**
- * Key definitions for {@link com.deathmotion.totemguard.api.config.ConfigFile#MESSAGES}.
- * <p>
- * These centralize paths and defaults for common message templates.
- */
 public final class MessagesKeys {
 
     public static final ConfigValueKey<String> PREFIX =

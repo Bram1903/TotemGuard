@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.check.impl.mods.ModSignatures;
 import com.deathmotion.totemguard.common.config.migration.MigrationRegistry;
 import com.deathmotion.totemguard.common.config.service.ConfigService;
 import com.deathmotion.totemguard.common.config.service.ConfigSnapshot;
+import org.jspecify.annotations.NonNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,12 +60,12 @@ public final class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public Path configDirectory() {
+    public @NonNull Path configDirectory() {
         return configDir;
     }
 
     @Override
-    public Config config(ConfigFile file) {
+    public @NonNull Config config(@NonNull ConfigFile file) {
         ConfigSnapshot snap = snapshots.get(file).get();
         if (snap == null) {
             throw new IllegalStateException("Config not loaded: " + file);
@@ -73,7 +74,7 @@ public final class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void reload(ConfigFile file) {
+    public void reload(@NonNull ConfigFile file) {
         ConfigSnapshot newSnap = service.loadAndMigrate(file);
         snapshots.get(file).set(newSnap);
 

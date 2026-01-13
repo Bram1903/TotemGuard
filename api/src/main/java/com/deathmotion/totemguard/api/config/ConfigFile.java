@@ -18,8 +18,10 @@
 
 package com.deathmotion.totemguard.api.config;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
- * Identifies a configuration file managed by TotemGuard.
+ * Identifies a concrete configuration file managed by TotemGuard.
  * <p>
  * The filenames are the resource names inside the plugin JAR and the persisted names
  * inside the server's configuration directory.
@@ -57,6 +59,7 @@ public enum ConfigFile {
      *
      * @return the config file name
      */
+    @NotNull
     public String fileName() {
         return fileName;
     }

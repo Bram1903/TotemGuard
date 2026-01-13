@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.api.config;
 
 import com.deathmotion.totemguard.api.config.key.ConfigValueKey;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public interface Config {
      *
      * @return the config file identifier
      */
-    ConfigFile file();
+    @NotNull ConfigFile file();
 
     /**
      * Returns the configuration version loaded from disk (after migrations).
@@ -51,7 +52,7 @@ public interface Config {
      * @param path dot-separated path (e.g. {@code alerts.message})
      * @return true if present, otherwise false
      */
-    boolean contains(String path);
+    boolean contains(@NotNull String path);
 
     /**
      * Reads the raw value at the given path.
@@ -59,7 +60,7 @@ public interface Config {
      * @param path dot-separated path
      * @return the raw value if present
      */
-    Optional<Object> get(String path);
+    @NotNull Optional<Object> get(@NotNull String path);
 
     /**
      * Reads a value as a string.
@@ -67,7 +68,7 @@ public interface Config {
      * @param path dot-separated path
      * @return the string value if present
      */
-    Optional<String> getString(String path);
+    @NotNull Optional<String> getString(@NotNull String path);
 
     /**
      * Reads a value as an integer.
@@ -75,7 +76,7 @@ public interface Config {
      * @param path dot-separated path
      * @return the integer value if present and parseable
      */
-    Optional<Integer> getInt(String path);
+    @NotNull Optional<Integer> getInt(@NotNull String path);
 
     /**
      * Reads a value as a boolean.
@@ -83,7 +84,7 @@ public interface Config {
      * @param path dot-separated path
      * @return the boolean value if present and parseable
      */
-    Optional<Boolean> getBoolean(String path);
+    @NotNull Optional<Boolean> getBoolean(@NotNull String path);
 
     /**
      * Reads a value as a double.
@@ -91,7 +92,7 @@ public interface Config {
      * @param path dot-separated path
      * @return the double value if present and parseable
      */
-    Optional<Double> getDouble(String path);
+    @NotNull Optional<Double> getDouble(@NotNull String path);
 
     /**
      * Reads a value as a list of strings.
@@ -101,7 +102,7 @@ public interface Config {
      * @param path dot-separated path
      * @return an immutable list of strings (possibly empty)
      */
-    List<String> getStringList(String path);
+    @NotNull List<@NotNull String> getStringList(@NotNull String path);
 
     /**
      * Returns a section if the value at the path is a map/object.
@@ -109,7 +110,7 @@ public interface Config {
      * @param path dot-separated path
      * @return the section if present and a map
      */
-    Optional<ConfigSection> getSection(String path);
+    @NotNull Optional<ConfigSection> getSection(@NotNull String path);
 
     /**
      * Returns an unmodifiable view of the underlying root map.
@@ -118,7 +119,7 @@ public interface Config {
      *
      * @return the root map
      */
-    Map<String, Object> asMap();
+    @NotNull Map<@NotNull String, @NotNull Object> asMap();
 
     /**
      * Reads a string value using a key that provides a default.
@@ -126,7 +127,8 @@ public interface Config {
      * @param key key definition containing path and default value
      * @return the configured value, or the key's default
      */
-    default String getString(ConfigValueKey<String> key) {
+    @NotNull
+    default String getString(@NotNull ConfigValueKey<String> key) {
         return getString(key.path()).orElseGet(key::defaultValue);
     }
 
@@ -138,7 +140,8 @@ public interface Config {
      * @param key key definition containing the path
      * @return the configured value if present
      */
-    default Optional<String> getOptionalString(ConfigValueKey<String> key) {
+    @NotNull
+    default Optional<String> getOptionalString(@NotNull ConfigValueKey<String> key) {
         return getString(key.path());
     }
 
@@ -148,7 +151,7 @@ public interface Config {
      * @param key key definition containing path and default value
      * @return the configured value, or the key's default
      */
-    default int getInt(ConfigValueKey<Integer> key) {
+    default int getInt(@NotNull ConfigValueKey<Integer> key) {
         return getInt(key.path()).orElseGet(key::defaultValue);
     }
 
@@ -158,7 +161,7 @@ public interface Config {
      * @param key key definition containing path and default value
      * @return the configured value, or the key's default
      */
-    default boolean getBoolean(ConfigValueKey<Boolean> key) {
+    default boolean getBoolean(@NotNull ConfigValueKey<Boolean> key) {
         return getBoolean(key.path()).orElseGet(key::defaultValue);
     }
 
@@ -168,7 +171,7 @@ public interface Config {
      * @param key key definition containing path and default value
      * @return the configured value, or the key's default
      */
-    default double getDouble(ConfigValueKey<Double> key) {
+    default double getDouble(@NotNull ConfigValueKey<Double> key) {
         return getDouble(key.path()).orElseGet(key::defaultValue);
     }
 
@@ -180,7 +183,8 @@ public interface Config {
      * @param key key definition containing path and default value
      * @return the configured list, or the key's default if empty
      */
-    default List<String> getStringListOrDefault(ConfigValueKey<List<String>> key) {
+    @NotNull
+    default List<@NotNull String> getStringListOrDefault(@NotNull ConfigValueKey<List<String>> key) {
         List<String> v = getStringList(key.path());
         return v.isEmpty() ? key.defaultValue() : v;
     }

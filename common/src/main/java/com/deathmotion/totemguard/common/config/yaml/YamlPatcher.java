@@ -49,7 +49,6 @@ public final class YamlPatcher {
         return joinLines(out.toArray(new String[0]));
     }
 
-    @SuppressWarnings("unchecked")
     public static String addMissingDefaults(String currentText, Map<String, Object> currentMap, Map<String, Object> defaultsMap) {
         String text = currentText;
 
@@ -137,7 +136,6 @@ public final class YamlPatcher {
         return joinLines(out.toArray(new String[0]));
     }
 
-    @SuppressWarnings("unchecked")
     private static String renderKeyValue(int indent, String key, Object value) {
         String pad = " ".repeat(Math.max(0, indent));
 

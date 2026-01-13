@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.config.path.PathId;
 import com.deathmotion.totemguard.common.config.path.PathResolver;
 import com.deathmotion.totemguard.common.config.yaml.YamlMaps;
 import com.deathmotion.totemguard.common.config.yaml.YamlNavigator;
+import org.jspecify.annotations.NonNull;
 
 import java.util.*;
 
@@ -46,7 +47,7 @@ final class ConfigView implements Config {
     }
 
     @Override
-    public ConfigFile file() {
+    public @NonNull ConfigFile file() {
         return file;
     }
 
@@ -56,26 +57,26 @@ final class ConfigView implements Config {
     }
 
     @Override
-    public boolean contains(String path) {
+    public boolean contains(@NonNull String path) {
         PathId id = resolver.resolve(path);
         if (id.isInvalid()) return false;
         return navigator.contains(id);
     }
 
     @Override
-    public Optional<Object> get(String path) {
+    public @NonNull Optional<Object> get(@NonNull String path) {
         PathId id = resolver.resolve(path);
         if (id.isInvalid()) return Optional.empty();
         return navigator.get(id);
     }
 
     @Override
-    public Optional<String> getString(String path) {
+    public @NonNull Optional<String> getString(@NonNull String path) {
         return get(path).map(String::valueOf);
     }
 
     @Override
-    public Optional<Integer> getInt(String path) {
+    public @NonNull Optional<Integer> getInt(@NonNull String path) {
         return get(path).flatMap(v -> {
             if (v instanceof Number n) return Optional.of(n.intValue());
             try {
@@ -87,7 +88,7 @@ final class ConfigView implements Config {
     }
 
     @Override
-    public Optional<Boolean> getBoolean(String path) {
+    public @NonNull Optional<Boolean> getBoolean(@NonNull String path) {
         return get(path).flatMap(v -> {
             if (v instanceof Boolean b) return Optional.of(b);
             String s = String.valueOf(v).trim().toLowerCase(Locale.ROOT);
@@ -98,7 +99,7 @@ final class ConfigView implements Config {
     }
 
     @Override
-    public Optional<Double> getDouble(String path) {
+    public @NonNull Optional<Double> getDouble(@NonNull String path) {
         return get(path).flatMap(v -> {
             if (v instanceof Number n) return Optional.of(n.doubleValue());
             try {
@@ -110,7 +111,7 @@ final class ConfigView implements Config {
     }
 
     @Override
-    public List<String> getStringList(String path) {
+    public @NonNull List<String> getStringList(@NonNull String path) {
         Object v = get(path).orElse(null);
         if (!(v instanceof List<?> list) || list.isEmpty()) return List.of();
 
@@ -120,7 +121,7 @@ final class ConfigView implements Config {
     }
 
     @Override
-    public Optional<ConfigSection> getSection(String path) {
+    public @NonNull Optional<ConfigSection> getSection(@NonNull String path) {
         return get(path).flatMap(v -> {
             if (!(v instanceof Map<?, ?> m)) return Optional.empty();
             return Optional.of(new SectionView(YamlMaps.toLinkedMap(m)));
@@ -128,7 +129,7 @@ final class ConfigView implements Config {
     }
 
     @Override
-    public Map<String, Object> asMap() {
+    public @NonNull Map<String, Object> asMap() {
         return Collections.unmodifiableMap(root);
     }
 
@@ -143,12 +144,12 @@ final class ConfigView implements Config {
     private record SectionView(Map<String, Object> sectionRoot) implements ConfigSection {
 
         @Override
-        public boolean contains(String path) {
+        public boolean contains(@NonNull String path) {
             return get(path).isPresent();
         }
 
         @Override
-        public Optional<Object> get(String path) {
+        public @NonNull Optional<Object> get(@NonNull String path) {
             String p = path == null ? "" : path.trim();
             if (p.isEmpty()) return Optional.empty();
 
@@ -165,12 +166,12 @@ final class ConfigView implements Config {
         }
 
         @Override
-        public Optional<String> getString(String path) {
+        public @NonNull Optional<String> getString(@NonNull String path) {
             return get(path).map(String::valueOf);
         }
 
         @Override
-        public Optional<Integer> getInt(String path) {
+        public @NonNull Optional<Integer> getInt(@NonNull String path) {
             return get(path).flatMap(v -> {
                 if (v instanceof Number n) return Optional.of(n.intValue());
                 try {
@@ -182,7 +183,7 @@ final class ConfigView implements Config {
         }
 
         @Override
-        public Optional<Boolean> getBoolean(String path) {
+        public @NonNull Optional<Boolean> getBoolean(@NonNull String path) {
             return get(path).flatMap(v -> {
                 if (v instanceof Boolean b) return Optional.of(b);
                 String s = String.valueOf(v).trim().toLowerCase(Locale.ROOT);
@@ -193,7 +194,7 @@ final class ConfigView implements Config {
         }
 
         @Override
-        public Optional<Double> getDouble(String path) {
+        public @NonNull Optional<Double> getDouble(@NonNull String path) {
             return get(path).flatMap(v -> {
                 if (v instanceof Number n) return Optional.of(n.doubleValue());
                 try {
@@ -205,7 +206,7 @@ final class ConfigView implements Config {
         }
 
         @Override
-        public List<String> getStringList(String path) {
+        public @NonNull List<String> getStringList(@NonNull String path) {
             Object v = get(path).orElse(null);
             if (!(v instanceof List<?> list) || list.isEmpty()) return List.of();
 
@@ -215,7 +216,7 @@ final class ConfigView implements Config {
         }
 
         @Override
-        public Optional<ConfigSection> getSection(String path) {
+        public @NonNull Optional<ConfigSection> getSection(@NonNull String path) {
             return get(path).flatMap(v -> {
                 if (!(v instanceof Map<?, ?> m)) return Optional.empty();
                 return Optional.of(new SectionView(YamlMaps.toLinkedMap(m)));
@@ -223,7 +224,7 @@ final class ConfigView implements Config {
         }
 
         @Override
-        public Map<String, Object> asMap() {
+        public @NonNull Map<String, Object> asMap() {
             return Collections.unmodifiableMap(sectionRoot);
         }
     }

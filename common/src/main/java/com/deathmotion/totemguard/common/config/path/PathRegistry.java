@@ -70,23 +70,16 @@ public final class PathRegistry {
         return t == null ? new String[0] : t;
     }
 
-    /**
-     * Registers all absolute paths in the YAML tree (e.g. "mods.AutoTotem.payloads").
-     * Also registers each leaf key by itself (e.g. "payloads") to support common relative
-     * lookups being "built" too.
-     */
     public void registerAllPaths(Map<String, Object> root) {
         walk("", root);
     }
 
-    @SuppressWarnings("unchecked")
     private void walk(String prefix, Object node) {
         if (node instanceof Map<?, ?> map) {
             for (Map.Entry<?, ?> e : map.entrySet()) {
                 String key = String.valueOf(e.getKey());
                 if (key.isBlank()) continue;
 
-                // Register leaf key alone (helps with common relative keys)
                 register(key);
 
                 String path = prefix.isEmpty() ? key : prefix + "." + key;

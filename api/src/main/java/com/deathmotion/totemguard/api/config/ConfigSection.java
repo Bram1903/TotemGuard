@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.api.config;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,7 +37,7 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return true if present, otherwise false
      */
-    boolean contains(String path);
+    boolean contains(@NotNull String path);
 
     /**
      * Reads the raw value at the given relative path.
@@ -43,7 +45,7 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return the value if present
      */
-    Optional<Object> get(String path);
+    @NotNull Optional<Object> get(@NotNull String path);
 
     /**
      * Reads a value as a string.
@@ -51,7 +53,7 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return the string value if present
      */
-    Optional<String> getString(String path);
+    @NotNull Optional<String> getString(@NotNull String path);
 
     /**
      * Reads a value as an integer.
@@ -59,7 +61,7 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return the integer value if present and parseable
      */
-    Optional<Integer> getInt(String path);
+    @NotNull Optional<Integer> getInt(@NotNull String path);
 
     /**
      * Reads a value as a boolean.
@@ -67,7 +69,7 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return the boolean value if present and parseable
      */
-    Optional<Boolean> getBoolean(String path);
+    @NotNull Optional<Boolean> getBoolean(@NotNull String path);
 
     /**
      * Reads a value as a double.
@@ -75,7 +77,7 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return the double value if present and parseable
      */
-    Optional<Double> getDouble(String path);
+    @NotNull Optional<Double> getDouble(@NotNull String path);
 
     /**
      * Reads a value as a list of strings.
@@ -85,7 +87,7 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return an immutable list of strings (possibly empty)
      */
-    List<String> getStringList(String path);
+    @NotNull List<@NotNull String> getStringList(@NotNull String path);
 
     /**
      * Returns a nested section if the value at the path is a map/object.
@@ -93,12 +95,12 @@ public interface ConfigSection {
      * @param path dot-separated path relative to this section
      * @return the nested section if present and a map
      */
-    Optional<ConfigSection> getSection(String path);
+    @NotNull Optional<ConfigSection> getSection(@NotNull String path);
 
     /**
      * Returns an unmodifiable view of the underlying map for this section.
      *
      * @return the section map
      */
-    Map<String, Object> asMap();
+    @NotNull Map<@NotNull String, @NotNull Object> asMap();
 }

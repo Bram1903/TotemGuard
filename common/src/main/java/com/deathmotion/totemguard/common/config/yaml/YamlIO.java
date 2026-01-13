@@ -59,7 +59,6 @@ public final class YamlIO {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public Map<String, Object> parseToMap(String text) {
         Object root = yaml.load(text);
         if (root == null) return new LinkedHashMap<>();

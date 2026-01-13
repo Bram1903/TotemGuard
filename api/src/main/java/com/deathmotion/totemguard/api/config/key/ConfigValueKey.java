@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.api.config.key;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Objects;
 
 /**
@@ -48,7 +50,7 @@ public final class ConfigValueKey<T> {
      * @param <T>          value type
      * @return the key instance
      */
-    public static <T> ConfigValueKey<T> required(String path, T defaultValue) {
+    public static <T> @NotNull ConfigValueKey<T> required(@NotNull String path, @NotNull T defaultValue) {
         return new ConfigValueKey<>(
                 path,
                 Objects.requireNonNull(defaultValue, "defaultValue"),
@@ -66,7 +68,7 @@ public final class ConfigValueKey<T> {
      * @param <T>  value type
      * @return the key instance
      */
-    public static <T> ConfigValueKey<T> optional(String path) {
+    public static <T> @NotNull ConfigValueKey<T> optional(@NotNull String path) {
         return new ConfigValueKey<>(path, null, false);
     }
 
@@ -75,7 +77,7 @@ public final class ConfigValueKey<T> {
      *
      * @return config path
      */
-    public String path() {
+    public @NotNull String path() {
         return path;
     }
 
@@ -94,10 +96,10 @@ public final class ConfigValueKey<T> {
      * @return default value
      * @throws IllegalStateException if no default is defined
      */
-    public T defaultValue() {
+    public @NotNull T defaultValue() {
         if (!hasDefault) {
             throw new IllegalStateException("Key has no default: " + path);
         }
-        return defaultValue;
+        return Objects.requireNonNull(defaultValue, "defaultValue");
     }
 }
