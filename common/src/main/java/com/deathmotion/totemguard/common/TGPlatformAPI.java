@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuardAPI;
+import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
@@ -58,5 +59,10 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     @Override
     public @NotNull PlaceholderRepository getPlaceholderRepository() {
         return platform.getPlaceholderRepository();
+    }
+
+    @Override
+    public @NotNull AlertRepository getAlertRepository() {
+        return platform.getAlertRepository();
     }
 }

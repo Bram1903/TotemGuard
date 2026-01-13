@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api;
 
+import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
@@ -64,4 +65,11 @@ public interface TotemGuardAPI {
      * @return the placeholder repository
      */
     @NotNull PlaceholderRepository getPlaceholderRepository();
+
+    /**
+     * Returns the alert repository
+     *
+     * @return the alert repository
+     */
+    @NotNull AlertRepository getAlertRepository();
 }

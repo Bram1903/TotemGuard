@@ -179,12 +179,12 @@ public class TGPlayer implements TGUser {
 
     @Override
     public boolean hasAlertsEnabled() {
-        return TGPlatform.getInstance().getAlertManager().hasAlertsEnabled(uuid);
+        return TGPlatform.getInstance().getAlertRepository().hasAlertsEnabled(uuid);
     }
 
     @Override
     public boolean toggleAlerts() {
-        return TGPlatform.getInstance().getAlertManager().toggleAlerts(uuid);
+        return TGPlatform.getInstance().getAlertRepository().toggleAlerts(uuid);
     }
 
     public ClientVersion getClientVersion() {

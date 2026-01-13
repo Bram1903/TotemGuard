@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.alert;
 
-import com.deathmotion.totemguard.api.alert.AlertManager;
+import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.Config;
 import com.deathmotion.totemguard.api.config.ConfigFile;
 import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
@@ -39,7 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
-public class AlertManagerImpl implements AlertManager, Reloadable {
+public class AlertRepoistoryImpl implements AlertRepository, Reloadable {
 
     @Getter
     private final ConcurrentHashMap<UUID, PlatformUser> enabledAlerts = new ConcurrentHashMap<>();
@@ -48,7 +48,7 @@ public class AlertManagerImpl implements AlertManager, Reloadable {
 
     private final Executor asyncExecutor = command -> TGPlatform.getInstance().getScheduler().runAsyncTask(command);
 
-    public AlertManagerImpl() {
+    public AlertRepoistoryImpl() {
         reload();
     }
 
