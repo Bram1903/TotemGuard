@@ -18,102 +18,74 @@
 
 package com.deathmotion.totemguard.common.config;
 
+import com.deathmotion.totemguard.api.config.Config;
+import com.deathmotion.totemguard.api.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.mods.ModSignatures;
-import com.deathmotion.totemguard.common.config.files.ConfigFileHandle;
-import com.deathmotion.totemguard.common.config.files.ConfigFileKey;
-import com.deathmotion.totemguard.common.config.io.ConfigPaths;
-import com.deathmotion.totemguard.common.config.io.NodeIO;
-import com.deathmotion.totemguard.common.config.io.ResourceDefaults;
-import com.deathmotion.totemguard.common.config.io.YamlLoaderFactory;
-import com.deathmotion.totemguard.common.config.migrate.MigrationRegistry;
-import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.loader.ConfigurationLoader;
+import com.deathmotion.totemguard.common.config.migration.MigrationRegistry;
+import com.deathmotion.totemguard.common.config.service.ConfigService;
+import com.deathmotion.totemguard.common.config.service.ConfigSnapshot;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.EnumMap;
-import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
-public final class ConfigRepositoryImpl {
+public final class ConfigRepositoryImpl implements ConfigRepository {
 
-    private final ConfigPaths paths;
-    private final ResourceDefaults defaults = new ResourceDefaults();
-    private final YamlLoaderFactory loaderFactory = new YamlLoaderFactory();
-    private final NodeIO nodeIO = new NodeIO();
-    private final MigrationRegistry migrations = new MigrationRegistry();
+    private final Path configDir;
+    private final ConfigService service;
 
-    private final Map<ConfigFileKey, ConfigFileHandle> files = new EnumMap<>(ConfigFileKey.class);
+    private final EnumMap<ConfigFile, AtomicReference<ConfigSnapshot>> snapshots =
+            new EnumMap<>(ConfigFile.class);
 
     public ConfigRepositoryImpl() {
-        this.paths = new ConfigPaths(TGPlatform.getInstance().getPluginDirectory());
-        initHandles();
+        TGPlatform platform = TGPlatform.getInstance();
+        this.configDir = Paths.get(Objects.requireNonNull(platform.getPluginDirectory(), "pluginDirectory"));
+
+        this.service = new ConfigService(
+                configDir,
+                ConfigRepositoryImpl.class.getClassLoader(),
+                new MigrationRegistry().buildDefault()
+        );
+
+        for (ConfigFile f : ConfigFile.values()) {
+            snapshots.put(f, new AtomicReference<>());
+        }
+
+        reloadAll();
     }
 
-    private void initHandles() {
-        for (ConfigFileKey key : ConfigFileKey.values()) {
-            Path path = paths.filePath(key);
-            ConfigurationLoader<CommentedConfigurationNode> loader = loaderFactory.create(path);
+    @Override
+    public Path configDirectory() {
+        return configDir;
+    }
 
-            files.put(key, new ConfigFileHandle(
-                    key,
-                    loader,
-                    migrations.forFile(key),
-                    nodeIO
-            ));
+    @Override
+    public Config config(ConfigFile file) {
+        ConfigSnapshot snap = snapshots.get(file).get();
+        if (snap == null) {
+            throw new IllegalStateException("Config not loaded: " + file);
+        }
+        return snap.view();
+    }
+
+    @Override
+    public void reload(ConfigFile file) {
+        ConfigSnapshot newSnap = service.loadAndMigrate(file);
+        snapshots.get(file).set(newSnap);
+
+        if (file == ConfigFile.MODS) {
+            ModSignatures.load(newSnap.view());
         }
     }
 
-    public void reload() {
-        try {
-            defaults.ensureDefaultsExist(paths, getClass().getClassLoader());
-
-            for (ConfigFileHandle handle : files.values()) {
-                handle.reload();
-            }
-
-            ModSignatures.load(mods());
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to load configuration files", e);
+    @Override
+    public void reloadAll() {
+        for (ConfigFile f : ConfigFile.values()) {
+            reload(f);
         }
-    }
-
-    public void save() {
-        try {
-            for (ConfigFileHandle handle : files.values()) {
-                handle.save();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to save configuration files", e);
-        }
-    }
-
-    public CommentedConfigurationNode config() {
-        return node(ConfigFileKey.MAIN);
-    }
-
-    public CommentedConfigurationNode checks() {
-        return node(ConfigFileKey.CHECKS);
-    }
-
-    public CommentedConfigurationNode messages() {
-        return node(ConfigFileKey.MESSAGES);
-    }
-
-    public CommentedConfigurationNode mods() {
-        return node(ConfigFileKey.MODS);
-    }
-
-    public Path dataDirectory() {
-        return paths.pluginDir();
-    }
-
-    private CommentedConfigurationNode node(ConfigFileKey key) {
-        ConfigFileHandle handle = files.get(key);
-        if (handle == null || handle.root() == null) {
-            throw new IllegalStateException("Config not loaded: " + key + " (did you call reload()?)");
-        }
-        return handle.root();
     }
 }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api;
 
+import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api.user.UserRepository;
@@ -42,6 +43,13 @@ public interface TotemGuardAPI {
      * @return the event repository
      */
     @NotNull EventRepository getEventRepository();
+
+    /**
+     * Returns the configuration repository used for managing configurations.
+     *
+     * @return the configuration repository
+     */
+    @NotNull ConfigRepository getConfigRepository();
 
     /**
      * Returns the user repository used for user management.

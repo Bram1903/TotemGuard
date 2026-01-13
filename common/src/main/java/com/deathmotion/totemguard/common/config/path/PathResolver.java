@@ -16,20 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.io;
+package com.deathmotion.totemguard.common.config.path;
 
-import com.deathmotion.totemguard.common.config.files.ConfigFileKey;
+import java.util.Objects;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+public final class PathResolver {
 
-public record ConfigPaths(Path pluginDir) {
+    private final PathRegistry registry;
 
-    public ConfigPaths(String pluginDir) {
-        this(Paths.get(pluginDir));
+    public PathResolver(PathRegistry registry) {
+        this.registry = Objects.requireNonNull(registry, "registry");
     }
 
-    public Path filePath(ConfigFileKey key) {
-        return pluginDir.resolve(key.fileName());
+    public PathId resolve(String path) {
+        return registry.resolve(path);
+    }
+
+    public String[] tokens(String path) {
+        PathId id = registry.resolve(path);
+        if (!id.isInvalid()) return registry.tokens(id);
+        return new String[0];
     }
 }

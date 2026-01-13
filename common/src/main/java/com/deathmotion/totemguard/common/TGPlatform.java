@@ -58,7 +58,6 @@ public abstract class TGPlatform {
     private boolean enabled = true;
 
     private ConfigRepositoryImpl configRepository;
-
     private EventRepositoryImpl eventRepository;
     private AlertManagerImpl alertManager;
     private PlayerRepositoryImpl playerRepository;
@@ -86,8 +85,6 @@ public abstract class TGPlatform {
         ConsoleBanner.print();
 
         configRepository = new ConfigRepositoryImpl();
-        configRepository.reload();
-
         eventRepository = new EventRepositoryImpl();
         alertManager = new AlertManagerImpl();
         playerRepository = new PlayerRepositoryImpl();

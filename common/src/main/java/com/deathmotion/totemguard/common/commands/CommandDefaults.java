@@ -18,48 +18,52 @@
 
 package com.deathmotion.totemguard.common.commands;
 
+import com.deathmotion.totemguard.api.config.Config;
+import com.deathmotion.totemguard.api.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import lombok.experimental.UtilityClass;
 import org.incendo.cloud.Command;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.description.Description;
-import org.spongepowered.configurate.CommentedConfigurationNode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @UtilityClass
 public class CommandDefaults {
 
     public static final String PERMISSION_PREFIX = "totemguard.";
-    private static final CommentedConfigurationNode CONFIG = TGPlatform.getInstance().getConfigRepository().config();
+
+    private static final Config CONFIG = TGPlatform.getInstance()
+            .getConfigRepository()
+            .config(ConfigFile.CONFIG);
+
     public static final String ROOT = readRoot();
     public static final String[] ALIASES = readAliases();
 
     public static Command.Builder<Sender> root(final CommandManager<Sender> manager) {
-        return manager.commandBuilder(ROOT, Description.of("The root command for TotemGuard."), ALIASES);
+        return manager.commandBuilder(
+                ROOT,
+                Description.of("The root command for TotemGuard."),
+                ALIASES
+        );
     }
 
     private static String readRoot() {
-        final String root = CONFIG.node("commands", "base").getString("totemguard");
-        return (root.isBlank()) ? "totemguard" : root;
+        String root = CONFIG.getString(ConfigKeys.COMMANDS_BASE);
+        return root.isBlank() ? ConfigKeys.COMMANDS_BASE.defaultValue() : root;
     }
 
     private static String[] readAliases() {
-        final CommentedConfigurationNode aliasesNode = CONFIG.node("commands", "aliases");
+        List<String> aliases = CONFIG.getStringList(ConfigKeys.COMMAND_ALIASES.path());
 
-        if (aliasesNode.isList()) {
-            final List<String> out = new ArrayList<>();
-            for (final CommentedConfigurationNode child : aliasesNode.childrenList()) {
-                final String s = child.getString();
-                if (s != null && !s.isBlank()) out.add(s);
-            }
-            if (!out.isEmpty()) {
-                return out.toArray(String[]::new);
-            }
+        if (!aliases.isEmpty()) {
+            return aliases.stream()
+                    .filter(s -> !s.isBlank())
+                    .toArray(String[]::new);
         }
 
-        return new String[]{"tg"};
+        return new String[]{ConfigKeys.COMMAND_ALIASES.defaultValue()};
     }
 }

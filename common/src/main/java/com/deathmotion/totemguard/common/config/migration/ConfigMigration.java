@@ -16,26 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.files;
+package com.deathmotion.totemguard.common.config.migration;
 
-public enum ConfigFileKey {
-    MAIN("config.yml"),
-    CHECKS("checks.yml"),
-    MESSAGES("messages.yml"),
-    MODS("mods.yml");
+public interface ConfigMigration {
+    int fromVersion();
 
-    private final String fileName;
+    int toVersion();
 
-    ConfigFileKey(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String fileName() {
-        return fileName;
-    }
-
-    public String resourcePath() {
-        return "/" + fileName;
-    }
+    void apply(MutableYaml yaml);
 }
-

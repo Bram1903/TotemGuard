@@ -16,23 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.io;
+package com.deathmotion.totemguard.common.config.migration;
 
-import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.loader.ConfigurationLoader;
-import org.spongepowered.configurate.yaml.NodeStyle;
-import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
+import java.util.Map;
+import java.util.Objects;
 
-import java.nio.file.Path;
+public final class MutableYaml {
 
-public final class YamlLoaderFactory {
+    private final Map<String, Object> map;
+    private String text;
 
-    public ConfigurationLoader<CommentedConfigurationNode> create(Path path) {
-        return YamlConfigurationLoader.builder()
-                .path(path)
-                .nodeStyle(NodeStyle.BLOCK)
-                .indent(2)
-                .build();
+    public MutableYaml(String text, Map<String, Object> map) {
+        this.text = Objects.requireNonNull(text, "text");
+        this.map = Objects.requireNonNull(map, "map");
+    }
+
+    public String text() {
+        return text;
+    }
+
+    public void text(String newText) {
+        this.text = Objects.requireNonNull(newText, "newText");
+    }
+
+    public Map<String, Object> map() {
+        return map;
     }
 }
-
