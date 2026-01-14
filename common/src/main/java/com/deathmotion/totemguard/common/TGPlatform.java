@@ -107,7 +107,7 @@ public abstract class TGPlatform {
         TotemGuard.init(api);
 
         enableBStats();
-        logger.info("Enabled TotemGuard in " + stopwatch);
+        logger.info("Enabled TotemGuard in " + stopwatch.stop().elapsed().toMillis() + "ms");
     }
 
     public void commonOnDisable() {
