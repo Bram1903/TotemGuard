@@ -28,11 +28,6 @@ tasks {
     }
 
     shadowJar {
-        archiveFileName = "${rootProject.name}-Bukkit-${rootProject.ext["versionNoHash"]}.jar"
-        archiveClassifier = null
-        destinationDirectory = rootProject.layout.buildDirectory
-        exclude("META-INF/maven/**")
-
         manifest {
             attributes["paperweight-mappings-namespace"] = "mojang"
         }

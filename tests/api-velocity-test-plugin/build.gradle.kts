@@ -1,6 +1,5 @@
 plugins {
     totemguard.`java-conventions`
-    alias(libs.plugins.shadow)
 }
 
 repositories {

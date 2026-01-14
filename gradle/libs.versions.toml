@@ -10,8 +10,9 @@ sponge = "14.0.0"
 
 cloud-core = "2.0.0"
 cloud-platform = "2.0.0-beta.14"
-
 bstats = "3.1.0"
+lettuce = "7.2.1.RELEASE"
+
 placeholderapi = "2.11.7"
 
 shadow = "9.2.2"
@@ -40,6 +41,8 @@ bstats-bukkit = { group = "org.bstats", name = "bstats-bukkit", version.ref = "b
 bstats-bungeecord = { group = "org.bstats", name = "bstats-bungeecord", version.ref = "bstats" }
 bstats-velocity = { group = "org.bstats", name = "bstats-velocity", version.ref = "bstats" }
 bstats-sponge = { group = "org.bstats", name = "bstats-sponge", version.ref = "bstats" }
+lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
+
 placeholderapi = { group = "me.clip", name = "placeholderapi", version.ref = "placeholderapi" }
 
 [bundles]

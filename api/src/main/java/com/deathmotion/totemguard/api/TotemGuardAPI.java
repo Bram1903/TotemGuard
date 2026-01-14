@@ -27,49 +27,49 @@ import com.deathmotion.totemguard.api.versioning.TGVersion;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Primary access point for the TotemGuard API.
+ * Primary entry point for accessing the TotemGuard API.
  */
 public interface TotemGuardAPI {
 
     /**
-     * Returns the current TotemGuard version.
+     * Returns the current TotemGuard API version.
      *
-     * @return the API version
+     * @return the API version, never {@code null}
      */
     @NotNull TGVersion getVersion();
 
     /**
-     * Returns the event repository used for event subscription and dispatch.
+     * Returns the repository for event subscription and dispatch.
      *
-     * @return the event repository
+     * @return the event repository, never {@code null}
      */
     @NotNull EventRepository getEventRepository();
 
     /**
-     * Returns the configuration repository used for managing configurations.
+     * Returns the repository for configuration management.
      *
-     * @return the configuration repository
+     * @return the configuration repository, never {@code null}
      */
     @NotNull ConfigRepository getConfigRepository();
 
     /**
-     * Returns the user repository used for user management.
+     * Returns the repository for user management.
      *
-     * @return the user repository
+     * @return the user repository, never {@code null}
      */
     @NotNull UserRepository getUserRepository();
 
     /**
-     * Returns the placeholder repository
+     * Returns the repository for placeholder management.
      *
-     * @return the placeholder repository
+     * @return the placeholder repository, never {@code null}
      */
     @NotNull PlaceholderRepository getPlaceholderRepository();
 
     /**
-     * Returns the alert repository
+     * Returns the repository for alert management.
      *
-     * @return the alert repository
+     * @return the alert repository, never {@code null}
      */
     @NotNull AlertRepository getAlertRepository();
 }
