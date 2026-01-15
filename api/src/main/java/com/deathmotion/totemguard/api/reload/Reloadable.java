@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.reload;
+package com.deathmotion.totemguard.api.reload;
 
 public interface Reloadable {
     void reload();

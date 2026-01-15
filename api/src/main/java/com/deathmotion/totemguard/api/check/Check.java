@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api.check;
 
+import com.deathmotion.totemguard.api.reload.Reloadable;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
  * Checks are responsible for identifying suspicious or invalid behavior
  * and may trigger flag events when their conditions are met.
  */
-public interface Check {
+public interface Check extends Reloadable {
 
     /**
      * Gets the unique, human-readable name of this check.

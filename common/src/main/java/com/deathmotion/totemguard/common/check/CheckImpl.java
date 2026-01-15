@@ -24,11 +24,11 @@ import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
-import com.deathmotion.totemguard.common.reload.Reloadable;
+import com.deathmotion.totemguard.api.reload.Reloadable;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
-public class CheckImpl implements Check, Reloadable {
+public class CheckImpl implements Check {
 
     public final TGPlayer player;
 

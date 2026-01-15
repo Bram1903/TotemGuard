@@ -149,4 +149,8 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
         return null;
     }
+
+    public @NotNull Collection<TGPlayer> getPlayers() {
+        return players.values();
+    }
 }

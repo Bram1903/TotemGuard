@@ -16,27 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.commands;
+package com.deathmotion.totemguard.common.reload;
 
+import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.commands.impl.*;
-import com.deathmotion.totemguard.common.platform.sender.Sender;
-import org.incendo.cloud.CommandManager;
 
-public class CommandManagerImpl {
+public class ReloadService {
 
-    CommandManager<Sender> commandManager;
+    public void reload() {
+        TGPlatform platform = TGPlatform.getInstance();
 
-    public CommandManagerImpl() {
-        this.commandManager = TGPlatform.getInstance().getCommandManager();
-        registerCommands();
-    }
+        platform.getConfigRepository().reloadAll();
+        platform.getMessageService().reload();
 
-    public void registerCommands() {
-        new ReloadCommand().register(commandManager);
-        new AlertCommand().register(commandManager);
-        new TestCommand().register(commandManager);
-        new InventoryCommand().register(commandManager);
-        new PlaceholderCommand().register(commandManager);
+        platform.getPlayerRepository().getPlayers()
+                .parallelStream()
+                .forEach(player -> player.getCheckManager().allChecks.values().forEach(Reloadable::reload));
     }
 }

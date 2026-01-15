@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuard;
-import com.deathmotion.totemguard.common.alert.AlertRepoistoryImpl;
+import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
@@ -29,11 +29,13 @@ import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenish
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPingListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
 import com.deathmotion.totemguard.common.util.Scheduler;
@@ -58,9 +60,11 @@ public abstract class TGPlatform {
     @Setter
     private boolean enabled = true;
 
+    private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
+    private MessageService messageService;
     private EventRepositoryImpl eventRepository;
-    private AlertRepoistoryImpl alertRepository;
+    private AlertRepositoryImpl alertRepository;
     private PlayerRepositoryImpl playerRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
     private CommandManagerImpl commandManager;
@@ -86,9 +90,11 @@ public abstract class TGPlatform {
 
         ConsoleBanner.print();
 
+        reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
+        messageService = new MessageService();
         eventRepository = new EventRepositoryImpl();
-        alertRepository = new AlertRepoistoryImpl();
+        alertRepository = new AlertRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
         placeholderRepository = new PlaceholderRepositoryImpl();
         commandManager = new CommandManagerImpl();

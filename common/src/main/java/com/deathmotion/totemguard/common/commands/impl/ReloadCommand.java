@@ -16,27 +16,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.commands;
+package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.commands.impl.*;
+import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import lombok.NonNull;
 import org.incendo.cloud.CommandManager;
+import org.incendo.cloud.context.CommandContext;
+import org.jetbrains.annotations.NotNull;
 
-public class CommandManagerImpl {
+public class ReloadCommand extends AbstractCommand {
 
-    CommandManager<Sender> commandManager;
-
-    public CommandManagerImpl() {
-        this.commandManager = TGPlatform.getInstance().getCommandManager();
-        registerCommands();
+    @Override
+    public void register(@NonNull CommandManager<Sender> manager) {
+        manager.command(
+                base(manager)
+                        .literal("reload")
+                        .permission(perm("reload"))
+                        .handler(this::handleReload)
+        );
     }
 
-    public void registerCommands() {
-        new ReloadCommand().register(commandManager);
-        new AlertCommand().register(commandManager);
-        new TestCommand().register(commandManager);
-        new InventoryCommand().register(commandManager);
-        new PlaceholderCommand().register(commandManager);
+    private void handleReload(@NotNull CommandContext<Sender> context) {
+        TGPlatform platform = TGPlatform.getInstance();
+        platform.getReloadService().reload();
+        context.sender().sendMessage(platform.getMessageService().getComponent(MessagesKeys.RELOAD));
     }
 }

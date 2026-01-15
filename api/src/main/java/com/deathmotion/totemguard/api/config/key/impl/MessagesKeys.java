@@ -33,6 +33,7 @@ public final class MessagesKeys {
                     "alerts.message",
                     "%prefix% &e%tg_player%&7 failed &6%tg_check% &7VL[&6%tg_check_violations%/∞&7]"
             );
+
     public static final ConfigValueKey<String> ALERTS_DEBUG =
             ConfigValueKey.required(
                     "alerts.debug",
@@ -49,6 +50,12 @@ public final class MessagesKeys {
             ConfigValueKey.required(
                     "alerts.disabled",
                     "%prefix% &cAlerts disabled"
+            );
+
+    public static final ConfigValueKey<String> RELOAD =
+            ConfigValueKey.required(
+                    "reload",
+                    "%prefix% &aTotemGuard reloaded successfully!"
             );
 
     private MessagesKeys() {

@@ -19,16 +19,14 @@
 package com.deathmotion.totemguard.common.alert;
 
 import com.deathmotion.totemguard.api.alert.AlertRepository;
-import com.deathmotion.totemguard.api.config.Config;
-import com.deathmotion.totemguard.api.config.ConfigFile;
 import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.api.event.impl.TGAlertEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
-import com.deathmotion.totemguard.common.reload.Reloadable;
 import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -39,7 +37,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
-public class AlertRepoistoryImpl implements AlertRepository, Reloadable {
+public class AlertRepositoryImpl implements AlertRepository {
+
+    private final TGPlatform platform = TGPlatform.getInstance();
+    private final MessageService messageService = platform.getMessageService();
 
     @Getter
     private final ConcurrentHashMap<UUID, PlatformUser> enabledAlerts = new ConcurrentHashMap<>();
@@ -48,12 +49,7 @@ public class AlertRepoistoryImpl implements AlertRepository, Reloadable {
 
     private final Executor asyncExecutor = command -> TGPlatform.getInstance().getScheduler().runAsyncTask(command);
 
-    public AlertRepoistoryImpl() {
-        reload();
-    }
-
-    @Override
-    public void reload() {
+    public AlertRepositoryImpl() {
 
     }
 
@@ -122,20 +118,13 @@ public class AlertRepoistoryImpl implements AlertRepository, Reloadable {
     }
 
     private void sendToggleAlertMessage(PlatformUser platformUser, boolean enabled) {
-        Config messages = TGPlatform.getInstance()
-                .getConfigRepository()
-                .config(ConfigFile.MESSAGES);
-
-        String message = enabled
-                ? messages.getString(MessagesKeys.ALERTS_ENABLED)
-                : messages.getString(MessagesKeys.ALERTS_DISABLED);
-
-        message = TGPlatform.getInstance()
-                .getPlaceholderRepository()
-                .replace(message);
-
-        platformUser.sendMessage(MessageUtil.formatMessage(message));
+        platformUser.sendMessage(
+                messageService.getComponent(
+                        enabled ? MessagesKeys.ALERTS_ENABLED : MessagesKeys.ALERTS_DISABLED
+                )
+        );
     }
+
 
     private record AlertKey(UUID playerUuid, String check) {
     }

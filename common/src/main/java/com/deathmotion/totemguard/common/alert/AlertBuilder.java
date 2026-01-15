@@ -1,4 +1,3 @@
-
 /*
  * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
  * Copyright (C) 2026 Bram and contributors
@@ -19,11 +18,10 @@
 
 package com.deathmotion.totemguard.common.alert;
 
-import com.deathmotion.totemguard.api.config.Config;
-import com.deathmotion.totemguard.api.config.ConfigFile;
 import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.message.MessageService;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -34,23 +32,28 @@ public final class AlertBuilder {
     }
 
     public static String build(CheckImpl check, int violations, @Nullable String debugInfo) {
-        Config messages = TGPlatform.getInstance()
-                .getConfigRepository()
-                .config(ConfigFile.MESSAGES);
-
-        String message = messages.getString(MessagesKeys.ALERTS_MESSAGE);
-
-        if (debugInfo != null) {
-            message += messages.getString(MessagesKeys.ALERTS_DEBUG);
-        }
+        MessageService messageService = TGPlatform.getInstance().getMessageService();
 
         Map<String, Object> extras = Map.of(
                 "tg_check_violations", violations,
                 "tg_check_debug", debugInfo == null ? "" : debugInfo
         );
 
-        return TGPlatform.getInstance()
-                .getPlaceholderRepository()
-                .replace(message, check.player, check, extras);
+        if (debugInfo != null) {
+            return messageService.getJoined(
+                    check.player,
+                    check,
+                    extras,
+                    MessagesKeys.ALERTS_MESSAGE,
+                    MessagesKeys.ALERTS_DEBUG
+            );
+        }
+
+        return messageService.getString(
+                MessagesKeys.ALERTS_MESSAGE,
+                check.player,
+                check,
+                extras
+        );
     }
 }
