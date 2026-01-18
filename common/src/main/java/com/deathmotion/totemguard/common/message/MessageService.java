@@ -48,6 +48,14 @@ public class MessageService implements Reloadable {
         this.messages = platform.getConfigRepository().config(ConfigFile.MESSAGES);
     }
 
+    private static @NotNull String nullToEmpty(@Nullable String s) {
+        return s == null ? "" : s;
+    }
+
+    private static @NotNull Map<String, Object> safeExtras(@Nullable Map<String, Object> extras) {
+        return extras == null ? Collections.emptyMap() : extras;
+    }
+
     @Override
     public void reload() {
         this.messages = platform.getConfigRepository().config(ConfigFile.MESSAGES);
@@ -99,13 +107,5 @@ public class MessageService implements Reloadable {
         }
 
         return placeholder.get().replace(message.toString(), player, check, safeExtras(extras));
-    }
-
-    private static @NotNull String nullToEmpty(@Nullable String s) {
-        return s == null ? "" : s;
-    }
-
-    private static @NotNull Map<String, Object> safeExtras(@Nullable Map<String, Object> extras) {
-        return extras == null ? Collections.emptyMap() : extras;
     }
 }

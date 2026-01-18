@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
-import com.deathmotion.totemguard.api.reload.Reloadable;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 

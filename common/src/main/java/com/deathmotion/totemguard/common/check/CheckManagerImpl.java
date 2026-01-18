@@ -23,7 +23,10 @@ import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.check.impl.autoclicker.AutoClickerA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
+import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemC;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
+import com.deathmotion.totemguard.common.check.impl.inventory.InventoryB;
+import com.deathmotion.totemguard.common.check.impl.inventory.InventoryC;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
@@ -46,6 +49,7 @@ public class CheckManagerImpl {
         eventChecks = new ImmutableClassToInstanceMap.Builder<EventCheck>()
                 .put(AutoTotemA.class, new AutoTotemA(player))
                 .put(AutoTotemB.class, new AutoTotemB(player))
+//                .put(AutoTotemC.class, new AutoTotemC(player))
                 .build();
 
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
@@ -56,6 +60,8 @@ public class CheckManagerImpl {
                 .put(ProtocolE.class, new ProtocolE(player))
                 .put(AutoClickerA.class, new AutoClickerA(player))
                 .put(InventoryA.class, new InventoryA(player))
+                .put(InventoryB.class, new InventoryB(player))
+                .put(InventoryC.class, new InventoryC(player))
                 .put(Mod.class, new Mod(player))
                 .build();
 

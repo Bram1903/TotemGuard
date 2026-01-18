@@ -39,6 +39,8 @@ import java.util.Map;
 public class InboundInventoryProcessor extends ProcessorInbound {
 
     private final PacketInventory inventory;
+    private Long lastClickTime;
+    private Integer lastSlot;
 
     public InboundInventoryProcessor(TGPlayer player) {
         super(player);

@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetCursorItem;
@@ -49,7 +48,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setCarriedItem(packet.getCarriedItem().orElse(ItemStack.EMPTY), -1, Issuer.SERVER, event.getTimestamp());
+            packet.getCarriedItem().ifPresent(carriedItem -> inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, event.getTimestamp()));
             for (int slot = 0; slot < packet.getItems().size(); slot++) {
                 inventory.setItem(slot, packet.getItems().get(slot), event.getTimestamp());
             }

@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package com.deathmotion.totemguard.common.check.impl.autototem;
 
 import com.deathmotion.totemguard.api.check.CheckType;
