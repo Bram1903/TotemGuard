@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
@@ -39,12 +40,12 @@ import java.util.Map;
 public class InboundInventoryProcessor extends ProcessorInbound {
 
     private final PacketInventory inventory;
-    private Long lastClickTime;
-    private Integer lastSlot;
+    private final Data data;
 
     public InboundInventoryProcessor(TGPlayer player) {
         super(player);
         this.inventory = player.getInventory();
+        this.data = player.getData();
     }
 
     @Override
@@ -71,6 +72,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             if (packet.getSlot() < 1 || packet.getSlot() > 45) return;
             inventory.setItem(packet.getSlot(), packet.getItemStack(), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
         } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
+            data.setOpenInventory(true);
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             inventory.setCarriedItem(packet.getCarriedItemStack(), packet.getSlot(), Issuer.CLIENT, event.getTimestamp());
@@ -79,6 +81,8 @@ public class InboundInventoryProcessor extends ProcessorInbound {
                     inventory.setItem(slotEntry.getKey(), slotEntry.getValue(), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
                 }
             });
+        } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
+            data.setOpenInventory(false);
         }
     }
 }

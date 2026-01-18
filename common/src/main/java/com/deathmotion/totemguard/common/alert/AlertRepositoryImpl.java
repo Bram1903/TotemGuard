@@ -112,7 +112,7 @@ public class AlertRepositoryImpl implements AlertRepository {
         });
     }
 
-    private void broadcast(String message) {
+    public void broadcast(String message) {
         Component component = MessageUtil.formatMessage(message);
         enabledAlerts.values().forEach(player -> player.sendMessage(component));
     }

@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.check.impl.autoclicker.AutoClickerA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
-import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemC;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryB;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryC;

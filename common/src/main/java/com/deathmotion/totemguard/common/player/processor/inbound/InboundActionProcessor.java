@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
-import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.ClickData;
 import com.deathmotion.totemguard.common.player.data.Data;
@@ -75,12 +74,10 @@ public class InboundActionProcessor extends ProcessorInbound {
 
             switch (packet.getAction()) {
                 case START_SNEAKING -> {
-                    TGPlatform.getInstance().getLogger().info("Sneaking");
                     data.setSneaking(true);
                     tickData.setSneaking(true);
                 }
                 case STOP_SNEAKING -> {
-                    TGPlatform.getInstance().getLogger().info("Stopped sneaking");
                     data.setSneaking(false);
                     tickData.setSneaking(true);
                 }
@@ -119,10 +116,6 @@ public class InboundActionProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
                 WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
-                if (data.isSneaking() != packet.isShift()) {
-                    TGPlatform.getInstance().getLogger().info("Sneaking changed from " + data.isSneaking() + " to " + packet.isShift());
-                }
-
                 data.setSneaking(packet.isShift());
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {

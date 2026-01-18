@@ -29,7 +29,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@CheckData(description = "Impossible click time difference", type = CheckType.INVENTORY)
+@CheckData(description = "Dropped item while carrying", type = CheckType.INVENTORY)
 public class InventoryC extends CheckImpl implements PacketCheck {
 
     public InventoryC(TGPlayer player) {
@@ -39,7 +39,6 @@ public class InventoryC extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
-        // We don't really care about checking for players in creative mode
         if (packetType != PacketType.Play.Client.CLICK_WINDOW) return;
 
         WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);

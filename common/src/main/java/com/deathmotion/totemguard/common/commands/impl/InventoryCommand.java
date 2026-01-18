@@ -80,6 +80,14 @@ public class InventoryCommand extends AbstractCommand {
         Component msg = Component.empty()
                 .append(Component.text("Packet Inventory Overview", NamedTextColor.GREEN, TextDecoration.BOLD))
                 .append(Component.newline())
+                .append(Component.text("Open Inventory: ", NamedTextColor.GRAY))
+                .append(
+                        Component.text(
+                                player.getData().isOpenInventory() ? "Yes" : "No",
+                                player.getData().isOpenInventory() ? NamedTextColor.GREEN : NamedTextColor.RED
+                        )
+                )
+                .append(Component.newline())
                 .append(Component.text("Selected hotbar index: ", NamedTextColor.GRAY))
                 .append(Component.text(String.valueOf(inv.getSelectedHotbarIndex()), NamedTextColor.YELLOW))
                 .append(Component.text(" (container slot ", NamedTextColor.GRAY))

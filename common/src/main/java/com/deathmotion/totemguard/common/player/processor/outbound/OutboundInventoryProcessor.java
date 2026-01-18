@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
@@ -34,10 +35,12 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWi
 public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private final PacketInventory inventory;
+    private final Data data;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
         this.inventory = player.getInventory();
+        this.data = player.getData();
     }
 
     @Override
@@ -62,6 +65,18 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
             inventory.setCarriedItem(packet.getStack(), -1, Issuer.SERVER, event.getTimestamp());
+        } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
+            player.getLatencyHandler().afterNextAck(() -> {
+                data.setOpenInventory(true);
+            });
+        } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
+            player.getLatencyHandler().afterNextAck(() -> {
+                data.setOpenInventory(true);
+            });
+        } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
+            player.getLatencyHandler().afterNextAck(() -> {
+                data.setOpenInventory(false);
+            });
         }
     }
 

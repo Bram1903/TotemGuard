@@ -44,7 +44,6 @@ public class InventoryB extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
-        // We don't really care about checking for players in creative mode
         if (packetType != PacketType.Play.Client.CLICK_WINDOW) return;
 
         WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);

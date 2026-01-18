@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,16 +28,31 @@ import lombok.Setter;
 @Setter
 public class Data {
 
+    private final TGPlayer player;
     private GameMode gameMode;
-
     private float health;
     private int food;
     private float foodSaturation;
-
     private boolean sprinting;
     private boolean sneaking;
     private boolean canFly;
     private boolean isFlying;
-
+    private boolean openInventory;
     private volatile boolean sendingBundlePacket;
+
+    public Data(TGPlayer player) {
+        this.player = player;
+    }
+
+    public void setOpenInventory(boolean openInventory) {
+        if (this.openInventory != openInventory) {
+            String message = "&a[Inventory] &7" + player.getName() + " has "
+                    + (openInventory ? "&aopened" : "&cclosed")
+                    + " &7their inventory.";
+
+            TGPlatform.getInstance().getAlertRepository().broadcast(message);
+        }
+
+        this.openInventory = openInventory;
+    }
 }

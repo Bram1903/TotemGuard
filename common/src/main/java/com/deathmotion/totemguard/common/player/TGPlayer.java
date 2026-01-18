@@ -100,7 +100,7 @@ public class TGPlayer implements TGUser {
         this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
-        this.data = new Data();
+        this.data = new Data(this);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();

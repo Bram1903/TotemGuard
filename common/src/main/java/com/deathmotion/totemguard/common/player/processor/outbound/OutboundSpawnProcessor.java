@@ -30,8 +30,11 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRe
 
 public class OutboundSpawnProcessor extends ProcessorOutbound {
 
+    private final Data data;
+
     public OutboundSpawnProcessor(TGPlayer player) {
         super(player);
+        this.data = player.getData();
     }
 
     @Override
@@ -42,11 +45,9 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.JOIN_GAME) {
             // On join, we don't really care about lag compensation
             WrapperPlayServerJoinGame packet = new WrapperPlayServerJoinGame(event);
-            Data data = player.getData();
             data.setGameMode(packet.getGameMode());
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
-            Data data = player.getData();
 
             // Make sure to delay this since it's a respawn packet
             player.getLatencyHandler().afterNextAckDelayed(event, () -> {
@@ -57,6 +58,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
 
                 data.setSprinting(false);
                 data.setGameMode(packet.getGameMode());
+                data.setOpenInventory(false);
             });
         }
     }
