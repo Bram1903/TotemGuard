@@ -52,11 +52,11 @@ public class CheckManagerImpl {
                 .build();
 
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
-                .put(ProtocolB.class, new ProtocolB(player))
-                .put(ProtocolE.class, new ProtocolE(player))
-                .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolA.class, new ProtocolA(player))
+                .put(ProtocolB.class, new ProtocolB(player))
+                .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
+                .put(ProtocolE.class, new ProtocolE(player))
                 .put(AutoClickerA.class, new AutoClickerA(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
