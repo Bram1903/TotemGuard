@@ -25,11 +25,12 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 
-// Copied this check from GrimAC (Inventory related, and I don't want our packet based inventory to get out of sync)
-@CheckData(description = "Invalid button for window click type", type = CheckType.PROTOCOL)
+@CheckData(description = "Invalid slot place packet", type = CheckType.PROTOCOL)
 public class ProtocolB extends CheckImpl implements PacketCheck {
+
+    private int lastSlot = -1;
 
     public ProtocolB(TGPlayer player) {
         super(player);
@@ -37,24 +38,17 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
+        if (event.getPacketType() != PacketType.Play.Client.HELD_ITEM_CHANGE) return;
+        final int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
 
-        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-        WrapperPlayClientClickWindow.WindowClickType clickType = packet.getWindowClickType();
-        int button = packet.getButton();
-
-        boolean wrong = switch (clickType) {
-            case PICKUP, QUICK_MOVE, CLONE -> button > 2 || button < 0;
-            case SWAP -> (button > 8 || button < 0) && button != 40;
-            case THROW -> button != 0 && button != 1;
-            case QUICK_CRAFT -> button == 3 || button == 7 || button > 10 || button < 0;
-            case PICKUP_ALL -> button != 0;
-            case UNKNOWN -> false;
-        };
-
-        if (wrong) {
-            fail("button: " + button + ", click type: " + clickType);
+        if (slot == lastSlot) {
+            fail("current slot: " + slot + ", last slot: " + lastSlot);
         }
+
+        if (slot < 0 || slot > 8) {
+            fail("slot: " + slot);
+        }
+
+        lastSlot = slot;
     }
 }
-

@@ -23,23 +23,17 @@ import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.TickData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
 
-import java.util.List;
-import java.util.function.Predicate;
-
-@CheckData(description = "Impossible action combination", type = CheckType.PROTOCOL)
+@CheckData(description = "Duplicated entity action", type = CheckType.PROTOCOL)
 public class ProtocolD extends CheckImpl implements PacketCheck {
 
-    private static final List<Rule> RULES = List.of(
-            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing()),
-            new Rule("attack + releasing", t -> t.isAttacking() && t.isReleasing()),
-            new Rule("inventory_click + place", t -> t.isClickingInInventory() && t.isPlacing()),
-            new Rule("inventory_click + attack", t -> t.isClickingInInventory() && t.isAttacking()),
-            new Rule("quickmove + attack", t -> t.isQuickMoveClicking() && t.isAttacking()),
-            new Rule("pickup_click + place", t -> t.isPickUpClicking() && t.isPlacing())
-    );
+    private boolean sentSprint;
+    private boolean sentSneak;
+    private boolean sentInput;
 
     public ProtocolD(TGPlayer player) {
         super(player);
@@ -47,17 +41,34 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!player.isTickEndPacket(event.getPacketType())) return;
+        final PacketTypeCommon packetType = event.getPacketType();
 
-        TickData t = player.getTickData();
+        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
+            final WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
 
-        for (Rule rule : RULES) {
-            if (rule.predicate().test(t)) {
-                fail(rule.name);
+            boolean sprint = false;
+            boolean sneak = false;
+
+            switch (packet.getAction()) {
+                case START_SNEAKING, STOP_SNEAKING -> sneak = true;
+                case START_SPRINTING, STOP_SPRINTING -> sprint = true;
             }
+
+            final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
+            if (alreadySent) {
+                fail();
+            }
+
+            this.sentSprint = sprint;
+            this.sentSneak = sneak;
+        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
+            if (sentInput) fail();
+            sentInput = true;
+        } else if (player.isTickEndPacket(packetType)) {
+            sentSprint = false;
+            sentSneak = false;
+            sentInput = false;
         }
     }
-
-    private record Rule(String name, Predicate<TickData> predicate) {
-    }
 }
+

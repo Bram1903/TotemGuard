@@ -23,14 +23,23 @@ import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.TickData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 
-@CheckData(description = "Invalid slot place packet", type = CheckType.PROTOCOL)
+import java.util.List;
+import java.util.function.Predicate;
+
+@CheckData(description = "Impossible action combination", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
-    private int lastSlot = -1;
+    private static final List<Rule> RULES = List.of(
+            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing()),
+            new Rule("attack + releasing", t -> t.isAttacking() && t.isReleasing()),
+            new Rule("inventory_click + place", t -> t.isClickingInInventory() && t.isPlacing()),
+            new Rule("inventory_click + attack", t -> t.isClickingInInventory() && t.isAttacking()),
+            new Rule("quickmove + attack", t -> t.isQuickMoveClicking() && t.isAttacking()),
+            new Rule("pickup_click + place", t -> t.isPickUpClicking() && t.isPlacing())
+    );
 
     public ProtocolA(TGPlayer player) {
         super(player);
@@ -38,17 +47,17 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.HELD_ITEM_CHANGE) return;
-        final int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
+        if (!player.isTickEndPacket(event.getPacketType())) return;
 
-        if (slot == lastSlot) {
-            fail("current slot: " + slot + ", last slot: " + lastSlot);
+        TickData t = player.getTickData();
+
+        for (Rule rule : RULES) {
+            if (rule.predicate().test(t)) {
+                fail(rule.name);
+            }
         }
+    }
 
-        if (slot < 0 || slot > 8) {
-            fail("slot: " + slot);
-        }
-
-        lastSlot = slot;
+    private record Rule(String name, Predicate<TickData> predicate) {
     }
 }

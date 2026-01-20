@@ -25,15 +25,11 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@CheckData(description = "Duplicated entity action", type = CheckType.PROTOCOL)
+// Copied this check from GrimAC (Inventory related, and I don't want our packet based inventory to get out of sync)
+@CheckData(description = "Invalid button for window click type", type = CheckType.PROTOCOL)
 public class ProtocolE extends CheckImpl implements PacketCheck {
-
-    private boolean sentSprint;
-    private boolean sentSneak;
-    private boolean sentInput;
 
     public ProtocolE(TGPlayer player) {
         super(player);
@@ -41,33 +37,23 @@ public class ProtocolE extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
+        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
 
-        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
-            final WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
+        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+        WrapperPlayClientClickWindow.WindowClickType clickType = packet.getWindowClickType();
+        int button = packet.getButton();
 
-            boolean sprint = false;
-            boolean sneak = false;
+        boolean wrong = switch (clickType) {
+            case PICKUP, QUICK_MOVE, CLONE -> button > 2 || button < 0;
+            case SWAP -> (button > 8 || button < 0) && button != 40;
+            case THROW -> button != 0 && button != 1;
+            case QUICK_CRAFT -> button == 3 || button == 7 || button > 10 || button < 0;
+            case PICKUP_ALL -> button != 0;
+            case UNKNOWN -> false;
+        };
 
-            switch (packet.getAction()) {
-                case START_SNEAKING, STOP_SNEAKING -> sneak = true;
-                case START_SPRINTING, STOP_SPRINTING -> sprint = true;
-            }
-
-            final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
-            if (alreadySent) {
-                fail();
-            }
-
-            this.sentSprint = sprint;
-            this.sentSneak = sneak;
-        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
-            if (sentInput) fail();
-            sentInput = true;
-        } else if (player.isTickEndPacket(packetType)) {
-            sentSprint = false;
-            sentSneak = false;
-            sentInput = false;
+        if (wrong) {
+            fail("button: " + button + ", click type: " + clickType);
         }
     }
 }
