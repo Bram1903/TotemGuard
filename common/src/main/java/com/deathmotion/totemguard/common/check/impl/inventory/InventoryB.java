@@ -55,7 +55,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
         long lastClickTime = button == LEFT_CLICK ? lastLeftClick : lastRightClick;
 
         if (lastClickTime != -1) {
-            if (event.getTimestamp() - lastClickTime < 5) {
+            if ((event.getTimestamp() - lastClickTime) < 5) {
                 fail();
             }
         }
