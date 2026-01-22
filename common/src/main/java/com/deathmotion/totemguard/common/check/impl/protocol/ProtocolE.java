@@ -53,7 +53,7 @@ public class ProtocolE extends CheckImpl implements PacketCheck {
         };
 
         if (wrong) {
-            fail("button: " + button + ", click type: " + clickType);
+            fail("clickType=" + clickType + ",button=" + button);
         }
     }
 }

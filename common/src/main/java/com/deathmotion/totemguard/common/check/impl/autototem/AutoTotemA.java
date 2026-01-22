@@ -77,13 +77,7 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
         final long useDiff = Math.abs(now - lastTotemActivatedTimestamp);
 
         if (clickDiff <= 75 && useDiff <= 1500) {
-            if (buffer.increase(5) >= 10) {
-                //fail("click time: " + clickDiff + "ms, totemUseTimeDiff: " + useDiff + "ms");
-            }
-
-            fail("click time: " + clickDiff + "ms, totemUseTimeDiff: " + useDiff + "ms");
-        } else {
-            buffer.decrease();
+            fail();
         }
 
         lastTotemActivatedTimestamp = null;

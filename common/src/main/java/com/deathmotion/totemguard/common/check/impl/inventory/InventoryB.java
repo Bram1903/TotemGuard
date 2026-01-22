@@ -58,7 +58,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
             long clickDifference = event.getTimestamp() - lastClickTime;
 
             if (clickDifference < 5) {
-                fail("diff: " + clickDifference);
+                fail("diff=" + clickDifference);
             }
         }
 

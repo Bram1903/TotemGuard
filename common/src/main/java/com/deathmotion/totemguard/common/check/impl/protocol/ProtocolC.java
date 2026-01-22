@@ -49,7 +49,7 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
             final int targetEntityId = packet.getEntityId();
 
             if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
-                if (fail("attacks: " + attacks)) {
+                if (fail("attacks=" + attacks)) {
                     event.setCancelled(true);
                 }
             }

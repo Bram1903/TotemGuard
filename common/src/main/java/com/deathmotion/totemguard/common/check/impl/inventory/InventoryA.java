@@ -42,14 +42,14 @@ public class InventoryA extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (player.getData().isSprinting() && event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
-            fail("rule: sprinting");
+            fail("sprinting");
         }
 
         if (!player.getData().isOpenInventory()) return;
 
         for (Rule rule : RULES) {
             if (rule.matches(event)) {
-                fail("rule: " + rule.name());
+                fail(rule.name());
 
                 // Yes, I now this is stupid,
                 // but clients like Wurst and Meteor just don't close the inventory after interacting with the inventory
