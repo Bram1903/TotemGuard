@@ -78,6 +78,8 @@ public class TGPlayer implements TGUser {
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
 
+    private final boolean supportsTickEndPacket;
+
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
     private @Nullable PlatformPlayer platformPlayer;
@@ -97,6 +99,8 @@ public class TGPlayer implements TGUser {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
+        this.supportsTickEndPacket = getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2);
+
         this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
@@ -193,7 +197,7 @@ public class TGPlayer implements TGUser {
     }
 
     public boolean isTickEndPacket(PacketTypeCommon packetType) {
-        if (getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2) && packetType == PacketType.Play.Client.CLIENT_TICK_END) {
+        if (supportsTickEndPacket && packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             return true;
         }
 

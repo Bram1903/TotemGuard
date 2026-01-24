@@ -19,8 +19,9 @@
 package com.deathmotion.totemguard.common.check.impl.autoclicker;
 
 import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.ClickData;
@@ -28,6 +29,7 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
+@RequiresTickEnd
 @CheckData(description = "CPS went above the configured limit", type = CheckType.AUTO_CLICKER)
 public class AutoClickerA extends CheckImpl implements PacketCheck {
 

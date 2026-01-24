@@ -21,47 +21,39 @@ package com.deathmotion.totemguard.common.check.impl.protocol;
 import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
-import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@RequiresTickEnd
-@CheckData(description = "Invalid set slot", type = CheckType.PROTOCOL)
-public class ProtocolC extends CheckImpl implements PacketCheck {
+// Copied this check from GrimAC (Inventory related, and I don't want our packet based inventory to get out of sync)
+@CheckData(description = "Invalid button for window click type", type = CheckType.PROTOCOL)
+public class ProtocolF extends CheckImpl implements PacketCheck {
 
-    private int currentSlot;
-
-    private int slotChanges;
-    private int blockPlacements;
-
-    public ProtocolC(TGPlayer player) {
+    public ProtocolF(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
-        if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
+        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
 
-            if (slot != currentSlot) {
-                slotChanges++;
-            }
+        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+        WrapperPlayClientClickWindow.WindowClickType clickType = packet.getWindowClickType();
+        int button = packet.getButton();
 
-            currentSlot = slot;
-        } else if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            blockPlacements++;
+        boolean wrong = switch (clickType) {
+            case PICKUP, QUICK_MOVE, CLONE -> button > 2 || button < 0;
+            case SWAP -> (button > 8 || button < 0) && button != 40;
+            case THROW -> button != 0 && button != 1;
+            case QUICK_CRAFT -> button == 3 || button == 7 || button > 10 || button < 0;
+            case PICKUP_ALL -> button != 0;
+            case UNKNOWN -> false;
+        };
 
-            if (blockPlacements > 1 && slotChanges > 1) {
-                fail();
-            }
-        } else if (player.isTickEndPacket(packetType)) {
-            slotChanges = 0;
-            blockPlacements = 0;
+        if (wrong) {
+            fail("clickType=" + clickType + ",button=" + button);
         }
     }
 }

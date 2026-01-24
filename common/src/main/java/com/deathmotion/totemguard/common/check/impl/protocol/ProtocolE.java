@@ -19,17 +19,23 @@
 package com.deathmotion.totemguard.common.check.impl.protocol;
 
 import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
 
-// Copied this check from GrimAC (Inventory related, and I don't want our packet based inventory to get out of sync)
-@CheckData(description = "Invalid button for window click type", type = CheckType.PROTOCOL)
+@RequiresTickEnd
+@CheckData(description = "Duplicated entity action", type = CheckType.PROTOCOL)
 public class ProtocolE extends CheckImpl implements PacketCheck {
+
+    private boolean sentSprint;
+    private boolean sentSneak;
+    private boolean sentInput;
 
     public ProtocolE(TGPlayer player) {
         super(player);
@@ -37,23 +43,33 @@ public class ProtocolE extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
+        final PacketTypeCommon packetType = event.getPacketType();
 
-        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-        WrapperPlayClientClickWindow.WindowClickType clickType = packet.getWindowClickType();
-        int button = packet.getButton();
+        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
+            final WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
 
-        boolean wrong = switch (clickType) {
-            case PICKUP, QUICK_MOVE, CLONE -> button > 2 || button < 0;
-            case SWAP -> (button > 8 || button < 0) && button != 40;
-            case THROW -> button != 0 && button != 1;
-            case QUICK_CRAFT -> button == 3 || button == 7 || button > 10 || button < 0;
-            case PICKUP_ALL -> button != 0;
-            case UNKNOWN -> false;
-        };
+            boolean sprint = false;
+            boolean sneak = false;
 
-        if (wrong) {
-            fail("clickType=" + clickType + ",button=" + button);
+            switch (packet.getAction()) {
+                case START_SNEAKING, STOP_SNEAKING -> sneak = true;
+                case START_SPRINTING, STOP_SPRINTING -> sprint = true;
+            }
+
+            final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
+            if (alreadySent) {
+                fail();
+            }
+
+            this.sentSprint = sprint;
+            this.sentSneak = sneak;
+        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
+            if (sentInput) fail();
+            sentInput = true;
+        } else if (player.isTickEndPacket(packetType)) {
+            sentSprint = false;
+            sentSneak = false;
+            sentInput = false;
         }
     }
 }

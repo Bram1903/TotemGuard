@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.impl.autoclicker.AutoClickerA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
@@ -39,38 +40,61 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public class CheckManagerImpl {
 
+    private final TGPlayer player;
+
     public ClassToInstanceMap<Check> allChecks;
+
     ClassToInstanceMap<PacketCheck> packetChecks;
     ClassToInstanceMap<EventCheck> eventChecks;
     ClassToInstanceMap<ExtendedCheck> extendedChecks;
 
     public CheckManagerImpl(TGPlayer player) {
-        eventChecks = new ImmutableClassToInstanceMap.Builder<EventCheck>()
-                .put(AutoTotemA.class, new AutoTotemA(player))
-                .put(AutoTotemB.class, new AutoTotemB(player))
-//                .put(AutoTotemC.class, new AutoTotemC(player))
-                .build();
+        this.player = player;
 
-        packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
-                .put(ProtocolA.class, new ProtocolA(player))
-                .put(ProtocolB.class, new ProtocolB(player))
-                .put(ProtocolC.class, new ProtocolC(player))
-                .put(ProtocolD.class, new ProtocolD(player))
-                .put(ProtocolE.class, new ProtocolE(player))
-                .put(AutoClickerA.class, new AutoClickerA(player))
-                .put(InventoryA.class, new InventoryA(player))
-                .put(InventoryB.class, new InventoryB(player))
-                .put(InventoryC.class, new InventoryC(player))
-                .put(Mod.class, new Mod(player))
-                .build();
+        var eventBuilder = new ImmutableClassToInstanceMap.Builder<EventCheck>();
+        putIfSupported(eventBuilder, AutoTotemA.class, new AutoTotemA(player));
+        putIfSupported(eventBuilder, AutoTotemB.class, new AutoTotemB(player));
+        eventChecks = eventBuilder.build();
 
-        extendedChecks = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>()
-                .build();
+        var packetBuilder = new ImmutableClassToInstanceMap.Builder<PacketCheck>();
+        putIfSupported(packetBuilder, ProtocolA.class, new ProtocolA(player));
+        putIfSupported(packetBuilder, ProtocolB.class, new ProtocolB(player));
+        putIfSupported(packetBuilder, ProtocolC.class, new ProtocolC(player));
+        putIfSupported(packetBuilder, ProtocolD.class, new ProtocolD(player));
+        putIfSupported(packetBuilder, ProtocolE.class, new ProtocolE(player));
+        putIfSupported(packetBuilder, ProtocolF.class, new ProtocolF(player));
+        putIfSupported(packetBuilder, AutoClickerA.class, new AutoClickerA(player));
+        putIfSupported(packetBuilder, InventoryA.class, new InventoryA(player));
+        putIfSupported(packetBuilder, InventoryB.class, new InventoryB(player));
+        putIfSupported(packetBuilder, InventoryC.class, new InventoryC(player));
+        putIfSupported(packetBuilder, Mod.class, new Mod(player));
+        packetChecks = packetBuilder.build();
+
+        var extendedBuilder = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>();
+        extendedChecks = extendedBuilder.build();
 
         allChecks = new ImmutableClassToInstanceMap.Builder<Check>()
                 .putAll(packetChecks)
                 .putAll(eventChecks)
+                .putAll(extendedChecks)
                 .build();
+    }
+
+    private boolean shouldRegister(Class<?> checkClass) {
+        if (checkClass.isAnnotationPresent(RequiresTickEnd.class)) {
+            return player.isSupportsTickEndPacket();
+        }
+
+        return true;
+    }
+
+    private <B, T extends B> void putIfSupported(
+            ImmutableClassToInstanceMap.Builder<B> builder,
+            Class<T> type,
+            T instance
+    ) {
+        if (!shouldRegister(type)) return;
+        builder.put(type, instance);
     }
 
     public void onPacketReceive(final PacketReceiveEvent packet) {
@@ -79,7 +103,8 @@ public class CheckManagerImpl {
             check.onPacketReceive(packet);
         }
 
-        for (PacketCheck check : extendedChecks.values()) {
+        // Use ExtendedCheck type here for clarity (and to avoid accidental type mismatch)
+        for (ExtendedCheck check : extendedChecks.values()) {
             if (!check.isEnabled()) continue;
             check.onPacketReceive(packet);
         }
@@ -91,7 +116,7 @@ public class CheckManagerImpl {
             check.onPacketSend(packet);
         }
 
-        for (PacketCheck check : extendedChecks.values()) {
+        for (ExtendedCheck check : extendedChecks.values()) {
             if (!check.isEnabled()) continue;
             check.onPacketSend(packet);
         }
@@ -114,3 +139,4 @@ public class CheckManagerImpl {
         return (T) allChecks.get(check);
     }
 }
+

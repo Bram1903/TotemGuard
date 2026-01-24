@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import lombok.Getter;

@@ -19,21 +19,20 @@
 package com.deathmotion.totemguard.common.check.impl.protocol;
 
 import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
-@CheckData(description = "Duplicated entity action", type = CheckType.PROTOCOL)
+@CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
 public class ProtocolD extends CheckImpl implements PacketCheck {
 
-    private boolean sentSprint;
-    private boolean sentSneak;
-    private boolean sentInput;
+    private int lastAttackedEntityId;
+    private int attacks;
 
     public ProtocolD(TGPlayer player) {
         super(player);
@@ -43,31 +42,21 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
 
-        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
-            final WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
+        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
+            final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
 
-            boolean sprint = false;
-            boolean sneak = false;
+            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
+            final int targetEntityId = packet.getEntityId();
 
-            switch (packet.getAction()) {
-                case START_SNEAKING, STOP_SNEAKING -> sneak = true;
-                case START_SPRINTING, STOP_SPRINTING -> sprint = true;
+            if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
+                if (fail("attacks=" + attacks)) {
+                    event.setCancelled(true);
+                }
             }
 
-            final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
-            if (alreadySent) {
-                fail();
-            }
-
-            this.sentSprint = sprint;
-            this.sentSneak = sneak;
-        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
-            if (sentInput) fail();
-            sentInput = true;
+            lastAttackedEntityId = targetEntityId;
         } else if (player.isTickEndPacket(packetType)) {
-            sentSprint = false;
-            sentSneak = false;
-            sentInput = false;
+            attacks = 0;
         }
     }
 }
