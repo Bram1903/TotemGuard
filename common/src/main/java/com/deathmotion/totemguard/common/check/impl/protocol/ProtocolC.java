@@ -33,7 +33,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHe
 @CheckData(description = "Invalid set slot", type = CheckType.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
 
-    private int currentSlot;
+    private int currentSlot = -1;
 
     private int slotChanges;
     private int blockPlacements;
@@ -47,6 +47,11 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
         final PacketTypeCommon packetType = event.getPacketType();
         if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
             int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
+            
+            if (currentSlot == -1) {
+                currentSlot = slot;
+                return;
+            }
 
             if (slot != currentSlot) {
                 slotChanges++;
