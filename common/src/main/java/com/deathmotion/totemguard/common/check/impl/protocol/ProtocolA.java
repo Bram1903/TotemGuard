@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.TickData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 
 import java.util.List;
@@ -35,12 +34,39 @@ import java.util.function.Predicate;
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
     private static final List<Rule> RULES = List.of(
-            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing() && !t.isInteracting()),
-            //new Rule("attack + releasing", t -> t.isAttacking() && t.isReleasing()),
-            new Rule("inventory_click + place", t -> t.isClickingInInventory() && t.isPlacing()),
-            new Rule("inventory_click + attack", t -> t.isClickingInInventory() && t.isAttacking()),
-            new Rule("quickmove + attack", t -> t.isQuickMoveClicking() && t.isAttacking()),
-            new Rule("pickup_click + place", t -> t.isPickUpClicking() && t.isPlacing())
+        new Rule("attack + place", p ->
+            p.getTickData().isAttacking()
+                && p.getTickData().isPlacing()
+                && !p.getTickData().isInteracting()
+        ),
+
+        // new Rule("attack + releasing", t ->
+        //     t.isAttacking() && t.isReleasing()
+        // ),
+
+        new Rule("inventory_click + place", p ->
+            p.getTickData().isClickingInInventory()
+                && p.getTickData().isPlacing()
+                && p.getData().isOpenInventory()
+        ),
+
+        new Rule("inventory_click + attack", p ->
+            p.getTickData().isClickingInInventory()
+                && p.getTickData().isAttacking()
+                && p.getData().isOpenInventory()
+        ),
+
+        new Rule("quickmove + attack", p ->
+            p.getTickData().isQuickMoveClicking()
+                && p.getTickData().isAttacking()
+                && p.getData().isOpenInventory()
+        ),
+
+        new Rule("pickup_click + place", p ->
+            p.getTickData().isPickUpClicking()
+                && p.getTickData().isPlacing()
+                && p.getData().isOpenInventory()
+        )
     );
 
     public ProtocolA(TGPlayer player) {
@@ -51,27 +77,13 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
     public void onPacketReceive(PacketReceiveEvent event) {
         if (!player.isTickEndPacket(event.getPacketType())) return;
 
-        TickData t = player.getTickData();
-
         for (Rule rule : RULES) {
-            String name = rule.name;
-            /*
-            Inventory related actions should only be checked if the inventory itself is closed.
-            This is because to the inventory does not have a client sided close delay.
-             */
-            if (name.equals("inventory_click + place") || name.equals("inventory_click + attack") || name.equals("pickup_click + place") || name.equals("quickmove + attack")) {
-                if (rule.predicate().test(t) && player.getData().isOpenInventory()) {
-                    fail(name);
-                }
-                return;
-            }
-
-            if (rule.predicate().test(t)) {
-                fail(name);
+            if (rule.predicate().test(player)) {
+                fail(rule.name);
             }
         }
     }
 
-    private record Rule(String name, Predicate<TickData> predicate) {
+    private record Rule(String name, Predicate<TGPlayer> predicate) {
     }
 }
