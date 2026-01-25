@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.check.impl.protocol;
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.TickData;
@@ -30,6 +31,7 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import java.util.List;
 import java.util.function.Predicate;
 
+@RequiresTickEnd
 @CheckData(description = "Impossible action combination", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
