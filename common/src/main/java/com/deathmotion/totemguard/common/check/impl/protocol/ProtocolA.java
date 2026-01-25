@@ -36,7 +36,7 @@ import java.util.function.Predicate;
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
     private static final List<Rule> RULES = List.of(
-            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing()),
+            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing() && !t.isInteracting()),
             new Rule("attack + releasing", t -> t.isAttacking() && t.isReleasing()),
             new Rule("inventory_click + place", t -> t.isClickingInInventory() && t.isPlacing()),
             new Rule("inventory_click + attack", t -> t.isClickingInInventory() && t.isAttacking()),
