@@ -50,7 +50,7 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
 
             if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
                 if (fail("attacks=" + attacks)) {
-                    event.setCancelled(true);
+                    //event.setCancelled(true);
                 }
             }
 
