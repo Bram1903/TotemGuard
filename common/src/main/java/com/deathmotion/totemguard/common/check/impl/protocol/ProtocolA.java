@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.check.impl.protocol;
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.TickData;
@@ -29,12 +30,13 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import java.util.List;
 import java.util.function.Predicate;
 
+@RequiresTickEnd
 @CheckData(description = "Impossible action combination", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
     private static final List<Rule> RULES = List.of(
-            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing()),
-            new Rule("attack + releasing", t -> t.isAttacking() && t.isReleasing()),
+            new Rule("attack + place", t -> t.isAttacking() && t.isPlacing() && !t.isInteracting()),
+            //new Rule("attack + releasing", t -> t.isAttacking() && t.isReleasing()),
             new Rule("inventory_click + place", t -> t.isClickingInInventory() && t.isPlacing()),
             new Rule("inventory_click + attack", t -> t.isClickingInInventory() && t.isAttacking()),
             new Rule("quickmove + attack", t -> t.isQuickMoveClicking() && t.isAttacking()),
