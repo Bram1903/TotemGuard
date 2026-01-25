@@ -50,7 +50,7 @@ public class Data {
                     + (openInventory ? "&aopened" : "&cclosed")
                     + " &7their inventory.";
 
-            TGPlatform.getInstance().getAlertRepository().broadcast(message);
+            //TGPlatform.getInstance().getAlertRepository().broadcast(message);
         }
 
         this.openInventory = openInventory;
