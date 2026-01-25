@@ -85,7 +85,7 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
                 return;
             }
 
-            TGPlatform.getInstance().getLogger().info("[TotemReplenished] player=" + playerName + " deltaC=" + deltaComp + "ms");
+            //TGPlatform.getInstance().getLogger().info("[TotemReplenished] player=" + playerName + " deltaC=" + deltaComp + "ms");
             player.getTotemData().getIntervals().add(deltaComp);
 
             TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
