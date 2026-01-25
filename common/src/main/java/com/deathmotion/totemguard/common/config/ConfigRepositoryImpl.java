@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.config;
 
-import com.deathmotion.totemguard.api.config.Config;
-import com.deathmotion.totemguard.api.config.ConfigFile;
-import com.deathmotion.totemguard.api.config.ConfigRepository;
+import com.deathmotion.totemguard.api3.config.Config;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.ConfigRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.mods.ModSignatures;
 import com.deathmotion.totemguard.common.config.migration.MigrationRegistry;

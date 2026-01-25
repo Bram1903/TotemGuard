@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
-import com.deathmotion.totemguard.api.user.TGUser;
-import com.deathmotion.totemguard.api.user.UserRepository;
+import com.deathmotion.totemguard.api3.event.impl.TGUserQuitEvent;
+import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;

@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.commands;
 
-import com.deathmotion.totemguard.api.config.Config;
-import com.deathmotion.totemguard.api.config.ConfigFile;
-import com.deathmotion.totemguard.api.config.key.impl.ConfigKeys;
+import com.deathmotion.totemguard.api3.config.Config;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import lombok.experimental.UtilityClass;

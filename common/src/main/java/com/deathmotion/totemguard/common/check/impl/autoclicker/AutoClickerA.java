@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.autoclicker;
 
-import com.deathmotion.totemguard.api.check.CheckType;
+import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.annotations;
 
-import com.deathmotion.totemguard.api.check.CheckType;
+import com.deathmotion.totemguard.api3.check.CheckType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

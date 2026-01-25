@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common;
 
-import com.deathmotion.totemguard.api.TotemGuard;
+import com.deathmotion.totemguard.api3.TotemGuard;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;

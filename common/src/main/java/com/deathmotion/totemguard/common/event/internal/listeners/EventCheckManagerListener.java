@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.event.internal.listeners;
 
-import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.api3.event.Event;
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 
 import java.util.function.Consumer;

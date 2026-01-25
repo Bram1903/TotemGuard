@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.placeholder.engine;
 
-import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderContext;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
-import com.deathmotion.totemguard.api.user.TGUser;
+import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderContext;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
+import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

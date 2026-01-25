@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.velocity.testplugin.events;
 
-import com.deathmotion.totemguard.api.TotemGuardAPI;
-import com.deathmotion.totemguard.api.event.EventSubscription;
-import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
-import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
+import com.deathmotion.totemguard.api3.TotemGuardAPI;
+import com.deathmotion.totemguard.api3.event.EventSubscription;
+import com.deathmotion.totemguard.api3.event.impl.TGUserJoinEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserQuitEvent;
 import com.deathmotion.totemguard.velocity.testplugin.ApiTestPlugin;
 
 public class ACUserEventListener {

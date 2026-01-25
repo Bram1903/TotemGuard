@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.message;
 
-import com.deathmotion.totemguard.api.config.Config;
-import com.deathmotion.totemguard.api.config.ConfigFile;
-import com.deathmotion.totemguard.api.config.key.ConfigValueKey;
-import com.deathmotion.totemguard.api.reload.Reloadable;
+import com.deathmotion.totemguard.api3.config.Config;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.key.ConfigValueKey;
+import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;

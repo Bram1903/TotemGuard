@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.check.type;
 
-import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.event.Event;
 
 public interface EventCheck extends Check {
 

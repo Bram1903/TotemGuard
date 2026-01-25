@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.mods;
 
-import com.deathmotion.totemguard.api.config.Config;
+import com.deathmotion.totemguard.api3.config.Config;
 
 import java.util.*;
 

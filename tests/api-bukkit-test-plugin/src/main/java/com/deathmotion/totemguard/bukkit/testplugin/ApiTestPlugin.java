@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.bukkit.testplugin;
 
-import com.deathmotion.totemguard.api.TotemGuard;
-import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
-import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
-import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
+import com.deathmotion.totemguard.api3.TotemGuard;
+import com.deathmotion.totemguard.api3.event.impl.TGFlagEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserJoinEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserQuitEvent;
 import com.deathmotion.totemguard.bukkit.testplugin.events.TGFlagEventListener;
 import com.deathmotion.totemguard.bukkit.testplugin.events.TGUserJoinEventListener;
 import com.deathmotion.totemguard.bukkit.testplugin.events.TGUserQuitEventListener;

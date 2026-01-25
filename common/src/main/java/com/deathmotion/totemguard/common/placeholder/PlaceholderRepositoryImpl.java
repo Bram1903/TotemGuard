@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.common.placeholder;
 
-import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
-import com.deathmotion.totemguard.api.user.TGUser;
+import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
+import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;

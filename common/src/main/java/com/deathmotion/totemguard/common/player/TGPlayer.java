@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
-import com.deathmotion.totemguard.api.user.TGUser;
+import com.deathmotion.totemguard.api3.event.impl.TGUserJoinEvent;
+import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;

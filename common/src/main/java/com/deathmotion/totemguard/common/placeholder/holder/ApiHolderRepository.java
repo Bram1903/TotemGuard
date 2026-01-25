@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder;
 
-import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

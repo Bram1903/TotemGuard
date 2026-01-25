@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.reload;
 
-import com.deathmotion.totemguard.api.reload.Reloadable;
+import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 
 public class ReloadService {

@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.config.service;
 
-import com.deathmotion.totemguard.api.config.Config;
-import com.deathmotion.totemguard.api.config.ConfigFile;
-import com.deathmotion.totemguard.api.config.ConfigSection;
+import com.deathmotion.totemguard.api3.config.Config;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.ConfigSection;
 import com.deathmotion.totemguard.common.config.path.PathId;
 import com.deathmotion.totemguard.common.config.path.PathResolver;
 import com.deathmotion.totemguard.common.config.yaml.YamlMaps;

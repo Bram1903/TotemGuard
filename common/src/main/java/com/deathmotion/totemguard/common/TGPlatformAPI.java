@@ -18,13 +18,13 @@
 
 package com.deathmotion.totemguard.common;
 
-import com.deathmotion.totemguard.api.TotemGuardAPI;
-import com.deathmotion.totemguard.api.alert.AlertRepository;
-import com.deathmotion.totemguard.api.config.ConfigRepository;
-import com.deathmotion.totemguard.api.event.EventRepository;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
-import com.deathmotion.totemguard.api.user.UserRepository;
-import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.api3.TotemGuardAPI;
+import com.deathmotion.totemguard.api3.alert.AlertRepository;
+import com.deathmotion.totemguard.api3.config.ConfigRepository;
+import com.deathmotion.totemguard.api3.event.EventRepository;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
+import com.deathmotion.totemguard.api3.user.UserRepository;
+import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import org.jetbrains.annotations.NotNull;
 
