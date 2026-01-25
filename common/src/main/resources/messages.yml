@@ -8,7 +8,7 @@
 # The version of the messages file. DO NOT TOUCH!!!
 config_version: 1
 
-prefix: "&6&lTG &8»"
+prefix: "&6&lTG3 &8»"
 alerts:
   enabled: "%prefix% &aAlerts enabled"
   disabled: "%prefix% &cAlerts disabled"

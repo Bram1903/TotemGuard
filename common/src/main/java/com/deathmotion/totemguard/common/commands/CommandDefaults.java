@@ -33,7 +33,7 @@ import java.util.List;
 @UtilityClass
 public class CommandDefaults {
 
-    public static final String PERMISSION_PREFIX = "totemguard.";
+    public static final String PERMISSION_PREFIX = "TotemGuardV3.";
 
     private static final Config CONFIG = TGPlatform.getInstance()
             .getConfigRepository()

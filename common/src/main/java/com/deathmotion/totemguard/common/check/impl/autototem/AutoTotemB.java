@@ -47,12 +47,12 @@ public class AutoTotemB extends CheckImpl implements EventCheck {
         int n = intervals.size();
 
         if (n < MIN_INTERVALS) {
-            log("skip: not enough delays (" + n + "/" + MIN_INTERVALS + ")");
+            //log("skip: not enough delays (" + n + "/" + MIN_INTERVALS + ")");
             return;
         }
 
         double standardDeviation = MathUtil.getStandardDeviation(intervals);
-        log("stdDev=" + standardDeviation + " samples=" + intervals);
+        //log("stdDev=" + standardDeviation + " samples=" + intervals);
     }
 
     private void log(String msg) {

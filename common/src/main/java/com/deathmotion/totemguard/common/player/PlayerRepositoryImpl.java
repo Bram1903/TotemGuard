@@ -69,7 +69,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     // TODO: This is temporarily (Will use a proper database implementation in the future
     private void enableAlerts(UUID uuid, PlatformUser platformUser) {
-        if (platformUser.hasPermission("TotemGuard.Alerts")) {
+        if (platformUser.hasPermission("TotemGuardV3.Alerts") && platformUser.hasPermission("TotemGuardV3.Alerts.EnableOnJoin")) {
             platform.getAlertRepository().toggleAlerts(uuid);
         }
     }
