@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 
 public class TotemReplenishedListener implements Consumer<InventoryChangedEvent> {
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final long MAX_REASONABLE_DELAY_MS = 5_000;
 
     @Override
