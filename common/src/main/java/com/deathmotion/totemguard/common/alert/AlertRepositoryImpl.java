@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.common.alert;
 
 import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
-import com.deathmotion.totemguard.api.event.impl.TGAlertEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
@@ -36,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 public class AlertRepositoryImpl implements AlertRepository {
 
@@ -45,12 +45,11 @@ public class AlertRepositoryImpl implements AlertRepository {
     @Getter
     private final ConcurrentHashMap<UUID, PlatformUser> enabledAlerts = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<AlertKey, CompletableFuture<Void>> alertQueues = new ConcurrentHashMap<>();
-
+    private final ConcurrentHashMap<UUID, CompletableFuture<Void>> chatQueues = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<AlertKey, ChatBuffer> chatBuffers = new ConcurrentHashMap<>();
     private final Executor asyncExecutor = command -> TGPlatform.getInstance().getScheduler().runAsyncTask(command);
 
     public AlertRepositoryImpl() {
-
     }
 
     @Override
@@ -80,34 +79,64 @@ public class AlertRepositoryImpl implements AlertRepository {
     public void removeUser(TGUser user) {
         UUID uuid = user.getUuid();
         enabledAlerts.remove(uuid);
-        alertQueues.keySet().removeIf(key -> key.playerUuid().equals(uuid));
+        chatBuffers.keySet().removeIf(key -> key.playerUuid().equals(uuid));
+        chatQueues.remove(uuid);
     }
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
+        // TODO: Call punishment handler
+        // TODO: Call Discord webhook handler
+        // TODO: Call database handler
+
+        bufferChatAlert(check, violations, debug);
+    }
+
+    private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug) {
         UUID playerUuid = check.player.getUuid();
         AlertKey key = new AlertKey(playerUuid, check.getName());
 
-        alertQueues.compute(key, (k, tail) -> {
-            CompletableFuture<Void> start = (tail == null) ? CompletableFuture.completedFuture(null) : tail;
+        chatBuffers.compute(key, (k, buf) -> {
+            if (buf == null) {
+                ChatBuffer created = new ChatBuffer(check);
+                created.update(violations, debug);
 
-            CompletableFuture<Void> next = start.thenRunAsync(() -> {
-                String alertMessage = AlertBuilder.build(check, violations, debug);
+                scheduleFlush(k);
 
-                TGAlertEvent event = new TGAlertEvent(
-                        check.player,
-                        check,
-                        debug,
-                        alertMessage
-                );
+                return created;
+            }
 
-                TGPlatform.getInstance().getEventRepository().post(event);
+            buf.update(violations, debug);
+            return buf;
+        });
+    }
 
-                if (!event.isCancelled()) {
-                    broadcast(event.getAlertMessage());
-                }
-            }, asyncExecutor);
+    private void scheduleFlush(AlertKey key) {
+        TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(() -> flushChat(key), 1, TimeUnit.SECONDS);
+    }
 
-            next.whenComplete((v, t) -> alertQueues.remove(k, next));
+    private void flushChat(AlertKey key) {
+        ChatBuffer buf = chatBuffers.remove(key);
+        if (buf == null) {
+            return;
+        }
+
+        int finalVl = buf.getViolations();
+        String finalDebug = buf.getDebug();
+        CheckImpl check = buf.getCheck();
+
+        String alertMessage = AlertBuilder.build(check, finalVl, finalDebug);
+        enqueueChatSend(key.playerUuid(), alertMessage);
+    }
+
+    private void enqueueChatSend(UUID playerUuid, String message) {
+        chatQueues.compute(playerUuid, (uuid, tail) -> {
+            CompletableFuture<Void> start = (tail == null)
+                    ? CompletableFuture.completedFuture(null)
+                    : tail;
+
+            CompletableFuture<Void> next = start.thenRunAsync(() -> broadcast(message), asyncExecutor);
+
+            next.whenComplete((v, t) -> chatQueues.remove(uuid, next));
             return next;
         });
     }
@@ -124,8 +153,5 @@ public class AlertRepositoryImpl implements AlertRepository {
                 )
         );
     }
-
-
-    private record AlertKey(UUID playerUuid, String check) {
-    }
 }
+
