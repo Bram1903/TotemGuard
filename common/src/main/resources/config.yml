@@ -10,6 +10,6 @@ config_version: 1
 
 # The name of the root command for TotemGuard. (This requires a server restart to take effect)
 commands:
-  base: totemguard
+  base: totemguard3
   aliases:
-    - tg
+    - tg3
