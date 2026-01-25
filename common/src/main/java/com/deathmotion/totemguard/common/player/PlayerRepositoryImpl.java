@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public final class PlayerRepositoryImpl implements UserRepository {
 
-    private static final String BYPASS_PERMISSION = "TotemGuard3.Bypass";
+    private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass";
 
     private final TGPlatform platform = TGPlatform.getInstance();
 
