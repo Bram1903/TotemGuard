@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.TickData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -53,6 +54,14 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
 
         for (Rule rule : RULES) {
             if (rule.predicate().test(t)) {
+                if (rule.name.equals("attack + releasing")) {
+                    ItemStack mainHandItem = player.getInventory().getMainHandItem();
+                    ItemStack offHandItem = player.getInventory().getOffhandItem();
+
+                    fail("main=" + mainHandItem.getType().getName().getKey() + ",off=" + offHandItem.getType().getName().getKey());
+                    return;
+                }
+
                 fail(rule.name);
             }
         }
