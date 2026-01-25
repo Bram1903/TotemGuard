@@ -76,8 +76,7 @@ public class AlertRepositoryImpl implements AlertRepository {
         return true;
     }
 
-    public void removeUser(TGUser user) {
-        UUID uuid = user.getUuid();
+    public void removeUser(UUID uuid) {
         enabledAlerts.remove(uuid);
         chatBuffers.keySet().removeIf(key -> key.playerUuid().equals(uuid));
         chatQueues.remove(uuid);

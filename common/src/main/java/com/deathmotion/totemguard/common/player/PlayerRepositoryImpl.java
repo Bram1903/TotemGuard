@@ -79,11 +79,10 @@ public final class PlayerRepositoryImpl implements UserRepository {
         if (uuid == null) return;
 
         clearExempt(uuid);
+        platform.getAlertRepository().removeUser(uuid);
 
         final TGPlayer player = players.remove(user);
         if (player == null) return;
-
-        platform.getAlertRepository().removeUser(player);
         platform.getEventRepository().post(new TGUserQuitEvent(player));
     }
 
