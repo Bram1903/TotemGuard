@@ -52,8 +52,20 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
         TickData t = player.getTickData();
 
         for (Rule rule : RULES) {
+            String name = rule.name;
+            /*
+            Inventory related actions should only be checked if the inventory itself is closed.
+            This is because to the inventory does not have a client sided close delay.
+             */
+            if (name.equals("inventory_click + place") || name.equals("inventory_click + attack") || name.equals("pickup_click + place") || name.equals("quickmove + attack")) {
+                if (rule.predicate().test(t) && player.getData().isOpenInventory()) {
+                    fail(name);
+                }
+                return;
+            }
+
             if (rule.predicate().test(t)) {
-                fail(rule.name);
+                fail(name);
             }
         }
     }
