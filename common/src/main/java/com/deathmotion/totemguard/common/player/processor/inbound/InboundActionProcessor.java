@@ -121,15 +121,13 @@ public class InboundActionProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {
             WrapperPlayClientPlayerAbilities packet = new WrapperPlayClientPlayerAbilities(event);
             data.setFlying(packet.isFlying() && data.isCanFly());
+        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
+            tickData.reset();
         }
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
-        if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END) {
-            tickData.reset();
-        }
-
         clickData.checkPost();
     }
 }
