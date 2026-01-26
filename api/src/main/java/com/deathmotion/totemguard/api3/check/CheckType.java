@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.api3.check;
 
 public enum CheckType {
     UNSPECIFIED,
-    AUTO_CLICKER,
     AUTO_TOTEM,
     INVENTORY,
     PROTOCOL,

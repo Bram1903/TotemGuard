@@ -57,7 +57,7 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
             }
 
             lastAttackedEntityId = targetEntityId;
-        } else if (player.isTickEndPacket(packetType)) {
+        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             attacks = 0;
         }
     }

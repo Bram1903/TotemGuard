@@ -121,19 +121,12 @@ public class InboundActionProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {
             WrapperPlayClientPlayerAbilities packet = new WrapperPlayClientPlayerAbilities(event);
             data.setFlying(packet.isFlying() && data.isCanFly());
-        } else if (player.isTickEndPacket(packetType)) {
-            if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-                // Autoclicker checks will only work on 1.21.2. I cba to deal with timing issues
-                // Older clients don't send a tick end packet, and the only way of knowing when they started a new tick
-                // is by listening for any movement packet. That means if they stand still and swing their arm, it doesn't send "tick" packets
-                clickData.tick();
-            }
         }
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
-        if (player.isTickEndPacket(event.getPacketType())) {
+        if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END) {
             tickData.reset();
         }
 

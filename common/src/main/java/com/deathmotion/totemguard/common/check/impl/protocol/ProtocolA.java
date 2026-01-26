@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -71,7 +72,7 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!player.isTickEndPacket(event.getPacketType())) return;
+        if (event.getPacketType() != PacketType.Play.Client.CLIENT_TICK_END) return;
 
         for (Rule rule : RULES) {
             if (rule.predicate().test(player)) {

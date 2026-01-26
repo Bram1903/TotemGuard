@@ -66,7 +66,7 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (sentInput) fail();
             sentInput = true;
-        } else if (player.isTickEndPacket(packetType)) {
+        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             sentSprint = false;
             sentSneak = false;
             sentInput = false;

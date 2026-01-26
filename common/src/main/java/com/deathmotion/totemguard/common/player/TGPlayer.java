@@ -197,12 +197,4 @@ public class TGPlayer implements TGUser {
     public boolean supportsEndTick() {
         return getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2) && PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_21_2);
     }
-
-    public boolean isTickEndPacket(PacketTypeCommon packetType) {
-        if (supportsEndTick() && packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            return true;
-        }
-
-        return isFlying(packetType);
-    }
 }
