@@ -73,6 +73,13 @@ public interface Check extends Reloadable {
     boolean isEnabled();
 
     /**
+     * Indicates whether this check requires the tick end packet
+     *
+     * @return {@code true} if the tick end is required, {@code false} otherwise
+     */
+    boolean requiresTickEnd();
+
+    /**
      * Gets the current number of violations recorded by this check.
      *
      * @return the number of violations

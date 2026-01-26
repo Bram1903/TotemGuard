@@ -21,22 +21,18 @@ package com.deathmotion.totemguard.common.check.impl.protocol;
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
-import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
-@RequiresTickEnd
-@CheckData(description = "Invalid set slot", type = CheckType.PROTOCOL)
+@CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
 
-    private int currentSlot = -1;
-
-    private int slotChanges;
-    private int blockPlacements;
+    private int lastAttackedEntityId;
+    private int attacks;
 
     public ProtocolC(TGPlayer player) {
         super(player);
@@ -45,28 +41,22 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
-        if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
-            
-            if (currentSlot == -1) {
-                currentSlot = slot;
-                return;
+
+        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
+            final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
+
+            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
+            final int targetEntityId = packet.getEntityId();
+
+            if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
+                if (fail("attacks=" + attacks)) {
+                    //event.setCancelled(true);
+                }
             }
 
-            if (slot != currentSlot) {
-                slotChanges++;
-            }
-
-            currentSlot = slot;
-        } else if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            blockPlacements++;
-
-            if (blockPlacements > 1 && slotChanges > 1) {
-                fail();
-            }
+            lastAttackedEntityId = targetEntityId;
         } else if (player.isTickEndPacket(packetType)) {
-            slotChanges = 0;
-            blockPlacements = 0;
+            attacks = 0;
         }
     }
 }

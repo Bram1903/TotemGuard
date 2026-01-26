@@ -40,10 +40,6 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
                 && !p.getTickData().isInteracting()
         ),
 
-        // new Rule("attack + releasing", t ->
-        //     t.isAttacking() && t.isReleasing()
-        // ),
-
         new Rule("inventory_click + place", p ->
             p.getTickData().isClickingInInventory()
                 && p.getTickData().isPlacing()

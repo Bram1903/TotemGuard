@@ -41,12 +41,14 @@ import com.deathmotion.totemguard.common.player.processor.inbound.InboundClientB
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundInventoryProcessor;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,8 +80,6 @@ public class TGPlayer implements TGUser {
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
 
-    private final boolean supportsTickEndPacket;
-
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
     private @Nullable PlatformPlayer platformPlayer;
@@ -99,7 +99,6 @@ public class TGPlayer implements TGUser {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
-        this.supportsTickEndPacket = getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2);
 
         this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
@@ -192,12 +191,15 @@ public class TGPlayer implements TGUser {
     }
 
     public ClientVersion getClientVersion() {
-        // If temporarily null, assume server version...
-        return Objects.requireNonNullElseGet(user.getClientVersion(), () -> ClientVersion.getById(PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion()));
+        return Objects.requireNonNullElseGet(user.getClientVersion(), () -> PacketEvents.getAPI().getServerManager().getVersion().toClientVersion());
+    }
+
+    public boolean supportsEndTick() {
+        return getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2) && PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_21_2);
     }
 
     public boolean isTickEndPacket(PacketTypeCommon packetType) {
-        if (supportsTickEndPacket && packetType == PacketType.Play.Client.CLIENT_TICK_END) {
+        if (supportsEndTick() && packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             return true;
         }
 

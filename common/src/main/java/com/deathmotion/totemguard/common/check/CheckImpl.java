@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.api3.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import lombok.Getter;
@@ -47,6 +48,10 @@ public class CheckImpl implements Check {
 
     @Getter
     private boolean enabled = true;
+
+    @Getter
+    private boolean requiresTickEnd;
+
     @Getter
     private int violations;
 
@@ -61,6 +66,10 @@ public class CheckImpl implements Check {
             throw new IllegalStateException("Check class " + checkClass.getName() + " is missing the @CheckData annotation!");
         }
         final CheckData checkData = checkClass.getAnnotation(CheckData.class);
+
+        if (checkClass.isAnnotationPresent(RequiresTickEnd.class)) {
+            requiresTickEnd = true;
+        }
 
         this.name = checkData.name().isBlank() ? checkClass.getSimpleName() : checkData.name();
         this.description = checkData.description();
@@ -97,5 +106,10 @@ public class CheckImpl implements Check {
         event = (TGFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
 
         return !event.isCancelled();
+    }
+
+    @Override
+    public boolean requiresTickEnd() {
+        return requiresTickEnd;
     }
 }
