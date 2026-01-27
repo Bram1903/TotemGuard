@@ -61,11 +61,13 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
                 return;
             }
 
-            if (lastTotemUseCompensated == null) {
-                TGPlatform.getInstance().getLogger().warning(
-                        "[TotemReplenished] Skipping replenishment for player " + playerName +
-                                ": lastTotemUseCompensated is null (lastTotemUse=" + lastTotemUse + ")"
-                );
+            if ( lastTotemUseCompensated == null) {
+                if (DEBUG) {
+                    TGPlatform.getInstance().getLogger().warning(
+                            "[TotemReplenished] Skipping replenishment for player " + playerName +
+                                    ": lastTotemUseCompensated is null (lastTotemUse=" + lastTotemUse + ")"
+                    );
+                }
                 return;
             }
 
