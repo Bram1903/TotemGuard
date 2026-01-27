@@ -32,6 +32,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
                     event -> new WrapperPlayClientPlayerDigging(event).getAction()
                             == DiggingAction.START_DIGGING
             ),
+            Rule.simple("move", PacketType.Play.Client.PLAYER_INPUT),
             Rule.simple("change slot", PacketType.Play.Client.HELD_ITEM_CHANGE)
     );
 
