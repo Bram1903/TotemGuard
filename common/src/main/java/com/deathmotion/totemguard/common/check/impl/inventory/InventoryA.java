@@ -29,6 +29,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerInput;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -50,7 +51,16 @@ public class InventoryA extends CheckImpl implements PacketCheck {
                     event -> new WrapperPlayClientPlayerDigging(event).getAction()
                             == DiggingAction.START_DIGGING
             ),
-            Rule.simple("move", PacketType.Play.Client.PLAYER_INPUT),
+            Rule.of("move", PacketType.Play.Client.PLAYER_INPUT, event -> {
+                final WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
+                return packet.isForward() ||
+                        packet.isBackward() ||
+                        packet.isLeft() ||
+                        packet.isRight() ||
+                        packet.isJump() ||
+                        packet.isShift() ||
+                        packet.isSprint();
+            }),
             Rule.simple("change slot", PacketType.Play.Client.HELD_ITEM_CHANGE)
     );
 
