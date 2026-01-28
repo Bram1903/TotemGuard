@@ -30,7 +30,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
 @RequiresTickEnd
-@CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
+@CheckData(description = "Multiple attacks per tick", type = CheckType.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
     private int attacks;
 
