@@ -23,7 +23,9 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPong;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientWindowConfirmation;
 
@@ -37,8 +39,9 @@ public final class PacketPingListener extends PacketListenerAbstract {
     public void onPacketReceive(PacketReceiveEvent event) {
         final TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(event.getUser());
         if (player == null) return;
+        final PacketTypeCommon packetType = event.getPacketType();
 
-        if (event.getPacketType() == PacketType.Play.Client.WINDOW_CONFIRMATION) {
+        if (packetType == PacketType.Play.Client.WINDOW_CONFIRMATION) {
             final WrapperPlayClientWindowConfirmation transaction = new WrapperPlayClientWindowConfirmation(event);
             final short id = transaction.getActionId();
 
@@ -52,7 +55,7 @@ public final class PacketPingListener extends PacketListenerAbstract {
         }
 
         // 1.17+: PONG is the response to our PING
-        if (event.getPacketType() == PacketType.Play.Client.PONG) {
+        if (packetType == PacketType.Play.Client.PONG) {
             final WrapperPlayClientPong pong = new WrapperPlayClientPong(event);
             final int id = pong.getId();
 
@@ -60,6 +63,22 @@ public final class PacketPingListener extends PacketListenerAbstract {
                 final short shortId = (short) id;
                 player.getLatencyHandler().onTransactionResponse(shortId);
             }
+        }
+    }
+
+    @Override
+    public void onPacketSend(final PacketSendEvent event) {
+        TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(event.getUser());
+        if (player == null) return;
+        final PacketTypeCommon packetType = event.getPacketType();
+
+        if (packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) {
+            return;
+        }
+
+        // 1.17+: PING is sent by us to the client
+        if (packetType == PacketType.Play.Server.PING) {
+            return;
         }
     }
 }
