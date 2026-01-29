@@ -30,7 +30,6 @@ import java.util.function.Consumer;
 
 public class TotemReplenishedListener implements Consumer<InventoryChangedEvent> {
 
-    private static final boolean DEBUG = false;
     private static final long MAX_REASONABLE_DELAY_MS = 5_000;
 
     @Override
@@ -39,7 +38,6 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
 
         TGPlayer player = event.getPlayer();
         PacketInventory inventory = player.getInventory();
-        String playerName = player.getName();
 
         for (InventorySlot inventorySlot : event.getChangedSlots()) {
             int slot = inventorySlot.getSlot();
@@ -48,56 +46,28 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
                 continue;
             }
 
-            Long lastTotemUseCompensated = player.getLastTotemUseCompensated();
             Long lastTotemUse = player.getLastTotemUse();
 
             if (lastTotemUse == null) {
-                if (DEBUG) {
-                    TGPlatform.getInstance().getLogger().warning(String.format(
-                            "[TotemReplenished] player=%s FOUND totem in hand slot=%d but lastTotemUse is null (updated=%d)",
-                            playerName, slot, inventorySlot.getUpdated()
-                    ));
-                }
-                return;
-            }
-
-            if ( lastTotemUseCompensated == null) {
-                if (DEBUG) {
-                    TGPlatform.getInstance().getLogger().warning(
-                            "[TotemReplenished] Skipping replenishment for player " + playerName +
-                                    ": lastTotemUseCompensated is null (lastTotemUse=" + lastTotemUse + ")"
-                    );
-                }
                 return;
             }
 
             long replenishedAt = inventorySlot.getUpdated();
-
             long deltaRaw = replenishedAt - lastTotemUse;
-            long deltaComp = replenishedAt - lastTotemUseCompensated;
 
-            // Sanity logging: huge/negative values indicate mismatched time bases or stale timestamps
-            if (DEBUG && (deltaComp < 0 || deltaComp > MAX_REASONABLE_DELAY_MS)) {
-                TGPlatform.getInstance().getLogger().warning(String.format(
-                        "[TotemReplenished] player=%s UNUSUAL deltaC=%dms (delta=%dms) slot=%d intervalsSize=%d",
-                        playerName, deltaComp, deltaRaw, slot,
-                        player.getTotemData().getIntervals().size()
-                ));
-
+            if (deltaRaw > MAX_REASONABLE_DELAY_MS) {
                 return;
             }
 
-            //TGPlatform.getInstance().getLogger().info("[TotemReplenished] player=" + playerName + " deltaC=" + deltaComp + "ms");
-            player.getTotemData().getIntervals().add(deltaComp);
+            player.getTotemData().getIntervals().add(deltaRaw);
 
             TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
                     player,
-                    lastTotemUseCompensated,
+                    deltaRaw,
                     replenishedAt
             );
             TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
 
-            player.setLastTotemUseCompensated(null);
             player.setLastTotemUse(null);
 
             return;

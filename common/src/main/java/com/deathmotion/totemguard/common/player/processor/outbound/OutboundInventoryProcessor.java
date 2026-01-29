@@ -66,17 +66,11 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
             inventory.setCarriedItem(packet.getStack(), -1, Issuer.SERVER, event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
-            player.getLatencyHandler().afterNextAck(() -> {
-                data.setOpenInventory(true);
-            });
+            //data.setOpenInventory(true);
         } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
-            player.getLatencyHandler().afterNextAck(() -> {
-                data.setOpenInventory(true);
-            });
+            //data.setOpenInventory(true);
         } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
-            player.getLatencyHandler().afterNextAck(() -> {
-                data.setOpenInventory(false);
-            });
+            data.setOpenInventory(false);
         }
     }
 

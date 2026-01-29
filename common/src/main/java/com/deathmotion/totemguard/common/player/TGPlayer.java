@@ -33,7 +33,6 @@ import com.deathmotion.totemguard.common.player.data.TickData;
 import com.deathmotion.totemguard.common.player.data.TotemData;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
-import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
@@ -42,13 +41,10 @@ import com.deathmotion.totemguard.common.player.processor.inbound.InboundInvento
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import lombok.Getter;
 import lombok.Setter;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,8 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
-import static com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying.isFlying;
 
 /**
  * Represents a player in TotemGuard. This object is bound to a single player and gets removed once the player leaves the server / proxy.
@@ -68,7 +62,6 @@ public class TGPlayer implements TGUser {
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
-    private final LatencyHandler latencyHandler;
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
 
@@ -91,16 +84,11 @@ public class TGPlayer implements TGUser {
     @Nullable
     private Long lastTotemUse;
 
-    @Setter
-    @Nullable
-    private Long lastTotemUseCompensated;
-
     public TGPlayer(@NotNull User user) {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
 
-        this.latencyHandler = new LatencyHandler(this);
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
         this.data = new Data(this);
