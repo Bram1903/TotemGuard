@@ -35,35 +35,35 @@ import java.util.function.Predicate;
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
     private static final List<Rule> RULES = List.of(
-        new Rule("attack + place", p ->
-            p.getTickData().isAttacking()
-                && p.getTickData().isPlacing()
-                && !p.getTickData().isInteracting()
-        ),
+            new Rule("attack + place", p ->
+                    p.getTickData().isAttacking()
+                            && p.getTickData().isPlacing()
+                            && !p.getTickData().isInteracting()
+            ),
 
-        new Rule("inventory_click + place", p ->
-            p.getTickData().isClickingInInventory()
-                && p.getTickData().isPlacing()
-                && p.getData().isOpenInventory()
-        ),
+            new Rule("inventory_click + place", p ->
+                    p.getTickData().isClickingInInventory()
+                            && p.getTickData().isPlacing()
+                            && p.getData().isOpenInventory()
+            ),
 
-        new Rule("inventory_click + attack", p ->
-            p.getTickData().isClickingInInventory()
-                && p.getTickData().isAttacking()
-                && p.getData().isOpenInventory()
-        ),
+            new Rule("inventory_click + attack", p ->
+                    p.getTickData().isClickingInInventory()
+                            && p.getTickData().isAttacking()
+                            && p.getData().isOpenInventory()
+            ),
 
-        new Rule("quickmove + attack", p ->
-            p.getTickData().isQuickMoveClicking()
-                && p.getTickData().isAttacking()
-                && p.getData().isOpenInventory()
-        ),
+            new Rule("quickmove + attack", p ->
+                    p.getTickData().isQuickMoveClicking()
+                            && p.getTickData().isAttacking()
+                            && p.getData().isOpenInventory()
+            ),
 
-        new Rule("pickup_click + place", p ->
-            p.getTickData().isPickUpClicking()
-                && p.getTickData().isPlacing()
-                && p.getData().isOpenInventory()
-        )
+            new Rule("pickup_click + place", p ->
+                    p.getTickData().isPickUpClicking()
+                            && p.getTickData().isPlacing()
+                            && p.getData().isOpenInventory()
+            )
     );
 
     public ProtocolA(TGPlayer player) {
