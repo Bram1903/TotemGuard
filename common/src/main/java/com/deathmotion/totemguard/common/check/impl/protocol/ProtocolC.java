@@ -30,8 +30,10 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
 @RequiresTickEnd
-@CheckData(description = "Multiple attacks per tick", type = CheckType.PROTOCOL)
+@CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
+
+    private int lastAttackedEntityId;
     private int attacks;
 
     public ProtocolC(TGPlayer player) {
@@ -44,15 +46,20 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
 
         if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
             final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
-            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
 
-            if (++attacks >= 2) {
+            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
+            final int targetEntityId = packet.getEntityId();
+
+            if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
                 if (fail("attacks=" + attacks)) {
                     //event.setCancelled(true);
                 }
             }
+
+            lastAttackedEntityId = targetEntityId;
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             attacks = 0;
         }
     }
 }
+
