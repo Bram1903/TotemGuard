@@ -56,7 +56,14 @@ subprojects {
             relocate("reactor", "com.deathmotion.totemguard.common.libs.reactor")
             relocate("redis.clients", "com.deathmotion.totemguard.common.libs.redisclients")
 
-            minimize()
+            // Caffeine
+            relocate("com.github.benmanes.caffeine", "com.deathmotion.totemguard.common.libs.caffeine")
+            relocate("com.google.errorprone.annotations", "com.deathmotion.totemguard.common.libs.errorprone.annotations")
+            relocate("org.jspecify.annotations", "com.deathmotion.totemguard.common.libs.jspecify.annotations")
+
+            minimize {
+                exclude(dependency("com.github.ben-manes.caffeine:caffeine:.*"))
+            }
         }
     }
 }

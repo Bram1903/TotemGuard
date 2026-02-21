@@ -36,6 +36,9 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CheckManagerImpl {
 
     private final TGPlayer player;
@@ -119,6 +122,29 @@ public class CheckManagerImpl {
             if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
 
             check.handleEvent(event);
+        }
+    }
+
+    public List<CheckSnapshot> getSnapshot() {
+        List<CheckSnapshot> snapshots = new ArrayList<>(allChecks.size());
+        for (Check check : allChecks.values()) {
+            CheckImpl impl = (CheckImpl) check;
+            snapshots.add(impl.getSnapshot());
+        }
+
+        return snapshots;
+    }
+
+    public void applySnapshot(List<CheckSnapshot> snapshots) {
+        for (CheckSnapshot snapshot : snapshots) {
+            String checkSnapshotName = snapshot.checkName();
+
+            for (Check check : allChecks.values()) {
+                if (!check.getName().equals(checkSnapshotName)) continue;
+                CheckImpl checkImpl = (CheckImpl) check;
+                checkImpl.applySnapshot(snapshot);
+                break;
+            }
         }
     }
 

@@ -31,6 +31,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
@@ -38,8 +39,8 @@ public final class Mod extends CheckImpl implements PacketCheck {
 
     private static final String REGISTER_CHANNEL = "minecraft:register";
 
-    private final Set<String> flaggedMods = new HashSet<>();
-    private final Set<String> pendingDetections = new HashSet<>();
+    private final Set<String> flaggedMods = ConcurrentHashMap.newKeySet();
+    private final Set<String> pendingDetections = ConcurrentHashMap.newKeySet();
 
     private final Map<String, Map<String, String>> translationIdsByMod = new HashMap<>();
 

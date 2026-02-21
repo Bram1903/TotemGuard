@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api3.TotemGuard;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
@@ -67,6 +68,7 @@ public abstract class TGPlatform {
     private PlayerRepositoryImpl playerRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
     private CommandManagerImpl commandManager;
+    private CacheRepositoryImpl cacheRepository;
 
     private TGPlatformAPI api;
 
@@ -97,6 +99,7 @@ public abstract class TGPlatform {
         playerRepository = new PlayerRepositoryImpl();
         placeholderRepository = new PlaceholderRepositoryImpl();
         commandManager = new CommandManagerImpl();
+        cacheRepository = new CacheRepositoryImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());

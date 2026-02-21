@@ -84,6 +84,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         final TGPlayer player = players.remove(user);
         if (player == null) return;
         platform.getEventRepository().post(new TGUserQuitEvent(player));
+        player.onLogout();
     }
 
     public void removeUser(final @NotNull User user) {

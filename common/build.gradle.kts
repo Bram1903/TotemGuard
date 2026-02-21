@@ -7,6 +7,7 @@ plugins {
 dependencies {
     api(project(":api"))
     implementation(libs.lettuce)
+    implementation(libs.caffeine)
     compileOnly(libs.packetevents.api)
     compileOnly(libs.bundles.adventure)
     compileOnly(libs.bundles.adventure.serializers)

@@ -21,7 +21,9 @@ package com.deathmotion.totemguard.common.player;
 import com.deathmotion.totemguard.api3.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
+import com.deathmotion.totemguard.common.check.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
@@ -45,6 +47,7 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -129,10 +132,17 @@ public class TGPlayer implements TGUser {
             return;
         }
 
-        hasLoggedIn = true;
         platform.getEventRepository().post(new TGUserJoinEvent(this));
 
-        checkManager.getPacketCheck(Mod.class).handle();
+        platform.getScheduler().runAsyncTask(() -> {
+            applyCachedData();
+            hasLoggedIn = true;
+            checkManager.getPacketCheck(Mod.class).handle();
+        });
+    }
+
+    public void onLogout() {
+        platform.getScheduler().runAsyncTask(this::cacheData);
     }
 
     public void triggerInventoryEvent() {
@@ -162,7 +172,6 @@ public class TGPlayer implements TGUser {
         platform.getEventRepository().post(event);
     }
 
-
     @Override
     public @NotNull String getName() {
         return user.getName();
@@ -184,5 +193,19 @@ public class TGPlayer implements TGUser {
 
     public boolean supportsEndTick() {
         return getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2) && PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_21_2);
+    }
+
+    @Blocking
+    private void applyCachedData() {
+        CacheRepositoryImpl cacheRepository = platform.getCacheRepository();
+
+        List<CheckSnapshot> checkSnapshots = cacheRepository.getCheckSnapshot(uuid);
+        if (checkSnapshots != null) checkManager.applySnapshot(checkSnapshots);
+    }
+
+    @Blocking
+    private void cacheData() {
+        CacheRepositoryImpl cacheRepository = platform.getCacheRepository();
+        cacheRepository.saveCheckSnapshot(uuid, checkManager.getSnapshot());
     }
 }

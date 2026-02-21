@@ -112,4 +112,13 @@ public class CheckImpl implements Check {
     public boolean requiresTickEnd() {
         return requiresTickEnd;
     }
+
+    public CheckSnapshot getSnapshot() {
+        return new CheckSnapshot(name, buffer.get(), violations);
+    }
+
+    public void applySnapshot(CheckSnapshot checkSnapshot) {
+        violations = checkSnapshot.violations();
+        buffer.set(checkSnapshot.buffer());
+    }
 }
