@@ -1,9 +1,7 @@
-plugins {
-    totemguard.`java-conventions`
-}
+import org.gradle.jvm.tasks.Jar
 
-repositories {
-    maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
+plugins {
+    id("totemguard.java-conventions")
 }
 
 dependencies {
@@ -14,19 +12,7 @@ dependencies {
 
 version = "1.0.0-SNAPSHOT"
 
-tasks {
-    jar {
-        archiveFileName = "TotemGuardAPI-Bukkit-Test.jar"
-        archiveClassifier = null
-    }
-
-    processResources {
-        inputs.property("version", project.version)
-
-        filesMatching(listOf("plugin.yml")) {
-            expand(
-                "version" to project.version,
-            )
-        }
-    }
+tasks.named<Jar>("jar") {
+    archiveFileName = "TotemGuardAPI-Bukkit-Test.jar"
+    archiveClassifier = null
 }

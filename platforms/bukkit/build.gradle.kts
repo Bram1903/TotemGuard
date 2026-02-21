@@ -1,16 +1,9 @@
-plugins {
-    totemguard.`java-conventions`
-    alias(libs.plugins.shadow)
-    alias(libs.plugins.run.paper)
-}
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
-repositories {
-    maven {
-        url = uri("https://repo.papermc.io/repository/maven-public/")
-    }
-    maven {
-        url = uri("https://repo.extendedclip.com/content/repositories/placeholderapi/")
-    }
+plugins {
+    id("totemguard.java-conventions")
+    id("totemguard.shadow-conventions")
+    alias(libs.plugins.run.paper)
 }
 
 dependencies {
@@ -23,18 +16,10 @@ dependencies {
 }
 
 tasks {
-    jar {
-        enabled = false
-    }
-
     shadowJar {
         manifest {
             attributes["paperweight-mappings-namespace"] = "mojang"
         }
-    }
-
-    assemble {
-        dependsOn(shadowJar)
     }
 
     // 1.8.8 - 1.16.5 = Java 8

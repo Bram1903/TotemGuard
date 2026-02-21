@@ -2,16 +2,9 @@ import org.spongepowered.gradle.plugin.config.PluginLoaders
 import org.spongepowered.plugin.metadata.model.PluginDependency
 
 plugins {
-    totemguard.`java-conventions`
-    alias(libs.plugins.shadow)
+    id("totemguard.java-conventions")
+    id("totemguard.shadow-conventions")
     alias(libs.plugins.spongeGradle)
-}
-
-repositories {
-    maven {
-        name = "sponge"
-        url = uri("https://repo.spongepowered.org/repository/maven-public/")
-    }
 }
 
 dependencies {
@@ -48,22 +41,5 @@ sponge {
                 optional(false)
             }
         }
-    }
-}
-
-tasks {
-    jar {
-        enabled = false
-    }
-
-    shadowJar {
-        archiveFileName = "${rootProject.name}-Sponge-${rootProject.ext["versionNoHash"]}.jar"
-        archiveClassifier = null
-        destinationDirectory = rootProject.layout.buildDirectory
-        exclude("META-INF/maven/**")
-    }
-
-    assemble {
-        dependsOn(shadowJar)
     }
 }

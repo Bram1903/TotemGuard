@@ -1,7 +1,7 @@
 plugins {
     `java-library`
-    totemguard.`java-conventions`
-    `tg-version`
+    id("totemguard.java-conventions")
+    id("tg-version")
 }
 
 dependencies {
@@ -15,14 +15,4 @@ dependencies {
     compileOnly(libs.guava)
     compileOnly(libs.snakeyaml)
     compileOnly(libs.cloud.core)
-}
-
-tasks {
-    withType<JavaCompile> {
-        dependsOn(generateVersionsFile)
-    }
-
-    generateVersionsFile {
-        packageName = "com.deathmotion.totemguard.common.util"
-    }
 }
