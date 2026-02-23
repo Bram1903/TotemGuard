@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis;
+package com.deathmotion.totemguard.common.redis.options;
 
 import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;

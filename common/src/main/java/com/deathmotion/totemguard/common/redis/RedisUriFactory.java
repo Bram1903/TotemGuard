@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.redis;
 
+import com.deathmotion.totemguard.common.redis.options.RedisOptions;
 import io.lettuce.core.RedisURI;
 
 import java.time.Duration;

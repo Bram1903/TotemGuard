@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis;
+package com.deathmotion.totemguard.common.redis.binary;
 
 /**
  * Binary Redis codec implemented directly by cacheable models.

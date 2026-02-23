@@ -1,6 +1,7 @@
 package com.deathmotion.totemguard.common.redis;
 
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
+import com.deathmotion.totemguard.common.redis.options.RedisOptions;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
