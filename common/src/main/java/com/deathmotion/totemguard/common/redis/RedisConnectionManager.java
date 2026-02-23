@@ -37,11 +37,11 @@ final class RedisConnectionManager {
     private volatile @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection;
 
     @Blocking
-    void start() {
+    void start(RedisOptions redisOptions) {
         synchronized (lock) {
             if (client != null) return;
 
-            var uri = RedisUriFactory.build(new RedisOptions());
+            var uri = RedisUriFactory.build(redisOptions);
 
             ClientResources res = RedisClientFactory.createResources();
             RedisClient cli = RedisClientFactory.createClient(res, uri);
@@ -109,10 +109,10 @@ final class RedisConnectionManager {
     }
 
     @Blocking
-    void restart() {
+    void restart(RedisOptions options) {
         synchronized (lock) {
             stop();
-            start();
+            start(options);
         }
     }
 

@@ -10,20 +10,20 @@ import org.jetbrains.annotations.Nullable;
 public final class RedisRepositoryImpl implements RedisRepository {
 
     private final RedisConnectionManager manager = new RedisConnectionManager();
-    private final RedisOptions options = new RedisOptions();
+    private boolean isEnabled = true;
 
     @Override
     public boolean isEnabled() {
-        return options.isEnabled();
+        return isEnabled;
     }
 
     @Override
     public boolean isConnected() {
-        return options.isEnabled() && manager.isConnected();
+        return isEnabled && manager.isConnected();
     }
 
     public @Nullable RedisAsyncCommands<byte[], byte[]> async() {
-        if (!options.isEnabled()) return null;
+        if (!isEnabled()) return null;
         StatefulRedisConnection<byte[], byte[]> conn = manager.connection();
         return (conn != null && conn.isOpen()) ? conn.async() : null;
     }
@@ -38,21 +38,28 @@ public final class RedisRepositoryImpl implements RedisRepository {
 
     @Blocking
     public void start() {
+        RedisOptions options = new RedisOptions();
         if (!options.isEnabled()) return;
-        manager.start();
+        isEnabled = true;
+        manager.start(options);
     }
 
     @Blocking
     public void stop() {
+        isEnabled = false;
         manager.stop();
     }
 
     @Blocking
     public void restart() {
-        if (!options.isEnabled()) {
+        if (!isEnabled()) {
             manager.stop();
             return;
         }
-        manager.restart();
+
+        RedisOptions options = new RedisOptions();
+        if (!options.isEnabled()) return;
+        isEnabled = true;
+        manager.restart(options);
     }
 }
