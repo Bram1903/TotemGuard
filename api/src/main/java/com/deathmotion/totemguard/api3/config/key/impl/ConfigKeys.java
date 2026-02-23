@@ -34,6 +34,37 @@ public final class ConfigKeys {
                     "tg"
             );
 
+    public static final ConfigValueKey<Boolean> REDIS_ENABLED =
+            ConfigValueKey.required(
+                    "redis.enabled",
+                    false
+            );
+
+    public static final ConfigValueKey<String> REDIS_HOST =
+            ConfigValueKey.required(
+                    "redis.host",
+                    "localhost"
+            );
+
+    public static final ConfigValueKey<Integer> REDIS_PORT =
+            ConfigValueKey.required(
+                    "redis.port",
+                    6379
+            );
+
+    public static final ConfigValueKey<String> REDIS_USERNAME =
+            ConfigValueKey.required(
+                    "redis.username",
+                    "default"
+            );
+
+    public static final ConfigValueKey<String> REDIS_PASSWORD =
+            ConfigValueKey.required(
+                    "redis.password",
+                    "yourPassword"
+            );
+
+
     private ConfigKeys() {
     }
 }

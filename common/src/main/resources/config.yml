@@ -13,3 +13,10 @@ commands:
   base: totemguard3
   aliases:
     - tg3
+
+redis:
+  enabled: false
+  host: localhost
+  port: 6379
+  username: default
+  password: yourPassword

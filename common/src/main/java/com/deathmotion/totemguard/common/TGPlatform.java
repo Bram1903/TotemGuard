@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api3.TotemGuard;
+import com.deathmotion.totemguard.api3.redis.RedisRepository;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
@@ -35,6 +36,7 @@ import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
@@ -62,6 +64,7 @@ public abstract class TGPlatform {
 
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
+    private RedisRepository redisRepository;
     private MessageService messageService;
     private EventRepositoryImpl eventRepository;
     private AlertRepositoryImpl alertRepository;
@@ -93,6 +96,7 @@ public abstract class TGPlatform {
 
         reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
+        redisRepository = new RedisRepositoryImpl();
         messageService = new MessageService();
         eventRepository = new EventRepositoryImpl();
         alertRepository = new AlertRepositoryImpl();
