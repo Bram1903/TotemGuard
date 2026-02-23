@@ -37,6 +37,8 @@ final class RedisConnectionManager {
     private volatile @Nullable StatefulRedisConnection<byte[], byte[]> connection;
     private volatile @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection;
 
+    private volatile @Nullable RedisConnectionEventLogger eventLogger;
+
     @Blocking
     void start(RedisOptions redisOptions) {
         synchronized (lock) {
@@ -47,6 +49,9 @@ final class RedisConnectionManager {
             ClientResources res = RedisClientFactory.createResources();
             RedisClient cli = RedisClientFactory.createClient(res, uri);
 
+            var log = new RedisConnectionEventLogger();
+            log.start(res);
+
             try {
                 StatefulRedisConnection<byte[], byte[]> conn = cli.connect(new ByteArrayCodec());
                 StatefulRedisPubSubConnection<byte[], byte[]> ps = cli.connectPubSub(new ByteArrayCodec());
@@ -55,7 +60,15 @@ final class RedisConnectionManager {
                 client = cli;
                 connection = conn;
                 pubSubConnection = ps;
+                eventLogger = log;
+
+                log.markUp();
             } catch (Exception e) {
+                try {
+                    log.close();
+                } catch (Exception ignored) {
+                }
+
                 try {
                     cli.shutdown();
                 } catch (Exception ignored) {
@@ -73,6 +86,9 @@ final class RedisConnectionManager {
     @Blocking
     void stop() {
         synchronized (lock) {
+            var log = eventLogger;
+            eventLogger = null;
+
             var ps = pubSubConnection;
             pubSubConnection = null;
             var conn = connection;
@@ -81,6 +97,14 @@ final class RedisConnectionManager {
             client = null;
             var res = resources;
             resources = null;
+
+            if (log != null) {
+                try {
+                    log.markDown();
+                    log.close();
+                } catch (Exception ignored) {
+                }
+            }
 
             if (ps != null) {
                 try {

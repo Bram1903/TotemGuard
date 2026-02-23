@@ -121,6 +121,7 @@ public abstract class TGPlatform {
     }
 
     public void commonOnDisable() {
+        if (redisRepository != null) redisRepository.stop();
     }
 
     public abstract Scheduler getScheduler();

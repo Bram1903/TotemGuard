@@ -11,7 +11,11 @@ import org.jetbrains.annotations.Nullable;
 public final class RedisRepositoryImpl implements RedisRepository {
 
     private final RedisConnectionManager manager = new RedisConnectionManager();
-    private boolean isEnabled = true;
+    private boolean isEnabled = false;
+
+    public RedisRepositoryImpl() {
+        start();
+    }
 
     @Override
     public boolean isEnabled() {
