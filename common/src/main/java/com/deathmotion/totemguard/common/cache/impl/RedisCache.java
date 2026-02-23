@@ -18,23 +18,58 @@
 
 package com.deathmotion.totemguard.common.cache.impl;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.AbstractCache;
 import com.deathmotion.totemguard.common.check.CheckSnapshot;
+import com.deathmotion.totemguard.common.redis.RedisKeys;
+import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import io.lettuce.core.GetExArgs;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
 
-public class RedisCache implements AbstractCache {
+public final class RedisCache implements AbstractCache {
+
+    private static final int CHECK_SNAPSHOT_TTL = 5 * 60;
+
+    private static final GetExArgs CHECK_SNAPSHOT_GETEX = GetExArgs.Builder.ex(CHECK_SNAPSHOT_TTL);
+
+    private final RedisRepositoryImpl redis = TGPlatform.getInstance().getRedisRepository();
 
     @Override
-    public @Blocking void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots) {
+    @Blocking
+    public void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots) {
+        var async = redis.async();
+        if (async == null) return;
 
+        try {
+            byte[] payload = CheckSnapshot.writeList(checkSnapshots);
+            async.setex(RedisKeys.checkSnapshots(uuid), CHECK_SNAPSHOT_TTL, payload)
+                    .toCompletableFuture()
+                    .join();
+        } catch (Exception ignored) {
+        }
     }
 
     @Override
-    public @Blocking @Nullable List<CheckSnapshot> getCheckSnapshot(UUID uuid) {
-        return List.of();
+    @Blocking
+    public @Nullable List<CheckSnapshot> getCheckSnapshot(UUID uuid) {
+        var async = redis.async();
+        if (async == null) return null;
+
+        try {
+            byte[] raw = async.getex(
+                    RedisKeys.checkSnapshots(uuid),
+                    CHECK_SNAPSHOT_GETEX
+            ).toCompletableFuture().join();
+
+            if (raw == null) return null;
+
+            return CheckSnapshot.readList(raw);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }

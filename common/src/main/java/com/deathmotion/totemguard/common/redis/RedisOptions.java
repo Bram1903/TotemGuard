@@ -27,6 +27,12 @@ import lombok.Getter;
 @Getter
 public class RedisOptions {
 
+    private final boolean enabled;
+    private final String host;
+    private final int port;
+    private final String username;
+    private final String password;
+
     public RedisOptions() {
         Config config = TGPlatform.getInstance().getConfigRepository().config(ConfigFile.CONFIG);
 
@@ -36,10 +42,4 @@ public class RedisOptions {
         username = config.getString(ConfigKeys.REDIS_USERNAME);
         password = config.getString(ConfigKeys.REDIS_PASSWORD);
     }
-
-    private final boolean enabled;
-    private final String host;
-    private final int port;
-    private final String username;
-    private final String password;
 }

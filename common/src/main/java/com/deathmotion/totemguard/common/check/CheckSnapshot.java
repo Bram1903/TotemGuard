@@ -18,5 +18,56 @@
 
 package com.deathmotion.totemguard.common.check;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
 public record CheckSnapshot(String checkName, double buffer, int violations) {
+
+    public static CheckSnapshot read(DataInput in) throws IOException {
+        int len = in.readInt();
+        byte[] name = new byte[len];
+        in.readFully(name);
+
+        String checkName = new String(name, StandardCharsets.UTF_8);
+        double buffer = in.readDouble();
+        int violations = in.readInt();
+
+        return new CheckSnapshot(checkName, buffer, violations);
+    }
+
+    public static byte[] writeList(List<CheckSnapshot> snapshots) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(baos);
+
+        out.writeInt(snapshots.size());
+        for (CheckSnapshot snapshot : snapshots) {
+            snapshot.write(out);
+        }
+
+        out.flush();
+        return baos.toByteArray();
+    }
+
+    public static List<CheckSnapshot> readList(byte[] data) throws IOException {
+        DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
+
+        int count = in.readInt();
+        List<CheckSnapshot> result = new ArrayList<>(count);
+
+        for (int i = 0; i < count; i++) {
+            result.add(read(in));
+        }
+
+        return result;
+    }
+
+    public void write(DataOutput out) throws IOException {
+        byte[] name = checkName.getBytes(StandardCharsets.UTF_8);
+        out.writeInt(name.length);
+        out.write(name);
+        out.writeDouble(buffer);
+        out.writeInt(violations);
+    }
 }
