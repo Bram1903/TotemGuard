@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.cache.impl;
 
 import com.deathmotion.totemguard.common.cache.AbstractCache;
-import com.deathmotion.totemguard.common.check.CheckSnapshot;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.jetbrains.annotations.Blocking;
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class InternalCache implements AbstractCache {
+public final class InternalCache implements AbstractCache {
 
     private final Cache<UUID, List<CheckSnapshot>> checkCache =
             Caffeine.newBuilder()

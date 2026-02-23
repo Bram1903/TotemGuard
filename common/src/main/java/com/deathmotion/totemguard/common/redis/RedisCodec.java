@@ -16,21 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.cache;
+package com.deathmotion.totemguard.common.redis;
 
-import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
-import org.jetbrains.annotations.Blocking;
-import org.jetbrains.annotations.Nullable;
+/**
+ * Binary Redis codec implemented directly by cacheable models.
+ *
+ * @param <T> Model type
+ */
+public interface RedisCodec<T> {
 
-import java.util.List;
-import java.util.UUID;
+    /**
+     * Encodes this instance into bytes.
+     */
+    byte[] encode() throws Exception;
 
-public interface AbstractCache {
-
-    @Blocking
-    void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots);
-
-    @Blocking
-    @Nullable
-    List<CheckSnapshot> getCheckSnapshot(UUID uuid);
+    /**
+     * Decodes an instance from bytes.
+     */
+    T decode(byte[] data) throws Exception;
 }

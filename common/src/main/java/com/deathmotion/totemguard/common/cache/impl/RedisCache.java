@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.cache.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.AbstractCache;
-import com.deathmotion.totemguard.common.check.CheckSnapshot;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.redis.RedisKeys;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import io.lettuce.core.GetExArgs;
@@ -45,7 +45,7 @@ public final class RedisCache implements AbstractCache {
         if (async == null) return;
 
         try {
-            byte[] payload = CheckSnapshot.writeList(checkSnapshots);
+            byte[] payload = CheckSnapshot.encodeList(checkSnapshots);
             async.setex(RedisKeys.checkSnapshots(uuid), CHECK_SNAPSHOT_TTL, payload)
                     .toCompletableFuture()
                     .join();
@@ -67,7 +67,7 @@ public final class RedisCache implements AbstractCache {
 
             if (raw == null) return null;
 
-            return CheckSnapshot.readList(raw);
+            return CheckSnapshot.decodeList(raw);
         } catch (Exception ignored) {
             return null;
         }

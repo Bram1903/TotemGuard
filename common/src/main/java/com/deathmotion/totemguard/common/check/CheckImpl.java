@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.check.Check;
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.api3.event.impl.TGFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.player.TGPlayer;

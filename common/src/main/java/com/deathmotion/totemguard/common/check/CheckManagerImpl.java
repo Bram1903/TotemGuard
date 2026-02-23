@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api3.check.Check;
 import com.deathmotion.totemguard.api3.event.Event;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;

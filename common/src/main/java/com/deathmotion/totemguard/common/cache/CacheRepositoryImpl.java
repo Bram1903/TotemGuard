@@ -19,9 +19,9 @@
 package com.deathmotion.totemguard.common.cache;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.cache.impl.InternalCache;
 import com.deathmotion.totemguard.common.cache.impl.RedisCache;
-import com.deathmotion.totemguard.common.check.CheckSnapshot;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import org.jetbrains.annotations.Nullable;
 
