@@ -18,9 +18,11 @@
 
 package com.deathmotion.totemguard.common.cache;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.impl.InternalCache;
 import com.deathmotion.totemguard.common.cache.impl.RedisCache;
 import com.deathmotion.totemguard.common.check.CheckSnapshot;
+import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -28,12 +30,14 @@ import java.util.UUID;
 
 public class CacheRepositoryImpl {
 
-    private boolean redisEnabled = false;
+    private final RedisRepositoryImpl redisRepository;
 
     private final InternalCache internalCache;
     private final RedisCache redisCache;
 
     public CacheRepositoryImpl() {
+        this.redisRepository = TGPlatform.getInstance().getRedisRepository();
+
         this.internalCache = new InternalCache();
         this.redisCache = new RedisCache();
     }
@@ -47,6 +51,6 @@ public class CacheRepositoryImpl {
     }
 
     private AbstractCache getCache() {
-        return redisEnabled ? redisCache : internalCache;
+        return redisRepository.isConnected() ? redisCache : internalCache;
     }
 }

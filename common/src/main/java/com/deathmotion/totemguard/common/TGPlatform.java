@@ -64,7 +64,7 @@ public abstract class TGPlatform {
 
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
-    private RedisRepository redisRepository;
+    private RedisRepositoryImpl redisRepository;
     private MessageService messageService;
     private EventRepositoryImpl eventRepository;
     private AlertRepositoryImpl alertRepository;

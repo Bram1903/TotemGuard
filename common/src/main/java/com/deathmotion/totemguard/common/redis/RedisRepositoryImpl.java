@@ -46,6 +46,10 @@ public final class RedisRepositoryImpl implements RedisRepository {
     private @Nullable StatefulRedisConnection<byte[], byte[]> connection;
     private @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection;
 
+    public RedisRepositoryImpl() {
+        start();
+    }
+
     public synchronized void start() {
         final RedisOptions options = new RedisOptions();
 
