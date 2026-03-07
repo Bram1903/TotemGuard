@@ -14,9 +14,34 @@ commands:
   aliases:
     - tg3
 
+# In a multiserver setup, enabling Redis is highly recommended.
+# Redis will make TotemGuard much more powerful by syncing data, alerts and more across servers.
 redis:
   enabled: false
   host: localhost
   port: 6379
+
+  # Can be left empty if no auth is required.
   username: default
   password: yourPassword
+
+  # Alert Sync
+  messaging:
+    channel: totemguard
+    send-alerts: true
+    receive-alerts: true
+
+# Caches information like check violations, buffers, and other player data.
+# This prevents a cheater from quickly leaving and rejoining the server to clear their active violations.
+# Note: When Redis is enabled, this will be synced across servers.
+cache:
+  # Enable caching.
+  enabled: true
+
+  # How long to keep cached data in seconds.
+  ttl: 300
+
+  # What data to cache.
+  data:
+    # Includes violations and buffers.
+    checks: true

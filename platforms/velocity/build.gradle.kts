@@ -14,7 +14,9 @@ dependencies {
 
 tasks {
     runVelocity {
-        velocityVersion(libs.versions.velocity.get())
+        val version = libs.versions.velocity.get()
+        velocityVersion(version)
+        runDirectory = rootDir.resolve("run/velocity/$version")
 
         downloadPlugins {
             url("https://cdn.modrinth.com/data/HYKaKraK/versions/ZjndEJRB/packetevents-velocity-2.11.1.jar")

@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.check.impl.mods;
 
 import com.deathmotion.totemguard.api3.check.CheckType;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -46,6 +47,8 @@ public final class Mod extends CheckImpl implements PacketCheck {
 
     public Mod(TGPlayer player) {
         super(player);
+
+        ModSignatures.load(player.getPlatform().getConfigRepository().config(ConfigFile.MODS));
         reload();
     }
 

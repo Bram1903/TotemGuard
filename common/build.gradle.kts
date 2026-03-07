@@ -6,8 +6,9 @@ plugins {
 
 dependencies {
     api(project(":api"))
-    implementation(libs.lettuce)
-    implementation(libs.caffeine)
+    implementation(libs.lettuce) {
+        exclude(group = "org.slf4j")
+    }
     compileOnly(libs.packetevents.api)
     compileOnly(libs.bundles.adventure)
     compileOnly(libs.bundles.adventure.serializers)

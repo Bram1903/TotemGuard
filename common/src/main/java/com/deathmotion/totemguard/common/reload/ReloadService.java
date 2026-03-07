@@ -18,8 +18,10 @@
 
 package com.deathmotion.totemguard.common.reload;
 
+import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.check.impl.mods.ModSignatures;
 
 public class ReloadService {
 
@@ -28,6 +30,9 @@ public class ReloadService {
 
         platform.getConfigRepository().reloadAll();
         platform.getMessageService().reload();
+        platform.getRedisRepository().restart();
+
+        ModSignatures.load(platform.getConfigRepository().config(ConfigFile.MODS));
 
         platform.getPlayerRepository().getPlayers()
                 .parallelStream()

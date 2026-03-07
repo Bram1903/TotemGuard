@@ -64,6 +64,41 @@ public final class ConfigKeys {
                     "yourPassword"
             );
 
+    public static final ConfigValueKey<String> REDIS_MESSAGING_CHANNEL =
+            ConfigValueKey.required(
+                    "redis.messaging.channel",
+                    "totemguard"
+            );
+
+    public static final ConfigValueKey<Boolean> REDIS_MESSAGING_SEND_ALERTS =
+            ConfigValueKey.required(
+                    "redis.messaging.send-alerts",
+                    true
+            );
+
+    public static final ConfigValueKey<Boolean> REDIS_MESSAGING_RECEIVE_ALERTS =
+            ConfigValueKey.required(
+                    "redis.messaging.receive-alerts",
+                    true
+            );
+
+    public static final ConfigValueKey<Boolean> CACHE_ENABLED =
+            ConfigValueKey.required(
+                    "cache.enabled",
+                    true
+            );
+
+    public static final ConfigValueKey<Integer> CACHE_TTL =
+            ConfigValueKey.required(
+                    "cache.ttl",
+                    300
+            );
+
+    public static final ConfigValueKey<Boolean> CACHE_DATA_CHECKS =
+            ConfigValueKey.required(
+                    "cache.data.checks",
+                    true
+            );
 
     private ConfigKeys() {
     }

@@ -12,7 +12,7 @@ sponge = "14.0.0"
 cloud-core = "2.0.0"
 cloud-platform = "2.0.0-beta.14"
 bstats = "3.1.0"
-lettuce = "7.2.1.RELEASE"
+lettuce = "7.5.0.RELEASE"
 
 placeholderapi = "2.11.7"
 
