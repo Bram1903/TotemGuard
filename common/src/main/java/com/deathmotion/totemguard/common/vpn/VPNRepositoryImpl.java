@@ -72,12 +72,14 @@ public class VPNRepositoryImpl {
 
         VPNData vpnData = cache.getVPNData(ip);
         if (vpnData != null) {
+            player.setVpn(vpnData.vpn());
             if (!vpnData.vpn()) return;
             handle(player);
             return;
         }
 
         boolean isVpn = adapter.isVpn(ip);
+        player.setVpn(isVpn);
         cache.saveVPNData(ip, new VPNData(isVpn));
 
         if (isVpn) handle(player);
