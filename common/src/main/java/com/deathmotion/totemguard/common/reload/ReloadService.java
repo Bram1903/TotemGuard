@@ -34,7 +34,7 @@ public class ReloadService {
         platform.getMessageService().reload();
         platform.getRedisRepository().restart();
         platform.getCacheRepository().reload();
-        platform.getVpnRepository().reload();
+        platform.getAntiVPNRepository().reload();
 
         ModSignatures.load(platform.getConfigRepository().config(ConfigFile.MODS));
 

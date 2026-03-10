@@ -45,8 +45,8 @@ cache:
     # VPN data (prevents making unessecary API calls by caching the result)
     vpn-data: 1800
 
-# Enables the VPN Detection feature.
-vpn:
+# Enables the Anti-VPN Detection feature.
+anti-vpn:
   # Enable VPN detection.
   enabled: true
 

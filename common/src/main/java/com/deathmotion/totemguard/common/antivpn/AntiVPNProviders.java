@@ -16,14 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.vpn;
+package com.deathmotion.totemguard.common.antivpn;
 
-import com.deathmotion.totemguard.common.vpn.adapters.IPRiskAdapter;
+import com.deathmotion.totemguard.common.antivpn.adapters.IPRiskAntiVPNAdapter;
 
 import java.util.List;
 
-public class Providers {
-    public static List<Adapter> adapters = List.of(
-            new IPRiskAdapter()
+public class AntiVPNProviders {
+    public static List<AntiVPNAdapter> AntiVPNAdapters = List.of(
+            new IPRiskAntiVPNAdapter()
     );
 }

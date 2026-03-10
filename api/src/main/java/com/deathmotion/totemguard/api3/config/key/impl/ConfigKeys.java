@@ -102,25 +102,25 @@ public final class ConfigKeys {
 
     public static final ConfigValueKey<Boolean> VPN_ENABLED =
             ConfigValueKey.required(
-                    "vpn.enabled",
+                    "anti-vpn.enabled",
                     true
             );
 
     public static final ConfigValueKey<String> VPN_PROVIDER =
             ConfigValueKey.required(
-                    "vpn.provider",
+                    "anti-vpn.provider",
                     "IPRisk"
             );
 
     public static final ConfigValueKey<String> VPN_API_KEY =
             ConfigValueKey.required(
-                    "vpn.api-key",
+                    "anti-vpn.api-key",
                     ""
             );
 
     public static final ConfigValueKey<Boolean> VPN_BLOCK =
             ConfigValueKey.required(
-                    "vpn.block",
+                    "anti-vpn.block",
                     true
             );
 

@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api3.check.Check;
 import com.deathmotion.totemguard.api3.check.CheckType;
-import com.deathmotion.totemguard.api3.event.impl.TGFlagEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
@@ -103,8 +103,8 @@ public class CheckImpl implements Check {
     }
 
     protected boolean shouldFail(@Nullable String debug) {
-        TGFlagEvent event = new TGFlagEvent(player, this, debug);
-        event = (TGFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
+        TGUserFlagEvent event = new TGUserFlagEvent(player, this, debug);
+        event = (TGUserFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
 
         return !event.isCancelled();
     }

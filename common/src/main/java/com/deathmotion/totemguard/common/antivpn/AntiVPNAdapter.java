@@ -16,12 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.vpn;
+package com.deathmotion.totemguard.common.antivpn;
 
+import com.google.gson.JsonParser;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
-public interface Adapter {
-    @NotNull String getName();
+import java.net.http.HttpClient;
 
-    boolean isVpn(@NotNull String ip);
+@Getter
+public abstract class AntiVPNAdapter {
+
+    private final HttpClient httpClient;
+    private final JsonParser jsonParser;
+
+    public AntiVPNAdapter() {
+        this.httpClient = HttpClient.newHttpClient();
+        this.jsonParser = new JsonParser();
+    }
+
+    public abstract @NotNull String getName();
+
+    public abstract boolean isVpn(@NotNull String ip);
 }

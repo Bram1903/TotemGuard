@@ -142,7 +142,7 @@ public class TGPlayer implements TGUser {
             applyCachedData();
             hasLoggedIn = true;
             checkManager.getPacketCheck(Mod.class).handle();
-            platform.getVpnRepository().validateConnection(this);
+            platform.getAntiVPNRepository().validateConnection(this);
         });
     }
 

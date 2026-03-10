@@ -18,11 +18,16 @@
 
 package com.deathmotion.totemguard.api3.event;
 
-
 /**
  * Base type for all events dispatched through the event system.
  */
 public abstract class Event {
+
+    private final long timestamp;
+
+    public Event() {
+        this.timestamp = System.currentTimeMillis();
+    }
 
     /**
      * Returns the name of this event.
@@ -33,5 +38,17 @@ public abstract class Event {
      */
     public String getName() {
         return getClass().getSimpleName();
+    }
+
+    /**
+     * Returns the time at which this event was created.
+     * <p>
+     * The value is expressed as the number of milliseconds since the Unix epoch,
+     * as returned by {@link System#currentTimeMillis()} at construction time.
+     *
+     * @return the event creation timestamp in milliseconds since the Unix epoch
+     */
+    public long getTimestamp() {
+        return timestamp;
     }
 }

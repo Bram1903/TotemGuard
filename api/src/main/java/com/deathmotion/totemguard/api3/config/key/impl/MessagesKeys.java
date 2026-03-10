@@ -58,6 +58,18 @@ public final class MessagesKeys {
                     "%prefix% &aTotemGuard reloaded successfully!"
             );
 
+    public static final ConfigValueKey<String> ANTI_VPN_ALERT =
+            ConfigValueKey.required(
+                    "anti-vpn.alert",
+                    "%prefix% &6%tg_player% &7tried to join using a VPN"
+            );
+
+    public static final ConfigValueKey<String> ANTI_VPN_KICK_MESSAGE =
+            ConfigValueKey.required(
+                    "anti-vpn.kick_message",
+                    "&#fbaf00%tg_player% &7has been kicked for using a VPN"
+            );
+
     private MessagesKeys() {
     }
 }

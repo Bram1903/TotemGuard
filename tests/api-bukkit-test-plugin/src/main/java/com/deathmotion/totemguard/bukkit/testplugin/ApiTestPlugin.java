@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.bukkit.testplugin;
 
 import com.deathmotion.totemguard.api3.TotemGuard;
-import com.deathmotion.totemguard.api3.event.impl.TGFlagEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.api3.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api3.event.impl.TGUserQuitEvent;
 import com.deathmotion.totemguard.bukkit.testplugin.events.TGFlagEventListener;
@@ -48,7 +48,7 @@ public final class ApiTestPlugin extends JavaPlugin {
 
             listeners.add(api.getEventRepository().subscribe(TGUserJoinEvent.class, new TGUserJoinEventListener()));
             listeners.add(api.getEventRepository().subscribe(TGUserQuitEvent.class, new TGUserQuitEventListener()));
-            listeners.add(api.getEventRepository().subscribe(TGFlagEvent.class, new TGFlagEventListener()));
+            listeners.add(api.getEventRepository().subscribe(TGUserFlagEvent.class, new TGFlagEventListener()));
         });
     }
 

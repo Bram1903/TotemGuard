@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * This event is fired before the flag is fully processed and can be
  * {@link Cancellable cancelled} by listeners to prevent further handling
  */
-public class TGFlagEvent extends TGUserEvent implements Cancellable {
+public class TGUserFlagEvent extends TGUserEvent implements Cancellable {
 
 
     private final Check check;
@@ -45,7 +45,7 @@ public class TGFlagEvent extends TGUserEvent implements Cancellable {
      * @param check the check responsible for the flag
      * @param debug optional debug information
      */
-    public TGFlagEvent(TGUser user, Check check, String debug) {
+    public TGUserFlagEvent(TGUser user, Check check, String debug) {
         super(user);
         this.check = check;
         this.debug = debug;
