@@ -41,7 +41,10 @@ public class ReloadCommand extends AbstractCommand {
 
     private void handleReload(@NotNull CommandContext<Sender> context) {
         TGPlatform platform = TGPlatform.getInstance();
-        platform.getReloadService().reload();
-        context.sender().sendMessage(platform.getMessageService().getComponent(MessagesKeys.RELOAD));
+
+        platform.getScheduler().runAsyncTask(() -> {
+            platform.getReloadService().reload();
+            context.sender().sendMessage(platform.getMessageService().getComponent(MessagesKeys.RELOAD));
+        });
     }
 }

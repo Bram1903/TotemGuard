@@ -34,6 +34,10 @@ public final class RedisKeys {
     private RedisKeys() {
     }
 
+    public static byte[] vpnData(String ip) {
+        return bytes(PREFIX + ":vpn:" + ip);
+    }
+
     /**
      * Key for cached check snapshots.
      */

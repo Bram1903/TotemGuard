@@ -16,30 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.cache;
+package com.deathmotion.totemguard.common.vpn;
 
-import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
-import com.deathmotion.totemguard.common.cache.data.VPNData;
-import org.jetbrains.annotations.Blocking;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.deathmotion.totemguard.common.vpn.adapters.IPRiskAdapter;
 
 import java.util.List;
-import java.util.UUID;
 
-public interface AbstractCache {
-
-    @Blocking
-    void saveVPNData(@NotNull String ip, @NotNull VPNData vpnData);
-
-    @Blocking
-    @Nullable
-    VPNData getVPNData(@NotNull String ip);
-
-    @Blocking
-    void saveCheckSnapshot(@NotNull UUID uuid, @NotNull List<CheckSnapshot> checkSnapshots);
-
-    @Blocking
-    @Nullable
-    List<CheckSnapshot> getCheckSnapshot(@NotNull UUID uuid);
+public class Providers {
+    public static List<Adapter> adapters = List.of(
+            new IPRiskAdapter()
+    );
 }

@@ -3,7 +3,7 @@ package com.deathmotion.totemguard.common.redis;
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
 import com.deathmotion.totemguard.common.redis.options.RedisOptions;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
@@ -27,14 +27,13 @@ public final class RedisRepositoryImpl implements RedisRepository {
         return isEnabled && manager.isConnected();
     }
 
-    public @Nullable RedisAsyncCommands<byte[], byte[]> async() {
-        if (!isEnabled()) return null;
-        StatefulRedisConnection<byte[], byte[]> conn = manager.connection();
-        return (conn != null && conn.isOpen()) ? conn.async() : null;
-    }
-
     public @Nullable StatefulRedisConnection<byte[], byte[]> connection() {
         return manager.connection();
+    }
+
+    public @Nullable RedisCommands<byte[], byte[]> sync() {
+        StatefulRedisConnection<byte[], byte[]> connection = connection();
+        return (connection != null && connection.isOpen()) ? connection.sync() : null;
     }
 
     public @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection() {

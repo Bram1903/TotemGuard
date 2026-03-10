@@ -38,10 +38,23 @@ cache:
   # Enable caching.
   enabled: true
 
-  # How long to keep cached data in seconds.
-  ttl: 300
-
-  # What data to cache.
+  # How long to cache data for in seconds (0 = no caching).
   data:
     # Includes violations and buffers.
-    checks: true
+    checks: 300
+    # VPN data (prevents making unessecary API calls by caching the result)
+    vpn-data: 1800
+
+# Enables the VPN Detection feature.
+vpn:
+  # Enable VPN detection.
+  enabled: true
+
+  # The Anti VPN provider to use. (IPRisk, etc)
+  provider: IPRisk
+
+  # The API key to use for the VPN provider (can leave blank or default if the provider doesn't require one)'.
+  api-key:
+
+  # Whether to block VPN users from joining the server.
+  block: true

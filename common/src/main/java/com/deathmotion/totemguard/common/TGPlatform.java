@@ -41,6 +41,7 @@ import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
 import com.deathmotion.totemguard.common.util.LoggerSuppressor;
 import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.common.vpn.VPNRepositoryImpl;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.google.common.base.Stopwatch;
 import lombok.Getter;
@@ -72,6 +73,7 @@ public abstract class TGPlatform {
     private PlaceholderRepositoryImpl placeholderRepository;
     private CommandManagerImpl commandManager;
     private CacheRepositoryImpl cacheRepository;
+    private VPNRepositoryImpl vpnRepository;
 
     private TGPlatformAPI api;
 
@@ -106,6 +108,7 @@ public abstract class TGPlatform {
         placeholderRepository = new PlaceholderRepositoryImpl();
         commandManager = new CommandManagerImpl();
         cacheRepository = new CacheRepositoryImpl();
+        vpnRepository = new VPNRepositoryImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());

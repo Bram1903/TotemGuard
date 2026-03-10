@@ -88,15 +88,39 @@ public final class ConfigKeys {
                     true
             );
 
-    public static final ConfigValueKey<Integer> CACHE_TTL =
+    public static final ConfigValueKey<Integer> CACHE_DATA_CHECKS =
             ConfigValueKey.required(
-                    "cache.ttl",
+                    "cache.data.checks",
                     300
             );
 
-    public static final ConfigValueKey<Boolean> CACHE_DATA_CHECKS =
+    public static final ConfigValueKey<Integer> CACHE_DATA_VPN =
             ConfigValueKey.required(
-                    "cache.data.checks",
+                    "cache.data.vpn-data",
+                    1800
+            );
+
+    public static final ConfigValueKey<Boolean> VPN_ENABLED =
+            ConfigValueKey.required(
+                    "vpn.enabled",
+                    true
+            );
+
+    public static final ConfigValueKey<String> VPN_PROVIDER =
+            ConfigValueKey.required(
+                    "vpn.provider",
+                    "IPRisk"
+            );
+
+    public static final ConfigValueKey<String> VPN_API_KEY =
+            ConfigValueKey.required(
+                    "vpn.api-key",
+                    ""
+            );
+
+    public static final ConfigValueKey<Boolean> VPN_BLOCK =
+            ConfigValueKey.required(
+                    "vpn.block",
                     true
             );
 

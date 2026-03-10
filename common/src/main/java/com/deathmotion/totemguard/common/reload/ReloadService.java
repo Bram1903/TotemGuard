@@ -22,15 +22,19 @@ import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.mods.ModSignatures;
+import org.jetbrains.annotations.Blocking;
 
 public class ReloadService {
 
+    @Blocking
     public void reload() {
         TGPlatform platform = TGPlatform.getInstance();
 
         platform.getConfigRepository().reloadAll();
         platform.getMessageService().reload();
         platform.getRedisRepository().restart();
+        platform.getCacheRepository().reload();
+        platform.getVpnRepository().reload();
 
         ModSignatures.load(platform.getConfigRepository().config(ConfigFile.MODS));
 

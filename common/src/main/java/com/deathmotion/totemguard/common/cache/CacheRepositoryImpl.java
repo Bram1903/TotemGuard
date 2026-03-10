@@ -18,11 +18,17 @@
 
 package com.deathmotion.totemguard.common.cache;
 
+import com.deathmotion.totemguard.api3.config.Config;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
+import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.deathmotion.totemguard.common.cache.impl.InternalCache;
 import com.deathmotion.totemguard.common.cache.impl.RedisCache;
+import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -31,26 +37,61 @@ import java.util.UUID;
 public class CacheRepositoryImpl {
 
     private final RedisRepositoryImpl redisRepository;
+    private final ConfigRepositoryImpl configRepository;
 
     private final InternalCache internalCache;
     private final RedisCache redisCache;
 
+    @Getter
+    private boolean cacheEnabled;
+    @Getter
+    private int checkDataTTL;
+    @Getter
+    private int vpnDataTTL;
+
     public CacheRepositoryImpl() {
         this.redisRepository = TGPlatform.getInstance().getRedisRepository();
+        this.configRepository = TGPlatform.getInstance().getConfigRepository();
 
-        this.internalCache = new InternalCache();
-        this.redisCache = new RedisCache();
+        loadConfig();
+
+        this.internalCache = new InternalCache(this);
+        this.redisCache = new RedisCache(this, redisRepository);
+    }
+
+    public void reload() {
+        loadConfig();
+        internalCache.reload();
+    }
+
+    public void saveVPNData(String ip, VPNData vpnData) {
+        if (!cacheEnabled || vpnDataTTL <= 0) return;
+        getCache().saveVPNData(ip, vpnData);
+    }
+
+    public @Nullable VPNData getVPNData(String ip) {
+        if (!cacheEnabled || vpnDataTTL <= 0) return null;
+        return getCache().getVPNData(ip);
     }
 
     public void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots) {
+        if (!cacheEnabled || checkDataTTL <= 0) return;
         getCache().saveCheckSnapshot(uuid, checkSnapshots);
     }
 
     public @Nullable List<CheckSnapshot> getCheckSnapshot(UUID uuid) {
+        if (!cacheEnabled || checkDataTTL <= 0) return null;
         return getCache().getCheckSnapshot(uuid);
     }
 
     private AbstractCache getCache() {
         return redisRepository.isConnected() ? redisCache : internalCache;
+    }
+
+    private void loadConfig() {
+        Config config = configRepository.config(ConfigFile.CONFIG);
+        this.cacheEnabled = config.getBoolean(ConfigKeys.CACHE_ENABLED);
+        this.checkDataTTL = config.getInt(ConfigKeys.CACHE_DATA_CHECKS);
+        this.vpnDataTTL = config.getInt(ConfigKeys.CACHE_DATA_VPN);
     }
 }

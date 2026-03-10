@@ -87,6 +87,10 @@ public class TGPlayer implements TGUser {
     @Nullable
     private Long lastTotemUse;
 
+    @Getter
+    @Setter
+    private boolean vpn;
+
     public TGPlayer(@NotNull User user) {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
@@ -138,6 +142,7 @@ public class TGPlayer implements TGUser {
             applyCachedData();
             hasLoggedIn = true;
             checkManager.getPacketCheck(Mod.class).handle();
+            platform.getVpnRepository().validateConnection(this);
         });
     }
 

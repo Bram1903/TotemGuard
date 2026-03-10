@@ -19,31 +19,98 @@
 package com.deathmotion.totemguard.common.cache.impl;
 
 import com.deathmotion.totemguard.common.cache.AbstractCache;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
+import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public final class InternalCache implements AbstractCache {
 
-    private final Cache<UUID, List<CheckSnapshot>> checkCache =
-            CacheBuilder.newBuilder()
-                    .maximumSize(10_000)
-                    .expireAfterAccess(5, TimeUnit.MINUTES)
-                    .build();
+    private static final long MAX_CACHE_SIZE = 10_000L;
+
+    private final CacheRepositoryImpl cacheRepository;
+
+    private Cache<UUID, List<CheckSnapshot>> checkCache;
+    private Cache<String, VPNData> vpnCache;
+
+    public InternalCache(CacheRepositoryImpl cacheRepository) {
+        this.cacheRepository = cacheRepository;
+        this.checkCache = buildCheckCache();
+        this.vpnCache = buildVpnCache();
+    }
+
+    public void reload() {
+        Map<UUID, List<CheckSnapshot>> checkEntries = checkCache.asMap();
+        Map<String, VPNData> vpnEntries = vpnCache.asMap();
+
+        Cache<UUID, List<CheckSnapshot>> newCheckCache = buildCheckCache();
+        Cache<String, VPNData> newVpnCache = buildVpnCache();
+
+        if (cacheRepository.isCacheEnabled() && cacheRepository.getCheckDataTTL() > 0) {
+            newCheckCache.putAll(checkEntries);
+        }
+
+        if (cacheRepository.isCacheEnabled() && cacheRepository.getVpnDataTTL() > 0) {
+            newVpnCache.putAll(vpnEntries);
+        }
+
+        this.checkCache.invalidateAll();
+        this.vpnCache.invalidateAll();
+
+        this.checkCache = newCheckCache;
+        this.vpnCache = newVpnCache;
+    }
 
     @Override
-    public @Blocking void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots) {
+    public void saveVPNData(@NonNull String ip, @NonNull VPNData vpnData) {
+        if (!cacheRepository.isCacheEnabled() || cacheRepository.getVpnDataTTL() <= 0) return;
+        vpnCache.put(ip, vpnData);
+    }
+
+    @Override
+    public @Nullable VPNData getVPNData(@NonNull String ip) {
+        if (!cacheRepository.isCacheEnabled() || cacheRepository.getVpnDataTTL() <= 0) return null;
+        return vpnCache.getIfPresent(ip);
+    }
+
+    @Override
+    public @Blocking void saveCheckSnapshot(@NonNull UUID uuid, @NonNull List<CheckSnapshot> checkSnapshots) {
+        if (!cacheRepository.isCacheEnabled() || cacheRepository.getCheckDataTTL() <= 0) return;
         checkCache.put(uuid, checkSnapshots);
     }
 
     @Override
-    public @Blocking @Nullable List<CheckSnapshot> getCheckSnapshot(UUID uuid) {
+    public @Blocking @Nullable List<CheckSnapshot> getCheckSnapshot(@NonNull UUID uuid) {
+        if (!cacheRepository.isCacheEnabled() || cacheRepository.getCheckDataTTL() <= 0) return null;
         return checkCache.getIfPresent(uuid);
+    }
+
+    private Cache<UUID, List<CheckSnapshot>> buildCheckCache() {
+        CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().maximumSize(MAX_CACHE_SIZE);
+
+        if (cacheRepository.isCacheEnabled() && cacheRepository.getCheckDataTTL() > 0) {
+            builder.expireAfterAccess(cacheRepository.getCheckDataTTL(), TimeUnit.SECONDS);
+        }
+
+        return builder.build();
+    }
+
+    private Cache<String, VPNData> buildVpnCache() {
+        CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().maximumSize(MAX_CACHE_SIZE);
+
+        if (cacheRepository.isCacheEnabled() && cacheRepository.getVpnDataTTL() > 0) {
+            builder.expireAfterAccess(cacheRepository.getVpnDataTTL(), TimeUnit.SECONDS);
+        }
+
+        return builder.build();
     }
 }
