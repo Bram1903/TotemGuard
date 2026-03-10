@@ -39,7 +39,7 @@ public class TGUserVPNDetectionEvent extends TGUserEvent implements Cancellable 
      * @param user the user that triggered the VPN detection
      * @param ip   the detected IP address
      */
-    public TGUserVPNDetectionEvent(@NotNull TGUser user, String ip) {
+    public TGUserVPNDetectionEvent(@NotNull TGUser user, @NotNull String ip) {
         super(user);
         this.ip = ip;
     }
