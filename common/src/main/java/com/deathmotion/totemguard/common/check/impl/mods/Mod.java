@@ -18,16 +18,26 @@
 
 package com.deathmotion.totemguard.common.check.impl.mods;
 
-import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.common.check.CheckData;
+import com.deathmotion.totemguard.api3.check.CheckType;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBundle;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
+import net.kyori.adventure.text.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -39,6 +49,14 @@ import java.util.concurrent.TimeUnit;
 public final class Mod extends CheckImpl implements PacketCheck {
 
     private static final String REGISTER_CHANNEL = "minecraft:register";
+
+    private static final int ANVIL_SCREEN = 8;
+
+    private static final int TRANSLATION_BATCH_SIZE = 50;
+    private static final long TRANSLATION_BATCH_DELAY_MS = 150L;
+
+    private static final char START_MARKER = '\uE000';
+    private static final char END_MARKER = '\uE001';
 
     private final Set<String> flaggedMods = ConcurrentHashMap.newKeySet();
     private final Set<String> pendingDetections = ConcurrentHashMap.newKeySet();
