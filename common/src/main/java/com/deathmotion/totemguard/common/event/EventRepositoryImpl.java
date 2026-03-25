@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.event;
 
-import com.deathmotion.totemguard.api.event.Event;
-import com.deathmotion.totemguard.api.event.EventOrder;
-import com.deathmotion.totemguard.api.event.EventRepository;
-import com.deathmotion.totemguard.api.event.EventSubscription;
+import com.deathmotion.totemguard.api3.event.Event;
+import com.deathmotion.totemguard.api3.event.EventOrder;
+import com.deathmotion.totemguard.api3.event.EventRepository;
+import com.deathmotion.totemguard.api3.event.EventSubscription;
 import com.deathmotion.totemguard.common.event.internal.InternalEvent;
 import org.jetbrains.annotations.NotNull;
 

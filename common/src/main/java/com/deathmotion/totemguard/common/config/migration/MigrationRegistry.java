@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.config.migration;
 
-import com.deathmotion.totemguard.api.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
 
 import java.util.EnumMap;
 import java.util.HashMap;

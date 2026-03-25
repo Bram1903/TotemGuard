@@ -1,0 +1,45 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.common.reload;
+
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.reload.Reloadable;
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.check.impl.mods.ModSignatures;
+import org.jetbrains.annotations.Blocking;
+
+public class ReloadService {
+
+    @Blocking
+    public void reload() {
+        TGPlatform platform = TGPlatform.getInstance();
+
+        platform.getConfigRepository().reloadAll();
+        platform.getMessageService().reload();
+        platform.getRedisRepository().restart();
+        platform.getCacheRepository().reload();
+        platform.getAntiVPNRepository().reload();
+
+        ModSignatures.load(platform.getConfigRepository().config(ConfigFile.MODS));
+
+        platform.getPlayerRepository().getPlayers()
+                .parallelStream()
+                .forEach(player -> player.getCheckManager().allChecks.values().forEach(Reloadable::reload));
+    }
+}

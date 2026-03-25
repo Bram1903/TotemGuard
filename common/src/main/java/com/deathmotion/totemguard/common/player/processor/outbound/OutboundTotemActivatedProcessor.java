@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -48,14 +47,8 @@ public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
         final boolean wasCarryingTotem = player.getInventory().isTotemInSlot(slot);
 
         if (wasCarryingTotem && itemStack.isEmpty()) {
-            final LatencyHandler latency = player.getLatencyHandler();
             player.setLastTotemUse(event.getTimestamp());
-
-            latency.afterNextAck(() -> {
-                final long ackMillis = latency.getLastAckAtMillis();
-                player.setLastTotemUseCompensated(ackMillis);
-                TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, ackMillis));
-            });
+            TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, event.getTimestamp()));
         }
     }
 }

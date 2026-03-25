@@ -18,8 +18,10 @@
 
 package com.deathmotion.totemguard.common;
 
-import com.deathmotion.totemguard.api.TotemGuard;
-import com.deathmotion.totemguard.common.alert.AlertRepoistoryImpl;
+import com.deathmotion.totemguard.api3.TotemGuard;
+import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
@@ -27,15 +29,18 @@ import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEve
 import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckManagerListener;
 import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
-import com.deathmotion.totemguard.common.event.packet.PacketPingListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
+import com.deathmotion.totemguard.common.util.LoggerSuppressor;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.google.common.base.Stopwatch;
@@ -58,12 +63,17 @@ public abstract class TGPlatform {
     @Setter
     private boolean enabled = true;
 
+    private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
+    private RedisRepositoryImpl redisRepository;
+    private MessageService messageService;
     private EventRepositoryImpl eventRepository;
-    private AlertRepoistoryImpl alertRepository;
+    private AlertRepositoryImpl alertRepository;
     private PlayerRepositoryImpl playerRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
     private CommandManagerImpl commandManager;
+    private CacheRepositoryImpl cacheRepository;
+    private AntiVPNRepositoryImpl antiVPNRepository;
 
     private TGPlatformAPI api;
 
@@ -77,6 +87,8 @@ public abstract class TGPlatform {
     }
 
     public void commonOnEnable() {
+        LoggerSuppressor.suppressDefaultNoise();
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         if (!CompatibilityUtil.isCompatible()) {
             setEnabled(false);
@@ -86,15 +98,19 @@ public abstract class TGPlatform {
 
         ConsoleBanner.print();
 
+        reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
+        redisRepository = new RedisRepositoryImpl();
+        messageService = new MessageService();
         eventRepository = new EventRepositoryImpl();
-        alertRepository = new AlertRepoistoryImpl();
+        alertRepository = new AlertRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
         placeholderRepository = new PlaceholderRepositoryImpl();
         commandManager = new CommandManagerImpl();
+        cacheRepository = new CacheRepositoryImpl();
+        antiVPNRepository = new AntiVPNRepositoryImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
-        PacketEvents.getAPI().getEventManager().registerListener(new PacketPingListener());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());
 
         //noinspection resource
@@ -111,6 +127,7 @@ public abstract class TGPlatform {
     }
 
     public void commonOnDisable() {
+        if (redisRepository != null) redisRepository.stop();
     }
 
     public abstract Scheduler getScheduler();

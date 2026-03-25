@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.util;
 
-import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.github.retrooper.packetevents.PacketEvents;

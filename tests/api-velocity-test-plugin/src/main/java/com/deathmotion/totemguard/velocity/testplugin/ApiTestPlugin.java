@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.velocity.testplugin;
 
-import com.deathmotion.totemguard.api.TotemGuard;
+import com.deathmotion.totemguard.api3.TotemGuard;
 import com.deathmotion.totemguard.velocity.testplugin.events.ACUserEventListener;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;

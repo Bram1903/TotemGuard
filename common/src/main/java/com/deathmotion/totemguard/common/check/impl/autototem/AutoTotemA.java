@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.check.impl.autototem;
 
-import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.api.event.Event;
-import com.deathmotion.totemguard.common.check.CheckData;
+import com.deathmotion.totemguard.api3.check.CheckType;
+import com.deathmotion.totemguard.api3.event.Event;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
@@ -77,13 +77,7 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
         final long useDiff = Math.abs(now - lastTotemActivatedTimestamp);
 
         if (clickDiff <= 75 && useDiff <= 1500) {
-            if (buffer.increase(5) >= 10) {
-                //fail("click time: " + clickDiff + "ms, totemUseTimeDiff: " + useDiff + "ms");
-            }
-
-            fail("click time: " + clickDiff + "ms, totemUseTimeDiff: " + useDiff + "ms");
-        } else {
-            buffer.decrease();
+            fail();
         }
 
         lastTotemActivatedTimestamp = null;

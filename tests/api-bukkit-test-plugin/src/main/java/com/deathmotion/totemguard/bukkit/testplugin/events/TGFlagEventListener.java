@@ -18,15 +18,15 @@
 
 package com.deathmotion.totemguard.bukkit.testplugin.events;
 
-import com.deathmotion.totemguard.api.event.impl.TGFlagEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.bukkit.testplugin.ApiTestPlugin;
 
 import java.util.function.Consumer;
 
-public final class TGFlagEventListener implements Consumer<TGFlagEvent> {
+public final class TGFlagEventListener implements Consumer<TGUserFlagEvent> {
 
     @Override
-    public void accept(TGFlagEvent tgFlagEvent) {
-        ApiTestPlugin.getInstance().getLogger().info("User " + tgFlagEvent.getUser().getName() + " was flagged for " + tgFlagEvent.getCheck().getName() + ".");
+    public void accept(TGUserFlagEvent tgUserFlagEvent) {
+        ApiTestPlugin.getInstance().getLogger().info("User " + tgUserFlagEvent.getUser().getName() + " was flagged for " + tgUserFlagEvent.getCheck().getName() + ".");
     }
 }

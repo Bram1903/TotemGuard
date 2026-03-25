@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.event.internal;
 
-import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.api3.event.Event;
 
 /**
  * Marker base class for events used only inside TotemGuard.

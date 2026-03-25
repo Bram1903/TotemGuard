@@ -1,12 +1,7 @@
-plugins {
-    totemguard.`java-conventions`
-}
+import org.gradle.jvm.tasks.Jar
 
-repositories {
-    maven {
-        name = "papermc"
-        url = uri("https://repo.papermc.io/repository/maven-public/")
-    }
+plugins {
+    id("totemguard.java-conventions")
 }
 
 dependencies {
@@ -18,19 +13,7 @@ dependencies {
 
 version = "1.0.0-SNAPSHOT"
 
-tasks {
-    jar {
-        archiveFileName = "TotemGuardAPI-Velocity-Test.jar"
-        archiveClassifier = null
-    }
-
-    processResources {
-        inputs.property("version", project.version)
-
-        filesMatching(listOf("velocity-plugin.json", "velocity-plugin.json")) {
-            expand(
-                "version" to project.version,
-            )
-        }
-    }
+tasks.named<Jar>("jar") {
+    archiveFileName = "TotemGuardAPI-Velocity-Test.jar"
+    archiveClassifier = null
 }

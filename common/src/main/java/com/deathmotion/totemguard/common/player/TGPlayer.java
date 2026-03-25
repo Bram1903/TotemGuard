@@ -18,9 +18,11 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
-import com.deathmotion.totemguard.api.user.TGUser;
+import com.deathmotion.totemguard.api3.event.impl.TGUserJoinEvent;
+import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
@@ -33,7 +35,6 @@ import com.deathmotion.totemguard.common.player.data.TickData;
 import com.deathmotion.totemguard.common.player.data.TotemData;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
-import com.deathmotion.totemguard.common.player.latency.LatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
@@ -41,12 +42,12 @@ import com.deathmotion.totemguard.common.player.processor.inbound.InboundClientB
 import com.deathmotion.totemguard.common.player.processor.inbound.InboundInventoryProcessor;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,8 +55,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
-import static com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying.isFlying;
 
 /**
  * Represents a player in TotemGuard. This object is bound to a single player and gets removed once the player leaves the server / proxy.
@@ -66,7 +65,6 @@ public class TGPlayer implements TGUser {
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
-    private final LatencyHandler latencyHandler;
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
 
@@ -89,18 +87,18 @@ public class TGPlayer implements TGUser {
     @Nullable
     private Long lastTotemUse;
 
+    @Getter
     @Setter
-    @Nullable
-    private Long lastTotemUseCompensated;
+    private boolean vpn;
 
     public TGPlayer(@NotNull User user) {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
-        this.latencyHandler = new LatencyHandler(this);
+
         this.inventory = new PacketInventory();
         this.checkManager = new CheckManagerImpl(this);
-        this.data = new Data();
+        this.data = new Data(this);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
@@ -138,10 +136,18 @@ public class TGPlayer implements TGUser {
             return;
         }
 
-        hasLoggedIn = true;
         platform.getEventRepository().post(new TGUserJoinEvent(this));
 
-        checkManager.getPacketCheck(Mod.class).handle();
+        platform.getScheduler().runAsyncTask(() -> {
+            applyCachedData();
+            hasLoggedIn = true;
+            checkManager.getPacketCheck(Mod.class).handle();
+            platform.getAntiVPNRepository().validateConnection(this);
+        });
+    }
+
+    public void onLogout() {
+        platform.getScheduler().runAsyncTask(this::cacheData);
     }
 
     public void triggerInventoryEvent() {
@@ -171,7 +177,6 @@ public class TGPlayer implements TGUser {
         platform.getEventRepository().post(event);
     }
 
-
     @Override
     public @NotNull String getName() {
         return user.getName();
@@ -188,15 +193,24 @@ public class TGPlayer implements TGUser {
     }
 
     public ClientVersion getClientVersion() {
-        // If temporarily null, assume server version...
-        return Objects.requireNonNullElseGet(user.getClientVersion(), () -> ClientVersion.getById(PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion()));
+        return Objects.requireNonNullElseGet(user.getClientVersion(), () -> PacketEvents.getAPI().getServerManager().getVersion().toClientVersion());
     }
 
-    public boolean isTickEndPacket(PacketTypeCommon packetType) {
-        if (getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2) && packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            return true;
-        }
+    public boolean supportsEndTick() {
+        return getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2) && PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_21_2);
+    }
 
-        return isFlying(packetType);
+    @Blocking
+    private void applyCachedData() {
+        CacheRepositoryImpl cacheRepository = platform.getCacheRepository();
+
+        List<CheckSnapshot> checkSnapshots = cacheRepository.getCheckSnapshot(uuid);
+        if (checkSnapshots != null) checkManager.applySnapshot(checkSnapshots);
+    }
+
+    @Blocking
+    private void cacheData() {
+        CacheRepositoryImpl cacheRepository = platform.getCacheRepository();
+        cacheRepository.saveCheckSnapshot(uuid, checkManager.getSnapshot());
     }
 }

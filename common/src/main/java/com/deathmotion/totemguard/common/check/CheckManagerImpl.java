@@ -18,12 +18,14 @@
 
 package com.deathmotion.totemguard.common.check;
 
-import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.event.Event;
-import com.deathmotion.totemguard.common.check.impl.autoclicker.AutoClickerA;
+import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.event.Event;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
+import com.deathmotion.totemguard.common.check.impl.inventory.InventoryB;
+import com.deathmotion.totemguard.common.check.impl.inventory.InventoryC;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
@@ -35,7 +37,12 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CheckManagerImpl {
+
+    private final TGPlayer player;
 
     public ClassToInstanceMap<Check> allChecks;
     ClassToInstanceMap<PacketCheck> packetChecks;
@@ -43,6 +50,8 @@ public class CheckManagerImpl {
     ClassToInstanceMap<ExtendedCheck> extendedChecks;
 
     public CheckManagerImpl(TGPlayer player) {
+        this.player = player;
+
         eventChecks = new ImmutableClassToInstanceMap.Builder<EventCheck>()
                 .put(AutoTotemA.class, new AutoTotemA(player))
                 .put(AutoTotemB.class, new AutoTotemB(player))
@@ -54,8 +63,9 @@ public class CheckManagerImpl {
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(ProtocolE.class, new ProtocolE(player))
-                .put(AutoClickerA.class, new AutoClickerA(player))
                 .put(InventoryA.class, new InventoryA(player))
+                .put(InventoryB.class, new InventoryB(player))
+                .put(InventoryC.class, new InventoryC(player))
                 .put(Mod.class, new Mod(player))
                 .build();
 
@@ -71,11 +81,15 @@ public class CheckManagerImpl {
     public void onPacketReceive(final PacketReceiveEvent packet) {
         for (PacketCheck check : packetChecks.values()) {
             if (!check.isEnabled()) continue;
+            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
+
             check.onPacketReceive(packet);
         }
 
         for (PacketCheck check : extendedChecks.values()) {
             if (!check.isEnabled()) continue;
+            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
+
             check.onPacketReceive(packet);
         }
     }
@@ -83,11 +97,15 @@ public class CheckManagerImpl {
     public void onPacketSend(final PacketSendEvent packet) {
         for (PacketCheck check : packetChecks.values()) {
             if (!check.isEnabled()) continue;
+            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
+
             check.onPacketSend(packet);
         }
 
         for (PacketCheck check : extendedChecks.values()) {
             if (!check.isEnabled()) continue;
+            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
+
             check.onPacketSend(packet);
         }
     }
@@ -95,15 +113,41 @@ public class CheckManagerImpl {
     public <T extends Event> void onEvent(final T event) {
         for (EventCheck check : eventChecks.values()) {
             if (!check.isEnabled()) continue;
+            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
+
             check.handleEvent(event);
         }
 
         for (ExtendedCheck check : extendedChecks.values()) {
             if (!check.isEnabled()) continue;
+            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
+
             check.handleEvent(event);
         }
     }
 
+    public List<CheckSnapshot> getSnapshot() {
+        List<CheckSnapshot> snapshots = new ArrayList<>(allChecks.size());
+        for (Check check : allChecks.values()) {
+            CheckImpl impl = (CheckImpl) check;
+            snapshots.add(impl.getSnapshot());
+        }
+
+        return snapshots;
+    }
+
+    public void applySnapshot(List<CheckSnapshot> snapshots) {
+        for (CheckSnapshot snapshot : snapshots) {
+            String checkSnapshotName = snapshot.checkName();
+
+            for (Check check : allChecks.values()) {
+                if (!check.getName().equals(checkSnapshotName)) continue;
+                CheckImpl checkImpl = (CheckImpl) check;
+                checkImpl.applySnapshot(snapshot);
+                break;
+            }
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {

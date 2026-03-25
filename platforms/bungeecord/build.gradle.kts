@@ -1,14 +1,8 @@
-plugins {
-    totemguard.`java-conventions`
-    alias(libs.plugins.shadow)
-}
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-repositories {
-    maven {
-        name = "sonatype"
-        url = uri("https://oss.sonatype.org/content/groups/public/")
-    }
-    maven("https://repo.papermc.io/repository/maven-public/") // For Brigadier
+plugins {
+    id("totemguard.java-conventions")
+    id("totemguard.shadow-conventions")
 }
 
 dependencies {
@@ -16,19 +10,7 @@ dependencies {
     compileOnly(libs.bungeecord)
 }
 
-tasks {
-    jar {
-        enabled = false
-    }
-
-    shadowJar {
-        archiveFileName = "${rootProject.name}-Bungee-${rootProject.ext["versionNoHash"]}.jar"
-        archiveClassifier = null
-        destinationDirectory = rootProject.layout.buildDirectory
-        exclude("META-INF/maven/**")
-    }
-
-    assemble {
-        dependsOn(shadowJar)
-    }
+tasks.named<ShadowJar>("shadowJar") {
+    archiveFileName =
+        "${rootProject.name}-Bungee-${project.version.toString().replace(Regex("\\+[0-9a-f]+-SNAPSHOT$"), "-SNAPSHOT")}.jar"
 }

@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
-import com.deathmotion.totemguard.api.user.TGUser;
-import com.deathmotion.totemguard.api.user.UserRepository;
+import com.deathmotion.totemguard.api3.event.impl.TGUserQuitEvent;
+import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public final class PlayerRepositoryImpl implements UserRepository {
 
-    private static final String BYPASS_PERMISSION = "TotemGuard.Bypass";
+    private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass";
 
     private final TGPlatform platform = TGPlatform.getInstance();
 
@@ -69,7 +69,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     // TODO: This is temporarily (Will use a proper database implementation in the future
     private void enableAlerts(UUID uuid, PlatformUser platformUser) {
-        if (platformUser.hasPermission("TotemGuard.Alerts")) {
+        if (platformUser.hasPermission("TotemGuardV3.Alerts") && platformUser.hasPermission("TotemGuardV3.Alerts.EnableOnJoin")) {
             platform.getAlertRepository().toggleAlerts(uuid);
         }
     }
@@ -79,12 +79,12 @@ public final class PlayerRepositoryImpl implements UserRepository {
         if (uuid == null) return;
 
         clearExempt(uuid);
+        platform.getAlertRepository().removeUser(uuid);
 
         final TGPlayer player = players.remove(user);
         if (player == null) return;
-
-        platform.getAlertRepository().removeUser(player);
         platform.getEventRepository().post(new TGUserQuitEvent(player));
+        player.onLogout();
     }
 
     public void removeUser(final @NotNull User user) {
@@ -148,5 +148,9 @@ public final class PlayerRepositoryImpl implements UserRepository {
         }
 
         return null;
+    }
+
+    public @NotNull Collection<TGPlayer> getPlayers() {
+        return players.values();
     }
 }

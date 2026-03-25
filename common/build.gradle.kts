@@ -1,12 +1,14 @@
 plugins {
     `java-library`
-    totemguard.`java-conventions`
-    `tg-version`
+    id("totemguard.java-conventions")
+    id("tg-version")
 }
 
 dependencies {
     api(project(":api"))
-    implementation(libs.lettuce)
+    implementation(libs.lettuce) {
+        exclude(group = "org.slf4j")
+    }
     compileOnly(libs.packetevents.api)
     compileOnly(libs.bundles.adventure)
     compileOnly(libs.bundles.adventure.serializers)
@@ -14,14 +16,4 @@ dependencies {
     compileOnly(libs.guava)
     compileOnly(libs.snakeyaml)
     compileOnly(libs.cloud.core)
-}
-
-tasks {
-    withType<JavaCompile> {
-        dependsOn(generateVersionsFile)
-    }
-
-    generateVersionsFile {
-        packageName = "com.deathmotion.totemguard.common.util"
-    }
 }

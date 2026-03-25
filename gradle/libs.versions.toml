@@ -11,11 +11,10 @@ sponge = "14.0.0"
 cloud-core = "2.0.0"
 cloud-platform = "2.0.0-beta.14"
 bstats = "3.1.0"
-lettuce = "7.2.1.RELEASE"
+lettuce = "7.5.0.RELEASE"
 
 placeholderapi = "2.11.7"
 
-shadow = "9.2.2"
 run-paper = "3.0.2"
 spongeGradle = "2.3.0"
 
@@ -51,7 +50,6 @@ adventure-serializers = ["adventure-text-serializer-gson", "adventure-text-seria
 adventure-minimessage = ["minimessage"]
 
 [plugins]
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
 run-velocity = { id = "xyz.jpenilla.run-velocity", version.ref = "run-paper" }
 spongeGradle = { id = "org.spongepowered.gradle.plugin", version.ref = "spongeGradle" }

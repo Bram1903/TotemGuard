@@ -1,0 +1,97 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.common.cache;
+
+import com.deathmotion.totemguard.api3.config.Config;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
+import com.deathmotion.totemguard.common.cache.data.VPNData;
+import com.deathmotion.totemguard.common.cache.impl.InternalCache;
+import com.deathmotion.totemguard.common.cache.impl.RedisCache;
+import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.UUID;
+
+public class CacheRepositoryImpl {
+
+    private final RedisRepositoryImpl redisRepository;
+    private final ConfigRepositoryImpl configRepository;
+
+    private final InternalCache internalCache;
+    private final RedisCache redisCache;
+
+    @Getter
+    private boolean cacheEnabled;
+    @Getter
+    private int checkDataTTL;
+    @Getter
+    private int vpnDataTTL;
+
+    public CacheRepositoryImpl() {
+        this.redisRepository = TGPlatform.getInstance().getRedisRepository();
+        this.configRepository = TGPlatform.getInstance().getConfigRepository();
+
+        loadConfig();
+
+        this.internalCache = new InternalCache(this);
+        this.redisCache = new RedisCache(this, redisRepository);
+    }
+
+    public void reload() {
+        loadConfig();
+        internalCache.reload();
+    }
+
+    public void saveVPNData(String ip, VPNData vpnData) {
+        if (!cacheEnabled || vpnDataTTL <= 0) return;
+        getCache().saveVPNData(ip, vpnData);
+    }
+
+    public @Nullable VPNData getVPNData(String ip) {
+        if (!cacheEnabled || vpnDataTTL <= 0) return null;
+        return getCache().getVPNData(ip);
+    }
+
+    public void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots) {
+        if (!cacheEnabled || checkDataTTL <= 0) return;
+        getCache().saveCheckSnapshot(uuid, checkSnapshots);
+    }
+
+    public @Nullable List<CheckSnapshot> getCheckSnapshot(UUID uuid) {
+        if (!cacheEnabled || checkDataTTL <= 0) return null;
+        return getCache().getCheckSnapshot(uuid);
+    }
+
+    private AbstractCache getCache() {
+        return redisRepository.isConnected() ? redisCache : internalCache;
+    }
+
+    private void loadConfig() {
+        Config config = configRepository.config(ConfigFile.CONFIG);
+        this.cacheEnabled = config.getBoolean(ConfigKeys.CACHE_ENABLED);
+        this.checkDataTTL = config.getInt(ConfigKeys.CACHE_DATA_CHECKS);
+        this.vpnDataTTL = config.getInt(ConfigKeys.CACHE_DATA_VPN);
+    }
+}

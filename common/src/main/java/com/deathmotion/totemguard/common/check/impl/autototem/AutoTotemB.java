@@ -16,14 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package com.deathmotion.totemguard.common.check.impl.autototem;
 
-import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.api3.check.CheckType;
+import com.deathmotion.totemguard.api3.event.Event;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.check.CheckData;
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -48,12 +47,12 @@ public class AutoTotemB extends CheckImpl implements EventCheck {
         int n = intervals.size();
 
         if (n < MIN_INTERVALS) {
-            log("skip: not enough delays (" + n + "/" + MIN_INTERVALS + ")");
+            //log("skip: not enough delays (" + n + "/" + MIN_INTERVALS + ")");
             return;
         }
 
         double standardDeviation = MathUtil.getStandardDeviation(intervals);
-        log("stdDev=" + standardDeviation + " samples=" + intervals);
+        //log("stdDev=" + standardDeviation + " samples=" + intervals);
     }
 
     private void log(String msg) {

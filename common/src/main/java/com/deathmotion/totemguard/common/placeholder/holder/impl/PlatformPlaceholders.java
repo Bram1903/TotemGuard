@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
-import com.deathmotion.totemguard.api.config.ConfigFile;
-import com.deathmotion.totemguard.api.config.key.impl.MessagesKeys;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
+import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.key.impl.MessagesKeys;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import org.jetbrains.annotations.NotNull;

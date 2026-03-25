@@ -1,14 +1,7 @@
 plugins {
-    totemguard.`java-conventions`
-    alias(libs.plugins.shadow)
+    id("totemguard.java-conventions")
+    id("totemguard.shadow-conventions")
     alias(libs.plugins.run.velocity)
-}
-
-repositories {
-    maven {
-        name = "papermc"
-        url = uri("https://repo.papermc.io/repository/maven-public/")
-    }
 }
 
 dependencies {
@@ -20,16 +13,10 @@ dependencies {
 }
 
 tasks {
-    jar {
-        enabled = false
-    }
-
-    assemble {
-        dependsOn(shadowJar)
-    }
-
     runVelocity {
-        velocityVersion(libs.versions.velocity.get())
+        val version = libs.versions.velocity.get()
+        velocityVersion(version)
+        runDirectory = rootDir.resolve("run/velocity/$version")
 
         downloadPlugins {
             url("https://cdn.modrinth.com/data/HYKaKraK/versions/ZjndEJRB/packetevents-velocity-2.11.1.jar")

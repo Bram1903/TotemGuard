@@ -1,3 +1,10 @@
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.javadoc.Javadoc
+import org.gradle.external.javadoc.CoreJavadocOptions
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.tasks.Jar
+import java.util.concurrent.TimeUnit
+
 plugins {
     java
     `maven-publish`
@@ -6,50 +13,44 @@ plugins {
 version = "1.0.0-SNAPSHOT"
 
 java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     withJavadocJar()
     withSourcesJar()
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
     compileOnly("org.jetbrains:annotations:26.0.2-1")
 }
 
-tasks {
-    jar {
-        archiveFileName = "${rootProject.name}API-${version}.jar"
-        archiveClassifier = null
-    }
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = Charsets.UTF_8.name()
+    options.release = 21
+}
 
-    withType<JavaCompile> {
-        options.encoding = Charsets.UTF_8.name()
-        options.release = 21
-    }
+tasks.named<JavaCompile>("compileJava") {
+    options.compilerArgs.add("-parameters")
+    options.compilerArgs.add("-g")
+    sequenceOf("unchecked", "deprecation", "removal").forEach { options.compilerArgs.add("-Xlint:$it") }
+}
 
-    compileJava {
-        options.compilerArgs.add("-parameters")
-        options.compilerArgs.add("-g")
+tasks.named<Jar>("jar") {
+    archiveFileName = "${rootProject.name}API-${project.version}.jar"
+    archiveClassifier = null
+}
 
-        sequenceOf("unchecked", "deprecation", "removal").forEach { options.compilerArgs.add("-Xlint:$it") }
-    }
+tasks.named<Jar>("javadocJar") {
+    archiveFileName.set("${rootProject.name}API-${project.version}-javadoc.jar")
+}
 
-    named<Jar>("javadocJar") {
-        archiveFileName.set("${rootProject.name}API-${version}-javadoc.jar")
-    }
+tasks.named<Jar>("sourcesJar") {
+    archiveFileName.set("${rootProject.name}API-${project.version}-sources.jar")
+}
 
-    named<Jar>("sourcesJar") {
-        archiveFileName.set("${rootProject.name}API-${version}-sources.jar")
-    }
-
-    javadoc {
-        title = "TotemGuard API v${version}"
-        options.encoding = Charsets.UTF_8.name()
-        options {
-            (this as CoreJavadocOptions).addBooleanOption("Xdoclint:none", true)
-        }
+tasks.named<Javadoc>("javadoc") {
+    title = "TotemGuard API v${project.version}"
+    options.encoding = Charsets.UTF_8.name()
+    options {
+        (this as CoreJavadocOptions).addBooleanOption("Xdoclint:none", true)
     }
 }
 
@@ -58,12 +59,12 @@ publishing {
         create<MavenPublication>("api") {
             groupId = "com.deathmotion"
             artifactId = "${rootProject.name}-api".lowercase()
-            version = version as String
+            version = project.version.toString()
             from(components["java"])
 
             pom {
                 name = "${rootProject.name}API"
-                description = rootProject.description
+                description = "TotemGuard API"
                 url = "https://github.com/Bram1903/TotemGuard"
 
                 developers {
@@ -98,13 +99,6 @@ publishing {
     }
 }
 
-// So that SNAPSHOT is always the latest SNAPSHOT
-configurations.all {
+configurations.configureEach {
     resolutionStrategy.cacheDynamicVersionsFor(0, TimeUnit.SECONDS)
-}
-
-val taskNames = gradle.startParameter.taskNames
-if (taskNames.any { it.contains("build") }
-    && taskNames.any { it.contains("publish") }) {
-    throw IllegalStateException("Cannot build and publish at the same time.")
 }

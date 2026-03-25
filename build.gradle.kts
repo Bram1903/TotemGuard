@@ -1,68 +1,47 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import java.util.Locale.getDefault
+import org.gradle.api.Project
+import org.gradle.api.tasks.Delete
 
-plugins {
-    alias(libs.plugins.shadow)
-}
+group = "com.deathmotion"
 
-val fullVersion = "3.0.0"
+val baseVersion = "3.0.0"
 val snapshot = true
 
-fun getVersionMeta(includeHash: Boolean): String {
-    if (!snapshot) {
-        return ""
-    }
-
-    var commitHash = ""
-    if (includeHash && file(".git").isDirectory) {
-        val result = providers.exec {
-            commandLine("git", "rev-parse", "--short", "HEAD")
-        }.standardOutput.asText.get().trim()
-
-        commitHash = "+$result"
-    }
-
-    return "$commitHash-SNAPSHOT"
-}
-version = "$fullVersion${getVersionMeta(true)}"
-ext["versionNoHash"] = "$fullVersion${getVersionMeta(false)}"
+version = baseVersion.withSnapshotMetadata(snapshot, resolveGitHash())
 
 subprojects {
-    plugins.withId("com.github.johnrengelman.shadow") {
-        tasks.withType<ShadowJar>().configureEach {
-            archiveFileName = "${rootProject.name}-${
-                project.name.replaceFirstChar {
-                    if (it.isLowerCase()) it.titlecase(
-                        getDefault()
-                    ) else it.toString()
-                }
-            }-${rootProject.ext["versionNoHash"]}.jar"
-            archiveClassifier = null
-            destinationDirectory = rootProject.layout.buildDirectory
-            exclude("META-INF/maven/**")
-
-            // Cloud
-            relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
-            relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
-
-            // BStats
-            relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
-
-            // Lettuce
-            relocate("io.lettuce", "com.deathmotion.totemguard.common.libs.lettuce")
-            relocate("io.netty", "com.deathmotion.totemguard.common.libs.netty")
-            relocate("org.reactivestreams", "com.deathmotion.totemguard.common.libs.reactivestreams")
-            relocate("org.slf4j", "com.deathmotion.totemguard.common.libs.slf4j")
-            relocate("reactor", "com.deathmotion.totemguard.common.libs.reactor")
-            relocate("redis.clients", "com.deathmotion.totemguard.common.libs.redisclients")
-
-            minimize()
-        }
+    group = rootProject.group
+    if (version.toString() == "unspecified") {
+        version = rootProject.version
     }
 }
 
-tasks {
-    register<Delete>("clean") {
-        delete(rootProject.layout.buildDirectory)
+tasks.register<Delete>("clean") {
+    delete(layout.buildDirectory)
+}
+
+fun String.withSnapshotMetadata(snapshot: Boolean, gitHash: String?): String {
+    if (!snapshot) {
+        return this
     }
+
+    return buildString {
+        append(this@withSnapshotMetadata)
+        if (!gitHash.isNullOrBlank()) {
+            append("+")
+            append(gitHash)
+        }
+        append("-SNAPSHOT")
+    }
+}
+
+fun Project.resolveGitHash(): String? {
+    if (!file(".git").exists()) {
+        return null
+    }
+
+    return runCatching {
+        providers.exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.get().trim().ifBlank { null }
+    }.getOrNull()
 }

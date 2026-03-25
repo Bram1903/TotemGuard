@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.bukkit.placeholder;
 
-import com.deathmotion.totemguard.api.placeholder.PlaceholderContext;
-import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderContext;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
 import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.player.TGPlayer;

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
-import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import com.deathmotion.totemguard.common.player.TGPlayer;

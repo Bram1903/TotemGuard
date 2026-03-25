@@ -10,6 +10,51 @@ config_version: 1
 
 # The name of the root command for TotemGuard. (This requires a server restart to take effect)
 commands:
-  base: totemguard
+  base: totemguard3
   aliases:
-    - tg
+    - tg3
+
+# In a multiserver setup, enabling Redis is highly recommended.
+# Redis will make TotemGuard much more powerful by syncing data, alerts and more across servers.
+redis:
+  enabled: false
+  host: localhost
+  port: 6379
+
+  # Can be left empty if no auth is required.
+  username: default
+  password: yourPassword
+
+  # Alert Sync
+  messaging:
+    channel: totemguard
+    send-alerts: true
+    receive-alerts: true
+
+# Caches information like check violations, buffers, and other player data.
+# This prevents a cheater from quickly leaving and rejoining the server to clear their active violations.
+# Note: When Redis is enabled, this will be synced across servers.
+cache:
+  # Enable caching.
+  enabled: true
+
+  # How long to cache data for in seconds (0 = no caching).
+  data:
+    # Includes violations and buffers.
+    checks: 300
+    # VPN data (prevents making unessecary API calls by caching the result)
+    vpn-data: 1800
+
+# Enables the Anti-VPN Detection feature.
+anti-vpn:
+  # Enable VPN detection.
+  enabled: true
+
+  # The Anti VPN provider to use. (IPRisk, etc)
+  provider: IPRisk
+
+  # The API key to use for the VPN provider (can leave blank or default if the provider doesn't require one)'.
+  api-key:
+
+  # Whether to block VPN users from joining the server.
+  block: true

@@ -1,0 +1,5 @@
+[versions]
+shadow = "9.3.1"
+
+[libraries]
+shadow-gradle-plugin = { group = "com.gradleup.shadow", name = "com.gradleup.shadow.gradle.plugin", version.ref = "shadow" }

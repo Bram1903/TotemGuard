@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.alert.AlertRepoistoryImpl;
+import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;
@@ -29,7 +29,7 @@ import org.jspecify.annotations.NonNull;
 
 public class AlertCommand extends AbstractCommand {
 
-    private final AlertRepoistoryImpl alertManager;
+    private final AlertRepositoryImpl alertManager;
 
     public AlertCommand() {
         this.alertManager = TGPlatform.getInstance().getAlertRepository();

@@ -36,10 +36,13 @@ public class PacketInventory {
 
     @Getter
     private final CarriedItem carriedItem = new CarriedItem();
+
     @Getter
     private final Map<Integer, InventorySlot> slots;
+
     @Getter
     private final Set<InventorySlot> updatedSlots = new HashSet<>();
+
     @Getter
     @Setter
     private int selectedHotbarIndex; // 0..8
