@@ -30,43 +30,25 @@ import org.jetbrains.annotations.Nullable;
  * This event is fired before the flag is fully processed and can be
  * {@link Cancellable cancelled} by listeners to prevent further handling
  */
-public class TGUserFlagEvent extends TGUserEvent implements Cancellable {
-
-
-    private final Check check;
-    private final String debug;
-
-    private boolean cancelled;
+public interface TGUserFlagEvent extends TGUserEvent, Cancellable {
 
     /**
-     * Constructs a new flag event for the given user and check.
+     * The check that was used to flag the user.
      *
-     * @param user  the user that was flagged
-     * @param check the check responsible for the flag
-     * @param debug optional debug information
+     * @return the check responsible for the flag
      */
-    public TGUserFlagEvent(TGUser user, Check check, String debug) {
-        super(user);
-        this.check = check;
-        this.debug = debug;
-        this.cancelled = false;
-    }
+    @NotNull Check getCheck();
 
-    public @NotNull Check getCheck() {
-        return check;
-    }
-
-    public @Nullable String getDebug() {
-        return debug;
-    }
+    /**
+     * Optional debug information about the flag.
+     *
+     * @return debug information, or null if not available
+     */
+    @Nullable String getDebug();
 
     @Override
-    public boolean isCancelled() {
-        return cancelled;
-    }
+    boolean isCancelled();
 
     @Override
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
+    void setCancelled(boolean cancelled);
 }

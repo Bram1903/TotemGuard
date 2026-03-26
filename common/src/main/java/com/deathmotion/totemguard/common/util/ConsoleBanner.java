@@ -36,7 +36,7 @@ public final class ConsoleBanner {
 
         String versionString = version.snapshot()
                 ? version.major() + "." + version.minor() + "." + version.patch()
-                + "-SNAPSHOT (" + version.snapshotCommit() + ")"
+                  + "-SNAPSHOT (" + version.snapshotCommit() + ")"
                 : version.major() + "." + version.minor() + "." + version.patch();
 
         List<String> text = List.of(

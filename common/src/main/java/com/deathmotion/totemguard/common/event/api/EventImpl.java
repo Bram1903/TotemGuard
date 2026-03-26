@@ -16,12 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.event.impl;
+package com.deathmotion.totemguard.common.event.api;
 
-/**
- * Called when a TotemGuard user joins the server.
- * <p>
- * This event does not include players with a bypass.
- */
-public interface TGUserJoinEvent extends TGUserEvent {
+import com.deathmotion.totemguard.api3.event.Event;
+import lombok.Getter;
+import org.jspecify.annotations.NonNull;
+
+@Getter
+public abstract class EventImpl implements Event {
+
+    private final long timestamp;
+
+    public EventImpl() {
+        this.timestamp = System.currentTimeMillis();
+    }
+
+    /**
+     * Returns the name of this event.
+     * <p>
+     * By default, this is the simple class name of the event implementation.
+     *
+     * @return the event name
+     */
+    public @NonNull String getName() {
+        return getClass().getSimpleName();
+    }
+
 }

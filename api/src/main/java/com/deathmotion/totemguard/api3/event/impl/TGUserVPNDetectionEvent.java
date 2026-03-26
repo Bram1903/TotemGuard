@@ -28,38 +28,18 @@ import org.jetbrains.annotations.NotNull;
  * This event is fired before the VPN detection is fully processed and can be
  * {@link Cancellable cancelled} by listeners to prevent further handling.
  */
-public class TGUserVPNDetectionEvent extends TGUserEvent implements Cancellable {
-
-    private final String ip;
-    private boolean cancelled;
-
-    /**
-     * Constructs a new VPN detection event for the given user and IP address.
-     *
-     * @param user the user that triggered the VPN detection
-     * @param ip   the detected IP address
-     */
-    public TGUserVPNDetectionEvent(@NotNull TGUser user, @NotNull String ip) {
-        super(user);
-        this.ip = ip;
-    }
+public interface TGUserVPNDetectionEvent extends TGUserEvent, Cancellable {
 
     /**
      * Returns the IP address associated with this VPN detection.
      *
      * @return the detected IP address
      */
-    public @NotNull String getIp() {
-        return ip;
-    }
+    @NotNull String getIp();
 
     @Override
-    public boolean isCancelled() {
-        return cancelled;
-    }
+    boolean isCancelled();
 
     @Override
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
+    void setCancelled(boolean cancelled);
 }

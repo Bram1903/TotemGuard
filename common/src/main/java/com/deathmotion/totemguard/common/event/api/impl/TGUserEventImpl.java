@@ -16,12 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.event.impl;
+package com.deathmotion.totemguard.common.event.api.impl;
 
-/**
- * Called when a TotemGuard user joins the server.
- * <p>
- * This event does not include players with a bypass.
- */
-public interface TGUserJoinEvent extends TGUserEvent {
+import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.common.event.api.EventImpl;
+import org.jetbrains.annotations.NotNull;
+
+public abstract class TGUserEventImpl extends EventImpl {
+
+    private final TGUser user;
+
+    protected TGUserEventImpl(@NotNull TGUser user) {
+        this.user = user;
+    }
+
+    public @NotNull TGUser getUser() {
+        return user;
+    }
 }
