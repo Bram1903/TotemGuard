@@ -107,6 +107,12 @@ public final class ConfigKeys {
                     1800
             );
 
+    public static final ConfigValueKey<Integer> CACHE_LOCAL_MAX_ENTRIES =
+            ConfigValueKey.required(
+                    "cache.local.max-entries",
+                    10000
+            );
+
     public static final ConfigValueKey<Boolean> VPN_ENABLED =
             ConfigValueKey.required(
                     "anti-vpn.enabled",

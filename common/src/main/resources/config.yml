@@ -47,6 +47,10 @@ cache:
     # VPN data (prevents making unessecary API calls by caching the result)
     vpn-data: 1800
 
+  local:
+    # Maximum amount of local fallback entries kept in-memory.
+    max-entries: 10000
+
 # Enables the Anti-VPN Detection feature.
 anti-vpn:
   # Enable VPN detection.
