@@ -1,9 +1,4 @@
-import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.api.tasks.javadoc.Javadoc
-import org.gradle.external.javadoc.CoreJavadocOptions
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.tasks.Jar
-import java.util.concurrent.TimeUnit
 
 plugins {
     java

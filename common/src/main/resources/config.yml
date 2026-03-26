@@ -42,6 +42,8 @@ cache:
   data:
     # Includes violations and buffers.
     checks: 300
+    # Alerts toggle state.
+    alerts-toggle: 1800
     # VPN data (prevents making unessecary API calls by caching the result)
     vpn-data: 1800
 

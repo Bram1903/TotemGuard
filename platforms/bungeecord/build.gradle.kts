@@ -12,5 +12,7 @@ dependencies {
 
 tasks.named<ShadowJar>("shadowJar") {
     archiveFileName =
-        "${rootProject.name}-Bungee-${project.version.toString().replace(Regex("\\+[0-9a-f]+-SNAPSHOT$"), "-SNAPSHOT")}.jar"
+        "${rootProject.name}-Bungee-${
+            project.version.toString().replace(Regex("\\+[0-9a-f]+-SNAPSHOT$"), "-SNAPSHOT")
+        }.jar"
 }

@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.deathmotion.totemguard.common.cache.impl.InternalCache;
@@ -44,8 +45,11 @@ public class CacheRepositoryImpl {
 
     @Getter
     private boolean cacheEnabled;
+
     @Getter
     private int checkDataTTL;
+    @Getter
+    private int alertsToggleDataTTL;
     @Getter
     private int vpnDataTTL;
 
@@ -74,6 +78,16 @@ public class CacheRepositoryImpl {
         return getCache().getVPNData(ip);
     }
 
+    public void saveCheckToggleData(UUID uuid, AlertsToggleData alertsToggleData) {
+        if (!cacheEnabled || alertsToggleDataTTL <= 0) return;
+        getCache().saveAlertsToggleData(uuid, alertsToggleData);
+    }
+
+    public @Nullable AlertsToggleData getAlertsToggleData(UUID uuid) {
+        if (!cacheEnabled || alertsToggleDataTTL <= 0) return null;
+        return getCache().getAlertsToggleData(uuid);
+    }
+
     public void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots) {
         if (!cacheEnabled || checkDataTTL <= 0) return;
         getCache().saveCheckSnapshot(uuid, checkSnapshots);
@@ -91,7 +105,9 @@ public class CacheRepositoryImpl {
     private void loadConfig() {
         Config config = configRepository.config(ConfigFile.CONFIG);
         this.cacheEnabled = config.getBoolean(ConfigKeys.CACHE_ENABLED);
+
         this.checkDataTTL = config.getInt(ConfigKeys.CACHE_DATA_CHECKS);
+        this.alertsToggleDataTTL = config.getInt(ConfigKeys.CACHE_ALERTS_TOGGLE);
         this.vpnDataTTL = config.getInt(ConfigKeys.CACHE_DATA_VPN);
     }
 }

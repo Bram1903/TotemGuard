@@ -66,13 +66,13 @@ public abstract class TGPlatform {
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
     private RedisRepositoryImpl redisRepository;
+    private CacheRepositoryImpl cacheRepository;
     private MessageService messageService;
     private EventRepositoryImpl eventRepository;
     private AlertRepositoryImpl alertRepository;
     private PlayerRepositoryImpl playerRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
     private CommandManagerImpl commandManager;
-    private CacheRepositoryImpl cacheRepository;
     private AntiVPNRepositoryImpl antiVPNRepository;
 
     private TGPlatformAPI api;
@@ -101,13 +101,13 @@ public abstract class TGPlatform {
         reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
         redisRepository = new RedisRepositoryImpl();
+        cacheRepository = new CacheRepositoryImpl();
         messageService = new MessageService();
         eventRepository = new EventRepositoryImpl();
         alertRepository = new AlertRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
         placeholderRepository = new PlaceholderRepositoryImpl();
         commandManager = new CommandManagerImpl();
-        cacheRepository = new CacheRepositoryImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());

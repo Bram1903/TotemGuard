@@ -20,11 +20,13 @@ package com.deathmotion.totemguard.common.cache.impl;
 
 import com.deathmotion.totemguard.common.cache.AbstractCache;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
@@ -41,22 +43,30 @@ public final class InternalCache implements AbstractCache {
 
     private Cache<UUID, List<CheckSnapshot>> checkCache;
     private Cache<String, VPNData> vpnCache;
+    private Cache<UUID, AlertsToggleData> alertsToggleCache;
 
     public InternalCache(CacheRepositoryImpl cacheRepository) {
         this.cacheRepository = cacheRepository;
         this.checkCache = buildCheckCache();
+        this.alertsToggleCache = buildAlertsToggleCache();
         this.vpnCache = buildVpnCache();
     }
 
     public void reload() {
         Map<UUID, List<CheckSnapshot>> checkEntries = checkCache.asMap();
+        Map<UUID, AlertsToggleData> alertsToggleCache = this.alertsToggleCache.asMap();
         Map<String, VPNData> vpnEntries = vpnCache.asMap();
 
         Cache<UUID, List<CheckSnapshot>> newCheckCache = buildCheckCache();
+        Cache<UUID, AlertsToggleData> newAlertsToggleCache = buildAlertsToggleCache();
         Cache<String, VPNData> newVpnCache = buildVpnCache();
 
         if (cacheRepository.isCacheEnabled() && cacheRepository.getCheckDataTTL() > 0) {
             newCheckCache.putAll(checkEntries);
+        }
+
+        if (cacheRepository.isCacheEnabled() && cacheRepository.getAlertsToggleDataTTL() > 0) {
+            newAlertsToggleCache.putAll(alertsToggleCache);
         }
 
         if (cacheRepository.isCacheEnabled() && cacheRepository.getVpnDataTTL() > 0) {
@@ -64,9 +74,11 @@ public final class InternalCache implements AbstractCache {
         }
 
         this.checkCache.invalidateAll();
+        this.alertsToggleCache.invalidateAll();
         this.vpnCache.invalidateAll();
 
         this.checkCache = newCheckCache;
+        this.alertsToggleCache = newAlertsToggleCache;
         this.vpnCache = newVpnCache;
     }
 
@@ -94,11 +106,33 @@ public final class InternalCache implements AbstractCache {
         return checkCache.getIfPresent(uuid);
     }
 
+    @Override
+    public void saveAlertsToggleData(@NotNull UUID uuid, @NotNull AlertsToggleData alertsToggleData) {
+        if (!cacheRepository.isCacheEnabled() || cacheRepository.getAlertsToggleDataTTL() <= 0) return;
+        alertsToggleCache.put(uuid, alertsToggleData);
+    }
+
+    @Override
+    public @Nullable AlertsToggleData getAlertsToggleData(@NotNull UUID uuid) {
+        if (!cacheRepository.isCacheEnabled() || cacheRepository.getAlertsToggleDataTTL() <= 0) return null;
+        return alertsToggleCache.getIfPresent(uuid);
+    }
+
     private Cache<UUID, List<CheckSnapshot>> buildCheckCache() {
         CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().maximumSize(MAX_CACHE_SIZE);
 
         if (cacheRepository.isCacheEnabled() && cacheRepository.getCheckDataTTL() > 0) {
             builder.expireAfterAccess(cacheRepository.getCheckDataTTL(), TimeUnit.SECONDS);
+        }
+
+        return builder.build();
+    }
+
+    private Cache<UUID, AlertsToggleData> buildAlertsToggleCache() {
+        CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().maximumSize(MAX_CACHE_SIZE);
+
+        if (cacheRepository.isCacheEnabled() && cacheRepository.getAlertsToggleDataTTL() > 0) {
+            builder.expireAfterAccess(cacheRepository.getAlertsToggleDataTTL(), TimeUnit.SECONDS);
         }
 
         return builder.build();

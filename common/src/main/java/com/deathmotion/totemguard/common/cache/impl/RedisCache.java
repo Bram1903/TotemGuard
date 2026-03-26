@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.cache.impl;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.AbstractCache;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
@@ -28,6 +29,7 @@ import com.deathmotion.totemguard.common.redis.options.RedisKeys;
 import io.lettuce.core.GetExArgs;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
@@ -110,6 +112,38 @@ public final class RedisCache implements AbstractCache {
             return CheckSnapshot.decodeList(raw);
         } catch (Exception exception) {
             logger.log(Level.WARNING, "Failed to decode check snapshots for uuid " + uuid, exception);
+            return null;
+        }
+    }
+
+    @Override
+    public void saveAlertsToggleData(@NotNull UUID uuid, @NotNull AlertsToggleData alertsToggleData) {
+        try {
+            set(
+                    RedisKeys.alertsToggleData(uuid),
+                    cacheRepository.getAlertsToggleDataTTL(),
+                    alertsToggleData.encode(),
+                    "Failed to save alerts toggle data to Redis for uuid " + uuid
+            );
+        } catch (Exception exception) {
+            logger.log(Level.WARNING, "Failed to encode alerts toggle data for uuid " + uuid, exception);
+        }
+    }
+
+    @Override
+    public @Nullable AlertsToggleData getAlertsToggleData(@NotNull UUID uuid) {
+        byte[] raw = get(
+                RedisKeys.alertsToggleData(uuid),
+                cacheRepository.getAlertsToggleDataTTL(),
+                "Failed to get alerts toggle data from Redis for uuid " + uuid
+        );
+
+        if (raw == null) return null;
+
+        try {
+            return new AlertsToggleData(false).decode(raw);
+        } catch (Exception exception) {
+            logger.log(Level.WARNING, "Failed to decode alerts toggle data for uuid " + uuid, exception);
             return null;
         }
     }

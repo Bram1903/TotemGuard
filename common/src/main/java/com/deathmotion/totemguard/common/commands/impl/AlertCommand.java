@@ -20,6 +20,8 @@ package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;
@@ -29,10 +31,14 @@ import org.jspecify.annotations.NonNull;
 
 public class AlertCommand extends AbstractCommand {
 
-    private final AlertRepositoryImpl alertManager;
+    private final TGPlatform platform;
+    private final AlertRepositoryImpl alertRepository;
+    private final CacheRepositoryImpl cacheManager;
 
     public AlertCommand() {
-        this.alertManager = TGPlatform.getInstance().getAlertRepository();
+        this.platform = TGPlatform.getInstance();
+        this.alertRepository = platform.getAlertRepository();
+        this.cacheManager = platform.getCacheRepository();
     }
 
     @Override
@@ -51,6 +57,10 @@ public class AlertCommand extends AbstractCommand {
             return;
         }
 
-        alertManager.toggleAlerts(sender.getUniqueId());
+        boolean enabled = alertRepository.toggleAlerts(sender.getUniqueId());
+
+        platform.getScheduler().runAsyncTask(() -> {
+            cacheManager.saveCheckToggleData(sender.getUniqueId(), new AlertsToggleData(enabled));
+        });
     }
 }

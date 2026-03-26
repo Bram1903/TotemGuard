@@ -1,8 +1,3 @@
-import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.api.tasks.testing.Test
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.language.jvm.tasks.ProcessResources
-
 plugins {
     java
 }

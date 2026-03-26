@@ -1,5 +1,3 @@
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
 plugins {
     id("totemguard.java-conventions")
     id("totemguard.shadow-conventions")

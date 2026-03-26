@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.cache;
 
+import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.cache.data.VPNData;
 import org.jetbrains.annotations.Blocking;
@@ -30,16 +31,23 @@ import java.util.UUID;
 public interface AbstractCache {
 
     @Blocking
-    void saveVPNData(@NotNull String ip, @NotNull VPNData vpnData);
-
-    @Blocking
-    @Nullable
-    VPNData getVPNData(@NotNull String ip);
-
-    @Blocking
     void saveCheckSnapshot(@NotNull UUID uuid, @NotNull List<CheckSnapshot> checkSnapshots);
 
     @Blocking
     @Nullable
     List<CheckSnapshot> getCheckSnapshot(@NotNull UUID uuid);
+
+    @Blocking
+    void saveAlertsToggleData(@NotNull UUID uuid, @NotNull AlertsToggleData alertsToggleData);
+
+    @Blocking
+    @Nullable
+    AlertsToggleData getAlertsToggleData(@NotNull UUID uuid);
+
+    @Blocking
+    void saveVPNData(@NotNull String ip, @NotNull VPNData vpnData);
+
+    @Blocking
+    @Nullable
+    VPNData getVPNData(@NotNull String ip);
 }

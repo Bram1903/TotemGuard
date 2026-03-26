@@ -1,6 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import java.util.Locale
 import org.gradle.jvm.tasks.Jar
+import java.util.*
 
 plugins {
     id("com.gradleup.shadow")

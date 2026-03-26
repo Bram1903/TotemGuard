@@ -21,6 +21,8 @@ package com.deathmotion.totemguard.common.player;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
@@ -38,10 +40,16 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass";
 
-    private final TGPlatform platform = TGPlatform.getInstance();
+    private final TGPlatform platform;
+    private final CacheRepositoryImpl cacheRepository;
 
     private final ConcurrentMap<User, TGPlayer> players = new ConcurrentHashMap<>();
     private final Collection<UUID> exemptUsers = ConcurrentHashMap.newKeySet();
+
+    public PlayerRepositoryImpl() {
+        platform = TGPlatform.getInstance();
+        cacheRepository = platform.getCacheRepository();
+    }
 
     public void onLoginPacket(final @NotNull User user) {
         if (!shouldCheck(user, null)) return;
@@ -67,10 +75,22 @@ public final class PlayerRepositoryImpl implements UserRepository {
         }
     }
 
-    // TODO: This is temporarily (Will use a proper database implementation in the future
     private void enableAlerts(UUID uuid, PlatformUser platformUser) {
-        if (platformUser.hasPermission("TotemGuardV3.Alerts") && platformUser.hasPermission("TotemGuardV3.Alerts.EnableOnJoin")) {
-            platform.getAlertRepository().toggleAlerts(uuid);
+        if (platformUser.hasPermission("TotemGuardV3.Alerts")) {
+            platform.getScheduler().runAsyncTask(() -> {
+                AlertsToggleData alertsToggleData = cacheRepository.getAlertsToggleData(uuid);
+
+                if (alertsToggleData == null) {
+                    if (platformUser.hasPermission("TotemGuardV3.Alerts.EnableOnJoin")) {
+                        cacheRepository.saveCheckToggleData(uuid, new AlertsToggleData(true));
+                        platform.getAlertRepository().toggleAlerts(uuid);
+                    }
+                } else {
+                    if (alertsToggleData.alertsEnabled()) {
+                        platform.getAlertRepository().toggleAlerts(uuid);
+                    }
+                }
+            });
         }
     }
 
