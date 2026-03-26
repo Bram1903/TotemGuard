@@ -62,7 +62,6 @@ public final class ModSignatures {
         if (input == null || input.isEmpty()) return List.of();
         return input.stream()
                 .filter(Objects::nonNull)
-                .map(s -> s.toLowerCase(Locale.ROOT))
                 .filter(s -> !s.isBlank())
                 .toList();
     }

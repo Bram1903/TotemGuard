@@ -55,9 +55,6 @@ public final class Mod extends CheckImpl implements PacketCheck {
     private static final int TRANSLATION_BATCH_SIZE = 50;
     private static final long TRANSLATION_BATCH_DELAY_MS = 150L;
 
-    private static final char START_MARKER = '\uE000';
-    private static final char END_MARKER = '\uE001';
-
     private final Set<String> flaggedMods = ConcurrentHashMap.newKeySet();
     private final Set<String> pendingDetections = ConcurrentHashMap.newKeySet();
 
@@ -232,9 +229,7 @@ public final class Mod extends CheckImpl implements PacketCheck {
 
         Component name = Component.text(probeId)
                 .append(Component.text("|"))
-                .append(Component.text(String.valueOf(START_MARKER)))
-                .append(Component.translatable(translationKey))
-                .append(Component.text(String.valueOf(END_MARKER)));
+                .append(Component.translatable(translationKey));
 
         player.getUser().sendPacket(new WrapperPlayServerSetSlot(
                 windowId,
@@ -264,7 +259,7 @@ public final class Mod extends CheckImpl implements PacketCheck {
         }
 
         final String probeId = itemName.substring(0, sep);
-        final String rendered = itemName.substring(sep + 1);
+        final String payload = itemName.substring(sep + 1);
 
         final String expectedKey = translationKeyByProbeId.get(probeId);
         final String modId = modByProbeId.get(probeId);
@@ -274,18 +269,7 @@ public final class Mod extends CheckImpl implements PacketCheck {
 
         event.setCancelled(true);
 
-        if (rendered.isEmpty() || rendered.charAt(0) != START_MARKER) {
-            return;
-        }
-
-        final int endIdx = rendered.lastIndexOf(END_MARKER);
-        if (endIdx < 0) {
-            return;
-        }
-
-        final String payload = rendered.substring(1, endIdx);
-
-        if (!payload.equals(expectedKey)) {
+        if (!expectedKey.startsWith(payload)) {
             failOnce(modId);
         }
     }
