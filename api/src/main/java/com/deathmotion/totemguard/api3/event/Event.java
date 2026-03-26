@@ -18,16 +18,12 @@
 
 package com.deathmotion.totemguard.api3.event;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Base type for all events dispatched through the event system.
  */
-public abstract class Event {
-
-    private final long timestamp;
-
-    public Event() {
-        this.timestamp = System.currentTimeMillis();
-    }
+public interface Event {
 
     /**
      * Returns the name of this event.
@@ -36,9 +32,7 @@ public abstract class Event {
      *
      * @return the event name
      */
-    public String getName() {
-        return getClass().getSimpleName();
-    }
+    @NotNull String getName();
 
     /**
      * Returns the time at which this event was created.
@@ -48,7 +42,5 @@ public abstract class Event {
      *
      * @return the event creation timestamp in milliseconds since the Unix epoch
      */
-    public long getTimestamp() {
-        return timestamp;
-    }
+    long getTimestamp();
 }

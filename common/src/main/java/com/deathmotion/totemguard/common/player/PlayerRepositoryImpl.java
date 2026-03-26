@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api3.event.impl.TGUserQuitEvent;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
@@ -83,7 +83,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
         final TGPlayer player = players.remove(user);
         if (player == null) return;
-        platform.getEventRepository().post(new TGUserQuitEvent(player));
+        platform.getEventRepository().post(new TGUserQuitEventImpl(player));
         player.onLogout();
     }
 

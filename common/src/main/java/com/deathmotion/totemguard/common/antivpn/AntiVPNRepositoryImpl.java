@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
+import com.deathmotion.totemguard.common.event.api.impl.TGUserVPNDetectionEventImpl;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.Getter;
@@ -110,7 +111,7 @@ public class AntiVPNRepositoryImpl {
             return;
         }
 
-        TGUserVPNDetectionEvent event = (TGUserVPNDetectionEvent) eventRepository.post(new TGUserVPNDetectionEvent(player, ip));
+        TGUserVPNDetectionEvent event = (TGUserVPNDetectionEvent) eventRepository.post(new TGUserVPNDetectionEventImpl(player, ip));
         if (event.isCancelled()) {
             return;
         }

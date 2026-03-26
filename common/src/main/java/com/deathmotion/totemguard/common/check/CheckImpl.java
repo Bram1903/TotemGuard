@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
+import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import lombok.Getter;
@@ -103,7 +104,7 @@ public class CheckImpl implements Check {
     }
 
     protected boolean shouldFail(@Nullable String debug) {
-        TGUserFlagEvent event = new TGUserFlagEvent(player, this, debug);
+        TGUserFlagEvent event = new TGUserFlagEventImpl(player, this, debug);
         event = (TGUserFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
 
         return !event.isCancelled();

@@ -28,19 +28,10 @@ import org.jetbrains.annotations.NotNull;
  * This is a base class for all TotemGuard events that are associated
  * with a specific user.
  */
-public abstract class TGUserEvent extends Event {
-
-
-    private final TGUser user;
-
-    protected TGUserEvent(@NotNull TGUser user) {
-        this.user = user;
-    }
+public interface TGUserEvent extends Event {
 
     /**
      * The TotemGuard user involved in this event.
      */
-    public @NotNull TGUser getUser() {
-        return user;
-    }
+    @NotNull TGUser getUser();
 }

@@ -18,21 +18,10 @@
 
 package com.deathmotion.totemguard.api3.event.impl;
 
-import com.deathmotion.totemguard.api3.user.TGUser;
-
 /**
  * Called when a TotemGuard user quits the server.
  * <p>
  * This event does not include players with a bypass.
  */
-public class TGUserQuitEvent extends TGUserEvent {
-
-    /**
-     * Constructs a new {@code TGUserQuitEvent}.
-     *
-     * @param user the {@link TGUser} who quit the server
-     */
-    public TGUserQuitEvent(TGUser user) {
-        super(user);
-    }
+public interface TGUserQuitEvent extends TGUserEvent {
 }
