@@ -47,8 +47,6 @@ public final class Mod extends CheckImpl implements PacketCheck {
 
     public Mod(TGPlayer player) {
         super(player);
-
-        ModSignatures.load(player.getPlatform().getConfigRepository().config(ConfigFile.MODS));
         reload();
     }
 
