@@ -1,9 +1,3 @@
-import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.register
-import org.gradle.language.base.plugins.LifecycleBasePlugin
 import version.TGVersionTask
 
 pluginManager.withPlugin("java") {

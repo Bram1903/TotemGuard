@@ -45,6 +45,10 @@ public final class RedisKeys {
         return bytes(PREFIX + ":checks:" + uuid);
     }
 
+    public static byte[] alertsToggleData(UUID uuid) {
+        return bytes(PREFIX + ":alertsToggleData:" + uuid);
+    }
+
     private static byte[] bytes(String value) {
         return value.getBytes(StandardCharsets.UTF_8);
     }
