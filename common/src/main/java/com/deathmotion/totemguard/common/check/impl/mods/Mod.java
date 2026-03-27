@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.common.check.impl.mods;
 
 import com.deathmotion.totemguard.api3.check.CheckType;
-import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -33,128 +32,108 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 @CheckData(description = "Mod detection", type = CheckType.MOD)
 public final class Mod extends CheckImpl implements PacketCheck {
 
     private static final String REGISTER_CHANNEL = "minecraft:register";
 
-    private final Set<String> flaggedMods = ConcurrentHashMap.newKeySet();
+    private final Set<String> detectedMods = ConcurrentHashMap.newKeySet();
     private final Set<String> pendingDetections = ConcurrentHashMap.newKeySet();
 
-    private final Map<String, Map<String, String>> translationIdsByMod = new HashMap<>();
+    private volatile Map<String, ModDefinition> definitionsById = Map.of();
 
     public Mod(TGPlayer player) {
         super(player);
         reload();
     }
 
-    private static String normalize(String value) {
-        return value == null ? null : value.toLowerCase(Locale.ROOT);
-    }
-
-    private static String nextId() {
-        String s = Long.toUnsignedString(ThreadLocalRandom.current().nextLong(), 36);
-        return (s.length() <= 8) ? s : s.substring(s.length() - 8);
-    }
-
     @Override
     public void reload() {
-        translationIdsByMod.clear();
+        super.reload();
 
-        for (Map.Entry<String, ModSignature> entry : ModSignatures.get().entrySet()) {
-            String modId = entry.getKey();
-            ModSignature sig = entry.getValue();
-
-            if (sig.translations().isEmpty()) {
-                continue;
-            }
-
-            Map<String, String> ids = new HashMap<>();
-            for (String key : sig.translations()) {
-                ids.put(nextId(), key);
-            }
-
-            translationIdsByMod.put(modId, ids);
-        }
-    }
-
-    @SuppressWarnings("unused")
-    public Map<String, Map<String, String>> translationIdsByMod() {
-        return Collections.unmodifiableMap(translationIdsByMod);
+        definitionsById = ModRegistry.getDefinitions();
+        detectedMods.removeIf(modId -> !definitionsById.containsKey(modId));
+        pendingDetections.removeIf(modId -> !definitionsById.containsKey(modId));
     }
 
     public void handle() {
-        flushDetections();
+        flushPendingDetections();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        PacketTypeCommon type = event.getPacketType();
+        final PacketTypeCommon packetType = event.getPacketType();
 
-        if (type == PacketType.Play.Client.PLUGIN_MESSAGE) {
-            WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
+        if (packetType == PacketType.Play.Client.PLUGIN_MESSAGE) {
+            final WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
             handlePluginMessage(packet.getChannelName(), packet.getData());
-        } else if (type == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
-            WrapperConfigClientPluginMessage packet = new WrapperConfigClientPluginMessage(event);
-            handlePluginMessage(packet.getChannelName(), packet.getData());
-        }
-    }
-
-    private void handlePluginMessage(String channel, byte[] data) {
-        if (channel == null) return;
-
-        String normalizedChannel = normalize(channel);
-
-        if (REGISTER_CHANNEL.equals(normalizedChannel)) {
-            String payload = new String(data, StandardCharsets.UTF_8);
-            for (String entry : payload.split("\0")) {
-                detectFromValue(normalize(entry));
-            }
-        } else {
-            detectFromValue(normalizedChannel);
-        }
-
-        flushDetections();
-    }
-
-    private void detectFromValue(String value) {
-        if (value == null || value.isBlank()) {
             return;
         }
 
-        for (Map.Entry<String, ModSignature> modEntry : ModSignatures.get().entrySet()) {
-            String modName = modEntry.getKey();
+        if (packetType == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
+            final WrapperConfigClientPluginMessage packet = new WrapperConfigClientPluginMessage(event);
+            handlePluginMessage(packet.getChannelName(), packet.getData());
+        }
+    }
 
-            if (flaggedMods.contains(modName)) {
+    private void handlePluginMessage(String channelName, byte[] data) {
+        final String normalizedChannelName = normalize(channelName);
+        if (normalizedChannelName == null) {
+            return;
+        }
+
+        if (REGISTER_CHANNEL.equals(normalizedChannelName)) {
+            final String payload = new String(data, StandardCharsets.UTF_8);
+            for (String registeredChannel : payload.split("\0")) {
+                queueDetections(registeredChannel);
+            }
+        } else {
+            queueDetections(normalizedChannelName);
+        }
+
+        flushPendingDetections();
+    }
+
+    private void queueDetections(String value) {
+        final String normalizedValue = normalize(value);
+        if (normalizedValue == null) {
+            return;
+        }
+
+        for (ModDefinition definition : definitionsById.values()) {
+            if (detectedMods.contains(definition.id()) || !definition.hasPayloads()) {
                 continue;
             }
 
-            for (String keyword : modEntry.getValue().payloads()) {
-                if (value.contains(keyword)) {
-                    pendingDetections.add(modName);
-                    break;
-                }
+            if (definition.matchesPayload(normalizedValue)) {
+                pendingDetections.add(definition.id());
             }
         }
     }
 
-    private void flushDetections() {
-        if (!player.isHasLoggedIn()) {
+    private void flushPendingDetections() {
+        if (!player.isHasLoggedIn() || pendingDetections.isEmpty()) {
             return;
         }
 
-        if (pendingDetections.isEmpty()) {
-            return;
-        }
+        for (String modId : new ArrayList<>(pendingDetections)) {
+            if (!pendingDetections.remove(modId)) {
+                continue;
+            }
 
-        for (String mod : pendingDetections) {
-            if (flaggedMods.add(mod)) {
-                fail(mod);
+            if (detectedMods.add(modId)) {
+                fail(modId);
             }
         }
+    }
 
-        pendingDetections.clear();
+    private static String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        final String normalized = value.trim().toLowerCase(Locale.ROOT);
+        return normalized.isBlank() ? null : normalized;
     }
 }

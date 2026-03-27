@@ -10,9 +10,11 @@ config_version: 1
 
 mods:
   AutoTotem:
+    severity: BAN
     payloads:
       - autototem
 
   Tweakeroo:
+    severity: KICK
     payloads:
       - servux:tweaks
