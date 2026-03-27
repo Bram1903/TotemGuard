@@ -18,12 +18,24 @@
 
 package com.deathmotion.totemguard.common.check.impl.mods;
 
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.util.Locale;
 
-public record ModSignature(
-        @NotNull List<String> payloads,
-        @NotNull List<String> translations
-) {
+public enum ModSeverity {
+    LOG,
+    KICK,
+    BAN;
+
+    public static @Nullable ModSeverity fromConfigValue(@Nullable String value) {
+        if (value == null || value.isBlank()) {
+            return KICK;
+        }
+
+        try {
+            return valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
 }
