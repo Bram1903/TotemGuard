@@ -26,7 +26,8 @@ import java.util.Objects;
 public record ModDefinition(
         @NotNull String id,
         @NotNull ModSeverity severity,
-        @NotNull List<String> payloads
+        @NotNull List<String> payloads,
+        @NotNull List<String> translations
 ) {
 
     public ModDefinition {
@@ -37,10 +38,15 @@ public record ModDefinition(
 
         severity = Objects.requireNonNull(severity, "severity");
         payloads = List.copyOf(Objects.requireNonNull(payloads, "payloads"));
+        translations = List.copyOf(Objects.requireNonNull(translations, "translations"));
     }
 
     public boolean hasPayloads() {
         return !payloads.isEmpty();
+    }
+
+    public boolean hasTranslations() {
+        return !translations.isEmpty();
     }
 
     public boolean matchesPayload(String value) {

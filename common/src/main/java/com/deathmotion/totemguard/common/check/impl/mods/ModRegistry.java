@@ -28,6 +28,7 @@ public final class ModRegistry {
 
     private static final String MODS_ROOT_PATH = "mods";
     private static final String PAYLOADS_PATH = "payloads";
+    private static final String TRANSLATIONS_PATH = "translations";
     private static final String SEVERITY_PATH = "severity";
 
     private static volatile Map<String, ModDefinition> DEFINITIONS = Map.of();
@@ -70,9 +71,10 @@ public final class ModRegistry {
 
     private static ModDefinition parseDefinition(String modId, ConfigSection modSection) {
         final List<String> payloads = normalizeValues(modSection.getStringList(PAYLOADS_PATH), true);
+        final List<String> translations = normalizeValues(modSection.getStringList(TRANSLATIONS_PATH), false);
 
-        if (payloads.isEmpty()) {
-            warn("Ignoring mod '" + modId + "' because it has no payloads.");
+        if (payloads.isEmpty() && translations.isEmpty()) {
+            warn("Ignoring mod '" + modId + "' because it has no payloads or translations.");
             return null;
         }
 
@@ -86,7 +88,8 @@ public final class ModRegistry {
         return new ModDefinition(
                 modId,
                 severity == null ? ModSeverity.KICK : severity,
-                payloads
+                payloads,
+                translations
         );
     }
 
