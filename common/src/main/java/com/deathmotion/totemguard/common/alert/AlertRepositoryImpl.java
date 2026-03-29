@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
@@ -39,8 +40,9 @@ import java.util.concurrent.TimeUnit;
 
 public class AlertRepositoryImpl implements AlertRepository {
 
-    private final TGPlatform platform = TGPlatform.getInstance();
-    private final MessageService messageService = platform.getMessageService();
+    private final TGPlatform platform;
+    private final MessageService messageService;
+    private final PunishmentRepositoryImpl punishmentRepository;
 
     @Getter
     private final ConcurrentHashMap<UUID, PlatformUser> enabledAlerts = new ConcurrentHashMap<>();
@@ -50,6 +52,9 @@ public class AlertRepositoryImpl implements AlertRepository {
     private final Executor asyncExecutor = command -> TGPlatform.getInstance().getScheduler().runAsyncTask(command);
 
     public AlertRepositoryImpl() {
+        this.platform = TGPlatform.getInstance();
+        this.messageService = platform.getMessageService();
+        this.punishmentRepository = platform.getPunishmentRepository();
     }
 
     @Override
@@ -83,11 +88,15 @@ public class AlertRepositoryImpl implements AlertRepository {
     }
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
-        // TODO: Call punishment handler
-        // TODO: Call Discord webhook handler
-        // TODO: Call database handler
-
         bufferChatAlert(check, violations, debug);
+
+        platform.getScheduler().runAsyncTask(() -> {
+            punishmentRepository.punish(check, violations, debug);
+
+            // TODO: Call punishment handler
+            // TODO: Call Discord webhook handler
+            // TODO: Call database handler
+        });
     }
 
     private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug) {

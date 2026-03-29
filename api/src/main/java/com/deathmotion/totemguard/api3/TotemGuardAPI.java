@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.alert.AlertRepository;
 import com.deathmotion.totemguard.api3.config.ConfigRepository;
 import com.deathmotion.totemguard.api3.event.EventRepository;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
+import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
 import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.api3.versioning.TGVersion;
@@ -66,6 +67,13 @@ public interface TotemGuardAPI {
      * @return the placeholder repository, never {@code null}
      */
     @NotNull PlaceholderRepository getPlaceholderRepository();
+
+    /**
+     * Returns the repository for punishment management.
+     *
+     * @return the punishment repository, never {@code null}
+     */
+    @NotNull PunishmentRepository getPunishmentRepository();
 
     /**
      * Returns the Redis repository.

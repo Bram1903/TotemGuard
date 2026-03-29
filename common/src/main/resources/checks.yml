@@ -7,3 +7,86 @@
 
 # The version of the checks file. DO NOT TOUCH!!!
 config_version: 1
+
+# This command placeholder can be used by using %default_punishment% as a punishment command.
+default-punishment: "ban %tg_player% Unfair Advantage"
+
+AutoTotemA:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+AutoTotemB:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryA:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryB:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryC:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolB:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolC:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolD:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolE:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"

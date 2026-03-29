@@ -16,27 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis.broker.packets;
+package com.deathmotion.totemguard.common.event.api.impl;
 
-import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncAlertMessagePacket;
+import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.event.impl.TGUserFlagEvent;
+import com.deathmotion.totemguard.api3.user.TGUser;
+import lombok.Getter;
+import lombok.Setter;
 
-public enum Packets {
+@Getter
+public final class TGUserPunishEventImpl extends TGUserEventImpl implements TGUserFlagEvent {
 
-    SYNC_ALERT_MESSAGE(new SyncAlertMessagePacket(1));
+    private final Check check;
+    private final String debug;
 
-    private final Packet<?> packet;
+    @Setter
+    private boolean cancelled;
 
-    Packets(Packet<?> packet) {
-        this.packet = packet;
-    }
-
-    public int getId() {
-        return packet.getId();
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> Packet<T> packet() {
-        return (Packet<T>) packet;
+    public TGUserPunishEventImpl(TGUser user, Check check, String debug) {
+        super(user);
+        this.check = check;
+        this.debug = debug;
+        this.cancelled = false;
     }
 }
-

@@ -31,26 +31,6 @@ redis:
     send-alerts: true
     receive-alerts: true
 
-# Caches information like check violations, buffers, and other player data.
-# This prevents a cheater from quickly leaving and rejoining the server to clear their active violations.
-# Note: When Redis is enabled, this will be synced across servers.
-cache:
-  # Enable caching.
-  enabled: true
-
-  # How long to cache data for in seconds (0 = no caching).
-  data:
-    # Includes violations and buffers.
-    checks: 300
-    # Alerts toggle state.
-    alerts-toggle: 1800
-    # VPN data (prevents making unessecary API calls by caching the result)
-    vpn-data: 1800
-
-  local:
-    # Maximum amount of local fallback entries kept in-memory.
-    max-entries: 10000
-
 # Enables the Anti-VPN Detection feature.
 anti-vpn:
   # Enable VPN detection.
@@ -64,3 +44,25 @@ anti-vpn:
 
   # Whether to block VPN users from joining the server.
   block: true
+
+# Caches information like check violations, buffers, and other player data.
+# This prevents a cheater from quickly leaving and rejoining the server to clear their active violations.
+# Note: When Redis is enabled, this will be synced across servers.
+cache:
+  # Enable caching.
+  enabled: true
+
+  # How long to cache data for in seconds (0 = no caching).
+  data:
+    # Includes violations and buffers.
+    checks: 300
+    # This stores players that are about to be punished and prevents multiple instances from ban/kicking the same player.
+    punish-queue: 60
+    # Alerts toggle state.
+    alerts-toggle: 1800
+    # VPN data (prevents making unessecary API calls by caching the result)
+    vpn-data: 1800
+
+  local:
+    # Maximum amount of local fallback entries kept in-memory.
+    max-entries: 10000

@@ -96,6 +96,19 @@ public final class CacheStore<K, V> {
         return decode(key, local);
     }
 
+    public void remove(K key) {
+        localCache.invalidate(key);
+
+        RedisCommands<byte[], byte[]> redis = redisSync();
+        if (redis == null) return;
+
+        try {
+            redis.del(redisKeyFactory.apply(key));
+        } catch (Exception exception) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING, "Failed to remove " + name + " for key " + key, exception);
+        }
+    }
+
     public void reloadLocalCache() {
         Cache<K, byte[]> oldCache = this.localCache;
         Map<K, byte[]> entries = oldCache.asMap();

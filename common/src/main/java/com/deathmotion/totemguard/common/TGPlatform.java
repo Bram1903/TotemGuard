@@ -36,6 +36,7 @@ import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
@@ -65,13 +66,14 @@ public abstract class TGPlatform {
 
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
+    private PlaceholderRepositoryImpl placeholderRepository;
     private RedisRepositoryImpl redisRepository;
     private CacheRepositoryImpl cacheRepository;
     private MessageService messageService;
     private EventRepositoryImpl eventRepository;
+    private PunishmentRepositoryImpl punishmentRepository;
     private AlertRepositoryImpl alertRepository;
     private PlayerRepositoryImpl playerRepository;
-    private PlaceholderRepositoryImpl placeholderRepository;
     private CommandManagerImpl commandManager;
     private AntiVPNRepositoryImpl antiVPNRepository;
 
@@ -100,13 +102,14 @@ public abstract class TGPlatform {
 
         reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
+        placeholderRepository = new PlaceholderRepositoryImpl();
         redisRepository = new RedisRepositoryImpl();
         cacheRepository = new CacheRepositoryImpl();
         messageService = new MessageService();
         eventRepository = new EventRepositoryImpl();
+        punishmentRepository = new PunishmentRepositoryImpl();
         alertRepository = new AlertRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
-        placeholderRepository = new PlaceholderRepositoryImpl();
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
 
@@ -131,6 +134,8 @@ public abstract class TGPlatform {
     }
 
     public abstract Scheduler getScheduler();
+
+    public abstract void dispatchCommand(String command);
 
     public abstract CommandManager<Sender> getCommandManager();
 

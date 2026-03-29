@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
+import com.deathmotion.totemguard.common.cache.data.PunishQueueData;
 import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.cache.RedisKeys;
@@ -38,10 +39,12 @@ public final class CacheRepositoryImpl {
 
     private final ConfigRepositoryImpl configRepository;
     private final CacheStore<UUID, List<CheckSnapshot>> checkSnapshotStore;
+    private final CacheStore<UUID, PunishQueueData> punishQueueStore;
     private final CacheStore<UUID, AlertsToggleData> alertsToggleStore;
     private final CacheStore<String, VPNData> vpnStore;
     private volatile boolean cacheEnabled;
     private volatile int checkDataTTL;
+    private volatile int punishQueueTTL;
     private volatile int alertsToggleDataTTL;
     private volatile int vpnDataTTL;
     private volatile long localCacheMaxEntries;
@@ -59,6 +62,16 @@ public final class CacheRepositoryImpl {
                 RedisKeys::checkSnapshots,
                 CheckSnapshot::encodeList,
                 CheckSnapshot::decodeList
+        );
+
+        this.punishQueueStore = new CacheStore<>(
+                "punish queue data",
+                () -> punishQueueTTL,
+                () -> cacheEnabled,
+                () -> localCacheMaxEntries,
+                RedisKeys::punishQueue,
+                PunishQueueData::encode,
+                bytes -> new PunishQueueData().decode(bytes)
         );
 
         this.alertsToggleStore = new CacheStore<>(
@@ -86,6 +99,7 @@ public final class CacheRepositoryImpl {
         loadConfig();
 
         checkSnapshotStore.reloadLocalCache();
+        punishQueueStore.reloadLocalCache();
         alertsToggleStore.reloadLocalCache();
         vpnStore.reloadLocalCache();
     }
@@ -96,6 +110,18 @@ public final class CacheRepositoryImpl {
 
     public @Nullable VPNData getVPNData(String ip) {
         return vpnStore.get(ip);
+    }
+
+    public void savePunishQueueData(UUID uuid) {
+        punishQueueStore.put(uuid, new PunishQueueData());
+    }
+
+    public @Nullable PunishQueueData getPunishQueueData(UUID uuid) {
+        return punishQueueStore.get(uuid);
+    }
+
+    public void removePunishQueueData(UUID uuid) {
+        punishQueueStore.remove(uuid);
     }
 
     public void saveCheckToggleData(UUID uuid, AlertsToggleData alertsToggleData) {
@@ -119,6 +145,7 @@ public final class CacheRepositoryImpl {
 
         this.cacheEnabled = config.getBoolean(ConfigKeys.CACHE_ENABLED);
         this.checkDataTTL = config.getInt(ConfigKeys.CACHE_DATA_CHECKS);
+        this.punishQueueTTL = config.getInt(ConfigKeys.CACHE_PUNISH_QUEUE);
         this.alertsToggleDataTTL = config.getInt(ConfigKeys.CACHE_ALERTS_TOGGLE);
         this.vpnDataTTL = config.getInt(ConfigKeys.CACHE_DATA_VPN);
 

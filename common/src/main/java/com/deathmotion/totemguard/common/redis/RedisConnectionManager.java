@@ -146,19 +146,6 @@ final class RedisConnectionManager {
             RedisConnectionEventLogger eventLogger
     ) {
 
-        boolean isConnected() {
-            return connection != null && connection.isOpen() && eventLogger.isUp();
-        }
-
-        void close() {
-            eventLogger.markDown();
-            closeQuietly(eventLogger);
-            closeQuietly(pubSubConnection);
-            closeQuietly(connection);
-            shutdownQuietly(client);
-            shutdownQuietly(resources);
-        }
-
         private static void closeQuietly(@Nullable AutoCloseable closeable) {
             if (closeable == null) {
                 return;
@@ -182,6 +169,19 @@ final class RedisConnectionManager {
                 resources.shutdown();
             } catch (Exception ignored) {
             }
+        }
+
+        boolean isConnected() {
+            return connection != null && connection.isOpen() && eventLogger.isUp();
+        }
+
+        void close() {
+            eventLogger.markDown();
+            closeQuietly(eventLogger);
+            closeQuietly(pubSubConnection);
+            closeQuietly(connection);
+            shutdownQuietly(client);
+            shutdownQuietly(resources);
         }
     }
 }

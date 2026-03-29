@@ -81,6 +81,11 @@ public class TGBukkitPlatform extends TGPlatform {
     }
 
     @Override
+    public void dispatchCommand(String command) {
+        scheduler.runMainThreadTask(() -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command));
+    }
+
+    @Override
     public org.incendo.cloud.CommandManager<Sender> getCommandManager() {
         return commandManager.get();
     }

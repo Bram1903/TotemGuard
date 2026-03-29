@@ -40,7 +40,11 @@ public final class CheckPlaceholders implements InternalPlaceholderHolder, Place
                 "tg_check_description", CheckImpl::getDescription,
                 "tg_check_type", c -> c.getType().name(),
                 "tg_check_experimental", c -> String.valueOf(c.isExperimental()),
-                "tg_check_enabled", c -> String.valueOf(c.isEnabled())
+                "tg_check_requires_tick_end", c -> String.valueOf(c.requiresTickEnd()),
+                "tg_check_enabled", c -> String.valueOf(c.isEnabled()),
+                "tg_check_punishable", c -> String.valueOf(c.isPunishable()),
+                "tg_check_violations", c -> String.valueOf(c.getViolations()),
+                "tg_check_max_violations", c -> String.valueOf(c.getMaxViolations())
         );
     }
 
