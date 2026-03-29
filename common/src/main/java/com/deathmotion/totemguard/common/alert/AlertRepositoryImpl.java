@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -140,8 +141,11 @@ public class AlertRepositoryImpl implements AlertRepository {
     }
 
     public void broadcast(String message) {
-        Component component = MessageUtil.formatMessage(message);
-        enabledAlerts.values().forEach(player -> player.sendMessage(component));
+        broadcast(MessageUtil.formatMessage(message), true);
+    }
+
+    public void broadcastRawComponent(Component message) {
+        broadcast(message, false);
     }
 
     private void sendToggleAlertMessage(PlatformUser platformUser, boolean enabled) {
@@ -151,5 +155,14 @@ public class AlertRepositoryImpl implements AlertRepository {
                 )
         );
     }
-}
 
+    private void broadcast(Component message, boolean syncRedis) {
+        enabledAlerts.values().forEach(player -> player.sendMessage(message));
+
+        if (!syncRedis || !platform.getRedisRepository().shouldSendAlerts()) {
+            return;
+        }
+
+        platform.getRedisRepository().publish(Packets.SYNC_ALERT_MESSAGE.packet(), message);
+    }
+}

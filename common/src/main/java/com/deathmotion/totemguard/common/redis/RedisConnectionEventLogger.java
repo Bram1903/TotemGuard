@@ -21,6 +21,8 @@ package com.deathmotion.totemguard.common.redis;
 import com.deathmotion.totemguard.common.TGPlatform;
 import io.lettuce.core.event.connection.ConnectionActivatedEvent;
 import io.lettuce.core.event.connection.DisconnectedEvent;
+import io.lettuce.core.event.connection.ReconnectAttemptEvent;
+import io.lettuce.core.event.connection.ReconnectFailedEvent;
 import io.lettuce.core.resource.ClientResources;
 import reactor.core.Disposable;
 
@@ -45,6 +47,8 @@ final class RedisConnectionEventLogger implements AutoCloseable {
 
         this.subscription = resources.eventBus().get().subscribe(event -> {
             if (event instanceof ConnectionActivatedEvent) {
+                lastReconnectAttemptLogged.set(-1);
+                lastReconnectFailedLogged.set(-1);
                 if (up.compareAndSet(false, true)) {
                     logger.info("Successfully connected to Redis.");
                 }
@@ -54,16 +58,36 @@ final class RedisConnectionEventLogger implements AutoCloseable {
                     lastReconnectAttemptLogged.set(-1);
                     lastReconnectFailedLogged.set(-1);
                 }
+            } else if (event instanceof ReconnectAttemptEvent reconnectAttemptEvent) {
+                long attempt = reconnectAttemptEvent.getAttempt();
+                if (lastReconnectAttemptLogged.getAndSet(attempt) != attempt) {
+                    logger.warning("Attempting to reconnect to Redis (attempt " + attempt + ").");
+                }
+            } else if (event instanceof ReconnectFailedEvent reconnectFailedEvent) {
+                long attempt = reconnectFailedEvent.getAttempt();
+                if (lastReconnectFailedLogged.getAndSet(attempt) != attempt) {
+                    Throwable cause = reconnectFailedEvent.getCause();
+                    logger.warning(
+                            "Failed to reconnect to Redis (attempt " + attempt + "): " +
+                                    (cause == null ? "unknown error" : cause.getMessage())
+                    );
+                }
             }
         });
     }
 
     void markUp() {
         up.set(true);
+        lastReconnectAttemptLogged.set(-1);
+        lastReconnectFailedLogged.set(-1);
     }
 
     void markDown() {
         up.set(false);
+    }
+
+    boolean isUp() {
+        return up.get();
     }
 
     @Override

@@ -26,7 +26,7 @@ import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
-import com.deathmotion.totemguard.common.redis.options.RedisKeys;
+import com.deathmotion.totemguard.common.redis.cache.RedisKeys;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;

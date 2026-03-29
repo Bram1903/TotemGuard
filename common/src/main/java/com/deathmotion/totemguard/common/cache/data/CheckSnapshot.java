@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.cache.data;
 
-import com.deathmotion.totemguard.common.redis.binary.RedisBinary;
-import com.deathmotion.totemguard.common.redis.binary.RedisCodec;
+import com.deathmotion.totemguard.common.redis.cache.binary.RedisBinary;
+import com.deathmotion.totemguard.common.redis.cache.binary.RedisCodec;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

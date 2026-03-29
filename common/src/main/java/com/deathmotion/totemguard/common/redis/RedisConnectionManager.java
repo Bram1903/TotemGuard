@@ -143,9 +143,9 @@ final class RedisConnectionManager {
 
     boolean isConnected() {
         var conn = connection;
-        var ps = pubSubConnection;
+        var log = eventLogger;
         return conn != null && conn.isOpen()
-                && ps != null && ps.isOpen();
+                && (log == null || log.isUp());
     }
 
     @Nullable StatefulRedisConnection<byte[], byte[]> connection() {

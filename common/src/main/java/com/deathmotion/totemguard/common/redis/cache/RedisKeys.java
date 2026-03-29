@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis.options;
+package com.deathmotion.totemguard.common.redis.cache;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;

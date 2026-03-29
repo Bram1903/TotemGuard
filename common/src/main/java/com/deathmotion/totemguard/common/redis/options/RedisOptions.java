@@ -32,6 +32,7 @@ public class RedisOptions {
     private final int port;
     private final String username;
     private final String password;
+    private final MessagingOptions messaging;
 
     public RedisOptions() {
         Config config = TGPlatform.getInstance().getConfigRepository().config(ConfigFile.CONFIG);
@@ -41,5 +42,24 @@ public class RedisOptions {
         port = config.getInt(ConfigKeys.REDIS_PORT);
         username = config.getString(ConfigKeys.REDIS_USERNAME);
         password = config.getString(ConfigKeys.REDIS_PASSWORD);
+        messaging = new MessagingOptions(config);
+    }
+
+    @Getter
+    public static final class MessagingOptions {
+
+        private final String channel;
+        private final boolean sendAlerts;
+        private final boolean receiveAlerts;
+
+        public MessagingOptions(Config config) {
+            this.channel = config.getString(ConfigKeys.REDIS_MESSAGING_CHANNEL);
+            this.sendAlerts = config.getBoolean(ConfigKeys.REDIS_MESSAGING_SEND_ALERTS);
+            this.receiveAlerts = config.getBoolean(ConfigKeys.REDIS_MESSAGING_RECEIVE_ALERTS);
+        }
+
+        public boolean hasChannel() {
+            return channel != null && !channel.isBlank();
+        }
     }
 }
