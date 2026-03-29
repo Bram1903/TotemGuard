@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.punishment;
 
 import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.event.impl.TGUserPunishEvent;
 import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
@@ -30,9 +31,12 @@ import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserPunishEventImpl;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.logging.Level;
 
 public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadable {
 
@@ -56,37 +60,80 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     @Override
     public void reload() {
         Config config = configRepository.config(ConfigFile.CHECKS);
-        this.defaultPunishment = config.getString("default-punishment").orElse("ban %player% Unfair Advantage");
+        this.defaultPunishment = config.getString("default-punishment").orElse("ban %tg_player% Unfair Advantage");
+    }
+
+    @Override
+    public boolean isPunishmentQueued(@NotNull UUID uuid) {
+        return cacheRepository.isPunishmentQueued(uuid);
     }
 
     public void punish(CheckImpl check, int violations, @Nullable String debug) {
-        if (!check.isPunishable()) return;
-        if (violations < check.getMaxViolations()) return;
+        if (!canPunish(check, violations)) return;
+
         TGPlayer player = check.player;
+        UUID playerUuid = player.getUuid();
 
-        if (cacheRepository.getPunishQueueData(player.getUuid()) != null) return;
+        if (!cacheRepository.tryClaimPunishment(playerUuid)) return;
 
-        TGUserPunishEventImpl event = (TGUserPunishEventImpl) eventRepository.post(new TGUserPunishEventImpl(
-                player,
-                check,
-                debug
-        ));
-        if (event.isCancelled()) return;
+        boolean releaseLock = true;
+        try {
+            TGUserPunishEvent event = (TGUserPunishEvent) eventRepository.post(new TGUserPunishEventImpl(
+                    player,
+                    check,
+                    debug
+            ));
+            if (event.isCancelled()) return;
 
-        check.clearViolations();
-        cacheRepository.savePunishQueueData(player.getUuid());
-        executePunishment(check);
+            if (!executePunishment(check)) {
+                platform.getLogger().warning(
+                        "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
+                );
+                return;
+            }
+
+            check.clearViolations();
+            releaseLock = false;
+        } finally {
+            if (releaseLock) {
+                cacheRepository.releasePunishmentLock(playerUuid);
+            }
+        }
     }
 
-    private void executePunishment(CheckImpl check) {
-        List<String> commands = check.getPunishCommands();
+    private boolean canPunish(CheckImpl check, int violations) {
+        return check.isPunishable() && violations >= check.getMaxViolations();
+    }
+
+    private boolean executePunishment(CheckImpl check) {
+        List<String> commands = check.getPunishCommands().isEmpty()
+                ? List.of("%default_punishment%")
+                : check.getPunishCommands();
+        int dispatchedCommands = 0;
 
         for (String command : commands) {
-            command = command.replace("%default_punishment%", defaultPunishment);
-            String processed = placeholderRepository.replace(command, check.player, check);
-            platform.dispatchCommand(processed);
+            String processedCommand = command.replace("%default_punishment%", defaultPunishment).trim();
+            if (processedCommand.isEmpty()) {
+                continue;
+            }
+
+            try {
+                String processed = placeholderRepository.replace(processedCommand, check.player, check).trim();
+                if (processed.isEmpty()) {
+                    continue;
+                }
+
+                platform.dispatchCommand(processed);
+                dispatchedCommands++;
+            } catch (Exception exception) {
+                platform.getLogger().log(
+                        Level.WARNING,
+                        "Failed to execute punishment command '" + processedCommand + "' for " + check.player.getName(),
+                        exception
+                );
+            }
         }
 
-        cacheRepository.removePunishQueueData(check.player.getUuid());
+        return dispatchedCommands > 0;
     }
 }

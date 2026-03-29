@@ -20,15 +20,35 @@ package com.deathmotion.totemguard.common.cache.data;
 
 import com.deathmotion.totemguard.common.redis.cache.binary.RedisCodec;
 
-public record PunishQueueData() implements RedisCodec<PunishQueueData> {
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
-    @Override
-    public byte[] encode() {
-        return new byte[0];
+public record PunishQueueData(long createdAt) implements RedisCodec<PunishQueueData> {
+
+    public static PunishQueueData now() {
+        return new PunishQueueData(System.currentTimeMillis());
     }
 
     @Override
-    public PunishQueueData decode(byte[] data) {
-        return new PunishQueueData();
+    public byte[] encode() throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(Long.BYTES);
+        try (DataOutputStream out = new DataOutputStream(baos)) {
+            out.writeLong(createdAt);
+        }
+        return baos.toByteArray();
+    }
+
+    @Override
+    public PunishQueueData decode(byte[] data) throws IOException {
+        if (data.length == 0) {
+            return new PunishQueueData(0L);
+        }
+
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
+            return new PunishQueueData(in.readLong());
+        }
     }
 }

@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.event.api.impl;
 
-import com.deathmotion.totemguard.api3.event.impl.TGUserJoinEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserQuitEvent;
 import com.deathmotion.totemguard.api3.user.TGUser;
 
-public final class TGUserQuitEventImpl extends TGUserEventImpl implements TGUserJoinEvent {
+public final class TGUserQuitEventImpl extends TGUserEventImpl implements TGUserQuitEvent {
 
     public TGUserQuitEventImpl(TGUser user) {
         super(user);

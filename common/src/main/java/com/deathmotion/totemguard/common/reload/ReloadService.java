@@ -34,6 +34,7 @@ public class ReloadService {
         platform.getMessageService().reload();
         platform.getRedisRepository().restart();
         platform.getCacheRepository().reload();
+        platform.getPunishmentRepository().reload();
         platform.getAntiVPNRepository().reload();
 
         ModRegistry.load(platform.getConfigRepository().config(ConfigFile.MODS));

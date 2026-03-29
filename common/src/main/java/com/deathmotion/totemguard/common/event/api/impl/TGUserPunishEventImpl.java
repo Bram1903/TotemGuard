@@ -19,21 +19,22 @@
 package com.deathmotion.totemguard.common.event.api.impl;
 
 import com.deathmotion.totemguard.api3.check.Check;
-import com.deathmotion.totemguard.api3.event.impl.TGUserFlagEvent;
+import com.deathmotion.totemguard.api3.event.impl.TGUserPunishEvent;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.Nullable;
 
 @Getter
-public final class TGUserPunishEventImpl extends TGUserEventImpl implements TGUserFlagEvent {
+public final class TGUserPunishEventImpl extends TGUserEventImpl implements TGUserPunishEvent {
 
     private final Check check;
-    private final String debug;
+    private final @Nullable String debug;
 
     @Setter
     private boolean cancelled;
 
-    public TGUserPunishEventImpl(TGUser user, Check check, String debug) {
+    public TGUserPunishEventImpl(TGUser user, Check check, @Nullable String debug) {
         super(user);
         this.check = check;
         this.debug = debug;

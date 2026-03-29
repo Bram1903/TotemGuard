@@ -26,6 +26,8 @@ import com.deathmotion.totemguard.common.event.internal.InternalEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +38,7 @@ public class EventRepositoryImpl implements EventRepository {
 
     private final Map<Class<?>, Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>>> listeners = new ConcurrentHashMap<>();
     private final Map<Key, Consumer<? super Event>> boxedByKey = new ConcurrentHashMap<>();
+    private final Map<Class<?>, List<Class<?>>> dispatchTypes = new ConcurrentHashMap<>();
 
     @Override
     public <T extends Event> @NotNull EventSubscription subscribe(
@@ -154,9 +157,12 @@ public class EventRepositoryImpl implements EventRepository {
 
     public @NotNull Event post(@NotNull Event event) {
         final boolean internal = event instanceof InternalEvent;
+        final List<Class<?>> eventTypes = dispatchTypesFor(event.getClass());
 
         for (EventOrder order : EventOrder.values()) {
-            dispatchBucketFor(event.getClass(), order, event);
+            for (Class<?> eventType : eventTypes) {
+                dispatchBucketFor(eventType, order, event);
+            }
 
             dispatchBucketFor(AnyIncludingInternal.class, order, event);
 
@@ -166,6 +172,29 @@ public class EventRepositoryImpl implements EventRepository {
             }
         }
         return event;
+    }
+
+    private List<Class<?>> dispatchTypesFor(Class<?> eventType) {
+        return dispatchTypes.computeIfAbsent(eventType, this::resolveDispatchTypes);
+    }
+
+    private List<Class<?>> resolveDispatchTypes(Class<?> eventType) {
+        LinkedHashSet<Class<?>> resolved = new LinkedHashSet<>();
+        collectDispatchTypes(eventType, resolved);
+        resolved.remove(Event.class);
+        return List.copyOf(resolved);
+    }
+
+    private void collectDispatchTypes(Class<?> type, LinkedHashSet<Class<?>> resolved) {
+        if (type == null || !Event.class.isAssignableFrom(type) || !resolved.add(type)) {
+            return;
+        }
+
+        for (Class<?> iface : type.getInterfaces()) {
+            collectDispatchTypes(iface, resolved);
+        }
+
+        collectDispatchTypes(type.getSuperclass(), resolved);
     }
 
     private void dispatchBucketFor(

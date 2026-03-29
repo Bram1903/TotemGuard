@@ -18,5 +18,20 @@
 
 package com.deathmotion.totemguard.api3.punishment;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.util.UUID;
+
 public interface PunishmentRepository {
+
+    /**
+     * Returns whether a punishment for the given player is currently queued or in-flight.
+     *
+     * <p>When Redis-backed caching is enabled, this reflects the shared cross-server lock
+     * used to prevent duplicate punishments.</p>
+     *
+     * @param uuid the player UUID
+     * @return {@code true} if a punishment lock currently exists, otherwise {@code false}
+     */
+    boolean isPunishmentQueued(@NotNull UUID uuid);
 }

@@ -5,6 +5,7 @@ import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.lettuce.core.GetExArgs;
+import io.lettuce.core.SetArgs;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,13 +55,8 @@ public final class CacheStore<K, V> {
     public void put(K key, V value) {
         if (!isActive()) return;
 
-        byte[] encoded;
-        try {
-            encoded = encoder.encode(value);
-        } catch (Exception exception) {
-            TGPlatform.getInstance().getLogger().log(Level.WARNING, "Failed to encode " + name + " for key " + key, exception);
-            return;
-        }
+        byte[] encoded = encodeValue(key, value);
+        if (encoded == null) return;
 
         localCache.put(key, encoded);
 
@@ -72,6 +68,42 @@ public final class CacheStore<K, V> {
         } catch (Exception exception) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING, "Failed to set " + name + " for key " + key, exception);
         }
+    }
+
+    public boolean putIfAbsent(K key, V value) {
+        if (!isActive()) {
+            return true;
+        }
+
+        byte[] encoded = encodeValue(key, value);
+        if (encoded == null) {
+            return false;
+        }
+
+        RedisCommands<byte[], byte[]> redis = redisSync();
+        if (redis != null) {
+            try {
+                String response = redis.set(redisKeyFactory.apply(key), encoded, SetArgs.Builder.nx().ex(ttl()));
+                boolean stored = "OK".equalsIgnoreCase(response);
+
+                if (stored) {
+                    localCache.put(key, encoded);
+                    return true;
+                }
+
+                byte[] existing = redis.get(redisKeyFactory.apply(key));
+                if (existing != null) {
+                    localCache.put(key, existing);
+                }
+
+                return false;
+            } catch (Exception exception) {
+                TGPlatform.getInstance().getLogger().log(Level.WARNING, "Failed to claim " + name + " for key " + key, exception);
+                return false;
+            }
+        }
+
+        return localCache.asMap().putIfAbsent(key, encoded) == null;
     }
 
     public @Nullable V get(K key) {
@@ -134,10 +166,19 @@ public final class CacheStore<K, V> {
 
     public @Nullable V decode(K key, byte[] payload) {
         try {
-            return decoder.decode(payload);
+        return decoder.decode(payload);
         } catch (Exception exception) {
             localCache.invalidate(key);
             TGPlatform.getInstance().getLogger().log(Level.WARNING, "Failed to decode " + name + " for key " + key, exception);
+            return null;
+        }
+    }
+
+    private @Nullable byte[] encodeValue(K key, V value) {
+        try {
+            return encoder.encode(value);
+        } catch (Exception exception) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING, "Failed to encode " + name + " for key " + key, exception);
             return null;
         }
     }

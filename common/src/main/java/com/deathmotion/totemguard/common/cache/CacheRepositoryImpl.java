@@ -71,7 +71,7 @@ public final class CacheRepositoryImpl {
                 () -> localCacheMaxEntries,
                 RedisKeys::punishQueue,
                 PunishQueueData::encode,
-                bytes -> new PunishQueueData().decode(bytes)
+                bytes -> new PunishQueueData(0L).decode(bytes)
         );
 
         this.alertsToggleStore = new CacheStore<>(
@@ -112,15 +112,15 @@ public final class CacheRepositoryImpl {
         return vpnStore.get(ip);
     }
 
-    public void savePunishQueueData(UUID uuid) {
-        punishQueueStore.put(uuid, new PunishQueueData());
+    public boolean tryClaimPunishment(UUID uuid) {
+        return punishQueueStore.putIfAbsent(uuid, PunishQueueData.now());
     }
 
-    public @Nullable PunishQueueData getPunishQueueData(UUID uuid) {
-        return punishQueueStore.get(uuid);
+    public boolean isPunishmentQueued(UUID uuid) {
+        return punishQueueStore.get(uuid) != null;
     }
 
-    public void removePunishQueueData(UUID uuid) {
+    public void releasePunishmentLock(UUID uuid) {
         punishQueueStore.remove(uuid);
     }
 
