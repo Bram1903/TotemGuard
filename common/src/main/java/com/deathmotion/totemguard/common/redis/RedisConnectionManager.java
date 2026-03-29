@@ -20,7 +20,9 @@ package com.deathmotion.totemguard.common.redis;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.redis.options.RedisOptions;
+import io.lettuce.core.ClientOptions;
 import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
@@ -28,131 +30,158 @@ import io.lettuce.core.resource.ClientResources;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
+
 final class RedisConnectionManager {
+
+    private static final ByteArrayCodec CODEC = new ByteArrayCodec();
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
     private final Object lock = new Object();
 
-    private volatile @Nullable ClientResources resources;
-    private volatile @Nullable RedisClient client;
-    private volatile @Nullable StatefulRedisConnection<byte[], byte[]> connection;
-    private volatile @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection;
-
-    private volatile @Nullable RedisConnectionEventLogger eventLogger;
+    private volatile @Nullable ConnectionHandle handle;
 
     @Blocking
-    void start(RedisOptions redisOptions) {
+    void start(RedisOptions options) {
         synchronized (lock) {
-            if (client != null) return;
-
-            var uri = RedisUriFactory.build(redisOptions);
-
-            ClientResources res = RedisClientFactory.createResources();
-            RedisClient cli = RedisClientFactory.createClient(res, uri);
-
-            var log = new RedisConnectionEventLogger();
-            log.start(res);
-
-            try {
-                StatefulRedisConnection<byte[], byte[]> conn = cli.connect(new ByteArrayCodec());
-                StatefulRedisPubSubConnection<byte[], byte[]> ps = cli.connectPubSub(new ByteArrayCodec());
-
-                resources = res;
-                client = cli;
-                connection = conn;
-                pubSubConnection = ps;
-                eventLogger = log;
-
-                log.markUp();
-            } catch (Exception e) {
-                try {
-                    log.close();
-                } catch (Exception ignored) {
-                }
-
-                try {
-                    cli.shutdown();
-                } catch (Exception ignored) {
-                }
-                try {
-                    res.shutdown();
-                } catch (Exception ignored) {
-                }
-
-                TGPlatform.getInstance().getLogger().warning("Failed to connect to Redis: " + e.getMessage());
+            if (handle != null) {
+                return;
             }
+
+            handle = open(options);
         }
     }
 
     @Blocking
     void stop() {
-        synchronized (lock) {
-            var log = eventLogger;
-            eventLogger = null;
-
-            var ps = pubSubConnection;
-            pubSubConnection = null;
-            var conn = connection;
-            connection = null;
-            var cli = client;
-            client = null;
-            var res = resources;
-            resources = null;
-
-            if (log != null) {
-                try {
-                    log.markDown();
-                    log.close();
-                } catch (Exception ignored) {
-                }
-            }
-
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch (Exception ignored) {
-                }
-            }
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (Exception ignored) {
-                }
-            }
-            if (cli != null) {
-                try {
-                    cli.shutdown();
-                } catch (Exception ignored) {
-                }
-            }
-            if (res != null) {
-                try {
-                    res.shutdown();
-                } catch (Exception ignored) {
-                }
-            }
-        }
+        close(swap(null));
     }
 
     @Blocking
     void restart(RedisOptions options) {
-        synchronized (lock) {
-            stop();
-            start(options);
-        }
+        close(swap(null));
+        start(options);
     }
 
     boolean isConnected() {
-        var conn = connection;
-        var log = eventLogger;
-        return conn != null && conn.isOpen()
-                && (log == null || log.isUp());
+        ConnectionHandle currentHandle = handle;
+        return currentHandle != null && currentHandle.isConnected();
     }
 
     @Nullable StatefulRedisConnection<byte[], byte[]> connection() {
-        return connection;
+        ConnectionHandle currentHandle = handle;
+        return currentHandle == null ? null : currentHandle.connection();
     }
 
     @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection() {
-        return pubSubConnection;
+        ConnectionHandle currentHandle = handle;
+        return currentHandle == null ? null : currentHandle.pubSubConnection();
+    }
+
+    private @Nullable ConnectionHandle swap(@Nullable ConnectionHandle newHandle) {
+        synchronized (lock) {
+            ConnectionHandle previous = this.handle;
+            this.handle = newHandle;
+            return previous;
+        }
+    }
+
+    private @Nullable ConnectionHandle open(RedisOptions options) {
+        ClientResources resources = ClientResources.create();
+        RedisClient client = RedisClient.create(resources, buildUri(options));
+        client.setOptions(ClientOptions.builder()
+                .autoReconnect(true)
+                .pingBeforeActivateConnection(true)
+                .build());
+
+        RedisConnectionEventLogger eventLogger = new RedisConnectionEventLogger();
+        eventLogger.start(resources);
+
+        try {
+            StatefulRedisConnection<byte[], byte[]> connection = client.connect(CODEC);
+            StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection = client.connectPubSub(CODEC);
+            eventLogger.markUp();
+
+            return new ConnectionHandle(resources, client, connection, pubSubConnection, eventLogger);
+        } catch (Exception exception) {
+            TGPlatform.getInstance().getLogger().warning("Failed to connect to Redis: " + exception.getMessage());
+            close(new ConnectionHandle(resources, client, null, null, eventLogger));
+            return null;
+        }
+    }
+
+    private RedisURI buildUri(RedisOptions options) {
+        RedisURI.Builder builder = RedisURI.builder()
+                .withHost(options.getHost())
+                .withPort(options.getPort())
+                .withTimeout(CONNECT_TIMEOUT);
+
+        String username = options.getUsername();
+        String password = options.getPassword();
+
+        if (password != null && !password.isBlank()) {
+            if (username != null && !username.isBlank()) {
+                builder.withAuthentication(username, password);
+            } else {
+                builder.withPassword(password.toCharArray());
+            }
+        }
+
+        return builder.build();
+    }
+
+    private void close(@Nullable ConnectionHandle handle) {
+        if (handle == null) {
+            return;
+        }
+
+        handle.close();
+    }
+
+    private record ConnectionHandle(
+            ClientResources resources,
+            RedisClient client,
+            @Nullable StatefulRedisConnection<byte[], byte[]> connection,
+            @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection,
+            RedisConnectionEventLogger eventLogger
+    ) {
+
+        boolean isConnected() {
+            return connection != null && connection.isOpen() && eventLogger.isUp();
+        }
+
+        void close() {
+            eventLogger.markDown();
+            closeQuietly(eventLogger);
+            closeQuietly(pubSubConnection);
+            closeQuietly(connection);
+            shutdownQuietly(client);
+            shutdownQuietly(resources);
+        }
+
+        private static void closeQuietly(@Nullable AutoCloseable closeable) {
+            if (closeable == null) {
+                return;
+            }
+
+            try {
+                closeable.close();
+            } catch (Exception ignored) {
+            }
+        }
+
+        private static void shutdownQuietly(RedisClient client) {
+            try {
+                client.shutdown();
+            } catch (Exception ignored) {
+            }
+        }
+
+        private static void shutdownQuietly(ClientResources resources) {
+            try {
+                resources.shutdown();
+            } catch (Exception ignored) {
+            }
+        }
     }
 }
