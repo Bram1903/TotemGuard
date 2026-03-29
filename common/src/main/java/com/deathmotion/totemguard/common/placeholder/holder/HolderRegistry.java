@@ -18,24 +18,23 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder;
 
-import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
-
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public final class ApiHolderRepository {
+public final class HolderRegistry<T> {
 
-    private final CopyOnWriteArrayList<PlaceholderHolder> holders = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<T> holders = new CopyOnWriteArrayList<>();
 
-    public boolean register(PlaceholderHolder holder) {
-        return holders.addIfAbsent(holder);
+    public boolean register(T holder) {
+        return holders.addIfAbsent(Objects.requireNonNull(holder, "holder"));
     }
 
-    public boolean unregister(PlaceholderHolder holder) {
-        return holders.remove(holder);
+    public boolean unregister(T holder) {
+        return holders.remove(Objects.requireNonNull(holder, "holder"));
     }
 
-    public List<PlaceholderHolder> snapshot() {
+    public List<T> snapshot() {
         return List.copyOf(holders);
     }
 }

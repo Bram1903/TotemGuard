@@ -33,13 +33,24 @@ import java.util.Set;
 public interface PlaceholderRepository {
 
     /**
+     * Replaces placeholders using the supplied resolution context.
+     *
+     * @param message input message
+     * @param context resolution context
+     * @return message with placeholders replaced
+     */
+    @NotNull
+    String replace(@NotNull String message, @NotNull PlaceholderContext context);
+
+    /**
      * Replace placeholders without any context.
      *
      * @param message input message
      * @return message with placeholders replaced
      */
-    @NotNull
-    String replace(@NotNull String message);
+    default @NotNull String replace(@NotNull String message) {
+        return replace(message, PlaceholderContext.empty());
+    }
 
     /**
      * Replace placeholders using a user context.
@@ -48,8 +59,9 @@ public interface PlaceholderRepository {
      * @param user    user context (nullable)
      * @return message with placeholders replaced
      */
-    @NotNull
-    String replace(@NotNull String message, @Nullable TGUser user);
+    default @NotNull String replace(@NotNull String message, @Nullable TGUser user) {
+        return replace(message, new PlaceholderContext(user, null));
+    }
 
     /**
      * Replace placeholders using a check context.
@@ -58,8 +70,9 @@ public interface PlaceholderRepository {
      * @param check   check context (nullable)
      * @return message with placeholders replaced
      */
-    @NotNull
-    String replace(@NotNull String message, @Nullable Check check);
+    default @NotNull String replace(@NotNull String message, @Nullable Check check) {
+        return replace(message, new PlaceholderContext(null, check));
+    }
 
     /**
      * Replace placeholders using both user and check context.
@@ -69,8 +82,9 @@ public interface PlaceholderRepository {
      * @param check   check context (nullable)
      * @return message with placeholders replaced
      */
-    @NotNull
-    String replace(@NotNull String message, @Nullable TGUser user, @Nullable Check check);
+    default @NotNull String replace(@NotNull String message, @Nullable TGUser user, @Nullable Check check) {
+        return replace(message, new PlaceholderContext(user, check));
+    }
 
     /**
      * Returns all currently registered placeholder keys for holders that implement {@link PlaceholderProvider}.
@@ -81,6 +95,18 @@ public interface PlaceholderRepository {
      */
     @NotNull
     Set<String> registeredKeys();
+
+    /**
+     * Returns the currently registered dynamic placeholder patterns.
+     *
+     * <p>Patterns are descriptive metadata exposed by holders implementing
+     * {@link PlaceholderProvider}. They are not required to be exhaustive.</p>
+     *
+     * @return an immutable set of registered placeholder patterns
+     */
+    default @NotNull Set<String> registeredPatterns() {
+        return Set.of();
+    }
 
     /**
      * Register a custom placeholder holder.
@@ -98,4 +124,3 @@ public interface PlaceholderRepository {
      */
     boolean unregisterHolder(@NotNull PlaceholderHolder holder);
 }
-

@@ -166,7 +166,7 @@ public final class CacheStore<K, V> {
 
     public @Nullable V decode(K key, byte[] payload) {
         try {
-        return decoder.decode(payload);
+            return decoder.decode(payload);
         } catch (Exception exception) {
             localCache.invalidate(key);
             TGPlatform.getInstance().getLogger().log(Level.WARNING, "Failed to decode " + name + " for key " + key, exception);

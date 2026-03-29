@@ -20,11 +20,7 @@ package com.deathmotion.totemguard.common.cache.data;
 
 import com.deathmotion.totemguard.common.redis.cache.binary.RedisCodec;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 public record PunishQueueData(long createdAt) implements RedisCodec<PunishQueueData> {
 
