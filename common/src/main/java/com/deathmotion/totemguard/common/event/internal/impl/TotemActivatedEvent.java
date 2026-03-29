@@ -33,13 +33,7 @@ import lombok.Getter;
 @Getter
 public class TotemActivatedEvent extends InternalPlayerEvent {
 
-    /**
-     * Timestamp (milliseconds since epoch) when the totem was activated.
-     */
-    private final long timestamp;
-
     public TotemActivatedEvent(TGPlayer player, long timestamp) {
-        super(player);
-        this.timestamp = timestamp;
+        super(player, timestamp);
     }
 }

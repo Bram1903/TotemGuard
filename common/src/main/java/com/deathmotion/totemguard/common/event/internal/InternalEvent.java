@@ -28,4 +28,11 @@ import com.deathmotion.totemguard.common.event.api.EventImpl;
  * </p>
  */
 public abstract class InternalEvent extends EventImpl {
+
+    protected InternalEvent() {
+    }
+
+    protected InternalEvent(long timestamp) {
+        super(timestamp);
+    }
 }

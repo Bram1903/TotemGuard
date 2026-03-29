@@ -26,9 +26,15 @@ import org.jspecify.annotations.NonNull;
 public abstract class EventImpl implements Event {
 
     private final long timestamp;
+    private final String name;
 
     public EventImpl() {
-        this.timestamp = System.currentTimeMillis();
+        this(System.currentTimeMillis());
+    }
+
+    protected EventImpl(long timestamp) {
+        this.timestamp = timestamp;
+        this.name = getClass().getSimpleName();
     }
 
     /**
@@ -39,7 +45,7 @@ public abstract class EventImpl implements Event {
      * @return the event name
      */
     public @NonNull String getName() {
-        return getClass().getSimpleName();
+        return name;
     }
 
 }

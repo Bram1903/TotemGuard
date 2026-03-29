@@ -52,7 +52,6 @@ public final class ApiTestPlugin extends JavaPlugin {
         });
     }
 
-
     public void onDisable() {
         for (AutoCloseable l : listeners) {
             try {

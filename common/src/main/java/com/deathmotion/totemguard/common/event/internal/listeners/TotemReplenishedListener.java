@@ -55,7 +55,7 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
             long replenishedAt = inventorySlot.getUpdated();
             long deltaRaw = replenishedAt - lastTotemUse;
 
-            if (deltaRaw > MAX_REASONABLE_DELAY_MS) {
+            if (deltaRaw < 0 || deltaRaw > MAX_REASONABLE_DELAY_MS) {
                 return;
             }
 
@@ -63,7 +63,7 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
 
             TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
                     player,
-                    deltaRaw,
+                    lastTotemUse,
                     replenishedAt
             );
             TGPlatform.getInstance().getEventRepository().post(replenishedEvent);

@@ -116,9 +116,8 @@ public class CheckImpl implements Check {
     }
 
     protected boolean shouldFail(@Nullable String debug) {
-        if (player.getPlatformUser().hasPermission(BYPASS_PERMISSION + name)) return false;
-        TGUserFlagEvent event = new TGUserFlagEventImpl(player, this, debug);
-        event = (TGUserFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
+        //if (player.getPlatformUser().hasPermission(BYPASS_PERMISSION + name)) return false;
+        TGUserFlagEvent event = TGPlatform.getInstance().getEventRepository().post(new TGUserFlagEventImpl(player, this, debug));
 
         return !event.isCancelled();
     }

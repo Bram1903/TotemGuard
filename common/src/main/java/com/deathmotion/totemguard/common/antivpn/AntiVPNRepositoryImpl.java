@@ -111,7 +111,7 @@ public class AntiVPNRepositoryImpl {
             return;
         }
 
-        TGUserVPNDetectionEvent event = (TGUserVPNDetectionEvent) eventRepository.post(new TGUserVPNDetectionEventImpl(player, ip));
+        TGUserVPNDetectionEvent event = eventRepository.post(new TGUserVPNDetectionEventImpl(player, ip));
         if (event.isCancelled()) {
             return;
         }

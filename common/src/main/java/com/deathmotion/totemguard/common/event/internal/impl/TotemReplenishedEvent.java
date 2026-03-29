@@ -49,8 +49,12 @@ public class TotemReplenishedEvent extends InternalPlayerEvent {
             long totemActivatedTimestamp,
             long totemReplenishedTimestamp
     ) {
-        super(player);
+        super(player, totemReplenishedTimestamp);
         this.totemActivatedTimestamp = totemActivatedTimestamp;
         this.totemReplenishedTimestamp = totemReplenishedTimestamp;
+    }
+
+    public long getDelayMillis() {
+        return totemReplenishedTimestamp - totemActivatedTimestamp;
     }
 }

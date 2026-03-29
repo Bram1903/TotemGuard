@@ -20,17 +20,26 @@ package com.deathmotion.totemguard.common.event.internal;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+
+import java.util.Objects;
 
 /**
  * Base class for internal events that are related to a single player.
  */
 @Getter
-@RequiredArgsConstructor
 public abstract class InternalPlayerEvent extends InternalEvent {
 
     /**
      * Player this event belongs to.
      */
     private final TGPlayer player;
+
+    protected InternalPlayerEvent(TGPlayer player) {
+        this.player = Objects.requireNonNull(player, "player");
+    }
+
+    protected InternalPlayerEvent(TGPlayer player, long timestamp) {
+        super(timestamp);
+        this.player = Objects.requireNonNull(player, "player");
+    }
 }

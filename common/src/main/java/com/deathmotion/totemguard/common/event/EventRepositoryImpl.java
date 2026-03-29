@@ -22,23 +22,32 @@ import com.deathmotion.totemguard.api3.event.Event;
 import com.deathmotion.totemguard.api3.event.EventOrder;
 import com.deathmotion.totemguard.api3.event.EventRepository;
 import com.deathmotion.totemguard.api3.event.EventSubscription;
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.InternalEvent;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.EnumMap;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 public class EventRepositoryImpl implements EventRepository {
 
-    private final Map<Class<?>, Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>>> listeners = new ConcurrentHashMap<>();
-    private final Map<Key, Consumer<? super Event>> boxedByKey = new ConcurrentHashMap<>();
-    private final Map<Class<?>, List<Class<?>>> dispatchTypes = new ConcurrentHashMap<>();
+    private static final EventOrder[] EVENT_ORDERS = EventOrder.values();
+    private static final RegisteredListener[] NO_LISTENERS = new RegisteredListener[0];
+
+    private final ListenerRegistry publicListeners = new ListenerRegistry();
+    private final ListenerRegistry internalListeners = new ListenerRegistry();
+    private final Map<Class<?>, Class<?>[]> dispatchTypes = new ConcurrentHashMap<>();
+    private final Map<DispatchPlanKey, RegisteredListener[]> dispatchPlans = new ConcurrentHashMap<>();
+    private final AtomicLong nextSequence = new AtomicLong();
+    private final ThreadLocal<Integer> internalDispatchDepth = ThreadLocal.withInitial(() -> 0);
 
     @Override
     public <T extends Event> @NotNull EventSubscription subscribe(
@@ -46,77 +55,23 @@ public class EventRepositoryImpl implements EventRepository {
             @NotNull EventOrder order,
             @NotNull Consumer<? super T> listener
     ) {
-        final Key key = new Key(eventType, order, listener);
-
-        final Consumer<? super Event> boxed = boxedByKey.computeIfAbsent(
-                key,
-                k -> (Event e) -> listener.accept(eventType.cast(e))
-        );
-
-        Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>> perType =
-                listeners.computeIfAbsent(eventType, k -> new EnumMap<>(EventOrder.class));
-
-        CopyOnWriteArrayList<Consumer<? super Event>> bucket =
-                perType.computeIfAbsent(order, k -> new CopyOnWriteArrayList<>());
-
-        if (!bucket.contains(boxed)) bucket.add(boxed);
-
-        return () -> {
-            boolean removed = bucket.remove(boxed);
-            if (removed) {
-                boxedByKey.remove(key, boxed);
-            }
-        };
+        return subscribe(publicListeners, eventType, order, listener);
     }
 
-    @Override
-    public @NotNull EventSubscription subscribeAll(
+    public <T extends Event> @NotNull EventSubscription subscribeInternal(
+            @NotNull Class<T> eventType,
             @NotNull EventOrder order,
-            @NotNull Consumer<? super Event> listener
+            @NotNull Consumer<? super T> listener
     ) {
-        final Key key = new Key(Event.class, order, listener);
-        final Consumer<? super Event> boxed = boxedByKey.computeIfAbsent(key, k -> listener);
-
-        Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>> perType =
-                listeners.computeIfAbsent(Event.class, k -> new EnumMap<>(EventOrder.class));
-
-        CopyOnWriteArrayList<Consumer<? super Event>> bucket =
-                perType.computeIfAbsent(order, k -> new CopyOnWriteArrayList<>());
-
-        if (!bucket.contains(boxed)) bucket.add(boxed);
-
-        return () -> {
-            boolean removed = bucket.remove(boxed);
-            if (removed) boxedByKey.remove(key, boxed);
-        };
+        return subscribe(internalListeners, eventType, order, listener);
     }
 
-    public @NotNull EventSubscription subscribeAllIncludingInternal(
-            @NotNull Consumer<? super Event> listener
+    public <T extends Event> @NotNull EventSubscription subscribeInternal(
+            @NotNull Class<T> eventType,
+            @NotNull Consumer<? super T> listener
     ) {
-        return subscribeAllIncludingInternal(EventOrder.NORMAL, listener);
+        return subscribeInternal(eventType, EventOrder.NORMAL, listener);
     }
-
-    public @NotNull EventSubscription subscribeAllIncludingInternal(
-            @NotNull EventOrder order,
-            @NotNull Consumer<? super Event> listener
-    ) {
-        final Key key = new Key(AnyIncludingInternal.class, order, listener);
-        final Consumer<? super Event> boxed = boxedByKey.computeIfAbsent(key, k -> listener);
-
-        Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>> perType = listeners.computeIfAbsent(AnyIncludingInternal.class, k -> new EnumMap<>(EventOrder.class));
-
-        CopyOnWriteArrayList<Consumer<? super Event>> bucket =
-                perType.computeIfAbsent(order, k -> new CopyOnWriteArrayList<>());
-
-        if (!bucket.contains(boxed)) bucket.add(boxed);
-
-        return () -> {
-            boolean removed = bucket.remove(boxed);
-            if (removed) boxedByKey.remove(key, boxed);
-        };
-    }
-
 
     @Override
     public <T extends Event> boolean unsubscribe(
@@ -124,65 +79,146 @@ public class EventRepositoryImpl implements EventRepository {
             @NotNull EventOrder order,
             @NotNull Consumer<? super T> listener
     ) {
-        final Key key = new Key(eventType, order, listener);
-        final Consumer<? super Event> boxed = boxedByKey.remove(key);
-        if (boxed == null) return false;
-
-        Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>> perType = listeners.get(eventType);
-        if (perType == null) return false;
-
-        CopyOnWriteArrayList<Consumer<? super Event>> bucket = perType.get(order);
-        if (bucket == null) return false;
-
-        return bucket.remove(boxed);
+        return unsubscribe(publicListeners, eventType, order, listener);
     }
 
-    @Override
-    public boolean unsubscribeAll(
+    public <T extends Event> boolean unsubscribeInternal(
+            @NotNull Class<T> eventType,
             @NotNull EventOrder order,
-            @NotNull Consumer<? super Event> listener
+            @NotNull Consumer<? super T> listener
     ) {
-        final Key key = new Key(Event.class, order, listener);
-        final Consumer<? super Event> boxed = boxedByKey.remove(key);
-        if (boxed == null) return false;
-
-        Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>> perType = listeners.get(Event.class);
-        if (perType == null) return false;
-
-        CopyOnWriteArrayList<Consumer<? super Event>> bucket = perType.get(order);
-        if (bucket == null) return false;
-
-        return bucket.remove(boxed);
+        return unsubscribe(internalListeners, eventType, order, listener);
     }
 
-    public @NotNull Event post(@NotNull Event event) {
-        final boolean internal = event instanceof InternalEvent;
-        final List<Class<?>> eventTypes = dispatchTypesFor(event.getClass());
+    public <T extends Event> boolean unsubscribeInternal(
+            @NotNull Class<T> eventType,
+            @NotNull Consumer<? super T> listener
+    ) {
+        return unsubscribeInternal(eventType, EventOrder.NORMAL, listener);
+    }
 
-        for (EventOrder order : EventOrder.values()) {
-            for (Class<?> eventType : eventTypes) {
-                dispatchBucketFor(eventType, order, event);
+    public <T extends Event> @NotNull T post(@NotNull T event) {
+        Objects.requireNonNull(event, "event");
+        final boolean internalOnly = shouldStayInternal(event);
+
+        final RegisteredListener[] dispatchPlan = dispatchPlans.computeIfAbsent(
+                new DispatchPlanKey(event.getClass(), internalOnly),
+                this::buildDispatchPlan
+        );
+
+        if (internalOnly) {
+            internalDispatchDepth.set(internalDispatchDepth.get() + 1);
+        }
+
+        try {
+            for (RegisteredListener listener : dispatchPlan) {
+                try {
+                    listener.accept(event);
+                } catch (Exception exception) {
+                    TGPlatform.getInstance().getLogger().log(
+                            Level.WARNING,
+                            "Failed to dispatch event " + event.getClass().getName() + " to listener " + listener.listenerClassName(),
+                            exception
+                    );
+                }
             }
-
-            dispatchBucketFor(AnyIncludingInternal.class, order, event);
-
-            // Prevent internal events from reaching other plugins' global (any-event) listeners
-            if (!internal) {
-                dispatchBucketFor(Event.class, order, event);
+        } finally {
+            if (internalOnly) {
+                exitInternalDispatch();
             }
         }
         return event;
     }
 
-    private List<Class<?>> dispatchTypesFor(Class<?> eventType) {
+    private boolean shouldStayInternal(Event event) {
+        return event instanceof InternalEvent || internalDispatchDepth.get() > 0;
+    }
+
+    private void exitInternalDispatch() {
+        int remainingDepth = internalDispatchDepth.get() - 1;
+        if (remainingDepth == 0) {
+            internalDispatchDepth.remove();
+            return;
+        }
+
+        internalDispatchDepth.set(remainingDepth);
+    }
+
+    private <T extends Event> @NotNull EventSubscription subscribe(
+            ListenerRegistry registry,
+            @NotNull Class<T> eventType,
+            @NotNull EventOrder order,
+            @NotNull Consumer<? super T> listener
+    ) {
+        final Key key = new Key(eventType, order, listener);
+        final RegisteredListener registration = registry.registrations.computeIfAbsent(
+                key,
+                ignored -> RegisteredListener.typed(eventType, listener, nextSequence.getAndIncrement())
+        );
+
+        if (registry
+                .listeners
+                .computeIfAbsent(eventType, ignored -> new ListenerSlots())
+                .bucket(order)
+                .addIfAbsent(registration)) {
+            dispatchPlans.clear();
+        }
+
+        return () -> removeRegistration(registry, key, registration);
+    }
+
+    private <T extends Event> boolean unsubscribe(
+            ListenerRegistry registry,
+            @NotNull Class<T> eventType,
+            @NotNull EventOrder order,
+            @NotNull Consumer<? super T> listener
+    ) {
+        final Key key = new Key(eventType, order, listener);
+        final RegisteredListener registration = registry.registrations.get(key);
+        if (registration == null) {
+            return false;
+        }
+        return removeRegistration(registry, key, registration);
+    }
+
+    private boolean removeRegistration(
+            ListenerRegistry registry,
+            Key key,
+            RegisteredListener registration
+    ) {
+        final ListenerSlots slots = registry.listeners.get(key.type());
+        if (slots == null || !slots.bucket(key.order()).remove(registration)) {
+            return false;
+        }
+
+        registry.registrations.remove(key, registration);
+        dispatchPlans.clear();
+        return true;
+    }
+
+    private RegisteredListener[] buildDispatchPlan(DispatchPlanKey key) {
+        final List<RegisteredListener> dispatchPlan = new ArrayList<>();
+
+        for (EventOrder order : EVENT_ORDERS) {
+            final int orderIndex = order.ordinal();
+            for (Class<?> dispatchType : dispatchTypesFor(key.eventType())) {
+                appendListeners(dispatchPlan, dispatchType, orderIndex, key.internalOnly());
+            }
+            appendListeners(dispatchPlan, Event.class, orderIndex, key.internalOnly());
+        }
+
+        return dispatchPlan.isEmpty() ? NO_LISTENERS : dispatchPlan.toArray(RegisteredListener[]::new);
+    }
+
+    private Class<?>[] dispatchTypesFor(Class<?> eventType) {
         return dispatchTypes.computeIfAbsent(eventType, this::resolveDispatchTypes);
     }
 
-    private List<Class<?>> resolveDispatchTypes(Class<?> eventType) {
+    private Class<?>[] resolveDispatchTypes(Class<?> eventType) {
         LinkedHashSet<Class<?>> resolved = new LinkedHashSet<>();
         collectDispatchTypes(eventType, resolved);
         resolved.remove(Event.class);
-        return List.copyOf(resolved);
+        return resolved.toArray(Class<?>[]::new);
     }
 
     private void collectDispatchTypes(Class<?> type, LinkedHashSet<Class<?>> resolved) {
@@ -197,23 +233,56 @@ public class EventRepositoryImpl implements EventRepository {
         collectDispatchTypes(type.getSuperclass(), resolved);
     }
 
-    private void dispatchBucketFor(
-            Class<?> key,
-            EventOrder order,
-            Event event
+    private void appendListeners(
+            List<RegisteredListener> dispatchPlan,
+            Class<?> eventType,
+            int orderIndex,
+            boolean internalOnly
     ) {
-        Map<EventOrder, CopyOnWriteArrayList<Consumer<? super Event>>> perType = listeners.get(key);
-        if (perType == null) return;
+        List<RegisteredListener> internalBucket = internalListeners.bucket(eventType, orderIndex);
+        List<RegisteredListener> publicBucket = internalOnly ? null : publicListeners.bucket(eventType, orderIndex);
 
-        CopyOnWriteArrayList<Consumer<? super Event>> bucket = perType.get(order);
-        if (bucket == null || bucket.isEmpty()) return;
+        if ((internalBucket == null || internalBucket.isEmpty())
+                && (publicBucket == null || publicBucket.isEmpty())) {
+            return;
+        }
 
-        for (Consumer<? super Event> l : bucket) {
-            l.accept(event);
+        if (internalBucket == null || internalBucket.isEmpty()) {
+            dispatchPlan.addAll(publicBucket);
+            return;
+        }
+
+        if (publicBucket == null || publicBucket.isEmpty()) {
+            dispatchPlan.addAll(internalBucket);
+            return;
+        }
+
+        int internalIndex = 0;
+        int publicIndex = 0;
+
+        while (internalIndex < internalBucket.size() && publicIndex < publicBucket.size()) {
+            RegisteredListener internalListener = internalBucket.get(internalIndex);
+            RegisteredListener publicListener = publicBucket.get(publicIndex);
+
+            if (internalListener.sequence() <= publicListener.sequence()) {
+                dispatchPlan.add(internalListener);
+                internalIndex++;
+            } else {
+                dispatchPlan.add(publicListener);
+                publicIndex++;
+            }
+        }
+
+        while (internalIndex < internalBucket.size()) {
+            dispatchPlan.add(internalBucket.get(internalIndex++));
+        }
+
+        while (publicIndex < publicBucket.size()) {
+            dispatchPlan.add(publicBucket.get(publicIndex++));
         }
     }
 
-    private static final class AnyIncludingInternal {
+    private record DispatchPlanKey(Class<?> eventType, boolean internalOnly) {
     }
 
     private record Key(Class<?> type, EventOrder order, Consumer<?> original) {
@@ -236,6 +305,74 @@ public class EventRepositoryImpl implements EventRepository {
             result = 31 * result + order.hashCode();
             result = 31 * result + System.identityHashCode(original);
             return result;
+        }
+    }
+
+    private static final class ListenerSlots {
+
+        @SuppressWarnings("unchecked")
+        private final CopyOnWriteArrayList<RegisteredListener>[] buckets = new CopyOnWriteArrayList[EVENT_ORDERS.length];
+
+        private ListenerSlots() {
+            for (int i = 0; i < buckets.length; i++) {
+                buckets[i] = new CopyOnWriteArrayList<>();
+            }
+        }
+
+        private CopyOnWriteArrayList<RegisteredListener> bucket(EventOrder order) {
+            return bucket(order.ordinal());
+        }
+
+        private CopyOnWriteArrayList<RegisteredListener> bucket(int orderIndex) {
+            return buckets[orderIndex];
+        }
+    }
+
+    private static final class ListenerRegistry {
+
+        private final Map<Class<?>, ListenerSlots> listeners = new ConcurrentHashMap<>();
+        private final Map<Key, RegisteredListener> registrations = new ConcurrentHashMap<>();
+
+        private List<RegisteredListener> bucket(Class<?> eventType, int orderIndex) {
+            ListenerSlots slots = listeners.get(eventType);
+            return slots == null ? null : slots.bucket(orderIndex);
+        }
+    }
+
+    private static final class RegisteredListener {
+
+        private final Consumer<?> original;
+        private final Consumer<? super Event> dispatcher;
+        private final long sequence;
+
+        private RegisteredListener(
+                Consumer<?> original,
+                Consumer<? super Event> dispatcher,
+                long sequence
+        ) {
+            this.original = original;
+            this.dispatcher = dispatcher;
+            this.sequence = sequence;
+        }
+
+        private static <T extends Event> RegisteredListener typed(
+                Class<T> eventType,
+                Consumer<? super T> listener,
+                long sequence
+        ) {
+            return new RegisteredListener(listener, event -> listener.accept(eventType.cast(event)), sequence);
+        }
+
+        private void accept(Event event) {
+            dispatcher.accept(event);
+        }
+
+        private long sequence() {
+            return sequence;
+        }
+
+        private String listenerClassName() {
+            return original.getClass().getName();
         }
     }
 }

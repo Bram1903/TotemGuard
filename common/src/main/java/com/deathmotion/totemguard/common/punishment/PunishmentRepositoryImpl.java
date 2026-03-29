@@ -78,7 +78,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
         boolean releaseLock = true;
         try {
-            TGUserPunishEvent event = (TGUserPunishEvent) eventRepository.post(new TGUserPunishEventImpl(
+            TGUserPunishEvent event = eventRepository.post(new TGUserPunishEventImpl(
                     player,
                     check,
                     debug
