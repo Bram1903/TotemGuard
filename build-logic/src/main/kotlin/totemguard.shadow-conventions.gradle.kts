@@ -22,8 +22,6 @@ tasks.withType<ShadowJar>().configureEach {
     relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
     relocate("io.lettuce", "com.deathmotion.totemguard.common.libs.lettuce")
     relocate("io.netty", "com.deathmotion.totemguard.common.libs.netty")
-    relocate("io.netty.resolver.dns", "com.deathmotion.totemguard.common.libs.netty.resolver.dns")
-    relocate("io.netty.handler.codec.dns", "com.deathmotion.totemguard.common.libs.netty.handler.codec.dns")
     relocate("org.reactivestreams", "com.deathmotion.totemguard.common.libs.reactivestreams")
     relocate("reactor", "com.deathmotion.totemguard.common.libs.reactor")
     relocate("redis.clients", "com.deathmotion.totemguard.common.libs.redisclients")
