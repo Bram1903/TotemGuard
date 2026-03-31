@@ -101,7 +101,7 @@ ProtocolF:
 
 TickA:
   enabled: true
-  punishable: false
+  punishable: true
   max-violations: 1
 
   punishment-commands:
