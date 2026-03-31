@@ -93,11 +93,11 @@ ProtocolE:
 
 TickA:
     enabled: true
-    punishable: true
+    punishable: false
     max-violations: 1
 
     punishment-commands:
-        - "ban %tg_player% Packet Manipulation"
+        - "kick %tg_player% Packet Manipulation"
 
 TickB:
     enabled: true

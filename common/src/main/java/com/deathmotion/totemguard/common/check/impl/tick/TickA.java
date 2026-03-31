@@ -45,7 +45,11 @@ public class TickA extends CheckImpl implements PacketCheck {
 
         if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
             if (!hasSentTickEnd) {
-                fail();
+                if (buffer.increase(1) > 1) {
+                    fail();
+                }
+            } else {
+                buffer.decrease(1);
             }
 
             hasSentTickEnd = false;
