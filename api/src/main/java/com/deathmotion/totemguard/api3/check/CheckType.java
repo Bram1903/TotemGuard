@@ -23,5 +23,6 @@ public enum CheckType {
     AUTO_TOTEM,
     INVENTORY,
     PROTOCOL,
+    TICK,
     MOD
 }

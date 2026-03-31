@@ -90,3 +90,11 @@ ProtocolE:
 
   punishment-commands:
     - "%default_punishment%"
+
+TickA:
+    enabled: true
+    punishable: true
+    max-violations: 1
+
+    punishment-commands:
+        - "kick %tg_player% Packet Manipulation"
