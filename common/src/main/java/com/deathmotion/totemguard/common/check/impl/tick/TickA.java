@@ -33,7 +33,8 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 @CheckData(description = "Forcefully prevents tick end packets", type = CheckType.TICK)
 public class TickA extends CheckImpl implements PacketCheck {
 
-    private boolean hasSentTickEnd = true;
+    private int teleportedInLastTick;
+    private boolean hasSentTickEnd;
 
     public TickA(TGPlayer player) {
         super(player);
@@ -44,17 +45,23 @@ public class TickA extends CheckImpl implements PacketCheck {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
-            if (!hasSentTickEnd) {
-                if (buffer.increase(1) > 1) {
-                    fail();
-                }
-            } else {
-                buffer.decrease(1);
+            if (!hasSentTickEnd && teleportedInLastTick == 0) {
+                fail();
             }
 
             hasSentTickEnd = false;
+
+            if (teleportedInLastTick != 0) {
+                teleportedInLastTick--;
+            }
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             hasSentTickEnd = true;
+
+            if (teleportedInLastTick != 0) {
+                teleportedInLastTick--;
+            }
+        } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM) {
+            teleportedInLastTick = 2;
         }
     }
 }
