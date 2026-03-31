@@ -30,7 +30,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @RequiresTickEnd
-@CheckData(description = "Forcefully prevents tick packets", type = CheckType.TICK)
+@CheckData(description = "Forcefully prevents tick end packets", type = CheckType.TICK)
 public class TickA extends CheckImpl implements PacketCheck {
 
     private boolean hasSentTickEnd = true;

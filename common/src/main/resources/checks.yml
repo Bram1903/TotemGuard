@@ -97,4 +97,12 @@ TickA:
     max-violations: 1
 
     punishment-commands:
+        - "ban %tg_player% Packet Manipulation"
+
+TickB:
+    enabled: true
+    punishable: false
+    max-violations: 5
+
+    punishment-commands:
         - "kick %tg_player% Packet Manipulation"
