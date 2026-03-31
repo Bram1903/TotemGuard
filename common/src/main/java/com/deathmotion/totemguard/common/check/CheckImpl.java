@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CheckImpl implements Check {
+public abstract class CheckImpl implements Check {
 
     private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass.";
 

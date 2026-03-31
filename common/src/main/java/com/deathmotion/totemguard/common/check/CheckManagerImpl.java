@@ -65,6 +65,7 @@ public class CheckManagerImpl {
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(ProtocolE.class, new ProtocolE(player))
+                .put(ProtocolF.class, new ProtocolF(player))
                 .put(TickA.class, new TickA(player))
                 .put(TickB.class, new TickB(player))
                 .put(InventoryA.class, new InventoryA(player))
