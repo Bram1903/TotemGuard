@@ -91,18 +91,26 @@ ProtocolE:
   punishment-commands:
     - "%default_punishment%"
 
-TickA:
-    enabled: true
-    punishable: false
-    max-violations: 1
+ProtocolF:
+  enabled: true
+  punishable: true
+  max-violations: 1
 
-    punishment-commands:
-        - "kick %tg_player% Packet Manipulation"
+  punishment-commands:
+    - "kick %tg_player% Packet Manipulation"
+
+TickA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "kick %tg_player% Packet Manipulation"
 
 TickB:
-    enabled: true
-    punishable: false
-    max-violations: 5
+  enabled: true
+  punishable: false
+  max-violations: 5
 
-    punishment-commands:
-        - "kick %tg_player% Packet Manipulation"
+  punishment-commands:
+    - "kick %tg_player% Packet Manipulation"
