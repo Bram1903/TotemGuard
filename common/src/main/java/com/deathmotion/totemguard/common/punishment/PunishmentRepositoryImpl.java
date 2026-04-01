@@ -76,7 +76,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
         if (!cacheRepository.tryClaimPunishment(playerUuid)) return;
 
-        boolean releaseLock = true;
+        boolean keepDistributedLock = false;
         try {
             TGUserPunishEvent event = eventRepository.post(new TGUserPunishEventImpl(
                     player,
@@ -93,11 +93,9 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             }
 
             check.clearViolations();
-            releaseLock = false;
+            keepDistributedLock = true;
         } finally {
-            if (releaseLock) {
-                cacheRepository.releasePunishmentLock(playerUuid);
-            }
+            cacheRepository.finishPunishment(playerUuid, keepDistributedLock);
         }
     }
 

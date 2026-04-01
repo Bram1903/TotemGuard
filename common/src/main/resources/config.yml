@@ -56,7 +56,8 @@ cache:
   data:
     # Includes violations and buffers.
     checks: 300
-    # This stores players that are about to be punished and prevents multiple instances from ban/kicking the same player.
+    # When Redis is connected, this keeps a short-lived distributed punishment lock
+    # so multiple servers do not punish the same player twice.
     punish-queue: 60
     # Alerts toggle state.
     alerts-toggle: 1800

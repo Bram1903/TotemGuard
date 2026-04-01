@@ -28,7 +28,8 @@ public interface PunishmentRepository {
      * Returns whether a punishment for the given player is currently queued or in-flight.
      *
      * <p>When Redis-backed caching is enabled, this reflects the shared cross-server lock
-     * used to prevent duplicate punishments.</p>
+     * used to prevent duplicate punishments. Otherwise, this reflects only the
+     * local in-flight punishment attempt on the current server.</p>
      *
      * @param uuid the player UUID
      * @return {@code true} if a punishment lock currently exists, otherwise {@code false}
