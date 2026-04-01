@@ -43,7 +43,10 @@ public class Data {
     private boolean canFly;
     private boolean isFlying;
     private boolean openInventory;
+
+    private boolean lastPacketWasTeleport;
     private boolean lastTeleportConfirmValid;
+
     private volatile boolean sendingBundlePacket;
 
     public Data(TGPlayer player) {
@@ -68,5 +71,9 @@ public class Data {
 
     public void validateTeleportConfirm(int teleportId) {
         lastTeleportConfirmValid = pendingTeleportIds.remove(teleportId);
+
+        if (lastTeleportConfirmValid) {
+            lastPacketWasTeleport = true;
+        }
     }
 }

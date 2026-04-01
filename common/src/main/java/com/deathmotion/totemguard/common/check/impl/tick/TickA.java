@@ -30,12 +30,11 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @RequiresTickEnd
-@CheckData(description = "Forcefully prevents tick end packets", type = CheckType.TICK)
+@CheckData(description = "Invalid tick packet sequence", type = CheckType.TICK)
 public class TickA extends CheckImpl implements PacketCheck {
 
     private boolean receivedTickEnd = true;
     private int flyingPackets;
-    private int teleportGracePackets;
 
     public TickA(TGPlayer player) {
         super(player);
@@ -46,7 +45,7 @@ public class TickA extends CheckImpl implements PacketCheck {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
-            if (consumeTeleportGrace()) {
+            if (player.getData().isLastPacketWasTeleport()) {
                 return;
             }
 
@@ -62,19 +61,6 @@ public class TickA extends CheckImpl implements PacketCheck {
                 fail("type=end, packets=" + flyingPackets);
             }
             flyingPackets = 0;
-
-            consumeTeleportGrace();
-        } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM && player.getData().isLastTeleportConfirmValid()) {
-            teleportGracePackets = 2;
         }
-    }
-
-    private boolean consumeTeleportGrace() {
-        if (teleportGracePackets <= 0) {
-            return false;
-        }
-
-        teleportGracePackets--;
-        return true;
     }
 }

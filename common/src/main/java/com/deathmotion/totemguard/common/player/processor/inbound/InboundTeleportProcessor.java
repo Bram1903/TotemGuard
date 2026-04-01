@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
 
 public class InboundTeleportProcessor extends ProcessorInbound {
@@ -39,5 +40,12 @@ public class InboundTeleportProcessor extends ProcessorInbound {
         if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
         WrapperPlayClientTeleportConfirm packet = new WrapperPlayClientTeleportConfirm(event);
         data.validateTeleportConfirm(packet.getTeleportId());
+    }
+
+    @Override
+    public void handleInboundPost(PacketReceiveEvent event) {
+        if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
+            data.setLastPacketWasTeleport(false);
+        }
     }
 }
