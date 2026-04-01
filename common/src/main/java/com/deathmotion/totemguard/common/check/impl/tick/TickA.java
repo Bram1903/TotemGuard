@@ -51,13 +51,13 @@ public class TickA extends CheckImpl implements PacketCheck {
 
             hasSentTickEnd = false;
 
-            if (teleportedInLastTick != 0) {
+            if (teleportedInLastTick > 0) {
                 teleportedInLastTick--;
             }
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             hasSentTickEnd = true;
 
-            if (teleportedInLastTick != 0) {
+            if (teleportedInLastTick > 0) {
                 teleportedInLastTick--;
             }
         } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM) {
@@ -65,4 +65,3 @@ public class TickA extends CheckImpl implements PacketCheck {
         }
     }
 }
-
