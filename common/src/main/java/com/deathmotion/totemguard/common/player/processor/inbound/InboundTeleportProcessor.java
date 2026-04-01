@@ -16,28 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.protocol;
+package com.deathmotion.totemguard.common.player.processor.inbound;
 
-import com.deathmotion.totemguard.api3.check.CheckType;
-import com.deathmotion.totemguard.common.check.CheckImpl;
-import com.deathmotion.totemguard.common.check.annotations.CheckData;
-import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
 
-@CheckData(description = "Invalid teleport acknowledgement", type = CheckType.PROTOCOL)
-public class ProtocolF extends CheckImpl implements PacketCheck {
+public class InboundTeleportProcessor extends ProcessorInbound {
 
-    public ProtocolF(TGPlayer player) {
+    private final Data data;
+
+    public InboundTeleportProcessor(TGPlayer player) {
         super(player);
+        this.data = player.getData();
     }
 
     @Override
-    public void onPacketReceive(PacketReceiveEvent event) {
+    public void handleInbound(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
-        if (!player.getData().isLastTeleportConfirmValid()) {
-            fail();
-        }
+        WrapperPlayClientTeleportConfirm packet = new WrapperPlayClientTeleportConfirm(event);
+        data.validateTeleportConfirm(packet.getTeleportId());
     }
 }

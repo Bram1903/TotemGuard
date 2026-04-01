@@ -16,28 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.protocol;
+package com.deathmotion.totemguard.common.player.processor.outbound;
 
-import com.deathmotion.totemguard.api3.check.CheckType;
-import com.deathmotion.totemguard.common.check.CheckImpl;
-import com.deathmotion.totemguard.common.check.annotations.CheckData;
-import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 
-@CheckData(description = "Invalid teleport acknowledgement", type = CheckType.PROTOCOL)
-public class ProtocolF extends CheckImpl implements PacketCheck {
+public class OutboundTeleportProcessor extends ProcessorOutbound {
 
-    public ProtocolF(TGPlayer player) {
+    private final Data data;
+
+    public OutboundTeleportProcessor(TGPlayer player) {
         super(player);
+        this.data = player.getData();
     }
 
     @Override
-    public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
-        if (!player.getData().isLastTeleportConfirmValid()) {
-            fail();
-        }
+    public void handleOutbound(PacketSendEvent event) {
+        if (event.isCancelled()) return;
+        if (event.getPacketType() != PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) return;
+
+        WrapperPlayServerPlayerPositionAndLook packet = new WrapperPlayServerPlayerPositionAndLook(event);
+        data.trackTeleport(packet.getTeleportId());
     }
 }

@@ -33,8 +33,9 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 @CheckData(description = "Forcefully prevents tick end packets", type = CheckType.TICK)
 public class TickA extends CheckImpl implements PacketCheck {
 
-    private int teleportedInLastTick;
-    private boolean hasSentTickEnd;
+    private boolean receivedTickEnd = true;
+    private int flyingPackets;
+    private int teleportGracePackets;
 
     public TickA(TGPlayer player) {
         super(player);
@@ -45,23 +46,35 @@ public class TickA extends CheckImpl implements PacketCheck {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
-            if (!hasSentTickEnd && teleportedInLastTick == 0) {
-                fail();
+            if (consumeTeleportGrace()) {
+                return;
             }
 
-            hasSentTickEnd = false;
-
-            if (teleportedInLastTick > 0) {
-                teleportedInLastTick--;
+            if (!receivedTickEnd) {
+                fail("type=flying, packets=" + flyingPackets);
             }
+            receivedTickEnd = false;
+            flyingPackets++;
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            hasSentTickEnd = true;
+            receivedTickEnd = true;
 
-            if (teleportedInLastTick > 0) {
-                teleportedInLastTick--;
+            if (flyingPackets > 1) {
+                fail("type=end, packets=" + flyingPackets);
             }
-        } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM) {
-            teleportedInLastTick = 2;
+            flyingPackets = 0;
+
+            consumeTeleportGrace();
+        } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM && player.getData().isLastTeleportConfirmValid()) {
+            teleportGracePackets = 2;
         }
+    }
+
+    private boolean consumeTeleportGrace() {
+        if (teleportGracePackets <= 0) {
+            return false;
+        }
+
+        teleportGracePackets--;
+        return true;
     }
 }
