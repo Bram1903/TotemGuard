@@ -32,6 +32,10 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPl
 import java.util.HashSet;
 import java.util.Set;
 
+// Detects invalid teleport confirmation packets.
+// A client should only acknowledge teleport IDs that were actually sent by the server.
+// Forged acknowledgements can potentially be used by disablers to interfere with TickA,
+// which several checks depend on.
 @CheckData(description = "Invalid teleport acknowledgement", type = CheckType.PROTOCOL)
 public class ProtocolF extends CheckImpl implements PacketCheck {
 
