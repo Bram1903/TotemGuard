@@ -42,6 +42,7 @@ import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
+import com.deathmotion.totemguard.common.util.JarIntegrityChecker;
 import com.deathmotion.totemguard.common.util.LoggerSuppressor;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -87,9 +88,17 @@ public abstract class TGPlatform {
     }
 
     public void commonOnInitialize() {
+        if (!JarIntegrityChecker.verifyCurrentJar()) {
+            setEnabled(false);
+        }
     }
 
     public void commonOnEnable() {
+        if (!enabled) {
+            disablePlugin();
+            return;
+        }
+
         LoggerSuppressor.suppressDefaultNoise();
 
         Stopwatch stopwatch = Stopwatch.createStarted();
