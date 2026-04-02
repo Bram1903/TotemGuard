@@ -75,16 +75,6 @@ public class PacketInventory {
         return invSlot.getItem();
     }
 
-    public void setItem(int slot, ItemStack stack, long timestampMillis) {
-        InventorySlot invSlot = slotOrNull(slot);
-        if (invSlot == null) {
-            return;
-        }
-
-        this.lastIssuer = Issuer.CLIENT;
-        invSlot.update(stack, timestampMillis);
-    }
-
     public void setItem(int slot, ItemStack stack, Issuer issuer, SlotAction action, long timestampMillis) {
         InventorySlot invSlot = slotOrNull(slot);
         if (invSlot == null) {

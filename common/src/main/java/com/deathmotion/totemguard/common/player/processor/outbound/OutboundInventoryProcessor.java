@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -53,15 +54,15 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             packet.getCarriedItem().ifPresent(carriedItem -> inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, event.getTimestamp()));
             for (int slot = 0; slot < packet.getItems().size(); slot++) {
-                inventory.setItem(slot, packet.getItems().get(slot), event.getTimestamp());
+                inventory.setItem(slot, packet.getItems().get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
             }
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            inventory.setItem(packet.getSlot(), packet.getStack(), event.getTimestamp());
+            inventory.setItem(packet.getSlot(), packet.getStack(), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setItem(packet.getSlot(), packet.getItem(), event.getTimestamp());
+            inventory.setItem(packet.getSlot(), packet.getItem(), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
             inventory.setCarriedItem(packet.getStack(), -1, Issuer.SERVER, event.getTimestamp());
