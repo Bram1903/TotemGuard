@@ -31,7 +31,12 @@ import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
-public class CheckImpl implements Check {
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class CheckImpl implements Check {
+
+    private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass.";
 
     public final TGPlayer player;
 
@@ -47,15 +52,20 @@ public class CheckImpl implements Check {
     private final CheckType type;
     @Getter
     private final boolean experimental;
-
     @Getter
-    private boolean enabled = true;
-
+    private final boolean requiresTickEnd;
     @Getter
-    private boolean requiresTickEnd;
-
+    protected boolean punishable;
+    @Getter
+    private boolean enabled;
     @Getter
     private int violations;
+
+    @Getter
+    private int maxViolations;
+
+    @Getter
+    private List<String> punishCommands = new ArrayList<>();
 
     public CheckImpl(TGPlayer player) {
         this.player = player;
@@ -68,10 +78,7 @@ public class CheckImpl implements Check {
             throw new IllegalStateException("Check class " + checkClass.getName() + " is missing the @CheckData annotation!");
         }
         final CheckData checkData = checkClass.getAnnotation(CheckData.class);
-
-        if (checkClass.isAnnotationPresent(RequiresTickEnd.class)) {
-            requiresTickEnd = true;
-        }
+        this.requiresTickEnd = checkClass.isAnnotationPresent(RequiresTickEnd.class);
 
         this.name = checkData.name().isBlank() ? checkClass.getSimpleName() : checkData.name();
         this.description = checkData.description();
@@ -87,7 +94,12 @@ public class CheckImpl implements Check {
     }
 
     public void load() {
-        // Load check settings from config
+        CheckOptions checkOptions = new CheckOptions(name);
+
+        enabled = checkOptions.isEnabled();
+        punishable = checkOptions.isPunishable();
+        maxViolations = checkOptions.getMaxViolations();
+        punishCommands = checkOptions.getPunishCommands();
     }
 
     protected boolean fail() {
@@ -104,10 +116,14 @@ public class CheckImpl implements Check {
     }
 
     protected boolean shouldFail(@Nullable String debug) {
-        TGUserFlagEvent event = new TGUserFlagEventImpl(player, this, debug);
-        event = (TGUserFlagEvent) TGPlatform.getInstance().getEventRepository().post(event);
+        //if (player.getPlatformUser().hasPermission(BYPASS_PERMISSION + name)) return false;
+        TGUserFlagEvent event = TGPlatform.getInstance().getEventRepository().post(new TGUserFlagEventImpl(player, this, debug));
 
         return !event.isCancelled();
+    }
+
+    public void clearViolations() {
+        violations = 0;
     }
 
     @Override

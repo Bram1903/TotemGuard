@@ -33,7 +33,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientIn
 @CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
 
-    private int lastAttackedEntityId;
+    private int lastAttackedEntityId = -1;
     private int attacks;
 
     public ProtocolC(TGPlayer player) {
@@ -59,7 +59,7 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
             lastAttackedEntityId = targetEntityId;
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             attacks = 0;
+            lastAttackedEntityId = -1;
         }
     }
 }
-

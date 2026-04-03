@@ -16,25 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.placeholder.holder;
+package com.deathmotion.totemguard.common.redis.broker.packets;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+@FunctionalInterface
+public interface PacketProcessor<T> {
 
-public final class InternalHolderRepository {
-
-    private final CopyOnWriteArrayList<InternalPlaceholderHolder> holders = new CopyOnWriteArrayList<>();
-
-    public boolean register(InternalPlaceholderHolder holder) {
-        return holders.addIfAbsent(holder);
+    default void handleAny(Object value) {
+        //noinspection unchecked
+        handle((T) value);
     }
 
-    public boolean unregister(InternalPlaceholderHolder holder) {
-        return holders.remove(holder);
-    }
-
-    public List<InternalPlaceholderHolder> snapshot() {
-        return List.copyOf(holders);
-    }
+    void handle(T value);
 }
-

@@ -1,6 +1,6 @@
 package com.deathmotion.totemguard.common.cache.data;
 
-import com.deathmotion.totemguard.common.redis.binary.RedisCodec;
+import com.deathmotion.totemguard.common.redis.cache.binary.RedisCodec;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

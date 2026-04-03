@@ -19,16 +19,15 @@
 package com.deathmotion.totemguard.common.placeholder;
 
 import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderContext;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
-import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.engine.PlaceholderEngine;
-import com.deathmotion.totemguard.common.placeholder.holder.ApiHolderRepository;
-import com.deathmotion.totemguard.common.placeholder.holder.InternalHolderRepository;
+import com.deathmotion.totemguard.common.placeholder.holder.HolderRegistry;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import com.deathmotion.totemguard.common.placeholder.holder.impl.CheckPlaceholders;
 import com.deathmotion.totemguard.common.placeholder.holder.impl.PlatformPlaceholders;
@@ -37,7 +36,6 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -46,8 +44,8 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
 
     private final TGPlatform platform;
 
-    private final InternalHolderRepository internalHolders = new InternalHolderRepository();
-    private final ApiHolderRepository apiHolders = new ApiHolderRepository();
+    private final HolderRegistry<InternalPlaceholderHolder> internalHolders = new HolderRegistry<>();
+    private final HolderRegistry<PlaceholderHolder> apiHolders = new HolderRegistry<>();
 
     private volatile PlaceholderEngine engine;
 
@@ -95,39 +93,25 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
     }
 
     @Override
-    public @NotNull String replace(@NotNull String message) {
-        return replace(message, (TGUser) null, null);
-    }
-
-    @Override
-    public @NotNull String replace(@NotNull String message, @Nullable TGUser user) {
-        return replace(message, user, null);
-    }
-
-    @Override
-    public @NotNull String replace(@NotNull String message, @Nullable Check check) {
-        return replace(message, null, check);
-    }
-
-    @Override
-    public @NotNull String replace(@NotNull String message,
-                                   @Nullable TGUser user,
-                                   @Nullable Check check) {
-
-        TGPlayer player = adaptUser(user);
-        CheckImpl internalCheck = (check instanceof CheckImpl impl) ? impl : null;
-
-        InternalContext internalCtx = new InternalContext(platform, player, internalCheck);
-        return engine.replace(message, internalCtx, user, check, Map.of());
+    public @NotNull String replace(@NotNull String message, @NotNull PlaceholderContext context) {
+        TGPlayer player = adaptUser(context.user());
+        CheckImpl internalCheck = adaptCheck(context.check());
+        return engine.replace(
+                message,
+                new InternalContext(platform, player, internalCheck),
+                context
+        );
     }
 
     public @NotNull String replace(@NotNull String message,
                                    @Nullable TGPlayer player,
                                    @Nullable CheckImpl check,
                                    @NotNull Map<String, Object> extras) {
-
-        InternalContext internalCtx = new InternalContext(platform, player, check);
-        return engine.replace(message, internalCtx, player, check, extras);
+        return engine.replace(
+                message,
+                new InternalContext(platform, player, check),
+                new PlaceholderContext(player, check, extras)
+        );
     }
 
     public @NotNull String replace(@NotNull String message,
@@ -138,21 +122,12 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
 
     @Override
     public @NotNull Set<String> registeredKeys() {
-        java.util.Set<String> keys = new java.util.TreeSet<>();
+        return engine.registeredKeys();
+    }
 
-        for (Object holder : internalHolders.snapshot()) {
-            if (holder instanceof PlaceholderProvider provider) {
-                keys.addAll(provider.keys());
-            }
-        }
-
-        for (Object holder : apiHolders.snapshot()) {
-            if (holder instanceof PlaceholderProvider provider) {
-                keys.addAll(provider.keys());
-            }
-        }
-
-        return Collections.unmodifiableSet(keys);
+    @Override
+    public @NotNull Set<String> registeredPatterns() {
+        return engine.registeredPatterns();
     }
 
     private @Nullable TGPlayer adaptUser(@Nullable TGUser user) {
@@ -162,6 +137,8 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
         UUID uuid = user.getUuid();
         return platform.getPlayerRepository().getPlayer(uuid);
     }
+
+    private @Nullable CheckImpl adaptCheck(@Nullable Check check) {
+        return check instanceof CheckImpl impl ? impl : null;
+    }
 }
-
-

@@ -16,26 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.placeholder.holder;
+package com.deathmotion.totemguard.common.redis.cache.binary;
 
-import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
+/**
+ * Binary Redis codec implemented directly by cacheable models.
+ *
+ * @param <T> Model type
+ */
+public interface RedisCodec<T> {
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+    /**
+     * Encodes this instance into bytes.
+     */
+    byte[] encode() throws Exception;
 
-public final class ApiHolderRepository {
-
-    private final CopyOnWriteArrayList<PlaceholderHolder> holders = new CopyOnWriteArrayList<>();
-
-    public boolean register(PlaceholderHolder holder) {
-        return holders.addIfAbsent(holder);
-    }
-
-    public boolean unregister(PlaceholderHolder holder) {
-        return holders.remove(holder);
-    }
-
-    public List<PlaceholderHolder> snapshot() {
-        return List.copyOf(holders);
-    }
+    /**
+     * Decodes an instance from bytes.
+     */
+    T decode(byte[] data) throws Exception;
 }

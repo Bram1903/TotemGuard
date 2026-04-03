@@ -16,23 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.event.internal.impl;/*
- * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- * Copyright (C) 2025 Bram and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+package com.deathmotion.totemguard.common.event.internal.impl;
 
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -79,10 +63,22 @@ public class InventoryChangedEvent extends InternalPlayerEvent {
             List<InventorySlot> changedSlots,
             Issuer lastIssuer
     ) {
-        super(player);
+        super(player, resolveTimestamp(updatedCarriedItem, changedSlots));
         this.updatedCarriedItem = updatedCarriedItem;
-        this.changedSlots = changedSlots;
+        this.changedSlots = List.copyOf(changedSlots);
         this.lastIssuer = lastIssuer;
     }
-}
 
+    private static long resolveTimestamp(
+            @Nullable CarriedItem updatedCarriedItem,
+            List<InventorySlot> changedSlots
+    ) {
+        long timestamp = updatedCarriedItem != null ? updatedCarriedItem.getTimestamp() : Long.MIN_VALUE;
+
+        for (InventorySlot changedSlot : changedSlots) {
+            timestamp = Math.max(timestamp, changedSlot.getUpdated());
+        }
+
+        return timestamp == Long.MIN_VALUE ? System.currentTimeMillis() : timestamp;
+    }
+}

@@ -25,7 +25,8 @@ import java.util.Locale;
 public enum ModSeverity {
     LOG,
     KICK,
-    BAN;
+    BAN,
+    KICK_THEN_BAN;
 
     public static @Nullable ModSeverity fromConfigValue(@Nullable String value) {
         if (value == null || value.isBlank()) {

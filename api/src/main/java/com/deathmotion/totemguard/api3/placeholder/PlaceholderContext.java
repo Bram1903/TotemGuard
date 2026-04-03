@@ -22,7 +22,10 @@ import com.deathmotion.totemguard.api3.check.Check;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Context provided to {@link PlaceholderHolder}s during placeholder resolution.
@@ -42,6 +45,12 @@ public record PlaceholderContext(
         Map<String, Object> extras
 ) {
 
+    private static final PlaceholderContext EMPTY = new PlaceholderContext(null, null, Map.of());
+
+    public PlaceholderContext {
+        extras = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(extras, "extras")));
+    }
+
     /**
      * Creates a context without any extra values.
      *
@@ -50,6 +59,10 @@ public record PlaceholderContext(
      */
     public PlaceholderContext(@Nullable TGUser user, @Nullable Check check) {
         this(user, check, Map.of());
+    }
+
+    public static PlaceholderContext empty() {
+        return EMPTY;
     }
 
     /**
@@ -65,6 +78,4 @@ public record PlaceholderContext(
         return type.isInstance(value) ? (T) value : null;
     }
 }
-
-
 

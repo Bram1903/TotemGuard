@@ -58,16 +58,18 @@ public interface EventRepository {
     }
 
     /**
-     * Subscribes a listener to all events with the given order.
+     * Subscribes a listener to all public events with the given order.
      *
      * @param order    the invocation order
      * @param listener the event consumer
      * @return a subscription handle used to unsubscribe
      */
-    @NotNull EventSubscription subscribeAll(
+    default @NotNull EventSubscription subscribeAll(
             @NotNull EventOrder order,
             @NotNull Consumer<? super Event> listener
-    );
+    ) {
+        return subscribe(Event.class, order, listener);
+    }
 
     /**
      * Subscribes a listener to all events using {@link EventOrder#NORMAL}.
@@ -112,16 +114,18 @@ public interface EventRepository {
     }
 
     /**
-     * Unsubscribes a listener from all events for the given order.
+     * Unsubscribes a listener from all public events for the given order.
      *
      * @param order    the invocation order
      * @param listener the event consumer
      * @return true if the listener was removed
      */
-    boolean unsubscribeAll(
+    default boolean unsubscribeAll(
             @NotNull EventOrder order,
             @NotNull Consumer<? super Event> listener
-    );
+    ) {
+        return unsubscribe(Event.class, order, listener);
+    }
 
     /**
      * Unsubscribes a listener from all events using {@link EventOrder#NORMAL}.

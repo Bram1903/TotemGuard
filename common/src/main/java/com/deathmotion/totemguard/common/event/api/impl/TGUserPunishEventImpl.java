@@ -16,30 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis;
+package com.deathmotion.totemguard.common.event.api.impl;
 
-import io.lettuce.core.ClientOptions;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.RedisURI;
-import io.lettuce.core.resource.ClientResources;
+import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.event.impl.TGUserPunishEvent;
+import com.deathmotion.totemguard.api3.user.TGUser;
+import lombok.Getter;
+import lombok.Setter;
+import org.jetbrains.annotations.Nullable;
 
-final class RedisClientFactory {
+@Getter
+public final class TGUserPunishEventImpl extends TGUserEventImpl implements TGUserPunishEvent {
 
-    private RedisClientFactory() {
-    }
+    private final Check check;
+    private final @Nullable String debug;
 
-    static ClientResources createResources() {
-        return ClientResources.builder().build();
-    }
+    @Setter
+    private boolean cancelled;
 
-    static RedisClient createClient(ClientResources resources, RedisURI uri) {
-        RedisClient client = RedisClient.create(resources, uri);
-
-        client.setOptions(ClientOptions.builder()
-                .autoReconnect(true)
-                .pingBeforeActivateConnection(true)
-                .build());
-
-        return client;
+    public TGUserPunishEventImpl(TGUser user, Check check, @Nullable String debug) {
+        super(user);
+        this.check = check;
+        this.debug = debug;
+        this.cancelled = false;
     }
 }

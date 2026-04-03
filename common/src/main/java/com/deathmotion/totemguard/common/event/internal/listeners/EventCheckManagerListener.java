@@ -18,16 +18,14 @@
 
 package com.deathmotion.totemguard.common.event.internal.listeners;
 
-import com.deathmotion.totemguard.api3.event.Event;
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 
 import java.util.function.Consumer;
 
-public class EventCheckManagerListener implements Consumer<Event> {
+public class EventCheckManagerListener implements Consumer<InternalPlayerEvent> {
 
     @Override
-    public void accept(Event event) {
-        if (!(event instanceof InternalPlayerEvent internalEvent)) return;
-        internalEvent.getPlayer().getCheckManager().onEvent(internalEvent);
+    public void accept(InternalPlayerEvent event) {
+        event.getPlayer().getCheckManager().onEvent(event);
     }
 }

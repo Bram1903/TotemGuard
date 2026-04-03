@@ -62,6 +62,11 @@ public class TGVelocityPlatform extends TGPlatform {
     }
 
     @Override
+    public void dispatchCommand(String command) {
+        plugin.getServer().getCommandManager().executeAsync(plugin.getServer().getConsoleCommandSource(), command);
+    }
+
+    @Override
     public CommandManager<Sender> getCommandManager() {
         return commandManager.get();
     }

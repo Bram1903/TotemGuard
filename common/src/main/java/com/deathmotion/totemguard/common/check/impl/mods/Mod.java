@@ -39,7 +39,10 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSe
 import net.kyori.adventure.text.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +70,17 @@ public final class Mod extends CheckImpl implements PacketCheck {
 
     public Mod(TGPlayer player) {
         super(player);
+        punishable = true;
         reload();
+    }
+
+    private static String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        final String normalized = value.trim().toLowerCase(Locale.ROOT);
+        return normalized.isBlank() ? null : normalized;
     }
 
     @Override

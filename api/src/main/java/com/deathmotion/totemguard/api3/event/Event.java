@@ -32,15 +32,19 @@ public interface Event {
      *
      * @return the event name
      */
-    @NotNull String getName();
+    default @NotNull String getName() {
+        return getClass().getSimpleName();
+    }
 
     /**
-     * Returns the time at which this event was created.
+     * Returns the timestamp associated with this event.
      * <p>
-     * The value is expressed as the number of milliseconds since the Unix epoch,
-     * as returned by {@link System#currentTimeMillis()} at construction time.
+     * The value is expressed as the number of milliseconds since the Unix epoch.
+     * Implementations typically use the time at which the underlying action
+     * occurred. When no explicit event time is available, they may fall back to
+     * the event creation time.
      *
-     * @return the event creation timestamp in milliseconds since the Unix epoch
+     * @return the event timestamp in milliseconds since the Unix epoch
      */
     long getTimestamp();
 }

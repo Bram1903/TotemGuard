@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis.options;
+package com.deathmotion.totemguard.common.redis.cache;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -43,6 +43,10 @@ public final class RedisKeys {
      */
     public static byte[] checkSnapshots(UUID uuid) {
         return bytes(PREFIX + ":checks:" + uuid);
+    }
+
+    public static byte[] punishQueue(UUID uuid) {
+        return bytes(PREFIX + ":punishQueue:" + uuid);
     }
 
     public static byte[] alertsToggleData(UUID uuid) {

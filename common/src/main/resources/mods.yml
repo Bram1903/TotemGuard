@@ -8,6 +8,18 @@
 # The version of the mods file. DO NOT TOUCH!!!
 config_version: 1
 
+# Kick
+kick-command: a
+
+# Ban
+ban-command: a
+
+# Severity Options:
+# LOG: Simply sends an alert in chat, like any other check
+# KICK: Kicks the player
+# BAN: Bans the player
+# KICK_THEN_BAN: Kicks the player for their first violation, then bans them for their second violation
+
 mods:
   AutoTotem:
     severity: BAN

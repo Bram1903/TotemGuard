@@ -18,67 +18,102 @@
 
 package com.deathmotion.totemguard.common.placeholder.engine;
 
-import com.deathmotion.totemguard.api3.check.Check;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderContext;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
-import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
 
 public final class PlaceholderEngine {
 
-    private static final Pattern PLACEHOLDER = Pattern.compile("%([a-zA-Z0-9_]+)%");
-
-    private final List<InternalPlaceholderHolder> internalHolders;
-    private final List<PlaceholderHolder> apiHolders;
+    private final ResolverCatalog<InternalContext> internalResolvers;
+    private final ResolverCatalog<PlaceholderContext> apiResolvers;
+    private final Set<String> registeredKeys;
+    private final Set<String> registeredPatterns;
 
     public PlaceholderEngine(@NotNull List<InternalPlaceholderHolder> internalHolders,
                              @NotNull List<PlaceholderHolder> apiHolders) {
-        this.internalHolders = List.copyOf(internalHolders);
-        this.apiHolders = List.copyOf(apiHolders);
+        this.internalResolvers = ResolverCatalog.compile(
+                internalHolders,
+                InternalPlaceholderHolder::resolve
+        );
+        this.apiResolvers = ResolverCatalog.compile(
+                apiHolders,
+                PlaceholderHolder::resolve
+        );
+
+        TreeSet<String> keys = new TreeSet<>(internalResolvers.registeredKeys());
+        keys.addAll(apiResolvers.registeredKeys());
+        this.registeredKeys = Collections.unmodifiableSet(keys);
+
+        TreeSet<String> patterns = new TreeSet<>(internalResolvers.registeredPatterns());
+        patterns.addAll(apiResolvers.registeredPatterns());
+        this.registeredPatterns = Collections.unmodifiableSet(patterns);
     }
 
     public @NotNull String replace(@NotNull String message,
                                    @NotNull InternalContext internalCtx,
-                                   @Nullable TGUser apiUser,
-                                   @Nullable Check apiCheck,
-                                   @NotNull Map<String, Object> extras) {
+                                   @NotNull PlaceholderContext apiCtx) {
 
         if (message.isEmpty() || message.indexOf('%') == -1) {
             return message;
         }
 
-        PlaceholderContext apiCtx = new PlaceholderContext(apiUser, apiCheck, extras);
-
-        Matcher matcher = PLACEHOLDER.matcher(message);
         StringBuilder out = new StringBuilder(message.length());
+        int cursor = 0;
+        int length = message.length();
 
-        while (matcher.find()) {
-            String key = matcher.group(1);
-
-            String replacement = resolveExtra(key, extras);
-            if (replacement == null) {
-                replacement = resolveInternal(key, internalCtx);
-            }
-            if (replacement == null) {
-                replacement = resolveApi(key, apiCtx);
+        while (cursor < length) {
+            int start = message.indexOf('%', cursor);
+            if (start < 0 || start == length - 1) {
+                out.append(message, cursor, length);
+                return out.toString();
             }
 
-            if (replacement == null) {
-                replacement = matcher.group(0);
+            int end = message.indexOf('%', start + 1);
+            if (end < 0) {
+                out.append(message, cursor, length);
+                return out.toString();
             }
 
-            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
+            String key = message.substring(start + 1, end);
+            if (!isValidKey(key)) {
+                out.append(message, cursor, end + 1);
+                cursor = end + 1;
+                continue;
+            }
+
+            out.append(message, cursor, start);
+
+            String replacement = resolveExtra(key, apiCtx.extras());
+            if (replacement == null) {
+                replacement = internalResolvers.resolve(key, internalCtx);
+            }
+            if (replacement == null) {
+                replacement = apiResolvers.resolve(key, apiCtx);
+            }
+
+            if (replacement != null) {
+                out.append(replacement);
+            } else {
+                out.append(message, start, end + 1);
+            }
+
+            cursor = end + 1;
         }
 
-        matcher.appendTail(out);
         return out.toString();
+    }
+
+    public @NotNull Set<String> registeredKeys() {
+        return registeredKeys;
+    }
+
+    public @NotNull Set<String> registeredPatterns() {
+        return registeredPatterns;
     }
 
     private @Nullable String resolveExtra(String key, Map<String, Object> extras) {
@@ -86,20 +121,165 @@ public final class PlaceholderEngine {
         return value != null ? value.toString() : null;
     }
 
-    private @Nullable String resolveInternal(String key, InternalContext ctx) {
-        for (InternalPlaceholderHolder holder : internalHolders) {
-            String replacement = holder.resolve(key, ctx);
-            if (replacement != null) return replacement;
+    private boolean isValidKey(String key) {
+        if (key.isEmpty()) {
+            return false;
         }
-        return null;
+
+        for (int i = 0; i < key.length(); i++) {
+            if (Character.isWhitespace(key.charAt(i))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    private @Nullable String resolveApi(String key, PlaceholderContext ctx) {
-        for (PlaceholderHolder holder : apiHolders) {
-            String replacement = holder.resolve(key, ctx);
-            if (replacement != null) return replacement;
+    @FunctionalInterface
+    private interface ResolverInvoker<H, C> {
+        @Nullable String resolve(H holder, @NotNull String key, @NotNull C context);
+    }
+
+    @FunctionalInterface
+    private interface Resolver<C> {
+        @Nullable String resolve(@NotNull String key, @NotNull C context);
+    }
+
+    private static final class ResolverCatalog<C> {
+
+        private static final ResolverEntry<?>[] EMPTY = new ResolverEntry[0];
+
+        private final Map<String, ResolverEntry<C>[]> exactResolvers;
+        private final ResolverEntry<C>[] dynamicResolvers;
+        private final Set<String> registeredKeys;
+        private final Set<String> registeredPatterns;
+
+        private ResolverCatalog(
+                Map<String, ResolverEntry<C>[]> exactResolvers,
+                ResolverEntry<C>[] dynamicResolvers,
+                Set<String> registeredKeys,
+                Set<String> registeredPatterns
+        ) {
+            this.exactResolvers = exactResolvers;
+            this.dynamicResolvers = dynamicResolvers;
+            this.registeredKeys = registeredKeys;
+            this.registeredPatterns = registeredPatterns;
         }
-        return null;
+
+        private static <H, C> ResolverCatalog<C> compile(
+                List<H> holders,
+                ResolverInvoker<H, C> invoker
+        ) {
+            List<ResolverEntry<C>> dynamicResolvers = new ArrayList<>();
+            Map<String, List<ResolverEntry<C>>> exactResolvers = new java.util.LinkedHashMap<>();
+            TreeSet<String> registeredKeys = new TreeSet<>();
+            TreeSet<String> registeredPatterns = new TreeSet<>();
+
+            int sequence = 0;
+            for (H holder : holders) {
+                ResolverEntry<C> entry = new ResolverEntry<>(sequence++, (key, context) -> invoker.resolve(holder, key, context));
+
+                Collection<String> keys = holder instanceof PlaceholderProvider provider ? provider.keys() : List.of();
+                Collection<String> patterns = holder instanceof PlaceholderProvider provider ? provider.patterns() : List.of();
+
+                for (String key : keys) {
+                    exactResolvers.computeIfAbsent(key, ignored -> new ArrayList<>()).add(entry);
+                    registeredKeys.add(key);
+                }
+
+                registeredPatterns.addAll(patterns);
+
+                if (!(holder instanceof PlaceholderProvider) || !patterns.isEmpty() || keys.isEmpty()) {
+                    dynamicResolvers.add(entry);
+                }
+            }
+
+            Map<String, ResolverEntry<C>[]> dispatchByKey = new java.util.HashMap<>();
+            for (Map.Entry<String, List<ResolverEntry<C>>> exactEntry : exactResolvers.entrySet()) {
+                dispatchByKey.put(exactEntry.getKey(), merge(exactEntry.getValue(), dynamicResolvers));
+            }
+
+            return new ResolverCatalog<>(
+                    Collections.unmodifiableMap(dispatchByKey),
+                    toArray(dynamicResolvers),
+                    Collections.unmodifiableSet(registeredKeys),
+                    Collections.unmodifiableSet(registeredPatterns)
+            );
+        }
+
+        private static <C> ResolverEntry<C>[] merge(
+                List<ResolverEntry<C>> exactResolvers,
+                List<ResolverEntry<C>> dynamicResolvers
+        ) {
+            if (dynamicResolvers.isEmpty()) {
+                return toArray(exactResolvers);
+            }
+            if (exactResolvers.isEmpty()) {
+                return toArray(dynamicResolvers);
+            }
+
+            List<ResolverEntry<C>> merged = new ArrayList<>(exactResolvers.size() + dynamicResolvers.size());
+            int exactIndex = 0;
+            int dynamicIndex = 0;
+
+            while (exactIndex < exactResolvers.size() && dynamicIndex < dynamicResolvers.size()) {
+                ResolverEntry<C> exactResolver = exactResolvers.get(exactIndex);
+                ResolverEntry<C> dynamicResolver = dynamicResolvers.get(dynamicIndex);
+
+                if (exactResolver.sequence() <= dynamicResolver.sequence()) {
+                    merged.add(exactResolver);
+                    exactIndex++;
+                } else {
+                    merged.add(dynamicResolver);
+                    dynamicIndex++;
+                }
+            }
+
+            while (exactIndex < exactResolvers.size()) {
+                merged.add(exactResolvers.get(exactIndex++));
+            }
+
+            while (dynamicIndex < dynamicResolvers.size()) {
+                merged.add(dynamicResolvers.get(dynamicIndex++));
+            }
+
+            return toArray(merged);
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <C> ResolverEntry<C>[] toArray(List<ResolverEntry<C>> resolvers) {
+            return resolvers.isEmpty() ? (ResolverEntry<C>[]) EMPTY : resolvers.toArray(ResolverEntry[]::new);
+        }
+
+        private @Nullable String resolve(@NotNull String key, @NotNull C context) {
+            ResolverEntry<C>[] resolvers = exactResolvers.get(key);
+            if (resolvers == null) {
+                resolvers = dynamicResolvers;
+            }
+
+            for (ResolverEntry<C> resolver : resolvers) {
+                String replacement = resolver.resolve(key, context);
+                if (replacement != null) {
+                    return replacement;
+                }
+            }
+
+            return null;
+        }
+
+        private Set<String> registeredKeys() {
+            return registeredKeys;
+        }
+
+        private Set<String> registeredPatterns() {
+            return registeredPatterns;
+        }
+    }
+
+    private record ResolverEntry<C>(int sequence, Resolver<C> resolver) {
+
+        private @Nullable String resolve(@NotNull String key, @NotNull C context) {
+            return resolver.resolve(key, context);
+        }
     }
 }
-

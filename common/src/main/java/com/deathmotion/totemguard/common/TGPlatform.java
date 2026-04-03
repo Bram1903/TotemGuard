@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
+import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckManagerListener;
 import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
@@ -36,10 +37,12 @@ import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
+import com.deathmotion.totemguard.common.util.JarIntegrityChecker;
 import com.deathmotion.totemguard.common.util.LoggerSuppressor;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -65,13 +68,14 @@ public abstract class TGPlatform {
 
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
+    private PlaceholderRepositoryImpl placeholderRepository;
     private RedisRepositoryImpl redisRepository;
     private CacheRepositoryImpl cacheRepository;
     private MessageService messageService;
     private EventRepositoryImpl eventRepository;
+    private PunishmentRepositoryImpl punishmentRepository;
     private AlertRepositoryImpl alertRepository;
     private PlayerRepositoryImpl playerRepository;
-    private PlaceholderRepositoryImpl placeholderRepository;
     private CommandManagerImpl commandManager;
     private AntiVPNRepositoryImpl antiVPNRepository;
 
@@ -84,9 +88,17 @@ public abstract class TGPlatform {
     }
 
     public void commonOnInitialize() {
+        if (!JarIntegrityChecker.verifyCurrentJar()) {
+            setEnabled(false);
+        }
     }
 
     public void commonOnEnable() {
+        if (!enabled) {
+            disablePlugin();
+            return;
+        }
+
         LoggerSuppressor.suppressDefaultNoise();
 
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -100,13 +112,14 @@ public abstract class TGPlatform {
 
         reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
+        placeholderRepository = new PlaceholderRepositoryImpl();
         redisRepository = new RedisRepositoryImpl();
         cacheRepository = new CacheRepositoryImpl();
         messageService = new MessageService();
         eventRepository = new EventRepositoryImpl();
+        punishmentRepository = new PunishmentRepositoryImpl();
         alertRepository = new AlertRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
-        placeholderRepository = new PlaceholderRepositoryImpl();
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
 
@@ -114,9 +127,9 @@ public abstract class TGPlatform {
         PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());
 
         //noinspection resource
-        eventRepository.subscribe(InventoryChangedEvent.class, new TotemReplenishedListener());
+        eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener());
         //noinspection resource
-        eventRepository.subscribeAllIncludingInternal(new EventCheckManagerListener());
+        eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener());
 
         // Load the API
         api = new TGPlatformAPI();
@@ -131,6 +144,8 @@ public abstract class TGPlatform {
     }
 
     public abstract Scheduler getScheduler();
+
+    public abstract void dispatchCommand(String command);
 
     public abstract CommandManager<Sender> getCommandManager();
 

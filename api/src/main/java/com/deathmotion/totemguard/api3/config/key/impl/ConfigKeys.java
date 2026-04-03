@@ -95,6 +95,12 @@ public final class ConfigKeys {
                     300
             );
 
+    public static final ConfigValueKey<Integer> CACHE_PUNISH_QUEUE =
+            ConfigValueKey.required(
+                    "cache.data.punish-queue",
+                    60
+            );
+
     public static final @NotNull ConfigValueKey<Integer> CACHE_ALERTS_TOGGLE =
             ConfigValueKey.required(
                     "cache.data.alerts-toggle",

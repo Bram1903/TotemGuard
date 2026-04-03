@@ -87,15 +87,16 @@ public class PlaceholderCommand extends AbstractCommand {
 
     private void executeList(@NonNull CommandContext<Sender> context) {
         Set<String> keys = placeholderRepository.registeredKeys();
+        Set<String> patterns = placeholderRepository.registeredPatterns();
 
-        if (keys.isEmpty()) {
+        if (keys.isEmpty() && patterns.isEmpty()) {
             context.sender().sendMessage(Component.text("No placeholder providers are registered.", NamedTextColor.RED));
             return;
         }
 
         final int pageSize = 40;
         List<String> all = new ArrayList<>(keys);
-        int pages = (all.size() + pageSize - 1) / pageSize;
+        int pages = Math.max(1, (all.size() + pageSize - 1) / pageSize);
 
         int page = 1;
 
@@ -117,6 +118,18 @@ public class PlaceholderCommand extends AbstractCommand {
             body = body.append(Component.text("%" + key + "%", NamedTextColor.YELLOW))
                     .append(Component.text("  ", NamedTextColor.DARK_GRAY));
             if ((i - from + 1) % 4 == 0) body = body.append(Component.newline());
+        }
+
+        if (!patterns.isEmpty()) {
+            body = body.append(Component.newline())
+                    .append(Component.newline())
+                    .append(Component.text("Dynamic Patterns", NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.newline());
+
+            for (String pattern : patterns) {
+                body = body.append(Component.text(pattern, NamedTextColor.AQUA))
+                        .append(Component.newline());
+            }
         }
 
         context.sender().sendMessage(header.append(body));
