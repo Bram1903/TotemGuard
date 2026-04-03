@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientAttack;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
 @RequiresTickEnd
@@ -48,18 +49,20 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
             final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
 
             if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
-            final int targetEntityId = packet.getEntityId();
-
-            if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
-                if (fail("attacks=" + attacks)) {
-                    //event.setCancelled(true);
-                }
-            }
-
-            lastAttackedEntityId = targetEntityId;
+            handleAttack(packet.getEntityId());
+        } else if (packetType == PacketType.Play.Client.ATTACK) {
+            handleAttack(new WrapperPlayClientAttack(event).getEntityId());
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             attacks = 0;
             lastAttackedEntityId = -1;
         }
+    }
+
+    private void handleAttack(int targetEntityId) {
+        if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
+            fail("attacks=" + attacks);
+        }
+
+        lastAttackedEntityId = targetEntityId;
     }
 }

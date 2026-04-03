@@ -65,6 +65,8 @@ public class InboundActionProcessor extends ProcessorInbound {
             } else {
                 tickData.setInteracting(true);
             }
+        } else if (packetType == PacketType.Play.Client.ATTACK) {
+            tickData.setAttacking(true);
         } else if (packetType == PacketType.Play.Client.USE_ITEM) {
             tickData.setUsing(true);
             clickData.recordRightClick();
