@@ -39,10 +39,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSe
 import net.kyori.adventure.text.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +69,13 @@ public final class Mod extends CheckImpl implements PacketCheck {
         super(player);
         punishable = true;
         reload();
+    }
+
+    private static String createProbeId() {
+        final String randomValue = Long.toUnsignedString(ThreadLocalRandom.current().nextLong(), 36);
+        return randomValue.length() <= 8
+                ? randomValue
+                : randomValue.substring(randomValue.length() - 8);
     }
 
     private static String normalize(String value) {
@@ -324,22 +328,6 @@ public final class Mod extends CheckImpl implements PacketCheck {
         if (!probe.translationKey().startsWith(responseValue)) {
             pendingDetections.add(probe.modId());
         }
-    }
-
-    private static String createProbeId() {
-        final String randomValue = Long.toUnsignedString(ThreadLocalRandom.current().nextLong(), 36);
-        return randomValue.length() <= 8
-                ? randomValue
-                : randomValue.substring(randomValue.length() - 8);
-    }
-
-    private static String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        final String normalized = value.trim().toLowerCase(Locale.ROOT);
-        return normalized.isBlank() ? null : normalized;
     }
 
     private record TranslationProbe(
