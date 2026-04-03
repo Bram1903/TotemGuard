@@ -23,16 +23,12 @@ import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Getter
 @Setter
 public class Data {
 
     private final TGPlayer player;
-
-    private final Set<Integer> pendingTeleportIds = new HashSet<>();
+    private final TeleportData teleportData;
 
     private GameMode gameMode;
     private float health;
@@ -44,13 +40,11 @@ public class Data {
     private boolean isFlying;
     private boolean openInventory;
 
-    private boolean lastPacketWasTeleport;
-    private boolean lastTeleportConfirmValid;
-
     private volatile boolean sendingBundlePacket;
 
     public Data(TGPlayer player) {
         this.player = player;
+        this.teleportData = new TeleportData();
     }
 
     public void setOpenInventory(boolean openInventory) {
@@ -63,17 +57,5 @@ public class Data {
         }
 
         this.openInventory = openInventory;
-    }
-
-    public void trackTeleport(int teleportId) {
-        pendingTeleportIds.add(teleportId);
-    }
-
-    public void validateTeleportConfirm(int teleportId) {
-        lastTeleportConfirmValid = pendingTeleportIds.remove(teleportId);
-
-        if (lastTeleportConfirmValid) {
-            lastPacketWasTeleport = true;
-        }
     }
 }

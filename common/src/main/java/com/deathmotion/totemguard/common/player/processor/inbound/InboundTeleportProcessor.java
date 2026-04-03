@@ -39,13 +39,13 @@ public class InboundTeleportProcessor extends ProcessorInbound {
     public void handleInbound(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
         WrapperPlayClientTeleportConfirm packet = new WrapperPlayClientTeleportConfirm(event);
-        data.validateTeleportConfirm(packet.getTeleportId());
+        data.getTeleportData().validateTeleportConfirm(packet.getTeleportId());
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
         if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
-            data.setLastPacketWasTeleport(false);
+            data.getTeleportData().clearLastPacketWasTeleport();
         }
     }
 }

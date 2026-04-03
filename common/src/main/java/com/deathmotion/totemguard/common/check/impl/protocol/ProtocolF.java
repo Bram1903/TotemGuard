@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.TeleportData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
@@ -36,8 +37,15 @@ public class ProtocolF extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
-        if (!player.getData().isLastTeleportConfirmValid()) {
-            fail();
+        TeleportData teleportData = player.getData().getTeleportData();
+
+        if (!teleportData.lastTeleportConfirmValid()) {
+            fail("invalid");
+            return;
+        }
+
+        if (teleportData.lastTeleportConfirmSkipped()) {
+            fail("skipped=" + teleportData.getLastSkippedTeleportCount());
         }
     }
 }
