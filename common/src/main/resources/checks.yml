@@ -93,15 +93,23 @@ ProtocolE:
 
 ProtocolF:
   enabled: true
-  punishable: true
+  punishable: false
   max-violations: 1
 
   punishment-commands:
     - "kick %tg_player% Packet Manipulation"
 
+ProtocolG:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
 TickA:
   enabled: true
-  punishable: true
+  punishable: false
   max-violations: 1
 
   punishment-commands:
