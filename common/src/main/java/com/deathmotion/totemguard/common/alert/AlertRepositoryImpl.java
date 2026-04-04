@@ -132,11 +132,11 @@ public class AlertRepositoryImpl implements AlertRepository {
         String finalDebug = buf.getDebug();
         CheckImpl check = buf.getCheck();
 
-        String alertMessage = AlertBuilder.build(check, finalVl, finalDebug);
+        Component alertMessage = AlertBuilder.build(check, finalVl, finalDebug);
         enqueueChatSend(key.playerUuid(), alertMessage);
     }
 
-    private void enqueueChatSend(UUID playerUuid, String message) {
+    private void enqueueChatSend(UUID playerUuid, Component message) {
         chatQueues.compute(playerUuid, (uuid, tail) -> {
             CompletableFuture<Void> start = (tail == null)
                     ? CompletableFuture.completedFuture(null)
@@ -151,6 +151,10 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     public void broadcast(String message) {
         broadcast(MessageUtil.formatMessage(message), true);
+    }
+
+    public void broadcast(Component message) {
+        broadcast(message, true);
     }
 
     public void broadcastRawComponent(Component message) {

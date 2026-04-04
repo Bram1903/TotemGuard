@@ -36,7 +36,7 @@ public final class CheckPlaceholders implements InternalPlaceholderHolder, Place
 
     static {
         RESOLVERS = Map.of(
-                "tg_check", CheckImpl::getName,
+                "tg_check_name", CheckImpl::getName,
                 "tg_check_description", CheckImpl::getDescription,
                 "tg_check_type", c -> c.getType().name(),
                 "tg_check_experimental", c -> String.valueOf(c.isExperimental()),

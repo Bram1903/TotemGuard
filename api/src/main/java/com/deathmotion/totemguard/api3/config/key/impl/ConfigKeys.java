@@ -23,6 +23,12 @@ import org.jetbrains.annotations.NotNull;
 
 public final class ConfigKeys {
 
+    public static final ConfigValueKey<String> SERVER =
+            ConfigValueKey.required(
+                    "server",
+                    "default"
+            );
+
     public static final ConfigValueKey<String> COMMANDS_BASE =
             ConfigValueKey.required(
                     "commands.base",

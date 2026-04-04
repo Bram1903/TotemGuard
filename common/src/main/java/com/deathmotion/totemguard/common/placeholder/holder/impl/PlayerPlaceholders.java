@@ -38,7 +38,11 @@ public final class PlayerPlaceholders implements InternalPlaceholderHolder, Plac
         RESOLVERS = Map.of(
                 "tg_player", TGPlayer::getName,
                 "tg_player_uuid", p -> p.getUuid().toString(),
-                "tg_player_brand", TGPlayer::getClientBrand);
+                "tg_player_brand", TGPlayer::getClientBrand,
+                "tg_player_version", p -> p.getClientVersion().getReleaseName(),
+                "tg_player_ping_k", p -> String.valueOf(p.getPingData().getKeepAlivePing()),
+                "tg_player_ping_t", p -> String.valueOf(p.getPingData().getTransactionPing())
+        );
     }
 
     @Override
@@ -55,5 +59,4 @@ public final class PlayerPlaceholders implements InternalPlaceholderHolder, Plac
         return fn != null ? fn.apply(player) : null;
     }
 }
-
 

@@ -40,6 +40,29 @@ public final class MessagesKeys {
                     " &7(&8%tg_check_debug%&7)"
             );
 
+    public static final ConfigValueKey<String> ALERTS_HOVER =
+            ConfigValueKey.required(
+                    "alerts.hover",
+                    "&#e7dec4Client Version: &#FEE067%tg_player_version% &#8f7440| &#e7dec4Client Brand: &#FEE067%tg_player_brand%\n" +
+                            "\n" +
+                            "&#e7dec4Player: &#FEE067%tg_player%\n" +
+                            "&#e7dec4Ping: &#FEE067(K: %k_ping%ms &#8f7440| &#FEE067T: %t_ping%ms)\n" +
+                            "\n" +
+                            "&#e7dec4Check: &#FEE067%tg_check_name%\n" +
+                            "&#e7dec4Description: &#FEE067%tg_check_description%\n" +
+                            "&#e7dec4Server: &#FEE067%tg_server%\n" +
+                            "\n" +
+                            "%tg_check_details%\n" +
+                            "\n" +
+                            "&#e7dec4Click to &#fbaf00teleport &#e7dec4to &#FEE067%tg_player%&#e7dec4."
+            );
+
+    public static final ConfigValueKey<String> ALERTS_COMMAND =
+            ConfigValueKey.required(
+                    "alerts.command",
+                    "/tp %tg_player%"
+            );
+
     public static final ConfigValueKey<String> ALERTS_ENABLED =
             ConfigValueKey.required(
                     "alerts.enabled",

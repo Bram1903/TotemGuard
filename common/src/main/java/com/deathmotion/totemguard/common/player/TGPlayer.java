@@ -29,18 +29,12 @@ import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEve
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
-import com.deathmotion.totemguard.common.player.data.ClickData;
-import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.player.data.TickData;
-import com.deathmotion.totemguard.common.player.data.TotemData;
+import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
-import com.deathmotion.totemguard.common.player.processor.inbound.InboundActionProcessor;
-import com.deathmotion.totemguard.common.player.processor.inbound.InboundClientBrandProcessor;
-import com.deathmotion.totemguard.common.player.processor.inbound.InboundInventoryProcessor;
-import com.deathmotion.totemguard.common.player.processor.inbound.InboundTeleportProcessor;
+import com.deathmotion.totemguard.common.player.processor.inbound.*;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
@@ -73,6 +67,7 @@ public class TGPlayer implements TGUser {
     private final TotemData totemData;
     private final ClickData clickData;
     private final TickData tickData;
+    private final PingData pingData;
 
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
@@ -103,8 +98,10 @@ public class TGPlayer implements TGUser {
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
+        this.pingData = new PingData();
 
         this.processorInbounds = new ArrayList<>() {{
+            add(new InboundPingProcessor(TGPlayer.this));
             add(new InboundInventoryProcessor(TGPlayer.this));
             add(new InboundClientBrandProcessor(TGPlayer.this));
             add(new InboundActionProcessor(TGPlayer.this));
@@ -112,6 +109,7 @@ public class TGPlayer implements TGUser {
         }};
 
         this.processorOutbounds = new ArrayList<>() {{
+            add(new OutboundPingProcessor(TGPlayer.this));
             add(new OutboundBundleProcessor(TGPlayer.this));
             add(new OutboundSpawnProcessor(TGPlayer.this));
             add(new OutboundHealthProcessor(TGPlayer.this));
