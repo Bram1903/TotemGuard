@@ -36,33 +36,23 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
 
     private static final List<Rule> RULES = List.of(
             new Rule("attack + place", p ->
-                    p.getTickData().isAttacking()
-                            && p.getTickData().isPlacing()
-                            && !p.getTickData().isInteracting()
+                    p.getTickData().isAttacking() && p.getTickData().isPlacing() && !p.getTickData().isInteracting()
             ),
 
             new Rule("inventory_click + place", p ->
-                    p.getTickData().isClickingInInventory()
-                            && p.getTickData().isPlacing()
-                            && p.getData().isOpenInventory()
+                    p.getTickData().isClickingInInventory() && p.getTickData().isPlacing()
             ),
 
             new Rule("inventory_click + attack", p ->
-                    p.getTickData().isClickingInInventory()
-                            && p.getTickData().isAttacking()
-                            && p.getData().isOpenInventory()
+                    p.getTickData().isClickingInInventory() && p.getTickData().isAttacking()
             ),
 
             new Rule("quickmove + attack", p ->
-                    p.getTickData().isQuickMoveClicking()
-                            && p.getTickData().isAttacking()
-                            && p.getData().isOpenInventory()
+                    p.getTickData().isQuickMoveClicking() && p.getTickData().isAttacking()
             ),
 
             new Rule("pickup_click + place", p ->
-                    p.getTickData().isPickUpClicking()
-                            && p.getTickData().isPlacing()
-                            && p.getData().isOpenInventory()
+                    p.getTickData().isPickUpClicking() && p.getTickData().isPlacing()
             )
     );
 
