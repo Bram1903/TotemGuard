@@ -55,6 +55,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
             data.setSprinting(false);
             data.setGameMode(packet.getGameMode());
             data.setOpenInventory(false);
+            data.resetPlayerInput();
         }
     }
 }

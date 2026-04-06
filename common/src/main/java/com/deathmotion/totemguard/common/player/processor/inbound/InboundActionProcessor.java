@@ -118,6 +118,15 @@ public class InboundActionProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
             if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
                 WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
+                data.setPlayerInput(
+                        packet.isForward(),
+                        packet.isBackward(),
+                        packet.isLeft(),
+                        packet.isRight(),
+                        packet.isJump(),
+                        packet.isShift(),
+                        packet.isSprint()
+                );
                 data.setSneaking(packet.isShift());
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {
