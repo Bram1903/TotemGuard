@@ -54,41 +54,33 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         // From here we only run checks if the player has an open inventory
         if (!player.getData().isOpenInventory()) return;
 
-        if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.getData().isInput()) {
-            failAndCloseInventory("move (post)");
+        if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
+            fail("move (post)");
             return;
         }
 
         if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            failAndCloseInventory("place");
+            fail("place");
             return;
         }
 
         if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            failAndCloseInventory("change slot");
+            fail("change slot");
             return;
         }
 
         if (packetType == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
-            failAndCloseInventory("break");
+            fail("break");
             return;
         }
 
         if (packetType == PacketType.Play.Client.ATTACK) {
-            failAndCloseInventory("attack");
+            fail("attack");
             return;
         }
 
         if (packetType == PacketType.Play.Client.INTERACT_ENTITY && new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
-            failAndCloseInventory("attack");
+            fail("attack");
         }
-    }
-
-    private void failAndCloseInventory(String reason) {
-        fail(reason);
-
-        // Yes, I now this is stupid,
-        // but clients like Wurst and Meteor just don't close the inventory after interacting with the inventory
-        player.getData().setOpenInventory(false);
     }
 }

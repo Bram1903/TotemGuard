@@ -115,20 +115,18 @@ public class InboundActionProcessor extends ProcessorInbound {
             }
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             tickData.setClosingInventory(true);
-        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
-            if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_6)) {
-                WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
-                data.setPlayerInput(
-                        packet.isForward(),
-                        packet.isBackward(),
-                        packet.isLeft(),
-                        packet.isRight(),
-                        packet.isJump(),
-                        packet.isShift(),
-                        packet.isSprint()
-                );
-                data.setSneaking(packet.isShift());
-            }
+        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
+            WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
+            data.setPlayerInput(
+                    packet.isForward(),
+                    packet.isBackward(),
+                    packet.isLeft(),
+                    packet.isRight(),
+                    packet.isJump(),
+                    packet.isShift(),
+                    packet.isSprint()
+            );
+            data.setSneaking(packet.isShift());
         } else if (packetType == PacketType.Play.Client.PLAYER_ABILITIES) {
             WrapperPlayClientPlayerAbilities packet = new WrapperPlayClientPlayerAbilities(event);
             data.setFlying(packet.isFlying() && data.isCanFly());
@@ -139,7 +137,7 @@ public class InboundActionProcessor extends ProcessorInbound {
     public void handleInboundPost(PacketReceiveEvent event) {
         clickData.checkPost();
 
-        if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END) {
+        if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
             tickData.reset();
         }
     }
