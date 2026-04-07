@@ -51,6 +51,14 @@ InventoryC:
   punishment-commands:
     - "%default_punishment%"
 
+InventoryD:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
 ProtocolA:
   enabled: true
   punishable: false

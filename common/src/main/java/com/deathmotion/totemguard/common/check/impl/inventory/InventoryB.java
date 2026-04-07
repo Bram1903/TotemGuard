@@ -25,17 +25,9 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@CheckData(description = "Impossible click time difference", type = CheckType.INVENTORY)
+@CheckData(description = "Moving while clicking in the inventory", type = CheckType.INVENTORY)
 public class InventoryB extends CheckImpl implements PacketCheck {
-
-    private static final int LEFT_CLICK = 0;
-    private static final int RIGHT_CLICK = 1;
-
-    private long lastLeftClick = -1;
-    private long lastRightClick = -1;
 
     public InventoryB(TGPlayer player) {
         super(player);
@@ -43,28 +35,14 @@ public class InventoryB extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
-        if (packetType != PacketType.Play.Client.CLICK_WINDOW) return;
+        if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
 
-        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.PICKUP) return;
-
-        int button = packet.getButton();
-        if (button != LEFT_CLICK && button != RIGHT_CLICK) return;
-
-        long lastClickTime = button == LEFT_CLICK ? lastLeftClick : lastRightClick;
-
-        if (lastClickTime != -1) {
-            if ((event.getTimestamp() - lastClickTime) < 5) {
-                fail();
-            }
+        if (player.getData().isSprinting()) {
+            fail("sprinting");
         }
 
-        if (button == LEFT_CLICK) {
-            lastLeftClick = event.getTimestamp();
-        } else {
-            lastRightClick = event.getTimestamp();
+        if (player.getData().isInput()) {
+            fail("move");
         }
     }
-
 }

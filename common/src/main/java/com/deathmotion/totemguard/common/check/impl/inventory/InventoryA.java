@@ -38,24 +38,11 @@ public class InventoryA extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final var packetType = event.getPacketType();
-        final boolean isWindowClick = packetType == PacketType.Play.Client.CLICK_WINDOW;
-
-        if (player.getData().isSprinting() && isWindowClick) {
-            fail("sprinting");
-            return;
-        }
-
-        if (player.getData().isInput() && isWindowClick) {
-            fail("move");
-            return;
-        }
-
-        // From here we only run checks if the player has an open inventory
         if (!player.getData().isOpenInventory()) return;
+        final var packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            fail("move (post)");
+            fail("move");
             return;
         }
 
