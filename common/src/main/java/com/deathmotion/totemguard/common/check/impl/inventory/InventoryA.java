@@ -69,13 +69,18 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             return;
         }
 
-        if (packetType == PacketType.Play.Client.INTERACT_ENTITY && new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
+        if (packetType == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
+            failAndCloseInventory("break");
+            return;
+        }
+
+        if (packetType == PacketType.Play.Client.ATTACK) {
             failAndCloseInventory("attack");
             return;
         }
 
-        if (packetType == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
-            failAndCloseInventory("break");
+        if (packetType == PacketType.Play.Client.INTERACT_ENTITY && new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
+            failAndCloseInventory("attack");
         }
     }
 
