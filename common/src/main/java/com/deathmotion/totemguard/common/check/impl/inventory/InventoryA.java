@@ -64,13 +64,18 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             return;
         }
 
+        if (packetType == PacketType.Play.Client.USE_ITEM) {
+            fail("use");
+            return;
+        }
+
         if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
             fail("change slot");
             return;
         }
 
-        if (packetType == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
-            fail("break");
+        if (packetType == PacketType.Play.Client.PICK_ITEM) {
+            fail("pick item");
             return;
         }
 
@@ -79,8 +84,19 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             return;
         }
 
-        if (packetType == PacketType.Play.Client.INTERACT_ENTITY && new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
-            fail("attack");
+        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
+            WrapperPlayClientInteractEntity.InteractAction action = new WrapperPlayClientInteractEntity(event).getAction();
+            fail(action == WrapperPlayClientInteractEntity.InteractAction.ATTACK ? "attack" : "interact");
+            return;
+        }
+
+        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
+            fail("entity action");
+            return;
+        }
+
+        if (packetType == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
+            fail("break");
         }
     }
 }
