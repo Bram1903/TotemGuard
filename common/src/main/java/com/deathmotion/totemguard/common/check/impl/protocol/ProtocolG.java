@@ -16,55 +16,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.inventory;
+package com.deathmotion.totemguard.common.check.impl.protocol;
 
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@CheckData(description = "Impossible click time difference", type = CheckType.INVENTORY)
-public class InventoryC extends CheckImpl implements PacketCheck {
+@RequiresTickEnd
+@CheckData(description = "Changed slot too quickly", type = CheckType.PROTOCOL, experimental = true)
+public class ProtocolG extends CheckImpl implements PacketCheck {
 
-    private static final int LEFT_CLICK = 0;
-    private static final int RIGHT_CLICK = 1;
+    int slotChanges;
 
-    private long lastLeftClick = -1;
-    private long lastRightClick = -1;
-
-    public InventoryC(TGPlayer player) {
+    public ProtocolG(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
-        if (packetType != PacketType.Play.Client.CLICK_WINDOW) return;
 
-        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.PICKUP) return;
-
-        int button = packet.getButton();
-        if (button != LEFT_CLICK && button != RIGHT_CLICK) return;
-
-        long lastClickTime = button == LEFT_CLICK ? lastLeftClick : lastRightClick;
-
-        if (lastClickTime != -1) {
-            if ((event.getTimestamp() - lastClickTime) < 5) {
-                fail();
+        if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
+            slotChanges++;
+        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
+            if (slotChanges > 1) {
+                fail("changes=" + slotChanges);
             }
-        }
 
-        if (button == LEFT_CLICK) {
-            lastLeftClick = event.getTimestamp();
-        } else {
-            lastRightClick = event.getTimestamp();
+            slotChanges = 0;
         }
     }
-
 }

@@ -8,6 +8,9 @@
 # The version of the config file. DO NOT TOUCH!!!
 config_version: 1
 
+# The name of the server for alerts, webhooks, and more. (%tg_server% placeholder)
+server: Default
+
 # The name of the root command for TotemGuard. (This requires a server restart to take effect)
 commands:
   base: totemguard3

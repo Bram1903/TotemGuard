@@ -22,8 +22,13 @@ import com.deathmotion.totemguard.api3.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.util.MessageUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class AlertBuilder {
@@ -31,29 +36,40 @@ public final class AlertBuilder {
     private AlertBuilder() {
     }
 
-    public static String build(CheckImpl check, int violations, @Nullable String debugInfo) {
+    public static Component build(CheckImpl check, int violations, @Nullable String debugInfo) {
         MessageService messageService = TGPlatform.getInstance().getMessageService();
 
-        Map<String, Object> extras = Map.of(
-                "tg_check_violations", violations,
-                "tg_check_debug", debugInfo == null ? "" : debugInfo
-        );
+        Map<String, Object> extras = new LinkedHashMap<>();
+        extras.put("tg_check_violations", violations);
+        extras.put("tg_check_debug", debugInfo == null ? "Not specified" : debugInfo);
 
-        if (debugInfo != null) {
-            return messageService.getJoined(
-                    check.player,
-                    check,
-                    extras,
-                    MessagesKeys.ALERTS_MESSAGE,
-                    MessagesKeys.ALERTS_DEBUG
-            );
-        }
-
-        return messageService.getString(
+        Component alert = messageService.getComponent(
                 MessagesKeys.ALERTS_MESSAGE,
                 check.player,
                 check,
                 extras
         );
+
+        String hoverText = messageService.getString(
+                MessagesKeys.ALERTS_HOVER,
+                check.player,
+                check,
+                extras
+        ).stripTrailing();
+        if (!hoverText.isBlank()) {
+            alert = alert.hoverEvent(HoverEvent.showText(MessageUtil.formatMessage(hoverText)));
+        }
+
+        String command = messageService.getString(
+                MessagesKeys.ALERTS_COMMAND,
+                check.player,
+                check,
+                extras
+        );
+        if (!command.isBlank()) {
+            alert = alert.clickEvent(ClickEvent.runCommand(command));
+        }
+
+        return alert;
     }
 }

@@ -23,16 +23,13 @@ import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Getter
 @Setter
 public class Data {
 
     private final TGPlayer player;
-
-    private final Set<Integer> pendingTeleportIds = new HashSet<>();
+    private final TeleportData teleportData;
+    private final InputData inputData;
 
     private GameMode gameMode;
     private float health;
@@ -44,13 +41,12 @@ public class Data {
     private boolean isFlying;
     private boolean openInventory;
 
-    private boolean lastPacketWasTeleport;
-    private boolean lastTeleportConfirmValid;
-
     private volatile boolean sendingBundlePacket;
 
     public Data(TGPlayer player) {
         this.player = player;
+        this.teleportData = new TeleportData();
+        this.inputData = new InputData();
     }
 
     public void setOpenInventory(boolean openInventory) {
@@ -65,15 +61,15 @@ public class Data {
         this.openInventory = openInventory;
     }
 
-    public void trackTeleport(int teleportId) {
-        pendingTeleportIds.add(teleportId);
+    public void setPlayerInput(boolean inputForward, boolean inputBackward, boolean inputLeft, boolean inputRight, boolean inputJumping, boolean inputSneaking, boolean inputSprinting) {
+        inputData.setState(inputForward, inputBackward, inputLeft, inputRight, inputJumping, inputSneaking, inputSprinting);
     }
 
-    public void validateTeleportConfirm(int teleportId) {
-        lastTeleportConfirmValid = pendingTeleportIds.remove(teleportId);
+    public void resetPlayerInput() {
+        inputData.reset();
+    }
 
-        if (lastTeleportConfirmValid) {
-            lastPacketWasTeleport = true;
-        }
+    public boolean isInput() {
+        return inputData.isInput();
     }
 }

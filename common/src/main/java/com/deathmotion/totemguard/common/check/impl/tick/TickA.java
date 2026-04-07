@@ -45,7 +45,7 @@ public class TickA extends CheckImpl implements PacketCheck {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
-            if (player.getData().isLastPacketWasTeleport()) {
+            if (player.getData().getTeleportData().lastPacketWasTeleport()) {
                 return;
             }
 

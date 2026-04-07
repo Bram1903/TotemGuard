@@ -12,8 +12,22 @@ prefix: "&#fbaf00&lTG &r&#fffb00[3.0] &8»"
 alerts:
   enabled: "%prefix% &aAlerts enabled"
   disabled: "%prefix% &cAlerts disabled"
-  message: "%prefix% &#FEE067%tg_player%&7 failed &#fbaf00%tg_check% &7VL[&#fbaf00%tg_check_violations%/∞&7]"
-  debug: " &7(&8%tg_check_debug%&7)"
+
+  message: "%prefix% &#FEE067%tg_player%&7 failed &#fbaf00%tg_check_name% &7VL[&#fbaf00%tg_check_violations%/∞&7]"
+  hover: |-
+    &#e7dec4Client Version: &#FEE067%tg_player_version% &#8f7440| &#e7dec4Client Brand: &#FEE067%tg_player_brand%
+    
+    &#e7dec4Player: &#FEE067%tg_player%
+    &#e7dec4Ping: &#FEE067(K: %tg_player_ping_k%ms &#8f7440| &#FEE067T: %tg_player_ping_t%ms)
+    
+    &#e7dec4Check: &#FEE067%tg_check_name%
+    &#e7dec4Description: &#FEE067%tg_check_description%
+    &#e7dec4Server: &#FEE067%tg_server%
+    
+    &#e7dec4Debug: &#FEE067%tg_check_debug%
+    
+    &#e7dec4Click to &#FEE067teleport &#e7dec4to &#FEE067%tg_player%&#e7dec4.
+  command: "/tp %tg_player%"
 
 reload: "%prefix% &aTotemGuard reloaded successfully!"
 anti-vpn:

@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryB;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryC;
+import com.deathmotion.totemguard.common.check.impl.inventory.InventoryD;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.impl.tick.TickA;
@@ -59,16 +60,18 @@ public class CheckManagerImpl {
                 .build();
 
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
+                .put(TickA.class, new TickA(player))
                 .put(ProtocolA.class, new ProtocolA(player))
                 .put(ProtocolB.class, new ProtocolB(player))
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(ProtocolE.class, new ProtocolE(player))
                 .put(ProtocolF.class, new ProtocolF(player))
-                .put(TickA.class, new TickA(player))
+                .put(ProtocolG.class, new ProtocolG(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
+                .put(InventoryD.class, new InventoryD(player))
                 .put(Mod.class, new Mod(player))
                 .build();
 

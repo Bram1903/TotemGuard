@@ -40,6 +40,6 @@ public class OutboundTeleportProcessor extends ProcessorOutbound {
         if (event.getPacketType() != PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) return;
 
         WrapperPlayServerPlayerPositionAndLook packet = new WrapperPlayServerPlayerPositionAndLook(event);
-        data.trackTeleport(packet.getTeleportId());
+        data.getTeleportData().trackTeleport(packet.getTeleportId());
     }
 }

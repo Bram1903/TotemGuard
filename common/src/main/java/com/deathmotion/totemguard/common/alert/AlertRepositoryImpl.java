@@ -33,12 +33,12 @@ import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class AlertRepositoryImpl implements AlertRepository {
+
+    private static final long CHAT_BUFFER_WINDOW_SECONDS = 1L;
 
     private final TGPlatform platform;
     private final MessageService messageService;
@@ -47,9 +47,7 @@ public class AlertRepositoryImpl implements AlertRepository {
     @Getter
     private final ConcurrentHashMap<UUID, PlatformUser> enabledAlerts = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<UUID, CompletableFuture<Void>> chatQueues = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<AlertKey, ChatBuffer> chatBuffers = new ConcurrentHashMap<>();
-    private final Executor asyncExecutor = command -> TGPlatform.getInstance().getScheduler().runAsyncTask(command);
+    private final ConcurrentHashMap<UUID, PlayerChatBuffer> chatBuffers = new ConcurrentHashMap<>();
 
     public AlertRepositoryImpl() {
         this.platform = TGPlatform.getInstance();
@@ -83,8 +81,11 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     public void removeUser(UUID uuid) {
         enabledAlerts.remove(uuid);
-        chatBuffers.keySet().removeIf(key -> key.playerUuid().equals(uuid));
-        chatQueues.remove(uuid);
+
+        PlayerChatBuffer playerChatBuffer = chatBuffers.remove(uuid);
+        if (playerChatBuffer != null) {
+            playerChatBuffer.clear();
+        }
     }
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
@@ -101,56 +102,23 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug) {
         UUID playerUuid = check.player.getUuid();
-        AlertKey key = new AlertKey(playerUuid, check.getName());
-
-        chatBuffers.compute(key, (k, buf) -> {
-            if (buf == null) {
-                ChatBuffer created = new ChatBuffer(check);
-                created.update(violations, debug);
-
-                scheduleFlush(k);
-
-                return created;
-            }
-
-            buf.update(violations, debug);
-            return buf;
-        });
-    }
-
-    private void scheduleFlush(AlertKey key) {
-        TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(() -> flushChat(key), 1, TimeUnit.SECONDS);
-    }
-
-    private void flushChat(AlertKey key) {
-        ChatBuffer buf = chatBuffers.remove(key);
-        if (buf == null) {
-            return;
-        }
-
-        int finalVl = buf.getViolations();
-        String finalDebug = buf.getDebug();
-        CheckImpl check = buf.getCheck();
-
-        String alertMessage = AlertBuilder.build(check, finalVl, finalDebug);
-        enqueueChatSend(key.playerUuid(), alertMessage);
-    }
-
-    private void enqueueChatSend(UUID playerUuid, String message) {
-        chatQueues.compute(playerUuid, (uuid, tail) -> {
-            CompletableFuture<Void> start = (tail == null)
-                    ? CompletableFuture.completedFuture(null)
-                    : tail;
-
-            CompletableFuture<Void> next = start.thenRunAsync(() -> broadcast(message), asyncExecutor);
-
-            next.whenComplete((v, t) -> chatQueues.remove(uuid, next));
-            return next;
-        });
+        chatBuffers.computeIfAbsent(
+                playerUuid,
+                ignored -> new PlayerChatBuffer(
+                        platform.getScheduler(),
+                        this::broadcast,
+                        CHAT_BUFFER_WINDOW_SECONDS,
+                        TimeUnit.SECONDS
+                )
+        ).buffer(check, violations, debug);
     }
 
     public void broadcast(String message) {
         broadcast(MessageUtil.formatMessage(message), true);
+    }
+
+    public void broadcast(Component message) {
+        broadcast(message, true);
     }
 
     public void broadcastRawComponent(Component message) {

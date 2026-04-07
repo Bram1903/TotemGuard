@@ -19,43 +19,37 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.PingData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJoinGame;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRespawn;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowConfirmation;
 
-public class OutboundSpawnProcessor extends ProcessorOutbound {
+public class OutboundPingProcessor extends ProcessorOutbound {
 
-    private final Data data;
+    private final PingData pingData;
 
-    public OutboundSpawnProcessor(TGPlayer player) {
+    public OutboundPingProcessor(TGPlayer player) {
         super(player);
-        this.data = player.getData();
+        this.pingData = player.getPingData();
     }
 
     @Override
     public void handleOutbound(PacketSendEvent event) {
-        if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
-        if (packetType == PacketType.Play.Server.JOIN_GAME) {
-            WrapperPlayServerJoinGame packet = new WrapperPlayServerJoinGame(event);
-            data.setGameMode(packet.getGameMode());
-        } else if (packetType == PacketType.Play.Server.RESPAWN) {
-            WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
-
-            if (player.getClientVersion().isOlderThan(ClientVersion.V_1_16) || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
-                data.setSneaking(false);
-            }
-
-            data.setSprinting(false);
-            data.setGameMode(packet.getGameMode());
-            data.setOpenInventory(false);
-            data.resetPlayerInput();
+        if (packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) {
+            WrapperPlayServerWindowConfirmation packet = new WrapperPlayServerWindowConfirmation(event);
+            pingData.transactionSent(packet.getActionId(), event.getTimestamp());
+        } else if (packetType == PacketType.Play.Server.PING) {
+            WrapperPlayServerPing packet = new WrapperPlayServerPing(event);
+            pingData.transactionSent(packet.getId(), event.getTimestamp());
+        } else if (packetType == PacketType.Play.Server.KEEP_ALIVE) {
+            WrapperPlayServerKeepAlive packet = new WrapperPlayServerKeepAlive(event);
+            pingData.keepAliveSent(packet.getId(), event.getTimestamp());
         }
     }
 }

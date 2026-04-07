@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
 import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.api3.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
@@ -36,10 +37,15 @@ public final class PlatformPlaceholders implements InternalPlaceholderHolder, Pl
     private static final Map<String, Function<InternalContext, String>> RESOLVERS;
 
     static {
-        RESOLVERS = Map.of("prefix", ctx -> ctx.platform()
-                .getConfigRepository()
-                .config(ConfigFile.MESSAGES)
-                .getString(MessagesKeys.PREFIX)
+        RESOLVERS = Map.of(
+                "prefix", ctx -> ctx.platform()
+                        .getConfigRepository()
+                        .config(ConfigFile.MESSAGES)
+                        .getString(MessagesKeys.PREFIX),
+                "tg_server", ctx -> ctx.platform()
+                        .getConfigRepository()
+                        .config(ConfigFile.CONFIG)
+                        .getString(ConfigKeys.SERVER)
         );
     }
 
@@ -54,5 +60,4 @@ public final class PlatformPlaceholders implements InternalPlaceholderHolder, Pl
         return fn != null ? fn.apply(ctx) : null;
     }
 }
-
 
