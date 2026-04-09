@@ -37,6 +37,10 @@ public class PingData {
     @Getter
     private int transactionPing = INVALID_PING;
     @Getter
+    private boolean observedTransactionReply;
+    @Getter
+    private boolean observedTeleportTransactionResult;
+    @Getter
     private boolean lastTransactionReplyValid;
     @Getter
     private boolean lastTransactionReplySynthetic;
@@ -81,6 +85,18 @@ public class PingData {
         return lastTransactionReplySynthetic;
     }
 
+    public int getPendingTransactionCount() {
+        return transactionTracker.pendingCount();
+    }
+
+    public int getPendingTeleportCount() {
+        return transactionTracker.pendingTeleportCount();
+    }
+
+    public int getLastSentPositiveTransactionId() {
+        return transactionTracker.lastPositiveTransactionId();
+    }
+
     public void trackTeleport(int teleportId) {
         transactionTracker.trackTeleport(teleportId);
     }
@@ -91,6 +107,7 @@ public class PingData {
 
     public void transactionReceived(int id, long timestamp) {
         TransactionReplyObservation observation = transactionTracker.received(id, timestamp);
+        this.observedTransactionReply = true;
         this.transactionPing = observation.ping();
         this.lastTransactionReplyValid = observation.valid();
         this.lastTransactionReplySynthetic = observation.synthetic();
@@ -100,6 +117,7 @@ public class PingData {
 
     public void teleportReceived(int teleportId, long timestamp) {
         TeleportTransactionObservation observation = transactionTracker.teleportReceived(teleportId, timestamp);
+        this.observedTeleportTransactionResult = true;
         this.lastTeleportSkippedTransactions = observation.skipped();
         this.lastSkippedTransactionsByTeleportCount = observation.skippedCount();
     }
@@ -287,6 +305,18 @@ public class PingData {
             for (int i = 0; i < skippedCount; i++) {
                 pendingTransactions.removeFirst();
             }
+        }
+
+        private int pendingCount() {
+            return pendingTransactions.size();
+        }
+
+        private int pendingTeleportCount() {
+            return pendingTeleports.size();
+        }
+
+        private int lastPositiveTransactionId() {
+            return lastPositiveTransactionId;
         }
 
         private record MatchedTransaction(

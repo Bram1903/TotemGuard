@@ -45,12 +45,15 @@ public class OutboundPingProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) {
             WrapperPlayServerWindowConfirmation packet = new WrapperPlayServerWindowConfirmation(event);
             pingData.transactionSent(packet.getActionId(), event.getTimestamp());
+            player.getDebugOverlayManager().refresh();
         } else if (packetType == PacketType.Play.Server.PING) {
             WrapperPlayServerPing packet = new WrapperPlayServerPing(event);
             pingData.transactionSent(packet.getId(), event.getTimestamp());
+            player.getDebugOverlayManager().refresh();
         } else if (packetType == PacketType.Play.Server.KEEP_ALIVE) {
             WrapperPlayServerKeepAlive packet = new WrapperPlayServerKeepAlive(event);
             pingData.keepAliveSent(packet.getId(), event.getTimestamp());
+            player.getDebugOverlayManager().refresh();
         }
     }
 }

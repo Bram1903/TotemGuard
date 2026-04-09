@@ -22,8 +22,8 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.PingData;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowConfirmation;
@@ -74,6 +74,7 @@ public class PacketLatencyHandler {
 
         player.getUser().sendPacketSilently(createTransactionPacket(transactionId));
         pingData.syntheticTransactionSent(transactionId, System.currentTimeMillis());
+        player.getDebugOverlayManager().refresh();
     }
 
     private PacketWrapper<?> createTransactionPacket(int transactionId) {

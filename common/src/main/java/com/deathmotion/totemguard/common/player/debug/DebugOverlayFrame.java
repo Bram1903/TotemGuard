@@ -16,17 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.data;
+package com.deathmotion.totemguard.common.player.debug;
 
-import com.deathmotion.totemguard.common.util.datastructure.EvictingList;
-import lombok.Getter;
+import net.kyori.adventure.text.Component;
 
-public class TotemData {
+import java.util.List;
 
-    public static final long MAX_TRACKED_INTERVAL_MS = 2_000L;
+public record DebugOverlayFrame(List<Component> lines) {
 
-    @Getter
-    private final EvictingList<Long> intervals = new EvictingList<>(50);
+    public DebugOverlayFrame {
+        lines = List.copyOf(lines);
+    }
 
-
+    public static DebugOverlayFrame of(Component... lines) {
+        return new DebugOverlayFrame(List.of(lines));
+    }
 }

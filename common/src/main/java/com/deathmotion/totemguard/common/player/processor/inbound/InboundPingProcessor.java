@@ -46,18 +46,21 @@ public class InboundPingProcessor extends ProcessorInbound {
         if (packetType == PacketType.Play.Client.WINDOW_CONFIRMATION) {
             WrapperPlayClientWindowConfirmation packet = new WrapperPlayClientWindowConfirmation(event);
             pingData.transactionReceived(packet.getActionId(), event.getTimestamp());
+            player.getDebugOverlayManager().refresh();
             if (proxy && pingData.shouldCancelTransactionReplyOnProxy()) {
                 event.setCancelled(true);
             }
         } else if (packetType == PacketType.Play.Client.PONG) {
             WrapperPlayClientPong packet = new WrapperPlayClientPong(event);
             pingData.transactionReceived(packet.getId(), event.getTimestamp());
+            player.getDebugOverlayManager().refresh();
             if (proxy && pingData.shouldCancelTransactionReplyOnProxy()) {
                 event.setCancelled(true);
             }
         } else if (packetType == PacketType.Play.Client.KEEP_ALIVE) {
             WrapperPlayClientKeepAlive packet = new WrapperPlayClientKeepAlive(event);
             pingData.keepAliveReceived(packet.getId(), event.getTimestamp());
+            player.getDebugOverlayManager().refresh();
         }
     }
 }

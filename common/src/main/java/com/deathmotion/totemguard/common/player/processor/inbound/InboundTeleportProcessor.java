@@ -44,6 +44,7 @@ public class InboundTeleportProcessor extends ProcessorInbound {
         WrapperPlayClientTeleportConfirm packet = new WrapperPlayClientTeleportConfirm(event);
         data.getTeleportData().validateTeleportConfirm(packet.getTeleportId());
         pingData.teleportReceived(packet.getTeleportId(), event.getTimestamp());
+        player.getDebugOverlayManager().refresh();
     }
 
     @Override
