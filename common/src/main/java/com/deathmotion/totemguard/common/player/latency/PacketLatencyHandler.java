@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.PingData;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
@@ -64,6 +65,8 @@ public class PacketLatencyHandler {
     }
 
     private void sendTransactionPacket(List<LongConsumer> callbacks) {
+        if (player.getUser().getEncoderState() != ConnectionState.PLAY) return;
+
         int transactionId = pingData.reserveNextTransactionId(maxTransactionId());
         for (LongConsumer callback : callbacks) {
             pingData.addTransactionCallback(transactionId, callback);
