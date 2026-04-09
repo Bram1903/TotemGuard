@@ -16,40 +16,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.protocol;
+package com.deathmotion.totemguard.common.check.impl.tick;
 
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
-import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.TeleportData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
-@RequiresTickEnd
-@CheckData(description = "Changed slot too quickly", type = CheckType.PROTOCOL, experimental = true)
-public class ProtocolG extends CheckImpl implements PacketCheck {
+@CheckData(description = "Invalid teleport acknowledgement", type = CheckType.TICK)
+public class TickC extends CheckImpl implements PacketCheck {
 
-    int slotChanges;
-
-    public ProtocolG(TGPlayer player) {
+    public TickC(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
+        if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
+        TeleportData teleportData = player.getData().getTeleportData();
 
-        if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            slotChanges++;
-        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            if (slotChanges > 1) {
-                fail("changes=" + slotChanges);
-            }
+        if (!teleportData.lastTeleportConfirmValid()) {
+            fail("invalid");
+            return;
+        }
 
-            slotChanges = 0;
+        if (teleportData.lastTeleportConfirmSkipped()) {
+            fail("skipped=" + teleportData.getLastSkippedTeleportCount());
         }
     }
 }

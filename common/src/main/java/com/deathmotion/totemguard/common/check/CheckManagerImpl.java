@@ -30,6 +30,8 @@ import com.deathmotion.totemguard.common.check.impl.inventory.InventoryD;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.impl.tick.TickA;
+import com.deathmotion.totemguard.common.check.impl.tick.TickB;
+import com.deathmotion.totemguard.common.check.impl.tick.TickC;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -61,13 +63,14 @@ public class CheckManagerImpl {
 
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
                 .put(TickA.class, new TickA(player))
+                .put(TickB.class, new TickB(player))
+                .put(TickC.class, new TickC(player))
                 .put(ProtocolA.class, new ProtocolA(player))
                 .put(ProtocolB.class, new ProtocolB(player))
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(ProtocolE.class, new ProtocolE(player))
                 .put(ProtocolF.class, new ProtocolF(player))
-                .put(ProtocolG.class, new ProtocolG(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))

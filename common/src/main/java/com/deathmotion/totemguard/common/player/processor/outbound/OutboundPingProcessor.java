@@ -39,6 +39,7 @@ public class OutboundPingProcessor extends ProcessorOutbound {
 
     @Override
     public void handleOutbound(PacketSendEvent event) {
+        if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) {

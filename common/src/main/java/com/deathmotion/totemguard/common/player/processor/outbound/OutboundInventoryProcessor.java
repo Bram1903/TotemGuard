@@ -24,8 +24,10 @@ import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetCursorItem;
@@ -33,15 +35,19 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSe
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 
+import java.util.List;
+
 public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private final PacketInventory inventory;
     private final Data data;
+    private final PacketLatencyHandler latencyHandler;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
         this.inventory = player.getInventory();
         this.data = player.getData();
+        this.latencyHandler = player.getLatencyHandler();
     }
 
     @Override
@@ -52,27 +58,56 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            packet.getCarriedItem().ifPresent(carriedItem -> inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, event.getTimestamp()));
-            for (int slot = 0; slot < packet.getItems().size(); slot++) {
-                inventory.setItem(slot, packet.getItems().get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
-            }
+            ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
+            List<ItemStack> items = packet.getItems().stream()
+                    .map(this::copyItemStack)
+                    .toList();
+
+            latencyHandler.compensate(event, timestamp -> {
+                if (carriedItem != null) {
+                    inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, timestamp);
+                }
+
+                for (int slot = 0; slot < items.size(); slot++) {
+                    inventory.setItem(slot, items.get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                }
+            });
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            inventory.setItem(packet.getSlot(), packet.getStack(), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
+            int slot = packet.getSlot();
+            ItemStack stack = copyItemStack(packet.getStack());
+
+            latencyHandler.compensate(event, timestamp ->
+                    inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setItem(packet.getSlot(), packet.getItem(), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
+            int slot = packet.getSlot();
+            ItemStack item = copyItemStack(packet.getItem());
+
+            latencyHandler.compensate(event, timestamp -> inventory.setItem(slot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
-            inventory.setCarriedItem(packet.getStack(), -1, Issuer.SERVER, event.getTimestamp());
+            ItemStack stack = copyItemStack(packet.getStack());
+
+            latencyHandler.compensate(event, timestamp ->
+                    inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
         } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
-            //data.setOpenInventory(true);
+            latencyHandler.compensate(event, timestamp -> {
+                data.setOpenInventory(true);
+                data.setServerOpenedInventoryThisTick(true);
+            });
         } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
-            //data.setOpenInventory(true);
+            latencyHandler.compensate(event, timestamp -> {
+                data.setOpenInventory(true);
+                data.setServerOpenedInventoryThisTick(true);
+            });
         } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
-            data.setOpenInventory(false);
+            latencyHandler.compensate(event, timestamp -> data.setOpenInventory(false));
         }
     }
 
+    private ItemStack copyItemStack(ItemStack itemStack) {
+        return itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
+    }
 }

@@ -32,6 +32,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.*;
@@ -68,6 +69,7 @@ public class TGPlayer implements TGUser {
     private final ClickData clickData;
     private final TickData tickData;
     private final PingData pingData;
+    private final PacketLatencyHandler latencyHandler;
 
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
@@ -99,6 +101,7 @@ public class TGPlayer implements TGUser {
         this.clickData = new ClickData();
         this.tickData = new TickData();
         this.pingData = new PingData();
+        this.latencyHandler = new PacketLatencyHandler(this);
 
         this.processorInbounds = new ArrayList<>() {{
             add(new InboundPingProcessor(TGPlayer.this));

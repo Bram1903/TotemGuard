@@ -36,6 +36,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
+        if (player.getData().isServerOpenedInventoryThisTick()) return;
 
         if (player.getData().isSprinting()) {
             fail("sprinting");

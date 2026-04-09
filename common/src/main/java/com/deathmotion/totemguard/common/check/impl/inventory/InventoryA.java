@@ -39,6 +39,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (!player.getData().isOpenInventory()) return;
+        if (player.getData().isServerOpenedInventoryThisTick()) return;
         final var packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
