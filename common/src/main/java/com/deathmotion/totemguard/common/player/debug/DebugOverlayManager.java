@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.debug;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatTypes;
@@ -35,14 +36,17 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DebugOverlayManager {
 
     private final TGPlayer player;
     private final Map<String, DebugOverlayProvider> providers = new LinkedHashMap<>();
+    private final AtomicBoolean dispatchScheduled = new AtomicBoolean();
 
     @Getter
-    private @Nullable String activeOverlayKey;
+    private volatile @Nullable String activeOverlayKey;
+    private volatile boolean dispatchDirty;
 
     public DebugOverlayManager(TGPlayer player) {
         this.player = player;
@@ -87,27 +91,11 @@ public class DebugOverlayManager {
     }
 
     public void refresh() {
-        DebugOverlayProvider provider = getActiveProvider();
-        if (provider == null) {
-            return;
-        }
-
-        User user = player.getUser();
-        if (user.getEncoderState() != ConnectionState.PLAY) {
-            return;
-        }
-
-        Component message = render(provider.buildFrame(player));
-        user.sendPacketSilently(createOverlayPacket(user, message));
+        scheduleDispatch();
     }
 
     public void clear() {
-        User user = player.getUser();
-        if (user.getEncoderState() != ConnectionState.PLAY) {
-            return;
-        }
-
-        user.sendPacketSilently(createOverlayPacket(user, Component.empty()));
+        scheduleDispatch();
     }
 
     public @Nullable DebugOverlayProvider getActiveProvider() {
@@ -128,6 +116,40 @@ public class DebugOverlayManager {
         }
 
         return rendered;
+    }
+
+    private void scheduleDispatch() {
+        this.dispatchDirty = true;
+
+        if (!dispatchScheduled.compareAndSet(false, true)) {
+            return;
+        }
+
+        TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
+            try {
+                do {
+                    this.dispatchDirty = false;
+                    dispatchNow();
+                } while (dispatchDirty);
+            } finally {
+                dispatchScheduled.set(false);
+
+                if (dispatchDirty) {
+                    scheduleDispatch();
+                }
+            }
+        });
+    }
+
+    private void dispatchNow() {
+        User user = player.getUser();
+        if (user.getEncoderState() != ConnectionState.PLAY) {
+            return;
+        }
+
+        DebugOverlayProvider provider = getActiveProvider();
+        Component message = provider == null ? Component.empty() : render(provider.buildFrame(player));
+        user.sendPacketSilently(createOverlayPacket(user, message));
     }
 
     private PacketWrapper<?> createOverlayPacket(User user, Component message) {

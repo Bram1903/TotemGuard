@@ -74,7 +74,6 @@ public class PacketLatencyHandler {
 
         player.getUser().sendPacketSilently(createTransactionPacket(transactionId));
         pingData.syntheticTransactionSent(transactionId, System.currentTimeMillis());
-        player.getDebugOverlayManager().refresh();
     }
 
     private PacketWrapper<?> createTransactionPacket(int transactionId) {

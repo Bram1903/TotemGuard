@@ -89,8 +89,20 @@ public class PingData {
         return transactionTracker.pendingCount();
     }
 
+    public int getPendingSyntheticTransactionCount() {
+        return transactionTracker.pendingSyntheticCount();
+    }
+
     public int getPendingTeleportCount() {
         return transactionTracker.pendingTeleportCount();
+    }
+
+    public int getAcceptedTransactionCount() {
+        return transactionTracker.acceptedCount();
+    }
+
+    public int getAcceptedSyntheticTransactionCount() {
+        return transactionTracker.acceptedSyntheticCount();
     }
 
     public int getLastSentPositiveTransactionId() {
@@ -175,6 +187,8 @@ public class PingData {
         private final Deque<PendingTransaction> pendingTransactions = new ArrayDeque<>();
         private final Map<Integer, PendingTransaction> pendingTeleports = new HashMap<>();
         private int lastPositiveTransactionId;
+        private int acceptedTransactions;
+        private int acceptedSyntheticTransactions;
 
         private int reserveNextPositiveId(int maxPositiveId) {
             if (maxPositiveId < 1) {
@@ -224,6 +238,7 @@ public class PingData {
                 return new TransactionReplyObservation(false, false, 0, INVALID_PING, false);
             }
 
+            recordAcceptedTransactions(matchedTransaction.acceptedTransactions());
             matchedTransaction.runCallbacks(timestamp);
 
             Long sentAt = matchedTransaction.matchedPacket().getSentAt();
@@ -259,6 +274,7 @@ public class PingData {
                 skippedTransactions.add(pendingTransaction);
 
                 if (pendingTransaction == transactionBoundary) {
+                    recordAcceptedTransactions(skippedTransactions);
                     for (PendingTransaction skippedTransaction : skippedTransactions) {
                         skippedTransaction.runCallbacks(timestamp);
                     }
@@ -311,12 +327,42 @@ public class PingData {
             return pendingTransactions.size();
         }
 
+        private int pendingSyntheticCount() {
+            int syntheticTransactions = 0;
+
+            for (PendingTransaction pendingTransaction : pendingTransactions) {
+                if (pendingTransaction.isSynthetic()) {
+                    syntheticTransactions++;
+                }
+            }
+
+            return syntheticTransactions;
+        }
+
         private int pendingTeleportCount() {
             return pendingTeleports.size();
         }
 
+        private int acceptedCount() {
+            return acceptedTransactions;
+        }
+
+        private int acceptedSyntheticCount() {
+            return acceptedSyntheticTransactions;
+        }
+
         private int lastPositiveTransactionId() {
             return lastPositiveTransactionId;
+        }
+
+        private void recordAcceptedTransactions(Collection<PendingTransaction> acceptedTransactions) {
+            this.acceptedTransactions += acceptedTransactions.size();
+
+            for (PendingTransaction acceptedTransaction : acceptedTransactions) {
+                if (acceptedTransaction.isSynthetic()) {
+                    this.acceptedSyntheticTransactions++;
+                }
+            }
         }
 
         private record MatchedTransaction(
@@ -330,6 +376,13 @@ public class PingData {
 
             private int skippedCount() {
                 return skippedPackets.size();
+            }
+
+            private List<PendingTransaction> acceptedTransactions() {
+                List<PendingTransaction> acceptedTransactions = new ArrayList<>(skippedPackets.size() + 1);
+                acceptedTransactions.addAll(skippedPackets);
+                acceptedTransactions.add(matchedPacket);
+                return acceptedTransactions;
             }
 
             private void runCallbacks(long timestamp) {
