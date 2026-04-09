@@ -56,6 +56,7 @@ public abstract class CheckImpl implements Check {
     private final boolean requiresTickEnd;
     @Getter
     protected boolean punishable;
+    protected boolean mitigate;
     @Getter
     private boolean enabled;
     @Getter
@@ -98,6 +99,7 @@ public abstract class CheckImpl implements Check {
 
         enabled = checkOptions.isEnabled();
         punishable = checkOptions.isPunishable();
+        mitigate = checkOptions.isMitigate();
         maxViolations = checkOptions.getMaxViolations();
         punishCommands = checkOptions.getPunishCommands();
     }
@@ -113,6 +115,16 @@ public abstract class CheckImpl implements Check {
         TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
         TGPlatform.getInstance().getAlertRepository().alert(this, violations, debug);
         return true;
+    }
+
+    protected void failInventory(@Nullable String debug) {
+        if (!fail(debug)) {
+            return;
+        }
+
+        if (mitigate && player.getData().isOpenInventory()) {
+            player.getUser().closeInventory();
+        }
     }
 
     protected boolean shouldFail(@Nullable String debug) {

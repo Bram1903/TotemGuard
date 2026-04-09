@@ -43,48 +43,48 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         final var packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            fail("move");
+            failInventory("move");
             return;
         }
 
         if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            fail("place");
+            failInventory("place");
             return;
         }
 
         if (packetType == PacketType.Play.Client.USE_ITEM) {
-            fail("use");
+            failInventory("use");
             return;
         }
 
         if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            fail("change slot");
+            failInventory("change slot");
             return;
         }
 
         if (packetType == PacketType.Play.Client.PICK_ITEM) {
-            fail("pick item");
+            failInventory("pick item");
             return;
         }
 
         if (packetType == PacketType.Play.Client.ATTACK) {
-            fail("attack");
+            failInventory("attack");
             return;
         }
 
         if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
             WrapperPlayClientInteractEntity.InteractAction action = new WrapperPlayClientInteractEntity(event).getAction();
-            fail(action == WrapperPlayClientInteractEntity.InteractAction.ATTACK ? "attack" : "interact");
+            failInventory(action == WrapperPlayClientInteractEntity.InteractAction.ATTACK ? "attack" : "interact");
             return;
         }
 
         if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
-            fail("entity action");
+            failInventory("entity action");
             return;
         }
 
         if (packetType == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
-            fail("break");
+            failInventory("break");
         }
     }
 }

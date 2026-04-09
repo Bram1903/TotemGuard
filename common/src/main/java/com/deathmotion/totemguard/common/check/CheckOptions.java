@@ -32,12 +32,14 @@ public class CheckOptions {
 
     private static final boolean DEFAULT_ENABLED = true;
     private static final boolean DEFAULT_PUNISHABLE = false;
+    private static final boolean DEFAULT_MITIGATE = false;
     private static final int DEFAULT_MAX_VIOLATIONS = 1;
     private static final List<String> DEFAULT_PUNISH_COMMANDS = List.of("%default_punishment%");
 
     private final String checkName;
     private final boolean enabled;
     private final boolean punishable;
+    private final boolean mitigate;
     private final int maxViolations;
     private final List<String> punishCommands;
 
@@ -59,6 +61,7 @@ public class CheckOptions {
 
             this.enabled = DEFAULT_ENABLED;
             this.punishable = DEFAULT_PUNISHABLE;
+            this.mitigate = DEFAULT_MITIGATE;
             this.maxViolations = DEFAULT_MAX_VIOLATIONS;
             this.punishCommands = DEFAULT_PUNISH_COMMANDS;
             return;
@@ -68,6 +71,10 @@ public class CheckOptions {
 
         this.enabled = readBoolean(section, "enabled", DEFAULT_ENABLED);
         this.punishable = readBoolean(section, "punishable", DEFAULT_PUNISHABLE);
+        this.mitigate = switch (checkName) {
+            case "InventoryA", "InventoryB" -> readBoolean(section, "mitigate", DEFAULT_MITIGATE);
+            default -> DEFAULT_MITIGATE;
+        };
         this.maxViolations = Math.max(1, readInt(section, "max-violations", DEFAULT_MAX_VIOLATIONS));
         this.punishCommands = readStringList(section, "punishment-commands", DEFAULT_PUNISH_COMMANDS);
     }

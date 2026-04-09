@@ -39,11 +39,11 @@ public class InventoryB extends CheckImpl implements PacketCheck {
         if (player.getData().isServerOpenedInventoryThisTick()) return;
 
         if (player.getData().isSprinting()) {
-            fail("sprinting");
+            failInventory("sprinting");
         }
 
         if (player.getData().isInput()) {
-            fail("move");
+            failInventory("move");
         }
     }
 }
