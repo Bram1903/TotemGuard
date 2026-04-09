@@ -93,20 +93,12 @@ public class PingData {
         return transactionTracker.pendingSyntheticCount();
     }
 
-    public int getPendingTeleportCount() {
-        return transactionTracker.pendingTeleportCount();
-    }
-
     public int getAcceptedTransactionCount() {
         return transactionTracker.acceptedCount();
     }
 
     public int getAcceptedSyntheticTransactionCount() {
         return transactionTracker.acceptedSyntheticCount();
-    }
-
-    public int getLastSentPositiveTransactionId() {
-        return transactionTracker.lastPositiveTransactionId();
     }
 
     public void trackTeleport(int teleportId) {
@@ -349,10 +341,6 @@ public class PingData {
 
         private int acceptedSyntheticCount() {
             return acceptedSyntheticTransactions;
-        }
-
-        private int lastPositiveTransactionId() {
-            return lastPositiveTransactionId;
         }
 
         private void recordAcceptedTransactions(Collection<PendingTransaction> acceptedTransactions) {
