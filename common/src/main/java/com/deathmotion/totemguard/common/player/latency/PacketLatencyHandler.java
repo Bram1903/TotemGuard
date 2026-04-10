@@ -72,8 +72,8 @@ public class PacketLatencyHandler {
             pingData.addTransactionCallback(transactionId, callback);
         }
 
+        pingData.markTransactionSynthetic(transactionId);
         player.getUser().sendPacket(createTransactionPacket(transactionId));
-        pingData.syntheticTransactionSent(transactionId, System.currentTimeMillis());
     }
 
     private PacketWrapper<?> createTransactionPacket(int transactionId) {

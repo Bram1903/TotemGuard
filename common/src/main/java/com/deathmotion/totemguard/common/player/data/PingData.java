@@ -77,8 +77,8 @@ public class PingData {
         transactionTracker.sent(id, timestamp, false);
     }
 
-    public void syntheticTransactionSent(int id, long timestamp) {
-        transactionTracker.sent(id, timestamp, true);
+    public void markTransactionSynthetic(int id) {
+        transactionTracker.markSynthetic(id);
     }
 
     public boolean shouldCancelTransactionReplyOnProxy() {
@@ -214,7 +214,17 @@ public class PingData {
             }
 
             pendingTransaction.setSentAt(timestamp);
-            pendingTransaction.setSynthetic(synthetic);
+            pendingTransaction.setSynthetic(pendingTransaction.isSynthetic() || synthetic);
+        }
+
+        private void markSynthetic(int id) {
+            PendingTransaction pendingTransaction = findLatestPendingTransaction(id);
+            if (pendingTransaction == null) {
+                pendingTransaction = new PendingTransaction(id);
+                pendingTransactions.addLast(pendingTransaction);
+            }
+
+            pendingTransaction.setSynthetic(true);
         }
 
         private void trackTeleport(int teleportId) {
@@ -302,6 +312,18 @@ public class PingData {
             while (pendingTransactions.hasNext()) {
                 PendingTransaction pendingTransaction = pendingTransactions.next();
                 if (pendingTransaction.getId() == id && pendingTransaction.getSentAt() == null) {
+                    return pendingTransaction;
+                }
+            }
+
+            return null;
+        }
+
+        private PendingTransaction findLatestPendingTransaction(int id) {
+            Iterator<PendingTransaction> pendingTransactions = this.pendingTransactions.descendingIterator();
+            while (pendingTransactions.hasNext()) {
+                PendingTransaction pendingTransaction = pendingTransactions.next();
+                if (pendingTransaction.getId() == id) {
                     return pendingTransaction;
                 }
             }
