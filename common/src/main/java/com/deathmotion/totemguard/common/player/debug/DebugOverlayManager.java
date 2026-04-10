@@ -91,6 +91,10 @@ public class DebugOverlayManager {
     }
 
     public void refresh() {
+        if (activeOverlayKey == null) {
+            return;
+        }
+
         scheduleDispatch();
     }
 

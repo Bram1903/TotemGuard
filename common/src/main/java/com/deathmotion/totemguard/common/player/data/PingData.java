@@ -193,7 +193,7 @@ public class PingData {
         }
 
         private void addCallback(int id, LongConsumer callback) {
-            PendingTransaction pendingTransaction = findLatestPendingTransactionWithoutTimestamp(id);
+            PendingTransaction pendingTransaction = findLatestPendingTransactionWithoutTimestampFast(id);
             if (pendingTransaction == null) {
                 pendingTransaction = new PendingTransaction(id);
                 pendingTransactions.addLast(pendingTransaction);
@@ -207,7 +207,7 @@ public class PingData {
                 this.lastPositiveTransactionId = id;
             }
 
-            PendingTransaction pendingTransaction = findLatestPendingTransactionWithoutTimestamp(id);
+            PendingTransaction pendingTransaction = findLatestPendingTransactionWithoutTimestampFast(id);
             if (pendingTransaction == null) {
                 pendingTransaction = new PendingTransaction(id);
                 pendingTransactions.addLast(pendingTransaction);
@@ -218,7 +218,7 @@ public class PingData {
         }
 
         private void markSynthetic(int id) {
-            PendingTransaction pendingTransaction = findLatestPendingTransaction(id);
+            PendingTransaction pendingTransaction = findLatestPendingTransactionFast(id);
             if (pendingTransaction == null) {
                 pendingTransaction = new PendingTransaction(id);
                 pendingTransactions.addLast(pendingTransaction);
@@ -240,7 +240,7 @@ public class PingData {
                 return new TransactionReplyObservation(false, false, 0, INVALID_PING, false);
             }
 
-            recordAcceptedTransactions(matchedTransaction.acceptedTransactions());
+            recordAcceptedTransactions(matchedTransaction);
             matchedTransaction.runCallbacks(timestamp);
 
             Long sentAt = matchedTransaction.matchedPacket().getSentAt();
@@ -270,25 +270,37 @@ public class PingData {
             }
 
             List<PendingTransaction> skippedTransactions = new ArrayList<>();
-
-            while (!pendingTransactions.isEmpty()) {
-                PendingTransaction pendingTransaction = pendingTransactions.removeFirst();
+            for (PendingTransaction pendingTransaction : pendingTransactions) {
                 skippedTransactions.add(pendingTransaction);
 
-                if (pendingTransaction == transactionBoundary) {
-                    recordAcceptedTransactions(skippedTransactions);
-                    for (PendingTransaction skippedTransaction : skippedTransactions) {
-                        skippedTransaction.runCallbacks(timestamp);
-                    }
-
-                    return new TeleportTransactionObservation(true, skippedTransactions.size());
+                if (pendingTransaction != transactionBoundary) {
+                    continue;
                 }
+
+                // The boundary may already have been retired by a direct reply. Only drain the deque
+                // once we have actually found the tracked boundary inside the current pending window.
+                for (int i = 0; i < skippedTransactions.size(); i++) {
+                    pendingTransactions.removeFirst();
+                }
+
+                recordAcceptedTransactions(skippedTransactions);
+                for (PendingTransaction skippedTransaction : skippedTransactions) {
+                    skippedTransaction.runCallbacks(timestamp);
+                }
+
+                return new TeleportTransactionObservation(true, skippedTransactions.size());
             }
 
             return TeleportTransactionObservation.NONE;
         }
 
         private MatchedTransaction consumeMatchedTransactionReply(int id) {
+            PendingTransaction firstPendingPacket = pendingTransactions.peekFirst();
+            if (firstPendingPacket != null && firstPendingPacket.getId() == id) {
+                pendingTransactions.removeFirst();
+                return new MatchedTransaction(firstPendingPacket, Collections.emptyList());
+            }
+
             List<PendingTransaction> skippedPackets = new ArrayList<>();
             Iterator<PendingTransaction> pendingPackets = pendingTransactions.iterator();
 
@@ -319,6 +331,17 @@ public class PingData {
             return null;
         }
 
+        private PendingTransaction findLatestPendingTransactionWithoutTimestampFast(int id) {
+            PendingTransaction lastPendingTransaction = pendingTransactions.peekLast();
+            if (lastPendingTransaction != null
+                    && lastPendingTransaction.getId() == id
+                    && lastPendingTransaction.getSentAt() == null) {
+                return lastPendingTransaction;
+            }
+
+            return findLatestPendingTransactionWithoutTimestamp(id);
+        }
+
         private PendingTransaction findLatestPendingTransaction(int id) {
             Iterator<PendingTransaction> pendingTransactions = this.pendingTransactions.descendingIterator();
             while (pendingTransactions.hasNext()) {
@@ -329,6 +352,15 @@ public class PingData {
             }
 
             return null;
+        }
+
+        private PendingTransaction findLatestPendingTransactionFast(int id) {
+            PendingTransaction lastPendingTransaction = pendingTransactions.peekLast();
+            if (lastPendingTransaction != null && lastPendingTransaction.getId() == id) {
+                return lastPendingTransaction;
+            }
+
+            return findLatestPendingTransaction(id);
         }
 
         private void discardSkippedTransactions(int skippedCount) {
@@ -375,6 +407,11 @@ public class PingData {
             }
         }
 
+        private void recordAcceptedTransactions(MatchedTransaction matchedTransaction) {
+            this.acceptedTransactions += matchedTransaction.acceptedCount();
+            this.acceptedSyntheticTransactions += matchedTransaction.acceptedSyntheticCount();
+        }
+
         private record MatchedTransaction(
                 PendingTransaction matchedPacket,
                 List<PendingTransaction> skippedPackets
@@ -388,11 +425,19 @@ public class PingData {
                 return skippedPackets.size();
             }
 
-            private List<PendingTransaction> acceptedTransactions() {
-                List<PendingTransaction> acceptedTransactions = new ArrayList<>(skippedPackets.size() + 1);
-                acceptedTransactions.addAll(skippedPackets);
-                acceptedTransactions.add(matchedPacket);
-                return acceptedTransactions;
+            private int acceptedCount() {
+                return skippedPackets.size() + 1;
+            }
+
+            private int acceptedSyntheticCount() {
+                int syntheticTransactions = matchedPacket.isSynthetic() ? 1 : 0;
+                for (PendingTransaction skippedPacket : skippedPackets) {
+                    if (skippedPacket.isSynthetic()) {
+                        syntheticTransactions++;
+                    }
+                }
+
+                return syntheticTransactions;
             }
 
             private void runCallbacks(long timestamp) {
