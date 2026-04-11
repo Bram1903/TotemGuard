@@ -46,6 +46,16 @@ public class PacketInventory {
     @Getter
     @Setter
     private int selectedHotbarIndex; // 0..8
+
+    @Getter
+    @Setter
+    private int playerWindowStateId;
+
+    @Getter
+    private int openWindowId = InventoryConstants.PLAYER_WINDOW_ID;
+
+    @Getter
+    private int openWindowTopSize = InventoryConstants.INVENTORY_SIZE;
     /*
      * The last issuer that made a change to the inventory
      */
@@ -145,6 +155,45 @@ public class PacketInventory {
 
     public boolean isCarryingTotem() {
         return carriedItem.getCurrentItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
+    }
+
+    public void setOpenWindow(int windowId, int topSize) {
+        this.openWindowId = windowId;
+        this.openWindowTopSize = topSize;
+    }
+
+    public void setOpenWindowTopSize(int topSize) {
+        this.openWindowTopSize = topSize;
+    }
+
+    public void resetOpenWindow() {
+        this.openWindowId = InventoryConstants.PLAYER_WINDOW_ID;
+        this.openWindowTopSize = InventoryConstants.INVENTORY_SIZE;
+    }
+
+    public int mapContainerSlotToPlayerSlot(int windowId, int containerSlot) {
+        if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+            return containerSlot;
+        }
+
+        if (windowId != this.openWindowId || this.openWindowTopSize < 0) {
+            return -1;
+        }
+
+        int relativeSlot = containerSlot - this.openWindowTopSize;
+        if (relativeSlot < 0) {
+            return -1;
+        }
+
+        if (relativeSlot < 27) {
+            return InventoryConstants.ITEMS_START + relativeSlot;
+        }
+
+        if (relativeSlot < 36) {
+            return InventoryConstants.HOTBAR_START + (relativeSlot - 27);
+        }
+
+        return -1;
     }
 
     private InventorySlot slot(int slot) {

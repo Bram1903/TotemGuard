@@ -31,6 +31,8 @@ import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckMana
 import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
+import com.deathmotion.totemguard.common.gui.GuiManager;
+import com.deathmotion.totemguard.common.gui.GuiPacketListener;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
@@ -74,6 +76,7 @@ public abstract class TGPlatform {
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
     private AntiVPNRepositoryImpl antiVPNRepository;
+    private GuiManager guiManager;
 
     private TGPlatformAPI api;
 
@@ -116,11 +119,13 @@ public abstract class TGPlatform {
         punishmentRepository = new PunishmentRepositoryImpl();
         alertRepository = new AlertRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
+        guiManager = new GuiManager();
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());
+        PacketEvents.getAPI().getEventManager().registerListener(new GuiPacketListener());
 
         //noinspection resource
         eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener());
@@ -137,6 +142,7 @@ public abstract class TGPlatform {
 
     public void commonOnDisable() {
         if (redisRepository != null) redisRepository.stop();
+        if (guiManager != null) guiManager.shutdown();
     }
 
     public abstract Scheduler getScheduler();

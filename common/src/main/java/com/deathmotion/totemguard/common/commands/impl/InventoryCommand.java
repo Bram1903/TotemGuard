@@ -33,7 +33,7 @@ import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
-public class InventoryCommand extends AbstractCommand {
+public final class InventoryCommand extends AbstractCommand {
 
     private static Component labeledSlot(String label, int slot, PacketInventory inv) {
         return Component.text(label + ": ", NamedTextColor.GRAY)

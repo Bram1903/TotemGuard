@@ -30,10 +30,7 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetCursorItem;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetPlayerInventory;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 import java.util.List;
 
@@ -57,7 +54,6 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
             ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
             List<ItemStack> items = packet.getItems().stream()
                     .map(this::copyItemStack)
@@ -68,9 +64,43 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                     inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, timestamp);
                 }
 
-                for (int slot = 0; slot < items.size(); slot++) {
-                    inventory.setItem(slot, items.get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
+                    inventory.setPlayerWindowStateId(packet.getStateId());
+                    inventory.resetOpenWindow();
+
+                    for (int slot = 0; slot < items.size(); slot++) {
+                        inventory.setItem(slot, items.get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                    }
+                    return;
                 }
+
+                if (items.size() < 36) {
+                    return;
+                }
+
+                inventory.setOpenWindow(packet.getWindowId(), items.size() - 36);
+                syncExternalPlayerSection(packet.getWindowId(), items, timestamp);
+            });
+        } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
+            WrapperPlayServerOpenWindow packet = new WrapperPlayServerOpenWindow(event);
+
+            latencyHandler.compensate(event, timestamp -> {
+                inventory.setOpenWindow(packet.getContainerId(), -1);
+                data.setOpenInventory(true);
+                data.setServerOpenedInventoryThisTick(true);
+            });
+        } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
+            WrapperPlayServerOpenHorseWindow packet = new WrapperPlayServerOpenHorseWindow(event);
+
+            latencyHandler.compensate(event, timestamp -> {
+                inventory.setOpenWindow(packet.getWindowId(), packet.getSlotCount());
+                data.setOpenInventory(true);
+                data.setServerOpenedInventoryThisTick(true);
+            });
+        } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
+            latencyHandler.compensate(event, timestamp -> {
+                inventory.resetOpenWindow();
+                data.setOpenInventory(false);
             });
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
@@ -81,29 +111,38 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                     inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            int slot = packet.getSlot();
             ItemStack item = copyItemStack(packet.getItem());
 
-            latencyHandler.compensate(event, timestamp -> inventory.setItem(slot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
+            latencyHandler.compensate(event, timestamp -> {
+                if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
+                    inventory.setPlayerWindowStateId(packet.getStateId());
+                    inventory.setItem(packet.getSlot(), item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                    return;
+                }
+
+                int mappedSlot = inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
+                if (mappedSlot >= 0) {
+                    inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                }
+            });
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
             ItemStack stack = copyItemStack(packet.getStack());
 
             latencyHandler.compensate(event, timestamp ->
                     inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
-        } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
-            latencyHandler.compensate(event, timestamp -> {
-                data.setOpenInventory(true);
-                data.setServerOpenedInventoryThisTick(true);
-            });
-        } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
-            latencyHandler.compensate(event, timestamp -> {
-                data.setOpenInventory(true);
-                data.setServerOpenedInventoryThisTick(true);
-            });
-        } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
-            latencyHandler.compensate(event, timestamp -> data.setOpenInventory(false));
+        }
+    }
+
+    private void syncExternalPlayerSection(int windowId, List<ItemStack> items, long timestamp) {
+        int playerSectionStart = items.size() - 36;
+        for (int index = 0; index < 36; index++) {
+            int mappedSlot = inventory.mapContainerSlotToPlayerSlot(windowId, playerSectionStart + index);
+            if (mappedSlot < 0) {
+                continue;
+            }
+
+            inventory.setItem(mappedSlot, items.get(playerSectionStart + index), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
         }
     }
 

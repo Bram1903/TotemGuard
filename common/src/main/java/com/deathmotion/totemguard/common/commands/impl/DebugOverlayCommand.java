@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DebugOverlayCommand extends AbstractCommand {
+public final class DebugOverlayCommand extends AbstractCommand {
 
     @Override
     public void register(@NonNull CommandManager<Sender> manager) {

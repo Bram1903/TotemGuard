@@ -153,7 +153,7 @@ public class DebugOverlayManager {
 
         DebugOverlayProvider provider = getActiveProvider();
         Component message = provider == null ? Component.empty() : render(provider.buildFrame(player));
-        user.sendPacketSilently(createOverlayPacket(user, message));
+        user.sendPacket(createOverlayPacket(user, message));
     }
 
     private PacketWrapper<?> createOverlayPacket(User user, Component message) {

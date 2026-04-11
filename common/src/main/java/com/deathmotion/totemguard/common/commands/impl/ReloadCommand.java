@@ -27,7 +27,7 @@ import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
-public class ReloadCommand extends AbstractCommand {
+public final class ReloadCommand extends AbstractCommand {
 
     @Override
     public void register(@NonNull CommandManager<Sender> manager) {

@@ -44,6 +44,7 @@ public class InboundActionProcessor extends ProcessorInbound {
 
     @Override
     public void handleInbound(PacketReceiveEvent event) {
+        if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.ANIMATION) {

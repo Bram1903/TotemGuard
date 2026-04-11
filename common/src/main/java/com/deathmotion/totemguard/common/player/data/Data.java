@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
@@ -51,15 +52,21 @@ public class Data {
     }
 
     public void setOpenInventory(boolean openInventory) {
-        if (this.openInventory != openInventory) {
+        boolean changed = this.openInventory != openInventory;
+        this.openInventory = openInventory;
+
+        if (changed) {
             String message = "&a[Inventory] &7" + player.getName() + " has "
                     + (openInventory ? "&aopened" : "&cclosed")
                     + " &7their inventory.";
 
             //TGPlatform.getInstance().getAlertRepository().broadcast(message);
-        }
 
-        this.openInventory = openInventory;
+            TGPlatform platform = TGPlatform.getInstance();
+            if (platform != null && platform.getGuiManager() != null) {
+                platform.getGuiManager().refreshMonitor(player.getUuid());
+            }
+        }
     }
 
     public void setPlayerInput(boolean inputForward, boolean inputBackward, boolean inputLeft, boolean inputRight, boolean inputJumping, boolean inputSneaking, boolean inputSprinting) {

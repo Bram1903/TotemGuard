@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
@@ -63,7 +64,9 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
             int slot = packet.getSlot();
             if (slot > 8 || slot < 0) return;
+            if (inventory.getSelectedHotbarIndex() == slot) return;
             inventory.setSelectedHotbarIndex(slot);
+            TGPlatform.getInstance().getGuiManager().refreshMonitor(player.getUuid());
         } else if (packetType == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
             if (packet.getSlot() < 1 || packet.getSlot() > 45) return;
@@ -71,11 +74,22 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             data.setOpenInventory(true);
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setCarriedItem(packet.getCarriedItemStack(), packet.getSlot(), Issuer.CLIENT, event.getTimestamp());
+            int carriedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
+                    ? packet.getSlot()
+                    : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
+
+            inventory.setCarriedItem(packet.getCarriedItemStack(), carriedSlot, Issuer.CLIENT, event.getTimestamp());
             packet.getSlots().ifPresent(slots -> {
                 for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {
-                    inventory.setItem(slotEntry.getKey(), slotEntry.getValue(), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
+                    int mappedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
+                            ? slotEntry.getKey()
+                            : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), slotEntry.getKey());
+
+                    if (mappedSlot < 0) {
+                        continue;
+                    }
+
+                    inventory.setItem(mappedSlot, slotEntry.getValue(), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
                 }
             });
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {

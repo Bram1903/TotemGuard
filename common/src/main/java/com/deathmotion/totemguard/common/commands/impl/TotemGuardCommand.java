@@ -18,49 +18,40 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.TotemGuard;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
-import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
-import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
+import com.deathmotion.totemguard.common.gui.screen.TotemGuardInfoScreen;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import lombok.NonNull;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 
-public final class AlertCommand extends AbstractCommand {
-
-    private final TGPlatform platform;
-    private final AlertRepositoryImpl alertRepository;
-    private final CacheRepositoryImpl cacheManager;
-
-    public AlertCommand() {
-        this.platform = TGPlatform.getInstance();
-        this.alertRepository = platform.getAlertRepository();
-        this.cacheManager = platform.getCacheRepository();
-    }
+public final class TotemGuardCommand extends AbstractCommand {
 
     @Override
     public void register(@NonNull CommandManager<Sender> manager) {
         manager.command(
                 base(manager)
-                        .literal("alerts")
-                        .permission(perm("alerts"))
-                        .handler(this::toggleAlerts)
+                        .handler(this::handleRoot)
         );
     }
 
-    private void toggleAlerts(final @NotNull CommandContext<Sender> context) {
-        final Sender sender = context.sender();
-        if (!requirePlayer(sender)) {
+    private void handleRoot(@NotNull CommandContext<Sender> context) {
+        Sender sender = context.sender();
+        if (!sender.isPlayer() || !sender.hasPermission(perm("gui"))) {
+            sender.sendMessage(Component.text(
+                    "TotemGuard " + TotemGuard.get().getVersion() + " on " + TGPlatform.getInstance().getPlatform().name(),
+                    NamedTextColor.YELLOW
+            ));
             return;
         }
 
-        boolean enabled = alertRepository.toggleAlerts(sender.getUniqueId());
-
-        platform.getScheduler().runAsyncTask(() -> {
-            cacheManager.saveCheckToggleData(sender.getUniqueId(), new AlertsToggleData(enabled));
-        });
+        if (!TGPlatform.getInstance().getGuiManager().open(sender, new TotemGuardInfoScreen())) {
+            sender.sendMessage(Component.text("Failed to open the TotemGuard GUI.", NamedTextColor.RED));
+        }
     }
 }
