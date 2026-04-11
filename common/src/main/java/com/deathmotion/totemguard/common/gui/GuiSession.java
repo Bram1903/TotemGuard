@@ -34,6 +34,7 @@ public final class GuiSession {
     private final Deque<GuiScreen> screenStack = new ArrayDeque<>();
 
     private GuiRenderResult currentRender;
+    private GuiRenderResult appliedRender;
     private Set<GuiSubscriptionKey> subscriptionKeys = Set.of();
     private boolean closed;
     private boolean closeRequested;
@@ -65,6 +66,14 @@ public final class GuiSession {
 
     public synchronized void currentRender(GuiRenderResult currentRender) {
         this.currentRender = currentRender;
+    }
+
+    public synchronized GuiRenderResult appliedRender() {
+        return appliedRender;
+    }
+
+    public synchronized void appliedRender(GuiRenderResult appliedRender) {
+        this.appliedRender = appliedRender;
     }
 
     public synchronized Set<GuiSubscriptionKey> subscriptionKeys() {

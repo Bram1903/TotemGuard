@@ -18,19 +18,24 @@
 
 package com.deathmotion.totemguard.common.gui;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemLore;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemProfile;
+import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemTooltipDisplay;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.util.Dummy;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 import java.util.List;
+import java.util.Set;
 
 public final class GuiItems {
 
@@ -40,11 +45,13 @@ public final class GuiItems {
     }
 
     public static ItemStack filler() {
-        return simple(
+        ItemStack item = simple(
                 ItemTypes.GRAY_STAINED_GLASS_PANE,
                 BLANK_NAME,
                 List.of()
         );
+        hideTooltip(item);
+        return item;
     }
 
     public static ItemStack simple(ItemType type, Component name, List<Component> lore) {
@@ -97,6 +104,18 @@ public final class GuiItems {
         item.setComponent(ComponentTypes.LORE, new ItemLore(lore.stream()
                 .map(GuiItems::guiText)
                 .toList()));
+    }
+
+    private static void hideTooltip(ItemStack item) {
+        ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
+        if (version.isNewerThanOrEquals(ServerVersion.V_1_21_5)) {
+            item.setComponent(ComponentTypes.TOOLTIP_DISPLAY, new ItemTooltipDisplay(true, Set.of()));
+            return;
+        }
+
+        if (version.isNewerThanOrEquals(ServerVersion.V_1_20_5)) {
+            item.setComponent(ComponentTypes.HIDE_TOOLTIP, Dummy.DUMMY);
+        }
     }
 
     private static Component guiText(Component component) {

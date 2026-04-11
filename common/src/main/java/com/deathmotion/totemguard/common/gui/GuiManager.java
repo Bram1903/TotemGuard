@@ -183,14 +183,25 @@ public final class GuiManager {
         return render == null ? -1 : render.size();
     }
 
-    public void trackPlayerWindowItems(User user, List<ItemStack> items, ItemStack carried) {
+    public void trackWindowItems(User user, int windowId, List<ItemStack> items, ItemStack carried) {
         if (user == null || user.getUUID() == null) {
             return;
         }
 
-        viewerInventories
-                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
-                .applyWindowItems(items, carried);
+        GuiViewerInventory inventory = viewerInventories
+                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory());
+
+        if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+            inventory.applyPlayerWindowItems(items, carried);
+            return;
+        }
+
+        if (!isGuiWindow(user, windowId)) {
+            int topSize = items.size() >= 36 ? items.size() - 36 : -1;
+            inventory.setOpenWindow(windowId, topSize);
+        }
+
+        inventory.applyContainerWindowItems(items, carried);
     }
 
     public void trackPlayerSlot(User user, int slot, ItemStack item) {
@@ -203,6 +214,27 @@ public final class GuiManager {
                 .applySlot(slot, item);
     }
 
+    public void trackWindowSlot(User user, int windowId, int slot, ItemStack item) {
+        if (user == null || user.getUUID() == null || windowId < 0) {
+            return;
+        }
+
+        GuiViewerInventory inventory = viewerInventories
+                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory());
+
+        if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+            inventory.applySlot(slot, item);
+            return;
+        }
+
+        int mappedSlot = isGuiWindow(user, windowId)
+                ? mapContainerSlotToPlayerSlot(windowSize(user), slot)
+                : inventory.mapContainerSlotToPlayerSlot(windowId, slot);
+        if (mappedSlot >= 0) {
+            inventory.applySlot(mappedSlot, item);
+        }
+    }
+
     public void trackPlayerCursor(User user, ItemStack item) {
         if (user == null || user.getUUID() == null) {
             return;
@@ -211,6 +243,63 @@ public final class GuiManager {
         viewerInventories
                 .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
                 .applyCursor(item);
+    }
+
+    public void trackClientWindowClick(User user, WrapperPlayClientClickWindow packet) {
+        if (user == null || user.getUUID() == null || packet == null) {
+            return;
+        }
+
+        GuiViewerInventory inventory = viewerInventories
+                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory());
+
+        int sourceSlot = mapViewerSlot(user, inventory, packet.getWindowId(), packet.getSlot());
+        int targetSlot = mapSwapTargetSlot(packet);
+
+        boolean sourceKnown = sourceSlot >= 0 && inventory.isKnown(sourceSlot);
+        boolean targetKnown = targetSlot >= 0 && inventory.isKnown(targetSlot);
+        ItemStack previousSource = sourceKnown ? inventory.item(sourceSlot) : ItemStack.EMPTY;
+        ItemStack previousTarget = targetKnown ? inventory.item(targetSlot) : ItemStack.EMPTY;
+
+        inventory.applyCursor(copyItem(packet.getCarriedItemStack()));
+
+        Set<Integer> updatedSlots = new HashSet<>();
+        packet.getSlots().ifPresent(slots -> {
+            for (Map.Entry<Integer, ItemStack> entry : slots.entrySet()) {
+                int mappedSlot = mapViewerSlot(user, inventory, packet.getWindowId(), entry.getKey());
+                if (mappedSlot < 0) {
+                    continue;
+                }
+
+                inventory.applySlot(mappedSlot, entry.getValue());
+                updatedSlots.add(mappedSlot);
+            }
+        });
+
+        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.SWAP
+                || sourceSlot < 0
+                || targetSlot < 0
+                || sourceSlot == targetSlot) {
+            return;
+        }
+
+        if (!updatedSlots.contains(sourceSlot) && targetKnown) {
+            inventory.applySlot(sourceSlot, previousTarget);
+        }
+
+        if (!updatedSlots.contains(targetSlot) && sourceKnown) {
+            inventory.applySlot(targetSlot, previousSource);
+        }
+    }
+
+    public void trackCreativeInventoryAction(User user, int slot, ItemStack item) {
+        if (user == null || user.getUUID() == null) {
+            return;
+        }
+
+        viewerInventories
+                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
+                .applySlot(slot, item);
     }
 
     public void resyncTopInventory(User user) {
@@ -238,6 +327,7 @@ public final class GuiManager {
                         render.item(slot)
                 ));
             }
+            session.appliedRender(render);
         });
     }
 
@@ -256,6 +346,19 @@ public final class GuiManager {
         }
 
         restoreViewerInventory(session, false, fallbackCursor);
+    }
+
+    public void resyncWindow(User user, ItemStack fallbackCursor) {
+        if (user == null || user.getUUID() == null) {
+            return;
+        }
+
+        GuiSession session = sessions.get(user.getUUID());
+        if (session == null || !isInteractive(session)) {
+            return;
+        }
+
+        restoreViewerInventory(session, true, fallbackCursor);
     }
 
     public void handleWindowClick(User user, WrapperPlayClientClickWindow packet) {
@@ -314,9 +417,28 @@ public final class GuiManager {
         finalizeClose(user.getUUID(), session);
     }
 
-    public void handleExternalInventoryPacket(User user) {
+    public void handleExternalInventoryOpen(User user, int windowId, int topSize) {
         if (user == null || user.getUUID() == null) {
             return;
+        }
+
+        if (!isGuiWindow(user, windowId)) {
+            viewerInventories
+                    .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
+                    .setOpenWindow(windowId, topSize);
+        }
+
+        finalizeClose(user.getUUID(), sessions.get(user.getUUID()));
+    }
+
+    public void handleInventoryClosePacket(User user, int windowId) {
+        if (user == null || user.getUUID() == null) {
+            return;
+        }
+
+        GuiViewerInventory inventory = viewerInventories.get(user.getUUID());
+        if (inventory != null && !isGuiWindow(user, windowId)) {
+            inventory.closeWindow(windowId);
         }
 
         finalizeClose(user.getUUID(), sessions.get(user.getUUID()));
@@ -394,7 +516,7 @@ public final class GuiManager {
             return;
         }
 
-        GuiRenderResult previousRender = session.currentRender();
+        GuiRenderResult previousRender = session.appliedRender();
         session.currentRender(nextRender);
         updateSubscriptions(session, screen.subscriptionKeys());
 
@@ -411,6 +533,7 @@ public final class GuiManager {
                 sendOpenWindow(session, nextRender);
                 sendWindowItems(session, stateId, nextRender, cursorFallback);
                 session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback)));
+                session.appliedRender(nextRender);
             });
             return;
         }
@@ -421,8 +544,10 @@ public final class GuiManager {
                 return;
             }
 
-            scheduleRender(session, nextRender, () ->
-                    session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback))));
+            scheduleRender(session, nextRender, () -> {
+                session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback)));
+                session.appliedRender(nextRender);
+            });
             return;
         }
 
@@ -432,6 +557,7 @@ public final class GuiManager {
                 if (cursorFallback != null) {
                     session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback)));
                 }
+                session.appliedRender(nextRender);
                 return;
             }
 
@@ -449,6 +575,8 @@ public final class GuiManager {
             if (cursorFallback != null) {
                 session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback)));
             }
+
+            session.appliedRender(nextRender);
         });
     }
 
@@ -566,10 +694,12 @@ public final class GuiManager {
                             render.item(slot)
                     ));
                 }
+                session.appliedRender(render);
             }
 
             syncViewerRange(session, stateId, render.size(), inventory, InventoryConstants.ITEMS_START, 27);
             syncViewerRange(session, stateId, render.size() + 27, inventory, InventoryConstants.HOTBAR_START, 9);
+            syncHiddenViewerSlots(session, inventory);
             session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, fallbackCursor)));
         });
     }
@@ -618,6 +748,31 @@ public final class GuiManager {
         }
     }
 
+    private void syncHiddenViewerSlots(GuiSession session, GuiViewerInventory inventory) {
+        if (inventory == null) {
+            return;
+        }
+
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_HELMET);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_CHESTPLATE);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_LEGGINGS);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_BOOTS);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_OFFHAND);
+    }
+
+    private void syncPlayerInventorySlot(GuiSession session, GuiViewerInventory inventory, int slot) {
+        if (!inventory.isKnown(slot)) {
+            return;
+        }
+
+        session.user().sendPacket(new WrapperPlayServerSetSlot(
+                InventoryConstants.PLAYER_WINDOW_ID,
+                0,
+                slot,
+                inventory.item(slot)
+        ));
+    }
+
     private ItemStack currentCursor(GuiSession session, ItemStack fallbackCursor) {
         GuiViewerInventory inventory = viewerInventories.get(session.viewerId());
         if (inventory != null && inventory.isCursorKnown()) {
@@ -655,6 +810,56 @@ public final class GuiManager {
 
     private ItemStack copyItem(ItemStack item) {
         return item == null || item.isEmpty() ? ItemStack.EMPTY : item.copy();
+    }
+
+    private int mapViewerSlot(User user, GuiViewerInventory inventory, int windowId, int slot) {
+        if (slot < 0) {
+            return -1;
+        }
+
+        if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+            return slot;
+        }
+
+        if (isGuiWindow(user, windowId)) {
+            return mapContainerSlotToPlayerSlot(windowSize(user), slot);
+        }
+
+        return inventory.mapContainerSlotToPlayerSlot(windowId, slot);
+    }
+
+    private int mapSwapTargetSlot(WrapperPlayClientClickWindow packet) {
+        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.SWAP) {
+            return -1;
+        }
+
+        int button = packet.getButton();
+        if (button >= 0 && button <= 8) {
+            return InventoryConstants.HOTBAR_START + button;
+        }
+
+        return button == 40 ? InventoryConstants.SLOT_OFFHAND : -1;
+    }
+
+    private int mapContainerSlotToPlayerSlot(int topSize, int containerSlot) {
+        if (topSize < 0) {
+            return -1;
+        }
+
+        int relativeSlot = containerSlot - topSize;
+        if (relativeSlot < 0) {
+            return -1;
+        }
+
+        if (relativeSlot < 27) {
+            return InventoryConstants.ITEMS_START + relativeSlot;
+        }
+
+        if (relativeSlot < 36) {
+            return InventoryConstants.HOTBAR_START + (relativeSlot - 27);
+        }
+
+        return -1;
     }
 
     private boolean isInteractive(GuiSession session) {

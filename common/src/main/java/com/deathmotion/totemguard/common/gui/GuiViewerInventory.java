@@ -30,8 +30,10 @@ public final class GuiViewerInventory {
     private final boolean[] knownSlots = new boolean[InventoryConstants.INVENTORY_SIZE];
     private ItemStack cursor = ItemStack.EMPTY;
     private boolean cursorKnown;
+    private int openWindowId = InventoryConstants.PLAYER_WINDOW_ID;
+    private int openWindowTopSize = InventoryConstants.INVENTORY_SIZE;
 
-    public synchronized void applyWindowItems(List<ItemStack> items, ItemStack carried) {
+    public synchronized void applyPlayerWindowItems(List<ItemStack> items, ItemStack carried) {
         Arrays.fill(this.slots, ItemStack.EMPTY);
         Arrays.fill(this.knownSlots, false);
 
@@ -40,6 +42,24 @@ public final class GuiViewerInventory {
             this.slots[slot] = copy(items.get(slot));
             this.knownSlots[slot] = true;
         }
+        this.cursor = copy(carried);
+        this.cursorKnown = true;
+        resetOpenWindow();
+    }
+
+    public synchronized void applyContainerWindowItems(List<ItemStack> items, ItemStack carried) {
+        if (items.size() >= 36) {
+            int playerSectionStart = items.size() - 36;
+
+            for (int index = 0; index < 27; index++) {
+                applySlot(InventoryConstants.ITEMS_START + index, items.get(playerSectionStart + index));
+            }
+
+            for (int index = 0; index < 9; index++) {
+                applySlot(InventoryConstants.HOTBAR_START + index, items.get(playerSectionStart + 27 + index));
+            }
+        }
+
         this.cursor = copy(carried);
         this.cursorKnown = true;
     }
@@ -78,6 +98,47 @@ public final class GuiViewerInventory {
 
     public synchronized ItemStack cursor() {
         return copy(this.cursor);
+    }
+
+    public synchronized void setOpenWindow(int windowId, int topSize) {
+        this.openWindowId = windowId;
+        this.openWindowTopSize = topSize;
+    }
+
+    public synchronized void closeWindow(int windowId) {
+        if (this.openWindowId == windowId) {
+            resetOpenWindow();
+        }
+    }
+
+    public synchronized int mapContainerSlotToPlayerSlot(int windowId, int containerSlot) {
+        if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+            return containerSlot;
+        }
+
+        if (windowId != this.openWindowId || this.openWindowTopSize < 0) {
+            return -1;
+        }
+
+        int relativeSlot = containerSlot - this.openWindowTopSize;
+        if (relativeSlot < 0) {
+            return -1;
+        }
+
+        if (relativeSlot < 27) {
+            return InventoryConstants.ITEMS_START + relativeSlot;
+        }
+
+        if (relativeSlot < 36) {
+            return InventoryConstants.HOTBAR_START + (relativeSlot - 27);
+        }
+
+        return -1;
+    }
+
+    private void resetOpenWindow() {
+        this.openWindowId = InventoryConstants.PLAYER_WINDOW_ID;
+        this.openWindowTopSize = InventoryConstants.INVENTORY_SIZE;
     }
 
     private ItemStack copy(ItemStack item) {

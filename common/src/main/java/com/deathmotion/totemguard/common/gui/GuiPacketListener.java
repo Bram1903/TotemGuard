@@ -26,6 +26,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCreativeInventoryAction;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 public final class GuiPacketListener extends PacketListenerAbstract {
@@ -46,6 +47,7 @@ public final class GuiPacketListener extends PacketListenerAbstract {
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             if (!guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
+                guiManager.trackClientWindowClick(event.getUser(), packet);
                 return;
             }
 
@@ -57,7 +59,7 @@ public final class GuiPacketListener extends PacketListenerAbstract {
                 return;
             }
 
-            guiManager.restoreViewerInventory(event.getUser(), packetFallbackCursor(packet));
+            guiManager.resyncWindow(event.getUser(), packetFallbackCursor(packet));
             return;
         }
 
@@ -68,6 +70,12 @@ public final class GuiPacketListener extends PacketListenerAbstract {
             }
 
             guiManager.handleWindowClose(event.getUser(), packet.getWindowId());
+            return;
+        }
+
+        if (packetType == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
+            WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
+            guiManager.trackCreativeInventoryAction(event.getUser(), packet.getSlot(), packet.getItemStack());
         }
     }
 
@@ -82,13 +90,12 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
-            if (packet.getWindowId() == 0) {
-                guiManager.trackPlayerWindowItems(
-                        event.getUser(),
-                        packet.getItems(),
-                        packet.getCarriedItem().orElse(ItemStack.EMPTY)
-                );
-            }
+            guiManager.trackWindowItems(
+                    event.getUser(),
+                    packet.getWindowId(),
+                    packet.getItems(),
+                    packet.getCarriedItem().orElse(ItemStack.EMPTY)
+            );
             return;
         }
 
@@ -100,9 +107,7 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-            if (packet.getWindowId() == 0) {
-                guiManager.trackPlayerSlot(event.getUser(), packet.getSlot(), packet.getItem());
-            }
+            guiManager.trackWindowSlot(event.getUser(), packet.getWindowId(), packet.getSlot(), packet.getItem());
             return;
         }
 
@@ -118,17 +123,19 @@ public final class GuiPacketListener extends PacketListenerAbstract {
                 return;
             }
 
-            guiManager.handleExternalInventoryPacket(event.getUser());
+            guiManager.handleExternalInventoryOpen(event.getUser(), packet.getContainerId(), -1);
             return;
         }
 
         if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
-            guiManager.handleExternalInventoryPacket(event.getUser());
+            WrapperPlayServerCloseWindow packet = new WrapperPlayServerCloseWindow(event);
+            guiManager.handleInventoryClosePacket(event.getUser(), packet.getWindowId());
             return;
         }
 
         if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
-            guiManager.handleExternalInventoryPacket(event.getUser());
+            WrapperPlayServerOpenHorseWindow packet = new WrapperPlayServerOpenHorseWindow(event);
+            guiManager.handleExternalInventoryOpen(event.getUser(), packet.getWindowId(), packet.getSlotCount());
         }
     }
 

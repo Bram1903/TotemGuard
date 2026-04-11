@@ -61,7 +61,6 @@ public class Data {
                     + " &7their inventory.";
 
             //TGPlatform.getInstance().getAlertRepository().broadcast(message);
-
             TGPlatform platform = TGPlatform.getInstance();
             if (platform != null && platform.getGuiManager() != null) {
                 platform.getGuiManager().refreshMonitor(player.getUuid());
