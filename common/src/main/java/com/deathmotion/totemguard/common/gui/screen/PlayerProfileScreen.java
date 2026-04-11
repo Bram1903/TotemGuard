@@ -92,7 +92,7 @@ public final class PlayerProfileScreen extends GuiScreen {
                 ItemTypes.BOOK,
                 Component.text("General", NamedTextColor.AQUA),
                 List.of(
-                        GuiText.line("Client version", String.valueOf(target.getClientVersion())),
+                        GuiText.line("Client version", target.getClientVersion().getReleaseName()),
                         GuiText.line("Client brand", target.getClientBrand() == null ? "Unknown" : target.getClientBrand()),
                         GuiText.status("Inventory open", target.getData().isOpenInventory())
                 )
