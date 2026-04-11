@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
@@ -54,6 +55,10 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
+            if (isGuiWindow(packet.getWindowId())) {
+                return;
+            }
+
             ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
             List<ItemStack> items = packet.getItems().stream()
                     .map(this::copyItemStack)
@@ -111,6 +116,10 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                     inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
+            if (isGuiWindow(packet.getWindowId())) {
+                return;
+            }
+
             ItemStack item = copyItemStack(packet.getItem());
 
             latencyHandler.compensate(event, timestamp -> {
@@ -126,12 +135,24 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                 }
             });
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
+            if (hasGuiSession()) {
+                return;
+            }
+
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
             ItemStack stack = copyItemStack(packet.getStack());
 
             latencyHandler.compensate(event, timestamp ->
                     inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
         }
+    }
+
+    private boolean hasGuiSession() {
+        return TGPlatform.getInstance().getGuiManager().hasSession(player.getUser());
+    }
+
+    private boolean isGuiWindow(int windowId) {
+        return TGPlatform.getInstance().getGuiManager().isGuiWindow(player.getUser(), windowId);
     }
 
     private void syncExternalPlayerSection(int windowId, List<ItemStack> items, long timestamp) {
