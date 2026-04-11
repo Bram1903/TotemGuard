@@ -60,6 +60,26 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6, Component.text("Monitor: " + targetName, NamedTextColor.GOLD));
 
+        if (session.viewerId().equals(targetId)) {
+            builder.fillEmpty(GuiItems.filler());
+            builder.set(13, GuiItems.simple(
+                    ItemTypes.BARRIER,
+                    Component.text("Self Monitor Disabled", NamedTextColor.RED),
+                    List.of(Component.text(
+                            "Monitoring your own inventory is disabled to prevent ghost item desync.",
+                            NamedTextColor.GRAY
+                    ))
+            ));
+            builder.set(49, singleExitButton(session), ctx -> {
+                if (session.hasParent()) {
+                    ctx.back();
+                    return;
+                }
+                ctx.close();
+            });
+            return builder.build();
+        }
+
         if (target == null) {
             builder.set(0, emptyPane("Player"));
             builder.set(8, singleExitButton(session), ctx -> {

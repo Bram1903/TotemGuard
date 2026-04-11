@@ -70,15 +70,20 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
             if (packet.getSlot() < 1 || packet.getSlot() > 45) return;
-            inventory.setItem(packet.getSlot(), packet.getItemStack(), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
+            inventory.setItem(packet.getSlot(), copyItem(packet.getItemStack()), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
         } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             data.setOpenInventory(true);
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             int carriedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
                     ? packet.getSlot()
                     : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
+            boolean predictedPickup = packet.getWindowClickType() == WrapperPlayClientClickWindow.WindowClickType.PICKUP
+                    && inventory.applyPickupClick(packet.getWindowId(), packet.getSlot(), packet.getButton(), Issuer.CLIENT, event.getTimestamp());
 
-            inventory.setCarriedItem(packet.getCarriedItemStack(), carriedSlot, Issuer.CLIENT, event.getTimestamp());
+            if (!predictedPickup) {
+                inventory.setCarriedItem(copyItem(packet.getCarriedItemStack()), carriedSlot, Issuer.CLIENT, event.getTimestamp());
+            }
+
             packet.getSlots().ifPresent(slots -> {
                 for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {
                     int mappedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
@@ -89,7 +94,11 @@ public class InboundInventoryProcessor extends ProcessorInbound {
                         continue;
                     }
 
-                    inventory.setItem(mappedSlot, slotEntry.getValue(), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
+                    if (predictedPickup && mappedSlot == carriedSlot && slotEntry.getKey() == packet.getSlot()) {
+                        continue;
+                    }
+
+                    inventory.setItem(mappedSlot, copyItem(slotEntry.getValue()), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
                 }
             });
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
@@ -97,5 +106,9 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         } else if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
             data.setServerOpenedInventoryThisTick(false);
         }
+    }
+
+    private ItemStack copyItem(ItemStack stack) {
+        return stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
     }
 }

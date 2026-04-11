@@ -115,13 +115,23 @@ public final class PlayerProfileScreen extends GuiScreen {
         ));
 
         builder.set(22, GuiItems.simple(
-                ItemTypes.CHEST,
-                Component.text("Open Monitor", NamedTextColor.GOLD),
-                List.of(
+                session.viewerId().equals(target.getUuid()) ? ItemTypes.BARRIER : ItemTypes.CHEST,
+                Component.text(
+                        session.viewerId().equals(target.getUuid()) ? "Self Monitor Disabled" : "Open Monitor",
+                        session.viewerId().equals(target.getUuid()) ? NamedTextColor.RED : NamedTextColor.GOLD
+                ),
+                session.viewerId().equals(target.getUuid())
+                        ? List.of(Component.text("Monitoring your own inventory is disabled", NamedTextColor.GRAY))
+                        : List.of(
                         Component.text("View the live packet inventory", NamedTextColor.GRAY),
                         Component.text("and watch updates in-place", NamedTextColor.GRAY)
                 )
         ), ctx -> {
+            if (ctx.session().viewerId().equals(target.getUuid())) {
+                ctx.message(Component.text("You cannot monitor your own inventory.", NamedTextColor.RED));
+                return;
+            }
+
             ctx.open(new PlayerMonitorScreen(target));
         });
 

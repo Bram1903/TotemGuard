@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.gui;
 
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.player.User;
 
 import java.util.ArrayDeque;
@@ -37,6 +38,8 @@ public final class GuiSession {
     private boolean closed;
     private boolean closeRequested;
     private int stateId = 1;
+    private ItemStack pendingCursorFallback = ItemStack.EMPTY;
+    private boolean hasPendingCursorFallback;
 
     public GuiSession(UUID viewerId, User user, int windowId) {
         this.viewerId = viewerId;
@@ -110,5 +113,26 @@ public final class GuiSession {
 
     public synchronized int nextStateId() {
         return stateId++;
+    }
+
+    public synchronized void pendingCursorFallback(ItemStack item) {
+        this.pendingCursorFallback = item == null || item.isEmpty() ? ItemStack.EMPTY : item.copy();
+        this.hasPendingCursorFallback = true;
+    }
+
+    public synchronized void clearPendingCursorFallback() {
+        this.pendingCursorFallback = ItemStack.EMPTY;
+        this.hasPendingCursorFallback = false;
+    }
+
+    public synchronized ItemStack consumePendingCursorFallback() {
+        if (!this.hasPendingCursorFallback) {
+            return null;
+        }
+
+        ItemStack fallback = this.pendingCursorFallback;
+        this.pendingCursorFallback = ItemStack.EMPTY;
+        this.hasPendingCursorFallback = false;
+        return fallback;
     }
 }

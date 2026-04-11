@@ -28,6 +28,7 @@ import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 import java.util.List;
 
@@ -88,11 +89,21 @@ public final class GuiItems {
     }
 
     private static void applyMeta(ItemStack item, Component name, List<Component> lore) {
-        item.setComponent(ComponentTypes.CUSTOM_NAME, name);
+        item.setComponent(ComponentTypes.CUSTOM_NAME, guiText(name));
         if (lore == null || lore.isEmpty()) {
             item.unsetComponent(ComponentTypes.LORE);
             return;
         }
-        item.setComponent(ComponentTypes.LORE, new ItemLore(List.copyOf(lore)));
+        item.setComponent(ComponentTypes.LORE, new ItemLore(lore.stream()
+                .map(GuiItems::guiText)
+                .toList()));
+    }
+
+    private static Component guiText(Component component) {
+        Component text = component == null ? BLANK_NAME : component;
+        if (text.decoration(TextDecoration.ITALIC) != TextDecoration.State.NOT_SET) {
+            return text;
+        }
+        return text.decoration(TextDecoration.ITALIC, false);
     }
 }

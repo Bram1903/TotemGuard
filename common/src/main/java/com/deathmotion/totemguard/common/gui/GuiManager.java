@@ -291,12 +291,13 @@ public final class GuiManager {
         }
 
         ItemStack fallbackCursor = fallbackCursor(packet);
+        session.pendingCursorFallback(fallbackCursor);
 
         if (context.rendered()) {
-            restoreViewerInventory(session, false, fallbackCursor);
             return;
         }
 
+        session.clearPendingCursorFallback();
         resync(session, fallbackCursor);
     }
 
@@ -403,24 +404,34 @@ public final class GuiManager {
                 || !Objects.equals(previousRender.title(), nextRender.title());
 
         int stateId = session.nextStateId();
+        ItemStack cursorFallback = session.consumePendingCursorFallback();
 
         if (reopen) {
             scheduleRender(session, nextRender, () -> {
                 sendOpenWindow(session, nextRender);
-                sendWindowItems(session, stateId, nextRender);
-                session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, ItemStack.EMPTY)));
+                sendWindowItems(session, stateId, nextRender, cursorFallback);
+                session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback)));
             });
             return;
         }
 
         int changedSlots = countChangedSlots(previousRender, nextRender);
         if (changedSlots == 0) {
+            if (cursorFallback == null) {
+                return;
+            }
+
+            scheduleRender(session, nextRender, () ->
+                    session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback))));
             return;
         }
 
         scheduleRender(session, nextRender, () -> {
             if (changedSlots > (nextRender.size() / 2)) {
-                sendWindowItems(session, stateId, nextRender);
+                sendWindowItems(session, stateId, nextRender, cursorFallback);
+                if (cursorFallback != null) {
+                    session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback)));
+                }
                 return;
             }
 
@@ -433,6 +444,10 @@ public final class GuiManager {
                             nextRender.item(slot)
                     ));
                 }
+            }
+
+            if (cursorFallback != null) {
+                session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, cursorFallback)));
             }
         });
     }
@@ -465,13 +480,13 @@ public final class GuiManager {
         session.user().sendPacket(openWindow);
     }
 
-    private void sendWindowItems(GuiSession session, int stateId, GuiRenderResult render) {
+    private void sendWindowItems(GuiSession session, int stateId, GuiRenderResult render, ItemStack fallbackCursor) {
         GuiViewerInventory inventory = viewerInventories.get(session.viewerId());
         session.user().sendPacket(new WrapperPlayServerWindowItems(
                 session.windowId(),
                 stateId,
                 buildWindowItems(render, inventory),
-                currentCursor(session, ItemStack.EMPTY)
+                currentCursor(session, fallbackCursor)
         ));
     }
 

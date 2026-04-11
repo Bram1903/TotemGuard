@@ -60,6 +60,14 @@ public final class MonitorCommand extends AbstractCommand {
             return;
         }
 
+        if (sender.getUniqueId().equals(target.getUuid())) {
+            sender.sendMessage(Component.text(
+                    "You cannot monitor your own inventory.",
+                    NamedTextColor.RED
+            ));
+            return;
+        }
+
         if (!TGPlatform.getInstance().getGuiManager().open(sender, new PlayerMonitorScreen(target))) {
             sender.sendMessage(Component.text("Failed to open the monitor GUI.", NamedTextColor.RED));
         }

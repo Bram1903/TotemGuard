@@ -56,6 +56,23 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
             if (isGuiWindow(packet.getWindowId())) {
+                ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
+                List<ItemStack> items = packet.getItems().stream()
+                        .map(this::copyItemStack)
+                        .toList();
+
+                trackAfterSend(event, timestamp -> {
+                    if (carriedItem != null) {
+                        inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, timestamp);
+                    }
+
+                    if (items.size() < 36) {
+                        return;
+                    }
+
+                    inventory.setOpenWindow(packet.getWindowId(), items.size() - 36);
+                    syncExternalPlayerSection(packet.getWindowId(), items, timestamp);
+                });
                 return;
             }
 
@@ -117,6 +134,13 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
             if (isGuiWindow(packet.getWindowId())) {
+                ItemStack item = copyItemStack(packet.getItem());
+                trackAfterSend(event, timestamp -> {
+                    int mappedSlot = inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
+                    if (mappedSlot >= 0) {
+                        inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                    }
+                });
                 return;
             }
 
@@ -136,6 +160,9 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             });
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
             if (hasGuiSession()) {
+                ItemStack stack = copyItemStack(new WrapperPlayServerSetCursorItem(event).getStack());
+                trackAfterSend(event, timestamp ->
+                        inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
                 return;
             }
 
@@ -153,6 +180,14 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private boolean isGuiWindow(int windowId) {
         return TGPlatform.getInstance().getGuiManager().isGuiWindow(player.getUser(), windowId);
+    }
+
+    private void trackAfterSend(PacketSendEvent event, java.util.function.LongConsumer callback) {
+        if (event.isCancelled()) {
+            return;
+        }
+
+        event.getTasksAfterSend().add(() -> callback.accept(event.getTimestamp()));
     }
 
     private void syncExternalPlayerSection(int windowId, List<ItemStack> items, long timestamp) {
