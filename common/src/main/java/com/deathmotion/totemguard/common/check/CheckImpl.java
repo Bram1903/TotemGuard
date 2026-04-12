@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -123,7 +124,10 @@ public abstract class CheckImpl implements Check {
         }
 
         if (mitigate && player.getData().isOpenInventory()) {
-            player.getUser().closeInventory();
+            platform.getScheduler().runAsyncTask(() -> {
+                player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
+                player.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
+            });
         }
     }
 
