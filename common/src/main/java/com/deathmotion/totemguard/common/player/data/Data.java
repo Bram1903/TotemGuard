@@ -42,7 +42,11 @@ public class Data {
     private boolean canFly;
     private boolean isFlying;
     private boolean openInventory;
+
     private boolean serverOpenedInventoryThisTick;
+
+    private boolean inventoryMitigated;
+    private boolean inventoryMitigatedThisTick;
 
     private volatile boolean sendingBundlePacket;
 

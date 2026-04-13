@@ -112,6 +112,13 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         }
     }
 
+    @Override
+    public void handleInboundPost(PacketReceiveEvent event) {
+        if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
+            data.setInventoryMitigatedThisTick(false);
+        }
+    }
+
     private ItemStack copyItem(ItemStack stack) {
         return stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
     }

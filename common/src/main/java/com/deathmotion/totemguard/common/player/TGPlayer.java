@@ -89,9 +89,6 @@ public class TGPlayer implements TGUser {
     @Nullable
     private Long lastTotemUse;
 
-    @Setter
-    private boolean inventoryMitigated;
-
     @Getter
     @Setter
     private boolean vpn;

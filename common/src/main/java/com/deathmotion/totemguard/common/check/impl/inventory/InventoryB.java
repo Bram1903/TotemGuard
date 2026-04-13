@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.check.impl.inventory;
 
 import com.deathmotion.totemguard.api3.check.CheckType;
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
@@ -49,17 +50,19 @@ public class InventoryB extends CheckImpl implements PacketCheck {
             if (data.isServerOpenedInventoryThisTick()) return;
             check("click");
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
+            if (data.isServerOpenedInventoryThisTick()) return;
+            if (data.isInventoryMitigatedThisTick()) return;
             check("close");
         }
     }
 
     private void check(String check) {
-        if (data.isSprinting()) {
-            failInventory(check + " (sprinting)");
-        }
-
         if (inputData.isInput()) {
             failInventory(check + " (move)");
+        }
+
+        if (data.isSprinting()) {
+            failInventory(check + " (sprinting)");
         }
     }
 }

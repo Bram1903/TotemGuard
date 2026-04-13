@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import lombok.Getter;
@@ -41,6 +42,7 @@ public abstract class CheckImpl implements Check {
 
     public final TGPlayer player;
 
+    protected final Data data;
     protected final PacketInventory inventory;
     protected final Buffer buffer;
     protected final TGPlatform platform;
@@ -71,6 +73,7 @@ public abstract class CheckImpl implements Check {
 
     public CheckImpl(TGPlayer player) {
         this.player = player;
+        this.data = player.getData();
         this.inventory = player.getInventory();
         this.buffer = new Buffer();
         this.platform = TGPlatform.getInstance();
@@ -123,8 +126,8 @@ public abstract class CheckImpl implements Check {
             return;
         }
 
-        if (mitigate && player.getData().isOpenInventory() && !player.isInventoryMitigated()) {
-            player.setInventoryMitigated(true);
+        if (mitigate && data.isOpenInventory() && !data.isInventoryMitigated()) {
+            data.setInventoryMitigated(true);
             player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
         }
     }

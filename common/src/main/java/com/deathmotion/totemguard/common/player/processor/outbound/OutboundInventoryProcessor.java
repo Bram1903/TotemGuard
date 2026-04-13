@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
@@ -34,18 +35,21 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 import java.util.List;
+import java.util.function.LongConsumer;
 
 public class OutboundInventoryProcessor extends ProcessorOutbound {
 
-    private final PacketInventory inventory;
     private final Data data;
+    private final PacketInventory inventory;
     private final PacketLatencyHandler latencyHandler;
+    private final GuiManager guiManager;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
-        this.inventory = player.getInventory();
         this.data = player.getData();
+        this.inventory = player.getInventory();
         this.latencyHandler = player.getLatencyHandler();
+        this.guiManager = TGPlatform.getInstance().getGuiManager();
     }
 
     @Override
@@ -55,7 +59,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
-            if (isGuiWindow(packet.getWindowId())) {
+            if (guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
                 ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
                 List<ItemStack> items = packet.getItems().stream()
                         .map(this::copyItemStack)
@@ -124,14 +128,15 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                 inventory.resetOpenWindow();
                 data.setOpenInventory(false);
 
-                if (player.isInventoryMitigated()) {
-                    player.setInventoryMitigated(false);
+                if (data.isInventoryMitigated()) {
+                    data.setInventoryMitigated(false);
+                    data.setInventoryMitigatedThisTick(true);
 
                     // This sends a close window packet on behalf of the client,
                     // so the server can potentially close open chests, and prevents compatibility issues.
-                    // This packet gets send to the server, AFTER we have confirmed the close window packet
+                    // This packet gets sent to the server, AFTER we have confirmed the close window packet
                     // has been processed by the client.
-                    // We only send this packet if we were the ones closing the inventory because of a mitigation
+                    // We only sent this packet if we were the ones closing the inventory because of mitigation
                     event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
                 }
             });
@@ -144,7 +149,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                     inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-            if (isGuiWindow(packet.getWindowId())) {
+            if (guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
                 ItemStack item = copyItemStack(packet.getItem());
                 trackAfterSend(event, timestamp -> {
                     int mappedSlot = inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
@@ -170,10 +175,9 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                 }
             });
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
-            if (hasGuiSession()) {
+            if (guiManager.hasSession(event.getUser())) {
                 ItemStack stack = copyItemStack(new WrapperPlayServerSetCursorItem(event).getStack());
-                trackAfterSend(event, timestamp ->
-                        inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
+                trackAfterSend(event, timestamp -> inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
                 return;
             }
 
@@ -185,15 +189,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         }
     }
 
-    private boolean hasGuiSession() {
-        return TGPlatform.getInstance().getGuiManager().hasSession(player.getUser());
-    }
-
-    private boolean isGuiWindow(int windowId) {
-        return TGPlatform.getInstance().getGuiManager().isGuiWindow(player.getUser(), windowId);
-    }
-
-    private void trackAfterSend(PacketSendEvent event, java.util.function.LongConsumer callback) {
+    private void trackAfterSend(PacketSendEvent event, LongConsumer callback) {
         if (event.isCancelled()) {
             return;
         }
