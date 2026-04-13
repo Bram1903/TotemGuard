@@ -123,11 +123,9 @@ public abstract class CheckImpl implements Check {
             return;
         }
 
-        if (mitigate && player.getData().isOpenInventory()) {
-            platform.getScheduler().runAsyncTask(() -> {
-                player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
-                player.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
-            });
+        if (mitigate && player.getData().isOpenInventory() && !player.isInventoryMitigated()) {
+            player.setInventoryMitigated(true);
+            player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
         }
     }
 

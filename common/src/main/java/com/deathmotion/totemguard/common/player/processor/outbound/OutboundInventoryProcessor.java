@@ -123,6 +123,17 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             latencyHandler.compensate(event, timestamp -> {
                 inventory.resetOpenWindow();
                 data.setOpenInventory(false);
+
+                if (player.isInventoryMitigated()) {
+                    player.setInventoryMitigated(false);
+
+                    // This sends a close window packet on behalf of the client,
+                    // so the server can potentially close open chests, and prevents compatibility issues.
+                    // This packet gets send to the server, AFTER we have confirmed the close window packet
+                    // has been processed by the client.
+                    // We only send this packet if we were the ones closing the inventory because of a mitigation
+                    event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
+                }
             });
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);

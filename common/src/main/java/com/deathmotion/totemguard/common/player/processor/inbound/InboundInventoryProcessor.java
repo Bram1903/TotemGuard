@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
@@ -37,11 +38,14 @@ import java.util.Map;
 
 public class InboundInventoryProcessor extends ProcessorInbound {
 
+    private final GuiManager guiManager;
     private final PacketInventory inventory;
     private final Data data;
 
     public InboundInventoryProcessor(TGPlayer player) {
         super(player);
+
+        this.guiManager = TGPlatform.getInstance().getGuiManager();
         this.inventory = player.getInventory();
         this.data = player.getData();
     }
@@ -66,7 +70,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             if (slot > 8 || slot < 0) return;
             if (inventory.getSelectedHotbarIndex() == slot) return;
             inventory.setSelectedHotbarIndex(slot);
-            TGPlatform.getInstance().getGuiManager().refreshMonitor(player.getUuid());
+            guiManager.refreshMonitor(player.getUuid());
         } else if (packetType == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
             if (packet.getSlot() < 1 || packet.getSlot() > 45) return;

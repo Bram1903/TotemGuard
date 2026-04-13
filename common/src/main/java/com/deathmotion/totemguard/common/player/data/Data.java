@@ -29,6 +29,7 @@ import lombok.Setter;
 public class Data {
 
     private final TGPlayer player;
+    private final TGPlatform platform;
     private final TeleportData teleportData;
     private final InputData inputData;
 
@@ -47,6 +48,7 @@ public class Data {
 
     public Data(TGPlayer player) {
         this.player = player;
+        this.platform = TGPlatform.getInstance();
         this.teleportData = new TeleportData();
         this.inputData = new InputData();
     }
@@ -61,22 +63,7 @@ public class Data {
                     + " &7their inventory.";
 
             //TGPlatform.getInstance().getAlertRepository().broadcast(message);
-            TGPlatform platform = TGPlatform.getInstance();
-            if (platform != null && platform.getGuiManager() != null) {
-                platform.getGuiManager().refreshMonitor(player.getUuid());
-            }
+            platform.getGuiManager().refreshMonitor(player.getUuid());
         }
-    }
-
-    public void setPlayerInput(boolean inputForward, boolean inputBackward, boolean inputLeft, boolean inputRight, boolean inputJumping, boolean inputSneaking, boolean inputSprinting) {
-        inputData.setState(inputForward, inputBackward, inputLeft, inputRight, inputJumping, inputSneaking, inputSprinting);
-    }
-
-    public void resetPlayerInput() {
-        inputData.reset();
-    }
-
-    public boolean isInput() {
-        return inputData.isInput();
     }
 }

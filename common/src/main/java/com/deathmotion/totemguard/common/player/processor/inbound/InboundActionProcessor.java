@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.player.processor.inbound;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.ClickData;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.data.TickData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -34,12 +35,14 @@ public class InboundActionProcessor extends ProcessorInbound {
     private final Data data;
     private final ClickData clickData;
     private final TickData tickData;
+    private final InputData inputData;
 
     public InboundActionProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
         this.clickData = player.getClickData();
         this.tickData = player.getTickData();
+        this.inputData = player.getData().getInputData();
     }
 
     @Override
@@ -117,7 +120,7 @@ public class InboundActionProcessor extends ProcessorInbound {
             tickData.setClosingInventory(true);
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
             WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
-            data.setPlayerInput(
+            inputData.setState(
                     packet.isForward(),
                     packet.isBackward(),
                     packet.isLeft(),
