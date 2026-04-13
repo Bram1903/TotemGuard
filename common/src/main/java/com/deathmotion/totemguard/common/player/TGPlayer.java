@@ -122,7 +122,6 @@ public class TGPlayer implements TGUser {
             add(new OutboundPingProcessor(TGPlayer.this));
             add(new OutboundBundleProcessor(TGPlayer.this));
             add(new OutboundSpawnProcessor(TGPlayer.this));
-            add(new OutboundHealthProcessor(TGPlayer.this));
             add(new OutboundTotemActivatedProcessor(TGPlayer.this));
             add(new OutboundInventoryProcessor(TGPlayer.this));
             add(new OutboundTeleportProcessor(TGPlayer.this));

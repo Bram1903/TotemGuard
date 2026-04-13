@@ -34,9 +34,6 @@ public class Data {
     private final InputData inputData;
 
     private GameMode gameMode;
-    private float health;
-    private int food;
-    private float foodSaturation;
     private boolean sprinting;
     private boolean sneaking;
     private boolean canFly;
