@@ -18,30 +18,38 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetCursorItem;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetPlayerInventory;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
+
+import java.util.List;
+import java.util.function.LongConsumer;
 
 public class OutboundInventoryProcessor extends ProcessorOutbound {
 
-    private final PacketInventory inventory;
     private final Data data;
+    private final PacketInventory inventory;
+    private final PacketLatencyHandler latencyHandler;
+    private final GuiManager guiManager;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
-        this.inventory = player.getInventory();
         this.data = player.getData();
+        this.inventory = player.getInventory();
+        this.latencyHandler = player.getLatencyHandler();
+        this.guiManager = TGPlatform.getInstance().getGuiManager();
     }
 
     @Override
@@ -51,28 +59,157 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            packet.getCarriedItem().ifPresent(carriedItem -> inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, event.getTimestamp()));
-            for (int slot = 0; slot < packet.getItems().size(); slot++) {
-                inventory.setItem(slot, packet.getItems().get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
+            if (guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
+                ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
+                List<ItemStack> items = packet.getItems().stream()
+                        .map(this::copyItemStack)
+                        .toList();
+
+                trackAfterSend(event, timestamp -> {
+                    if (carriedItem != null) {
+                        inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, timestamp);
+                    }
+
+                    if (items.size() < 36) {
+                        return;
+                    }
+
+                    inventory.setOpenWindow(packet.getWindowId(), items.size() - 36);
+                    syncExternalPlayerSection(packet.getWindowId(), items, timestamp);
+                });
+                return;
             }
+
+            ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
+            List<ItemStack> items = packet.getItems().stream()
+                    .map(this::copyItemStack)
+                    .toList();
+
+            latencyHandler.compensate(event, timestamp -> {
+                if (carriedItem != null) {
+                    inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, timestamp);
+                }
+
+                if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
+                    inventory.setPlayerWindowStateId(packet.getStateId());
+                    inventory.resetOpenWindow();
+
+                    for (int slot = 0; slot < items.size(); slot++) {
+                        inventory.setItem(slot, items.get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                    }
+                    return;
+                }
+
+                if (items.size() < 36) {
+                    return;
+                }
+
+                inventory.setOpenWindow(packet.getWindowId(), items.size() - 36);
+                syncExternalPlayerSection(packet.getWindowId(), items, timestamp);
+            });
+        } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
+            WrapperPlayServerOpenWindow packet = new WrapperPlayServerOpenWindow(event);
+
+            latencyHandler.compensate(event, timestamp -> {
+                inventory.setOpenWindow(packet.getContainerId(), -1);
+                data.setOpenInventory(true);
+                data.setServerOpenedInventoryThisTick(true);
+            });
+        } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
+            WrapperPlayServerOpenHorseWindow packet = new WrapperPlayServerOpenHorseWindow(event);
+
+            latencyHandler.compensate(event, timestamp -> {
+                inventory.setOpenWindow(packet.getWindowId(), packet.getSlotCount());
+                data.setOpenInventory(true);
+                data.setServerOpenedInventoryThisTick(true);
+            });
+        } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
+            latencyHandler.compensate(event, timestamp -> {
+                inventory.resetOpenWindow();
+                data.setOpenInventory(false);
+
+                if (data.isInventoryMitigated()) {
+                    data.setInventoryMitigated(false);
+                    data.setInventoryMitigatedThisTick(true);
+
+                    // This sends a close window packet on behalf of the client,
+                    // so the server can potentially close open chests, and prevents compatibility issues.
+                    // This packet gets sent to the server, AFTER we have confirmed the close window packet
+                    // has been processed by the client.
+                    // We only sent this packet if we were the ones closing the inventory because of mitigation
+                    event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
+                }
+            });
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            inventory.setItem(packet.getSlot(), packet.getStack(), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
+            int slot = packet.getSlot();
+            ItemStack stack = copyItemStack(packet.getStack());
+
+            latencyHandler.compensate(event, timestamp ->
+                    inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
         } else if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setItem(packet.getSlot(), packet.getItem(), Issuer.SERVER, SlotAction.IRRELEVANT, event.getTimestamp());
+            if (guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
+                ItemStack item = copyItemStack(packet.getItem());
+                trackAfterSend(event, timestamp -> {
+                    int mappedSlot = inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
+                    if (mappedSlot >= 0) {
+                        inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                    }
+                });
+                return;
+            }
+
+            ItemStack item = copyItemStack(packet.getItem());
+
+            latencyHandler.compensate(event, timestamp -> {
+                if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
+                    inventory.setPlayerWindowStateId(packet.getStateId());
+                    inventory.setItem(packet.getSlot(), item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                    return;
+                }
+
+                int mappedSlot = inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
+                if (mappedSlot >= 0) {
+                    inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+                }
+            });
         } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
+            if (guiManager.hasSession(event.getUser())) {
+                ItemStack stack = copyItemStack(new WrapperPlayServerSetCursorItem(event).getStack());
+                trackAfterSend(event, timestamp -> inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
+                return;
+            }
+
             WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
-            inventory.setCarriedItem(packet.getStack(), -1, Issuer.SERVER, event.getTimestamp());
-        } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
-            //data.setOpenInventory(true);
-        } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
-            //data.setOpenInventory(true);
-        } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
-            data.setOpenInventory(false);
+            ItemStack stack = copyItemStack(packet.getStack());
+
+            latencyHandler.compensate(event, timestamp ->
+                    inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
         }
     }
 
+    private void trackAfterSend(PacketSendEvent event, LongConsumer callback) {
+        if (event.isCancelled()) {
+            return;
+        }
+
+        event.getTasksAfterSend().add(() -> callback.accept(event.getTimestamp()));
+    }
+
+    private void syncExternalPlayerSection(int windowId, List<ItemStack> items, long timestamp) {
+        int playerSectionStart = items.size() - 36;
+        for (int index = 0; index < 36; index++) {
+            int mappedSlot = inventory.mapContainerSlotToPlayerSlot(windowId, playerSectionStart + index);
+            if (mappedSlot < 0) {
+                continue;
+            }
+
+            inventory.setItem(mappedSlot, items.get(playerSectionStart + index), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+        }
+    }
+
+    private ItemStack copyItemStack(ItemStack itemStack) {
+        return itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
+    }
 }

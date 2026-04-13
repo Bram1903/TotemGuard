@@ -16,36 +16,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.protocol;
+package com.deathmotion.totemguard.common.check.impl.tick;
 
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.TeleportData;
+import com.deathmotion.totemguard.common.player.data.PingData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
-@CheckData(description = "Invalid teleport acknowledgement", type = CheckType.PROTOCOL)
-public class ProtocolF extends CheckImpl implements PacketCheck {
+@CheckData(description = "Invalid transaction acknowledgement", type = CheckType.TICK)
+public class TickB extends CheckImpl implements PacketCheck {
 
-    public ProtocolF(TGPlayer player) {
+    public TickB(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
-        TeleportData teleportData = player.getData().getTeleportData();
+        PacketTypeCommon packetType = event.getPacketType();
+        PingData pingData = player.getPingData();
 
-        if (!teleportData.lastTeleportConfirmValid()) {
-            fail("invalid");
-            return;
-        }
+        if (packetType == PacketType.Play.Client.WINDOW_CONFIRMATION || packetType == PacketType.Play.Client.PONG) {
+            if (!pingData.isLastTransactionReplyValid()) {
+                fail("invalid");
+                return;
+            }
 
-        if (teleportData.lastTeleportConfirmSkipped()) {
-            fail("skipped=" + teleportData.getLastSkippedTeleportCount());
+            if (pingData.isLastTransactionReplySkipped()) {
+                fail("type=transaction,skipped=" + pingData.getLastSkippedTransactionReplyCount());
+            }
+        } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM) {
+            if (pingData.isLastTeleportSkippedTransactions()) {
+                fail("type=teleport,skipped=" + pingData.getLastSkippedTransactionsByTeleportCount());
+            }
         }
     }
 }

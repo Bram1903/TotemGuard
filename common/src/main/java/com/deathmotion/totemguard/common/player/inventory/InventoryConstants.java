@@ -18,8 +18,14 @@
 
 package com.deathmotion.totemguard.common.player.inventory;
 
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
+
 public class InventoryConstants {
     public static final int PLAYER_WINDOW_ID = 0;
+    public static final WrapperPlayServerCloseWindow SERVER_CLOSE_WINDOW = new WrapperPlayServerCloseWindow(InventoryConstants.PLAYER_WINDOW_ID);
+    public static final WrapperPlayClientCloseWindow CLIENT_CLOSE_WINDOW = new WrapperPlayClientCloseWindow(InventoryConstants.PLAYER_WINDOW_ID);
+
     public static final int INVENTORY_SIZE = 46;
 
     public static final int SLOT_CRAFT_RESULT = 0;

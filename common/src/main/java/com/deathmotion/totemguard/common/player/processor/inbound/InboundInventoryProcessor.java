@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
@@ -30,20 +32,20 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCreativeInventoryAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import com.github.retrooper.packetevents.wrapper.play.client.*;
 
 import java.util.Map;
 
 public class InboundInventoryProcessor extends ProcessorInbound {
 
+    private final GuiManager guiManager;
     private final PacketInventory inventory;
     private final Data data;
 
     public InboundInventoryProcessor(TGPlayer player) {
         super(player);
+
+        this.guiManager = TGPlatform.getInstance().getGuiManager();
         this.inventory = player.getInventory();
         this.data = player.getData();
     }
@@ -66,23 +68,58 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
             int slot = packet.getSlot();
             if (slot > 8 || slot < 0) return;
+            if (inventory.getSelectedHotbarIndex() == slot) return;
             inventory.setSelectedHotbarIndex(slot);
+            guiManager.refreshMonitor(player.getUuid());
         } else if (packetType == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
             WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
             if (packet.getSlot() < 1 || packet.getSlot() > 45) return;
-            inventory.setItem(packet.getSlot(), packet.getItemStack(), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
+            inventory.setItem(packet.getSlot(), copyItem(packet.getItemStack()), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
         } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             data.setOpenInventory(true);
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
-            inventory.setCarriedItem(packet.getCarriedItemStack(), packet.getSlot(), Issuer.CLIENT, event.getTimestamp());
+            int carriedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
+                    ? packet.getSlot()
+                    : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
+            boolean predictedPickup = packet.getWindowClickType() == WrapperPlayClientClickWindow.WindowClickType.PICKUP
+                    && inventory.applyPickupClick(packet.getWindowId(), packet.getSlot(), packet.getButton(), Issuer.CLIENT, event.getTimestamp());
+
+            if (!predictedPickup) {
+                inventory.setCarriedItem(copyItem(packet.getCarriedItemStack()), carriedSlot, Issuer.CLIENT, event.getTimestamp());
+            }
+
             packet.getSlots().ifPresent(slots -> {
                 for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {
-                    inventory.setItem(slotEntry.getKey(), slotEntry.getValue(), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
+                    int mappedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
+                            ? slotEntry.getKey()
+                            : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), slotEntry.getKey());
+
+                    if (mappedSlot < 0) {
+                        continue;
+                    }
+
+                    if (predictedPickup && mappedSlot == carriedSlot && slotEntry.getKey() == packet.getSlot()) {
+                        continue;
+                    }
+
+                    inventory.setItem(mappedSlot, copyItem(slotEntry.getValue()), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
                 }
             });
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             data.setOpenInventory(false);
+        } else if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
+            data.setServerOpenedInventoryThisTick(false);
         }
+    }
+
+    @Override
+    public void handleInboundPost(PacketReceiveEvent event) {
+        if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
+            data.setInventoryMitigatedThisTick(false);
+        }
+    }
+
+    private ItemStack copyItem(ItemStack stack) {
+        return stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
     }
 }

@@ -18,11 +18,6 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
 public class InputData {
 
     private boolean forward;

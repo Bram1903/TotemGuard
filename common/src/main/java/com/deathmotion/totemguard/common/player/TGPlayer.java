@@ -30,8 +30,12 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.data.*;
+import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
+import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
+import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.*;
@@ -68,6 +72,8 @@ public class TGPlayer implements TGUser {
     private final ClickData clickData;
     private final TickData tickData;
     private final PingData pingData;
+    private final DebugOverlayManager debugOverlayManager;
+    private final PacketLatencyHandler latencyHandler;
 
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
@@ -93,12 +99,16 @@ public class TGPlayer implements TGUser {
         this.user = user;
 
         this.inventory = new PacketInventory();
-        this.checkManager = new CheckManagerImpl(this);
         this.data = new Data(this);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
         this.pingData = new PingData();
+        this.debugOverlayManager = new DebugOverlayManager(this);
+        this.debugOverlayManager.register(new TransactionDebugProvider());
+        this.debugOverlayManager.register(new TotemDebugProvider());
+        this.latencyHandler = new PacketLatencyHandler(this);
+        this.checkManager = new CheckManagerImpl(this);
 
         this.processorInbounds = new ArrayList<>() {{
             add(new InboundPingProcessor(TGPlayer.this));
@@ -176,6 +186,7 @@ public class TGPlayer implements TGUser {
         );
 
         platform.getEventRepository().post(event);
+        debugOverlayManager.refresh();
     }
 
     @Override

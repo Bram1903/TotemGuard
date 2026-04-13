@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.TotemData;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
@@ -29,8 +30,6 @@ import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import java.util.function.Consumer;
 
 public class TotemReplenishedListener implements Consumer<InventoryChangedEvent> {
-
-    private static final long MAX_REASONABLE_DELAY_MS = 5_000;
 
     @Override
     public void accept(InventoryChangedEvent event) {
@@ -55,7 +54,9 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
             long replenishedAt = inventorySlot.getUpdated();
             long deltaRaw = replenishedAt - lastTotemUse;
 
-            if (deltaRaw < 0 || deltaRaw > MAX_REASONABLE_DELAY_MS) {
+            if (deltaRaw < 0 || deltaRaw > TotemData.MAX_TRACKED_INTERVAL_MS) {
+                player.setLastTotemUse(null);
+                player.getDebugOverlayManager().refresh();
                 return;
             }
 
@@ -69,6 +70,7 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
             TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
 
             player.setLastTotemUse(null);
+            player.getDebugOverlayManager().refresh();
 
             return;
         }

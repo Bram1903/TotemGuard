@@ -30,6 +30,7 @@ AutoTotemB:
 InventoryA:
   enabled: true
   punishable: false
+  mitigate: true
   max-violations: 2
 
   punishment-commands:
@@ -38,6 +39,7 @@ InventoryA:
 InventoryB:
   enabled: true
   punishable: false
+  mitigate: true
   max-violations: 2
 
   punishment-commands:
@@ -99,7 +101,7 @@ ProtocolE:
   punishment-commands:
     - "%default_punishment%"
 
-ProtocolF:
+TickA:
   enabled: true
   punishable: false
   max-violations: 1
@@ -107,15 +109,15 @@ ProtocolF:
   punishment-commands:
     - "kick %tg_player% Packet Manipulation"
 
-ProtocolG:
+TickB:
   enabled: true
   punishable: false
   max-violations: 1
 
   punishment-commands:
-    - "%default_punishment%"
+    - "kick %tg_player% Packet Manipulation"
 
-TickA:
+TickC:
   enabled: true
   punishable: false
   max-violations: 1

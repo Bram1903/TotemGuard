@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class PlaceholderCommand extends AbstractCommand {
+public final class PlaceholderCommand extends AbstractCommand {
 
     private final PlaceholderRepositoryImpl placeholderRepository;
 

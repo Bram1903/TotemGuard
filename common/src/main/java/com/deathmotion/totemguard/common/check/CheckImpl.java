@@ -27,6 +27,8 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +42,7 @@ public abstract class CheckImpl implements Check {
 
     public final TGPlayer player;
 
+    protected final Data data;
     protected final PacketInventory inventory;
     protected final Buffer buffer;
     protected final TGPlatform platform;
@@ -56,6 +59,7 @@ public abstract class CheckImpl implements Check {
     private final boolean requiresTickEnd;
     @Getter
     protected boolean punishable;
+    protected boolean mitigate;
     @Getter
     private boolean enabled;
     @Getter
@@ -69,6 +73,7 @@ public abstract class CheckImpl implements Check {
 
     public CheckImpl(TGPlayer player) {
         this.player = player;
+        this.data = player.getData();
         this.inventory = player.getInventory();
         this.buffer = new Buffer();
         this.platform = TGPlatform.getInstance();
@@ -98,6 +103,7 @@ public abstract class CheckImpl implements Check {
 
         enabled = checkOptions.isEnabled();
         punishable = checkOptions.isPunishable();
+        mitigate = checkOptions.isMitigate();
         maxViolations = checkOptions.getMaxViolations();
         punishCommands = checkOptions.getPunishCommands();
     }
@@ -113,6 +119,17 @@ public abstract class CheckImpl implements Check {
         TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
         TGPlatform.getInstance().getAlertRepository().alert(this, violations, debug);
         return true;
+    }
+
+    protected void failInventory(@Nullable String debug) {
+        if (!fail(debug)) {
+            return;
+        }
+
+        if (mitigate && data.isOpenInventory() && !data.isInventoryMitigated()) {
+            data.setInventoryMitigated(true);
+            player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
+        }
     }
 
     protected boolean shouldFail(@Nullable String debug) {

@@ -16,17 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.data;
+package com.deathmotion.totemguard.common.gui;
 
-import com.deathmotion.totemguard.common.util.datastructure.EvictingList;
-import lombok.Getter;
+import java.util.Set;
 
-public class TotemData {
+public abstract class GuiScreen {
 
-    public static final long MAX_TRACKED_INTERVAL_MS = 2_000L;
+    public abstract GuiRenderResult render(GuiSession session);
 
-    @Getter
-    private final EvictingList<Long> intervals = new EvictingList<>(50);
+    public Set<GuiSubscriptionKey> subscriptionKeys() {
+        return Set.of();
+    }
 
+    public void onOpen(GuiSession session) {
+    }
 
+    public void onClose(GuiSession session) {
+    }
 }

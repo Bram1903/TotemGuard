@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 
 @CheckData(description = "Impossible click time difference", type = CheckType.AUTO_TOTEM)
@@ -51,30 +52,51 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
 
     private void onTotemActivated(TotemActivatedEvent event) {
         lastTotemActivatedTimestamp = event.getTimestamp();
+        totemPickUpTimestamp = null;
     }
 
     private void onInventoryChanged(InventoryChangedEvent event) {
         if (event.getLastIssuer() != Issuer.CLIENT) return;
 
         final CarriedItem carriedItem = event.getUpdatedCarriedItem();
-        if (carriedItem == null) return;
-
-        final int clickedSlot = carriedItem.getSlot();
-        final long clickedTime = carriedItem.getTimestamp();
-        final boolean wasCarryingTotem = carriedItem.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING;
-
-        if (inventory.isCarryingTotem() && !wasCarryingTotem) {
-            totemPickUpTimestamp = carriedItem.getTimestamp();
-        } else if (!inventory.isCarryingTotem() && wasCarryingTotem) {
-            if (inventory.isHandSlot(clickedSlot) && inventory.isTotemInSlot(clickedSlot) && totemPickUpTimestamp != null && lastTotemActivatedTimestamp != null) {
-                evaluate(clickedTime);
+        if (carriedItem != null) {
+            final boolean wasCarryingTotem = carriedItem.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING;
+            if (inventory.isCarryingTotem() && !wasCarryingTotem) {
+                totemPickUpTimestamp = carriedItem.getTimestamp();
             }
+        }
+
+        Long packetSourceTimestamp = null;
+        Long handTotemPlacedTimestamp = null;
+
+        for (InventorySlot changedSlot : event.getChangedSlots()) {
+            final int slot = changedSlot.getSlot();
+            final boolean slotHadTotem = changedSlot.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING;
+            final boolean slotHasTotem = changedSlot.getItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
+
+            if (!inventory.isHandSlot(slot) && slotHadTotem && !slotHasTotem) {
+                packetSourceTimestamp = packetSourceTimestamp == null
+                        ? changedSlot.getUpdated()
+                        : Math.min(packetSourceTimestamp, changedSlot.getUpdated());
+            }
+
+            if (inventory.isHandSlot(slot) && !slotHadTotem && slotHasTotem) {
+                handTotemPlacedTimestamp = changedSlot.getUpdated();
+            }
+        }
+
+        if (packetSourceTimestamp != null) {
+            totemPickUpTimestamp = packetSourceTimestamp;
+        }
+
+        if (handTotemPlacedTimestamp != null && totemPickUpTimestamp != null && lastTotemActivatedTimestamp != null) {
+            evaluate(handTotemPlacedTimestamp, totemPickUpTimestamp);
         }
     }
 
-    private void evaluate(long now) {
-        final long clickDiff = Math.abs(now - totemPickUpTimestamp);
-        final long useDiff = Math.abs(now - lastTotemActivatedTimestamp);
+    private void evaluate(long placedAt, long pickedUpAt) {
+        final long clickDiff = Math.abs(placedAt - pickedUpAt);
+        final long useDiff = Math.abs(placedAt - lastTotemActivatedTimestamp);
 
         if (clickDiff <= 75 && useDiff <= 1500) {
             fail();

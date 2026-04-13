@@ -16,17 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.data;
+package com.deathmotion.totemguard.common.player.debug;
 
-import com.deathmotion.totemguard.common.util.datastructure.EvictingList;
-import lombok.Getter;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 
-public class TotemData {
+public interface DebugOverlayProvider {
 
-    public static final long MAX_TRACKED_INTERVAL_MS = 2_000L;
+    String getKey();
 
-    @Getter
-    private final EvictingList<Long> intervals = new EvictingList<>(50);
+    default String getDisplayName() {
+        return getKey();
+    }
 
+    default String getPermissionSuffix() {
+        return "debug." + getKey();
+    }
 
+    DebugOverlayFrame buildFrame(TGPlayer player);
 }

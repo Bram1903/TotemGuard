@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.inventory;
 
+import com.deathmotion.totemguard.common.player.inventory.enums.EquipmentType;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
@@ -46,6 +47,16 @@ public class PacketInventory {
     @Getter
     @Setter
     private int selectedHotbarIndex; // 0..8
+
+    @Getter
+    @Setter
+    private int playerWindowStateId;
+
+    @Getter
+    private int openWindowId = InventoryConstants.PLAYER_WINDOW_ID;
+
+    @Getter
+    private int openWindowTopSize = InventoryConstants.INVENTORY_SIZE;
     /*
      * The last issuer that made a change to the inventory
      */
@@ -64,6 +75,32 @@ public class PacketInventory {
     public void setCarriedItem(ItemStack carriedItem, int slot, Issuer issuer, long timestampMillis) {
         this.lastIssuer = issuer;
         this.carriedItem.update(carriedItem, slot, issuer, timestampMillis);
+    }
+
+    public boolean applyPickupClick(int windowId, int containerSlot, int button, Issuer issuer, long timestampMillis) {
+        if (button != 0 && button != 1) {
+            return false;
+        }
+
+        if (containerSlot == -999) {
+            applyOutsidePickup(button, issuer, timestampMillis);
+            return true;
+        }
+
+        int playerSlot = windowId == InventoryConstants.PLAYER_WINDOW_ID
+                ? containerSlot
+                : mapContainerSlotToPlayerSlot(windowId, containerSlot);
+        if (playerSlot < 0) {
+            return false;
+        }
+
+        // The player crafting area can affect multiple slots at once. Let packet payloads drive that path.
+        if (windowId == InventoryConstants.PLAYER_WINDOW_ID && playerSlot <= InventoryConstants.SLOT_CRAFT_4) {
+            return false;
+        }
+
+        applyPickupClickOnPlayerSlot(playerSlot, button, issuer, timestampMillis);
+        return true;
     }
 
     public ItemStack getItem(int slot) {
@@ -145,6 +182,176 @@ public class PacketInventory {
 
     public boolean isCarryingTotem() {
         return carriedItem.getCurrentItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
+    }
+
+    public void setOpenWindow(int windowId, int topSize) {
+        this.openWindowId = windowId;
+        this.openWindowTopSize = topSize;
+    }
+
+    public void setOpenWindowTopSize(int topSize) {
+        this.openWindowTopSize = topSize;
+    }
+
+    public void resetOpenWindow() {
+        this.openWindowId = InventoryConstants.PLAYER_WINDOW_ID;
+        this.openWindowTopSize = InventoryConstants.INVENTORY_SIZE;
+    }
+
+    public int mapContainerSlotToPlayerSlot(int windowId, int containerSlot) {
+        if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+            return containerSlot;
+        }
+
+        if (windowId != this.openWindowId || this.openWindowTopSize < 0) {
+            return -1;
+        }
+
+        int relativeSlot = containerSlot - this.openWindowTopSize;
+        if (relativeSlot < 0) {
+            return -1;
+        }
+
+        if (relativeSlot < 27) {
+            return InventoryConstants.ITEMS_START + relativeSlot;
+        }
+
+        if (relativeSlot < 36) {
+            return InventoryConstants.HOTBAR_START + (relativeSlot - 27);
+        }
+
+        return -1;
+    }
+
+    private void applyOutsidePickup(int button, Issuer issuer, long timestampMillis) {
+        ItemStack currentCarried = copyItem(carriedItem.getCurrentItem());
+        if (currentCarried.isEmpty()) {
+            return;
+        }
+
+        if (button == 0) {
+            setCarriedItem(ItemStack.EMPTY, -1, issuer, timestampMillis);
+            return;
+        }
+
+        ItemStack remaining = currentCarried.copy();
+        remaining.setAmount(remaining.getAmount() - 1);
+        setCarriedItem(remaining.getAmount() > 0 ? remaining : ItemStack.EMPTY, -1, issuer, timestampMillis);
+    }
+
+    private void applyPickupClickOnPlayerSlot(int slot, int button, Issuer issuer, long timestampMillis) {
+        ItemStack slotItem = copyItem(getItem(slot));
+        ItemStack currentCarried = copyItem(carriedItem.getCurrentItem());
+
+        if (slotItem.isEmpty()) {
+            if (currentCarried.isEmpty()) {
+                return;
+            }
+
+            int placeAmount = button == 0 ? currentCarried.getAmount() : 1;
+
+            ItemStack placedItem = currentCarried.copy();
+            placedItem.setAmount(placeAmount);
+            setItem(slot, placedItem, issuer, SlotAction.CLICK, timestampMillis);
+
+            if (placeAmount >= currentCarried.getAmount()) {
+                setCarriedItem(ItemStack.EMPTY, slot, issuer, timestampMillis);
+                return;
+            }
+
+            ItemStack remaining = currentCarried.copy();
+            remaining.setAmount(currentCarried.getAmount() - placeAmount);
+            setCarriedItem(remaining, slot, issuer, timestampMillis);
+            return;
+        }
+
+        if (currentCarried.isEmpty()) {
+            int pickupAmount = button == 0 ? slotItem.getAmount() : (slotItem.getAmount() + 1) / 2;
+
+            ItemStack pickedUp = slotItem.copy();
+            pickedUp.setAmount(pickupAmount);
+            setCarriedItem(pickedUp, slot, issuer, timestampMillis);
+
+            int remainingAmount = slotItem.getAmount() - pickupAmount;
+            if (remainingAmount <= 0) {
+                setItem(slot, ItemStack.EMPTY, issuer, SlotAction.CLICK, timestampMillis);
+                return;
+            }
+
+            ItemStack remaining = slotItem.copy();
+            remaining.setAmount(remainingAmount);
+            setItem(slot, remaining, issuer, SlotAction.CLICK, timestampMillis);
+            return;
+        }
+
+        if (!canPlaceInPlayerSlot(slot, currentCarried)) {
+            return;
+        }
+
+        if (ItemStack.isSameItemSameTags(slotItem, currentCarried)) {
+            int maxStack = getPlayerSlotMaxStack(slot, currentCarried);
+            int room = maxStack - slotItem.getAmount();
+            if (room <= 0) {
+                return;
+            }
+
+            int insertAmount = Math.min(button == 0 ? currentCarried.getAmount() : 1, room);
+            if (insertAmount <= 0) {
+                return;
+            }
+
+            ItemStack updatedSlot = slotItem.copy();
+            updatedSlot.setAmount(slotItem.getAmount() + insertAmount);
+            setItem(slot, updatedSlot, issuer, SlotAction.CLICK, timestampMillis);
+
+            int remainingAmount = currentCarried.getAmount() - insertAmount;
+            if (remainingAmount <= 0) {
+                setCarriedItem(ItemStack.EMPTY, slot, issuer, timestampMillis);
+                return;
+            }
+
+            ItemStack remaining = currentCarried.copy();
+            remaining.setAmount(remainingAmount);
+            setCarriedItem(remaining, slot, issuer, timestampMillis);
+            return;
+        }
+
+        if (currentCarried.getAmount() > getPlayerSlotMaxStack(slot, currentCarried)) {
+            return;
+        }
+
+        setItem(slot, currentCarried, issuer, SlotAction.CLICK, timestampMillis);
+        setCarriedItem(slotItem, slot, issuer, timestampMillis);
+    }
+
+    private boolean canPlaceInPlayerSlot(int slot, ItemStack stack) {
+        if (stack.isEmpty()) {
+            return true;
+        }
+
+        return switch (slot) {
+            case InventoryConstants.SLOT_CRAFT_RESULT -> false;
+            case InventoryConstants.SLOT_HELMET -> EquipmentType.getEquipmentSlotForItem(stack) == EquipmentType.HEAD;
+            case InventoryConstants.SLOT_CHESTPLATE ->
+                    EquipmentType.getEquipmentSlotForItem(stack) == EquipmentType.CHEST;
+            case InventoryConstants.SLOT_LEGGINGS -> EquipmentType.getEquipmentSlotForItem(stack) == EquipmentType.LEGS;
+            case InventoryConstants.SLOT_BOOTS -> EquipmentType.getEquipmentSlotForItem(stack) == EquipmentType.FEET;
+            default -> true;
+        };
+    }
+
+    private int getPlayerSlotMaxStack(int slot, ItemStack stack) {
+        return switch (slot) {
+            case InventoryConstants.SLOT_HELMET,
+                 InventoryConstants.SLOT_CHESTPLATE,
+                 InventoryConstants.SLOT_LEGGINGS,
+                 InventoryConstants.SLOT_BOOTS -> 1;
+            default -> stack.getMaxStackSize();
+        };
+    }
+
+    private ItemStack copyItem(ItemStack stack) {
+        return stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
     }
 
     private InventorySlot slot(int slot) {

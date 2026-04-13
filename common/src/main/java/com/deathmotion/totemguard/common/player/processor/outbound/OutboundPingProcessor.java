@@ -39,17 +39,21 @@ public class OutboundPingProcessor extends ProcessorOutbound {
 
     @Override
     public void handleOutbound(PacketSendEvent event) {
+        if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) {
             WrapperPlayServerWindowConfirmation packet = new WrapperPlayServerWindowConfirmation(event);
             pingData.transactionSent(packet.getActionId(), event.getTimestamp());
+            event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
         } else if (packetType == PacketType.Play.Server.PING) {
             WrapperPlayServerPing packet = new WrapperPlayServerPing(event);
             pingData.transactionSent(packet.getId(), event.getTimestamp());
+            event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
         } else if (packetType == PacketType.Play.Server.KEEP_ALIVE) {
             WrapperPlayServerKeepAlive packet = new WrapperPlayServerKeepAlive(event);
             pingData.keepAliveSent(packet.getId(), event.getTimestamp());
+            event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
         }
     }
 }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
@@ -28,6 +29,7 @@ import lombok.Setter;
 public class Data {
 
     private final TGPlayer player;
+    private final TGPlatform platform;
     private final TeleportData teleportData;
     private final InputData inputData;
 
@@ -41,35 +43,31 @@ public class Data {
     private boolean isFlying;
     private boolean openInventory;
 
+    private boolean serverOpenedInventoryThisTick;
+
+    private boolean inventoryMitigated;
+    private boolean inventoryMitigatedThisTick;
+
     private volatile boolean sendingBundlePacket;
 
     public Data(TGPlayer player) {
         this.player = player;
+        this.platform = TGPlatform.getInstance();
         this.teleportData = new TeleportData();
         this.inputData = new InputData();
     }
 
     public void setOpenInventory(boolean openInventory) {
-        if (this.openInventory != openInventory) {
+        boolean changed = this.openInventory != openInventory;
+        this.openInventory = openInventory;
+
+        if (changed) {
             String message = "&a[Inventory] &7" + player.getName() + " has "
                     + (openInventory ? "&aopened" : "&cclosed")
                     + " &7their inventory.";
 
             //TGPlatform.getInstance().getAlertRepository().broadcast(message);
+            platform.getGuiManager().refreshMonitor(player.getUuid());
         }
-
-        this.openInventory = openInventory;
-    }
-
-    public void setPlayerInput(boolean inputForward, boolean inputBackward, boolean inputLeft, boolean inputRight, boolean inputJumping, boolean inputSneaking, boolean inputSprinting) {
-        inputData.setState(inputForward, inputBackward, inputLeft, inputRight, inputJumping, inputSneaking, inputSprinting);
-    }
-
-    public void resetPlayerInput() {
-        inputData.reset();
-    }
-
-    public boolean isInput() {
-        return inputData.isInput();
     }
 }

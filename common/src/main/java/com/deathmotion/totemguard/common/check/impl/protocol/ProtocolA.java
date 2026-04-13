@@ -24,53 +24,27 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.TickData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
-import java.util.List;
-import java.util.function.Predicate;
-
 @RequiresTickEnd
-@CheckData(description = "Impossible action combination", type = CheckType.PROTOCOL)
+@CheckData(description = "Attack and place", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
-    private static final List<Rule> RULES = List.of(
-            new Rule("attack + place", p ->
-                    p.getTickData().isAttacking() && p.getTickData().isPlacing() && !p.getTickData().isInteracting()
-            ),
-
-            new Rule("inventory_click + place", p ->
-                    p.getTickData().isClickingInInventory() && p.getTickData().isPlacing()
-            ),
-
-            new Rule("inventory_click + attack", p ->
-                    p.getTickData().isClickingInInventory() && p.getTickData().isAttacking()
-            ),
-
-            new Rule("quickmove + attack", p ->
-                    p.getTickData().isQuickMoveClicking() && p.getTickData().isAttacking()
-            ),
-
-            new Rule("pickup_click + place", p ->
-                    p.getTickData().isPickUpClicking() && p.getTickData().isPlacing()
-            )
-    );
+    private final TickData tickData;
 
     public ProtocolA(TGPlayer player) {
         super(player);
+        this.tickData = player.getTickData();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.CLIENT_TICK_END) return;
 
-        for (Rule rule : RULES) {
-            if (rule.predicate().test(player)) {
-                fail(rule.name);
-            }
+        if (tickData.isAttacking() && tickData.isPlacing() && !tickData.isInteracting()) {
+            fail("attack/place");
         }
-    }
-
-    private record Rule(String name, Predicate<TGPlayer> predicate) {
     }
 }
