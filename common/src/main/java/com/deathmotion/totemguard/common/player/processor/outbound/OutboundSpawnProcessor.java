@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.player.processor.outbound;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.InputData;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -33,11 +34,13 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
 
     private final Data data;
     private final InputData inputData;
+    private final PacketLatencyHandler latencyHandler;
 
     public OutboundSpawnProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
         this.inputData = player.getData().getInputData();
+        this.latencyHandler = player.getLatencyHandler();
     }
 
     @Override
@@ -51,14 +54,16 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
 
-            if (player.getClientVersion().isOlderThan(ClientVersion.V_1_16) || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
-                data.setSneaking(false);
-            }
+            latencyHandler.compensate(event, timestamp -> {
+                if (player.getClientVersion().isOlderThan(ClientVersion.V_1_16) || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
+                    data.setSneaking(false);
+                }
 
-            data.setSprinting(false);
-            data.setGameMode(packet.getGameMode());
-            data.setOpenInventory(false);
-            inputData.reset();
+                data.setGameMode(packet.getGameMode());
+                data.setOpenInventory(false);
+                data.setSprinting(false);
+                inputData.reset();
+            });
         }
     }
 }
