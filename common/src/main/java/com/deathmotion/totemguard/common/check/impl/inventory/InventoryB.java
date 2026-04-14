@@ -44,22 +44,22 @@ public class InventoryB extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
+        if (data.isServerOpenedInventoryThisTick()) return;
 
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
-            if (data.isServerOpenedInventoryThisTick()) return;
-            check("click");
+            if (data.isSprinting()) {
+                failInventory("click (sprinting");
+            } else if (inputData.isInput()) {
+                failInventory("click (move");
+            }
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
-            if (data.isServerOpenedInventoryThisTick()) return;
             if (data.isInventoryMitigatedThisTick()) return;
-            check("close");
-        }
-    }
 
-    private void check(String check) {
-        if (data.isSprinting()) {
-            failInventory(check + " (sprinting)");
-        } else if (inputData.isInput()) {
-            failInventory(check + " (move)");
+            if (data.isSprinting()) {
+                fail("close (sprinting)");
+            } else if (inputData.isInput()) {
+                fail("close (move)");
+            }
         }
     }
 }
