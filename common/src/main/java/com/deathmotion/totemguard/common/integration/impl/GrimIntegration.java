@@ -86,7 +86,7 @@ public final class GrimIntegration implements Integration {
     }
 
     private void registerListeners() {
-        eventBus.subscribe(grimPlugin, GrimTransactionReceivedEvent.class, this::onTransactionReceived, 0, true);
+        eventBus.subscribe(grimPlugin, GrimTransactionReceivedEvent.class, this::onTransactionReceived);
         eventBus.subscribe(grimPlugin, GrimTeleportEvent.class, this::onTeleport);
     }
 
@@ -102,7 +102,7 @@ public final class GrimIntegration implements Integration {
     }
 
     private void onTransactionReceived(GrimTransactionReceivedEvent event) {
-        if (!event.isCancelled()) return;
+        if (!event.isPacketCancelled()) return;
         TGPlayer player = playerRepository.getPlayer(event.getUser().getUniqueId());
         if (player == null) return;
 
