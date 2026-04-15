@@ -21,19 +21,25 @@ package com.deathmotion.totemguard.common.integration;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.integration.impl.GrimIntegration;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class IntegrationRegistrar {
 
-    private final List<Integration> integrations = List.of(
-            new GrimIntegration()
-    );
+    private static final String GRIM_PLUGIN_NAME = "GrimAC";
+
+    private final List<Integration> integrations = new ArrayList<>();
+
+    public IntegrationRegistrar() {
+        registerIntegrations();
+    }
 
     public void enableAll() {
         for (Integration integration : integrations) {
             try {
                 integration.enable();
-            } catch (Exception exception) {
+            } catch (Exception | LinkageError exception) {
                 TGPlatform.getInstance().getLogger().severe(
                         "Failed to enable " + integration.getName() + " integration: " + exception.getMessage()
                 );
@@ -45,11 +51,35 @@ public class IntegrationRegistrar {
         for (Integration integration : integrations) {
             try {
                 integration.disable();
-            } catch (Exception exception) {
+            } catch (Exception | LinkageError exception) {
                 TGPlatform.getInstance().getLogger().severe(
                         "Failed to disable " + integration.getName() + " integration: " + exception.getMessage()
                 );
             }
         }
+
+        integrations.clear();
+    }
+
+    private void registerIntegrations() {
+        registerIfEnabled(GRIM_PLUGIN_NAME, this::createGrimIntegration);
+    }
+
+    private void registerIfEnabled(String pluginName, Supplier<Integration> supplier) {
+        if (!TGPlatform.getInstance().isPluginEnabled(pluginName)) {
+            return;
+        }
+
+        try {
+            integrations.add(supplier.get());
+        } catch (LinkageError exception) {
+            TGPlatform.getInstance().getLogger().severe(
+                    "Failed to load " + pluginName + " integration: " + exception
+            );
+        }
+    }
+
+    private Integration createGrimIntegration() {
+        return new GrimIntegration();
     }
 }

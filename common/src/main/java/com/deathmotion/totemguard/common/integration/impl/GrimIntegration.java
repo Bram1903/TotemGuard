@@ -65,7 +65,7 @@ public final class GrimIntegration implements Integration {
             registerListeners();
 
             enabled = true;
-            TGPlatform.getInstance().getLogger().info(PLUGIN_NAME + " plugin detected, hooking into the API.");
+            TGPlatform.getInstance().getLogger().info(PLUGIN_NAME + " detected, hooking into the API for compatibility.");
         } catch (Exception | LinkageError exception) {
             enabled = false;
             eventBus = null;
