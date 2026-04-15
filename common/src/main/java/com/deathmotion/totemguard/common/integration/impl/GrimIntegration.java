@@ -55,10 +55,6 @@ public final class GrimIntegration implements Integration {
 
     @Override
     public void enable() {
-        if (!TGPlatform.getInstance().isPluginEnabled(PLUGIN_NAME)) {
-            return;
-        }
-
         try {
             eventBus = GrimAPIProvider.get().getEventBus();
             grimPlugin = createPluginContext();
