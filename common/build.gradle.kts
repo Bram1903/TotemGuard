@@ -16,4 +16,5 @@ dependencies {
     compileOnly(libs.guava)
     compileOnly(libs.snakeyaml)
     compileOnly(libs.cloud.core)
+    compileOnly(files("$rootDir/libs/grim.jar"))
 }

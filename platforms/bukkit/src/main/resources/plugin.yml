@@ -11,3 +11,4 @@ depend:
   - packetevents
 softdepend:
   - PlaceholderAPI
+  - GrimAC

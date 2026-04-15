@@ -33,6 +33,7 @@ import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.gui.GuiPacketListener;
+import com.deathmotion.totemguard.common.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
@@ -77,6 +78,7 @@ public abstract class TGPlatform {
     private CommandManagerImpl commandManager;
     private AntiVPNRepositoryImpl antiVPNRepository;
     private GuiManager guiManager;
+    private IntegrationRegistrar integrationRegistrar;
 
     private TGPlatformAPI api;
 
@@ -119,9 +121,12 @@ public abstract class TGPlatform {
         punishmentRepository = new PunishmentRepositoryImpl();
         alertRepository = new AlertRepositoryImpl();
         playerRepository = new PlayerRepositoryImpl();
+        integrationRegistrar = new IntegrationRegistrar();
         guiManager = new GuiManager();
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
+
+        integrationRegistrar.enableAll();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
         PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());
@@ -141,6 +146,7 @@ public abstract class TGPlatform {
     }
 
     public void commonOnDisable() {
+        if (integrationRegistrar != null) integrationRegistrar.disableAll();
         if (redisRepository != null) redisRepository.stop();
         if (guiManager != null) guiManager.shutdown();
     }
