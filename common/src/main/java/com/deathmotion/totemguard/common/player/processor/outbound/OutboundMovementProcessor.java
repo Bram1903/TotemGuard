@@ -19,36 +19,29 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.MovementData;
-import com.deathmotion.totemguard.common.player.data.PingData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerRotation;
 
-public class OutboundTeleportProcessor extends ProcessorOutbound {
+public class OutboundMovementProcessor extends ProcessorOutbound {
 
-    private final Data data;
     private final MovementData movementData;
-    private final PingData pingData;
 
-    public OutboundTeleportProcessor(TGPlayer player) {
+    public OutboundMovementProcessor(TGPlayer player) {
         super(player);
-        this.data = player.getData();
         this.movementData = player.getData().getMovementData();
-        this.pingData = player.getPingData();
     }
 
     @Override
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
-        if (event.getPacketType() != PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) return;
-
-        WrapperPlayServerPlayerPositionAndLook packet = new WrapperPlayServerPlayerPositionAndLook(event);
-        data.getTeleportData().trackTeleport(packet.getTeleportId());
-        movementData.trackTeleport(packet);
-        pingData.trackTeleport(packet.getTeleportId());
-        event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
+        if (event.getPacketType() == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) {
+            movementData.handleServerSync(new WrapperPlayServerPlayerPositionAndLook(event));
+        } else if (event.getPacketType() == PacketType.Play.Server.PLAYER_ROTATION) {
+            movementData.handleServerSync(new WrapperPlayServerPlayerRotation(event));
+        }
     }
 }

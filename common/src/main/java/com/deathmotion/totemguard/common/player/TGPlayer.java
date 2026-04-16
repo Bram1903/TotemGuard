@@ -116,6 +116,7 @@ public class TGPlayer implements TGUser {
             add(new InboundClientBrandProcessor(TGPlayer.this));
             add(new InboundActionProcessor(TGPlayer.this));
             add(new InboundTeleportProcessor(TGPlayer.this));
+            add(new InboundMovementProcessor(TGPlayer.this));
         }};
 
         this.processorOutbounds = new ArrayList<>() {{
@@ -125,6 +126,7 @@ public class TGPlayer implements TGUser {
             add(new OutboundTotemActivatedProcessor(TGPlayer.this));
             add(new OutboundInventoryProcessor(TGPlayer.this));
             add(new OutboundTeleportProcessor(TGPlayer.this));
+            add(new OutboundMovementProcessor(TGPlayer.this));
         }};
     }
 

@@ -29,6 +29,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @CheckData(description = "Impossible action with open inventory", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
@@ -42,6 +43,15 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         if (!player.getData().isOpenInventory()) return;
         if (player.getData().isServerOpenedInventoryThisTick()) return;
         final var packetType = event.getPacketType();
+
+        if (WrapperPlayClientPlayerFlying.isFlying(packetType) && player.getData().getTeleportData().lastPacketWasTeleport()) {
+            return;
+        }
+
+        if (WrapperPlayClientPlayerFlying.isFlying(packetType) && player.getData().getMovementData().isLastFlyingRotationChanged()) {
+            failInventory("aim");
+            return;
+        }
 
         if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
             final InputData inputData = player.getData().getInputData();

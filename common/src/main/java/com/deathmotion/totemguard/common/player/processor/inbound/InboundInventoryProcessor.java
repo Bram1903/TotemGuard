@@ -107,8 +107,6 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             });
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             data.setOpenInventory(false);
-        } else if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
-            data.setServerOpenedInventoryThisTick(false);
         }
     }
 
@@ -116,6 +114,9 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     public void handleInboundPost(PacketReceiveEvent event) {
         if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
             data.setInventoryMitigatedThisTick(false);
+        } else if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())
+                || (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
+            data.setServerOpenedInventoryThisTick(false);
         }
     }
 

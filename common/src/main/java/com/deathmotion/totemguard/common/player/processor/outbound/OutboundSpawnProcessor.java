@@ -63,6 +63,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.setOpenInventory(false);
                 data.setSprinting(false);
                 inputData.reset();
+                data.getMovementData().reset();
             });
         }
     }

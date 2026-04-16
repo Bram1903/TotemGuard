@@ -40,7 +40,7 @@ public class TeleportData {
         pendingTeleportIds.add(teleportId);
     }
 
-    public void validateTeleportConfirm(int teleportId) {
+    public TeleportConfirmResult validateTeleportConfirm(int teleportId) {
         lastTeleportConfirmValid = false;
         lastTeleportConfirmSkipped = false;
         lastSkippedTeleportCount = 0;
@@ -58,7 +58,7 @@ public class TeleportData {
         }
 
         if (!matched) {
-            return;
+            return new TeleportConfirmResult(false, teleportId, List.of());
         }
 
         lastTeleportConfirmValid = true;
@@ -74,6 +74,7 @@ public class TeleportData {
         pendingTeleportIds.remove(teleportId);
 
         lastPacketWasTeleport = true;
+        return new TeleportConfirmResult(true, teleportId, List.copyOf(skippedTeleportIds));
     }
 
     public boolean lastPacketWasTeleport() {
@@ -90,5 +91,8 @@ public class TeleportData {
 
     public void clearLastPacketWasTeleport() {
         lastPacketWasTeleport = false;
+    }
+
+    public record TeleportConfirmResult(boolean valid, int teleportId, List<Integer> skippedTeleportIds) {
     }
 }

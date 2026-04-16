@@ -32,6 +32,7 @@ public class Data {
     private final TGPlatform platform;
     private final TeleportData teleportData;
     private final InputData inputData;
+    private final MovementData movementData;
 
     private GameMode gameMode;
     private boolean sprinting;
@@ -52,6 +53,7 @@ public class Data {
         this.platform = TGPlatform.getInstance();
         this.teleportData = new TeleportData();
         this.inputData = new InputData();
+        this.movementData = new MovementData();
     }
 
     public void setOpenInventory(boolean openInventory) {
