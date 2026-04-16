@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
@@ -43,6 +44,10 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         final var packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
+            final InputData inputData = player.getData().getInputData();
+            // We love the auto jump setting
+            if (!inputData.current().jumping() && inputData.previous().jumping()) return;
+
             failInventory("move");
             return;
         }
