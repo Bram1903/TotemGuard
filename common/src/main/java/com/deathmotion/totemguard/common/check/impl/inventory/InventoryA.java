@@ -40,17 +40,17 @@ public class InventoryA extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!player.getData().isOpenInventory()) return;
-        if (player.getData().isServerOpenedInventoryThisTick()) return;
+        if (!data.isOpenInventory()) return;
+        if (data.isServerOpenedInventoryThisTick()) return;
         final var packetType = event.getPacketType();
 
-        if (WrapperPlayClientPlayerFlying.isFlying(packetType) && player.getData().getMovementData().isLastFlyingRotationChanged()) {
+        if (WrapperPlayClientPlayerFlying.isFlying(packetType) && data.getMovementData().isLastFlyingRotationChanged()) {
             failInventory("aim");
             return;
         }
 
         if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            final InputData inputData = player.getData().getInputData();
+            final InputData inputData = data.getInputData();
             // We love the auto jump setting
             if (!inputData.current().jumping() && inputData.previous().jumping()) return;
 
