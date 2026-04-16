@@ -44,10 +44,6 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         if (player.getData().isServerOpenedInventoryThisTick()) return;
         final var packetType = event.getPacketType();
 
-        if (WrapperPlayClientPlayerFlying.isFlying(packetType) && player.getData().getTeleportData().lastPacketWasTeleport()) {
-            return;
-        }
-
         if (WrapperPlayClientPlayerFlying.isFlying(packetType) && player.getData().getMovementData().isLastFlyingRotationChanged()) {
             failInventory("aim");
             return;
