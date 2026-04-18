@@ -23,21 +23,16 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@CheckData(description = "Impossible click time difference", type = CheckType.INVENTORY)
-public class InventoryD extends CheckImpl implements PacketCheck {
+@CheckData(description = "Dropped item while carrying", type = CheckType.INVENTORY)
+public class InventoryE extends CheckImpl implements PacketCheck {
 
-    private static final int LEFT_CLICK = 0;
-    private static final int RIGHT_CLICK = 1;
-
-    private long lastLeftClick = -1;
-    private long lastRightClick = -1;
-
-    public InventoryD(TGPlayer player) {
+    public InventoryE(TGPlayer player) {
         super(player);
     }
 
@@ -47,23 +42,13 @@ public class InventoryD extends CheckImpl implements PacketCheck {
         if (packetType != PacketType.Play.Client.CLICK_WINDOW) return;
 
         WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.PICKUP) return;
+        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.THROW) return;
 
-        int button = packet.getButton();
-        if (button != LEFT_CLICK && button != RIGHT_CLICK) return;
+        if (packet.getSlots().isPresent()) return;
 
-        long lastClickTime = button == LEFT_CLICK ? lastLeftClick : lastRightClick;
-
-        if (lastClickTime != -1) {
-            if ((event.getTimestamp() - lastClickTime) < 5) {
-                fail();
-            }
-        }
-
-        if (button == LEFT_CLICK) {
-            lastLeftClick = event.getTimestamp();
-        } else {
-            lastRightClick = event.getTimestamp();
+        CarriedItem carriedItem = inventory.getCarriedItem();
+        if (carriedItem != null && !carriedItem.getCurrentItem().isEmpty()) {
+            fail();
         }
     }
 

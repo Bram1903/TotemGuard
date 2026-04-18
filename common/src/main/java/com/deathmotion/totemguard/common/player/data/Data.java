@@ -40,6 +40,8 @@ public class Data {
     private boolean canFly;
     private boolean isFlying;
     private boolean openInventory;
+    private boolean verifiedOpenInventory;
+    private boolean pendingOpenInventory;
 
     private boolean serverOpenedInventoryThisTick;
 
@@ -60,13 +62,33 @@ public class Data {
         boolean changed = this.openInventory != openInventory;
         this.openInventory = openInventory;
 
+        if (!openInventory) {
+            this.verifiedOpenInventory = false;
+            this.pendingOpenInventory = false;
+        }
+
         if (changed) {
             String message = "&a[Inventory] &7" + player.getName() + " has "
                     + (openInventory ? "&aopened" : "&cclosed")
                     + " &7their inventory.";
 
-            //TGPlatform.getInstance().getAlertRepository().broadcast(message);
+            TGPlatform.getInstance().getAlertRepository().broadcast(message);
+
             platform.getGuiManager().refreshMonitor(player.getUuid());
         }
+    }
+
+    public void setVerifiedOpenInventory() {
+        verifiedOpenInventory = true;
+        pendingOpenInventory = true;
+    }
+
+    public void applyPendingOpenInventory() {
+        if (!pendingOpenInventory) {
+            return;
+        }
+
+        pendingOpenInventory = false;
+        setOpenInventory(true);
     }
 }
