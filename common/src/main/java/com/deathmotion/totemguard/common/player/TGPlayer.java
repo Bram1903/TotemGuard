@@ -30,6 +30,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.data.*;
+import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
 import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
