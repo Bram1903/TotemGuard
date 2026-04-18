@@ -104,10 +104,6 @@ public final class TransactionDebugProvider implements DebugOverlayProvider {
             return "none";
         }
 
-        if (!pingData.isLastTeleportReplyValid()) {
-            return "invalid";
-        }
-
         if (pingData.isLastTeleportReplySkipped()) {
             return "skip:" + pingData.getLastSkippedTeleportReplyCount();
         }
@@ -118,10 +114,6 @@ public final class TransactionDebugProvider implements DebugOverlayProvider {
     private static NamedTextColor teleportColor(PingData pingData) {
         if (!pingData.isObservedTeleportReply()) {
             return NamedTextColor.GRAY;
-        }
-
-        if (!pingData.isLastTeleportReplyValid()) {
-            return NamedTextColor.RED;
         }
 
         return pingData.isLastTeleportReplySkipped() ? NamedTextColor.RED : NamedTextColor.GREEN;

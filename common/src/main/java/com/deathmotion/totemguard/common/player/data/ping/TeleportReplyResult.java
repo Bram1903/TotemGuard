@@ -18,8 +18,9 @@
 
 package com.deathmotion.totemguard.common.player.data.ping;
 
-enum ReplyType {
-    TRANSACTION,
-    KEEP_ALIVE,
-    TELEPORT
+record TeleportReplyResult(boolean skipped, int skippedCount) {
+
+    static TeleportReplyResult none() {
+        return new TeleportReplyResult(false, 0);
+    }
 }

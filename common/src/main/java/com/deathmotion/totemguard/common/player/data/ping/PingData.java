@@ -26,7 +26,8 @@ public class PingData {
 
     static final int INVALID_PING = -1;
 
-    private final PendingReplies replies = new PendingReplies();
+    private final PendingKeepAlives keepAlives = new PendingKeepAlives();
+    private final PendingTransactions transactions = new PendingTransactions();
 
     @Getter
     private int keepAlivePing = INVALID_PING;
@@ -38,8 +39,6 @@ public class PingData {
     private boolean observedKeepAliveReply;
     @Getter
     private boolean observedTeleportReply;
-    @Getter
-    private boolean lastTeleportReplyValid;
     @Getter
     private boolean lastTransactionReplyValid;
     @Getter
@@ -68,23 +67,23 @@ public class PingData {
     }
 
     public void keepAliveSent(long id, long timestamp) {
-        replies.sendKeepAlive(id, timestamp);
+        keepAlives.send(id, timestamp);
     }
 
     public int reserveNextTransactionId(int maxPositiveId) {
-        return replies.reserveTransactionId(maxPositiveId);
+        return transactions.reserveId(maxPositiveId);
     }
 
     public void addTransactionCallback(int id, LongConsumer callback) {
-        replies.addTransactionCallback(id, callback);
+        transactions.addCallback(id, callback);
     }
 
     public void transactionSent(int id, long timestamp) {
-        replies.sendTransaction(id, timestamp);
+        transactions.sent(id, timestamp);
     }
 
     public void markTransactionSynthetic(int id) {
-        replies.markTransactionSynthetic(id);
+        transactions.markSynthetic(id);
     }
 
     public boolean shouldCancelTransactionReplyOnProxy() {
@@ -92,27 +91,27 @@ public class PingData {
     }
 
     public int getPendingTransactionCount() {
-        return replies.pendingTransactions();
+        return transactions.pendingCount();
     }
 
     public int getPendingSyntheticTransactionCount() {
-        return replies.pendingSyntheticTransactions();
+        return transactions.pendingSyntheticCount();
     }
 
     public int getAcceptedTransactionCount() {
-        return replies.acceptedTransactions();
+        return transactions.acceptedCount();
     }
 
     public int getAcceptedSyntheticTransactionCount() {
-        return replies.acceptedSyntheticTransactions();
+        return transactions.acceptedSyntheticCount();
     }
 
-    public void teleportSent(int teleportId, long timestamp) {
-        replies.sendTeleport(teleportId, timestamp);
+    public void teleportSent(int teleportId) {
+        transactions.trackTeleport(teleportId);
     }
 
     public void keepAliveReceived(long id, long timestamp) {
-        ReplyResult result = replies.receive(ReplyType.KEEP_ALIVE, id, timestamp);
+        PingReplyResult result = keepAlives.receive(id, timestamp);
         this.observedKeepAliveReply = true;
         this.keepAlivePing = result.ping();
         this.lastKeepAliveReplyValid = result.valid();
@@ -121,7 +120,7 @@ public class PingData {
     }
 
     public void transactionReceived(int id, long timestamp) {
-        ReplyResult result = replies.receive(ReplyType.TRANSACTION, id, timestamp);
+        PingReplyResult result = transactions.receive(id, timestamp);
         this.observedTransactionReply = true;
         this.transactionPing = result.ping();
         this.lastTransactionReplyValid = result.valid();
@@ -131,9 +130,8 @@ public class PingData {
     }
 
     public void teleportReceived(int teleportId, long timestamp) {
-        ReplyResult result = replies.receive(ReplyType.TELEPORT, teleportId, timestamp);
+        TeleportReplyResult result = transactions.receiveTeleport(teleportId, timestamp);
         this.observedTeleportReply = true;
-        this.lastTeleportReplyValid = result.valid();
         this.lastTeleportReplySkipped = result.skipped();
         this.lastSkippedTeleportReplyCount = result.skippedCount();
     }

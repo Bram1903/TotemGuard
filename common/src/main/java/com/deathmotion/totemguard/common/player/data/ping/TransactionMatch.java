@@ -20,9 +20,9 @@ package com.deathmotion.totemguard.common.player.data.ping;
 
 import java.util.List;
 
-record ReplyMatch(PendingReply matched, List<PendingReply> entries) {
+record TransactionMatch(PendingTransaction matched, List<PendingTransaction> accepted) {
 
     int skippedCount() {
-        return entries.size() - 1;
+        return accepted.size() - 1;
     }
 }

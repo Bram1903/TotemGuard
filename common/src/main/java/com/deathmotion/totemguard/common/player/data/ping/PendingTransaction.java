@@ -25,26 +25,19 @@ import java.util.List;
 import java.util.function.LongConsumer;
 import java.util.logging.Level;
 
-final class PendingReply {
+final class PendingTransaction {
 
-    private final ReplyType type;
-    private final long id;
+    private final int id;
     private final List<LongConsumer> callbacks = new ArrayList<>();
     private Long sentAt;
     private boolean synthetic;
 
-    PendingReply(ReplyType type, long id) {
-        this.type = type;
+    PendingTransaction(int id) {
         this.id = id;
     }
 
-    PendingReply(ReplyType type, long id, long sentAt) {
-        this(type, id);
-        this.sentAt = sentAt;
-    }
-
-    ReplyType type() {
-        return type;
+    int id() {
+        return id;
     }
 
     Long sentAt() {
@@ -53,14 +46,6 @@ final class PendingReply {
 
     boolean synthetic() {
         return synthetic;
-    }
-
-    boolean matches(ReplyType type, long id) {
-        return this.type == type && this.id == id;
-    }
-
-    boolean isTransaction(int id) {
-        return matches(ReplyType.TRANSACTION, id);
     }
 
     void addCallback(LongConsumer callback) {

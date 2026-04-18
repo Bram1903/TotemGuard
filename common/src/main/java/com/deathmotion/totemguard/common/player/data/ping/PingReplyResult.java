@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.player.data.ping;
 
-record ReplyResult(boolean valid, boolean skipped, int skippedCount, int ping, boolean synthetic) {
+record PingReplyResult(boolean valid, boolean skipped, int skippedCount, int ping, boolean synthetic) {
 
-    static ReplyResult invalid() {
-        return new ReplyResult(false, false, 0, PingData.INVALID_PING, false);
+    static PingReplyResult invalid() {
+        return new PingReplyResult(false, false, 0, PingData.INVALID_PING, false);
     }
 }
