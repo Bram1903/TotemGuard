@@ -22,17 +22,10 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.book.BookType;
-import com.github.retrooper.packetevents.protocol.item.type.ItemType;
-import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import com.github.retrooper.packetevents.protocol.mapper.MappedEntitySet;
 import com.github.retrooper.packetevents.protocol.recipe.RecipeBookSettings;
 import com.github.retrooper.packetevents.protocol.recipe.RecipeBookType;
 import com.github.retrooper.packetevents.protocol.recipe.RecipeDisplayEntry;
 import com.github.retrooper.packetevents.protocol.recipe.RecipeDisplayId;
-import com.github.retrooper.packetevents.protocol.recipe.category.RecipeBookCategories;
-import com.github.retrooper.packetevents.protocol.recipe.display.ShapedCraftingRecipeDisplay;
-import com.github.retrooper.packetevents.protocol.recipe.display.slot.EmptySlotDisplay;
-import com.github.retrooper.packetevents.protocol.recipe.display.slot.ItemStackSlotDisplay;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSetDisplayedRecipe;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRecipeBookAdd;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRecipeBookRemove;
@@ -206,34 +199,8 @@ public final class InventoryRecipeTracker {
     }
 
     private WrapperPlayServerRecipeBookAdd buildAddPacket(RecipeDisplayId recipeId) {
-        var ingredientStack = com.github.retrooper.packetevents.protocol.item.ItemStack.builder()
-                .type(ItemTypes.OAK_LOG)
-                .amount(1)
-                .build();
-        var resultStack = com.github.retrooper.packetevents.protocol.item.ItemStack.builder()
-                .type(ItemTypes.OAK_PLANKS)
-                .amount(4)
-                .build();
-
-        ShapedCraftingRecipeDisplay display = new ShapedCraftingRecipeDisplay(
-                1,
-                1,
-                List.of(new ItemStackSlotDisplay(ingredientStack)),
-                new ItemStackSlotDisplay(resultStack),
-                EmptySlotDisplay.INSTANCE
-        );
-
-        MappedEntitySet<ItemType> ingredientSet = new MappedEntitySet<>(List.of(ItemTypes.OAK_LOG));
-        RecipeDisplayEntry entry = new RecipeDisplayEntry(
-                recipeId,
-                display,
-                null,
-                RecipeBookCategories.CRAFTING_BUILDING_BLOCKS,
-                List.of(ingredientSet)
-        );
-
-        WrapperPlayServerRecipeBookAdd.AddEntry addEntry =
-                new WrapperPlayServerRecipeBookAdd.AddEntry(entry, false, true);
+        RecipeDisplayEntry entry = InventoryConstants.createRecipeProbeEntry(recipeId);
+        WrapperPlayServerRecipeBookAdd.AddEntry addEntry = new WrapperPlayServerRecipeBookAdd.AddEntry(entry, false, true);
         return new WrapperPlayServerRecipeBookAdd(List.of(addEntry), false);
     }
 }
