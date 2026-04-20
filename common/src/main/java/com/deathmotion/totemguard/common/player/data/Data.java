@@ -20,9 +20,11 @@ package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.MessageUtil;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
 import lombok.Setter;
+import net.kyori.adventure.text.Component;
 
 @Getter
 @Setter
@@ -71,8 +73,10 @@ public class Data {
             String message = "&a[Inventory] &7" + player.getName() + " has "
                     + (openInventory ? "&aopened" : "&cclosed")
                     + " &7their inventory.";
+            Component inventoryMessage = MessageUtil.formatMessage(message);
 
-            TGPlatform.getInstance().getAlertRepository().broadcast(message);
+            //TGPlatform.getInstance().getAlertRepository().broadcast(message);
+            player.getUser().sendMessage(inventoryMessage);
 
             platform.getGuiManager().refreshMonitor(player.getUuid());
         }

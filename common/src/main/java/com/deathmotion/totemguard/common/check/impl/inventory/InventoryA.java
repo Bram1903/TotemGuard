@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
@@ -45,6 +46,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         final var packetType = event.getPacketType();
 
         if (WrapperPlayClientPlayerFlying.isFlying(packetType) && data.getMovementData().isLastFlyingRotationChanged()) {
+            if (data.getGameMode() == GameMode.SPECTATOR) return;
             failInventory("aim");
             return;
         }
