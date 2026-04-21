@@ -19,27 +19,29 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUpdateHealth;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerRotation;
 
-public class OutboundHealthProcessor extends ProcessorOutbound {
+public class OutboundMovementProcessor extends ProcessorOutbound {
 
-    public OutboundHealthProcessor(TGPlayer player) {
+    private final MovementData movementData;
+
+    public OutboundMovementProcessor(TGPlayer player) {
         super(player);
+        this.movementData = player.getData().getMovementData();
     }
 
     @Override
     public void handleOutbound(PacketSendEvent event) {
-        if (event.getPacketType() == PacketType.Play.Server.UPDATE_HEALTH) {
-            WrapperPlayServerUpdateHealth packet = new WrapperPlayServerUpdateHealth(event);
-            Data data = player.getData();
-
-            data.setHealth(packet.getHealth());
-            data.setFood(packet.getFood());
-            data.setFoodSaturation(packet.getFoodSaturation());
+        if (event.isCancelled()) return;
+        if (event.getPacketType() == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) {
+            movementData.handleServerSync(new WrapperPlayServerPlayerPositionAndLook(event));
+        } else if (event.getPacketType() == PacketType.Play.Server.PLAYER_ROTATION) {
+            movementData.handleServerSync(new WrapperPlayServerPlayerRotation(event));
         }
     }
 }

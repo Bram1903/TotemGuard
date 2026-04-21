@@ -20,22 +20,12 @@ package com.deathmotion.totemguard.common.player.data;
 
 public class InputData {
 
-    private boolean forward;
-    private boolean backward;
-    private boolean left;
-    private boolean right;
-    private boolean jumping;
-    private boolean sneaking;
-    private boolean sprinting;
+    private State current = State.empty();
+    private State previous = State.empty();
 
     public void setState(boolean forward, boolean backward, boolean left, boolean right, boolean jumping, boolean sneaking, boolean sprinting) {
-        this.forward = forward;
-        this.backward = backward;
-        this.left = left;
-        this.right = right;
-        this.jumping = jumping;
-        this.sneaking = sneaking;
-        this.sprinting = sprinting;
+        this.previous = this.current;
+        this.current = new State(forward, backward, left, right, jumping, sneaking, sprinting);
     }
 
     public void reset() {
@@ -43,12 +33,33 @@ public class InputData {
     }
 
     public boolean isInput() {
-        return forward
-                || backward
-                || left
-                || right
-                || jumping
-                || sneaking
-                || sprinting;
+        return current.isInput();
+    }
+
+    public State current() {
+        return current;
+    }
+
+    public State previous() {
+        return previous;
+    }
+
+    public record State(
+            boolean forward,
+            boolean backward,
+            boolean left,
+            boolean right,
+            boolean jumping,
+            boolean sneaking,
+            boolean sprinting
+    ) {
+        public static State empty() {
+            return new State(false, false, false, false, false, false, false);
+        }
+
+        // We love the auto jump setting
+        public boolean isInput() {
+            return forward || backward || left || right || sneaking || sprinting;
+        }
     }
 }

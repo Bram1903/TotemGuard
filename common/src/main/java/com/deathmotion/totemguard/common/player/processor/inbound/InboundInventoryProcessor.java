@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
@@ -41,6 +42,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     private final GuiManager guiManager;
     private final PacketInventory inventory;
     private final Data data;
+    private final InventoryRecipeTracker recipeTracker;
 
     public InboundInventoryProcessor(TGPlayer player) {
         super(player);
@@ -48,6 +50,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         this.guiManager = TGPlatform.getInstance().getGuiManager();
         this.inventory = player.getInventory();
         this.data = player.getData();
+        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
@@ -76,8 +79,8 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             if (packet.getSlot() < 1 || packet.getSlot() > 45) return;
             inventory.setItem(packet.getSlot(), copyItem(packet.getItemStack()), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
         } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
-            data.setOpenInventory(true);
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+            data.setOpenInventory(true);
             int carriedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
                     ? packet.getSlot()
                     : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
@@ -106,9 +109,18 @@ public class InboundInventoryProcessor extends ProcessorInbound {
                 }
             });
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
+            WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
             data.setOpenInventory(false);
-        } else if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
-            data.setServerOpenedInventoryThisTick(false);
+            if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
+                recipeTracker.armAfterClientClose();
+            }
+        } else if (packetType == PacketType.Play.Client.SET_RECIPE_BOOK_STATE) {
+            WrapperPlayClientSetRecipeBookState packet = new WrapperPlayClientSetRecipeBookState(event);
+            recipeTracker.recordClientState(packet.getBookType(), packet.isBookOpen());
+        } else if (packetType == PacketType.Play.Client.SET_DISPLAYED_RECIPE) {
+            if (recipeTracker.handleDisplayedRecipe(event)) {
+                data.setVerifiedOpenInventory();
+            }
         }
     }
 
@@ -116,6 +128,9 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     public void handleInboundPost(PacketReceiveEvent event) {
         if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
             data.setInventoryMitigatedThisTick(false);
+        } else if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType()) || (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
+            data.applyPendingOpenInventory();
+            data.setServerOpenedInventoryThisTick(false);
         }
     }
 

@@ -23,11 +23,14 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @CheckData(description = "Impossible action with open inventory", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
@@ -38,11 +41,21 @@ public class InventoryA extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!player.getData().isOpenInventory()) return;
-        if (player.getData().isServerOpenedInventoryThisTick()) return;
+        if (!data.isOpenInventory()) return;
+        if (data.isServerOpenedInventoryThisTick()) return;
         final var packetType = event.getPacketType();
 
+        if (WrapperPlayClientPlayerFlying.isFlying(packetType) && data.getMovementData().isLastFlyingRotationChanged()) {
+            if (data.getGameMode() == GameMode.SPECTATOR) return;
+            failInventory("aim");
+            return;
+        }
+
         if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
+            final InputData inputData = data.getInputData();
+            // We love the auto jump setting
+            if (!inputData.current().jumping() && inputData.previous().jumping()) return;
+
             failInventory("move");
             return;
         }

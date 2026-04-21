@@ -20,9 +20,11 @@ package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.MessageUtil;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
 import lombok.Setter;
+import net.kyori.adventure.text.Component;
 
 @Getter
 @Setter
@@ -32,16 +34,16 @@ public class Data {
     private final TGPlatform platform;
     private final TeleportData teleportData;
     private final InputData inputData;
+    private final MovementData movementData;
 
     private GameMode gameMode;
-    private float health;
-    private int food;
-    private float foodSaturation;
     private boolean sprinting;
     private boolean sneaking;
     private boolean canFly;
     private boolean isFlying;
     private boolean openInventory;
+    private boolean verifiedOpenInventory;
+    private boolean pendingOpenInventory;
 
     private boolean serverOpenedInventoryThisTick;
 
@@ -55,19 +57,42 @@ public class Data {
         this.platform = TGPlatform.getInstance();
         this.teleportData = new TeleportData();
         this.inputData = new InputData();
+        this.movementData = new MovementData();
     }
 
     public void setOpenInventory(boolean openInventory) {
         boolean changed = this.openInventory != openInventory;
         this.openInventory = openInventory;
 
+        if (!openInventory) {
+            this.verifiedOpenInventory = false;
+            this.pendingOpenInventory = false;
+        }
+
         if (changed) {
             String message = "&a[Inventory] &7" + player.getName() + " has "
                     + (openInventory ? "&aopened" : "&cclosed")
                     + " &7their inventory.";
+            Component inventoryMessage = MessageUtil.formatMessage(message);
 
             //TGPlatform.getInstance().getAlertRepository().broadcast(message);
+            player.getUser().sendMessage(inventoryMessage);
+
             platform.getGuiManager().refreshMonitor(player.getUuid());
         }
+    }
+
+    public void setVerifiedOpenInventory() {
+        verifiedOpenInventory = true;
+        pendingOpenInventory = true;
+    }
+
+    public void applyPendingOpenInventory() {
+        if (!pendingOpenInventory) {
+            return;
+        }
+
+        pendingOpenInventory = false;
+        setOpenInventory(true);
     }
 }

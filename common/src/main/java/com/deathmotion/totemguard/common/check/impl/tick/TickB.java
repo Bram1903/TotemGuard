@@ -23,12 +23,12 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.PingData;
+import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
-@CheckData(description = "Invalid transaction acknowledgement", type = CheckType.TICK)
+@CheckData(description = "Invalid acknowledgement order", type = CheckType.TICK)
 public class TickB extends CheckImpl implements PacketCheck {
 
     public TickB(TGPlayer player) {
@@ -42,16 +42,25 @@ public class TickB extends CheckImpl implements PacketCheck {
 
         if (packetType == PacketType.Play.Client.WINDOW_CONFIRMATION || packetType == PacketType.Play.Client.PONG) {
             if (!pingData.isLastTransactionReplyValid()) {
-                fail("invalid");
+                fail("type=transaction,invalid");
                 return;
             }
 
             if (pingData.isLastTransactionReplySkipped()) {
                 fail("type=transaction,skipped=" + pingData.getLastSkippedTransactionReplyCount());
             }
+        } else if (packetType == PacketType.Play.Client.KEEP_ALIVE) {
+            if (!pingData.isLastKeepAliveReplyValid()) {
+                fail("type=keepalive,invalid");
+                return;
+            }
+
+            if (pingData.isLastKeepAliveReplySkipped()) {
+                fail("type=keepalive,skipped=" + pingData.getLastSkippedKeepAliveReplyCount());
+            }
         } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM) {
-            if (pingData.isLastTeleportSkippedTransactions()) {
-                fail("type=teleport,skipped=" + pingData.getLastSkippedTransactionsByTeleportCount());
+            if (pingData.isLastTeleportReplySkipped()) {
+                fail("type=teleport,skipped=" + pingData.getLastSkippedTeleportReplyCount());
             }
         }
     }

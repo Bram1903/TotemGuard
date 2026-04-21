@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
@@ -43,6 +44,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     private final PacketInventory inventory;
     private final PacketLatencyHandler latencyHandler;
     private final GuiManager guiManager;
+    private final InventoryRecipeTracker recipeTracker;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
@@ -50,6 +52,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         this.inventory = player.getInventory();
         this.latencyHandler = player.getLatencyHandler();
         this.guiManager = TGPlatform.getInstance().getGuiManager();
+        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
@@ -140,6 +143,12 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
                     event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
                 }
             });
+        } else if (packetType == PacketType.Play.Server.RECIPE_BOOK_ADD) {
+            recipeTracker.handleRecipeAdd(event);
+        } else if (packetType == PacketType.Play.Server.RECIPE_BOOK_REMOVE) {
+            recipeTracker.handleRecipeRemove(event);
+        } else if (packetType == PacketType.Play.Server.RECIPE_BOOK_SETTINGS) {
+            recipeTracker.handleServerSettings(event);
         } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
             WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
             int slot = packet.getSlot();

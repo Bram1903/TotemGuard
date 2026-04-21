@@ -20,7 +20,8 @@ package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.player.data.PingData;
+import com.deathmotion.totemguard.common.player.data.TeleportData;
+import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -42,7 +43,8 @@ public class InboundTeleportProcessor extends ProcessorInbound {
     public void handleInbound(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
         WrapperPlayClientTeleportConfirm packet = new WrapperPlayClientTeleportConfirm(event);
-        data.getTeleportData().validateTeleportConfirm(packet.getTeleportId());
+        TeleportData.TeleportConfirmResult confirmResult = data.getTeleportData().validateTeleportConfirm(packet.getTeleportId());
+        data.getMovementData().handleTeleportConfirm(confirmResult);
         pingData.teleportReceived(packet.getTeleportId(), event.getTimestamp());
         player.getDebugOverlayManager().refresh();
     }
