@@ -36,6 +36,7 @@ public class ReloadService {
         platform.getCacheRepository().reload();
         platform.getPunishmentRepository().reload();
         platform.getAntiVPNRepository().reload();
+        platform.getDiscordWebhookService().reload();
 
         ModRegistry.load(platform.getConfigRepository().config(ConfigFile.MODS));
 

@@ -47,10 +47,8 @@ import java.util.Map;
 
 public class CheckManagerImpl {
 
-    private final TGPlayer player;
-
     public final ClassToInstanceMap<Check> allChecks;
-
+    private final TGPlayer player;
     // Flat arrays for hot-path iteration — avoids repeated Map.values() view creation.
     private final PacketCheck[] packetCheckArray;
     private final EventCheck[] eventCheckArray;

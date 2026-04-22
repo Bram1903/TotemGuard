@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
+import com.deathmotion.totemguard.common.discord.DiscordWebhookService;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
@@ -73,6 +74,7 @@ public abstract class TGPlatform {
     private EventRepositoryImpl eventRepository;
     private PunishmentRepositoryImpl punishmentRepository;
     private AlertRepositoryImpl alertRepository;
+    private DiscordWebhookService discordWebhookService;
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
     private AntiVPNRepositoryImpl antiVPNRepository;
@@ -118,6 +120,7 @@ public abstract class TGPlatform {
         eventRepository = new EventRepositoryImpl();
         punishmentRepository = new PunishmentRepositoryImpl();
         alertRepository = new AlertRepositoryImpl();
+        discordWebhookService = new DiscordWebhookService();
         playerRepository = new PlayerRepositoryImpl();
         guiManager = new GuiManager();
         commandManager = new CommandManagerImpl();
@@ -143,6 +146,7 @@ public abstract class TGPlatform {
     public void commonOnDisable() {
         if (redisRepository != null) redisRepository.stop();
         if (guiManager != null) guiManager.shutdown();
+        if (discordWebhookService != null) discordWebhookService.shutdown();
     }
 
     public abstract Scheduler getScheduler();

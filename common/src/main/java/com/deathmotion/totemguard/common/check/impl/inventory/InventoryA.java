@@ -40,6 +40,16 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         super(player);
     }
 
+    private static String staticReason(PacketTypeCommon type) {
+        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
+        if (type == PacketType.Play.Client.USE_ITEM) return "use";
+        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) return "change slot";
+        if (type == PacketType.Play.Client.PICK_ITEM) return "pick item";
+        if (type == PacketType.Play.Client.ATTACK) return "attack";
+        if (type == PacketType.Play.Client.ENTITY_ACTION) return "entity action";
+        return null;
+    }
+
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (!data.isOpenInventory()) return;
@@ -78,15 +88,5 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         if (type == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
             failInventory("break");
         }
-    }
-
-    private static String staticReason(PacketTypeCommon type) {
-        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
-        if (type == PacketType.Play.Client.USE_ITEM) return "use";
-        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) return "change slot";
-        if (type == PacketType.Play.Client.PICK_ITEM) return "pick item";
-        if (type == PacketType.Play.Client.ATTACK) return "attack";
-        if (type == PacketType.Play.Client.ENTITY_ACTION) return "entity action";
-        return null;
     }
 }

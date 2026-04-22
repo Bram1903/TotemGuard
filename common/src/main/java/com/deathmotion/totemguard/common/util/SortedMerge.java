@@ -40,8 +40,14 @@ public final class SortedMerge {
         int aSize = a == null ? 0 : a.size();
         int bSize = b == null ? 0 : b.size();
         if (aSize == 0 && bSize == 0) return;
-        if (aSize == 0) { dest.addAll(b); return; }
-        if (bSize == 0) { dest.addAll(a); return; }
+        if (aSize == 0) {
+            dest.addAll(b);
+            return;
+        }
+        if (bSize == 0) {
+            dest.addAll(a);
+            return;
+        }
 
         int i = 0, j = 0;
         while (i < aSize && j < bSize) {

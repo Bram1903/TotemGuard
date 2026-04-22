@@ -89,8 +89,11 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
         bufferChatAlert(check, violations, debug);
-        // TODO: wire Discord webhook + database persistence handlers off the same async path.
-        platform.getScheduler().runAsyncTask(() -> punishmentRepository.punish(check, violations, debug));
+        // TODO: wire database persistence handler off the same async path.
+        platform.getScheduler().runAsyncTask(() -> {
+            platform.getDiscordWebhookService().sendAlert(check, violations, debug);
+            punishmentRepository.punish(check, violations, debug);
+        });
     }
 
     private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug) {
