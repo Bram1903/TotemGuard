@@ -21,43 +21,32 @@ package com.deathmotion.totemguard.common.placeholder.holder.impl;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.api3.config.key.impl.MessagesKeys;
-import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
-import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
+import com.deathmotion.totemguard.common.placeholder.holder.MapResolverHolder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
-public final class PlatformPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
+public final class PlatformPlaceholders extends MapResolverHolder<InternalContext> {
 
-    private static final Map<String, Function<InternalContext, String>> RESOLVERS;
+    private static final Map<String, Function<InternalContext, String>> RESOLVERS = Map.of(
+            "prefix", ctx -> ctx.platform()
+                    .getConfigRepository()
+                    .config(ConfigFile.MESSAGES)
+                    .getString(MessagesKeys.PREFIX),
+            "tg_server", ctx -> ctx.platform()
+                    .getConfigRepository()
+                    .config(ConfigFile.CONFIG)
+                    .getString(ConfigKeys.SERVER)
+    );
 
-    static {
-        RESOLVERS = Map.of(
-                "prefix", ctx -> ctx.platform()
-                        .getConfigRepository()
-                        .config(ConfigFile.MESSAGES)
-                        .getString(MessagesKeys.PREFIX),
-                "tg_server", ctx -> ctx.platform()
-                        .getConfigRepository()
-                        .config(ConfigFile.CONFIG)
-                        .getString(ConfigKeys.SERVER)
-        );
+    public PlatformPlaceholders() {
+        super(RESOLVERS);
     }
 
     @Override
-    public @NotNull Collection<String> keys() {
-        return RESOLVERS.keySet();
-    }
-
-    @Override
-    public @Nullable String resolve(@NonNull String key, @NonNull InternalContext ctx) {
-        Function<InternalContext, String> fn = RESOLVERS.get(key);
-        return fn != null ? fn.apply(ctx) : null;
+    protected @NotNull InternalContext subject(@NotNull InternalContext ctx) {
+        return ctx;
     }
 }
-

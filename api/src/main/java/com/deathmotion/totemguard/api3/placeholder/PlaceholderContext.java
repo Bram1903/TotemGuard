@@ -25,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Context provided to {@link PlaceholderHolder}s during placeholder resolution.
@@ -48,7 +47,14 @@ public record PlaceholderContext(
     private static final PlaceholderContext EMPTY = new PlaceholderContext(null, null, Map.of());
 
     public PlaceholderContext {
-        extras = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(extras, "extras")));
+        if (extras == null) {
+            extras = Map.of();
+        } else if (!extras.isEmpty()) {
+            // Defensively copy only when the caller actually passed content.
+            extras = Collections.unmodifiableMap(new LinkedHashMap<>(extras));
+        } else {
+            extras = Map.of();
+        }
     }
 
     /**

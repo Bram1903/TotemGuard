@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.placeholder.PlaceholderContext;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderHolder;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
+import com.deathmotion.totemguard.common.util.SortedMerge;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -211,38 +212,11 @@ public final class PlaceholderEngine {
                 List<ResolverEntry<C>> exactResolvers,
                 List<ResolverEntry<C>> dynamicResolvers
         ) {
-            if (dynamicResolvers.isEmpty()) {
-                return toArray(exactResolvers);
-            }
-            if (exactResolvers.isEmpty()) {
-                return toArray(dynamicResolvers);
-            }
+            if (dynamicResolvers.isEmpty()) return toArray(exactResolvers);
+            if (exactResolvers.isEmpty()) return toArray(dynamicResolvers);
 
             List<ResolverEntry<C>> merged = new ArrayList<>(exactResolvers.size() + dynamicResolvers.size());
-            int exactIndex = 0;
-            int dynamicIndex = 0;
-
-            while (exactIndex < exactResolvers.size() && dynamicIndex < dynamicResolvers.size()) {
-                ResolverEntry<C> exactResolver = exactResolvers.get(exactIndex);
-                ResolverEntry<C> dynamicResolver = dynamicResolvers.get(dynamicIndex);
-
-                if (exactResolver.sequence() <= dynamicResolver.sequence()) {
-                    merged.add(exactResolver);
-                    exactIndex++;
-                } else {
-                    merged.add(dynamicResolver);
-                    dynamicIndex++;
-                }
-            }
-
-            while (exactIndex < exactResolvers.size()) {
-                merged.add(exactResolvers.get(exactIndex++));
-            }
-
-            while (dynamicIndex < dynamicResolvers.size()) {
-                merged.add(dynamicResolvers.get(dynamicIndex++));
-            }
-
+            SortedMerge.into(merged, exactResolvers, dynamicResolvers, ResolverEntry::sequence);
             return toArray(merged);
         }
 

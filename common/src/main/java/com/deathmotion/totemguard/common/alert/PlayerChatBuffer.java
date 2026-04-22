@@ -31,57 +31,43 @@ final class PlayerChatBuffer {
 
     private final Scheduler scheduler;
     private final Consumer<Component> broadcaster;
-    private final long bufferWindow;
-    private final TimeUnit bufferWindowUnit;
+    private final long bufferWindowSeconds;
     private final ConcurrentHashMap<String, ChatBuffer> checkBuffers = new ConcurrentHashMap<>();
 
-    PlayerChatBuffer(
-            Scheduler scheduler,
-            Consumer<Component> broadcaster,
-            long bufferWindow,
-            TimeUnit bufferWindowUnit
-    ) {
+    PlayerChatBuffer(Scheduler scheduler, Consumer<Component> broadcaster, long bufferWindowSeconds) {
         this.scheduler = scheduler;
         this.broadcaster = broadcaster;
-        this.bufferWindow = bufferWindow;
-        this.bufferWindowUnit = bufferWindowUnit;
+        this.bufferWindowSeconds = bufferWindowSeconds;
     }
 
     void buffer(CheckImpl check, int violations, @Nullable String debug) {
         String checkName = check.getName();
 
-        checkBuffers.compute(checkName, (ignored, existingBuffer) -> {
-            if (existingBuffer == null) {
-                ChatBuffer createdBuffer = createBuffer(checkName, check);
-                createdBuffer.update(violations, debug);
-                return createdBuffer;
-            }
+        ChatBuffer existing = checkBuffers.get(checkName);
+        if (existing != null) {
+            existing.update(violations, debug);
+            return;
+        }
 
-            existingBuffer.update(violations, debug);
-            return existingBuffer;
-        });
+        ChatBuffer fresh = new ChatBuffer(check);
+        fresh.update(violations, debug);
+
+        ChatBuffer prior = checkBuffers.putIfAbsent(checkName, fresh);
+        if (prior != null) {
+            // Lost the race — merge into the winner.
+            prior.update(violations, debug);
+            return;
+        }
+
+        scheduler.runAsyncTaskDelayed(() -> flush(checkName, fresh), bufferWindowSeconds, TimeUnit.SECONDS);
     }
 
     void clear() {
         checkBuffers.clear();
     }
 
-    private ChatBuffer createBuffer(String checkName, CheckImpl check) {
-        ChatBuffer chatBuffer = new ChatBuffer(check);
-
-        scheduler.runAsyncTaskDelayed(
-                () -> flush(checkName, chatBuffer),
-                bufferWindow,
-                bufferWindowUnit
-        );
-
-        return chatBuffer;
-    }
-
     private void flush(String checkName, ChatBuffer chatBuffer) {
-        if (!checkBuffers.remove(checkName, chatBuffer)) {
-            return;
-        }
+        if (!checkBuffers.remove(checkName, chatBuffer)) return;
 
         Component alertMessage = AlertBuilder.build(
                 chatBuffer.getCheck(),

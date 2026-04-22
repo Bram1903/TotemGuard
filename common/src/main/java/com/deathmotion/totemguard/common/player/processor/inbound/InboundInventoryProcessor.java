@@ -56,81 +56,125 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     @Override
     public void handleInbound(PacketReceiveEvent event) {
         if (event.isCancelled()) return;
-        final PacketTypeCommon packetType = event.getPacketType();
+        final PacketTypeCommon type = event.getPacketType();
 
-        if (packetType == PacketType.Play.Client.PLAYER_DIGGING) {
-            WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
-            DiggingAction action = packet.getAction();
-
-            switch (action) {
-                case DROP_ITEM_STACK -> inventory.dropItemFromHand(event.getTimestamp());
-                case DROP_ITEM -> inventory.dropItemFromHand(1, event.getTimestamp());
-                case SWAP_ITEM_WITH_OFFHAND -> inventory.swapItemToOffhand(Issuer.CLIENT, event.getTimestamp());
-            }
-        } else if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
-            int slot = packet.getSlot();
-            if (slot > 8 || slot < 0) return;
-            if (inventory.getSelectedHotbarIndex() == slot) return;
-            inventory.setSelectedHotbarIndex(slot);
-            guiManager.refreshMonitor(player.getUuid());
-        } else if (packetType == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) {
-            WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
-            if (packet.getSlot() < 1 || packet.getSlot() > 45) return;
-            inventory.setItem(packet.getSlot(), copyItem(packet.getItemStack()), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
-        } else if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
-            WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-            data.setOpenInventory(true);
-            int carriedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
-                    ? packet.getSlot()
-                    : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
-            boolean predictedPickup = packet.getWindowClickType() == WrapperPlayClientClickWindow.WindowClickType.PICKUP
-                    && inventory.applyPickupClick(packet.getWindowId(), packet.getSlot(), packet.getButton(), Issuer.CLIENT, event.getTimestamp());
-
-            if (!predictedPickup) {
-                inventory.setCarriedItem(copyItem(packet.getCarriedItemStack()), carriedSlot, Issuer.CLIENT, event.getTimestamp());
-            }
-
-            packet.getSlots().ifPresent(slots -> {
-                for (Map.Entry<Integer, ItemStack> slotEntry : slots.entrySet()) {
-                    int mappedSlot = packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID
-                            ? slotEntry.getKey()
-                            : inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), slotEntry.getKey());
-
-                    if (mappedSlot < 0) {
-                        continue;
-                    }
-
-                    if (predictedPickup && mappedSlot == carriedSlot && slotEntry.getKey() == packet.getSlot()) {
-                        continue;
-                    }
-
-                    inventory.setItem(mappedSlot, copyItem(slotEntry.getValue()), Issuer.CLIENT, SlotAction.CLICK, event.getTimestamp());
-                }
-            });
-        } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
-            WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
-            data.setOpenInventory(false);
-            if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
-                recipeTracker.armAfterClientClose();
-            }
-        } else if (packetType == PacketType.Play.Client.SET_RECIPE_BOOK_STATE) {
-            WrapperPlayClientSetRecipeBookState packet = new WrapperPlayClientSetRecipeBookState(event);
-            recipeTracker.recordClientState(packet.getBookType(), packet.isBookOpen());
-        } else if (packetType == PacketType.Play.Client.SET_DISPLAYED_RECIPE) {
-            if (recipeTracker.handleDisplayedRecipe(event)) {
-                data.setVerifiedOpenInventory();
-            }
-        }
+        if (type == PacketType.Play.Client.PLAYER_DIGGING) handleDigging(event);
+        else if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) handleHeldItemChange(event);
+        else if (type == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) handleCreativeAction(event);
+        else if (type == PacketType.Play.Client.CLICK_WINDOW) handleClickWindow(event);
+        else if (type == PacketType.Play.Client.CLOSE_WINDOW) handleCloseWindow(event);
+        else if (type == PacketType.Play.Client.SET_RECIPE_BOOK_STATE) handleSetRecipeBookState(event);
+        else if (type == PacketType.Play.Client.SET_DISPLAYED_RECIPE) handleSetDisplayedRecipe(event);
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
-        if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
+        PacketTypeCommon type = event.getPacketType();
+        if (type == PacketType.Play.Client.CLOSE_WINDOW) {
             data.setInventoryMitigatedThisTick(false);
-        } else if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType()) || (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
+            return;
+        }
+
+        boolean tickBoundary = WrapperPlayClientPlayerFlying.isFlying(type)
+                || (type == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick());
+        if (tickBoundary) {
             data.applyPendingOpenInventory();
             data.setServerOpenedInventoryThisTick(false);
+        }
+    }
+
+    private void handleDigging(PacketReceiveEvent event) {
+        WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
+        long timestamp = event.getTimestamp();
+        switch (packet.getAction()) {
+            case DROP_ITEM_STACK -> inventory.dropItemFromHand(timestamp);
+            case DROP_ITEM -> inventory.dropItemFromHand(1, timestamp);
+            case SWAP_ITEM_WITH_OFFHAND -> inventory.swapItemToOffhand(Issuer.CLIENT, timestamp);
+            default -> {
+            }
+        }
+    }
+
+    private void handleHeldItemChange(PacketReceiveEvent event) {
+        WrapperPlayClientHeldItemChange packet = new WrapperPlayClientHeldItemChange(event);
+        int slot = packet.getSlot();
+        if (slot < 0 || slot > 8) return;
+        if (inventory.getSelectedHotbarIndex() == slot) return;
+
+        inventory.setSelectedHotbarIndex(slot);
+        guiManager.refreshMonitor(player.getUuid());
+    }
+
+    private void handleCreativeAction(PacketReceiveEvent event) {
+        WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
+        int slot = packet.getSlot();
+        if (slot < 1 || slot > 45) return;
+
+        inventory.setItem(slot, copyItem(packet.getItemStack()), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
+    }
+
+    private void handleClickWindow(PacketReceiveEvent event) {
+        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+        data.setOpenInventory(true);
+
+        final int windowId = packet.getWindowId();
+        final int containerSlot = packet.getSlot();
+        final long timestamp = event.getTimestamp();
+        final boolean inPlayerWindow = windowId == InventoryConstants.PLAYER_WINDOW_ID;
+
+        final int carriedSlot = inPlayerWindow
+                ? containerSlot
+                : inventory.mapContainerSlotToPlayerSlot(windowId, containerSlot);
+
+        boolean predictedPickup = packet.getWindowClickType() == WrapperPlayClientClickWindow.WindowClickType.PICKUP
+                && inventory.applyPickupClick(windowId, containerSlot, packet.getButton(), Issuer.CLIENT, timestamp);
+
+        if (!predictedPickup) {
+            inventory.setCarriedItem(copyItem(packet.getCarriedItemStack()), carriedSlot, Issuer.CLIENT, timestamp);
+        }
+
+        applyClientSlotPayload(packet, windowId, containerSlot, carriedSlot, predictedPickup, timestamp);
+    }
+
+    private void applyClientSlotPayload(WrapperPlayClientClickWindow packet,
+                                        int windowId,
+                                        int containerSlot,
+                                        int carriedSlot,
+                                        boolean predictedPickup,
+                                        long timestamp) {
+        packet.getSlots().ifPresent(slots -> {
+            boolean inPlayerWindow = windowId == InventoryConstants.PLAYER_WINDOW_ID;
+            for (Map.Entry<Integer, ItemStack> entry : slots.entrySet()) {
+                int entrySlot = entry.getKey();
+                int mappedSlot = inPlayerWindow
+                        ? entrySlot
+                        : inventory.mapContainerSlotToPlayerSlot(windowId, entrySlot);
+                if (mappedSlot < 0) continue;
+
+                // Skip the slot we already predicted to avoid double-applying it.
+                if (predictedPickup && mappedSlot == carriedSlot && entrySlot == containerSlot) continue;
+
+                inventory.setItem(mappedSlot, copyItem(entry.getValue()), Issuer.CLIENT, SlotAction.CLICK, timestamp);
+            }
+        });
+    }
+
+    private void handleCloseWindow(PacketReceiveEvent event) {
+        WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
+        data.setOpenInventory(false);
+        if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
+            recipeTracker.armAfterClientClose();
+        }
+    }
+
+    private void handleSetRecipeBookState(PacketReceiveEvent event) {
+        WrapperPlayClientSetRecipeBookState packet = new WrapperPlayClientSetRecipeBookState(event);
+        recipeTracker.recordClientState(packet.getBookType(), packet.isBookOpen());
+    }
+
+    private void handleSetDisplayedRecipe(PacketReceiveEvent event) {
+        if (recipeTracker.handleDisplayedRecipe(event)) {
+            data.setVerifiedOpenInventory();
         }
     }
 

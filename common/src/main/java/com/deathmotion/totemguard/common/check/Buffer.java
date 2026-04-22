@@ -22,13 +22,10 @@ public final class Buffer {
 
     private double value;
 
+    // Pins negatives to 0 and infinity / NaN to Double.MAX_VALUE.
     private static double clamp(double value) {
-        if (value > Double.MAX_VALUE) {
-            return Double.MAX_VALUE;
-        }
-        if (value < 0.0) {
-            return 0.0;
-        }
+        if (!(value >= 0.0)) return 0.0;           // handles NaN and negatives
+        if (value > Double.MAX_VALUE) return Double.MAX_VALUE; // handles +Infinity
         return value;
     }
 

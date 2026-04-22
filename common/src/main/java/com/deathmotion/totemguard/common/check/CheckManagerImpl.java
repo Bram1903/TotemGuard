@@ -41,27 +41,36 @@ import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CheckManagerImpl {
 
     private final TGPlayer player;
 
-    public ClassToInstanceMap<Check> allChecks;
-    ClassToInstanceMap<PacketCheck> packetChecks;
-    ClassToInstanceMap<EventCheck> eventChecks;
-    ClassToInstanceMap<ExtendedCheck> extendedChecks;
-    ClassToInstanceMap<ManualCheck> manualChecks;
+    public final ClassToInstanceMap<Check> allChecks;
+
+    // Flat arrays for hot-path iteration — avoids repeated Map.values() view creation.
+    private final PacketCheck[] packetCheckArray;
+    private final EventCheck[] eventCheckArray;
+    private final ExtendedCheck[] extendedCheckArray;
+
+    private final ClassToInstanceMap<PacketCheck> packetChecks;
+    private final ClassToInstanceMap<ManualCheck> manualChecks;
+
+    // O(1) snapshot lookup by check name.
+    private final Map<String, CheckImpl> checksByName;
 
     public CheckManagerImpl(TGPlayer player) {
         this.player = player;
 
-        eventChecks = new ImmutableClassToInstanceMap.Builder<EventCheck>()
+        ImmutableClassToInstanceMap<EventCheck> eventChecks = ImmutableClassToInstanceMap.<EventCheck>builder()
                 .put(AutoTotemA.class, new AutoTotemA(player))
                 .put(AutoTotemB.class, new AutoTotemB(player))
                 .build();
 
-        packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
+        this.packetChecks = ImmutableClassToInstanceMap.<PacketCheck>builder()
                 .put(TickA.class, new TickA(player))
                 .put(TickB.class, new TickB(player))
                 .put(TickC.class, new TickC(player))
@@ -78,98 +87,91 @@ public class CheckManagerImpl {
                 .put(Mod.class, new Mod(player))
                 .build();
 
-        extendedChecks = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>()
+        ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = ImmutableClassToInstanceMap.<ExtendedCheck>builder()
                 .build();
 
-        manualChecks = new ImmutableClassToInstanceMap.Builder<ManualCheck>()
+        this.manualChecks = ImmutableClassToInstanceMap.<ManualCheck>builder()
                 .put(ManualTotemA.class, new ManualTotemA(player))
                 .build();
 
-        allChecks = new ImmutableClassToInstanceMap.Builder<Check>()
+        this.allChecks = ImmutableClassToInstanceMap.<Check>builder()
                 .putAll(packetChecks)
                 .putAll(eventChecks)
                 .putAll(manualChecks)
                 .build();
+
+        this.packetCheckArray = packetChecks.values().toArray(PacketCheck[]::new);
+        this.eventCheckArray = eventChecks.values().toArray(EventCheck[]::new);
+        this.extendedCheckArray = extendedChecks.values().toArray(ExtendedCheck[]::new);
+
+        this.checksByName = new HashMap<>(allChecks.size());
+        for (Check check : allChecks.values()) {
+            checksByName.put(check.getName(), (CheckImpl) check);
+        }
+    }
+
+    private boolean skip(Check check) {
+        if (!check.isEnabled()) return true;
+        return check.requiresTickEnd() && !player.supportsEndTick();
     }
 
     public void onPacketReceive(final PacketReceiveEvent packet) {
-        for (PacketCheck check : packetChecks.values()) {
-            if (!check.isEnabled()) continue;
-            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
-
+        for (PacketCheck check : packetCheckArray) {
+            if (skip(check)) continue;
             check.onPacketReceive(packet);
         }
-
-        for (PacketCheck check : extendedChecks.values()) {
-            if (!check.isEnabled()) continue;
-            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
-
+        for (ExtendedCheck check : extendedCheckArray) {
+            if (skip(check)) continue;
             check.onPacketReceive(packet);
         }
     }
 
     public void onPacketSend(final PacketSendEvent packet) {
-        for (PacketCheck check : packetChecks.values()) {
-            if (!check.isEnabled()) continue;
-            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
-
+        for (PacketCheck check : packetCheckArray) {
+            if (skip(check)) continue;
             check.onPacketSend(packet);
         }
-
-        for (PacketCheck check : extendedChecks.values()) {
-            if (!check.isEnabled()) continue;
-            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
-
+        for (ExtendedCheck check : extendedCheckArray) {
+            if (skip(check)) continue;
             check.onPacketSend(packet);
         }
     }
 
     public <T extends Event> void onEvent(final T event) {
-        for (EventCheck check : eventChecks.values()) {
-            if (!check.isEnabled()) continue;
-            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
-
+        for (EventCheck check : eventCheckArray) {
+            if (skip(check)) continue;
             check.handleEvent(event);
         }
-
-        for (ExtendedCheck check : extendedChecks.values()) {
-            if (!check.isEnabled()) continue;
-            if (check.requiresTickEnd() && !player.supportsEndTick()) continue;
-
+        for (ExtendedCheck check : extendedCheckArray) {
+            if (skip(check)) continue;
             check.handleEvent(event);
         }
     }
 
     public List<CheckSnapshot> getSnapshot() {
-        List<CheckSnapshot> snapshots = new ArrayList<>(allChecks.size());
-        for (Check check : allChecks.values()) {
-            CheckImpl impl = (CheckImpl) check;
-            snapshots.add(impl.getSnapshot());
+        List<CheckSnapshot> snapshots = new ArrayList<>(checksByName.size());
+        for (CheckImpl check : checksByName.values()) {
+            snapshots.add(check.getSnapshot());
         }
-
         return snapshots;
     }
 
     public void applySnapshot(List<CheckSnapshot> snapshots) {
         for (CheckSnapshot snapshot : snapshots) {
-            String checkSnapshotName = snapshot.checkName();
-
-            for (Check check : allChecks.values()) {
-                if (!check.getName().equals(checkSnapshotName)) continue;
-                CheckImpl checkImpl = (CheckImpl) check;
-                checkImpl.applySnapshot(snapshot);
-                break;
+            CheckImpl check = checksByName.get(snapshot.checkName());
+            if (check != null) {
+                check.applySnapshot(snapshot);
             }
         }
     }
 
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {
-        return (T) allChecks.get(check);
+        return (T) packetChecks.get(check);
     }
 
     @SuppressWarnings("unchecked")
     public <T extends ManualCheck> T getManualCheck(Class<T> check) {
-        return (T) allChecks.get(check);
+        return (T) manualChecks.get(check);
     }
 }

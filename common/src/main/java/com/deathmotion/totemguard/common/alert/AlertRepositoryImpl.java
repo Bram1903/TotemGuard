@@ -34,7 +34,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class AlertRepositoryImpl implements AlertRepository {
 
@@ -90,26 +89,14 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
         bufferChatAlert(check, violations, debug);
-
-        platform.getScheduler().runAsyncTask(() -> {
-            punishmentRepository.punish(check, violations, debug);
-
-            // TODO: Call punishment handler
-            // TODO: Call Discord webhook handler
-            // TODO: Call database handler
-        });
+        // TODO: wire Discord webhook + database persistence handlers off the same async path.
+        platform.getScheduler().runAsyncTask(() -> punishmentRepository.punish(check, violations, debug));
     }
 
     private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug) {
-        UUID playerUuid = check.player.getUuid();
         chatBuffers.computeIfAbsent(
-                playerUuid,
-                ignored -> new PlayerChatBuffer(
-                        platform.getScheduler(),
-                        this::broadcast,
-                        CHAT_BUFFER_WINDOW_SECONDS,
-                        TimeUnit.SECONDS
-                )
+                check.player.getUuid(),
+                ignored -> new PlayerChatBuffer(platform.getScheduler(), this::broadcast, CHAT_BUFFER_WINDOW_SECONDS)
         ).buffer(check, violations, debug);
     }
 
