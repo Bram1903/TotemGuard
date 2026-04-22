@@ -18,5 +18,38 @@
 
 package com.deathmotion.totemguard.common.platform.player;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Consumer;
+
+/**
+ * Backend-only view of a player. Exists on Bukkit/Fabric/Sponge where we can
+ * touch the real server-side inventory and health; not created on proxy
+ * platforms like Velocity, where {@code TGPlayer#getPlatformPlayer()} returns
+ * {@code null}.
+ */
 public interface PlatformPlayer {
+
+    boolean isInSurvivalOrAdventure();
+
+    boolean isInvulnerable();
+
+    /**
+     * Starts a manual-check window on the target's region thread:
+     * <ol>
+     *   <li>snapshots inventory, cursor, held-slot, health, food, saturation, and active potion effects,</li>
+     *   <li>forces enough damage to pop the offhand totem — this is what drives the natural totem animation,
+     *       sound, and regen/absorption buffs, so the target experiences it as real combat damage.</li>
+     * </ol>
+     *
+     * <p>If the damage is actually applied, invokes {@code onStarted} with a handle whose
+     * {@link ManualCheckHandle#restore()} method reverts the full snapshot — including stripping
+     * the regen/fire-resist/absorption buffs the totem granted, so the check leaves no visible trace.</p>
+     *
+     * <p>If the damage was refused (e.g. a damage-cap plugin or anticheat cancels the
+     * {@code EntityDamageEvent}), {@code onDamageRefused} is invoked instead, the snapshot is
+     * discarded untouched, and no handle is produced.</p>
+     */
+    void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted,
+                          @NotNull Runnable onDamageRefused);
 }

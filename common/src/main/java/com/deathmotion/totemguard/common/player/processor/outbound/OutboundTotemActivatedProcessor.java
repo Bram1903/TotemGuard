@@ -42,6 +42,7 @@ public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
         if (event.getPacketType() != PacketType.Play.Server.SET_SLOT) return;
+        if (player.isManualCheckActive()) return;
 
         final WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
         if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;

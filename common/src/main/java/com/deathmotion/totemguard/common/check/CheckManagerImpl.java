@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.inventory.*;
+import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.impl.tick.TickA;
@@ -31,6 +32,7 @@ import com.deathmotion.totemguard.common.check.impl.tick.TickB;
 import com.deathmotion.totemguard.common.check.impl.tick.TickC;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
+import com.deathmotion.totemguard.common.check.type.ManualCheck;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -49,6 +51,7 @@ public class CheckManagerImpl {
     ClassToInstanceMap<PacketCheck> packetChecks;
     ClassToInstanceMap<EventCheck> eventChecks;
     ClassToInstanceMap<ExtendedCheck> extendedChecks;
+    ClassToInstanceMap<ManualCheck> manualChecks;
 
     public CheckManagerImpl(TGPlayer player) {
         this.player = player;
@@ -78,9 +81,14 @@ public class CheckManagerImpl {
         extendedChecks = new ImmutableClassToInstanceMap.Builder<ExtendedCheck>()
                 .build();
 
+        manualChecks = new ImmutableClassToInstanceMap.Builder<ManualCheck>()
+                .put(ManualTotemA.class, new ManualTotemA(player))
+                .build();
+
         allChecks = new ImmutableClassToInstanceMap.Builder<Check>()
                 .putAll(packetChecks)
                 .putAll(eventChecks)
+                .putAll(manualChecks)
                 .build();
     }
 
@@ -157,6 +165,11 @@ public class CheckManagerImpl {
 
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {
+        return (T) allChecks.get(check);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ManualCheck> T getManualCheck(Class<T> check) {
         return (T) allChecks.get(check);
     }
 }

@@ -133,3 +133,11 @@ TickC:
 
   punishment-commands:
     - "kick %tg_player% Packet Manipulation"
+
+ManualTotemA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"

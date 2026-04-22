@@ -23,12 +23,19 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 public class BukkitPlatformUserFactory extends AbstractPlatformUserFactory<Player> {
+
+    private final Plugin plugin;
+
+    public BukkitPlatformUserFactory(Plugin plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     protected Player getNativePlayer(@NotNull UUID uuid) {
@@ -42,6 +49,6 @@ public class BukkitPlatformUserFactory extends AbstractPlatformUserFactory<Playe
 
     @Override
     protected @Nullable PlatformPlayer createPlatformPlayer(@NotNull Player nativePlayer) {
-        return new BukkitPlatformPlayer(nativePlayer);
+        return new BukkitPlatformPlayer(nativePlayer, plugin);
     }
 }
