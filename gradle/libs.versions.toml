@@ -14,6 +14,7 @@ bstats = "3.1.0"
 lettuce = "7.5.0.RELEASE"
 
 placeholderapi = "2.11.7"
+grim-api = "1.3.0.0"
 
 run-paper = "3.0.2"
 spongeGradle = "2.3.0"
@@ -43,6 +44,7 @@ bstats-sponge = { group = "org.bstats", name = "bstats-sponge", version.ref = "b
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
 
 placeholderapi = { group = "me.clip", name = "placeholderapi", version.ref = "placeholderapi" }
+grim-api = { group = "ac.grim.grimac", name = "GrimAPI", version.ref = "grim-api" }
 
 [bundles]
 adventure = ["adventure-api"]

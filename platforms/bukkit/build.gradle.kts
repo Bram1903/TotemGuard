@@ -37,7 +37,7 @@ tasks {
         url("https://github.com/ViaVersion/ViaVersion/releases/download/5.9.0/ViaVersion-5.9.0.jar")
         url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.9.0/ViaBackwards-5.9.0.jar")
         url("https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/2.12.2/PlaceholderAPI-2.12.2.jar")
-        //url("https://cdn.modrinth.com/data/LJNGWSvH/versions/D5qyTffF/grimac-bukkit-2.3.74-d1b2135.jar")
+        //url("https://cdn.modrinth.com/data/LJNGWSvH/versions/oyUPCWmq/grimac-bukkit-2.3.74-794e120.jar")
     }
 
     runServer {

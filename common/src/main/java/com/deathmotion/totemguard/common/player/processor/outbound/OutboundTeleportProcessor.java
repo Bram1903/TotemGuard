@@ -47,7 +47,7 @@ public class OutboundTeleportProcessor extends ProcessorOutbound {
 
         WrapperPlayServerPlayerPositionAndLook packet = new WrapperPlayServerPlayerPositionAndLook(event);
         data.getTeleportData().trackTeleport(packet.getTeleportId());
-        movementData.trackTeleport(packet);
+        movementData.trackTeleport(packet.getTeleportId());
         pingData.teleportSent(packet.getTeleportId());
         event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
     }

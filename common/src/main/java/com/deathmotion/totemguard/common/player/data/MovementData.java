@@ -27,13 +27,13 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPl
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerRotation;
 import lombok.Getter;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 public class MovementData {
 
-    private final Map<Integer, Location> pendingTeleports = new LinkedHashMap<>();
+    private final Set<Integer> pendingTeleports = new LinkedHashSet<>();
     private Location current = emptyLocation();
     private Location previous = emptyLocation();
     private boolean lastFlyingPositionChanged;
@@ -77,8 +77,8 @@ public class MovementData {
         horizontalCollision = packet.isHorizontalCollision();
     }
 
-    public void trackTeleport(WrapperPlayServerPlayerPositionAndLook packet) {
-        pendingTeleports.put(packet.getTeleportId(), resolveTeleportLocation(packet, current));
+    public void trackTeleport(int teleportId) {
+        pendingTeleports.add(teleportId);
     }
 
     public void handleTeleportConfirm(TeleportData.TeleportConfirmResult confirmResult) {

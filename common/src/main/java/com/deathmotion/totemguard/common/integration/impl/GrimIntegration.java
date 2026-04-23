@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.integration.impl;
 
 import ac.grim.grimac.api.GrimAPIProvider;
+import ac.grim.grimac.api.GrimUser;
 import ac.grim.grimac.api.event.EventBus;
 import ac.grim.grimac.api.event.events.GrimTeleportEvent;
 import ac.grim.grimac.api.event.events.GrimTransactionReceivedEvent;
@@ -82,8 +83,8 @@ public final class GrimIntegration implements Integration {
     }
 
     private void registerListeners() {
-        eventBus.subscribe(grimPlugin, GrimTransactionReceivedEvent.class, this::onTransactionReceived);
-        eventBus.subscribe(grimPlugin, GrimTeleportEvent.class, this::onTeleport);
+        eventBus.get(GrimTransactionReceivedEvent.class).onTransactionReceived(grimPlugin, this::onTransactionReceived);
+        eventBus.get(GrimTeleportEvent.class).onTeleport(grimPlugin, this::onTeleport);
     }
 
     private GrimPlugin createPluginContext() {
@@ -97,21 +98,22 @@ public final class GrimIntegration implements Integration {
         );
     }
 
-    private void onTransactionReceived(GrimTransactionReceivedEvent event) {
-        if (!event.isPacketCancelled()) return;
-        TGPlayer player = playerRepository.getPlayer(event.getUser().getUniqueId());
+    private void onTransactionReceived(GrimUser user, int transactionId, boolean packetCancelled, long timestamp) {
+        if (!packetCancelled) return;
+        TGPlayer player = playerRepository.getPlayer(user.getUniqueId());
         if (player == null) return;
 
-        player.getPingData().transactionReceived(event.getTransactionId(), event.getTimestamp());
+        player.getPingData().transactionReceived(transactionId, timestamp);
         player.getDebugOverlayManager().refresh();
     }
 
-    private void onTeleport(GrimTeleportEvent event) {
-        TGPlayer player = playerRepository.getPlayer(event.getUser().getUniqueId());
+    private void onTeleport(GrimUser user, int teleportId, long timestamp) {
+        TGPlayer player = playerRepository.getPlayer(user.getUniqueId());
         if (player == null) return;
 
-        player.getData().getTeleportData().trackTeleport(event.getTeleportId());
-        player.getPingData().trackTeleport(event.getTeleportId());
+        player.getData().getTeleportData().trackTeleport(teleportId);
+        player.getData().getMovementData().trackTeleport(teleportId);
+        player.getPingData().teleportSent(teleportId);
         player.getDebugOverlayManager().refresh();
     }
 }
