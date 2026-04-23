@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.player.latency;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.PingData;
+import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;

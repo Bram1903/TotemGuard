@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.api3.event.EventRepository;
 import com.deathmotion.totemguard.api3.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.InternalEvent;
+import com.deathmotion.totemguard.common.util.SortedMerge;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -131,13 +132,9 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     private void exitInternalDispatch() {
-        int remainingDepth = internalDispatchDepth.get() - 1;
-        if (remainingDepth == 0) {
-            internalDispatchDepth.remove();
-            return;
-        }
-
-        internalDispatchDepth.set(remainingDepth);
+        int remaining = internalDispatchDepth.get() - 1;
+        if (remaining <= 0) internalDispatchDepth.remove();
+        else internalDispatchDepth.set(remaining);
     }
 
     private <T extends Event> @NotNull EventSubscription subscribe(
@@ -237,45 +234,7 @@ public class EventRepositoryImpl implements EventRepository {
     ) {
         List<RegisteredListener> internalBucket = internalListeners.bucket(eventType, orderIndex);
         List<RegisteredListener> publicBucket = internalOnly ? null : publicListeners.bucket(eventType, orderIndex);
-
-        if ((internalBucket == null || internalBucket.isEmpty())
-                && (publicBucket == null || publicBucket.isEmpty())) {
-            return;
-        }
-
-        if (internalBucket == null || internalBucket.isEmpty()) {
-            dispatchPlan.addAll(publicBucket);
-            return;
-        }
-
-        if (publicBucket == null || publicBucket.isEmpty()) {
-            dispatchPlan.addAll(internalBucket);
-            return;
-        }
-
-        int internalIndex = 0;
-        int publicIndex = 0;
-
-        while (internalIndex < internalBucket.size() && publicIndex < publicBucket.size()) {
-            RegisteredListener internalListener = internalBucket.get(internalIndex);
-            RegisteredListener publicListener = publicBucket.get(publicIndex);
-
-            if (internalListener.sequence() <= publicListener.sequence()) {
-                dispatchPlan.add(internalListener);
-                internalIndex++;
-            } else {
-                dispatchPlan.add(publicListener);
-                publicIndex++;
-            }
-        }
-
-        while (internalIndex < internalBucket.size()) {
-            dispatchPlan.add(internalBucket.get(internalIndex++));
-        }
-
-        while (publicIndex < publicBucket.size()) {
-            dispatchPlan.add(publicBucket.get(publicIndex++));
-        }
+        SortedMerge.into(dispatchPlan, internalBucket, publicBucket, RegisteredListener::sequence);
     }
 
     private record DispatchPlanKey(Class<?> eventType, boolean internalOnly) {

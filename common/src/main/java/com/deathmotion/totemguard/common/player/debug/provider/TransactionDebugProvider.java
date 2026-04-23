@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.player.debug.provider;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.PingData;
+import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayFrame;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
 import net.kyori.adventure.text.Component;
@@ -100,23 +100,23 @@ public final class TransactionDebugProvider implements DebugOverlayProvider {
     }
 
     private static String teleportStatus(PingData pingData) {
-        if (!pingData.isObservedTeleportTransactionResult()) {
+        if (!pingData.isObservedTeleportReply()) {
             return "none";
         }
 
-        if (pingData.isLastTeleportSkippedTransactions()) {
-            return "skip:" + pingData.getLastSkippedTransactionsByTeleportCount();
+        if (pingData.isLastTeleportReplySkipped()) {
+            return "skip:" + pingData.getLastSkippedTeleportReplyCount();
         }
 
         return "ok";
     }
 
     private static NamedTextColor teleportColor(PingData pingData) {
-        if (!pingData.isObservedTeleportTransactionResult()) {
+        if (!pingData.isObservedTeleportReply()) {
             return NamedTextColor.GRAY;
         }
 
-        return pingData.isLastTeleportSkippedTransactions() ? NamedTextColor.RED : NamedTextColor.GREEN;
+        return pingData.isLastTeleportReplySkipped() ? NamedTextColor.RED : NamedTextColor.GREEN;
     }
 
     @Override

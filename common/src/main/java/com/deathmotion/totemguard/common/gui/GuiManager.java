@@ -50,6 +50,10 @@ public final class GuiManager {
         this.platform.getEventRepository().subscribeInternal(InventoryChangedEvent.class, this::handleInventoryChanged);
     }
 
+    private GuiViewerInventory inventoryFor(UUID viewerId) {
+        return viewerInventories.computeIfAbsent(viewerId, ignored -> new GuiViewerInventory());
+    }
+
     public boolean open(Sender sender, GuiScreen screen) {
         Objects.requireNonNull(sender, "sender");
         Objects.requireNonNull(screen, "screen");
@@ -188,8 +192,7 @@ public final class GuiManager {
             return;
         }
 
-        GuiViewerInventory inventory = viewerInventories
-                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory());
+        GuiViewerInventory inventory = inventoryFor(user.getUUID());
 
         if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
             inventory.applyPlayerWindowItems(items, carried);
@@ -209,9 +212,7 @@ public final class GuiManager {
             return;
         }
 
-        viewerInventories
-                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
-                .applySlot(slot, item);
+        inventoryFor(user.getUUID()).applySlot(slot, item);
     }
 
     public void trackWindowSlot(User user, int windowId, int slot, ItemStack item) {
@@ -219,8 +220,7 @@ public final class GuiManager {
             return;
         }
 
-        GuiViewerInventory inventory = viewerInventories
-                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory());
+        GuiViewerInventory inventory = inventoryFor(user.getUUID());
 
         if (windowId == InventoryConstants.PLAYER_WINDOW_ID) {
             inventory.applySlot(slot, item);
@@ -240,9 +240,7 @@ public final class GuiManager {
             return;
         }
 
-        viewerInventories
-                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
-                .applyCursor(item);
+        inventoryFor(user.getUUID()).applyCursor(item);
     }
 
     public void trackClientWindowClick(User user, WrapperPlayClientClickWindow packet) {
@@ -250,8 +248,7 @@ public final class GuiManager {
             return;
         }
 
-        GuiViewerInventory inventory = viewerInventories
-                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory());
+        GuiViewerInventory inventory = inventoryFor(user.getUUID());
 
         int sourceSlot = mapViewerSlot(user, inventory, packet.getWindowId(), packet.getSlot());
         int targetSlot = mapSwapTargetSlot(packet);
@@ -297,9 +294,7 @@ public final class GuiManager {
             return;
         }
 
-        viewerInventories
-                .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
-                .applySlot(slot, item);
+        inventoryFor(user.getUUID()).applySlot(slot, item);
     }
 
     public void resyncTopInventory(User user) {
@@ -423,9 +418,7 @@ public final class GuiManager {
         }
 
         if (!isGuiWindow(user, windowId)) {
-            viewerInventories
-                    .computeIfAbsent(user.getUUID(), ignored -> new GuiViewerInventory())
-                    .setOpenWindow(windowId, topSize);
+            inventoryFor(user.getUUID()).setOpenWindow(windowId, topSize);
         }
 
         finalizeClose(user.getUUID(), sessions.get(user.getUUID()));

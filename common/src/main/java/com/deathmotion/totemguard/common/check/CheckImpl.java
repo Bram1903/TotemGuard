@@ -38,8 +38,6 @@ import java.util.List;
 
 public abstract class CheckImpl implements Check {
 
-    private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass.";
-
     public final TGPlayer player;
 
     protected final Data data;
@@ -133,9 +131,7 @@ public abstract class CheckImpl implements Check {
     }
 
     protected boolean shouldFail(@Nullable String debug) {
-        //if (player.getPlatformUser().hasPermission(BYPASS_PERMISSION + name)) return false;
         TGUserFlagEvent event = TGPlatform.getInstance().getEventRepository().post(new TGUserFlagEventImpl(player, this, debug));
-
         return !event.isCancelled();
     }
 

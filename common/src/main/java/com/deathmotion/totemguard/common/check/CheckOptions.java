@@ -26,6 +26,7 @@ import lombok.Getter;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Getter
 public class CheckOptions {
@@ -35,6 +36,10 @@ public class CheckOptions {
     private static final boolean DEFAULT_MITIGATE = false;
     private static final int DEFAULT_MAX_VIOLATIONS = 1;
     private static final List<String> DEFAULT_PUNISH_COMMANDS = List.of("%default_punishment%");
+
+    // Only these checks actually act on "mitigate" (close-window mitigation in CheckImpl#failInventory).
+    // Keeping the allowlist here avoids silently surfacing a config key that would be a no-op elsewhere.
+    private static final Set<String> MITIGATION_CAPABLE = Set.of("InventoryA", "InventoryB");
 
     private final String checkName;
     private final boolean enabled;
@@ -71,12 +76,14 @@ public class CheckOptions {
 
         this.enabled = readBoolean(section, "enabled", DEFAULT_ENABLED);
         this.punishable = readBoolean(section, "punishable", DEFAULT_PUNISHABLE);
-        this.mitigate = switch (checkName) {
-            case "InventoryA", "InventoryB" -> readBoolean(section, "mitigate", DEFAULT_MITIGATE);
-            default -> DEFAULT_MITIGATE;
-        };
+        this.mitigate = readMitigate(section, checkName);
         this.maxViolations = Math.max(1, readInt(section, "max-violations", DEFAULT_MAX_VIOLATIONS));
         this.punishCommands = readStringList(section, "punishment-commands", DEFAULT_PUNISH_COMMANDS);
+    }
+
+    private boolean readMitigate(ConfigSection section, String checkName) {
+        if (!MITIGATION_CAPABLE.contains(checkName)) return DEFAULT_MITIGATE;
+        return readBoolean(section, "mitigate", DEFAULT_MITIGATE);
     }
 
     private boolean readBoolean(ConfigSection section, String path, boolean defaultValue) {

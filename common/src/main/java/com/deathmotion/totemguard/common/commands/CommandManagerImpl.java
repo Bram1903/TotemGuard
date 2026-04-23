@@ -41,5 +41,11 @@ public class CommandManagerImpl {
         new DebugOverlayCommand().register(commandManager);
         new InventoryCommand().register(commandManager);
         new PlaceholderCommand().register(commandManager);
+
+        // /tg check needs real inventory access via PlatformPlayer, which only
+        // exists on backend platforms. Skip on proxies (Velocity/Bungee).
+        if (!TGPlatform.getInstance().getPlatform().isProxy()) {
+            new CheckCommand().register(commandManager);
+        }
     }
 }

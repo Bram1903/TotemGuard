@@ -94,11 +94,9 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
 
     @Override
     public @NotNull String replace(@NotNull String message, @NotNull PlaceholderContext context) {
-        TGPlayer player = adaptUser(context.user());
-        CheckImpl internalCheck = adaptCheck(context.check());
         return engine.replace(
                 message,
-                new InternalContext(platform, player, internalCheck),
+                new InternalContext(platform, adaptUser(context.user()), adaptCheck(context.check())),
                 context
         );
     }

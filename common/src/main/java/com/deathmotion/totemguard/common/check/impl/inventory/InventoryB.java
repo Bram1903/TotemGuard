@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -32,12 +31,10 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 @CheckData(description = "Moving during inventory interaction", type = CheckType.INVENTORY)
 public class InventoryB extends CheckImpl implements PacketCheck {
 
-    private final Data data;
     private final InputData inputData;
 
     public InventoryB(TGPlayer player) {
         super(player);
-        this.data = player.getData();
         this.inputData = player.getData().getInputData();
     }
 
@@ -50,7 +47,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
             if (data.isSprinting()) {
                 failInventory("click (sprinting");
             } else if (inputData.isInput()) {
-                failInventory("click (move");
+                failInventory("click (move)");
             }
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             if (data.isInventoryMitigatedThisTick()) return;

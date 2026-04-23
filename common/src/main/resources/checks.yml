@@ -48,12 +48,21 @@ InventoryB:
 InventoryC:
   enabled: true
   punishable: false
+  mitigate: true
   max-violations: 2
 
   punishment-commands:
     - "%default_punishment%"
 
 InventoryD:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryE:
   enabled: true
   punishable: false
   max-violations: 2
@@ -124,3 +133,11 @@ TickC:
 
   punishment-commands:
     - "kick %tg_player% Packet Manipulation"
+
+ManualTotemA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"

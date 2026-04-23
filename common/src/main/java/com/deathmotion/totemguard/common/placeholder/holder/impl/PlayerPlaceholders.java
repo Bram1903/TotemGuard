@@ -18,45 +18,32 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
-import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
-import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
+import com.deathmotion.totemguard.common.placeholder.holder.MapResolverHolder;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
-public final class PlayerPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
+public final class PlayerPlaceholders extends MapResolverHolder<TGPlayer> {
 
-    private static final Map<String, Function<TGPlayer, String>> RESOLVERS;
+    private static final Map<String, Function<TGPlayer, String>> RESOLVERS = Map.of(
+            "tg_player", TGPlayer::getName,
+            "tg_player_uuid", p -> p.getUuid().toString(),
+            "tg_player_brand", TGPlayer::getClientBrand,
+            "tg_player_version", p -> p.getClientVersion().getReleaseName(),
+            "tg_player_ping_k", p -> String.valueOf(p.getPingData().getKeepAlivePing()),
+            "tg_player_ping_t", p -> String.valueOf(p.getPingData().getTransactionPing())
+    );
 
-    static {
-        RESOLVERS = Map.of(
-                "tg_player", TGPlayer::getName,
-                "tg_player_uuid", p -> p.getUuid().toString(),
-                "tg_player_brand", TGPlayer::getClientBrand,
-                "tg_player_version", p -> p.getClientVersion().getReleaseName(),
-                "tg_player_ping_k", p -> String.valueOf(p.getPingData().getKeepAlivePing()),
-                "tg_player_ping_t", p -> String.valueOf(p.getPingData().getTransactionPing())
-        );
+    public PlayerPlaceholders() {
+        super(RESOLVERS);
     }
 
     @Override
-    public @NotNull Collection<String> keys() {
-        return RESOLVERS.keySet();
-    }
-
-    @Override
-    public @Nullable String resolve(@NonNull String key, @NonNull InternalContext ctx) {
-        TGPlayer player = ctx.player();
-        if (player == null) return null;
-
-        Function<TGPlayer, String> fn = RESOLVERS.get(key);
-        return fn != null ? fn.apply(player) : null;
+    protected @Nullable TGPlayer subject(@NotNull InternalContext ctx) {
+        return ctx.player();
     }
 }
-

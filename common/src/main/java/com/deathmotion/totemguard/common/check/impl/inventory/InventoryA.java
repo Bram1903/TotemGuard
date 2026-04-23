@@ -23,11 +23,15 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @CheckData(description = "Impossible action with open inventory", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
@@ -36,54 +40,52 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         super(player);
     }
 
+    private static String staticReason(PacketTypeCommon type) {
+        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
+        if (type == PacketType.Play.Client.USE_ITEM) return "use";
+        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) return "change slot";
+        if (type == PacketType.Play.Client.PICK_ITEM) return "pick item";
+        if (type == PacketType.Play.Client.ATTACK) return "attack";
+        if (type == PacketType.Play.Client.ENTITY_ACTION) return "entity action";
+        return null;
+    }
+
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!player.getData().isOpenInventory()) return;
-        if (player.getData().isServerOpenedInventoryThisTick()) return;
-        final var packetType = event.getPacketType();
+        if (!data.isOpenInventory()) return;
+        if (data.isServerOpenedInventoryThisTick()) return;
 
-        if (packetType == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            failInventory("move");
+        final PacketTypeCommon type = event.getPacketType();
+
+        if (WrapperPlayClientPlayerFlying.isFlying(type)) {
+            if (data.getMovementData().isLastFlyingRotationChanged() && data.getGameMode() != GameMode.SPECTATOR) {
+                failInventory("aim");
+            }
             return;
         }
 
-        if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            failInventory("place");
+        String reason = staticReason(type);
+        if (reason != null) {
+            failInventory(reason);
             return;
         }
 
-        if (packetType == PacketType.Play.Client.USE_ITEM) {
-            failInventory("use");
+        if (type == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
+            final InputData input = data.getInputData();
+            // Auto-jump releases PLAYER_INPUT packets even when idle — ignore the jump release tick.
+            if (input.current().jumping() || !input.previous().jumping()) {
+                failInventory("move");
+            }
             return;
         }
 
-        if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            failInventory("change slot");
-            return;
-        }
-
-        if (packetType == PacketType.Play.Client.PICK_ITEM) {
-            failInventory("pick item");
-            return;
-        }
-
-        if (packetType == PacketType.Play.Client.ATTACK) {
-            failInventory("attack");
-            return;
-        }
-
-        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
+        if (type == PacketType.Play.Client.INTERACT_ENTITY) {
             WrapperPlayClientInteractEntity.InteractAction action = new WrapperPlayClientInteractEntity(event).getAction();
             failInventory(action == WrapperPlayClientInteractEntity.InteractAction.ATTACK ? "attack" : "interact");
             return;
         }
 
-        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
-            failInventory("entity action");
-            return;
-        }
-
-        if (packetType == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
+        if (type == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
             failInventory("break");
         }
     }

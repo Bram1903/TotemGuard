@@ -18,47 +18,35 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
-import com.deathmotion.totemguard.api3.placeholder.PlaceholderProvider;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
-import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
+import com.deathmotion.totemguard.common.placeholder.holder.MapResolverHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
-public final class CheckPlaceholders implements InternalPlaceholderHolder, PlaceholderProvider {
+public final class CheckPlaceholders extends MapResolverHolder<CheckImpl> {
 
-    private static final Map<String, Function<CheckImpl, String>> RESOLVERS;
+    private static final Map<String, Function<CheckImpl, String>> RESOLVERS = Map.of(
+            "tg_check_name", CheckImpl::getName,
+            "tg_check_description", CheckImpl::getDescription,
+            "tg_check_type", c -> c.getType().name(),
+            "tg_check_experimental", c -> String.valueOf(c.isExperimental()),
+            "tg_check_requires_tick_end", c -> String.valueOf(c.requiresTickEnd()),
+            "tg_check_enabled", c -> String.valueOf(c.isEnabled()),
+            "tg_check_punishable", c -> String.valueOf(c.isPunishable()),
+            "tg_check_violations", c -> String.valueOf(c.getViolations()),
+            "tg_check_max_violations", c -> String.valueOf(c.getMaxViolations())
+    );
 
-    static {
-        RESOLVERS = Map.of(
-                "tg_check_name", CheckImpl::getName,
-                "tg_check_description", CheckImpl::getDescription,
-                "tg_check_type", c -> c.getType().name(),
-                "tg_check_experimental", c -> String.valueOf(c.isExperimental()),
-                "tg_check_requires_tick_end", c -> String.valueOf(c.requiresTickEnd()),
-                "tg_check_enabled", c -> String.valueOf(c.isEnabled()),
-                "tg_check_punishable", c -> String.valueOf(c.isPunishable()),
-                "tg_check_violations", c -> String.valueOf(c.getViolations()),
-                "tg_check_max_violations", c -> String.valueOf(c.getMaxViolations())
-        );
+    public CheckPlaceholders() {
+        super(RESOLVERS);
     }
 
     @Override
-    public @NotNull Collection<String> keys() {
-        return RESOLVERS.keySet();
-    }
-
-    @Override
-    public @Nullable String resolve(@NonNull String key, @NonNull InternalContext ctx) {
-        CheckImpl check = ctx.check();
-        if (check == null) return null;
-
-        Function<CheckImpl, String> fn = RESOLVERS.get(key);
-        return fn != null ? fn.apply(check) : null;
+    protected @Nullable CheckImpl subject(@NotNull InternalContext ctx) {
+        return ctx.check();
     }
 }

@@ -29,10 +29,15 @@ import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEve
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
-import com.deathmotion.totemguard.common.player.data.*;
+import com.deathmotion.totemguard.common.player.data.ClickData;
+import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.TickData;
+import com.deathmotion.totemguard.common.player.data.TotemData;
+import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
 import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
+import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
@@ -72,6 +77,7 @@ public class TGPlayer implements TGUser {
     private final ClickData clickData;
     private final TickData tickData;
     private final PingData pingData;
+    private final InventoryRecipeTracker inventoryRecipeTracker;
     private final DebugOverlayManager debugOverlayManager;
     private final PacketLatencyHandler latencyHandler;
 
@@ -93,6 +99,15 @@ public class TGPlayer implements TGUser {
     @Setter
     private boolean vpn;
 
+    /**
+     * True while a staff-initiated {@code /tg check} is running against this player.
+     * Server-originated inventory mutations performed by the command (clearing the
+     * offhand, restoring contents) must not feed the auto-totem detection pipeline,
+     * so processors consult this flag and skip their own bookkeeping while it's set.
+     */
+    @Setter
+    private volatile boolean manualCheckActive;
+
     public TGPlayer(@NotNull User user) {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
@@ -104,6 +119,7 @@ public class TGPlayer implements TGUser {
         this.clickData = new ClickData();
         this.tickData = new TickData();
         this.pingData = new PingData();
+        this.inventoryRecipeTracker = new InventoryRecipeTracker(this);
         this.debugOverlayManager = new DebugOverlayManager(this);
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());
@@ -116,6 +132,7 @@ public class TGPlayer implements TGUser {
             add(new InboundClientBrandProcessor(TGPlayer.this));
             add(new InboundActionProcessor(TGPlayer.this));
             add(new InboundTeleportProcessor(TGPlayer.this));
+            add(new InboundMovementProcessor(TGPlayer.this));
         }};
 
         this.processorOutbounds = new ArrayList<>() {{
@@ -125,6 +142,7 @@ public class TGPlayer implements TGUser {
             add(new OutboundTotemActivatedProcessor(TGPlayer.this));
             add(new OutboundInventoryProcessor(TGPlayer.this));
             add(new OutboundTeleportProcessor(TGPlayer.this));
+            add(new OutboundMovementProcessor(TGPlayer.this));
         }};
     }
 

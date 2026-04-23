@@ -34,6 +34,11 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 @CheckData(description = "Impossible click time difference", type = CheckType.AUTO_TOTEM)
 public class AutoTotemA extends CheckImpl implements EventCheck {
 
+    // Max ms between picking up a totem and placing it in the offhand — tighter than human reaction.
+    private static final long MAX_CLICK_DIFF_MS = 75L;
+    // Max ms between totem consumption and the next totem reaching the offhand.
+    private static final long MAX_USE_TO_PLACE_DIFF_MS = 1500L;
+
     private Long lastTotemActivatedTimestamp;
     private Long totemPickUpTimestamp;
 
@@ -98,7 +103,7 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
         final long clickDiff = Math.abs(placedAt - pickedUpAt);
         final long useDiff = Math.abs(placedAt - lastTotemActivatedTimestamp);
 
-        if (clickDiff <= 75 && useDiff <= 1500) {
+        if (clickDiff <= MAX_CLICK_DIFF_MS && useDiff <= MAX_USE_TO_PLACE_DIFF_MS) {
             fail();
         }
 

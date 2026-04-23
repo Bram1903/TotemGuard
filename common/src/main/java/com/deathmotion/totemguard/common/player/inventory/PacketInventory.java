@@ -99,6 +99,14 @@ public class PacketInventory {
             return false;
         }
 
+        // If the carried item can't go in this slot (e.g. non-armor into an armor slot), the real client
+        // rejects the click and sends no payload. Don't optimistically predict here — otherwise a phantom
+        // item lands in the slot and the predictedPickup guard in the processor suppresses corrections.
+        ItemStack carried = carriedItem.getCurrentItem();
+        if (!carried.isEmpty() && !canPlaceInPlayerSlot(playerSlot, carried)) {
+            return false;
+        }
+
         applyPickupClickOnPlayerSlot(playerSlot, button, issuer, timestampMillis);
         return true;
     }

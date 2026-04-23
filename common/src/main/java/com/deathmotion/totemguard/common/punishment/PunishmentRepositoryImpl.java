@@ -92,6 +92,8 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                 return;
             }
 
+            platform.getDiscordWebhookService().sendPunishment(check, debug);
+
             check.clearViolations();
             keepDistributedLock = true;
         } finally {

@@ -20,7 +20,8 @@ package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.player.data.PingData;
+import com.deathmotion.totemguard.common.player.data.MovementData;
+import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -29,11 +30,13 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPl
 public class OutboundTeleportProcessor extends ProcessorOutbound {
 
     private final Data data;
+    private final MovementData movementData;
     private final PingData pingData;
 
     public OutboundTeleportProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
+        this.movementData = player.getData().getMovementData();
         this.pingData = player.getPingData();
     }
 
@@ -44,7 +47,8 @@ public class OutboundTeleportProcessor extends ProcessorOutbound {
 
         WrapperPlayServerPlayerPositionAndLook packet = new WrapperPlayServerPlayerPositionAndLook(event);
         data.getTeleportData().trackTeleport(packet.getTeleportId());
-        pingData.trackTeleport(packet.getTeleportId());
+        movementData.trackTeleport(packet);
+        pingData.teleportSent(packet.getTeleportId());
         event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
     }
 }

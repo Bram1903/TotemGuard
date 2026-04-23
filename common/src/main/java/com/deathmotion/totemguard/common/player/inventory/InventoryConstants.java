@@ -18,8 +18,20 @@
 
 package com.deathmotion.totemguard.common.player.inventory;
 
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemType;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import com.github.retrooper.packetevents.protocol.mapper.MappedEntitySet;
+import com.github.retrooper.packetevents.protocol.recipe.RecipeDisplayEntry;
+import com.github.retrooper.packetevents.protocol.recipe.RecipeDisplayId;
+import com.github.retrooper.packetevents.protocol.recipe.category.RecipeBookCategories;
+import com.github.retrooper.packetevents.protocol.recipe.display.ShapedCraftingRecipeDisplay;
+import com.github.retrooper.packetevents.protocol.recipe.display.slot.EmptySlotDisplay;
+import com.github.retrooper.packetevents.protocol.recipe.display.slot.ItemStackSlotDisplay;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
+
+import java.util.List;
 
 public class InventoryConstants {
     public static final int PLAYER_WINDOW_ID = 0;
@@ -46,4 +58,38 @@ public class InventoryConstants {
     public static final int HOTBAR_END = 44;
 
     public static final int SLOT_OFFHAND = 45;
+
+    public static final ItemStack RECIPE_PROBE_INGREDIENT_STACK = ItemStack.builder()
+            .type(ItemTypes.OAK_LOG)
+            .amount(1)
+            .build();
+
+    public static final ItemStack RECIPE_PROBE_RESULT_STACK = ItemStack.builder()
+            .type(ItemTypes.OAK_PLANKS)
+            .amount(4)
+            .build();
+
+    public static final ItemStackSlotDisplay RECIPE_PROBE_INGREDIENT_SLOT = new ItemStackSlotDisplay(RECIPE_PROBE_INGREDIENT_STACK);
+
+    public static final ItemStackSlotDisplay RECIPE_PROBE_RESULT_SLOT = new ItemStackSlotDisplay(RECIPE_PROBE_RESULT_STACK);
+
+    public static final ShapedCraftingRecipeDisplay RECIPE_PROBE_DISPLAY = new ShapedCraftingRecipeDisplay(
+            1,
+            1,
+            List.of(RECIPE_PROBE_INGREDIENT_SLOT),
+            RECIPE_PROBE_RESULT_SLOT,
+            EmptySlotDisplay.INSTANCE
+    );
+
+    public static final MappedEntitySet<ItemType> RECIPE_PROBE_INGREDIENT_SET = new MappedEntitySet<>(List.of(ItemTypes.OAK_LOG));
+
+    public static RecipeDisplayEntry createRecipeProbeEntry(RecipeDisplayId recipeId) {
+        return new RecipeDisplayEntry(
+                recipeId,
+                RECIPE_PROBE_DISPLAY,
+                null,
+                RecipeBookCategories.CRAFTING_BUILDING_BLOCKS,
+                List.of(RECIPE_PROBE_INGREDIENT_SET)
+        );
+    }
 }

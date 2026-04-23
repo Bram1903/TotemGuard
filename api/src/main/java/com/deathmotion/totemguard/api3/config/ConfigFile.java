@@ -46,7 +46,12 @@ public enum ConfigFile {
     /**
      * Client mod detection configuration.
      */
-    MODS("mods.yml");
+    MODS("mods.yml"),
+
+    /**
+     * Discord webhook configuration.
+     */
+    DISCORD("discord.yml");
 
     private final String fileName;
 

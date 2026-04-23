@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
@@ -43,6 +44,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     private final PacketInventory inventory;
     private final PacketLatencyHandler latencyHandler;
     private final GuiManager guiManager;
+    private final InventoryRecipeTracker recipeTracker;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
@@ -50,150 +52,150 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         this.inventory = player.getInventory();
         this.latencyHandler = player.getLatencyHandler();
         this.guiManager = TGPlatform.getInstance().getGuiManager();
+        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
-        final PacketTypeCommon packetType = event.getPacketType();
+        final PacketTypeCommon type = event.getPacketType();
 
-        if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
-            WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
-            if (guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
-                ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
-                List<ItemStack> items = packet.getItems().stream()
-                        .map(this::copyItemStack)
-                        .toList();
+        if (type == PacketType.Play.Server.WINDOW_ITEMS) handleWindowItems(event);
+        else if (type == PacketType.Play.Server.OPEN_WINDOW) handleOpenWindow(event);
+        else if (type == PacketType.Play.Server.OPEN_HORSE_WINDOW) handleOpenHorseWindow(event);
+        else if (type == PacketType.Play.Server.CLOSE_WINDOW) handleCloseWindow(event);
+        else if (type == PacketType.Play.Server.RECIPE_BOOK_ADD) recipeTracker.handleRecipeAdd(event);
+        else if (type == PacketType.Play.Server.RECIPE_BOOK_REMOVE) recipeTracker.handleRecipeRemove(event);
+        else if (type == PacketType.Play.Server.RECIPE_BOOK_SETTINGS) recipeTracker.handleServerSettings(event);
+        else if (type == PacketType.Play.Server.SET_PLAYER_INVENTORY) handleSetPlayerInventory(event);
+        else if (type == PacketType.Play.Server.SET_SLOT) handleSetSlot(event);
+        else if (type == PacketType.Play.Server.SET_CURSOR_ITEM) handleSetCursorItem(event);
+    }
 
-                trackAfterSend(event, timestamp -> {
-                    if (carriedItem != null) {
-                        inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, timestamp);
-                    }
+    private void handleWindowItems(PacketSendEvent event) {
+        WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
+        final int windowId = packet.getWindowId();
+        final int stateId = packet.getStateId();
+        final ItemStack carried = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
+        final List<ItemStack> items = packet.getItems().stream().map(this::copyItemStack).toList();
+        final boolean isGui = guiManager.isGuiWindow(event.getUser(), windowId);
 
-                    if (items.size() < 36) {
-                        return;
-                    }
-
-                    inventory.setOpenWindow(packet.getWindowId(), items.size() - 36);
-                    syncExternalPlayerSection(packet.getWindowId(), items, timestamp);
-                });
-                return;
+        schedule(event, isGui, timestamp -> {
+            if (carried != null) {
+                inventory.setCarriedItem(carried, -1, Issuer.SERVER, timestamp);
             }
 
-            ItemStack carriedItem = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
-            List<ItemStack> items = packet.getItems().stream()
-                    .map(this::copyItemStack)
-                    .toList();
-
-            latencyHandler.compensate(event, timestamp -> {
-                if (carriedItem != null) {
-                    inventory.setCarriedItem(carriedItem, -1, Issuer.SERVER, timestamp);
-                }
-
-                if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
-                    inventory.setPlayerWindowStateId(packet.getStateId());
-                    inventory.resetOpenWindow();
-
-                    for (int slot = 0; slot < items.size(); slot++) {
-                        inventory.setItem(slot, items.get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
-                    }
-                    return;
-                }
-
-                if (items.size() < 36) {
-                    return;
-                }
-
-                inventory.setOpenWindow(packet.getWindowId(), items.size() - 36);
-                syncExternalPlayerSection(packet.getWindowId(), items, timestamp);
-            });
-        } else if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
-            WrapperPlayServerOpenWindow packet = new WrapperPlayServerOpenWindow(event);
-
-            latencyHandler.compensate(event, timestamp -> {
-                inventory.setOpenWindow(packet.getContainerId(), -1);
-                data.setOpenInventory(true);
-                data.setServerOpenedInventoryThisTick(true);
-            });
-        } else if (packetType == PacketType.Play.Server.OPEN_HORSE_WINDOW) {
-            WrapperPlayServerOpenHorseWindow packet = new WrapperPlayServerOpenHorseWindow(event);
-
-            latencyHandler.compensate(event, timestamp -> {
-                inventory.setOpenWindow(packet.getWindowId(), packet.getSlotCount());
-                data.setOpenInventory(true);
-                data.setServerOpenedInventoryThisTick(true);
-            });
-        } else if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
-            latencyHandler.compensate(event, timestamp -> {
+            // GUI windows are never PLAYER_WINDOW_ID; they get the external-window sync path.
+            if (!isGui && windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+                inventory.setPlayerWindowStateId(stateId);
                 inventory.resetOpenWindow();
-                data.setOpenInventory(false);
-
-                if (data.isInventoryMitigated()) {
-                    data.setInventoryMitigated(false);
-                    data.setInventoryMitigatedThisTick(true);
-
-                    // This sends a close window packet on behalf of the client,
-                    // so the server can potentially close open chests, and prevents compatibility issues.
-                    // This packet gets sent to the server, AFTER we have confirmed the close window packet
-                    // has been processed by the client.
-                    // We only sent this packet if we were the ones closing the inventory because of mitigation
-                    event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
+                for (int slot = 0; slot < items.size(); slot++) {
+                    inventory.setItem(slot, items.get(slot), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
                 }
-            });
-        } else if (packetType == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
-            WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-            int slot = packet.getSlot();
-            ItemStack stack = copyItemStack(packet.getStack());
-
-            latencyHandler.compensate(event, timestamp ->
-                    inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
-        } else if (packetType == PacketType.Play.Server.SET_SLOT) {
-            WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-            if (guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
-                ItemStack item = copyItemStack(packet.getItem());
-                trackAfterSend(event, timestamp -> {
-                    int mappedSlot = inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
-                    if (mappedSlot >= 0) {
-                        inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
-                    }
-                });
                 return;
             }
 
-            ItemStack item = copyItemStack(packet.getItem());
+            if (items.size() < 36) return;
 
-            latencyHandler.compensate(event, timestamp -> {
-                if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
-                    inventory.setPlayerWindowStateId(packet.getStateId());
-                    inventory.setItem(packet.getSlot(), item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
-                    return;
-                }
+            inventory.setOpenWindow(windowId, items.size() - 36);
+            syncExternalPlayerSection(windowId, items, timestamp);
+        });
+    }
 
-                int mappedSlot = inventory.mapContainerSlotToPlayerSlot(packet.getWindowId(), packet.getSlot());
-                if (mappedSlot >= 0) {
-                    inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
-                }
-            });
-        } else if (packetType == PacketType.Play.Server.SET_CURSOR_ITEM) {
-            if (guiManager.hasSession(event.getUser())) {
-                ItemStack stack = copyItemStack(new WrapperPlayServerSetCursorItem(event).getStack());
-                trackAfterSend(event, timestamp -> inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
+    private void handleOpenWindow(PacketSendEvent event) {
+        WrapperPlayServerOpenWindow packet = new WrapperPlayServerOpenWindow(event);
+        final int containerId = packet.getContainerId();
+        latencyHandler.compensate(event, () -> {
+            inventory.setOpenWindow(containerId, -1);
+            data.setOpenInventory(true);
+            data.setServerOpenedInventoryThisTick(true);
+        });
+    }
+
+    private void handleOpenHorseWindow(PacketSendEvent event) {
+        WrapperPlayServerOpenHorseWindow packet = new WrapperPlayServerOpenHorseWindow(event);
+        final int windowId = packet.getWindowId();
+        final int slotCount = packet.getSlotCount();
+        latencyHandler.compensate(event, () -> {
+            inventory.setOpenWindow(windowId, slotCount);
+            data.setOpenInventory(true);
+            data.setServerOpenedInventoryThisTick(true);
+        });
+    }
+
+    private void handleCloseWindow(PacketSendEvent event) {
+        latencyHandler.compensate(event, () -> {
+            inventory.resetOpenWindow();
+            data.setOpenInventory(false);
+
+            if (!data.isInventoryMitigated()) return;
+
+            data.setInventoryMitigated(false);
+            data.setInventoryMitigatedThisTick(true);
+
+            // If we initiated the close (mitigation), relay a client close-window packet to the server
+            // so any server-side container (chest, anvil, etc.) also closes. Sent after the client has
+            // confirmed the close to avoid compatibility issues.
+            event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
+        });
+    }
+
+    private void handleSetPlayerInventory(PacketSendEvent event) {
+        WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
+        final int slot = packet.getSlot();
+        final ItemStack stack = copyItemStack(packet.getStack());
+
+        latencyHandler.compensate(event, timestamp ->
+                inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
+    }
+
+    private void handleSetSlot(PacketSendEvent event) {
+        WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
+        final int windowId = packet.getWindowId();
+        final int slot = packet.getSlot();
+        final int stateId = packet.getStateId();
+        final ItemStack item = copyItemStack(packet.getItem());
+        final boolean isGui = guiManager.isGuiWindow(event.getUser(), windowId);
+
+        schedule(event, isGui, timestamp -> {
+            if (!isGui && windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+                inventory.setPlayerWindowStateId(stateId);
+                inventory.setItem(slot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
                 return;
             }
 
-            WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
-            ItemStack stack = copyItemStack(packet.getStack());
+            int mappedSlot = inventory.mapContainerSlotToPlayerSlot(windowId, slot);
+            if (mappedSlot >= 0) {
+                inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+            }
+        });
+    }
 
-            latencyHandler.compensate(event, timestamp ->
-                    inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
+    private void handleSetCursorItem(PacketSendEvent event) {
+        WrapperPlayServerSetCursorItem packet = new WrapperPlayServerSetCursorItem(event);
+        final ItemStack stack = copyItemStack(packet.getStack());
+        final boolean isGui = guiManager.hasSession(event.getUser());
+
+        schedule(event, isGui, timestamp ->
+                inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
+    }
+
+    /**
+     * GUI windows are rendered by TotemGuard itself, so state must be applied in lockstep with the
+     * packet actually going out to the client (no latency compensation). Real server windows need
+     * latency-compensated application so our tracker moves in sync with the client's own tick
+     * that processes the packet.
+     */
+    private void schedule(PacketSendEvent event, boolean isGui, LongConsumer apply) {
+        if (isGui) {
+            trackAfterSend(event, apply);
+        } else {
+            latencyHandler.compensate(event, apply);
         }
     }
 
     private void trackAfterSend(PacketSendEvent event, LongConsumer callback) {
-        if (event.isCancelled()) {
-            return;
-        }
-
+        if (event.isCancelled()) return;
         event.getTasksAfterSend().add(() -> callback.accept(event.getTimestamp()));
     }
 
@@ -201,9 +203,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         int playerSectionStart = items.size() - 36;
         for (int index = 0; index < 36; index++) {
             int mappedSlot = inventory.mapContainerSlotToPlayerSlot(windowId, playerSectionStart + index);
-            if (mappedSlot < 0) {
-                continue;
-            }
+            if (mappedSlot < 0) continue;
 
             inventory.setItem(mappedSlot, items.get(playerSectionStart + index), Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
         }

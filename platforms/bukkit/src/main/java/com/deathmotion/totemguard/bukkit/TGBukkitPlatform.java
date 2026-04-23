@@ -53,7 +53,7 @@ public class TGBukkitPlatform extends TGPlatform {
         this.scheduler = new BukkitScheduler(plugin);
 
         this.senderFactory = Lazy.of(BukkitSenderFactory::new);
-        this.platformUserFactory = Lazy.of(BukkitPlatformUserFactory::new);
+        this.platformUserFactory = Lazy.of(() -> new BukkitPlatformUserFactory(plugin));
 
         this.commandManager = Lazy.of(() -> {
             LegacyPaperCommandManager<Sender> manager = new LegacyPaperCommandManager<>(

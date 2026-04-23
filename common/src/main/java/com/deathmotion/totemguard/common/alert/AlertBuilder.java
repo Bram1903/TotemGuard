@@ -28,44 +28,30 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class AlertBuilder {
+
+    private static final String UNSPECIFIED_DEBUG = "Not specified";
 
     private AlertBuilder() {
     }
 
     public static Component build(CheckImpl check, int violations, @Nullable String debugInfo) {
         MessageService messageService = TGPlatform.getInstance().getMessageService();
-
-        Map<String, Object> extras = new LinkedHashMap<>();
-        extras.put("tg_check_violations", violations);
-        extras.put("tg_check_debug", debugInfo == null ? "Not specified" : debugInfo);
-
-        Component alert = messageService.getComponent(
-                MessagesKeys.ALERTS_MESSAGE,
-                check.player,
-                check,
-                extras
+        Map<String, Object> extras = Map.of(
+                "tg_check_violations", violations,
+                "tg_check_debug", debugInfo == null ? UNSPECIFIED_DEBUG : debugInfo
         );
 
-        String hoverText = messageService.getString(
-                MessagesKeys.ALERTS_HOVER,
-                check.player,
-                check,
-                extras
-        ).stripTrailing();
+        Component alert = messageService.getComponent(MessagesKeys.ALERTS_MESSAGE, check.player, check, extras);
+
+        String hoverText = messageService.getString(MessagesKeys.ALERTS_HOVER, check.player, check, extras).stripTrailing();
         if (!hoverText.isBlank()) {
             alert = alert.hoverEvent(HoverEvent.showText(MessageUtil.formatMessage(hoverText)));
         }
 
-        String command = messageService.getString(
-                MessagesKeys.ALERTS_COMMAND,
-                check.player,
-                check,
-                extras
-        );
+        String command = messageService.getString(MessagesKeys.ALERTS_COMMAND, check.player, check, extras);
         if (!command.isBlank()) {
             alert = alert.clickEvent(ClickEvent.runCommand(command));
         }

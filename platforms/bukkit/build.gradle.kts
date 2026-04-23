@@ -33,9 +33,9 @@ tasks {
     )
 
     val sharedPlugins = runPaper.downloadPluginsSpec {
-        url("https://ci.codemc.io/job/retrooper/job/packetevents/835/artifact/build/libs/packetevents-spigot-2.12.0-SNAPSHOT.jar")
-        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.8.1/ViaVersion-5.8.1.jar")
-        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.8.1/ViaBackwards-5.8.1.jar")
+        url("https://cdn.modrinth.com/data/HYKaKraK/versions/ap8qHs7D/packetevents-spigot-2.12.1.jar")
+        url("https://github.com/ViaVersion/ViaVersion/releases/download/5.9.0/ViaVersion-5.9.0.jar")
+        url("https://github.com/ViaVersion/ViaBackwards/releases/download/5.9.0/ViaBackwards-5.9.0.jar")
         url("https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/2.12.2/PlaceholderAPI-2.12.2.jar")
         //url("https://cdn.modrinth.com/data/LJNGWSvH/versions/D5qyTffF/grimac-bukkit-2.3.74-d1b2135.jar")
     }

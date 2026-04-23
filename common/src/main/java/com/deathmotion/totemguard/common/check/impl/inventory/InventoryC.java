@@ -21,50 +21,45 @@ package com.deathmotion.totemguard.common.check.impl.inventory;
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
 
-@CheckData(description = "Impossible click time difference", type = CheckType.INVENTORY)
+@RequiresTickEnd
+@CheckData(description = "Inventory interaction without open inventory", type = CheckType.INVENTORY)
 public class InventoryC extends CheckImpl implements PacketCheck {
 
-    private static final int LEFT_CLICK = 0;
-    private static final int RIGHT_CLICK = 1;
-
-    private long lastLeftClick = -1;
-    private long lastRightClick = -1;
+    private final InventoryRecipeTracker recipeTracker;
 
     public InventoryC(TGPlayer player) {
         super(player);
+        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
-        if (packetType != PacketType.Play.Client.CLICK_WINDOW) return;
+        if (!recipeTracker.isAwaitingVisualConfirmation()) return;
 
-        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-        if (packet.getWindowClickType() != WrapperPlayClientClickWindow.WindowClickType.PICKUP) return;
-
-        int button = packet.getButton();
-        if (button != LEFT_CLICK && button != RIGHT_CLICK) return;
-
-        long lastClickTime = button == LEFT_CLICK ? lastLeftClick : lastRightClick;
-
-        if (lastClickTime != -1) {
-            if ((event.getTimestamp() - lastClickTime) < 5) {
-                fail();
+        if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
+            WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
+                return;
             }
-        }
 
-        if (button == LEFT_CLICK) {
-            lastLeftClick = event.getTimestamp();
-        } else {
-            lastRightClick = event.getTimestamp();
+            failInventory("click");
+        } else if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
+            WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
+            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
+                return;
+            }
+
+            fail("close");
         }
     }
-
 }

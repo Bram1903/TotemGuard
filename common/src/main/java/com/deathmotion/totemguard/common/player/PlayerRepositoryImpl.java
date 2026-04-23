@@ -44,6 +44,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
     private final CacheRepositoryImpl cacheRepository;
 
     private final ConcurrentMap<User, TGPlayer> players = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, TGPlayer> playersByUuid = new ConcurrentHashMap<>();
     private final Collection<UUID> exemptUsers = ConcurrentHashMap.newKeySet();
 
     public PlayerRepositoryImpl() {
@@ -53,7 +54,12 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     public void onLoginPacket(final @NotNull User user) {
         if (!shouldCheck(user, null)) return;
-        players.put(user, new TGPlayer(user));
+        TGPlayer player = new TGPlayer(user);
+        players.put(user, player);
+        UUID uuid = user.getUUID();
+        if (uuid != null) {
+            playersByUuid.put(uuid, player);
+        }
     }
 
     public void onLogin(final @NotNull User user) {
@@ -66,6 +72,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         final TGPlayer player = players.get(user);
 
         if (player != null) {
+            playersByUuid.putIfAbsent(uuid, player);
             player.onLogin();
             enableAlerts(uuid, player.getPlatformUser());
         } else {
@@ -102,6 +109,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         platform.getAlertRepository().removeUser(uuid);
 
         final TGPlayer player = players.remove(user);
+        playersByUuid.remove(uuid);
         if (player == null) return;
         platform.getEventRepository().post(new TGUserQuitEventImpl(player));
         player.onLogout();
@@ -109,7 +117,11 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     public void removeUser(final @NotNull User user) {
         players.remove(user);
-        clearExempt(user.getUUID());
+        UUID uuid = user.getUUID();
+        if (uuid != null) {
+            playersByUuid.remove(uuid);
+        }
+        clearExempt(uuid);
     }
 
     public @Nullable TGPlayer getPlayer(final @NotNull User user) {
@@ -151,23 +163,11 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
     @Override
     public @Nullable TGUser getUser(final @NotNull UUID uuid) {
-        for (User user : players.keySet()) {
-            if (user.getUUID().equals(uuid)) {
-                return players.get(user);
-            }
-        }
-
-        return null;
+        return playersByUuid.get(uuid);
     }
 
     public @Nullable TGPlayer getPlayer(final @NotNull UUID uuid) {
-        for (User user : players.keySet()) {
-            if (user.getUUID().equals(uuid)) {
-                return players.get(user);
-            }
-        }
-
-        return null;
+        return playersByUuid.get(uuid);
     }
 
     public @NotNull Collection<TGPlayer> getPlayers() {
