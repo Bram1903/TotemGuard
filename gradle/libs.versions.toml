@@ -14,7 +14,7 @@ bstats = "3.1.0"
 lettuce = "7.5.0.RELEASE"
 
 placeholderapi = "2.11.7"
-grim-api = "1.3.0.0"
+grim-api = "1.3.1.0"
 
 run-paper = "3.0.2"
 spongeGradle = "2.3.0"
