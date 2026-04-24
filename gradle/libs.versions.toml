@@ -12,6 +12,8 @@ cloud-core = "2.0.0"
 cloud-platform = "2.0.0-beta.14"
 bstats = "3.1.0"
 lettuce = "7.5.0.RELEASE"
+hikaricp = "6.2.1"
+mysql-jdbc = "9.1.0"
 
 placeholderapi = "2.11.7"
 grim-api = "1.3.1.0"
@@ -42,6 +44,8 @@ bstats-bungeecord = { group = "org.bstats", name = "bstats-bungeecord", version.
 bstats-velocity = { group = "org.bstats", name = "bstats-velocity", version.ref = "bstats" }
 bstats-sponge = { group = "org.bstats", name = "bstats-sponge", version.ref = "bstats" }
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
+mysql-jdbc = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql-jdbc" }
 
 placeholderapi = { group = "me.clip", name = "placeholderapi", version.ref = "placeholderapi" }
 grim-api = { group = "ac.grim.grimac", name = "GrimAPI", version.ref = "grim-api" }

@@ -149,6 +149,60 @@ public final class ConfigKeys {
                     true
             );
 
+    public static final ConfigValueKey<Boolean> DATABASE_ENABLED =
+            ConfigValueKey.required(
+                    "database.enabled",
+                    false
+            );
+
+    public static final ConfigValueKey<String> DATABASE_HOST =
+            ConfigValueKey.required(
+                    "database.host",
+                    "localhost"
+            );
+
+    public static final ConfigValueKey<Integer> DATABASE_PORT =
+            ConfigValueKey.required(
+                    "database.port",
+                    3306
+            );
+
+    public static final ConfigValueKey<String> DATABASE_DATABASE =
+            ConfigValueKey.required(
+                    "database.database",
+                    "totemguard"
+            );
+
+    public static final ConfigValueKey<String> DATABASE_USERNAME =
+            ConfigValueKey.required(
+                    "database.username",
+                    "root"
+            );
+
+    public static final ConfigValueKey<String> DATABASE_PASSWORD =
+            ConfigValueKey.required(
+                    "database.password",
+                    "password"
+            );
+
+    public static final ConfigValueKey<String> DATABASE_PARAMETERS =
+            ConfigValueKey.required(
+                    "database.parameters",
+                    ""
+            );
+
+    public static final ConfigValueKey<Integer> DATABASE_RETENTION_ALERT_DAYS =
+            ConfigValueKey.required(
+                    "database.retention.alerts-days",
+                    0
+            );
+
+    public static final ConfigValueKey<Integer> DATABASE_RETENTION_VPN_DAYS =
+            ConfigValueKey.required(
+                    "database.retention.vpn-cache-days",
+                    30
+            );
+
     private ConfigKeys() {
     }
 }

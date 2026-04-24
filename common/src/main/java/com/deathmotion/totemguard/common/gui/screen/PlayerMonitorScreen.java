@@ -49,6 +49,11 @@ public final class PlayerMonitorScreen extends GuiScreen {
     }
 
     @Override
+    public String requiredPermission() {
+        return "TotemGuardV3.Gui.Monitor";
+    }
+
+    @Override
     public Set<GuiSubscriptionKey> subscriptionKeys() {
         return Set.of(GuiSubscriptionKey.monitor(targetId));
     }

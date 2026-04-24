@@ -16,35 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.gui;
+package com.deathmotion.totemguard.common.database.model;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Set;
-
-public abstract class GuiScreen {
-
-    public abstract GuiRenderResult render(GuiSession session);
-
-    /**
-     * Permission node the viewer must hold to open this screen.
-     *
-     * <p>Returning {@code null} means the screen is open to anyone who already
-     * reached the navigation path. The {@link GuiManager} enforces this on
-     * {@code open}, {@code pushScreen} and {@code replaceScreen} — screens
-     * that lack permission are never rendered.</p>
-     */
-    public @Nullable String requiredPermission() {
-        return null;
-    }
-
-    public Set<GuiSubscriptionKey> subscriptionKeys() {
-        return Set.of();
-    }
-
-    public void onOpen(GuiSession session) {
-    }
-
-    public void onClose(GuiSession session) {
-    }
+/**
+ * Read projection of an alert plus any session context we can LEFT JOIN.
+ *
+ * <p>Session-derived fields ({@code clientBrand}, {@code clientVersion}) are
+ * nullable because (a) a flag can fire before the session row has inserted,
+ * and (b) sessions are cascade-nulled when their alerts outlive them.</p>
+ */
+public record AlertRecord(
+        long id,
+        String checkName,
+        String serverName,
+        int violations,
+        @Nullable String debug,
+        @Nullable Integer keepalivePing,
+        @Nullable Integer transactionPing,
+        @Nullable String clientBrand,
+        @Nullable Integer clientVersion,
+        long createdAt
+) {
 }

@@ -8,8 +8,15 @@
 # The version of the checks file. DO NOT TOUCH!!!
 config_version: 1
 
-# This command placeholder can be used by using %default_punishment% as a punishment command.
-default-punishment: "ban %tg_player% Unfair Advantage"
+# Every punishment command must declare its *type* via a leading tag:
+#   [BAN]     - removes the player from the server / network
+#   [KICK]    - disconnects the player from this server
+#   [GENERIC] - any other command (announcements, logs, webhooks, ...)
+# An untagged command is treated as GENERIC. The type is persisted alongside
+# the dispatched command so /tg profile can show punishment history cleanly.
+
+# Shortcut used by checks below as %default_punishment%.
+default-punishment: "[BAN] ban %tg_player% Unfair Advantage"
 
 AutoTotemA:
   enabled: true
@@ -100,7 +107,7 @@ TickA:
   max-violations: 1
 
   punishment-commands:
-    - "kick %tg_player% Packet Manipulation"
+    - "[KICK] kick %tg_player% Packet Manipulation"
 
 TickB:
   enabled: true
@@ -108,7 +115,7 @@ TickB:
   max-violations: 1
 
   punishment-commands:
-    - "kick %tg_player% Packet Manipulation"
+    - "[KICK] kick %tg_player% Packet Manipulation"
 
 TickC:
   enabled: true
@@ -116,7 +123,7 @@ TickC:
   max-violations: 1
 
   punishment-commands:
-    - "kick %tg_player% Packet Manipulation"
+    - "[KICK] kick %tg_player% Packet Manipulation"
 
 ManualTotemA:
   enabled: true

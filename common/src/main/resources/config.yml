@@ -70,3 +70,31 @@ cache:
   local:
     # Maximum amount of local fallback entries kept in-memory.
     max-entries: 10000
+
+# Persists alerts, sessions and punishments to an external MySQL-compatible
+# database (MySQL 8+ or MariaDB). All writes happen off the main and netty
+# threads. Multiple TotemGuard instances can share the same database — each
+# row is tagged with the server identifier above.
+database:
+  # Enable database persistence. When disabled, no tables are touched and
+  # the plugin behaves exactly as before.
+  enabled: false
+
+  host: localhost
+  port: 3306
+  database: totemguard
+  username: root
+  password: password
+  # Extra JDBC parameters appended to the connection URL.
+  # Example: useSSL=false&serverTimezone=UTC
+  parameters: ""
+
+  # Retention only applies to the high-volume tables below. Players,
+  # sessions, catalog rows and *punishments* are kept forever — they're
+  # your moderation history.
+  retention:
+    # Delete alerts older than this many days. 0 = keep forever.
+    alerts-days: 0
+    # Drop cached VPN lookups older than this many days so stale API
+    # responses don't pile up indefinitely.
+    vpn-cache-days: 30

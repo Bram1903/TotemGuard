@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.event.impl.TGUserPunishEvent;
 import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
+import com.deathmotion.totemguard.api3.punishment.PunishmentType;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
@@ -85,7 +86,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             ));
             if (event.isCancelled()) return;
 
-            if (!executePunishment(check)) {
+            if (!executePunishment(check, debug)) {
                 platform.getLogger().warning(
                         "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
                 );
@@ -105,14 +106,14 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         return check.isPunishable() && violations >= check.getMaxViolations();
     }
 
-    private boolean executePunishment(CheckImpl check) {
-        List<String> commands = check.getPunishCommands().isEmpty()
-                ? List.of("%default_punishment%")
+    private boolean executePunishment(CheckImpl check, @Nullable String debug) {
+        List<PunishmentCommand> commands = check.getPunishCommands().isEmpty()
+                ? List.of(PunishmentCommand.parse("%default_punishment%"))
                 : check.getPunishCommands();
         int dispatchedCommands = 0;
 
-        for (String command : commands) {
-            String processedCommand = command.replace("%default_punishment%", defaultPunishment).trim();
+        for (PunishmentCommand command : commands) {
+            String processedCommand = command.raw().replace("%default_punishment%", defaultPunishment).trim();
             if (processedCommand.isEmpty()) {
                 continue;
             }
@@ -125,6 +126,12 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
                 platform.dispatchCommand(processed);
                 dispatchedCommands++;
+                // Only KICK/BAN are persisted as punishments — GENERIC
+                // commands (announcements, logging, webhooks) still run
+                // but would pollute the punishment history with non-actions.
+                if (command.type() != PunishmentType.GENERIC) {
+                    recordPunishment(check, command.type(), processed, debug);
+                }
             } catch (Exception exception) {
                 platform.getLogger().log(
                         Level.WARNING,
@@ -135,5 +142,18 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         }
 
         return dispatchedCommands > 0;
+    }
+
+    private void recordPunishment(CheckImpl check, PunishmentType type, String dispatched, @Nullable String debug) {
+        TGPlayer player = check.player;
+        platform.getDatabaseRepository().recordPunishment(
+                player.getDatabaseSessionId(),
+                player.getDatabasePlayerId(),
+                check.getName(),
+                type,
+                dispatched,
+                debug,
+                System.currentTimeMillis()
+        );
     }
 }

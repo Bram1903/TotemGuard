@@ -37,8 +37,11 @@ tasks.withType<ShadowJar>().configureEach {
     relocate("org.reactivestreams", "com.deathmotion.totemguard.common.libs.reactivestreams")
     relocate("reactor", "com.deathmotion.totemguard.common.libs.reactor")
     relocate("redis.clients", "com.deathmotion.totemguard.common.libs.redisclients")
+    relocate("com.zaxxer.hikari", "com.deathmotion.totemguard.common.libs.hikari")
     relocate("com.google.errorprone.annotations", "com.deathmotion.totemguard.common.libs.errorprone.annotations")
     relocate("org.jspecify.annotations", "com.deathmotion.totemguard.common.libs.jspecify.annotations")
+
+    mergeServiceFiles()
 
     minimize {
         exclude(dependency("com.github.ben-manes.caffeine:caffeine:.*"))

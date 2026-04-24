@@ -91,6 +91,23 @@ public class TGPlayer implements TGUser {
     @Setter()
     private String clientBrand;
 
+    /**
+     * Surrogate tg_players.id resolved on login, or {@code 0} while
+     * unresolved / when the database is disabled. Alerts carry this as a
+     * 4-byte int instead of a 16-byte UUID.
+     */
+    @Setter
+    private volatile int databasePlayerId;
+
+    /**
+     * Database session id for this login, or {@code null} while the session
+     * row has not been inserted yet (or when the database is disabled).
+     * Alerts attach to this so per-session history reconstruction is cheap.
+     */
+    @Setter
+    @Nullable
+    private volatile Long databaseSessionId;
+
     @Setter
     @Nullable
     private Long lastTotemUse;
@@ -171,11 +188,48 @@ public class TGPlayer implements TGUser {
             hasLoggedIn = true;
             checkManager.getPacketCheck(Mod.class).handle();
             platform.getAntiVPNRepository().validateConnection(this);
+            startDatabaseSession();
         });
     }
 
     public void onLogout() {
-        platform.getScheduler().runAsyncTask(this::cacheData);
+        platform.getScheduler().runAsyncTask(() -> {
+            cacheData();
+            endDatabaseSession();
+        });
+    }
+
+    private void startDatabaseSession() {
+        if (!platform.getDatabaseRepository().isConnected()) return;
+        try {
+            Integer clientVersionId = user.getClientVersion() == null
+                    ? null
+                    : user.getClientVersion().getProtocolVersion();
+            long[] result = platform.getDatabaseRepository().startSession(
+                    uuid,
+                    user.getName(),
+                    clientBrand,
+                    clientVersionId,
+                    System.currentTimeMillis()
+            );
+            this.databasePlayerId = (int) result[0];
+            this.databaseSessionId = result[1];
+        } catch (Exception ex) {
+            platform.getLogger().warning(
+                    "Failed to open database session for " + user.getName() + ": " + ex.getMessage());
+        }
+    }
+
+    private void endDatabaseSession() {
+        Long sessionId = this.databaseSessionId;
+        if (sessionId == null) return;
+        if (!platform.getDatabaseRepository().isConnected()) return;
+        try {
+            platform.getDatabaseRepository().endSession(sessionId, System.currentTimeMillis());
+        } catch (Exception ex) {
+            platform.getLogger().warning(
+                    "Failed to close database session for " + user.getName() + ": " + ex.getMessage());
+        }
     }
 
     public void triggerInventoryEvent() {

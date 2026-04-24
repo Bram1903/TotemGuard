@@ -33,6 +33,7 @@ public class ReloadService {
         platform.getConfigRepository().reloadAll();
         platform.getMessageService().reload();
         platform.getRedisRepository().restart();
+        platform.getDatabaseRepository().restart();
         platform.getCacheRepository().reload();
         platform.getPunishmentRepository().reload();
         platform.getAntiVPNRepository().reload();

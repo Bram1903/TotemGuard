@@ -18,6 +18,9 @@
 
 package com.deathmotion.totemguard.common.gui;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.player.User;
 
@@ -118,6 +121,19 @@ public final class GuiSession {
 
     public synchronized boolean hasParent() {
         return screenStack.size() > 1;
+    }
+
+    /**
+     * Checks whether the viewer holds the given permission. Screens use this
+     * to hide navigation tiles the viewer can't actually open, which keeps
+     * the UI honest — nothing is shown that leads to a denial message.
+     */
+    public boolean hasPermission(String permission) {
+        if (permission == null) return true;
+        PlatformUserCreation creation = TGPlatform.getInstance().getPlatformUserFactory().create(viewerId);
+        if (creation == null) return false;
+        PlatformUser viewer = creation.getPlatformUser();
+        return viewer != null && viewer.hasPermission(permission);
     }
 
     public synchronized int nextStateId() {

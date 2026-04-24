@@ -89,7 +89,23 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
         bufferChatAlert(check, violations, debug);
-        // TODO: wire database persistence handler off the same async path.
+        // Database persistence is non-blocking: recordAlert only enqueues to the
+        // in-memory writer buffer, never touches JDBC on the caller thread.
+        // Ping values are sampled here (main/netty thread) so the row reflects
+        // the player's actual latency when the flag fired, not whatever the DB
+        // writer thread happens to observe later.
+        int keepalivePing = check.player.getPingData().getKeepAlivePing();
+        int transactionPing = check.player.getPingData().getTransactionPing();
+        platform.getDatabaseRepository().recordAlert(
+                check.player.getDatabaseSessionId(),
+                check.player.getDatabasePlayerId(),
+                check.getName(),
+                violations,
+                debug,
+                keepalivePing >= 0 ? keepalivePing : null,
+                transactionPing >= 0 ? transactionPing : null,
+                System.currentTimeMillis()
+        );
         platform.getScheduler().runAsyncTask(() -> {
             platform.getDiscordWebhookService().sendAlert(check, violations, debug);
             punishmentRepository.punish(check, violations, debug);

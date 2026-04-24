@@ -45,6 +45,11 @@ public final class TotemGuardInfoScreen extends GuiScreen {
     }
 
     @Override
+    public String requiredPermission() {
+        return "TotemGuardV3.Gui.Info";
+    }
+
+    @Override
     public GuiRenderResult render(GuiSession session) {
         return page == 0 ? renderOverview() : renderRuntime(session);
     }

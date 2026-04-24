@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.config.ConfigSection;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.punishment.PunishmentCommand;
 import lombok.Getter;
 
 import java.util.List;
@@ -35,7 +36,7 @@ public class CheckOptions {
     private static final boolean DEFAULT_PUNISHABLE = false;
     private static final boolean DEFAULT_MITIGATE = false;
     private static final int DEFAULT_MAX_VIOLATIONS = 1;
-    private static final List<String> DEFAULT_PUNISH_COMMANDS = List.of("%default_punishment%");
+    private static final List<String> DEFAULT_PUNISH_COMMANDS_RAW = List.of("%default_punishment%");
 
     // Only these checks actually act on "mitigate" (close-window mitigation in CheckImpl#failInventory).
     // Keeping the allowlist here avoids silently surfacing a config key that would be a no-op elsewhere.
@@ -46,7 +47,7 @@ public class CheckOptions {
     private final boolean punishable;
     private final boolean mitigate;
     private final int maxViolations;
-    private final List<String> punishCommands;
+    private final List<PunishmentCommand> punishCommands;
 
     public CheckOptions(String checkName) {
         this.checkName = checkName;
@@ -68,7 +69,7 @@ public class CheckOptions {
             this.punishable = DEFAULT_PUNISHABLE;
             this.mitigate = DEFAULT_MITIGATE;
             this.maxViolations = DEFAULT_MAX_VIOLATIONS;
-            this.punishCommands = DEFAULT_PUNISH_COMMANDS;
+            this.punishCommands = parsePunishCommands(DEFAULT_PUNISH_COMMANDS_RAW);
             return;
         }
 
@@ -78,7 +79,13 @@ public class CheckOptions {
         this.punishable = readBoolean(section, "punishable", DEFAULT_PUNISHABLE);
         this.mitigate = readMitigate(section, checkName);
         this.maxViolations = Math.max(1, readInt(section, "max-violations", DEFAULT_MAX_VIOLATIONS));
-        this.punishCommands = readStringList(section, "punishment-commands", DEFAULT_PUNISH_COMMANDS);
+        this.punishCommands = parsePunishCommands(
+                readStringList(section, "punishment-commands", DEFAULT_PUNISH_COMMANDS_RAW)
+        );
+    }
+
+    private static List<PunishmentCommand> parsePunishCommands(List<String> raw) {
+        return raw.stream().map(PunishmentCommand::parse).toList();
     }
 
     private boolean readMitigate(ConfigSection section, String checkName) {

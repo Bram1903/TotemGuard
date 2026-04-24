@@ -20,8 +20,12 @@ package com.deathmotion.totemguard.common.gui;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
+import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -67,6 +71,12 @@ public final class GuiManager {
             return false;
         }
 
+        String required = screen.requiredPermission();
+        if (required != null && !sender.hasPermission(required)) {
+            sender.sendMessage(deniedMessage(required));
+            return false;
+        }
+
         UUID viewerId = user.getUUID();
         close(viewerId, false);
 
@@ -83,6 +93,9 @@ public final class GuiManager {
         if (session == null || !isInteractive(session)) {
             return;
         }
+        if (!checkPermission(viewerId, screen)) {
+            return;
+        }
 
         session.push(screen);
         screen.onOpen(session);
@@ -92,6 +105,9 @@ public final class GuiManager {
     public void replaceScreen(UUID viewerId, GuiScreen screen) {
         GuiSession session = sessions.get(viewerId);
         if (session == null || !isInteractive(session)) {
+            return;
+        }
+        if (!checkPermission(viewerId, screen)) {
             return;
         }
 
@@ -104,6 +120,31 @@ public final class GuiManager {
         session.push(screen);
         screen.onOpen(session);
         render(session, true);
+    }
+
+    /**
+     * Resolves the viewer as a {@link PlatformUser} and checks the screen's
+     * permission. Sends a denial message on failure so the click doesn't look
+     * like a no-op.
+     */
+    private boolean checkPermission(UUID viewerId, GuiScreen screen) {
+        String required = screen.requiredPermission();
+        if (required == null) return true;
+
+        PlatformUserCreation creation = platform.getPlatformUserFactory().create(viewerId);
+        if (creation == null) return false;
+
+        PlatformUser viewer = creation.getPlatformUser();
+        if (viewer.hasPermission(required)) return true;
+
+        viewer.sendMessage(deniedMessage(required));
+        return false;
+    }
+
+    private static Component deniedMessage(String permission) {
+        return Component.text("You lack the permission ", NamedTextColor.RED)
+                .append(Component.text(permission, NamedTextColor.YELLOW))
+                .append(Component.text(" to open that screen.", NamedTextColor.RED));
     }
 
     public void back(UUID viewerId) {

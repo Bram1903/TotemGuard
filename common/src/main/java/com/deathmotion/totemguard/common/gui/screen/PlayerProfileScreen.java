@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.gui.screen;
 import com.deathmotion.totemguard.api3.check.Check;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.gui.screen.history.PlayerHistoryHubScreen;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
@@ -42,6 +43,11 @@ public final class PlayerProfileScreen extends GuiScreen {
     public PlayerProfileScreen(UUID targetId, String fallbackName) {
         this.targetId = targetId;
         this.fallbackName = fallbackName;
+    }
+
+    @Override
+    public String requiredPermission() {
+        return "TotemGuardV3.Gui.Profile";
     }
 
     @Override
@@ -89,7 +95,7 @@ public final class PlayerProfileScreen extends GuiScreen {
         ));
 
         builder.set(12, GuiItems.simple(
-                ItemTypes.BOOK,
+                ItemTypes.NAME_TAG,
                 Component.text("General", NamedTextColor.AQUA),
                 List.of(
                         GuiText.line("Client version", target.getClientVersion().getReleaseName()),
@@ -114,26 +120,39 @@ public final class PlayerProfileScreen extends GuiScreen {
                 )
         ));
 
-        builder.set(22, GuiItems.simple(
-                session.viewerId().equals(target.getUuid()) ? ItemTypes.BARRIER : ItemTypes.CHEST,
-                Component.text(
-                        session.viewerId().equals(target.getUuid()) ? "Self Monitor Disabled" : "Open Monitor",
-                        session.viewerId().equals(target.getUuid()) ? NamedTextColor.RED : NamedTextColor.GOLD
-                ),
-                session.viewerId().equals(target.getUuid())
-                        ? List.of(Component.text("Monitoring your own inventory is disabled", NamedTextColor.GRAY))
-                        : List.of(
-                        Component.text("View the live packet inventory", NamedTextColor.GRAY),
-                        Component.text("and watch updates in-place", NamedTextColor.GRAY)
-                )
-        ), ctx -> {
-            if (ctx.session().viewerId().equals(target.getUuid())) {
-                ctx.message(Component.text("You cannot monitor your own inventory.", NamedTextColor.RED));
-                return;
-            }
+        if (session.hasPermission("TotemGuardV3.Gui.History")) {
+            builder.set(18, GuiItems.simple(
+                    ItemTypes.BOOK,
+                    Component.text("History", NamedTextColor.GOLD),
+                    List.of(
+                            Component.text("Browse this player's alert and", NamedTextColor.GRAY),
+                            Component.text("punishment history from the database.", NamedTextColor.GRAY)
+                    )
+            ), ctx -> ctx.open(new PlayerHistoryHubScreen(target)));
+        }
 
-            ctx.open(new PlayerMonitorScreen(target));
-        });
+        if (session.hasPermission("TotemGuardV3.Gui.Monitor")) {
+            builder.set(22, GuiItems.simple(
+                    session.viewerId().equals(target.getUuid()) ? ItemTypes.BARRIER : ItemTypes.CHEST,
+                    Component.text(
+                            session.viewerId().equals(target.getUuid()) ? "Self Monitor Disabled" : "Open Monitor",
+                            session.viewerId().equals(target.getUuid()) ? NamedTextColor.RED : NamedTextColor.GOLD
+                    ),
+                    session.viewerId().equals(target.getUuid())
+                            ? List.of(Component.text("Monitoring your own inventory is disabled", NamedTextColor.GRAY))
+                            : List.of(
+                            Component.text("View the live packet inventory", NamedTextColor.GRAY),
+                            Component.text("and watch updates in-place", NamedTextColor.GRAY)
+                    )
+            ), ctx -> {
+                if (ctx.session().viewerId().equals(target.getUuid())) {
+                    ctx.message(Component.text("You cannot monitor your own inventory.", NamedTextColor.RED));
+                    return;
+                }
+
+                ctx.open(new PlayerMonitorScreen(target));
+            });
+        }
 
         return builder.build();
     }

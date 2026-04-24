@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
+import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
 import com.deathmotion.totemguard.common.discord.DiscordWebhookService;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
@@ -70,6 +71,7 @@ public abstract class TGPlatform {
     private ConfigRepositoryImpl configRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
     private RedisRepositoryImpl redisRepository;
+    private DatabaseRepositoryImpl databaseRepository;
     private CacheRepositoryImpl cacheRepository;
     private MessageService messageService;
     private EventRepositoryImpl eventRepository;
@@ -117,6 +119,7 @@ public abstract class TGPlatform {
         configRepository = new ConfigRepositoryImpl();
         placeholderRepository = new PlaceholderRepositoryImpl();
         redisRepository = new RedisRepositoryImpl();
+        databaseRepository = new DatabaseRepositoryImpl();
         cacheRepository = new CacheRepositoryImpl();
         messageService = new MessageService();
         eventRepository = new EventRepositoryImpl();
@@ -151,6 +154,7 @@ public abstract class TGPlatform {
     public void commonOnDisable() {
         if (integrationRegistrar != null) integrationRegistrar.disableAll();
         if (redisRepository != null) redisRepository.stop();
+        if (databaseRepository != null) databaseRepository.stop();
         if (guiManager != null) guiManager.shutdown();
         if (discordWebhookService != null) discordWebhookService.shutdown();
     }
