@@ -22,20 +22,8 @@ import com.deathmotion.totemguard.api3.punishment.PunishmentType;
 
 import java.util.Locale;
 
-/**
- * A parsed punishment-commands entry from checks.yml.
- *
- * <p>The raw string kept here still contains placeholders like
- * {@code %tg_player%} and {@code %default_punishment%}; expansion happens at
- * dispatch time.</p>
- */
 public record PunishmentCommand(PunishmentType type, String raw) {
 
-    /**
-     * Parses a single configured command. Recognizes a leading {@code [TYPE]}
-     * tag (case-insensitive); an unknown or missing tag falls back to
-     * {@link PunishmentType#GENERIC} with the original text preserved.
-     */
     public static PunishmentCommand parse(String input) {
         String trimmed = input == null ? "" : input.trim();
         if (!trimmed.startsWith("[")) {
@@ -48,11 +36,9 @@ public record PunishmentCommand(PunishmentType type, String raw) {
         String tag = trimmed.substring(1, end).trim().toUpperCase(Locale.ROOT);
         try {
             PunishmentType type = PunishmentType.valueOf(tag);
-            String rest = trimmed.substring(end + 1).trim();
-            return new PunishmentCommand(type, rest);
+            return new PunishmentCommand(type, trimmed.substring(end + 1).trim());
         } catch (IllegalArgumentException ignored) {
-            // Unknown tag — keep the line verbatim so admins still see it dispatched
-            // rather than silently mangled, but log the type as GENERIC.
+            // Unknown tag — keep the line verbatim, treat as GENERIC.
             return new PunishmentCommand(PunishmentType.GENERIC, trimmed);
         }
     }

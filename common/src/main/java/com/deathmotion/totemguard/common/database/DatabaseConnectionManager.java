@@ -28,15 +28,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.logging.Level;
 
-/**
- * Owns the HikariCP pool connecting to an external MySQL-compatible server
- * (MySQL 8+, MariaDB, etc.).
- *
- * <p>The JDBC driver itself is not bundled in the plugin jar — it's declared
- * as a runtime library in the platform descriptors ({@code plugin.yml} for
- * Paper, {@code velocity-plugin.json} for Velocity), so the server downloads
- * and loads it into the plugin classloader on startup.</p>
- */
 public final class DatabaseConnectionManager {
 
     private static final String DRIVER_CLASS = "com.mysql.cj.jdbc.Driver";
@@ -54,14 +45,10 @@ public final class DatabaseConnectionManager {
         config.setConnectionTimeout(DatabaseOptions.POOL_CONNECTION_TIMEOUT_MS);
         config.setIdleTimeout(DatabaseOptions.POOL_IDLE_TIMEOUT_MS);
         config.setMaxLifetime(DatabaseOptions.POOL_MAX_LIFETIME_MS);
-        // A negative fail-timeout lets the pool come up even when the DB is
-        // temporarily unreachable — Hikari will lazily connect on first borrow
-        // and transparently recreate connections once the server is back.
+        // Lets the pool boot even when the DB is down; Hikari reconnects lazily.
         config.setInitializationFailTimeout(-1);
         config.setDriverClassName(DRIVER_CLASS);
 
-        // MySQL Connector/J speaks to both MySQL and MariaDB over the MySQL
-        // wire protocol, so the same URL + driver cover both backends.
         StringBuilder url = new StringBuilder("jdbc:mysql://")
                 .append(options.getHost())
                 .append(':').append(options.getPort())
@@ -118,14 +105,9 @@ public final class DatabaseConnectionManager {
         try {
             Class.forName(DRIVER_CLASS);
         } catch (ClassNotFoundException ex) {
-            // Driver is declared as a runtime library in plugin.yml /
-            // velocity-plugin.json — a missing class here means the platform
-            // failed to resolve that library (no network, Maven Central down,
-            // etc.). Fail loudly so the admin can fix it.
             throw new IllegalStateException(
                     "MySQL JDBC driver (" + DRIVER_CLASS + ") is not on the classpath. " +
-                            "Make sure the platform's library loader has access to Maven Central, " +
-                            "or install mysql-connector-j into the server's library folder.",
+                            "Install mysql-connector-j on the server or via the platform's library loader.",
                     ex);
         }
     }

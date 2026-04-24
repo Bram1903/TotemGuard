@@ -22,11 +22,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-/**
- * Centralized key builders. The same strings address Redis entries (across a
- * fleet of servers sharing one Redis) and local-only entries on a single
- * server, so collisions between categories are impossible by construction.
- */
 public final class CacheKeys {
 
     private static final String PREFIX = "totemguard:";

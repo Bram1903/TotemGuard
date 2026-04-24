@@ -30,14 +30,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 
-/**
- * Durable store for staff alert-toggle preferences.
- *
- * <p>The cache in front of this handles the hot path; the DB row is the
- * source of truth across process restarts and across the 30-minute cache
- * expiry. Staff who rejoin after being offline for a day pick up exactly
- * the toggle state they left with.</p>
- */
 public final class StaffAlertPrefDao {
 
     private final DatabaseConnectionManager connection;
@@ -47,9 +39,7 @@ public final class StaffAlertPrefDao {
     }
 
     /**
-     * @return {@code null} if this UUID has never toggled alerts on this
-     * network (so the caller should install a default), otherwise
-     * the stored preference.
+     * @return {@code null} if the UUID has no stored preference yet.
      */
     @Blocking
     public @Nullable Boolean find(UUID uuid) throws SQLException {

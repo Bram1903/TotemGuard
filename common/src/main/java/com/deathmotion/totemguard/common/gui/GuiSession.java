@@ -123,11 +123,6 @@ public final class GuiSession {
         return screenStack.size() > 1;
     }
 
-    /**
-     * Checks whether the viewer holds the given permission. Screens use this
-     * to hide navigation tiles the viewer can't actually open, which keeps
-     * the UI honest — nothing is shown that leads to a denial message.
-     */
     public boolean hasPermission(String permission) {
         if (permission == null) return true;
         PlatformUserCreation creation = TGPlatform.getInstance().getPlatformUserFactory().create(viewerId);

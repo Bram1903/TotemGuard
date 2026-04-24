@@ -42,9 +42,6 @@ import java.util.logging.Logger;
 @Getter
 public class AntiVPNRepositoryImpl {
 
-    // VPN responses from the upstream API are relatively stable, but 30 min is
-    // the sweet spot: fresh enough to react to changing exit nodes, long enough
-    // to absorb the reconnect storm of a small server without paying per-join.
     private static final Duration VPN_CACHE_TTL = Duration.ofMinutes(30);
     private final ConfigRepositoryImpl configRepository;
     private final CacheRepositoryImpl cacheRepository;

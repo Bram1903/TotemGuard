@@ -48,23 +48,9 @@ anti-vpn:
   # Whether to block VPN users from joining the server.
   block: true
 
-# Caches hot lookups: VPN API results, staff alert preferences, recent
-# alert/punishment history, distributed punishment locks, and the check
-# violation snapshots that prevent cheaters from dodging VLs via a quick
-# rejoin. Uses Redis when connected, otherwise an in-process cache.
-# Never both at once — so there's no drift between backends.
-cache:
-  # Disable only if you want to force a database hit on every lookup,
-  # which is very rarely what you want.
-  enabled: true
-
-# Persists alerts, sessions and punishments to an external MySQL-compatible
-# database (MySQL 8+ or MariaDB). All writes happen off the main and netty
-# threads. Multiple TotemGuard instances can share the same database — each
-# row is tagged with the server identifier above.
+# MySQL 8+ or MariaDB. Shared across servers; each row is tagged with
+# the server name above.
 database:
-  # Enable database persistence. When disabled, no tables are touched and
-  # the plugin behaves exactly as before.
   enabled: false
 
   host: localhost
@@ -72,16 +58,12 @@ database:
   database: totemguard
   username: root
   password: password
-  # Extra JDBC parameters appended to the connection URL.
-  # Example: useSSL=false&serverTimezone=UTC
+  # Extra JDBC parameters, e.g. useSSL=false&serverTimezone=UTC
   parameters: ""
 
-  # Retention only applies to the high-volume tables below. Players,
-  # sessions, catalog rows and *punishments* are kept forever — they're
-  # your moderation history.
+  # Only alerts and VPN cache are swept. Players, sessions, and punishments
+  # are kept forever.
   retention:
-    # Delete alerts older than this many days. 0 = keep forever.
+    # 0 = keep forever.
     alerts-days: 0
-    # Drop cached VPN lookups older than this many days so stale API
-    # responses don't pile up indefinitely.
     vpn-cache-days: 30

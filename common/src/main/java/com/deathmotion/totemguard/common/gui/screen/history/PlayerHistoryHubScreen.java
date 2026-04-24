@@ -28,11 +28,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Landing screen for player history. Shows two choices — alerts or
- * punishments — plus a player head for context. Each choice opens a
- * paginated list in its own subscreen.
- */
 public final class PlayerHistoryHubScreen extends GuiScreen {
 
     private final UUID targetId;
@@ -120,9 +115,6 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
                 ), ctx -> ctx.open(new PlayerPunishmentsScreen(targetId, targetName, 0)));
             }
         } else {
-            // When the database is disabled or unreachable, skip the DB-backed
-            // tiles entirely. They'd never do anything useful anyway, and no
-            // JDBC call is attempted so nothing ends up in the server log.
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
                     Component.text("Database offline", NamedTextColor.RED),

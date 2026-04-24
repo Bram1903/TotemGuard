@@ -59,9 +59,6 @@ public final class AlertDao {
         return value.substring(0, max);
     }
 
-    /**
-     * Clamps into SMALLINT UNSIGNED range or writes NULL for bogus values.
-     */
     private static void setPing(PreparedStatement stmt, int index, Integer value) throws SQLException {
         if (value == null || value < 0) {
             stmt.setNull(index, Types.SMALLINT);
@@ -70,19 +67,11 @@ public final class AlertDao {
         stmt.setInt(index, Math.min(value, 65_535));
     }
 
-    /**
-     * Reads a nullable integer column into boxed {@link Integer} for AlertRecord.
-     */
     private static Integer readNullableInt(ResultSet rs, String column) throws SQLException {
         int v = rs.getInt(column);
         return rs.wasNull() ? null : v;
     }
 
-    /**
-     * Inserts a batch of alerts as one transaction. Called from the writer
-     * thread only — callers must never invoke this from the main or netty
-     * thread.
-     */
     @Blocking
     public void insertBatch(List<PendingAlert> batch) throws SQLException {
         if (batch.isEmpty()) return;
@@ -116,20 +105,11 @@ public final class AlertDao {
         }
     }
 
-    /**
-     * Deletes alerts older than {@code cutoffEpochMs} in chunks of
-     * {@code chunkSize}, returning the total rows removed. Chunking prevents
-     * long-held row locks on huge tables.
-     */
     @Blocking
     public long deleteOlderThan(long cutoffEpochMs, int chunkSize) throws SQLException {
         return deleteOldChunked(Sql.DELETE_OLD_ALERTS, cutoffEpochMs, chunkSize);
     }
 
-    /**
-     * Same as {@link #deleteOlderThan(long, int)} but for the VPN cache —
-     * kept here so retention sweeps share one pool connection pattern.
-     */
     @Blocking
     public long deleteOldVpnCacheEntries(long cutoffEpochMs, int chunkSize) throws SQLException {
         return deleteOldChunked(Sql.DELETE_OLD_VPN_CACHE, cutoffEpochMs, chunkSize);

@@ -24,25 +24,16 @@ import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import lombok.Getter;
 
-/**
- * Snapshot of database-related configuration.
- *
- * <p>Pool sizing, batching cadence and sweep scheduling are intentionally
- * not surfaced in config.yml — the hardcoded defaults are tuned to behave
- * well from tiny servers up to million-alert/day deployments. Only the
- * connection details and retention windows are user-facing.</p>
- */
 @Getter
 public final class DatabaseOptions {
 
-    // Connection pool — safe defaults for any server size.
     public static final int POOL_MAX_SIZE = 10;
     public static final int POOL_MIN_IDLE = 2;
     public static final int POOL_CONNECTION_TIMEOUT_MS = 5_000;
     public static final int POOL_IDLE_TIMEOUT_MS = 60_000;
     public static final int POOL_MAX_LIFETIME_MS = 1_800_000;
 
-    // Alert writer batching — 100 rows or 1s, whichever comes first.
+    // Flush whichever comes first.
     public static final int BATCH_MAX_SIZE = 100;
     public static final int BATCH_FLUSH_INTERVAL_MS = 1_000;
     public static final int BATCH_QUEUE_CAPACITY = 10_000;

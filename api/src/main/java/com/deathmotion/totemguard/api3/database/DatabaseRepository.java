@@ -18,22 +18,9 @@
 
 package com.deathmotion.totemguard.api3.database;
 
-/**
- * Public, read-only view of the TotemGuard database layer.
- *
- * <p>TotemGuard persists history to an external MySQL-compatible database
- * (MySQL 8+ or MariaDB). This interface exists today for feature-gating and
- * status reporting</p>
- */
 public interface DatabaseRepository {
 
-    /**
-     * @return whether database persistence is enabled in the configuration
-     */
     boolean isEnabled();
 
-    /**
-     * @return a best-effort snapshot of whether the connection pool is alive
-     */
     boolean isConnected();
 }

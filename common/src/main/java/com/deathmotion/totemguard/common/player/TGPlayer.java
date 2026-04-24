@@ -69,9 +69,6 @@ import java.util.UUID;
 @Getter
 public class TGPlayer implements TGUser {
 
-    // 5 minutes mirrors the original behaviour: long enough for a typical
-    // ragequit-and-rejoin, short enough that stale buffers don't hang around
-    // for a week if the player never comes back.
     private static final Duration CHECK_SNAPSHOT_TTL = Duration.ofMinutes(5);
     private final TGPlatform platform;
     private final UUID uuid;
@@ -94,16 +91,12 @@ public class TGPlayer implements TGUser {
     @Setter()
     private String clientBrand;
     /**
-     * Surrogate tg_players.id resolved on login, or {@code 0} while
-     * unresolved / when the database is disabled. Alerts carry this as a
-     * 4-byte int instead of a 16-byte UUID.
+     * 0 while unresolved or when the database is disabled.
      */
     @Setter
     private volatile int databasePlayerId;
     /**
-     * Database session id for this login, or {@code null} while the session
-     * row has not been inserted yet (or when the database is disabled).
-     * Alerts attach to this so per-session history reconstruction is cheap.
+     * null while unresolved or when the database is disabled.
      */
     @Setter
     @Nullable

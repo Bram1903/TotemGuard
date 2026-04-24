@@ -27,24 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /**
- * Deletes historical rows that have aged out of their retention window.
- *
- * <p>Only two tables are ever swept:</p>
- * <ul>
- *   <li>{@code tg_alerts} — configurable, default is to keep forever.</li>
- *   <li>{@code tg_vpn_cache} — short-lived lookup cache that should not pile
- *       up indefinitely; defaults to 30 days so the VPN API responses stay
- *       reasonably fresh.</li>
- * </ul>
- *
- * <p>Players, sessions, catalog rows and punishments are intentionally
- * permanent — they're the moderation record and are small enough that
- * keeping them forever costs nothing meaningful.</p>
+ * Periodically deletes aged-out alert and VPN cache rows.
  */
 public final class RetentionSweeper {
 
-    // Sweep cadence and chunk size aren't user-facing knobs — these defaults
-    // are safe for everything from tiny networks to million-alert databases.
     private static final long INITIAL_DELAY_SECONDS = TimeUnit.MINUTES.toSeconds(1);
     private static final long PERIOD_SECONDS = TimeUnit.HOURS.toSeconds(6);
     private static final int DELETE_CHUNK_SIZE = 10_000;

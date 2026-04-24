@@ -19,11 +19,7 @@ dependencies {
 }
 
 tasks {
-    // Relocate the MySQL driver on Velocity only. Paper ships mysql-connector-j
-    // in its library loader so the Bukkit jar doesn't bundle (and doesn't need
-    // to relocate) the driver. Velocity has no such loader, so we shade it —
-    // and must relocate it to avoid colliding with any other proxy plugin that
-    // also bundles its own copy of the driver at the canonical package.
+    // Relocate to avoid clashing with other proxy plugins bundling the driver.
     withType<ShadowJar>().configureEach {
         relocate("com.mysql", "com.deathmotion.totemguard.common.libs.mysql")
     }

@@ -18,14 +18,6 @@
 
 package com.deathmotion.totemguard.common.cache;
 
-/**
- * Round-trip serializer for a cached value type.
- *
- * <p>The cache layer only speaks bytes, so consumers bring a codec to each
- * call. That keeps the wire format honest (nothing accidentally relies on
- * Java serialization) and lets us swap Redis and local backends without the
- * data shape changing between them.</p>
- */
 public interface Codec<V> {
 
     byte[] encode(V value) throws Exception;

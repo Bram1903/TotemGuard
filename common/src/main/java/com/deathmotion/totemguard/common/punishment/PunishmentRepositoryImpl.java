@@ -46,10 +46,6 @@ import java.util.logging.Level;
 
 public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadable {
 
-    // Short TTL — punishment commands should complete well inside a minute.
-    // The lock exists only to prevent the double-punish race between servers
-    // sharing a Redis; if it outlives the actual command for some reason,
-    // the Redis key falls off on its own.
     private static final Duration LOCK_TTL = Duration.ofSeconds(60);
 
     private final TGPlatform platform;
@@ -58,8 +54,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     private final ConfigRepositoryImpl configRepository;
     private final PlaceholderRepositoryImpl placeholderRepository;
 
-    // Fast in-process guard against two threads on the same JVM racing into
-    // the same punishment. The distributed side lives behind the cache key.
+    // Same-JVM guard; the cross-server guard lives in the cache key.
     private final Set<UUID> inFlightPunishments = ConcurrentHashMap.newKeySet();
 
     private String defaultPunishment;
@@ -120,10 +115,6 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
     private boolean tryClaim(UUID uuid) {
         if (!inFlightPunishments.add(uuid)) return false;
-        // When Redis is offline the cache falls back to in-process storage,
-        // and in single-server mode the putIfAbsent on the local backend is
-        // effectively the same guard the in-flight set provides. Either way
-        // we only proceed if we actually got the key.
         boolean claimed = cacheRepository.putIfAbsent(
                 CacheKeys.punishLock(uuid),
                 System.currentTimeMillis(),
@@ -165,9 +156,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
                 platform.dispatchCommand(processed);
                 dispatchedCommands++;
-                // Only KICK/BAN are persisted as punishments — GENERIC
-                // commands (announcements, logging, webhooks) still run
-                // but would pollute the punishment history with non-actions.
+                // GENERIC commands are dispatched but not persisted.
                 if (command.type() != PunishmentType.GENERIC) {
                     recordPunishment(check, command.type(), processed, debug);
                 }

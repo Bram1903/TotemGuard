@@ -18,9 +18,6 @@
 
 package com.deathmotion.totemguard.common.cache;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.backend.LocalCacheBackend;
 import com.deathmotion.totemguard.common.cache.backend.RedisCacheBackend;
@@ -30,72 +27,34 @@ import java.time.Duration;
 import java.util.logging.Level;
 
 /**
- * Unified cache facade. Every call routes to exactly one backend:
- * Redis when it's available, the in-process store otherwise. This plugin
- * never double-writes, so the two backends cannot drift.
- *
- * <p>The repository is intentionally value-type-agnostic — callers supply a
- * {@link Codec} at every call. That keeps all wire formats in one place
- * ({@link CacheCodecs}) instead of scattered across data records, and it
- * makes swapping backends or adding new types a pure additive change.</p>
+ * Routes every call to either Redis or the in-process backend — never both.
  */
 public final class CacheRepositoryImpl {
 
     private final RedisCacheBackend redisBackend;
     private final LocalCacheBackend localBackend;
 
-    private volatile boolean enabled;
-
     public CacheRepositoryImpl() {
         TGPlatform platform = TGPlatform.getInstance();
         this.redisBackend = new RedisCacheBackend(platform.getRedisRepository());
         this.localBackend = new LocalCacheBackend();
-        reload();
     }
 
-    /**
-     * Reloads the enabled flag from config. No TTLs live here — each caller owns its own.
-     */
-    public void reload() {
-        Config config = TGPlatform.getInstance().getConfigRepository().config(ConfigFile.CONFIG);
-        this.enabled = config.getBoolean(ConfigKeys.CACHE_ENABLED);
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    /**
-     * @return whether the currently-selected backend speaks Redis.
-     */
     public boolean isDistributed() {
         return redisBackend.isAvailable();
     }
 
     /**
-     * Fetches the cached value at {@code key} and decodes it through
-     * {@code codec}, returning {@code null} on any miss, decode failure, or
-     * when caching is disabled.
-     *
-     * <p>The TTL is not touched — use {@link #getAndRefresh} when you want
-     * "as long as someone keeps looking at this, keep it warm" semantics.
-     * Plain {@code get} gives you "this entry dies on its original schedule
-     * no matter how many reads happen" — right for history pages that must
-     * refresh on a predictable cadence.</p>
+     * Reads without touching the TTL.
      */
     public <V> @Nullable V get(String key, Codec<V> codec) {
-        if (!enabled) return null;
         return decode(key, backend().get(key), codec);
     }
 
     /**
-     * Like {@link #get} but, on hit, resets the entry's TTL to {@code ttl}
-     * so continued use keeps the cached copy alive. Use for hot lookups
-     * like VPN results and staff toggle state — things a DB query is
-     * expensive to re-materialize.
+     * Reads and, on hit, resets the TTL to {@code ttl}.
      */
     public <V> @Nullable V getAndRefresh(String key, Codec<V> codec, Duration ttl) {
-        if (!enabled) return null;
         return decode(key, backend().getAndRefresh(key, ttl), codec);
     }
 
@@ -111,11 +70,7 @@ public final class CacheRepositoryImpl {
         }
     }
 
-    /**
-     * Stores {@code value} under {@code key} for {@code ttl}. Silently no-ops if caching is off.
-     */
     public <V> void put(String key, V value, Codec<V> codec, Duration ttl) {
-        if (!enabled) return;
         byte[] raw;
         try {
             raw = codec.encode(value);
@@ -128,12 +83,9 @@ public final class CacheRepositoryImpl {
     }
 
     /**
-     * Lock-style write — only installs the value if no row exists.
-     *
-     * @return {@code true} iff this caller claimed the slot
+     * @return {@code true} iff this caller claimed the slot.
      */
     public <V> boolean putIfAbsent(String key, V value, Codec<V> codec, Duration ttl) {
-        if (!enabled) return true;
         byte[] raw;
         try {
             raw = codec.encode(value);
@@ -146,16 +98,10 @@ public final class CacheRepositoryImpl {
     }
 
     public void remove(String key) {
-        if (!enabled) return;
         backend().remove(key);
     }
 
-    /**
-     * Checks presence without decoding. Cheap for key-only questions like
-     * "is there a lock for this uuid".
-     */
     public boolean contains(String key) {
-        if (!enabled) return false;
         return backend().get(key) != null;
     }
 

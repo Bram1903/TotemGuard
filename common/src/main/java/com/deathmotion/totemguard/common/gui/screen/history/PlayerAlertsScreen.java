@@ -38,27 +38,12 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Paginated alerts history for one player.
- *
- * <p>Without a {@code checkName} filter this is the "recent firehose" view —
- * every check mixed together, newest first. With a filter applied only that
- * one check's alerts appear, and the footer picks up a "Clear filter" button
- * so the operator can return to the full view in one click.</p>
- *
- * <p>The database query runs off the main thread during
- * {@link #onOpen(GuiSession)}; while it's in-flight the screen shows a single
- * "Loading…" tile so the player never stares at filler squares.</p>
+ * Paginated alert history, optionally filtered by check name.
  */
 public final class PlayerAlertsScreen extends GuiScreen {
 
     static final int PAGE_SIZE = 21;
-    // Multiple staff viewing the same profile on a busy server shouldn't each
-    // fan out independent DB round-trips — 2 minutes is short enough that new
-    // alerts still surface quickly and long enough that pagination hops don't
-    // repeatedly hit the database.
     private static final Duration HISTORY_TTL = Duration.ofMinutes(2);
-    // Content slots in a 6-row GUI: rows 1..3 of the middle 7 columns.
-    // That gives us PAGE_SIZE = 21 alert tiles per page.
     private static final int[] CONTENT_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
@@ -86,11 +71,6 @@ public final class PlayerAlertsScreen extends GuiScreen {
         this.checkName = checkName;
     }
 
-    /**
-     * Resolves a stored protocol version to its friendly release name when
-     * PacketEvents knows about it, falling back to {@code protocol#N} so old
-     * clients we haven't mapped still show something meaningful.
-     */
     private static String formatClientVersion(Integer protocol) {
         if (protocol == null) return null;
         try {
@@ -99,7 +79,6 @@ public final class PlayerAlertsScreen extends GuiScreen {
                 return cv.getReleaseName();
             }
         } catch (Throwable ignored) {
-            // fall through to raw protocol
         }
         return "protocol " + protocol;
     }
@@ -113,9 +92,6 @@ public final class PlayerAlertsScreen extends GuiScreen {
     public void onOpen(GuiSession session) {
         TGPlatform platform = TGPlatform.getInstance();
 
-        // When the database is disabled or unreachable we don't schedule any
-        // JDBC work — the screen renders an "offline" tile directly so nothing
-        // ends up in the server log.
         if (!platform.getDatabaseRepository().isConnected()) {
             this.loaded = List.of();
             this.totalCount = 0;
@@ -155,9 +131,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
                 cache.put(pageKey, rows, CacheCodecs.ALERT_RECORDS, HISTORY_TTL);
                 cache.put(countKey, total, CacheCodecs.INT, HISTORY_TTL);
             } catch (Exception ex) {
-                // A connection drop between the isConnected() check and the
-                // query is expected and not worth a stack trace — anything
-                // else is a real bug and we want the details.
+                // A drop between isConnected() and the query isn't worth a stack trace.
                 if (!platform.getDatabaseRepository().isConnected()) {
                     this.loaded = List.of();
                     this.totalCount = 0;
@@ -332,12 +306,6 @@ public final class PlayerAlertsScreen extends GuiScreen {
         renderFilterButton(builder);
     }
 
-    /**
-     * Slot 53 holds the filter affordance. On the unfiltered feed it opens
-     * the check picker (so {@code back} still returns to the full feed). On a
-     * filtered feed "Clear filter" pops back to the full feed, and "Change
-     * filter" replaces with the picker to avoid stack growth.
-     */
     private void renderFilterButton(GuiRenderResult.Builder builder) {
         if (checkName == null) {
             builder.set(53, GuiItems.simple(

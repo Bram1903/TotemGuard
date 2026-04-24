@@ -18,14 +18,5 @@
 
 package com.deathmotion.totemguard.common.database.model;
 
-/**
- * One row per distinct check a player has ever flagged, with a cached count
- * so the filter list can show "TickA (42)" without a second query per row.
- *
- * <p>Because the underlying join is keyed by {@code check_id}, renaming or
- * replacing a check in code simply surfaces a new entry here — historical
- * rows keep pointing at the old catalog row and still show up under their
- * old name.</p>
- */
 public record AlertCheckSummary(String checkName, int alertCount) {
 }

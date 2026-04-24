@@ -67,15 +67,8 @@ public final class AlertCommand extends AbstractCommand {
 
         platform.getScheduler().runAsyncTask(() -> {
             UUID uuid = sender.getUniqueId();
-
-            // Cache is the fast path — read on every login, updated here so
-            // the next reconnect within the TTL window doesn't need the DB.
             cacheManager.put(CacheKeys.alertsToggle(uuid),
                     enabled, CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
-
-            // DB is the durable path — it outlives the cache TTL and the
-            // process, so staff preferences survive restarts and rejoins
-            // days later.
             if (platform.getDatabaseRepository().isConnected()) {
                 try {
                     platform.getDatabaseRepository().upsertStaffAlertPref(uuid, enabled);

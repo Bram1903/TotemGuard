@@ -20,13 +20,6 @@ package com.deathmotion.totemguard.common.database.model;
 
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Read projection of an alert plus any session context we can LEFT JOIN.
- *
- * <p>Session-derived fields ({@code clientBrand}, {@code clientVersion}) are
- * nullable because (a) a flag can fire before the session row has inserted,
- * and (b) sessions are cascade-nulled when their alerts outlive them.</p>
- */
 public record AlertRecord(
         long id,
         String checkName,

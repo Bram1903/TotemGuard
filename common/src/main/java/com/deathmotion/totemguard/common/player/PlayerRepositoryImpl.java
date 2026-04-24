@@ -41,9 +41,6 @@ import java.util.concurrent.ConcurrentMap;
 public final class PlayerRepositoryImpl implements UserRepository {
 
     private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass";
-    // Staff toggle preference follows them across reconnects for 30 min,
-    // which covers the typical "dc and rejoin" without surviving a full
-    // shift change. Anything longer is served from the database.
     private static final Duration ALERTS_TOGGLE_TTL = Duration.ofMinutes(30);
     private final TGPlatform platform;
     private final CacheRepositoryImpl cacheRepository;
@@ -98,15 +95,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
     }
 
     /**
-     * Three-tier lookup for the staff member's remembered toggle state:
-     *
-     * <ol>
-     *   <li>Cache — fast, shared across servers when Redis is connected.</li>
-     *   <li>Database — authoritative across restarts and across the cache TTL.
-     *       On hit, rehydrates the cache for the next reconnect.</li>
-     *   <li>First-time default: alerts on. Persisted to both cache and DB so
-     *       subsequent logins respect whatever the player toggles from here.</li>
-     * </ol>
+     * Cache → DB → first-time default (on).
      */
     private boolean resolveAlertsEnabled(UUID uuid) {
         Boolean cached = cacheRepository.getAndRefresh(
@@ -127,7 +116,6 @@ public final class PlayerRepositoryImpl implements UserRepository {
             }
         }
 
-        // Never seen before — opt staff in by default.
         boolean firstTimeDefault = true;
         cacheRepository.put(CacheKeys.alertsToggle(uuid), firstTimeDefault,
                 CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);

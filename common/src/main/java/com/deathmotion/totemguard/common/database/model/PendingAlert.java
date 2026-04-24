@@ -20,18 +20,6 @@ package com.deathmotion.totemguard.common.database.model;
 
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Immutable row sitting in the alert writer queue.
- *
- * <p>{@code sessionId} is nullable for rare cases where a flag fires before
- * the session row has finished inserting — in that path we still record the
- * alert with the player context so history queries remain accurate, just
- * without the session linkage.</p>
- *
- * <p>The two ping values are captured from the player at flag-time so the
- * history view can show latency context per-alert rather than "whatever the
- * player's ping is right now".</p>
- */
 public record PendingAlert(
         @Nullable Long sessionId,
         int playerId,

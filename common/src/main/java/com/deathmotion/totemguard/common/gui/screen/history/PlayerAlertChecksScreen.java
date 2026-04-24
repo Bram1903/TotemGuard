@@ -35,21 +35,12 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Alphabetical list of every distinct check this player has ever flagged.
- * Picked when the operator wants to drill into one check's worth of alerts
- * instead of scrolling the full firehose.
- *
- * <p>Names come from {@code tg_checks}, which is permanent — renaming or
- * removing a check in code doesn't break this screen. Old alerts keep
- * surfacing under their original name, and a renamed check shows up as a
- * separate entry. That's fine: the history reads "what actually happened
- * at the time", not "what the check is called today".</p>
+ * Alphabetical list of every check this player has ever flagged.
  */
 public final class PlayerAlertChecksScreen extends GuiScreen {
 
     static final int PAGE_SIZE = 28;
     private static final Duration HISTORY_TTL = Duration.ofMinutes(2);
-    // 4 content rows × 7 center columns of a 6-row GUI = 28 tiles.
     private static final int[] CONTENT_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,

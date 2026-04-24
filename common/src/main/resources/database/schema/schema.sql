@@ -1,13 +1,5 @@
--- TotemGuardV3 schema — MySQL / MariaDB dialect.
---
--- Player, server and check names are stored once in their respective catalog
--- tables and referenced by small surrogate integer ids everywhere else. This
--- keeps the hot tables (tg_alerts, tg_sessions) narrow — 4-byte ints instead
--- of 16-byte BINARY UUIDs per row — which matters when millions of alert rows
--- accumulate across a fleet of servers.
---
--- Timestamps are BIGINT epoch milliseconds so range scans and retention
--- sweeps are index-friendly without timezone ambiguity.
+-- TotemGuardV3 schema — MySQL / MariaDB.
+-- Timestamps are BIGINT epoch milliseconds.
 
 CREATE TABLE IF NOT EXISTS tg_schema_version (
     id           TINYINT UNSIGNED NOT NULL,
@@ -66,9 +58,6 @@ CREATE TABLE IF NOT EXISTS tg_alerts (
     check_id          SMALLINT UNSIGNED NOT NULL,
     violations        INT UNSIGNED NOT NULL,
     debug             VARCHAR(512),
-    -- Per-alert context captured from the player at the moment of the flag.
-    -- Nullable so early-login flags that fire before the ping sampler has
-    -- warmed up don't fabricate misleading numbers.
     keepalive_ping    SMALLINT UNSIGNED,
     transaction_ping  SMALLINT UNSIGNED,
     created_at        BIGINT NOT NULL,
@@ -84,10 +73,7 @@ CREATE TABLE IF NOT EXISTS tg_alerts (
     CONSTRAINT fk_tg_alerts_server  FOREIGN KEY (server_id)  REFERENCES tg_servers(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;
 
--- Punishments executed by TotemGuard. Never swept by retention — this is
--- permanent moderation history used by /tg profile and mod-kick tooling.
--- Each row captures the *intent* (type: 0=GENERIC, 1=KICK, 2=BAN)
--- alongside the expanded command string that was actually dispatched.
+-- type: 0=GENERIC (not persisted), 1=KICK, 2=BAN. Never swept.
 CREATE TABLE IF NOT EXISTS tg_punishments (
     id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     session_id   BIGINT UNSIGNED,
@@ -109,8 +95,7 @@ CREATE TABLE IF NOT EXISTS tg_punishments (
     CONSTRAINT fk_tg_punishments_server  FOREIGN KEY (server_id)  REFERENCES tg_servers(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;
 
--- Staff toggle preferences are intentionally decoupled from tg_players so
--- staff can opt in on a fresh install before they've ever been seen here.
+-- Decoupled from tg_players so staff prefs survive DB resets.
 CREATE TABLE IF NOT EXISTS tg_staff_alert_prefs (
     player_uuid     BINARY(16) NOT NULL,
     alerts_enabled  TINYINT UNSIGNED NOT NULL,

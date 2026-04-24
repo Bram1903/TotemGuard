@@ -32,16 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Wire-format central. Every value cached in either backend flows through a
- * codec defined here. Keeping them co-located makes version bumps obvious —
- * if you change a format, every consumer sees the same change.
- *
- * <p>Formats are hand-rolled binary (length-prefixed UTF-8 strings, fixed
- * primitives) rather than JSON or Java serialization. It's ~half the size
- * and decodes faster, at the cost of breaking on format changes — which is
- * fine for ephemeral cache data: the next read just misses and repopulates.</p>
- */
 public final class CacheCodecs {
 
     public static final Codec<Boolean> BOOLEAN = new Codec<>() {
@@ -56,7 +46,6 @@ public final class CacheCodecs {
         }
     };
 
-    // --- primitives ---------------------------------------------------------
     public static final Codec<Long> LONG = new Codec<>() {
         @Override
         public byte[] encode(Long value) throws Exception {
@@ -99,7 +88,6 @@ public final class CacheCodecs {
         }
     };
 
-    // --- list<T> helper -----------------------------------------------------
     public static final Codec<List<AlertRecord>> ALERT_RECORDS = new Codec<>() {
         @Override
         public byte[] encode(List<AlertRecord> list) throws Exception {
@@ -226,7 +214,6 @@ public final class CacheCodecs {
         return in.readBoolean() ? readUtf8(in) : null;
     }
 
-    // --- domain codecs ------------------------------------------------------
 
     private static void writeNullableInt(DataOutputStream out, Integer value) throws Exception {
         if (value == null) {

@@ -128,11 +128,6 @@ public final class GuiManager {
         render(session, true);
     }
 
-    /**
-     * Resolves the viewer as a {@link PlatformUser} and checks the screen's
-     * permission. Sends a denial message on failure so the click doesn't look
-     * like a no-op.
-     */
     private boolean checkPermission(UUID viewerId, GuiScreen screen) {
         String required = screen.requiredPermission();
         if (required == null) return true;

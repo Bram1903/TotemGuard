@@ -30,16 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 /**
- * Single-threaded batched writer for alert rows.
- *
- * <p>Alert insertion is the hot database path: on a packed server it can fire
- * thousands of times per minute. Doing one INSERT per flag would saturate both
- * the connection pool and the DB itself, so we queue alerts from any thread
- * and flush them in batches from a dedicated worker thread.</p>
- *
- * <p>If the queue fills up (DB is wedged or slow), new alerts are dropped and
- * a warning is logged — this keeps the producer path lock-free and bounded.
- * Cache and chat notifications are unaffected.</p>
+ * Bounded queue + single worker thread that flushes alerts in batches.
+ * When the queue fills up (DB is down or slow) new alerts are dropped.
  */
 public final class AlertWriter {
 
@@ -79,13 +71,11 @@ public final class AlertWriter {
                 Thread.currentThread().interrupt();
             }
         }
-        // Drain anything still buffered so no alert gets silently dropped on shutdown.
         drainAndFlush();
     }
 
     /**
-     * Enqueues an alert for batched insertion. Returns {@code false} if the
-     * queue was full and the alert was dropped.
+     * @return {@code false} if the queue was full and the alert was dropped.
      */
     public boolean submit(PendingAlert alert) {
         if (!running.get()) return false;
@@ -123,7 +113,6 @@ public final class AlertWriter {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Throwable t) {
-                // Don't let an unexpected error kill the writer thread.
                 TGPlatform.getInstance().getLogger().log(Level.SEVERE,
                         "Unexpected error in alert writer loop", t);
             }
@@ -145,11 +134,10 @@ public final class AlertWriter {
 
     private void warnDrop() {
         long now = System.nanoTime();
-        // Rate-limit the warning to one per 10s to avoid log flood.
+        // One warning per 10s — avoids log spam when the DB is down.
         if (now - lastDropWarnNs < TimeUnit.SECONDS.toNanos(10)) return;
         lastDropWarnNs = now;
         TGPlatform.getInstance().getLogger().warning(
-                "TotemGuard database queue is full — dropping alerts. " +
-                        "Increase database.batching.queue-capacity or check DB health.");
+                "TotemGuard database queue is full — dropping alerts. Check DB health.");
     }
 }

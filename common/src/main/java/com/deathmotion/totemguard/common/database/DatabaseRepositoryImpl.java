@@ -39,16 +39,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-/**
- * Entry point into the TotemGuard database layer.
- *
- * <p>Lifecycle mirrors {@code RedisRepositoryImpl}: constructed during
- * {@code commonOnEnable()}, {@link #start()} opens the pool and applies the
- * schema, {@link #restart()} re-reads config + reopens everything, and
- * {@link #stop()} drains pending writes and closes the pool. All database I/O
- * lives on either the writer thread or an async worker — callers on the main
- * or netty thread only ever hit in-memory queues.</p>
- */
 public final class DatabaseRepositoryImpl implements DatabaseRepository {
 
     private static final long RECONNECT_INTERVAL_SECONDS = 60L;
@@ -109,11 +99,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         start();
     }
 
-    /**
-     * Attempts to bring the pool + DAOs online. On failure, leaves state torn
-     * down and returns {@code false} so the caller can schedule a retry.
-     * Never throws — connection failures are expected and handled.
-     */
     private boolean attemptInitialize(DatabaseOptions opts) {
         try {
             connection.start(opts);
@@ -189,9 +174,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     /**
-     * Records a session and returns {@code [playerId, sessionId]} as a long
-     * pair — callers typically want both. Callers must only invoke this off
-     * the main / netty thread.
+     * @return {@code [playerId, sessionId]}. Off main/netty thread only.
      */
     @Blocking
     public long[] startSession(
@@ -222,16 +205,8 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     /**
-     * Non-blocking enqueue of an alert. Safe to call from any thread including
-     * main/netty — it only touches in-memory structures. Resolution of the
-     * check id (which can touch the DB on first sight) happens on the
-     * scheduler, not the caller.
-     *
-     * @param playerId surrogate tg_players.id from the login handshake, or
-     *                 {@code 0} if the session has not finished opening —
-     *                 in which case the alert is silently dropped (the
-     *                 session insert is racing the flag, a rare early-login
-     *                 edge case)
+     * Non-blocking enqueue of an alert. Safe to call from any thread.
+     * Alerts with {@code playerId <= 0} are dropped (session not ready yet).
      */
     public void recordAlert(
             @Nullable Long sessionId,
@@ -264,9 +239,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     /**
-     * Non-blocking enqueue of an executed punishment. Offloads the single
-     * INSERT to the async scheduler — unlike alerts, punishments are rare
-     * enough that dedicated batching would be overkill.
+     * Non-blocking — inserts on the scheduler, no batching.
      */
     public void recordPunishment(
             @Nullable Long sessionId,
@@ -296,11 +269,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         });
     }
 
-    // ------------------------------------------------------------------
-    // Staff alert toggle preference — durable across process restarts and
-    // across the cache's 30-minute TTL.
-    // ------------------------------------------------------------------
-
     @Blocking
     public @Nullable Boolean findStaffAlertPref(UUID uuid) throws SQLException {
         requireEnabled();
@@ -316,12 +284,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         if (prefs == null) throw new SQLException("Database not ready");
         prefs.upsert(uuid, enabled, System.currentTimeMillis());
     }
-
-    // ------------------------------------------------------------------
-    // Read accessors used by the history screens. These run on whatever
-    // thread the caller picked — GUI screens must dispatch them to the
-    // scheduler's async executor before touching them.
-    // ------------------------------------------------------------------
 
     @Blocking
     public List<AlertRecord> findAlertsByPlayer(UUID uuid, int limit, int offset) throws SQLException {

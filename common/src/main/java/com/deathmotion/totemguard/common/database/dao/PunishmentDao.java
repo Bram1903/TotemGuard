@@ -31,12 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Persists a single punishment dispatch. Punishments are rare (capped by
- * {@code max-violations}, distributed lock), so there's no batching — each
- * dispatch writes one row directly from the scheduler async task that
- * triggered it.
- */
 public final class PunishmentDao {
 
     private final DatabaseConnectionManager connection;

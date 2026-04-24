@@ -30,11 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Resolves small surrogate IDs for server names and check names.
- *
- * <p>These mappings are stable for the lifetime of a given string, so they're
- * cached in-memory after the first lookup — the hot write path never hits
- * disk for these. Unknown IDs are inserted on demand.</p>
+ * Resolves and caches server/check name → id mappings.
  */
 public final class CatalogDao {
 

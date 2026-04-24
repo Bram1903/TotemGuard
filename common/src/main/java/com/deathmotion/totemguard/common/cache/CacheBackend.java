@@ -22,35 +22,17 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 
-/**
- * A thin, string-keyed, bytes-valued cache.
- *
- * <p>Two implementations ship:
- * {@link com.deathmotion.totemguard.common.cache.backend.RedisCacheBackend}
- * and {@link com.deathmotion.totemguard.common.cache.backend.LocalCacheBackend}.
- * The {@link CacheRepositoryImpl} picks exactly one at a time based on
- * Redis connectivity — never writes to both — so there's no cross-backend
- * drift to worry about.</p>
- */
 public interface CacheBackend {
 
-    /**
-     * @return {@code true} if this backend is currently usable.
-     */
     boolean isAvailable();
 
     /**
-     * Reads {@code key} without touching its TTL. Suits data where a fixed
-     * cache window matters — history pages, for instance, should refresh
-     * from the source on a predictable cadence regardless of how many times
-     * they're viewed.
+     * Reads without touching the TTL.
      */
     @Nullable byte[] get(String key);
 
     /**
-     * Reads {@code key} and, on hit, resets its TTL to {@code ttl}. Suits
-     * "hot" caches (VPN lookups, staff toggle state, check snapshots) where
-     * continued access should keep the entry alive indefinitely.
+     * Reads and, on hit, resets the TTL to {@code ttl}.
      */
     @Nullable byte[] getAndRefresh(String key, Duration ttl);
 
@@ -59,10 +41,7 @@ public interface CacheBackend {
     void remove(String key);
 
     /**
-     * Attempts to install {@code value} at {@code key} iff nothing is there.
-     *
-     * @return {@code true} when the value was stored, {@code false} if a
-     * row already existed (somebody else holds the lock).
+     * @return {@code true} only if nothing was at {@code key}.
      */
     boolean putIfAbsent(String key, byte[] value, Duration ttl);
 }

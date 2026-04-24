@@ -89,11 +89,7 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
         bufferChatAlert(check, violations, debug);
-        // Database persistence is non-blocking: recordAlert only enqueues to the
-        // in-memory writer buffer, never touches JDBC on the caller thread.
-        // Ping values are sampled here (main/netty thread) so the row reflects
-        // the player's actual latency when the flag fired, not whatever the DB
-        // writer thread happens to observe later.
+        // Sample ping here so the row reflects latency at flag time.
         int keepalivePing = check.player.getPingData().getKeepAlivePing();
         int transactionPing = check.player.getPingData().getTransactionPing();
         platform.getDatabaseRepository().recordAlert(

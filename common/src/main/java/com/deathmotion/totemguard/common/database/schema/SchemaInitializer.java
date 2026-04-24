@@ -32,13 +32,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Applies the bundled schema DDL.
- *
- * <p>DDL statements use {@code CREATE TABLE IF NOT EXISTS}, so this runs
- * safely on every startup. When schema evolution is needed we'll stamp
- * {@code tg_schema_version} and apply migrations conditionally.</p>
- */
 public final class SchemaInitializer {
 
     @Blocking

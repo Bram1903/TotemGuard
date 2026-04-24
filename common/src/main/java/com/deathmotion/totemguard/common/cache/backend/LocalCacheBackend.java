@@ -28,29 +28,19 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * In-process cache backed by a single Guava {@link Cache} plus a ConcurrentHashMap
- * for per-entry expiration.
- *
- * <p>Guava's {@link CacheBuilder} only supports a uniform TTL per cache, but
- * callers bring their own TTL per entry. We store the computed expiry timestamp
- * alongside the bytes and evict at read time — Guava still enforces the
- * bounded-size eviction so memory stays capped.</p>
+ * Guava cache with per-entry TTLs — Guava only supports one TTL per cache,
+ * so we stamp each entry with its own expiry and check at read time.
  */
 public final class LocalCacheBackend implements CacheBackend {
 
-    private static final int DEFAULT_MAX_ENTRIES = 10_000;
+    private static final int MAX_ENTRIES = 10_000;
 
     private final Cache<String, Entry> cache;
-    // Tracks keys that are "reserved" for putIfAbsent correctness. Guava's
-    // asMap().putIfAbsent is atomic enough for our single-JVM semantics.
     private final ConcurrentMap<String, Entry> view;
 
     public LocalCacheBackend() {
         this.cache = CacheBuilder.newBuilder()
-                .maximumSize(DEFAULT_MAX_ENTRIES)
-                // Longest TTL we use is the staff alerts toggle at 30 min, so
-                // a 1-hour hard cap keeps dangling entries out of memory even
-                // if the per-entry expiry check somehow misses.
+                .maximumSize(MAX_ENTRIES)
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build();
         this.view = cache.asMap();
@@ -66,7 +56,6 @@ public final class LocalCacheBackend implements CacheBackend {
         Entry entry = view.get(key);
         if (entry == null) return null;
         if (entry.expired()) {
-            // computeIfPresent avoids clobbering a racing put
             view.computeIfPresent(key, (k, current) -> current.expired() ? null : current);
             return null;
         }
@@ -75,9 +64,6 @@ public final class LocalCacheBackend implements CacheBackend {
 
     @Override
     public @Nullable byte[] getAndRefresh(String key, Duration ttl) {
-        // computeIfPresent lets us read the current value and swap in a
-        // freshly-stamped entry atomically, so concurrent refreshes can't
-        // race each other or a put.
         byte[][] out = new byte[1][];
         view.computeIfPresent(key, (k, current) -> {
             if (current.expired()) return null;
@@ -110,13 +96,9 @@ public final class LocalCacheBackend implements CacheBackend {
             } else if (view.replace(key, current, proposed)) {
                 return true;
             }
-            // another thread raced us — loop and re-check
         }
     }
 
-    /**
-     * Used by tests and reload to start from a clean slate.
-     */
     public void clear() {
         cache.invalidateAll();
     }

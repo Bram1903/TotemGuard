@@ -18,12 +18,6 @@
 
 package com.deathmotion.totemguard.common.database;
 
-/**
- * Central home for the non-trivial MySQL query strings used across DAOs.
- *
- * <p>Ad-hoc single-line SELECTs stay inline with their DAO; upserts and the
- * alert batch insert live here so the exact SQL is easy to find and tune.</p>
- */
 public final class Sql {
 
     public static final String SCHEMA_RESOURCE_PATH = "database/schema/schema.sql";
@@ -85,9 +79,6 @@ public final class Sql {
     public static final String DELETE_OLD_VPN_CACHE =
             "DELETE FROM tg_vpn_cache WHERE cached_at < ? LIMIT ?";
 
-    // History views — joined against tg_checks/tg_servers to surface names
-    // alongside ids. Filter by uuid so callers don't need to resolve the
-    // surrogate player id first.
     public static final String SELECT_ALERTS_BY_UUID =
             "SELECT a.id, c.name AS check_name, s.name AS server_name, " +
                     "       a.violations, a.debug, " +

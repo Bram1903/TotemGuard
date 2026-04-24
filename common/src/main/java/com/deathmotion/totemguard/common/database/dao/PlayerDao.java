@@ -32,12 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Upserts a player row and resolves the tiny surrogate integer id used
- * everywhere else in the schema.
- *
- * <p>uuid→id resolutions are cached so the hot alert/session path never
- * re-queries for an already-seen player. Only the first sight of a player
- * (per plugin process) touches the database on this path.</p>
+ * Upserts a player row and caches the uuid→id mapping in memory.
  */
 public final class PlayerDao {
 

@@ -27,12 +27,7 @@ public abstract class GuiScreen {
     public abstract GuiRenderResult render(GuiSession session);
 
     /**
-     * Permission node the viewer must hold to open this screen.
-     *
-     * <p>Returning {@code null} means the screen is open to anyone who already
-     * reached the navigation path. The {@link GuiManager} enforces this on
-     * {@code open}, {@code pushScreen} and {@code replaceScreen} — screens
-     * that lack permission are never rendered.</p>
+     * @return permission the viewer must hold, or {@code null} for no check.
      */
     public @Nullable String requiredPermission() {
         return null;

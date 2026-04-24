@@ -8,14 +8,9 @@
 # The version of the checks file. DO NOT TOUCH!!!
 config_version: 1
 
-# Every punishment command must declare its *type* via a leading tag:
-#   [BAN]     - removes the player from the server / network
-#   [KICK]    - disconnects the player from this server
-#   [GENERIC] - any other command (announcements, logs, webhooks, ...)
-# An untagged command is treated as GENERIC. The type is persisted alongside
-# the dispatched command so /tg profile can show punishment history cleanly.
+# Tag each command with [BAN], [KICK], or [GENERIC]. Untagged = GENERIC.
+# GENERIC commands are dispatched but not persisted in punishment history.
 
-# Shortcut used by checks below as %default_punishment%.
 default-punishment: "[BAN] ban %tg_player% Unfair Advantage"
 
 AutoTotemA:

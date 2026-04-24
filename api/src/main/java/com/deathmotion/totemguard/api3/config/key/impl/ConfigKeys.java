@@ -88,12 +88,6 @@ public final class ConfigKeys {
                     true
             );
 
-    public static final ConfigValueKey<Boolean> CACHE_ENABLED =
-            ConfigValueKey.required(
-                    "cache.enabled",
-                    true
-            );
-
     public static final ConfigValueKey<Boolean> VPN_ENABLED =
             ConfigValueKey.required(
                     "anti-vpn.enabled",

@@ -23,9 +23,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-/**
- * Helpers for the history screens that are not worth their own class.
- */
 final class HistoryText {
 
     private static final DateTimeFormatter ABSOLUTE = DateTimeFormatter
@@ -35,9 +32,6 @@ final class HistoryText {
     private HistoryText() {
     }
 
-    /**
-     * "3m ago" / "2h ago" / "4d ago" — compact label for the row title.
-     */
     static String relative(long epochMs) {
         long deltaSeconds = Math.max(0, (System.currentTimeMillis() - epochMs) / 1000);
         if (deltaSeconds < 60) return deltaSeconds + "s ago";
@@ -47,9 +41,6 @@ final class HistoryText {
         return (deltaSeconds / 2_592_000) + "mo ago";
     }
 
-    /**
-     * Full yyyy-MM-dd HH:mm timestamp in the server's local timezone.
-     */
     static String absolute(long epochMs) {
         return ABSOLUTE.format(Instant.ofEpochMilli(epochMs));
     }
