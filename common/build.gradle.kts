@@ -12,9 +12,6 @@ dependencies {
     implementation(libs.hikaricp) {
         exclude(group = "org.slf4j")
     }
-    // JDBC driver is provided at runtime by the platform's library loader
-    // (see libraries entry in plugin.yml / velocity-plugin.json), so we only
-    // need it on the compile classpath.
     compileOnly(libs.mysql.jdbc)
     compileOnly(libs.packetevents.api)
     compileOnly(libs.bundles.adventure)
