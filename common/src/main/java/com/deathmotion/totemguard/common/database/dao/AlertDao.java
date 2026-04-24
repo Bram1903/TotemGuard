@@ -81,14 +81,14 @@ public final class AlertDao {
             c.setAutoCommit(false);
             try (PreparedStatement stmt = c.prepareStatement(Sql.INSERT_ALERT)) {
                 for (PendingAlert alert : batch) {
-                    if (alert.sessionId() == null) stmt.setNull(1, Types.BIGINT);
-                    else stmt.setLong(1, alert.sessionId());
+                    if (alert.profileId() == null) stmt.setNull(1, Types.BIGINT);
+                    else stmt.setLong(1, alert.profileId());
                     stmt.setInt(2, alert.playerId());
                     stmt.setInt(3, alert.serverId());
                     stmt.setInt(4, alert.checkId());
                     stmt.setLong(5, alert.violations());
                     if (alert.debug() == null) stmt.setNull(6, Types.VARCHAR);
-                    else stmt.setString(6, truncate(alert.debug(), 512));
+                    else stmt.setString(6, truncate(alert.debug(), 128));
                     setPing(stmt, 7, alert.keepalivePing());
                     setPing(stmt, 8, alert.transactionPing());
                     stmt.setLong(9, alert.createdAt());

@@ -35,6 +35,7 @@ public class CommandManagerImpl {
     public void registerCommands() {
         new TotemGuardCommand().register(commandManager);
         new ProfileCommand().register(commandManager);
+        new HistoryCommand().register(commandManager);
         new MonitorCommand().register(commandManager);
         new ReloadCommand().register(commandManager);
         new AlertCommand().register(commandManager);

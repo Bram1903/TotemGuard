@@ -37,6 +37,17 @@ public final class Sql {
                     "  last_name = VALUES(last_name), " +
                     "  last_seen = VALUES(last_seen)";
 
+    // Minecraft names are unique case-insensitively. utf8mb4_bin collation makes '=' case-sensitive,
+    // so we compare on LOWER(). Full scan is fine — tg_players is small (player count, not alert count).
+    // Order by last_seen DESC so the active holder of a recycled name wins when an old row still lingers.
+    public static final String SELECT_PLAYER_BY_NAME =
+            "SELECT id, uuid, last_name FROM tg_players " +
+                    "WHERE LOWER(last_name) = LOWER(?) " +
+                    "ORDER BY last_seen DESC LIMIT 1";
+
+    public static final String SELECT_PLAYER_BY_UUID =
+            "SELECT id, uuid, last_name FROM tg_players WHERE uuid = ? LIMIT 1";
+
     public static final String UPSERT_STAFF_ALERT_PREF =
             "INSERT INTO tg_staff_alert_prefs (player_uuid, alerts_enabled, updated_at) " +
                     "VALUES (?, ?, ?) " +
@@ -59,19 +70,26 @@ public final class Sql {
 
     public static final String INSERT_ALERT =
             "INSERT INTO tg_alerts " +
-                    "(session_id, player_id, server_id, check_id, violations, debug, " +
+                    "(profile_id, player_id, server_id, check_id, violations, debug, " +
                     " keepalive_ping, transaction_ping, created_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     public static final String INSERT_PUNISHMENT =
             "INSERT INTO tg_punishments " +
-                    "(session_id, player_id, server_id, check_id, type, command, debug, created_at) " +
+                    "(profile_id, player_id, server_id, check_id, type, command, debug, created_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-    public static final String INSERT_SESSION =
-            "INSERT INTO tg_sessions " +
-                    "(player_id, server_id, name, client_brand, client_version, started_at) " +
-                    "VALUES (?, ?, ?, ?, ?, ?)";
+    // NULL-safe lookup: VARCHAR(64) brand and SMALLINT version can both be null.
+    public static final String SELECT_PROFILE_ID =
+            "SELECT id FROM tg_profiles " +
+                    "WHERE player_id = ? AND server_id = ? " +
+                    "  AND client_brand   <=> ? " +
+                    "  AND client_version <=> ? " +
+                    "LIMIT 1";
+
+    public static final String INSERT_PROFILE =
+            "INSERT INTO tg_profiles (player_id, server_id, client_brand, client_version) " +
+                    "VALUES (?, ?, ?, ?)";
 
     public static final String DELETE_OLD_ALERTS =
             "DELETE FROM tg_alerts WHERE created_at < ? LIMIT ?";
@@ -83,13 +101,13 @@ public final class Sql {
             "SELECT a.id, c.name AS check_name, s.name AS server_name, " +
                     "       a.violations, a.debug, " +
                     "       a.keepalive_ping, a.transaction_ping, " +
-                    "       sess.client_brand, sess.client_version, " +
+                    "       prof.client_brand, prof.client_version, " +
                     "       a.created_at " +
                     "FROM tg_alerts a " +
                     "JOIN tg_players p ON a.player_id = p.id " +
                     "JOIN tg_checks  c ON a.check_id  = c.id " +
                     "JOIN tg_servers s ON a.server_id = s.id " +
-                    "LEFT JOIN tg_sessions sess ON a.session_id = sess.id " +
+                    "LEFT JOIN tg_profiles prof ON a.profile_id = prof.id " +
                     "WHERE p.uuid = ? " +
                     "ORDER BY a.created_at DESC " +
                     "LIMIT ? OFFSET ?";
@@ -112,13 +130,13 @@ public final class Sql {
             "SELECT a.id, c.name AS check_name, s.name AS server_name, " +
                     "       a.violations, a.debug, " +
                     "       a.keepalive_ping, a.transaction_ping, " +
-                    "       sess.client_brand, sess.client_version, " +
+                    "       prof.client_brand, prof.client_version, " +
                     "       a.created_at " +
                     "FROM tg_alerts a " +
                     "JOIN tg_players p ON a.player_id = p.id " +
                     "JOIN tg_checks  c ON a.check_id  = c.id " +
                     "JOIN tg_servers s ON a.server_id = s.id " +
-                    "LEFT JOIN tg_sessions sess ON a.session_id = sess.id " +
+                    "LEFT JOIN tg_profiles prof ON a.profile_id = prof.id " +
                     "WHERE p.uuid = ? AND c.name = ? " +
                     "ORDER BY a.created_at DESC " +
                     "LIMIT ? OFFSET ?";

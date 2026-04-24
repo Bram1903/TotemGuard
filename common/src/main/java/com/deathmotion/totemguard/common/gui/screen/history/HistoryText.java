@@ -26,7 +26,7 @@ import java.util.Locale;
 final class HistoryText {
 
     private static final DateTimeFormatter ABSOLUTE = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT)
+            .ofPattern("dd-MM-yyyy HH:mm", Locale.ROOT)
             .withZone(ZoneId.systemDefault());
 
     private HistoryText() {

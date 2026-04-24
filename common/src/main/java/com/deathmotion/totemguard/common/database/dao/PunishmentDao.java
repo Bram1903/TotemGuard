@@ -46,7 +46,7 @@ public final class PunishmentDao {
 
     @Blocking
     public void insert(
-            @Nullable Long sessionId,
+            @Nullable Long profileId,
             int playerId,
             int serverId,
             int checkId,
@@ -57,15 +57,15 @@ public final class PunishmentDao {
     ) throws SQLException {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.INSERT_PUNISHMENT)) {
-            if (sessionId == null) stmt.setNull(1, Types.BIGINT);
-            else stmt.setLong(1, sessionId);
+            if (profileId == null) stmt.setNull(1, Types.BIGINT);
+            else stmt.setLong(1, profileId);
             stmt.setInt(2, playerId);
             stmt.setInt(3, serverId);
             stmt.setInt(4, checkId);
             stmt.setInt(5, type.ordinal());
-            stmt.setString(6, truncate(expandedCommand, 512));
+            stmt.setString(6, truncate(expandedCommand, 256));
             if (debug == null) stmt.setNull(7, Types.VARCHAR);
-            else stmt.setString(7, truncate(debug, 512));
+            else stmt.setString(7, truncate(debug, 128));
             stmt.setLong(8, createdAt);
             stmt.executeUpdate();
         }

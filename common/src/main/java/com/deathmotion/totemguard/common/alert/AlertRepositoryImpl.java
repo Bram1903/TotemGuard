@@ -93,7 +93,7 @@ public class AlertRepositoryImpl implements AlertRepository {
         int keepalivePing = check.player.getPingData().getKeepAlivePing();
         int transactionPing = check.player.getPingData().getTransactionPing();
         platform.getDatabaseRepository().recordAlert(
-                check.player.getDatabaseSessionId(),
+                check.player.getDatabaseProfileId(),
                 check.player.getDatabasePlayerId(),
                 check.getName(),
                 violations,

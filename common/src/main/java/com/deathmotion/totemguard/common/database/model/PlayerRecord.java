@@ -18,17 +18,7 @@
 
 package com.deathmotion.totemguard.common.database.model;
 
-import org.jetbrains.annotations.Nullable;
+import java.util.UUID;
 
-public record PendingAlert(
-        @Nullable Long profileId,
-        int playerId,
-        int serverId,
-        int checkId,
-        int violations,
-        @Nullable String debug,
-        @Nullable Integer keepalivePing,
-        @Nullable Integer transactionPing,
-        long createdAt
-) {
+public record PlayerRecord(int id, UUID uuid, String name) {
 }

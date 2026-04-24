@@ -100,7 +100,7 @@ public class TGPlayer implements TGUser {
      */
     @Setter
     @Nullable
-    private volatile Long databaseSessionId;
+    private volatile Long databaseProfileId;
     @Setter
     @Nullable
     private Long lastTotemUse;
@@ -179,24 +179,21 @@ public class TGPlayer implements TGUser {
             hasLoggedIn = true;
             checkManager.getPacketCheck(Mod.class).handle();
             platform.getAntiVPNRepository().validateConnection(this);
-            startDatabaseSession();
+            resolveDatabaseProfile();
         });
     }
 
     public void onLogout() {
-        platform.getScheduler().runAsyncTask(() -> {
-            cacheData();
-            endDatabaseSession();
-        });
+        platform.getScheduler().runAsyncTask(this::cacheData);
     }
 
-    private void startDatabaseSession() {
+    private void resolveDatabaseProfile() {
         if (!platform.getDatabaseRepository().isConnected()) return;
         try {
             Integer clientVersionId = user.getClientVersion() == null
                     ? null
                     : user.getClientVersion().getProtocolVersion();
-            long[] result = platform.getDatabaseRepository().startSession(
+            long[] result = platform.getDatabaseRepository().resolveProfile(
                     uuid,
                     user.getName(),
                     clientBrand,
@@ -204,22 +201,10 @@ public class TGPlayer implements TGUser {
                     System.currentTimeMillis()
             );
             this.databasePlayerId = (int) result[0];
-            this.databaseSessionId = result[1];
+            this.databaseProfileId = result[1];
         } catch (Exception ex) {
             platform.getLogger().warning(
-                    "Failed to open database session for " + user.getName() + ": " + ex.getMessage());
-        }
-    }
-
-    private void endDatabaseSession() {
-        Long sessionId = this.databaseSessionId;
-        if (sessionId == null) return;
-        if (!platform.getDatabaseRepository().isConnected()) return;
-        try {
-            platform.getDatabaseRepository().endSession(sessionId, System.currentTimeMillis());
-        } catch (Exception ex) {
-            platform.getLogger().warning(
-                    "Failed to close database session for " + user.getName() + ": " + ex.getMessage());
+                    "Failed to resolve database profile for " + user.getName() + ": " + ex.getMessage());
         }
     }
 

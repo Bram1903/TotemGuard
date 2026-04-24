@@ -20,8 +20,10 @@ package com.deathmotion.totemguard.common.database.dao;
 
 import com.deathmotion.totemguard.common.database.DatabaseConnectionManager;
 import com.deathmotion.totemguard.common.database.Sql;
+import com.deathmotion.totemguard.common.database.model.PlayerRecord;
 import com.deathmotion.totemguard.common.database.util.UuidBytes;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -74,5 +76,40 @@ public final class PlayerDao {
             }
         }
         throw new SQLException("Failed to resolve tg_players.id for " + uuid);
+    }
+
+    /**
+     * Case-insensitive lookup by last known name. When a name has been recycled, the
+     * most recently seen holder wins. Returns the canonical stored casing.
+     */
+    @Blocking
+    public @Nullable PlayerRecord findByName(String name) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.SELECT_PLAYER_BY_NAME)) {
+            stmt.setString(1, name);
+            return readSingle(stmt);
+        }
+    }
+
+    @Blocking
+    public @Nullable PlayerRecord findByUuid(UUID uuid) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.SELECT_PLAYER_BY_UUID)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            return readSingle(stmt);
+        }
+    }
+
+    private @Nullable PlayerRecord readSingle(PreparedStatement stmt) throws SQLException {
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                int id = rs.getInt("id");
+                UUID uuid = UuidBytes.fromBytes(rs.getBytes("uuid"));
+                String canonicalName = rs.getString("last_name");
+                idCache.put(uuid, id);
+                return new PlayerRecord(id, uuid, canonicalName);
+            }
+        }
+        return null;
     }
 }

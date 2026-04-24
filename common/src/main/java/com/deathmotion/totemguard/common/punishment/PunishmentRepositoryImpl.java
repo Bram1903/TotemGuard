@@ -175,7 +175,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     private void recordPunishment(CheckImpl check, PunishmentType type, String dispatched, @Nullable String debug) {
         TGPlayer player = check.player;
         platform.getDatabaseRepository().recordPunishment(
-                player.getDatabaseSessionId(),
+                player.getDatabaseProfileId(),
                 player.getDatabasePlayerId(),
                 check.getName(),
                 type,
