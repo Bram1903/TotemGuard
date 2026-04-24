@@ -19,11 +19,7 @@
 package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.gui.GuiItems;
-import com.deathmotion.totemguard.common.gui.GuiRenderResult;
-import com.deathmotion.totemguard.common.gui.GuiScreen;
-import com.deathmotion.totemguard.common.gui.GuiSession;
-import com.deathmotion.totemguard.common.gui.GuiText;
+import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;

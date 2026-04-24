@@ -21,8 +21,9 @@ package com.deathmotion.totemguard.common.player;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
-import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
@@ -31,6 +32,7 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,10 +41,12 @@ import java.util.concurrent.ConcurrentMap;
 public final class PlayerRepositoryImpl implements UserRepository {
 
     private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass";
-
+    // Staff toggle preference follows them across reconnects for 30 min,
+    // which covers the typical "dc and rejoin" without surviving a full
+    // shift change. Anything longer is served from the database.
+    private static final Duration ALERTS_TOGGLE_TTL = Duration.ofMinutes(30);
     private final TGPlatform platform;
     private final CacheRepositoryImpl cacheRepository;
-
     private final ConcurrentMap<User, TGPlayer> players = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, TGPlayer> playersByUuid = new ConcurrentHashMap<>();
     private final Collection<UUID> exemptUsers = ConcurrentHashMap.newKeySet();
@@ -83,22 +87,59 @@ public final class PlayerRepositoryImpl implements UserRepository {
     }
 
     private void enableAlerts(UUID uuid, PlatformUser platformUser) {
-        if (platformUser.hasPermission("TotemGuardV3.Alerts")) {
-            platform.getScheduler().runAsyncTask(() -> {
-                AlertsToggleData alertsToggleData = cacheRepository.getAlertsToggleData(uuid);
+        if (!platformUser.hasPermission("TotemGuardV3.Alerts")) return;
 
-                if (alertsToggleData == null) {
-                    if (platformUser.hasPermission("TotemGuardV3.Alerts.EnableOnJoin")) {
-                        cacheRepository.saveCheckToggleData(uuid, new AlertsToggleData(true));
-                        platform.getAlertRepository().toggleAlerts(uuid);
-                    }
-                } else {
-                    if (alertsToggleData.alertsEnabled()) {
-                        platform.getAlertRepository().toggleAlerts(uuid);
-                    }
+        platform.getScheduler().runAsyncTask(() -> {
+            boolean enabled = resolveAlertsEnabled(uuid);
+            if (enabled) {
+                platform.getAlertRepository().toggleAlerts(uuid);
+            }
+        });
+    }
+
+    /**
+     * Three-tier lookup for the staff member's remembered toggle state:
+     *
+     * <ol>
+     *   <li>Cache — fast, shared across servers when Redis is connected.</li>
+     *   <li>Database — authoritative across restarts and across the cache TTL.
+     *       On hit, rehydrates the cache for the next reconnect.</li>
+     *   <li>First-time default: alerts on. Persisted to both cache and DB so
+     *       subsequent logins respect whatever the player toggles from here.</li>
+     * </ol>
+     */
+    private boolean resolveAlertsEnabled(UUID uuid) {
+        Boolean cached = cacheRepository.getAndRefresh(
+                CacheKeys.alertsToggle(uuid), CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+        if (cached != null) return cached;
+
+        if (platform.getDatabaseRepository().isConnected()) {
+            try {
+                Boolean stored = platform.getDatabaseRepository().findStaffAlertPref(uuid);
+                if (stored != null) {
+                    cacheRepository.put(CacheKeys.alertsToggle(uuid), stored,
+                            CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+                    return stored;
                 }
-            });
+            } catch (Exception ex) {
+                platform.getLogger().warning(
+                        "Failed to load staff alert preference for " + uuid + ": " + ex.getMessage());
+            }
         }
+
+        // Never seen before — opt staff in by default.
+        boolean firstTimeDefault = true;
+        cacheRepository.put(CacheKeys.alertsToggle(uuid), firstTimeDefault,
+                CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+        if (platform.getDatabaseRepository().isConnected()) {
+            try {
+                platform.getDatabaseRepository().upsertStaffAlertPref(uuid, firstTimeDefault);
+            } catch (Exception ex) {
+                platform.getLogger().warning(
+                        "Failed to persist default staff alert preference for " + uuid + ": " + ex.getMessage());
+            }
+        }
+        return firstTimeDefault;
     }
 
     public void onPlayerDisconnect(final @NotNull User user) {

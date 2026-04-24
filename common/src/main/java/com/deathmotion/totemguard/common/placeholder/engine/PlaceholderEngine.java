@@ -172,7 +172,7 @@ public final class PlaceholderEngine {
                 ResolverInvoker<H, C> invoker
         ) {
             List<ResolverEntry<C>> dynamicResolvers = new ArrayList<>();
-            Map<String, List<ResolverEntry<C>>> exactResolvers = new java.util.LinkedHashMap<>();
+            Map<String, List<ResolverEntry<C>>> exactResolvers = new LinkedHashMap<>();
             TreeSet<String> registeredKeys = new TreeSet<>();
             TreeSet<String> registeredPatterns = new TreeSet<>();
 
@@ -195,7 +195,7 @@ public final class PlaceholderEngine {
                 }
             }
 
-            Map<String, ResolverEntry<C>[]> dispatchByKey = new java.util.HashMap<>();
+            Map<String, ResolverEntry<C>[]> dispatchByKey = new HashMap<>();
             for (Map.Entry<String, List<ResolverEntry<C>>> exactEntry : exactResolvers.entrySet()) {
                 dispatchByKey.put(exactEntry.getKey(), merge(exactEntry.getValue(), dynamicResolvers));
             }

@@ -19,17 +19,17 @@
 package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
-import com.deathmotion.totemguard.common.gui.GuiItems;
-import com.deathmotion.totemguard.common.gui.GuiRenderResult;
-import com.deathmotion.totemguard.common.gui.GuiScreen;
-import com.deathmotion.totemguard.common.gui.GuiSession;
-import com.deathmotion.totemguard.common.gui.GuiText;
+import com.deathmotion.totemguard.common.gui.*;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -48,6 +48,7 @@ import java.util.logging.Level;
 public final class PlayerAlertChecksScreen extends GuiScreen {
 
     static final int PAGE_SIZE = 28;
+    private static final Duration HISTORY_TTL = Duration.ofMinutes(2);
     // 4 content rows × 7 center columns of a 6-row GUI = 28 tiles.
     private static final int[] CONTENT_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
@@ -86,9 +87,21 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         }
 
         platform.getScheduler().runAsyncTask(() -> {
+            CacheRepositoryImpl cache = platform.getCacheRepository();
+            String key = CacheKeys.alertHistoryCheckSummaries(targetId);
+
+            List<AlertCheckSummary> cached = cache.get(key, CacheCodecs.ALERT_CHECK_SUMMARIES);
+            if (cached != null) {
+                this.loaded = cached;
+                platform.getGuiManager().refresh(session.viewerId());
+                return;
+            }
+
             try {
-                this.loaded = platform.getDatabaseRepository()
+                List<AlertCheckSummary> rows = platform.getDatabaseRepository()
                         .findAlertCheckSummariesByPlayer(targetId);
+                this.loaded = rows;
+                cache.put(key, rows, CacheCodecs.ALERT_CHECK_SUMMARIES, HISTORY_TTL);
             } catch (Exception ex) {
                 if (!platform.getDatabaseRepository().isConnected()) {
                     this.loaded = List.of();

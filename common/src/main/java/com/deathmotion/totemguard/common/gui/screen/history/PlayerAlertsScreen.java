@@ -19,12 +19,11 @@
 package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.database.model.AlertRecord;
-import com.deathmotion.totemguard.common.gui.GuiItems;
-import com.deathmotion.totemguard.common.gui.GuiRenderResult;
-import com.deathmotion.totemguard.common.gui.GuiScreen;
-import com.deathmotion.totemguard.common.gui.GuiSession;
-import com.deathmotion.totemguard.common.gui.GuiText;
+import com.deathmotion.totemguard.common.gui.*;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -32,6 +31,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -52,6 +52,11 @@ import java.util.logging.Level;
 public final class PlayerAlertsScreen extends GuiScreen {
 
     static final int PAGE_SIZE = 21;
+    // Multiple staff viewing the same profile on a busy server shouldn't each
+    // fan out independent DB round-trips — 2 minutes is short enough that new
+    // alerts still surface quickly and long enough that pagination hops don't
+    // repeatedly hit the database.
+    private static final Duration HISTORY_TTL = Duration.ofMinutes(2);
     // Content slots in a 6-row GUI: rows 1..3 of the middle 7 columns.
     // That gives us PAGE_SIZE = 21 alert tiles per page.
     private static final int[] CONTENT_SLOTS = {
@@ -81,6 +86,24 @@ public final class PlayerAlertsScreen extends GuiScreen {
         this.checkName = checkName;
     }
 
+    /**
+     * Resolves a stored protocol version to its friendly release name when
+     * PacketEvents knows about it, falling back to {@code protocol#N} so old
+     * clients we haven't mapped still show something meaningful.
+     */
+    private static String formatClientVersion(Integer protocol) {
+        if (protocol == null) return null;
+        try {
+            ClientVersion cv = ClientVersion.getById(protocol);
+            if (cv != null && cv != ClientVersion.UNKNOWN) {
+                return cv.getReleaseName();
+            }
+        } catch (Throwable ignored) {
+            // fall through to raw protocol
+        }
+        return "protocol " + protocol;
+    }
+
     @Override
     public String requiredPermission() {
         return "TotemGuardV3.Gui.History.Alerts";
@@ -101,6 +124,19 @@ public final class PlayerAlertsScreen extends GuiScreen {
         }
 
         platform.getScheduler().runAsyncTask(() -> {
+            CacheRepositoryImpl cache = platform.getCacheRepository();
+            String pageKey = CacheKeys.alertHistoryPage(targetId, page, checkName);
+            String countKey = CacheKeys.alertHistoryCount(targetId, checkName);
+
+            List<AlertRecord> cachedPage = cache.get(pageKey, CacheCodecs.ALERT_RECORDS);
+            Integer cachedCount = cache.get(countKey, CacheCodecs.INT);
+            if (cachedPage != null && cachedCount != null) {
+                this.loaded = cachedPage;
+                this.totalCount = cachedCount;
+                platform.getGuiManager().refresh(session.viewerId());
+                return;
+            }
+
             try {
                 List<AlertRecord> rows;
                 int total;
@@ -116,6 +152,8 @@ public final class PlayerAlertsScreen extends GuiScreen {
                 }
                 this.loaded = rows;
                 this.totalCount = total;
+                cache.put(pageKey, rows, CacheCodecs.ALERT_RECORDS, HISTORY_TTL);
+                cache.put(countKey, total, CacheCodecs.INT, HISTORY_TTL);
             } catch (Exception ex) {
                 // A connection drop between the isConnected() check and the
                 // query is expected and not worth a stack trace — anything
@@ -259,24 +297,6 @@ public final class PlayerAlertsScreen extends GuiScreen {
         );
     }
 
-    /**
-     * Resolves a stored protocol version to its friendly release name when
-     * PacketEvents knows about it, falling back to {@code protocol#N} so old
-     * clients we haven't mapped still show something meaningful.
-     */
-    private static String formatClientVersion(Integer protocol) {
-        if (protocol == null) return null;
-        try {
-            ClientVersion cv = ClientVersion.getById(protocol);
-            if (cv != null && cv != ClientVersion.UNKNOWN) {
-                return cv.getReleaseName();
-            }
-        } catch (Throwable ignored) {
-            // fall through to raw protocol
-        }
-        return "protocol " + protocol;
-    }
-
     private void renderFooter(GuiRenderResult.Builder builder) {
         int total = Math.max(0, totalCount);
         int pages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
@@ -297,8 +317,8 @@ public final class PlayerAlertsScreen extends GuiScreen {
                 checkName == null
                         ? List.of(GuiText.line("Total alerts", String.valueOf(total)))
                         : List.of(
-                                GuiText.line("Filter", checkName),
-                                GuiText.line("Matching alerts", String.valueOf(total)))
+                        GuiText.line("Filter", checkName),
+                        GuiText.line("Matching alerts", String.valueOf(total)))
         ));
 
         if (hasNext) {

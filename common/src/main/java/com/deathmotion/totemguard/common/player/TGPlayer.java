@@ -20,6 +20,8 @@ package com.deathmotion.totemguard.common.player;
 
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
@@ -55,6 +57,7 @@ import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -66,12 +69,15 @@ import java.util.UUID;
 @Getter
 public class TGPlayer implements TGUser {
 
+    // 5 minutes mirrors the original behaviour: long enough for a typical
+    // ragequit-and-rejoin, short enough that stale buffers don't hang around
+    // for a week if the player never comes back.
+    private static final Duration CHECK_SNAPSHOT_TTL = Duration.ofMinutes(5);
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
-
     private final Data data;
     private final TotemData totemData;
     private final ClickData clickData;
@@ -80,17 +86,13 @@ public class TGPlayer implements TGUser {
     private final InventoryRecipeTracker inventoryRecipeTracker;
     private final DebugOverlayManager debugOverlayManager;
     private final PacketLatencyHandler latencyHandler;
-
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
-
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
     private @Nullable PlatformPlayer platformPlayer;
-
     @Setter()
     private String clientBrand;
-
     /**
      * Surrogate tg_players.id resolved on login, or {@code 0} while
      * unresolved / when the database is disabled. Alerts carry this as a
@@ -98,7 +100,6 @@ public class TGPlayer implements TGUser {
      */
     @Setter
     private volatile int databasePlayerId;
-
     /**
      * Database session id for this login, or {@code null} while the session
      * row has not been inserted yet (or when the database is disabled).
@@ -107,15 +108,12 @@ public class TGPlayer implements TGUser {
     @Setter
     @Nullable
     private volatile Long databaseSessionId;
-
     @Setter
     @Nullable
     private Long lastTotemUse;
-
     @Getter
     @Setter
     private boolean vpn;
-
     /**
      * True while a staff-initiated {@code /tg check} is running against this player.
      * Server-originated inventory mutations performed by the command (clearing the
@@ -286,14 +284,15 @@ public class TGPlayer implements TGUser {
     @Blocking
     private void applyCachedData() {
         CacheRepositoryImpl cacheRepository = platform.getCacheRepository();
-
-        List<CheckSnapshot> checkSnapshots = cacheRepository.getCheckSnapshot(uuid);
+        List<CheckSnapshot> checkSnapshots = cacheRepository.getAndRefresh(
+                CacheKeys.checkSnapshots(uuid), CacheCodecs.CHECK_SNAPSHOTS, CHECK_SNAPSHOT_TTL);
         if (checkSnapshots != null) checkManager.applySnapshot(checkSnapshots);
     }
 
     @Blocking
     private void cacheData() {
         CacheRepositoryImpl cacheRepository = platform.getCacheRepository();
-        cacheRepository.saveCheckSnapshot(uuid, checkManager.getSnapshot());
+        cacheRepository.put(CacheKeys.checkSnapshots(uuid),
+                checkManager.getSnapshot(), CacheCodecs.CHECK_SNAPSHOTS, CHECK_SNAPSHOT_TTL);
     }
 }

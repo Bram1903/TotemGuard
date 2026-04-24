@@ -27,10 +27,10 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.punishment.PunishmentCommand;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.punishment.PunishmentCommand;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 

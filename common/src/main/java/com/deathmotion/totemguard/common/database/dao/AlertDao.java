@@ -26,10 +26,7 @@ import com.deathmotion.totemguard.common.database.model.PendingAlert;
 import com.deathmotion.totemguard.common.database.util.UuidBytes;
 import org.jetbrains.annotations.Blocking;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +37,45 @@ public final class AlertDao {
 
     public AlertDao(DatabaseConnectionManager connection) {
         this.connection = connection;
+    }
+
+    private static AlertRecord readAlertRow(ResultSet rs) throws SQLException {
+        return new AlertRecord(
+                rs.getLong("id"),
+                rs.getString("check_name"),
+                rs.getString("server_name"),
+                rs.getInt("violations"),
+                rs.getString("debug"),
+                readNullableInt(rs, "keepalive_ping"),
+                readNullableInt(rs, "transaction_ping"),
+                rs.getString("client_brand"),
+                readNullableInt(rs, "client_version"),
+                rs.getLong("created_at")
+        );
+    }
+
+    private static String truncate(String value, int max) {
+        if (value.length() <= max) return value;
+        return value.substring(0, max);
+    }
+
+    /**
+     * Clamps into SMALLINT UNSIGNED range or writes NULL for bogus values.
+     */
+    private static void setPing(PreparedStatement stmt, int index, Integer value) throws SQLException {
+        if (value == null || value < 0) {
+            stmt.setNull(index, Types.SMALLINT);
+            return;
+        }
+        stmt.setInt(index, Math.min(value, 65_535));
+    }
+
+    /**
+     * Reads a nullable integer column into boxed {@link Integer} for AlertRecord.
+     */
+    private static Integer readNullableInt(ResultSet rs, String column) throws SQLException {
+        int v = rs.getInt(column);
+        return rs.wasNull() ? null : v;
     }
 
     /**
@@ -56,13 +92,13 @@ public final class AlertDao {
             c.setAutoCommit(false);
             try (PreparedStatement stmt = c.prepareStatement(Sql.INSERT_ALERT)) {
                 for (PendingAlert alert : batch) {
-                    if (alert.sessionId() == null) stmt.setNull(1, java.sql.Types.BIGINT);
+                    if (alert.sessionId() == null) stmt.setNull(1, Types.BIGINT);
                     else stmt.setLong(1, alert.sessionId());
                     stmt.setInt(2, alert.playerId());
                     stmt.setInt(3, alert.serverId());
                     stmt.setInt(4, alert.checkId());
                     stmt.setLong(5, alert.violations());
-                    if (alert.debug() == null) stmt.setNull(6, java.sql.Types.VARCHAR);
+                    if (alert.debug() == null) stmt.setNull(6, Types.VARCHAR);
                     else stmt.setString(6, truncate(alert.debug(), 512));
                     setPing(stmt, 7, alert.keepalivePing());
                     setPing(stmt, 8, alert.transactionPing());
@@ -159,21 +195,6 @@ public final class AlertDao {
         return out;
     }
 
-    private static AlertRecord readAlertRow(ResultSet rs) throws SQLException {
-        return new AlertRecord(
-                rs.getLong("id"),
-                rs.getString("check_name"),
-                rs.getString("server_name"),
-                rs.getInt("violations"),
-                rs.getString("debug"),
-                readNullableInt(rs, "keepalive_ping"),
-                readNullableInt(rs, "transaction_ping"),
-                rs.getString("client_brand"),
-                readNullableInt(rs, "client_version"),
-                rs.getLong("created_at")
-        );
-    }
-
     @Blocking
     public int countByPlayerAndCheck(UUID uuid, String checkName) throws SQLException {
         try (Connection c = connection.borrow();
@@ -199,25 +220,5 @@ public final class AlertDao {
             }
         }
         return total;
-    }
-
-    private static String truncate(String value, int max) {
-        if (value.length() <= max) return value;
-        return value.substring(0, max);
-    }
-
-    /** Clamps into SMALLINT UNSIGNED range or writes NULL for bogus values. */
-    private static void setPing(PreparedStatement stmt, int index, Integer value) throws SQLException {
-        if (value == null || value < 0) {
-            stmt.setNull(index, java.sql.Types.SMALLINT);
-            return;
-        }
-        stmt.setInt(index, Math.min(value, 65_535));
-    }
-
-    /** Reads a nullable integer column into boxed {@link Integer} for AlertRecord. */
-    private static Integer readNullableInt(ResultSet rs, String column) throws SQLException {
-        int v = rs.getInt(column);
-        return rs.wasNull() ? null : v;
     }
 }

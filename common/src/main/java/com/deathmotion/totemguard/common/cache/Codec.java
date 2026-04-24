@@ -16,22 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis.cache.binary;
+package com.deathmotion.totemguard.common.cache;
 
 /**
- * Binary Redis codec implemented directly by cacheable models.
+ * Round-trip serializer for a cached value type.
  *
- * @param <T> Model type
+ * <p>The cache layer only speaks bytes, so consumers bring a codec to each
+ * call. That keeps the wire format honest (nothing accidentally relies on
+ * Java serialization) and lets us swap Redis and local backends without the
+ * data shape changing between them.</p>
  */
-public interface RedisCodec<T> {
+public interface Codec<V> {
 
-    /**
-     * Encodes this instance into bytes.
-     */
-    byte[] encode() throws Exception;
+    byte[] encode(V value) throws Exception;
 
-    /**
-     * Decodes an instance from bytes.
-     */
-    T decode(byte[] data) throws Exception;
+    V decode(byte[] bytes) throws Exception;
 }

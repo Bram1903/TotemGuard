@@ -23,7 +23,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-/** Helpers for the history screens that are not worth their own class. */
+/**
+ * Helpers for the history screens that are not worth their own class.
+ */
 final class HistoryText {
 
     private static final DateTimeFormatter ABSOLUTE = DateTimeFormatter
@@ -33,17 +35,21 @@ final class HistoryText {
     private HistoryText() {
     }
 
-    /** "3m ago" / "2h ago" / "4d ago" — compact label for the row title. */
+    /**
+     * "3m ago" / "2h ago" / "4d ago" — compact label for the row title.
+     */
     static String relative(long epochMs) {
         long deltaSeconds = Math.max(0, (System.currentTimeMillis() - epochMs) / 1000);
-        if (deltaSeconds < 60)        return deltaSeconds + "s ago";
-        if (deltaSeconds < 3600)      return (deltaSeconds / 60) + "m ago";
-        if (deltaSeconds < 86_400)    return (deltaSeconds / 3600) + "h ago";
+        if (deltaSeconds < 60) return deltaSeconds + "s ago";
+        if (deltaSeconds < 3600) return (deltaSeconds / 60) + "m ago";
+        if (deltaSeconds < 86_400) return (deltaSeconds / 3600) + "h ago";
         if (deltaSeconds < 2_592_000) return (deltaSeconds / 86_400) + "d ago";
         return (deltaSeconds / 2_592_000) + "mo ago";
     }
 
-    /** Full yyyy-MM-dd HH:mm timestamp in the server's local timezone. */
+    /**
+     * Full yyyy-MM-dd HH:mm timestamp in the server's local timezone.
+     */
     static String absolute(long epochMs) {
         return ABSOLUTE.format(Instant.ofEpochMilli(epochMs));
     }

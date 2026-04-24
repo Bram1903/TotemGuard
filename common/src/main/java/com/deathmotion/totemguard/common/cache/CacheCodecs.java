@@ -1,0 +1,251 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.common.cache;
+
+import com.deathmotion.totemguard.api3.punishment.PunishmentType;
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
+import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
+import com.deathmotion.totemguard.common.database.model.AlertRecord;
+import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Wire-format central. Every value cached in either backend flows through a
+ * codec defined here. Keeping them co-located makes version bumps obvious —
+ * if you change a format, every consumer sees the same change.
+ *
+ * <p>Formats are hand-rolled binary (length-prefixed UTF-8 strings, fixed
+ * primitives) rather than JSON or Java serialization. It's ~half the size
+ * and decodes faster, at the cost of breaking on format changes — which is
+ * fine for ephemeral cache data: the next read just misses and repopulates.</p>
+ */
+public final class CacheCodecs {
+
+    public static final Codec<Boolean> BOOLEAN = new Codec<>() {
+        @Override
+        public byte[] encode(Boolean value) {
+            return new byte[]{(byte) (value ? 1 : 0)};
+        }
+
+        @Override
+        public Boolean decode(byte[] bytes) {
+            return bytes.length > 0 && bytes[0] != 0;
+        }
+    };
+
+    // --- primitives ---------------------------------------------------------
+    public static final Codec<Long> LONG = new Codec<>() {
+        @Override
+        public byte[] encode(Long value) throws Exception {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(8);
+            new DataOutputStream(baos).writeLong(value);
+            return baos.toByteArray();
+        }
+
+        @Override
+        public Long decode(byte[] bytes) throws Exception {
+            return new DataInputStream(new ByteArrayInputStream(bytes)).readLong();
+        }
+    };
+    public static final Codec<Integer> INT = new Codec<>() {
+        @Override
+        public byte[] encode(Integer value) throws Exception {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(4);
+            new DataOutputStream(baos).writeInt(value);
+            return baos.toByteArray();
+        }
+
+        @Override
+        public Integer decode(byte[] bytes) throws Exception {
+            return new DataInputStream(new ByteArrayInputStream(bytes)).readInt();
+        }
+    };
+    public static final Codec<List<CheckSnapshot>> CHECK_SNAPSHOTS = new Codec<>() {
+        @Override
+        public byte[] encode(List<CheckSnapshot> list) throws Exception {
+            return encodeList(list, (out, s) -> {
+                writeUtf8(out, s.checkName());
+                out.writeDouble(s.buffer());
+                out.writeInt(s.violations());
+            });
+        }
+
+        @Override
+        public List<CheckSnapshot> decode(byte[] bytes) throws Exception {
+            return decodeList(bytes, in -> new CheckSnapshot(readUtf8(in), in.readDouble(), in.readInt()));
+        }
+    };
+
+    // --- list<T> helper -----------------------------------------------------
+    public static final Codec<List<AlertRecord>> ALERT_RECORDS = new Codec<>() {
+        @Override
+        public byte[] encode(List<AlertRecord> list) throws Exception {
+            return encodeList(list, (out, r) -> {
+                out.writeLong(r.id());
+                writeUtf8(out, r.checkName());
+                writeUtf8(out, r.serverName());
+                out.writeInt(r.violations());
+                writeNullableUtf8(out, r.debug());
+                writeNullableInt(out, r.keepalivePing());
+                writeNullableInt(out, r.transactionPing());
+                writeNullableUtf8(out, r.clientBrand());
+                writeNullableInt(out, r.clientVersion());
+                out.writeLong(r.createdAt());
+            });
+        }
+
+        @Override
+        public List<AlertRecord> decode(byte[] bytes) throws Exception {
+            return decodeList(bytes, in -> new AlertRecord(
+                    in.readLong(),
+                    readUtf8(in),
+                    readUtf8(in),
+                    in.readInt(),
+                    readNullableUtf8(in),
+                    readNullableInt(in),
+                    readNullableInt(in),
+                    readNullableUtf8(in),
+                    readNullableInt(in),
+                    in.readLong()
+            ));
+        }
+    };
+    public static final Codec<List<PunishmentRecord>> PUNISHMENT_RECORDS = new Codec<>() {
+        @Override
+        public byte[] encode(List<PunishmentRecord> list) throws Exception {
+            return encodeList(list, (out, r) -> {
+                out.writeLong(r.id());
+                writeUtf8(out, r.checkName());
+                writeUtf8(out, r.serverName());
+                out.writeInt(r.type().ordinal());
+                writeUtf8(out, r.command());
+                writeNullableUtf8(out, r.debug());
+                out.writeLong(r.createdAt());
+            });
+        }
+
+        @Override
+        public List<PunishmentRecord> decode(byte[] bytes) throws Exception {
+            PunishmentType[] types = PunishmentType.values();
+            return decodeList(bytes, in -> {
+                long id = in.readLong();
+                String checkName = readUtf8(in);
+                String serverName = readUtf8(in);
+                int typeOrdinal = in.readInt();
+                PunishmentType type = (typeOrdinal >= 0 && typeOrdinal < types.length)
+                        ? types[typeOrdinal] : PunishmentType.GENERIC;
+                String command = readUtf8(in);
+                String debug = readNullableUtf8(in);
+                long createdAt = in.readLong();
+                return new PunishmentRecord(id, checkName, serverName, type, command, debug, createdAt);
+            });
+        }
+    };
+    public static final Codec<List<AlertCheckSummary>> ALERT_CHECK_SUMMARIES = new Codec<>() {
+        @Override
+        public byte[] encode(List<AlertCheckSummary> list) throws Exception {
+            return encodeList(list, (out, s) -> {
+                writeUtf8(out, s.checkName());
+                out.writeInt(s.alertCount());
+            });
+        }
+
+        @Override
+        public List<AlertCheckSummary> decode(byte[] bytes) throws Exception {
+            return decodeList(bytes, in -> new AlertCheckSummary(readUtf8(in), in.readInt()));
+        }
+    };
+
+    private CacheCodecs() {
+    }
+
+    private static <T> byte[] encodeList(List<T> list, ElementWriter<T> writer) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (DataOutputStream out = new DataOutputStream(baos)) {
+            out.writeInt(list.size());
+            for (T item : list) writer.write(out, item);
+        }
+        return baos.toByteArray();
+    }
+
+    private static <T> List<T> decodeList(byte[] bytes, ElementReader<T> reader) throws Exception {
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes))) {
+            int n = in.readInt();
+            List<T> out = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) out.add(reader.read(in));
+            return out;
+        }
+    }
+
+    private static void writeUtf8(DataOutputStream out, String value) throws Exception {
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        out.writeInt(bytes.length);
+        out.write(bytes);
+    }
+
+    private static String readUtf8(DataInputStream in) throws Exception {
+        int len = in.readInt();
+        byte[] bytes = new byte[len];
+        in.readFully(bytes);
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    private static void writeNullableUtf8(DataOutputStream out, String value) throws Exception {
+        if (value == null) {
+            out.writeBoolean(false);
+        } else {
+            out.writeBoolean(true);
+            writeUtf8(out, value);
+        }
+    }
+
+    private static String readNullableUtf8(DataInputStream in) throws Exception {
+        return in.readBoolean() ? readUtf8(in) : null;
+    }
+
+    // --- domain codecs ------------------------------------------------------
+
+    private static void writeNullableInt(DataOutputStream out, Integer value) throws Exception {
+        if (value == null) {
+            out.writeBoolean(false);
+        } else {
+            out.writeBoolean(true);
+            out.writeInt(value);
+        }
+    }
+
+    private static Integer readNullableInt(DataInputStream in) throws Exception {
+        return in.readBoolean() ? in.readInt() : null;
+    }
+
+    private interface ElementWriter<T> {
+        void write(DataOutputStream out, T value) throws Exception;
+    }
+
+    private interface ElementReader<T> {
+        T read(DataInputStream in) throws Exception;
+    }
+}

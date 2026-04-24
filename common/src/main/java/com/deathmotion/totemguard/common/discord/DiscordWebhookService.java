@@ -46,6 +46,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -125,7 +126,7 @@ public final class DiscordWebhookService implements Reloadable {
                 "tg_check_debug", debug == null ? UNSPECIFIED_DEBUG : debug
         );
 
-        java.util.function.Function<String, String> resolver = key -> resolvePlaceholder(key, player, check, extras);
+        Function<String, String> resolver = key -> resolvePlaceholder(key, player, check, extras);
 
         Embed embed = new Embed(render(cfg.description, resolver))
                 .title(cfg.title)
@@ -173,7 +174,7 @@ public final class DiscordWebhookService implements Reloadable {
         channel.enqueue(request);
     }
 
-    private String render(CompiledDiscordTemplate template, java.util.function.Function<String, String> resolver) {
+    private String render(CompiledDiscordTemplate template, Function<String, String> resolver) {
         if (template == null) return "";
         return template.render(resolver, backtickReplacement);
     }

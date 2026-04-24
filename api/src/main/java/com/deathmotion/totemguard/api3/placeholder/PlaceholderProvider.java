@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.api3.placeholder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Optional capability: holders can expose the keys they support for introspection / documentation.
@@ -38,6 +39,6 @@ public interface PlaceholderProvider {
      * Example: "myplugin_stat_*" or "myplugin_stat:<id>"
      */
     default @NotNull Collection<String> patterns() {
-        return java.util.List.of();
+        return List.of();
     }
 }

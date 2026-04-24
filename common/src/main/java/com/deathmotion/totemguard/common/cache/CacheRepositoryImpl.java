@@ -22,169 +22,144 @@ import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
-import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
-import com.deathmotion.totemguard.common.cache.data.PunishQueueData;
-import com.deathmotion.totemguard.common.cache.data.VPNData;
-import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
-import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
-import com.deathmotion.totemguard.common.redis.cache.RedisKeys;
+import com.deathmotion.totemguard.common.cache.backend.LocalCacheBackend;
+import com.deathmotion.totemguard.common.cache.backend.RedisCacheBackend;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
+import java.util.logging.Level;
 
+/**
+ * Unified cache facade. Every call routes to exactly one backend:
+ * Redis when it's available, the in-process store otherwise. This plugin
+ * never double-writes, so the two backends cannot drift.
+ *
+ * <p>The repository is intentionally value-type-agnostic — callers supply a
+ * {@link Codec} at every call. That keeps all wire formats in one place
+ * ({@link CacheCodecs}) instead of scattered across data records, and it
+ * makes swapping backends or adding new types a pure additive change.</p>
+ */
 public final class CacheRepositoryImpl {
 
-    private static final long DEFAULT_LOCAL_MAX_ENTRIES = 10_000L;
+    private final RedisCacheBackend redisBackend;
+    private final LocalCacheBackend localBackend;
 
-    private final ConfigRepositoryImpl configRepository;
-    private final RedisRepositoryImpl redisRepository;
-    private final CacheStore<UUID, List<CheckSnapshot>> checkSnapshotStore;
-    private final CacheStore<UUID, PunishQueueData> punishQueueStore;
-    private final CacheStore<UUID, AlertsToggleData> alertsToggleStore;
-    private final CacheStore<String, VPNData> vpnStore;
-    private final Set<UUID> inFlightPunishments = ConcurrentHashMap.newKeySet();
-    private volatile boolean cacheEnabled;
-    private volatile int checkDataTTL;
-    private volatile int punishQueueTTL;
-    private volatile int alertsToggleDataTTL;
-    private volatile int vpnDataTTL;
-    private volatile long localCacheMaxEntries;
+    private volatile boolean enabled;
 
     public CacheRepositoryImpl() {
         TGPlatform platform = TGPlatform.getInstance();
-
-        this.configRepository = platform.getConfigRepository();
-        this.redisRepository = platform.getRedisRepository();
-
-        loadConfig();
-
-        this.checkSnapshotStore = new CacheStore<>(
-                "check snapshots",
-                () -> checkDataTTL,
-                () -> cacheEnabled,
-                () -> localCacheMaxEntries,
-                RedisKeys::checkSnapshots,
-                CheckSnapshot::encodeList,
-                CheckSnapshot::decodeList
-        );
-
-        this.punishQueueStore = new CacheStore<>(
-                "punish queue data",
-                () -> punishQueueTTL,
-                () -> cacheEnabled,
-                () -> localCacheMaxEntries,
-                RedisKeys::punishQueue,
-                PunishQueueData::encode,
-                bytes -> new PunishQueueData(0L).decode(bytes)
-        );
-
-        this.alertsToggleStore = new CacheStore<>(
-                "alerts toggle data",
-                () -> alertsToggleDataTTL,
-                () -> cacheEnabled,
-                () -> localCacheMaxEntries,
-                RedisKeys::alertsToggleData,
-                AlertsToggleData::encode,
-                bytes -> new AlertsToggleData(false).decode(bytes)
-        );
-
-        this.vpnStore = new CacheStore<>(
-                "vpn data",
-                () -> vpnDataTTL,
-                () -> cacheEnabled,
-                () -> localCacheMaxEntries,
-                RedisKeys::vpnData,
-                VPNData::encode,
-                bytes -> new VPNData(false).decode(bytes)
-        );
+        this.redisBackend = new RedisCacheBackend(platform.getRedisRepository());
+        this.localBackend = new LocalCacheBackend();
+        reload();
     }
 
+    /**
+     * Reloads the enabled flag from config. No TTLs live here — each caller owns its own.
+     */
     public void reload() {
-        loadConfig();
-
-        checkSnapshotStore.reloadLocalCache();
-        punishQueueStore.reloadLocalCache();
-        alertsToggleStore.reloadLocalCache();
-        vpnStore.reloadLocalCache();
+        Config config = TGPlatform.getInstance().getConfigRepository().config(ConfigFile.CONFIG);
+        this.enabled = config.getBoolean(ConfigKeys.CACHE_ENABLED);
     }
 
-    public void saveVPNData(String ip, VPNData vpnData) {
-        vpnStore.put(ip, vpnData);
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public @Nullable VPNData getVPNData(String ip) {
-        return vpnStore.get(ip);
+    /**
+     * @return whether the currently-selected backend speaks Redis.
+     */
+    public boolean isDistributed() {
+        return redisBackend.isAvailable();
     }
 
-    public boolean tryClaimPunishment(UUID uuid) {
-        if (!inFlightPunishments.add(uuid)) {
-            return false;
+    /**
+     * Fetches the cached value at {@code key} and decodes it through
+     * {@code codec}, returning {@code null} on any miss, decode failure, or
+     * when caching is disabled.
+     *
+     * <p>The TTL is not touched — use {@link #getAndRefresh} when you want
+     * "as long as someone keeps looking at this, keep it warm" semantics.
+     * Plain {@code get} gives you "this entry dies on its original schedule
+     * no matter how many reads happen" — right for history pages that must
+     * refresh on a predictable cadence.</p>
+     */
+    public <V> @Nullable V get(String key, Codec<V> codec) {
+        if (!enabled) return null;
+        return decode(key, backend().get(key), codec);
+    }
+
+    /**
+     * Like {@link #get} but, on hit, resets the entry's TTL to {@code ttl}
+     * so continued use keeps the cached copy alive. Use for hot lookups
+     * like VPN results and staff toggle state — things a DB query is
+     * expensive to re-materialize.
+     */
+    public <V> @Nullable V getAndRefresh(String key, Codec<V> codec, Duration ttl) {
+        if (!enabled) return null;
+        return decode(key, backend().getAndRefresh(key, ttl), codec);
+    }
+
+    private <V> @Nullable V decode(String key, byte[] raw, Codec<V> codec) {
+        if (raw == null) return null;
+        try {
+            return codec.decode(raw);
+        } catch (Exception ex) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING,
+                    "Cache decode failed for key " + key, ex);
+            backend().remove(key);
+            return null;
         }
-
-        if (!shouldUseDistributedPunishmentLock()) {
-            return true;
-        }
-
-        boolean claimed = punishQueueStore.putIfAbsent(uuid, PunishQueueData.now());
-        if (!claimed) {
-            inFlightPunishments.remove(uuid);
-        }
-
-        return claimed;
     }
 
-    public boolean isPunishmentQueued(UUID uuid) {
-        if (inFlightPunishments.contains(uuid)) {
-            return true;
-        }
-
-        return shouldUseDistributedPunishmentLock() && punishQueueStore.get(uuid) != null;
-    }
-
-    public void finishPunishment(UUID uuid, boolean keepDistributedLock) {
-        inFlightPunishments.remove(uuid);
-
-        if (keepDistributedLock && shouldUseDistributedPunishmentLock()) {
+    /**
+     * Stores {@code value} under {@code key} for {@code ttl}. Silently no-ops if caching is off.
+     */
+    public <V> void put(String key, V value, Codec<V> codec, Duration ttl) {
+        if (!enabled) return;
+        byte[] raw;
+        try {
+            raw = codec.encode(value);
+        } catch (Exception ex) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING,
+                    "Cache encode failed for key " + key, ex);
             return;
         }
-
-        punishQueueStore.remove(uuid);
+        backend().put(key, raw, ttl);
     }
 
-    public void saveCheckToggleData(UUID uuid, AlertsToggleData alertsToggleData) {
-        alertsToggleStore.put(uuid, alertsToggleData);
+    /**
+     * Lock-style write — only installs the value if no row exists.
+     *
+     * @return {@code true} iff this caller claimed the slot
+     */
+    public <V> boolean putIfAbsent(String key, V value, Codec<V> codec, Duration ttl) {
+        if (!enabled) return true;
+        byte[] raw;
+        try {
+            raw = codec.encode(value);
+        } catch (Exception ex) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING,
+                    "Cache encode failed for key " + key, ex);
+            return false;
+        }
+        return backend().putIfAbsent(key, raw, ttl);
     }
 
-    public @Nullable AlertsToggleData getAlertsToggleData(UUID uuid) {
-        return alertsToggleStore.get(uuid);
+    public void remove(String key) {
+        if (!enabled) return;
+        backend().remove(key);
     }
 
-    public void saveCheckSnapshot(UUID uuid, List<CheckSnapshot> checkSnapshots) {
-        checkSnapshotStore.put(uuid, checkSnapshots);
+    /**
+     * Checks presence without decoding. Cheap for key-only questions like
+     * "is there a lock for this uuid".
+     */
+    public boolean contains(String key) {
+        if (!enabled) return false;
+        return backend().get(key) != null;
     }
 
-    public @Nullable List<CheckSnapshot> getCheckSnapshot(UUID uuid) {
-        return checkSnapshotStore.get(uuid);
-    }
-
-    private void loadConfig() {
-        Config config = configRepository.config(ConfigFile.CONFIG);
-
-        this.cacheEnabled = config.getBoolean(ConfigKeys.CACHE_ENABLED);
-        this.checkDataTTL = config.getInt(ConfigKeys.CACHE_DATA_CHECKS);
-        this.punishQueueTTL = config.getInt(ConfigKeys.CACHE_PUNISH_QUEUE);
-        this.alertsToggleDataTTL = config.getInt(ConfigKeys.CACHE_ALERTS_TOGGLE);
-        this.vpnDataTTL = config.getInt(ConfigKeys.CACHE_DATA_VPN);
-
-        long configuredMaxEntries = config.getInt(ConfigKeys.CACHE_LOCAL_MAX_ENTRIES);
-        this.localCacheMaxEntries = configuredMaxEntries > 0 ? configuredMaxEntries : DEFAULT_LOCAL_MAX_ENTRIES;
-    }
-
-    private boolean shouldUseDistributedPunishmentLock() {
-        return cacheEnabled && punishQueueTTL > 0 && redisRepository.isConnected();
+    private CacheBackend backend() {
+        return redisBackend.isAvailable() ? redisBackend : localBackend;
     }
 }

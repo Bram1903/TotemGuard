@@ -24,14 +24,14 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +52,12 @@ public final class GuiManager {
     public GuiManager() {
         this.platform = TGPlatform.getInstance();
         this.platform.getEventRepository().subscribeInternal(InventoryChangedEvent.class, this::handleInventoryChanged);
+    }
+
+    private static Component deniedMessage(String permission) {
+        return Component.text("You lack the permission ", NamedTextColor.RED)
+                .append(Component.text(permission, NamedTextColor.YELLOW))
+                .append(Component.text(" to open that screen.", NamedTextColor.RED));
     }
 
     private GuiViewerInventory inventoryFor(UUID viewerId) {
@@ -139,12 +145,6 @@ public final class GuiManager {
 
         viewer.sendMessage(deniedMessage(required));
         return false;
-    }
-
-    private static Component deniedMessage(String permission) {
-        return Component.text("You lack the permission ", NamedTextColor.RED)
-                .append(Component.text(permission, NamedTextColor.YELLOW))
-                .append(Component.text(" to open that screen.", NamedTextColor.RED));
     }
 
     public void back(UUID viewerId) {

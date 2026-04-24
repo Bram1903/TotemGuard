@@ -20,12 +20,11 @@ package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.api3.punishment.PunishmentType;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
-import com.deathmotion.totemguard.common.gui.GuiItems;
-import com.deathmotion.totemguard.common.gui.GuiRenderResult;
-import com.deathmotion.totemguard.common.gui.GuiScreen;
-import com.deathmotion.totemguard.common.gui.GuiSession;
-import com.deathmotion.totemguard.common.gui.GuiText;
+import com.deathmotion.totemguard.common.gui.*;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -33,6 +32,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +45,7 @@ import java.util.logging.Level;
 public final class PlayerPunishmentsScreen extends GuiScreen {
 
     static final int PAGE_SIZE = 21;
+    private static final Duration HISTORY_TTL = Duration.ofMinutes(2);
     private static final int[] CONTENT_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
@@ -66,6 +67,22 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         this.page = Math.max(0, page);
     }
 
+    private static ItemType iconFor(PunishmentType type) {
+        return switch (type) {
+            case GENERIC -> ItemTypes.PAPER;
+            case KICK -> ItemTypes.GOLDEN_AXE;
+            case BAN -> ItemTypes.NETHERITE_AXE;
+        };
+    }
+
+    private static NamedTextColor colorFor(PunishmentType type) {
+        return switch (type) {
+            case GENERIC -> NamedTextColor.GRAY;
+            case KICK -> NamedTextColor.GOLD;
+            case BAN -> NamedTextColor.RED;
+        };
+    }
+
     @Override
     public String requiredPermission() {
         return "TotemGuardV3.Gui.History.Punishments";
@@ -83,12 +100,27 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         }
 
         platform.getScheduler().runAsyncTask(() -> {
+            CacheRepositoryImpl cache = platform.getCacheRepository();
+            String pageKey = CacheKeys.punishmentHistoryPage(targetId, page);
+            String countKey = CacheKeys.punishmentHistoryCount(targetId);
+
+            List<PunishmentRecord> cachedPage = cache.get(pageKey, CacheCodecs.PUNISHMENT_RECORDS);
+            Integer cachedCount = cache.get(countKey, CacheCodecs.INT);
+            if (cachedPage != null && cachedCount != null) {
+                this.loaded = cachedPage;
+                this.totalCount = cachedCount;
+                platform.getGuiManager().refresh(session.viewerId());
+                return;
+            }
+
             try {
                 List<PunishmentRecord> rows = platform.getDatabaseRepository()
                         .findPunishmentsByPlayer(targetId, PAGE_SIZE, page * PAGE_SIZE);
                 int total = platform.getDatabaseRepository().countPunishmentsByPlayer(targetId);
                 this.loaded = rows;
                 this.totalCount = total;
+                cache.put(pageKey, rows, CacheCodecs.PUNISHMENT_RECORDS, HISTORY_TTL);
+                cache.put(countKey, total, CacheCodecs.INT, HISTORY_TTL);
             } catch (Exception ex) {
                 if (!platform.getDatabaseRepository().isConnected()) {
                     this.loaded = List.of();
@@ -191,22 +223,6 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
                 Component.text(record.checkName() + " · " + record.type().name(), colorFor(record.type())),
                 lore
         );
-    }
-
-    private static ItemType iconFor(PunishmentType type) {
-        return switch (type) {
-            case GENERIC -> ItemTypes.PAPER;
-            case KICK -> ItemTypes.GOLDEN_AXE;
-            case BAN -> ItemTypes.NETHERITE_AXE;
-        };
-    }
-
-    private static NamedTextColor colorFor(PunishmentType type) {
-        return switch (type) {
-            case GENERIC -> NamedTextColor.GRAY;
-            case KICK -> NamedTextColor.GOLD;
-            case BAN -> NamedTextColor.RED;
-        };
     }
 
     private void renderFooter(GuiRenderResult.Builder builder) {

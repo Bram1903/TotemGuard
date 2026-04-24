@@ -23,11 +23,7 @@ import com.deathmotion.totemguard.common.database.Sql;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public final class SessionDao {
 
@@ -35,6 +31,11 @@ public final class SessionDao {
 
     public SessionDao(DatabaseConnectionManager connection) {
         this.connection = connection;
+    }
+
+    private static String truncate(String value, int max) {
+        if (value.length() <= max) return value;
+        return value.substring(0, max);
     }
 
     @Blocking
@@ -51,9 +52,9 @@ public final class SessionDao {
             stmt.setInt(1, playerId);
             stmt.setInt(2, serverId);
             stmt.setString(3, name);
-            if (clientBrand == null) stmt.setNull(4, java.sql.Types.VARCHAR);
+            if (clientBrand == null) stmt.setNull(4, Types.VARCHAR);
             else stmt.setString(4, truncate(clientBrand, 128));
-            if (clientVersion == null) stmt.setNull(5, java.sql.Types.SMALLINT);
+            if (clientVersion == null) stmt.setNull(5, Types.SMALLINT);
             else stmt.setInt(5, clientVersion);
             stmt.setLong(6, startedAt);
             stmt.executeUpdate();
@@ -86,10 +87,5 @@ public final class SessionDao {
             stmt.setInt(2, serverId);
             stmt.executeUpdate();
         }
-    }
-
-    private static String truncate(String value, int max) {
-        if (value.length() <= max) return value;
-        return value.substring(0, max);
     }
 }

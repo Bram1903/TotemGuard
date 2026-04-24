@@ -35,12 +35,18 @@ package com.deathmotion.totemguard.api3.punishment;
  */
 public enum PunishmentType {
 
-    /** Announcements, logging, webhooks — anything that doesn't remove the player. */
+    /**
+     * Announcements, logging, webhooks — anything that doesn't remove the player.
+     */
     GENERIC,
 
-    /** Removes the player from this server only. */
+    /**
+     * Removes the player from this server only.
+     */
     KICK,
 
-    /** Bans the player from the server / network. */
+    /**
+     * Bans the player from the server / network.
+     */
     BAN
 }

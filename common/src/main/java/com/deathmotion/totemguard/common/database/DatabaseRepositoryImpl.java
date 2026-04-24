@@ -21,11 +21,7 @@ package com.deathmotion.totemguard.common.database;
 import com.deathmotion.totemguard.api3.database.DatabaseRepository;
 import com.deathmotion.totemguard.api3.punishment.PunishmentType;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.database.dao.AlertDao;
-import com.deathmotion.totemguard.common.database.dao.CatalogDao;
-import com.deathmotion.totemguard.common.database.dao.PlayerDao;
-import com.deathmotion.totemguard.common.database.dao.PunishmentDao;
-import com.deathmotion.totemguard.common.database.dao.SessionDao;
+import com.deathmotion.totemguard.common.database.dao.*;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.database.model.AlertRecord;
 import com.deathmotion.totemguard.common.database.model.PendingAlert;
@@ -66,6 +62,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     private volatile @Nullable SessionDao sessionDao;
     private volatile @Nullable AlertDao alertDao;
     private volatile @Nullable PunishmentDao punishmentDao;
+    private volatile @Nullable StaffAlertPrefDao staffAlertPrefDao;
     private volatile @Nullable AlertWriter alertWriter;
     private volatile @Nullable RetentionSweeper retentionSweeper;
 
@@ -127,6 +124,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             SessionDao sessions = new SessionDao(connection);
             AlertDao alerts = new AlertDao(connection);
             PunishmentDao punishments = new PunishmentDao(connection);
+            StaffAlertPrefDao staffPrefs = new StaffAlertPrefDao(connection);
             AlertWriter writer = new AlertWriter(alerts);
             RetentionSweeper sweeper = new RetentionSweeper(alerts, opts);
 
@@ -138,6 +136,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             this.sessionDao = sessions;
             this.alertDao = alerts;
             this.punishmentDao = punishments;
+            this.staffAlertPrefDao = staffPrefs;
             this.alertWriter = writer;
             this.retentionSweeper = sweeper;
             writer.start();
@@ -228,11 +227,11 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
      * check id (which can touch the DB on first sight) happens on the
      * scheduler, not the caller.
      *
-     * @param playerId  surrogate tg_players.id from the login handshake, or
-     *                  {@code 0} if the session has not finished opening —
-     *                  in which case the alert is silently dropped (the
-     *                  session insert is racing the flag, a rare early-login
-     *                  edge case)
+     * @param playerId surrogate tg_players.id from the login handshake, or
+     *                 {@code 0} if the session has not finished opening —
+     *                 in which case the alert is silently dropped (the
+     *                 session insert is racing the flag, a rare early-login
+     *                 edge case)
      */
     public void recordAlert(
             @Nullable Long sessionId,
@@ -295,6 +294,27 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
                         "Failed to persist punishment for " + checkName, ex);
             }
         });
+    }
+
+    // ------------------------------------------------------------------
+    // Staff alert toggle preference — durable across process restarts and
+    // across the cache's 30-minute TTL.
+    // ------------------------------------------------------------------
+
+    @Blocking
+    public @Nullable Boolean findStaffAlertPref(UUID uuid) throws SQLException {
+        requireEnabled();
+        StaffAlertPrefDao prefs = this.staffAlertPrefDao;
+        if (prefs == null) throw new SQLException("Database not ready");
+        return prefs.find(uuid);
+    }
+
+    @Blocking
+    public void upsertStaffAlertPref(UUID uuid, boolean enabled) throws SQLException {
+        requireEnabled();
+        StaffAlertPrefDao prefs = this.staffAlertPrefDao;
+        if (prefs == null) throw new SQLException("Database not ready");
+        prefs.upsert(uuid, enabled, System.currentTimeMillis());
     }
 
     // ------------------------------------------------------------------
@@ -380,6 +400,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         PlayerDao players = this.playerDao;
         if (players != null) players.resetCache();
 
+        this.staffAlertPrefDao = null;
         this.punishmentDao = null;
         this.alertDao = null;
         this.sessionDao = null;

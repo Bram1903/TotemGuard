@@ -26,10 +26,7 @@ import com.deathmotion.totemguard.common.database.util.UuidBytes;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +45,11 @@ public final class PunishmentDao {
         this.connection = connection;
     }
 
+    private static String truncate(String value, int max) {
+        if (value.length() <= max) return value;
+        return value.substring(0, max);
+    }
+
     @Blocking
     public void insert(
             @Nullable Long sessionId,
@@ -61,14 +63,14 @@ public final class PunishmentDao {
     ) throws SQLException {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.INSERT_PUNISHMENT)) {
-            if (sessionId == null) stmt.setNull(1, java.sql.Types.BIGINT);
+            if (sessionId == null) stmt.setNull(1, Types.BIGINT);
             else stmt.setLong(1, sessionId);
             stmt.setInt(2, playerId);
             stmt.setInt(3, serverId);
             stmt.setInt(4, checkId);
             stmt.setInt(5, type.ordinal());
             stmt.setString(6, truncate(expandedCommand, 512));
-            if (debug == null) stmt.setNull(7, java.sql.Types.VARCHAR);
+            if (debug == null) stmt.setNull(7, Types.VARCHAR);
             else stmt.setString(7, truncate(debug, 512));
             stmt.setLong(8, createdAt);
             stmt.executeUpdate();
@@ -114,10 +116,5 @@ public final class PunishmentDao {
                 return rs.next() ? rs.getInt(1) : 0;
             }
         }
-    }
-
-    private static String truncate(String value, int max) {
-        if (value.length() <= max) return value;
-        return value.substring(0, max);
     }
 }

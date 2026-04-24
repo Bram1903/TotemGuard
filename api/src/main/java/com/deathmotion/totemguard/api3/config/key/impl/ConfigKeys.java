@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.api3.config.key.impl;
 
 import com.deathmotion.totemguard.api3.config.key.ConfigValueKey;
-import org.jetbrains.annotations.NotNull;
 
 public final class ConfigKeys {
 
@@ -93,36 +92,6 @@ public final class ConfigKeys {
             ConfigValueKey.required(
                     "cache.enabled",
                     true
-            );
-
-    public static final ConfigValueKey<Integer> CACHE_DATA_CHECKS =
-            ConfigValueKey.required(
-                    "cache.data.checks",
-                    300
-            );
-
-    public static final ConfigValueKey<Integer> CACHE_PUNISH_QUEUE =
-            ConfigValueKey.required(
-                    "cache.data.punish-queue",
-                    60
-            );
-
-    public static final @NotNull ConfigValueKey<Integer> CACHE_ALERTS_TOGGLE =
-            ConfigValueKey.required(
-                    "cache.data.alerts-toggle",
-                    1800
-            );
-
-    public static final ConfigValueKey<Integer> CACHE_DATA_VPN =
-            ConfigValueKey.required(
-                    "cache.data.vpn-data",
-                    1800
-            );
-
-    public static final ConfigValueKey<Integer> CACHE_LOCAL_MAX_ENTRIES =
-            ConfigValueKey.required(
-                    "cache.local.max-entries",
-                    10000
             );
 
     public static final ConfigValueKey<Boolean> VPN_ENABLED =

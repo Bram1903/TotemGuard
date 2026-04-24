@@ -50,6 +50,9 @@ public final class Sql {
                     "  alerts_enabled = VALUES(alerts_enabled), " +
                     "  updated_at = VALUES(updated_at)";
 
+    public static final String SELECT_STAFF_ALERT_PREF =
+            "SELECT alerts_enabled FROM tg_staff_alert_prefs WHERE player_uuid = ?";
+
     public static final String UPSERT_VPN_CACHE =
             "INSERT INTO tg_vpn_cache (ip_hash, is_vpn, provider, response, cached_at, expires_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?) " +

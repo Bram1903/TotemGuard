@@ -18,52 +18,9 @@
 
 package com.deathmotion.totemguard.common.cache.data;
 
-import com.deathmotion.totemguard.common.redis.cache.binary.RedisBinary;
-import com.deathmotion.totemguard.common.redis.cache.binary.RedisCodec;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-public record CheckSnapshot(String checkName, double buffer, int violations) implements RedisCodec<CheckSnapshot> {
-
-    static CheckSnapshot read(DataInput in) throws IOException {
-        int len = in.readInt();
-        byte[] name = new byte[len];
-        in.readFully(name);
-
-        return new CheckSnapshot(
-                new String(name, StandardCharsets.UTF_8),
-                in.readDouble(),
-                in.readInt()
-        );
-    }
-
-    public static byte[] encodeList(List<CheckSnapshot> snapshots) throws IOException {
-        return RedisBinary.writeList(snapshots, (out, s) -> s.write(out));
-    }
-
-    public static List<CheckSnapshot> decodeList(byte[] data) throws IOException {
-        return RedisBinary.readList(data, CheckSnapshot::read);
-    }
-
-    @Override
-    public byte[] encode() throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        write(new DataOutputStream(baos));
-        return baos.toByteArray();
-    }
-
-    @Override
-    public CheckSnapshot decode(byte[] data) throws IOException {
-        return read(new DataInputStream(new ByteArrayInputStream(data)));
-    }
-
-    void write(DataOutput out) throws IOException {
-        byte[] name = checkName.getBytes(StandardCharsets.UTF_8);
-        out.writeInt(name.length);
-        out.write(name);
-        out.writeDouble(buffer);
-        out.writeInt(violations);
-    }
+/**
+ * Snapshot of a single check's live state, carried between sessions via the
+ * cache so a cheater can't dodge violations by quickly reconnecting.
+ */
+public record CheckSnapshot(String checkName, double buffer, int violations) {
 }

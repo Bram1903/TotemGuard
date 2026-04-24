@@ -25,8 +25,9 @@ import com.deathmotion.totemguard.api3.config.key.impl.MessagesKeys;
 import com.deathmotion.totemguard.api3.event.impl.TGUserVPNDetectionEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
-import com.deathmotion.totemguard.common.cache.data.VPNData;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserVPNDetectionEventImpl;
@@ -35,18 +36,22 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.logging.Logger;
 
 @Getter
 public class AntiVPNRepositoryImpl {
 
+    // VPN responses from the upstream API are relatively stable, but 30 min is
+    // the sweet spot: fresh enough to react to changing exit nodes, long enough
+    // to absorb the reconnect storm of a small server without paying per-join.
+    private static final Duration VPN_CACHE_TTL = Duration.ofMinutes(30);
     private final ConfigRepositoryImpl configRepository;
     private final CacheRepositoryImpl cacheRepository;
     private final EventRepositoryImpl eventRepository;
     private final AlertRepositoryImpl alertRepository;
     private final MessageService messageService;
     private final Logger logger;
-
     private boolean enabled;
     private String apiKey = "";
     private @Nullable AntiVPNAdapter antiVPNAdapter;
@@ -93,14 +98,14 @@ public class AntiVPNRepositoryImpl {
 
         String ip = player.getUser().getAddress().getAddress().getHostAddress();
 
-        VPNData cachedData = cacheRepository.getVPNData(ip);
-        if (cachedData != null) {
-            handleVpnResult(player, ip, cachedData.vpn());
+        Boolean cached = cacheRepository.getAndRefresh(CacheKeys.vpn(ip), CacheCodecs.BOOLEAN, VPN_CACHE_TTL);
+        if (cached != null) {
+            handleVpnResult(player, ip, cached);
             return;
         }
 
         boolean vpn = antiVPNAdapter.isVpn(ip);
-        cacheRepository.saveVPNData(ip, new VPNData(vpn));
+        cacheRepository.put(CacheKeys.vpn(ip), vpn, CacheCodecs.BOOLEAN, VPN_CACHE_TTL);
         handleVpnResult(player, ip, vpn);
     }
 

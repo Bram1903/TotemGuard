@@ -27,6 +27,7 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -170,7 +171,7 @@ public final class PlayerProfileScreen extends GuiScreen {
                 .filter(check -> check.getViolations() > 0)
                 .count();
 
-        List<Component> lines = new java.util.ArrayList<>();
+        List<Component> lines = new ArrayList<>();
         lines.add(GuiText.line("Total violations", String.valueOf(totalViolations)));
         lines.add(GuiText.line("Checks with VL", String.valueOf(activeChecks)));
 

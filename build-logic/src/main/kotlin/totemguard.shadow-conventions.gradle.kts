@@ -45,6 +45,7 @@ tasks.withType<ShadowJar>().configureEach {
 
     minimize {
         exclude(dependency("com.github.ben-manes.caffeine:caffeine:.*"))
+        exclude(dependency("org.bstats:.*:.*"))
     }
 
     doLast {

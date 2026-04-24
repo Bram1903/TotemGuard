@@ -20,8 +20,9 @@ package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
-import com.deathmotion.totemguard.common.cache.data.AlertsToggleData;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;
@@ -29,7 +30,12 @@ import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
+import java.time.Duration;
+import java.util.UUID;
+
 public final class AlertCommand extends AbstractCommand {
+
+    private static final Duration ALERTS_TOGGLE_TTL = Duration.ofMinutes(30);
 
     private final TGPlatform platform;
     private final AlertRepositoryImpl alertRepository;
@@ -60,7 +66,24 @@ public final class AlertCommand extends AbstractCommand {
         boolean enabled = alertRepository.toggleAlerts(sender.getUniqueId());
 
         platform.getScheduler().runAsyncTask(() -> {
-            cacheManager.saveCheckToggleData(sender.getUniqueId(), new AlertsToggleData(enabled));
+            UUID uuid = sender.getUniqueId();
+
+            // Cache is the fast path — read on every login, updated here so
+            // the next reconnect within the TTL window doesn't need the DB.
+            cacheManager.put(CacheKeys.alertsToggle(uuid),
+                    enabled, CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+
+            // DB is the durable path — it outlives the cache TTL and the
+            // process, so staff preferences survive restarts and rejoins
+            // days later.
+            if (platform.getDatabaseRepository().isConnected()) {
+                try {
+                    platform.getDatabaseRepository().upsertStaffAlertPref(uuid, enabled);
+                } catch (Exception ex) {
+                    platform.getLogger().warning(
+                            "Failed to persist alert toggle for " + uuid + ": " + ex.getMessage());
+                }
+            }
         });
     }
 }
