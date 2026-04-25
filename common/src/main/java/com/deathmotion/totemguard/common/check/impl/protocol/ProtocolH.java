@@ -21,57 +21,30 @@ package com.deathmotion.totemguard.common.check.impl.protocol;
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
-import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 
-@RequiresTickEnd
-@CheckData(description = "Slot change after action in same tick", type = CheckType.PROTOCOL)
-public class ProtocolA extends CheckImpl implements PacketCheck {
+@CheckData(description = "Piercing attack without a piercing weapon", type = CheckType.PROTOCOL)
+public class ProtocolH extends CheckImpl implements PacketCheck {
 
-    private boolean sawFlushingAction;
-
-    public ProtocolA(TGPlayer player) {
+    public ProtocolH(TGPlayer player) {
         super(player);
-    }
-
-    private static boolean isFlushingAction(PacketTypeCommon type, PacketReceiveEvent event) {
-        if (type == PacketType.Play.Client.ATTACK
-                || type == PacketType.Play.Client.INTERACT_ENTITY
-                || type == PacketType.Play.Client.USE_ITEM
-                || type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            return true;
-        }
-        if (type == PacketType.Play.Client.PLAYER_DIGGING) {
-            DiggingAction action = new WrapperPlayClientPlayerDigging(event).getAction();
-            return action == DiggingAction.RELEASE_USE_ITEM || action == DiggingAction.STAB;
-        }
-        return false;
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon type = event.getPacketType();
+        if (event.getPacketType() != PacketType.Play.Client.PLAYER_DIGGING) return;
+        if (new WrapperPlayClientPlayerDigging(event).getAction() != DiggingAction.STAB) return;
 
-        if (type == PacketType.Play.Client.CLIENT_TICK_END) {
-            sawFlushingAction = false;
-            return;
-        }
-
-        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            if (sawFlushingAction) {
-                fail();
-            }
-            return;
-        }
-
-        if (isFlushingAction(type, event)) {
-            sawFlushingAction = true;
+        ItemStack mainHand = inventory.getMainHandItem();
+        if (mainHand == null || !mainHand.hasComponent(ComponentTypes.PIERCING_WEAPON)) {
+            fail();
         }
     }
 }

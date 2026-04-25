@@ -24,45 +24,27 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.TickData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientAttack;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
 @RequiresTickEnd
-@CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
+@CheckData(description = "Attack and place", type = CheckType.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
 
-    private int lastAttackedEntityId = -1;
-    private int attacks;
+    private final TickData tickData;
 
     public ProtocolC(TGPlayer player) {
         super(player);
+        this.tickData = player.getTickData();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
+        if (event.getPacketType() != PacketType.Play.Client.CLIENT_TICK_END) return;
 
-        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
-            final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
-
-            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
-            handleAttack(packet.getEntityId());
-        } else if (packetType == PacketType.Play.Client.ATTACK) {
-            handleAttack(new WrapperPlayClientAttack(event).getEntityId());
-        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            attacks = 0;
-            lastAttackedEntityId = -1;
+        if (tickData.isAttacking() && tickData.isPlacing() && !tickData.isInteracting()) {
+            fail("attack/place");
         }
-    }
-
-    private void handleAttack(int targetEntityId) {
-        if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
-            fail("attacks=" + attacks);
-        }
-
-        lastAttackedEntityId = targetEntityId;
     }
 }

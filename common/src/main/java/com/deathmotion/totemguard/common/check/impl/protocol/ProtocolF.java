@@ -24,45 +24,30 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientAttack;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
 
 @RequiresTickEnd
-@CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
-public class ProtocolD extends CheckImpl implements PacketCheck {
+@CheckData(description = "Sprint without forward input", type = CheckType.PROTOCOL)
+public class ProtocolF extends CheckImpl implements PacketCheck {
 
-    private int lastAttackedEntityId = -1;
-    private int attacks;
-
-    public ProtocolD(TGPlayer player) {
+    public ProtocolF(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
+        if (event.getPacketType() != PacketType.Play.Client.ENTITY_ACTION) return;
 
-        if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
-            final WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
+        WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
+        if (packet.getAction() != WrapperPlayClientEntityAction.Action.START_SPRINTING) return;
+        if (packet.getEntityId() != player.getUser().getEntityId()) return;
 
-            if (packet.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) return;
-            handleAttack(packet.getEntityId());
-        } else if (packetType == PacketType.Play.Client.ATTACK) {
-            handleAttack(new WrapperPlayClientAttack(event).getEntityId());
-        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            attacks = 0;
-            lastAttackedEntityId = -1;
+        InputData.State state = data.getInputData().current();
+        if (!state.forward() || state.backward()) {
+            fail("forward=" + state.forward() + ",back=" + state.backward());
         }
-    }
-
-    private void handleAttack(int targetEntityId) {
-        if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
-            fail("attacks=" + attacks);
-        }
-
-        lastAttackedEntityId = targetEntityId;
     }
 }

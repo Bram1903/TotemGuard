@@ -27,12 +27,15 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
 
 @RequiresTickEnd
-@CheckData(description = "Changed slot too quickly", type = CheckType.PROTOCOL, experimental = true)
+@CheckData(description = "Duplicated entity action", type = CheckType.PROTOCOL)
 public class ProtocolE extends CheckImpl implements PacketCheck {
 
-    int slotChanges;
+    private boolean sentSprint;
+    private boolean sentSneak;
+    private boolean sentInput;
 
     public ProtocolE(TGPlayer player) {
         super(player);
@@ -42,14 +45,32 @@ public class ProtocolE extends CheckImpl implements PacketCheck {
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
 
-        if (packetType == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            slotChanges++;
-        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            if (slotChanges > 1) {
-                fail("changes=" + slotChanges);
+        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
+            final WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
+
+            boolean sprint = false;
+            boolean sneak = false;
+
+            switch (packet.getAction()) {
+                case START_SNEAKING, STOP_SNEAKING -> sneak = true;
+                case START_SPRINTING, STOP_SPRINTING -> sprint = true;
             }
 
-            slotChanges = 0;
+            final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
+            if (alreadySent) {
+                fail();
+            }
+
+            this.sentSprint = sprint;
+            this.sentSneak = sneak;
+        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
+            if (sentInput) fail();
+            sentInput = true;
+        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
+            sentSprint = false;
+            sentSneak = false;
+            sentInput = false;
         }
     }
 }
+

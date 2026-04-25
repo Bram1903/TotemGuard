@@ -96,6 +96,30 @@ ProtocolE:
   punishment-commands:
     - "%default_punishment%"
 
+ProtocolF:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolG:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolH:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
 TickA:
   enabled: true
   punishable: false

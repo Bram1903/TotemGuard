@@ -27,8 +27,8 @@ import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
@@ -45,8 +45,10 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         if (type == PacketType.Play.Client.USE_ITEM) return "use";
         if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) return "change slot";
         if (type == PacketType.Play.Client.PICK_ITEM) return "pick item";
+        if (type == PacketType.Play.Client.PICK_ITEM_FROM_BLOCK) return "pick block";
+        if (type == PacketType.Play.Client.PICK_ITEM_FROM_ENTITY) return "pick entity";
         if (type == PacketType.Play.Client.ATTACK) return "attack";
-        if (type == PacketType.Play.Client.ENTITY_ACTION) return "entity action";
+        if (type == PacketType.Play.Client.ANIMATION) return "swing";
         return null;
     }
 
@@ -85,8 +87,30 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             return;
         }
 
-        if (type == PacketType.Play.Client.PLAYER_DIGGING && new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.START_DIGGING) {
-            failInventory("break");
+        if (type == PacketType.Play.Client.PLAYER_DIGGING) {
+            switch (new WrapperPlayClientPlayerDigging(event).getAction()) {
+                case START_DIGGING, FINISHED_DIGGING, CANCELLED_DIGGING -> failInventory("dig");
+                case DROP_ITEM, DROP_ITEM_STACK -> failInventory("drop");
+                case SWAP_ITEM_WITH_OFFHAND -> failInventory("swap offhand");
+                case RELEASE_USE_ITEM -> failInventory("release");
+                case STAB -> failInventory("stab");
+            }
+            return;
+        }
+
+        if (type == PacketType.Play.Client.ENTITY_ACTION) {
+            // STOP_SNEAKING / STOP_SPRINTING / START_JUMPING_WITH_HORSE can fire once
+            // on the screen-open transition (KeyMapping.releaseAll), so they're allowed.
+            switch (new WrapperPlayClientEntityAction(event).getAction()) {
+                case START_SNEAKING -> failInventory("sneak");
+                case LEAVE_BED -> failInventory("leave bed");
+                case START_SPRINTING -> failInventory("sprint");
+                case STOP_JUMPING_WITH_HORSE -> failInventory("stop ride jump");
+                case OPEN_HORSE_INVENTORY -> failInventory("open horse inv");
+                case START_FLYING_WITH_ELYTRA -> failInventory("start glide");
+                case STOP_SNEAKING, STOP_SPRINTING, START_JUMPING_WITH_HORSE -> {
+                }
+            }
         }
     }
 }

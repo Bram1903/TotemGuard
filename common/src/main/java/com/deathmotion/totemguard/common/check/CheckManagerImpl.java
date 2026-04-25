@@ -51,7 +51,7 @@ public class CheckManagerImpl {
 
     public final ClassToInstanceMap<Check> allChecks;
     private final TGPlayer player;
-    // Flat arrays for hot-path iteration — avoids repeated Map.values() view creation.
+
     private final PacketCheck[] packetCheckArray;
     private final EventCheck[] eventCheckArray;
     private final ExtendedCheck[] extendedCheckArray;
@@ -59,7 +59,6 @@ public class CheckManagerImpl {
     private final ClassToInstanceMap<PacketCheck> packetChecks;
     private final ClassToInstanceMap<ManualCheck> manualChecks;
 
-    // O(1) snapshot lookup by check name.
     private final Map<String, CheckImpl> checksByName;
 
     public CheckManagerImpl(TGPlayer player) {
@@ -79,6 +78,9 @@ public class CheckManagerImpl {
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(ProtocolE.class, new ProtocolE(player))
+                .put(ProtocolF.class, new ProtocolF(player))
+                .put(ProtocolG.class, new ProtocolG(player))
+                .put(ProtocolH.class, new ProtocolH(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
