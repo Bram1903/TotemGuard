@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.database;
 import com.deathmotion.totemguard.api3.database.DatabaseRepository;
 import com.deathmotion.totemguard.api3.punishment.PunishmentType;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.deathmotion.totemguard.common.database.dao.*;
 import com.deathmotion.totemguard.common.database.model.*;
 import com.deathmotion.totemguard.common.database.schema.SchemaInitializer;
@@ -60,7 +61,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     @Override
     public boolean isEnabled() {
         DatabaseOptions current = this.options;
-        return current != null && current.isEnabled();
+        return current != null && current.enabled();
     }
 
     @Override
@@ -70,10 +71,10 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
 
     @Blocking
     public synchronized void start() {
-        DatabaseOptions newOptions = new DatabaseOptions();
+        DatabaseOptions newOptions = TGPlatform.getInstance().getConfigRepository().configView().database();
         this.options = newOptions;
 
-        if (!newOptions.isEnabled()) {
+        if (!newOptions.enabled()) {
             return;
         }
 
@@ -110,7 +111,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             AlertWriter writer = new AlertWriter(alerts);
             RetentionSweeper sweeper = new RetentionSweeper(alerts, opts);
 
-            int serverId = catalog.resolveAndCacheThisServerId(opts.getServerName());
+            int serverId = catalog.resolveAndCacheThisServerId(opts.serverName());
 
             this.catalogDao = catalog;
             this.playerDao = players;
@@ -163,7 +164,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
 
     private synchronized void reconnectTick() {
         DatabaseOptions opts = this.options;
-        if (opts == null || !opts.isEnabled()) {
+        if (opts == null || !opts.enabled()) {
             stopReconnectScheduler();
             return;
         }

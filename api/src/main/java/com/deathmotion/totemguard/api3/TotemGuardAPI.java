@@ -34,11 +34,24 @@ import org.jetbrains.annotations.NotNull;
 public interface TotemGuardAPI {
 
     /**
-     * Returns the current TotemGuard API version.
+     * Returns the version of the running TotemGuard plugin (e.g. {@code 3.1.0}).
+     * <p>
+     * This advances every plugin release; consumers should not depend on its exact value
+     * for compatibility checks. Use {@link #getApiVersion()} for that.
+     *
+     * @return the plugin version, never {@code null}
+     */
+    @NotNull TGVersion getVersion();
+
+    /**
+     * Returns the version of the {@code totemguard-api} jar shaded into this build of
+     * TotemGuard. Independent of the plugin version: an API 1.0.x consumer shading
+     * {@code totemguard-api:1.0.0} can run against TotemGuard 3.1, 3.2, 3.3, etc. as long
+     * as the plugin still ships an API 1.x jar.
      *
      * @return the API version, never {@code null}
      */
-    @NotNull TGVersion getVersion();
+    @NotNull TGVersion getApiVersion();
 
     /**
      * Returns the repository for event subscription and dispatch.

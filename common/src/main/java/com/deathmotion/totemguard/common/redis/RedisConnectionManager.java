@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.redis;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.redis.options.RedisOptions;
+import com.deathmotion.totemguard.common.config.schema.RedisOptions;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
@@ -328,15 +328,15 @@ final class RedisConnectionManager {
 
     private RedisURI buildUri(RedisOptions opts) {
         RedisURI.Builder builder = RedisURI.builder()
-                .withHost(opts.getHost())
-                .withPort(opts.getPort())
+                .withHost(opts.host())
+                .withPort(opts.port())
                 .withTimeout(COMMAND_TIMEOUT);
 
-        String username = opts.getUsername();
-        String password = opts.getPassword();
+        String username = opts.username();
+        String password = opts.password();
 
-        if (password != null && !password.isBlank()) {
-            if (username != null && !username.isBlank()) {
+        if (!password.isBlank()) {
+            if (!username.isBlank()) {
                 builder.withAuthentication(username, password);
             } else {
                 builder.withPassword(password.toCharArray());

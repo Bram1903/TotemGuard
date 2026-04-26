@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.TotemGuard;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.check.impl.mods.ModRegistry;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
@@ -117,6 +118,7 @@ public abstract class TGPlatform {
 
         reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
+        ModRegistry.load();
         placeholderRepository = new PlaceholderRepositoryImpl();
         redisRepository = new RedisRepositoryImpl();
         databaseRepository = new DatabaseRepositoryImpl();

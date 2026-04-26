@@ -20,34 +20,47 @@ package com.deathmotion.totemguard.common.config.service;
 
 import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.common.config.path.PathRegistry;
-import com.deathmotion.totemguard.common.config.path.PathResolver;
-import com.deathmotion.totemguard.common.config.yaml.YamlNavigator;
+import com.deathmotion.totemguard.common.config.yaml.DefaultsResolver;
 
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Immutable snapshot of one loaded config file.
+ * <p>
+ * Holds the merged user-map, the bundled-defaults resolver, and the resolved version.
+ * The {@link #view()} accessor produces a thread-safe {@link Config} backed by this snapshot.
+ */
 public final class ConfigSnapshot {
 
     private final ConfigFile file;
-    private final Path path;
     private final Map<String, Object> root;
     private final int version;
-
-    private final PathResolver resolver;
-    private final YamlNavigator navigator;
+    private final DefaultsResolver defaults;
     private final ConfigView view;
 
-    public ConfigSnapshot(ConfigFile file, Path path, Map<String, Object> root, int version, PathRegistry registry) {
+    public ConfigSnapshot(ConfigFile file, Map<String, Object> root, int version, DefaultsResolver defaults) {
         this.file = Objects.requireNonNull(file, "file");
-        this.path = Objects.requireNonNull(path, "path");
         this.root = Objects.requireNonNull(root, "root");
         this.version = version;
+        this.defaults = Objects.requireNonNull(defaults, "defaults");
+        this.view = new ConfigView(file, version, root, defaults);
+    }
 
-        this.resolver = new PathResolver(registry);
-        this.navigator = new YamlNavigator(root, registry);
-        this.view = new ConfigView(file, version, root, navigator, resolver);
+    public ConfigFile file() {
+        return file;
+    }
+
+    public int version() {
+        return version;
+    }
+
+    public Map<String, Object> root() {
+        return root;
+    }
+
+    public DefaultsResolver defaults() {
+        return defaults;
     }
 
     public Config view() {

@@ -22,11 +22,14 @@ import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.config.ConfigRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.check.impl.mods.ModRegistry;
 import com.deathmotion.totemguard.common.config.migration.MigrationRegistry;
 import com.deathmotion.totemguard.common.config.service.ConfigService;
 import com.deathmotion.totemguard.common.config.service.ConfigSnapshot;
-import org.jspecify.annotations.NonNull;
+import com.deathmotion.totemguard.common.config.view.ChecksView;
+import com.deathmotion.totemguard.common.config.view.ConfigView;
+import com.deathmotion.totemguard.common.config.view.DiscordView;
+import com.deathmotion.totemguard.common.config.view.ModsView;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,22 +37,34 @@ import java.util.EnumMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Default {@link ConfigRepository} implementation.
+ * <p>
+ * Atomic {@link AtomicReference}s per file ensure reads see either the old snapshot or
+ * the new one across reloads. Typed views ({@link ChecksView}, {@link ModsView},
+ * {@link DiscordView}) are internal types — accessed directly off this concrete impl
+ * (which is what {@link TGPlatform#getConfigRepository()} returns) rather than through
+ * the public {@link ConfigRepository} interface.
+ */
 public final class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Path configDir;
     private final ConfigService service;
 
-    private final EnumMap<ConfigFile, AtomicReference<ConfigSnapshot>> snapshots =
-            new EnumMap<>(ConfigFile.class);
+    private final EnumMap<ConfigFile, AtomicReference<ConfigSnapshot>> snapshots = new EnumMap<>(ConfigFile.class);
+
+    private final AtomicReference<ConfigView> configView = new AtomicReference<>();
+    private final AtomicReference<ChecksView> checksView = new AtomicReference<>();
+    private final AtomicReference<ModsView> modsView = new AtomicReference<>();
+    private final AtomicReference<DiscordView> discordView = new AtomicReference<>();
 
     public ConfigRepositoryImpl() {
         TGPlatform platform = TGPlatform.getInstance();
         this.configDir = Paths.get(Objects.requireNonNull(platform.getPluginDirectory(), "pluginDirectory"));
-
         this.service = new ConfigService(
                 configDir,
                 ConfigRepositoryImpl.class.getClassLoader(),
-                new MigrationRegistry().buildDefault()
+                MigrationRegistry.buildDefault()
         );
 
         for (ConfigFile f : ConfigFile.values()) {
@@ -57,16 +72,15 @@ public final class ConfigRepositoryImpl implements ConfigRepository {
         }
 
         reloadAll();
-        ModRegistry.load(config(ConfigFile.MODS));
     }
 
     @Override
-    public @NonNull Path configDirectory() {
+    public @NotNull Path configDirectory() {
         return configDir;
     }
 
     @Override
-    public @NonNull Config config(@NonNull ConfigFile file) {
+    public @NotNull Config config(@NotNull ConfigFile file) {
         ConfigSnapshot snap = snapshots.get(file).get();
         if (snap == null) {
             throw new IllegalStateException("Config not loaded: " + file);
@@ -74,16 +88,46 @@ public final class ConfigRepositoryImpl implements ConfigRepository {
         return snap.view();
     }
 
+    public @NotNull ConfigView configView() {
+        return configView.get();
+    }
+
+    public @NotNull ChecksView checks() {
+        return checksView.get();
+    }
+
+    public @NotNull ModsView mods() {
+        return modsView.get();
+    }
+
+    public @NotNull DiscordView discord() {
+        return discordView.get();
+    }
+
     @Override
-    public void reload(@NonNull ConfigFile file) {
-        ConfigSnapshot newSnap = service.loadAndMigrate(file);
-        snapshots.get(file).set(newSnap);
+    public void reload(@NotNull ConfigFile file) {
+        ConfigSnapshot snap = service.loadAndMigrate(file);
+        snapshots.get(file).set(snap);
+        rebuildTypedViews(file, snap);
     }
 
     @Override
     public void reloadAll() {
         for (ConfigFile f : ConfigFile.values()) {
-            reload(f);
+            ConfigSnapshot snap = service.loadAndMigrate(f);
+            snapshots.get(f).set(snap);
+            rebuildTypedViews(f, snap);
+        }
+    }
+
+    private void rebuildTypedViews(ConfigFile file, ConfigSnapshot snap) {
+        switch (file) {
+            case CONFIG -> configView.set(new ConfigView(snap.view()));
+            case CHECKS -> checksView.set(new ChecksView(snap.view()));
+            case MODS -> modsView.set(new ModsView(snap.view()));
+            case DISCORD -> discordView.set(new DiscordView(snap.view()));
+            default -> {
+            }
         }
     }
 }

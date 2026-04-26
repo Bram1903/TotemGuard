@@ -3,9 +3,25 @@ import org.gradle.jvm.tasks.Jar
 plugins {
     java
     `maven-publish`
+    id("tg-version")
 }
 
-version = "1.0.0-SNAPSHOT"
+val apiBaseVersion = "1.0.0"
+val apiSnapshot = rootProject.extra["snapshot"] as Boolean
+val apiGitHash = rootProject.extra["gitHash"] as String?
+
+version = buildString {
+    append(apiBaseVersion)
+    if (apiSnapshot) {
+        if (!apiGitHash.isNullOrBlank()) append("+").append(apiGitHash)
+        append("-SNAPSHOT")
+    }
+}
+
+tgVersion {
+    packageName.set("com.deathmotion.totemguard.api3.versioning")
+    className.set("TGAPIVersions")
+}
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))

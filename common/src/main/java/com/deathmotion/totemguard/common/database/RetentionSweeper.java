@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.database;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.deathmotion.totemguard.common.database.dao.AlertDao;
 
 import java.util.concurrent.Executors;
@@ -43,8 +44,8 @@ public final class RetentionSweeper {
 
     public RetentionSweeper(AlertDao alertDao, DatabaseOptions options) {
         this.alertDao = alertDao;
-        this.alertRetentionDays = Math.max(0, options.getRetentionAlertDays());
-        this.vpnRetentionDays = Math.max(0, options.getRetentionVpnDays());
+        this.alertRetentionDays = Math.max(0, options.retentionAlertDays());
+        this.vpnRetentionDays = Math.max(0, options.retentionVpnDays());
     }
 
     public void start() {

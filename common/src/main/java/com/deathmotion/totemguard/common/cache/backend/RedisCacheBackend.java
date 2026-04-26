@@ -45,6 +45,30 @@ public final class RedisCacheBackend implements CacheBackend {
         this.repository = repository;
     }
 
+    private static <T> @Nullable T await(String op, String key, CompletionStage<T> stage) {
+        try {
+            return stage.toCompletableFuture().get(OP_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException ex) {
+            stage.toCompletableFuture().cancel(true);
+            throw new CacheBackendException(
+                    "Redis cache " + op + " for key " + key + " timed out after " + OP_TIMEOUT_MS + "ms", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new CacheBackendException("Redis cache " + op + " for key " + key + " was interrupted", ex);
+        } catch (ExecutionException ex) {
+            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+            throw new CacheBackendException(
+                    "Redis cache " + op + " failed for key " + key + ": " + cause.getMessage(), cause);
+        } catch (Exception ex) {
+            throw new CacheBackendException(
+                    "Redis cache " + op + " failed for key " + key + ": " + ex.getMessage(), ex);
+        }
+    }
+
+    private static byte[] bytes(String key) {
+        return key.getBytes(StandardCharsets.UTF_8);
+    }
+
     @Override
     public boolean isAvailable() {
         return repository.isConnected();
@@ -86,29 +110,5 @@ public final class RedisCacheBackend implements CacheBackend {
             throw new CacheBackendException("Redis cache backend is not available");
         }
         return conn.commands().async();
-    }
-
-    private static <T> @Nullable T await(String op, String key, CompletionStage<T> stage) {
-        try {
-            return stage.toCompletableFuture().get(OP_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException ex) {
-            stage.toCompletableFuture().cancel(true);
-            throw new CacheBackendException(
-                    "Redis cache " + op + " for key " + key + " timed out after " + OP_TIMEOUT_MS + "ms", ex);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new CacheBackendException("Redis cache " + op + " for key " + key + " was interrupted", ex);
-        } catch (ExecutionException ex) {
-            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-            throw new CacheBackendException(
-                    "Redis cache " + op + " failed for key " + key + ": " + cause.getMessage(), cause);
-        } catch (Exception ex) {
-            throw new CacheBackendException(
-                    "Redis cache " + op + " failed for key " + key + ": " + ex.getMessage(), ex);
-        }
-    }
-
-    private static byte[] bytes(String key) {
-        return key.getBytes(StandardCharsets.UTF_8);
     }
 }

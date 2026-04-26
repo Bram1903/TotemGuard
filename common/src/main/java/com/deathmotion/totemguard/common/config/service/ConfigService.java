@@ -19,20 +19,29 @@
 package com.deathmotion.totemguard.common.config.service;
 
 import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.common.config.migration.ConfigMigration;
+import com.deathmotion.totemguard.common.config.migration.MigrationContext;
 import com.deathmotion.totemguard.common.config.migration.MigrationRegistry;
-import com.deathmotion.totemguard.common.config.migration.MutableYaml;
-import com.deathmotion.totemguard.common.config.path.PathRegistry;
+import com.deathmotion.totemguard.common.config.yaml.DefaultsResolver;
 import com.deathmotion.totemguard.common.config.yaml.YamlIO;
 import com.deathmotion.totemguard.common.config.yaml.YamlMaps;
-import com.deathmotion.totemguard.common.config.yaml.YamlPatcher;
+import com.deathmotion.totemguard.common.config.yaml.YamlMerger;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Loads a {@link ConfigFile} from disk, applies migrations, merges in any missing bundled
+ * defaults, and produces a {@link ConfigSnapshot}.
+ * <p>
+ * Defaults are loaded once per {@link ConfigFile} (cached in {@link #defaultsCache}) and
+ * shared across all snapshots of that file.
+ */
 public final class ConfigService {
 
     private static final String VERSION_KEY = "config_version";
@@ -40,14 +49,10 @@ public final class ConfigService {
     private final Path configDir;
     private final ClassLoader classLoader;
     private final MigrationRegistry.Registry migrations;
-
     private final YamlIO io = new YamlIO();
+    private final EnumMap<ConfigFile, BundledResource> defaultsCache = new EnumMap<>(ConfigFile.class);
 
-    public ConfigService(
-            Path configDir,
-            ClassLoader classLoader,
-            MigrationRegistry.Registry migrations
-    ) {
+    public ConfigService(Path configDir, ClassLoader classLoader, MigrationRegistry.Registry migrations) {
         this.configDir = Objects.requireNonNull(configDir, "configDir");
         this.classLoader = Objects.requireNonNull(classLoader, "classLoader");
         this.migrations = Objects.requireNonNull(migrations, "migrations");
@@ -61,116 +66,99 @@ public final class ConfigService {
 
     public ConfigSnapshot loadAndMigrate(ConfigFile file) {
         Path target = configDir.resolve(file.fileName());
+        BundledResource bundled = loadBundled(file);
 
         if (Files.notExists(target)) {
-            copyDefaultVerbatim(file, target);
+            copyVerbatim(file, target);
         }
 
         String diskText = io.readString(target);
-        String defaultsText = readDefaultText(file);
-
         Map<String, Object> diskMap = io.parseToMap(diskText);
-        Map<String, Object> defaultsMap = io.parseToMap(defaultsText);
 
         int diskVersion = io.readVersion(diskMap, VERSION_KEY);
-        int latestVersion = io.readVersion(defaultsMap, VERSION_KEY);
+        int latestVersion = io.readVersion(bundled.map, VERSION_KEY);
 
-        String patchedText = diskText;
-        int v = diskVersion;
-
-        if (v < latestVersion) {
-            while (v < latestVersion) {
-                var migration = migrations.find(file, v);
-                if (migration == null) {
-                    throw new IllegalStateException(
-                            "Missing migration for " + file +
-                                    " from version " + v + " to " + (v + 1)
-                    );
-                }
-
-                Map<String, Object> currentMap = io.parseToMap(patchedText);
-                MutableYaml mutable = new MutableYaml(patchedText, currentMap);
-
-                migration.apply(mutable);
-
-                patchedText = mutable.text();
-                patchedText = YamlPatcher.setScalar(
-                        patchedText,
-                        VERSION_KEY,
-                        String.valueOf(migration.toVersion())
-                );
-
-                v = migration.toVersion();
-            }
+        Map<String, Object> migratedMap = diskMap;
+        boolean migrated = false;
+        if (diskVersion < latestVersion) {
+            migratedMap = runMigrations(file, diskMap, diskVersion, latestVersion);
+            migratedMap.put(VERSION_KEY, latestVersion);
+            migrated = true;
         }
 
-        Map<String, Object> afterMigrationMap = io.parseToMap(patchedText);
-
-        String mergedText = YamlPatcher.addMissingDefaults(
-                patchedText,
-                afterMigrationMap,
-                defaultsMap
-        );
-
-        boolean changed = !mergedText.equals(diskText);
-
-        Map<String, Object> mergedMap = io.parseToMap(mergedText);
-        int finalVersion = io.readVersion(mergedMap, VERSION_KEY);
-
-        if (finalVersion != latestVersion) {
-            mergedText = YamlPatcher.setScalar(
-                    mergedText,
-                    VERSION_KEY,
-                    String.valueOf(latestVersion)
-            );
-            mergedMap = io.parseToMap(mergedText);
-            changed = true;
-            finalVersion = latestVersion;
+        String finalText;
+        if (migrated) {
+            // Comments are not preserved across a migration; emit a fresh document.
+            // The version was already stamped on migratedMap above.
+            finalText = YamlMerger.dumpFresh(migratedMap);
+        } else {
+            // User file is at the bundled version (or higher — a downgrade scenario we leave alone).
+            // Surgically insert any missing defaults; the on-disk version line is preserved as-is.
+            finalText = YamlMerger.addMissingDefaults(diskText, migratedMap, bundled.map);
         }
 
-        if (changed) {
-            io.writeStringAtomic(target, mergedText);
+        Map<String, Object> finalMap = io.parseToMap(finalText);
+        int finalVersion = io.readVersion(finalMap, VERSION_KEY);
+
+        if (!finalText.equals(diskText)) {
+            io.writeStringAtomic(target, finalText);
         }
-
-        Map<String, Object> normalized = YamlMaps.toLinkedMap(mergedMap);
-
-        PathRegistry registry = new PathRegistry();
-        registry.registerAllPaths(normalized);
-        registry.registerAllPaths(YamlMaps.toLinkedMap(defaultsMap));
 
         return new ConfigSnapshot(
                 file,
-                target,
-                normalized,
+                YamlMaps.toLinkedMap(finalMap),
                 finalVersion,
-                registry
+                bundled.resolver
         );
     }
 
-    private void copyDefaultVerbatim(ConfigFile file, Path target) {
+    private Map<String, Object> runMigrations(ConfigFile file, Map<String, Object> startMap, int from, int to) {
+        Map<String, Object> map = YamlMaps.toLinkedMap(startMap);
+        int v = from;
+        while (v < to) {
+            ConfigMigration m = migrations.find(file, v);
+            if (m == null) {
+                throw new IllegalStateException(
+                        "Missing migration for " + file + " from version " + v + " to " + (v + 1));
+            }
+            MigrationContext ctx = new MigrationContext(map);
+            m.apply(ctx);
+            v = m.toVersion();
+        }
+        return map;
+    }
+
+    private BundledResource loadBundled(ConfigFile file) {
+        BundledResource cached = defaultsCache.get(file);
+        if (cached != null) return cached;
+
         try (InputStream in = classLoader.getResourceAsStream(file.fileName())) {
             if (in == null) {
-                throw new IllegalStateException("Missing resource: " + file.fileName());
+                throw new IllegalStateException("Missing bundled resource: " + file.fileName());
+            }
+            String text = io.readString(in);
+            Map<String, Object> map = io.parseToMap(text);
+            BundledResource resource = new BundledResource(text, map, new DefaultsResolver(map));
+            defaultsCache.put(file, resource);
+            return resource;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to load bundled resource: " + file.fileName(), e);
+        }
+    }
+
+    private void copyVerbatim(ConfigFile file, Path target) {
+        try (InputStream in = classLoader.getResourceAsStream(file.fileName())) {
+            if (in == null) {
+                throw new IllegalStateException("Missing bundled resource: " + file.fileName());
             }
             Files.createDirectories(target.getParent());
             Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "Failed to copy default config " + file.fileName() + " to " + target, e
-            );
+                    "Failed to copy bundled config " + file.fileName() + " to " + target, e);
         }
     }
 
-    private String readDefaultText(ConfigFile file) {
-        try (InputStream in = classLoader.getResourceAsStream(file.fileName())) {
-            if (in == null) {
-                throw new IllegalStateException("Missing resource: " + file.fileName());
-            }
-            return io.readString(in);
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Failed to read default resource " + file.fileName(), e
-            );
-        }
+    private record BundledResource(String text, Map<String, Object> map, DefaultsResolver resolver) {
     }
 }

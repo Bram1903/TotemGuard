@@ -16,26 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.config;
-
-import org.jetbrains.annotations.NotNull;
-
-import java.nio.file.Path;
+package com.deathmotion.totemguard.api3.config.key;
 
 /**
- * Central access point for TotemGuard's configuration.
+ * Constants for {@code discord.yml}.
  * <p>
- * Reload is atomic: callers reading during a {@link #reload(ConfigFile)} or
- * {@link #reloadAll()} see either the old snapshot or the new one, never a partially
- * loaded one.
+ * Per-channel settings (alerts/punishments) are read as nested sections under each prefix:
+ * <pre>
+ *   ConfigSection alerts = repo.config(ConfigFile.DISCORD)
+ *           .getSection(DiscordKeys.ALERTS_PREFIX)
+ *           .orElseThrow();
+ *   boolean enabled = alerts.getBoolean("enabled").orElse(false);
+ * </pre>
+ * Defaults live in the bundled {@code discord.yml} resource.
  */
-public interface ConfigRepository {
+public final class DiscordKeys {
 
-    @NotNull Path configDirectory();
+    public static final String ALERTS_PREFIX = "alerts";
+    public static final String PUNISHMENTS_PREFIX = "punishments";
 
-    @NotNull Config config(@NotNull ConfigFile file);
-
-    void reload(@NotNull ConfigFile file);
-
-    void reloadAll();
+    private DiscordKeys() {
+    }
 }

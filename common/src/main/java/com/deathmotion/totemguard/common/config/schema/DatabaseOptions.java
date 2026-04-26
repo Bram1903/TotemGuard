@@ -16,15 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.path;
+package com.deathmotion.totemguard.common.config.schema;
 
-public record PathId(int id) {
+import org.jetbrains.annotations.NotNull;
 
-    public static PathId invalid() {
-        return new PathId(0);
-    }
-
-    public boolean isInvalid() {
-        return id <= 0;
-    }
+/**
+ * Snapshot of the {@code database.*} section of {@code config.yml}.
+ * <p>
+ * Pool/batch tuning constants are intentionally not in this record — they are
+ * implementation details of the database subsystem (see
+ * {@link com.deathmotion.totemguard.common.database.DatabaseTuning}).
+ */
+public record DatabaseOptions(
+        boolean enabled,
+        @NotNull String serverName,
+        @NotNull String host,
+        int port,
+        @NotNull String database,
+        @NotNull String username,
+        @NotNull String password,
+        @NotNull String parameters,
+        int retentionAlertDays,
+        int retentionVpnDays
+) {
 }

@@ -17,6 +17,26 @@ commands:
   aliases:
     - tg3
 
+# MySQL 8+ or MariaDB. Shared across servers; each row is tagged with
+# the server name above.
+database:
+  enabled: false
+
+  host: localhost
+  port: 3306
+  database: totemguard
+  username: root
+  password: password
+  # Extra JDBC parameters, e.g. useSSL=false&serverTimezone=UTC
+  parameters: ""
+
+  # Only alerts and VPN cache are swept. Players, sessions, and punishments
+  # are kept forever.
+  retention:
+    # 0 = keep forever.
+    alerts-days: 30
+    vpn-cache-days: 30
+
 # In a multiserver setup, enabling Redis is highly recommended.
 # Redis will make TotemGuard much more powerful by syncing data, alerts and more across servers.
 redis:
@@ -37,7 +57,7 @@ redis:
 # Enables the Anti-VPN Detection feature.
 anti-vpn:
   # Enable VPN detection.
-  enabled: true
+  enabled: false
 
   # The Anti VPN provider to use. (IPRisk, etc)
   provider: IPRisk
@@ -47,23 +67,3 @@ anti-vpn:
 
   # Whether to block VPN users from joining the server.
   block: true
-
-# MySQL 8+ or MariaDB. Shared across servers; each row is tagged with
-# the server name above.
-database:
-  enabled: false
-
-  host: localhost
-  port: 3306
-  database: totemguard
-  username: root
-  password: password
-  # Extra JDBC parameters, e.g. useSSL=false&serverTimezone=UTC
-  parameters: ""
-
-  # Only alerts and VPN cache are swept. Players, sessions, and punishments
-  # are kept forever.
-  retention:
-    # 0 = keep forever.
-    alerts-days: 0
-    vpn-cache-days: 30

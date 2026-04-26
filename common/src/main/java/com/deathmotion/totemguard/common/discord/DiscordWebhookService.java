@@ -18,13 +18,14 @@
 
 package com.deathmotion.totemguard.common.discord;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.api3.config.key.impl.DiscordKeys;
+import com.deathmotion.totemguard.api3.config.key.DiscordKeys;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
+import com.deathmotion.totemguard.common.config.schema.WebhookConfig;
+import com.deathmotion.totemguard.common.config.schema.WebhookField;
+import com.deathmotion.totemguard.common.config.view.DiscordView;
 import com.deathmotion.totemguard.common.discord.webhook.*;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -71,8 +72,6 @@ public final class DiscordWebhookService implements Reloadable {
     private final WebhookChannel alertChannel;
     private final WebhookChannel punishmentChannel;
 
-    private char backtickReplacement = 'ʼ';
-
     public DiscordWebhookService() {
         this.platform = TGPlatform.getInstance();
         this.configRepository = platform.getConfigRepository();
@@ -95,13 +94,9 @@ public final class DiscordWebhookService implements Reloadable {
 
     @Override
     public void reload() {
-        Config discord = configRepository.config(ConfigFile.DISCORD);
-
-        String replacement = discord.getString(DiscordKeys.BACKTICK_REPLACEMENT);
-        this.backtickReplacement = replacement.isEmpty() ? '`' : replacement.charAt(0);
-
-        alertChannel.updateConfig(loadChannelConfig(discord, DiscordKeys.ALERTS_PREFIX));
-        punishmentChannel.updateConfig(loadChannelConfig(discord, DiscordKeys.PUNISHMENTS_PREFIX));
+        DiscordView view = configRepository.discord();
+        alertChannel.updateConfig(loadChannelConfig(view.webhook(DiscordKeys.ALERTS_PREFIX), DiscordKeys.ALERTS_PREFIX));
+        punishmentChannel.updateConfig(loadChannelConfig(view.webhook(DiscordKeys.PUNISHMENTS_PREFIX), DiscordKeys.PUNISHMENTS_PREFIX));
     }
 
     public void shutdown() {
@@ -176,7 +171,7 @@ public final class DiscordWebhookService implements Reloadable {
 
     private String render(CompiledDiscordTemplate template, Function<String, String> resolver) {
         if (template == null) return "";
-        return template.render(resolver, backtickReplacement);
+        return template.render(resolver);
     }
 
     private @Nullable String resolvePlaceholder(String key, TGPlayer player, CheckImpl check, Map<String, Object> extras) {
@@ -185,70 +180,56 @@ public final class DiscordWebhookService implements Reloadable {
         return probe.equals(out) ? null : out;
     }
 
-    private ChannelConfig loadChannelConfig(Config discord, String prefix) {
-        boolean enabled = discord.getBoolean(DiscordKeys.enabled(prefix));
-        if (!enabled) return ChannelConfig.disabled();
+    private ChannelConfig loadChannelConfig(WebhookConfig cfg, String prefix) {
+        if (!cfg.enabled()) return ChannelConfig.disabled();
 
-        String url = discord.getString(DiscordKeys.url(prefix));
-        if (!WEBHOOK_REGEX.test(url)) {
-            platform.getLogger().warning("[Discord] Invalid webhook URL for '" + prefix + "': " + url);
+        if (!WEBHOOK_REGEX.test(cfg.url())) {
+            platform.getLogger().warning("[Discord] Invalid webhook URL for '" + prefix + "': " + cfg.url());
             return ChannelConfig.disabled();
         }
 
         URI uri;
         try {
-            uri = URI.create(url);
+            uri = URI.create(cfg.url());
         } catch (IllegalArgumentException e) {
             platform.getLogger().warning("[Discord] Failed to parse webhook URL for '" + prefix + "': " + e.getMessage());
             return ChannelConfig.disabled();
         }
 
-        Integer color = parseColor(discord.getString(DiscordKeys.color(prefix)));
+        Integer color = parseColor(cfg.color());
         if (color == null) {
             platform.getLogger().warning("[Discord] Invalid hex color for '" + prefix + "', falling back to default.");
             color = 0xd9b61a;
         }
 
-        List<CompiledField> fields = compileFields(discord, DiscordKeys.fieldsPath(prefix));
-
-        String footerRaw = discord.getString(DiscordKeys.footer(prefix));
-        CompiledDiscordTemplate footer = footerRaw.isBlank() ? null : CompiledDiscordTemplate.compile(footerRaw);
+        List<CompiledField> compiled = compileFields(cfg.fields());
+        CompiledDiscordTemplate footer = cfg.footer().isBlank() ? null : CompiledDiscordTemplate.compile(cfg.footer());
 
         return new ChannelConfig(
                 true,
                 uri,
-                discord.getString(DiscordKeys.username(prefix)),
-                discord.getString(DiscordKeys.avatar(prefix)),
-                discord.getString(DiscordKeys.title(prefix)),
+                cfg.username(),
+                cfg.avatar(),
+                cfg.title(),
                 color,
-                discord.getBoolean(DiscordKeys.timestamp(prefix)),
-                discord.getString(DiscordKeys.thumbnail(prefix)),
+                cfg.timestamp(),
+                cfg.thumbnail(),
                 CompiledDiscordTemplate.compile(""),
                 footer,
-                fields.toArray(CompiledField[]::new)
+                compiled.toArray(CompiledField[]::new)
         );
     }
 
-    private List<CompiledField> compileFields(Config discord, String path) {
-        Object raw = discord.get(path).orElse(null);
-        if (!(raw instanceof List<?> list)) return List.of();
-
-        List<CompiledField> out = new ArrayList<>(list.size());
-        int max = Math.min(list.size(), Embed.MAX_FIELDS);
-
+    private List<CompiledField> compileFields(List<WebhookField> fields) {
+        if (fields.isEmpty()) return List.of();
+        int max = Math.min(fields.size(), Embed.MAX_FIELDS);
+        List<CompiledField> out = new ArrayList<>(max);
         for (int i = 0; i < max; i++) {
-            Object entry = list.get(i);
-            if (!(entry instanceof Map<?, ?> map)) continue;
-
-            Object name = map.get("name");
-            Object value = map.get("value");
-            Object inline = map.get("inline");
-            if (name == null || value == null) continue;
-
+            WebhookField f = fields.get(i);
             out.add(new CompiledField(
-                    CompiledDiscordTemplate.compile(String.valueOf(name)),
-                    CompiledDiscordTemplate.compile(String.valueOf(value)),
-                    inline instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(inline))
+                    CompiledDiscordTemplate.compile(f.name()),
+                    CompiledDiscordTemplate.compile(f.value()),
+                    f.inline()
             ));
         }
         return out;

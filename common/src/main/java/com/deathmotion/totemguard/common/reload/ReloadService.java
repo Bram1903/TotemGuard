@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.reload;
 
-import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.mods.ModRegistry;
@@ -38,7 +37,7 @@ public class ReloadService {
         platform.getAntiVPNRepository().reload();
         platform.getDiscordWebhookService().reload();
 
-        ModRegistry.load(platform.getConfigRepository().config(ConfigFile.MODS));
+        ModRegistry.load();
 
         platform.getPlayerRepository().getPlayers()
                 .parallelStream()

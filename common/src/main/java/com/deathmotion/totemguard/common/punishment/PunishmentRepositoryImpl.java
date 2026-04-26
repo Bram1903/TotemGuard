@@ -18,8 +18,6 @@
 
 package com.deathmotion.totemguard.common.punishment;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.event.impl.TGUserPunishEvent;
 import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api3.punishment.PunishmentType;
@@ -70,8 +68,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
     @Override
     public void reload() {
-        Config config = configRepository.config(ConfigFile.CHECKS);
-        this.defaultPunishment = config.getString("default-punishment").orElse("ban %tg_player% Unfair Advantage");
+        this.defaultPunishment = configRepository.checks().defaultPunishment();
     }
 
     @Override

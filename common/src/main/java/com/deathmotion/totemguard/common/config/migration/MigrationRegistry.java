@@ -24,23 +24,40 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Registry of configured migrations, keyed by ({@link ConfigFile}, fromVersion).
+ * <p>
+ * Add new migrations in {@link #buildDefault()}.
+ */
 public final class MigrationRegistry {
 
-    public Registry buildDefault() {
+    private MigrationRegistry() {
+    }
+
+    public static Registry buildDefault() {
         Registry r = new Registry();
 
-        // TODO: We can later add migrations here like this:
-        // r.register(ConfigFile.MESSAGES, new Migration_1_to_2_Messages());
+        // Gotta add migrations here, once we release new versions that change the config based on version 1
 
         return r;
     }
 
     public static final class Registry {
+
         private final Map<ConfigFile, Map<Integer, ConfigMigration>> migrations = new EnumMap<>(ConfigFile.class);
 
         public void register(ConfigFile file, ConfigMigration migration) {
-            migrations.computeIfAbsent(file, f -> new HashMap<>())
-                    .put(migration.fromVersion(), migration);
+            if (migration.toVersion() != migration.fromVersion() + 1) {
+                throw new IllegalArgumentException(
+                        "Migration must advance exactly one version: " + file
+                                + " " + migration.fromVersion() + " -> " + migration.toVersion());
+            }
+            ConfigMigration existing = migrations.computeIfAbsent(file, f -> new HashMap<>())
+                    .putIfAbsent(migration.fromVersion(), migration);
+            if (existing != null) {
+                throw new IllegalStateException(
+                        "Duplicate migration for " + file + " from version " + migration.fromVersion());
+            }
         }
 
         public ConfigMigration find(ConfigFile file, int fromVersion) {

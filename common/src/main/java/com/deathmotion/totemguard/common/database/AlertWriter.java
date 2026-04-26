@@ -46,9 +46,9 @@ public final class AlertWriter {
 
     public AlertWriter(AlertDao alertDao) {
         this.alertDao = alertDao;
-        this.queue = new LinkedBlockingQueue<>(DatabaseOptions.BATCH_QUEUE_CAPACITY);
-        this.batchMaxSize = DatabaseOptions.BATCH_MAX_SIZE;
-        this.flushIntervalNs = TimeUnit.MILLISECONDS.toNanos(DatabaseOptions.BATCH_FLUSH_INTERVAL_MS);
+        this.queue = new LinkedBlockingQueue<>(DatabaseTuning.BATCH_QUEUE_CAPACITY);
+        this.batchMaxSize = DatabaseTuning.BATCH_MAX_SIZE;
+        this.flushIntervalNs = TimeUnit.MILLISECONDS.toNanos(DatabaseTuning.BATCH_FLUSH_INTERVAL_MS);
     }
 
     public void start() {

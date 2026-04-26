@@ -18,17 +18,13 @@
 
 package com.deathmotion.totemguard.common.check.impl.mods;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigSection;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.schema.ModConfig;
+import com.deathmotion.totemguard.common.config.view.ModsView;
 
 import java.util.*;
 
 public final class ModRegistry {
-
-    private static final String MODS_ROOT_PATH = "mods";
-    private static final String PAYLOADS_PATH = "payloads";
-    private static final String SEVERITY_PATH = "severity";
 
     private static volatile Map<String, ModDefinition> DEFINITIONS = Map.of();
 
@@ -39,94 +35,40 @@ public final class ModRegistry {
         return DEFINITIONS;
     }
 
-    public static void load(Config config) {
-        final LinkedHashMap<String, ModDefinition> loadedDefinitions = new LinkedHashMap<>();
+    public static void load() {
+        ModsView view = TGPlatform.getInstance().getConfigRepository().mods();
 
-        config.getSection(MODS_ROOT_PATH).ifPresent(modsSection -> {
-            for (String modId : modsSection.asMap().keySet()) {
-                final String normalizedModId = normalizeModId(modId);
-                if (normalizedModId == null) {
-                    warn("Ignoring mod entry with an empty id.");
-                    continue;
-                }
-
-                final Optional<ConfigSection> modSection = modsSection.getSection(modId);
-                if (modSection.isEmpty()) {
-                    warn("Ignoring mod '" + normalizedModId + "' because it is not a section.");
-                    continue;
-                }
-
-                final ModDefinition definition = parseDefinition(normalizedModId, modSection.get());
-                if (definition == null) {
-                    continue;
-                }
-
-                loadedDefinitions.put(normalizedModId, definition);
+        LinkedHashMap<String, ModDefinition> loaded = new LinkedHashMap<>();
+        for (ModConfig cfg : view.all().values()) {
+            List<String> payloads = normalizePayloads(cfg.payloads());
+            if (payloads.isEmpty()) {
+                warn("Ignoring mod '" + cfg.id() + "' because it has no payloads.");
+                continue;
             }
-        });
 
-        DEFINITIONS = Collections.unmodifiableMap(new LinkedHashMap<>(loadedDefinitions));
+            ModSeverity severity = ModSeverity.fromConfigValue(cfg.severity());
+            if (severity == null) {
+                warn("Ignoring invalid severity '" + cfg.severity() + "' for mod '" + cfg.id()
+                        + "'. Valid values: LOG, KICK, BAN, KICK_THEN_BAN. Using KICK.");
+                severity = ModSeverity.KICK;
+            }
+
+            loaded.put(cfg.id(), new ModDefinition(cfg.id(), severity, payloads));
+        }
+
+        DEFINITIONS = Collections.unmodifiableMap(loaded);
     }
 
-    private static ModDefinition parseDefinition(String modId, ConfigSection modSection) {
-        final List<String> payloads = normalizeValues(modSection.getStringList(PAYLOADS_PATH), true);
+    private static List<String> normalizePayloads(List<String> values) {
+        if (values.isEmpty()) return List.of();
 
-        if (payloads.isEmpty()) {
-            warn("Ignoring mod '" + modId + "' because it has no payloads.");
-            return null;
-        }
-
-        final String severityValue = modSection.getString(SEVERITY_PATH).orElse(null);
-        final ModSeverity severity = ModSeverity.fromConfigValue(severityValue);
-        if (severity == null) {
-            warn("Ignoring invalid severity '" + severityValue + "' for mod '" + modId
-                    + "'. Valid values: LOG, KICK, BAN. Using KICK.");
-        }
-
-        return new ModDefinition(
-                modId,
-                severity == null ? ModSeverity.KICK : severity,
-                payloads
-        );
-    }
-
-    private static List<String> normalizeValues(List<String> values, boolean lowerCase) {
-        if (values.isEmpty()) {
-            return List.of();
-        }
-
-        final LinkedHashSet<String> normalizedValues = new LinkedHashSet<>();
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
         for (String value : values) {
-            if (value == null) {
-                continue;
-            }
-
-            String normalized = value.trim();
-            if (normalized.isBlank()) {
-                continue;
-            }
-
-            if (lowerCase) {
-                normalized = normalized.toLowerCase(Locale.ROOT);
-            }
-
-            normalizedValues.add(normalized);
+            if (value == null) continue;
+            String trimmed = value.trim().toLowerCase(Locale.ROOT);
+            if (!trimmed.isEmpty()) normalized.add(trimmed);
         }
-
-        if (normalizedValues.isEmpty()) {
-            return List.of();
-        }
-
-        return List.copyOf(normalizedValues);
-    }
-
-    private static String normalizeModId(String modId) {
-        if (modId == null) {
-            return null;
-        }
-
-        final String normalized = modId.trim();
-        return normalized.isBlank() ? null : normalized;
+        return normalized.isEmpty() ? List.of() : List.copyOf(normalized);
     }
 
     private static void warn(String message) {

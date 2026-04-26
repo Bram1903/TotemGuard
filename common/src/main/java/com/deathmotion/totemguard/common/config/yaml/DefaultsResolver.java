@@ -16,30 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.migration;
+package com.deathmotion.totemguard.common.config.yaml;
 
+import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 
-public final class MutableYaml {
+/**
+ * Wraps a bundled YAML map and exposes path-based lookups. Used as the fallback source
+ * for typed-key reads when the user file is missing a key.
+ */
+public record DefaultsResolver(Map<String, Object> root) {
 
-    private final Map<String, Object> map;
-    private String text;
-
-    public MutableYaml(String text, Map<String, Object> map) {
-        this.text = Objects.requireNonNull(text, "text");
-        this.map = Objects.requireNonNull(map, "map");
+    public DefaultsResolver(Map<String, Object> root) {
+        this.root = root == null ? Collections.emptyMap() : Collections.unmodifiableMap(root);
     }
 
-    public String text() {
-        return text;
+    public Optional<Object> get(String dottedPath) {
+        return YamlMaps.walk(root, dottedPath);
     }
 
-    public void text(String newText) {
-        this.text = Objects.requireNonNull(newText, "newText");
-    }
-
-    public Map<String, Object> map() {
-        return map;
+    public boolean contains(String dottedPath) {
+        return YamlMaps.containsPath(root, dottedPath);
     }
 }

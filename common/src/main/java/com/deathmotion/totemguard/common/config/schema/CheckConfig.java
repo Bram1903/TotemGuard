@@ -16,26 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.config;
+package com.deathmotion.totemguard.common.config.schema;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
+import java.util.List;
 
 /**
- * Central access point for TotemGuard's configuration.
- * <p>
- * Reload is atomic: callers reading during a {@link #reload(ConfigFile)} or
- * {@link #reloadAll()} see either the old snapshot or the new one, never a partially
- * loaded one.
+ * Typed view of one check entry in {@code checks.yml}. Internal type — fields may evolve
+ * across plugin versions. Public API consumers should read raw config via
+ * {@link com.deathmotion.totemguard.api3.config.Config} sections instead.
  */
-public interface ConfigRepository {
-
-    @NotNull Path configDirectory();
-
-    @NotNull Config config(@NotNull ConfigFile file);
-
-    void reload(@NotNull ConfigFile file);
-
-    void reloadAll();
+public record CheckConfig(
+        @NotNull String name,
+        boolean enabled,
+        boolean punishable,
+        boolean mitigate,
+        int maxViolations,
+        @NotNull List<String> punishmentCommands
+) {
+    public CheckConfig {
+        name = name.trim();
+        punishmentCommands = List.copyOf(punishmentCommands);
+    }
 }

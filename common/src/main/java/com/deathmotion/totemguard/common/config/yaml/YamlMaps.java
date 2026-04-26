@@ -18,10 +18,7 @@
 
 package com.deathmotion.totemguard.common.config.yaml;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class YamlMaps {
 
@@ -44,5 +41,81 @@ public final class YamlMaps {
             return out;
         }
         return v;
+    }
+
+    /**
+     * Walks a dot-separated path through nested maps. Returns empty if any segment is
+     * missing, the leaf value is null (e.g. {@code key:} with no value in YAML), or a
+     * non-map is encountered before the final segment.
+     * <p>
+     * Use {@link #containsPath} to distinguish "missing" from "present but null".
+     */
+    public static Optional<Object> walk(Map<String, Object> root, String dottedPath) {
+        if (dottedPath.isEmpty()) return Optional.empty();
+
+        String[] tokens = dottedPath.split("\\.");
+        Object cur = root;
+        for (String key : tokens) {
+            if (!(cur instanceof Map<?, ?> map)) return Optional.empty();
+            cur = map.get(key);
+            if (cur == null) return Optional.empty();
+        }
+        return Optional.of(cur);
+    }
+
+    /**
+     * Returns true if the leaf key at the given dotted path exists in the map, regardless
+     * of whether its value is null. Useful for telling YAML-null values ({@code key:} with
+     * no scalar) apart from missing keys.
+     */
+    public static boolean containsPath(Map<String, Object> root, String dottedPath) {
+        if (dottedPath.isEmpty()) return false;
+
+        String[] tokens = dottedPath.split("\\.");
+        Object cur = root;
+        for (int i = 0; i < tokens.length - 1; i++) {
+            if (!(cur instanceof Map<?, ?> map)) return false;
+            cur = map.get(tokens[i]);
+            if (cur == null) return false;
+        }
+        return cur instanceof Map<?, ?> map && map.containsKey(tokens[tokens.length - 1]);
+    }
+
+    /**
+     * Sets a dot-separated path in a nested map, creating intermediate maps as needed.
+     * Returns the previous value at the path, or null if absent.
+     */
+    @SuppressWarnings("unchecked")
+    public static Object setPath(Map<String, Object> root, String dottedPath, Object value) {
+        String[] tokens = dottedPath.split("\\.");
+        Map<String, Object> cur = root;
+        for (int i = 0; i < tokens.length - 1; i++) {
+            Object next = cur.get(tokens[i]);
+            if (next instanceof Map<?, ?> m) {
+                cur = (Map<String, Object>) m;
+            } else {
+                Map<String, Object> fresh = new LinkedHashMap<>();
+                cur.put(tokens[i], fresh);
+                cur = fresh;
+            }
+        }
+        return cur.put(tokens[tokens.length - 1], value);
+    }
+
+    /**
+     * Removes a dot-separated path from a nested map. Returns the removed value, or null if absent.
+     * Empty intermediate maps left behind are not pruned.
+     */
+    public static Object removePath(Map<String, Object> root, String dottedPath) {
+        String[] tokens = dottedPath.split("\\.");
+        Map<String, Object> cur = root;
+        for (int i = 0; i < tokens.length - 1; i++) {
+            Object next = cur.get(tokens[i]);
+            if (!(next instanceof Map<?, ?>)) return null;
+            @SuppressWarnings("unchecked")
+            Map<String, Object> casted = (Map<String, Object>) next;
+            cur = casted;
+        }
+        return cur.remove(tokens[tokens.length - 1]);
     }
 }

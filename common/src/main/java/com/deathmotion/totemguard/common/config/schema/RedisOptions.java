@@ -16,26 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.config;
+package com.deathmotion.totemguard.common.config.schema;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
-
 /**
- * Central access point for TotemGuard's configuration.
- * <p>
- * Reload is atomic: callers reading during a {@link #reload(ConfigFile)} or
- * {@link #reloadAll()} see either the old snapshot or the new one, never a partially
- * loaded one.
+ * Snapshot of the {@code redis.*} section of {@code config.yml}.
  */
-public interface ConfigRepository {
+public record RedisOptions(
+        boolean enabled,
+        @NotNull String host,
+        int port,
+        @NotNull String username,
+        @NotNull String password,
+        @NotNull MessagingOptions messaging
+) {
 
-    @NotNull Path configDirectory();
-
-    @NotNull Config config(@NotNull ConfigFile file);
-
-    void reload(@NotNull ConfigFile file);
-
-    void reloadAll();
+    public record MessagingOptions(
+            @NotNull String channel,
+            boolean sendAlerts,
+            boolean receiveAlerts
+    ) {
+        public boolean hasChannel() {
+            return !channel.isBlank();
+        }
+    }
 }

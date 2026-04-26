@@ -18,29 +18,28 @@
 
 package com.deathmotion.totemguard.common.commands;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.schema.CommandsOptions;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import lombok.experimental.UtilityClass;
 import org.incendo.cloud.Command;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.description.Description;
 
-import java.util.List;
-
 @UtilityClass
 public class CommandDefaults {
 
     public static final String PERMISSION_PREFIX = "TotemGuardV3.";
 
-    private static final Config CONFIG = TGPlatform.getInstance()
+    private static final CommandsOptions OPTIONS = TGPlatform.getInstance()
             .getConfigRepository()
-            .config(ConfigFile.CONFIG);
+            .configView()
+            .commands();
 
-    public static final String ROOT = readRoot();
-    public static final String[] ALIASES = readAliases();
+    public static final String ROOT = OPTIONS.base().isBlank() ? "totemguard" : OPTIONS.base();
+    public static final String[] ALIASES = OPTIONS.aliases().stream()
+            .filter(s -> !s.isBlank())
+            .toArray(String[]::new);
 
     public static Command.Builder<Sender> root(final CommandManager<Sender> manager) {
         return manager.commandBuilder(
@@ -48,22 +47,5 @@ public class CommandDefaults {
                 Description.of("The root command for TotemGuard."),
                 ALIASES
         );
-    }
-
-    private static String readRoot() {
-        String root = CONFIG.getString(ConfigKeys.COMMANDS_BASE);
-        return root.isBlank() ? ConfigKeys.COMMANDS_BASE.defaultValue() : root;
-    }
-
-    private static String[] readAliases() {
-        List<String> aliases = CONFIG.getStringList(ConfigKeys.COMMAND_ALIASES.path());
-
-        if (!aliases.isEmpty()) {
-            return aliases.stream()
-                    .filter(s -> !s.isBlank())
-                    .toArray(String[]::new);
-        }
-
-        return new String[]{ConfigKeys.COMMAND_ALIASES.defaultValue()};
     }
 }

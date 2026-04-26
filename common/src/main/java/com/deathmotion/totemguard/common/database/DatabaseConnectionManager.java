@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.database;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jetbrains.annotations.Nullable;
@@ -35,31 +36,31 @@ public final class DatabaseConnectionManager {
     private volatile @Nullable HikariDataSource dataSource;
 
     public synchronized void start(DatabaseOptions options) {
-        if (!options.isEnabled()) return;
+        if (!options.enabled()) return;
         loadDriver();
 
         HikariConfig config = new HikariConfig();
         config.setPoolName("TotemGuard-DB");
-        config.setMaximumPoolSize(DatabaseOptions.POOL_MAX_SIZE);
-        config.setMinimumIdle(DatabaseOptions.POOL_MIN_IDLE);
-        config.setConnectionTimeout(DatabaseOptions.POOL_CONNECTION_TIMEOUT_MS);
-        config.setIdleTimeout(DatabaseOptions.POOL_IDLE_TIMEOUT_MS);
-        config.setMaxLifetime(DatabaseOptions.POOL_MAX_LIFETIME_MS);
+        config.setMaximumPoolSize(DatabaseTuning.POOL_MAX_SIZE);
+        config.setMinimumIdle(DatabaseTuning.POOL_MIN_IDLE);
+        config.setConnectionTimeout(DatabaseTuning.POOL_CONNECTION_TIMEOUT_MS);
+        config.setIdleTimeout(DatabaseTuning.POOL_IDLE_TIMEOUT_MS);
+        config.setMaxLifetime(DatabaseTuning.POOL_MAX_LIFETIME_MS);
         // Lets the pool boot even when the DB is down; Hikari reconnects lazily.
         config.setInitializationFailTimeout(-1);
         config.setDriverClassName(DRIVER_CLASS);
 
         StringBuilder url = new StringBuilder("jdbc:mysql://")
-                .append(options.getHost())
-                .append(':').append(options.getPort())
-                .append('/').append(options.getDatabase());
-        String params = options.getParameters();
-        if (params != null && !params.isBlank()) {
+                .append(options.host())
+                .append(':').append(options.port())
+                .append('/').append(options.database());
+        String params = options.parameters();
+        if (!params.isBlank()) {
             url.append('?').append(params);
         }
         config.setJdbcUrl(url.toString());
-        config.setUsername(options.getUsername());
-        config.setPassword(options.getPassword());
+        config.setUsername(options.username());
+        config.setPassword(options.password());
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");

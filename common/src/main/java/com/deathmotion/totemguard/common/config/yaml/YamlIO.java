@@ -51,9 +51,15 @@ public final class YamlIO {
 
     public void writeStringAtomic(Path file, String content) {
         try {
+            Files.createDirectories(file.getParent());
             Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
-            Files.writeString(tmp, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Files.writeString(tmp, content, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            try {
+                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (Exception atomicFailure) {
+                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (Exception e) {
             throw new IllegalStateException("Failed to write file: " + file, e);
         }
@@ -63,7 +69,7 @@ public final class YamlIO {
         Object root = yaml.load(text);
         if (root == null) return new LinkedHashMap<>();
         if (!(root instanceof Map<?, ?> m)) {
-            throw new IllegalStateException("YAML root must be a map/object");
+            throw new IllegalStateException("YAML root must be a map");
         }
         return YamlMaps.toLinkedMap(m);
     }

@@ -19,8 +19,7 @@
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
 import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
-import com.deathmotion.totemguard.api3.config.key.impl.MessagesKeys;
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.MapResolverHolder;
 import org.jetbrains.annotations.NotNull;
@@ -37,8 +36,8 @@ public final class PlatformPlaceholders extends MapResolverHolder<InternalContex
                     .getString(MessagesKeys.PREFIX),
             "tg_server", ctx -> ctx.platform()
                     .getConfigRepository()
-                    .config(ConfigFile.CONFIG)
-                    .getString(ConfigKeys.SERVER)
+                    .configView()
+                    .server()
     );
 
     public PlatformPlaceholders() {

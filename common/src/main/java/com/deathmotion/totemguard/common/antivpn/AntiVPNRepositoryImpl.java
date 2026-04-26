@@ -18,10 +18,7 @@
 
 package com.deathmotion.totemguard.common.antivpn;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.api3.config.key.impl.ConfigKeys;
-import com.deathmotion.totemguard.api3.config.key.impl.MessagesKeys;
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.api3.event.impl.TGUserVPNDetectionEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
@@ -29,6 +26,7 @@ import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
+import com.deathmotion.totemguard.common.config.schema.AntiVpnOptions;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserVPNDetectionEventImpl;
 import com.deathmotion.totemguard.common.message.MessageService;
@@ -66,21 +64,19 @@ public class AntiVPNRepositoryImpl {
     }
 
     public void reload() {
-        Config config = configRepository.config(ConfigFile.CONFIG);
+        AntiVpnOptions opts = configRepository.configView().antiVpn();
 
-        enabled = config.getBoolean(ConfigKeys.VPN_ENABLED);
-        apiKey = config.getString(ConfigKeys.VPN_API_KEY);
-        shouldBlock = config.getBoolean(ConfigKeys.VPN_BLOCK);
-
-        String providerName = config.getString(ConfigKeys.VPN_PROVIDER);
+        enabled = opts.enabled();
+        apiKey = opts.apiKey();
+        shouldBlock = opts.block();
 
         antiVPNAdapter = AntiVPNProviders.AntiVPNAdapters.stream()
-                .filter(adapter -> adapter.getName().equalsIgnoreCase(providerName))
+                .filter(adapter -> adapter.getName().equalsIgnoreCase(opts.provider()))
                 .findFirst()
                 .orElse(null);
 
         if (antiVPNAdapter == null) {
-            logger.severe("Invalid anti-VPN provider: " + providerName);
+            logger.severe("Invalid anti-VPN provider: " + opts.provider());
             enabled = false;
             return;
         }

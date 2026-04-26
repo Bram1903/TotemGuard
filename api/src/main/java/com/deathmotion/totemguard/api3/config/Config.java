@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.api3.config;
 
-import com.deathmotion.totemguard.api3.config.key.ConfigValueKey;
+import com.deathmotion.totemguard.api3.config.key.ConfigKey;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -26,166 +26,50 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Represents an in-memory view of a YAML configuration file.
+ * In-memory view of a YAML configuration file.
  * <p>
- * Implementations should be safe to use across threads and optimized for frequent reads.
+ * Reads on a {@link Config} are thread-safe. Each call returns the value present in the
+ * snapshot at the time of the call; reloading produces a new snapshot, so callers should
+ * not cache references across reloads if they want to see updated values.
+ * <p>
+ * Typed-key reads ({@link #getString(ConfigKey)} etc.) fall back to the value from the
+ * bundled-default YAML resource when the user file is missing the key. Path-string reads
+ * ({@link #getString(String)} etc.) do not fall back; they return {@link Optional#empty()}
+ * for missing values.
  */
 public interface Config {
 
-    /**
-     * Returns which configuration file this view belongs to.
-     *
-     * @return the config file identifier
-     */
     @NotNull ConfigFile file();
 
-    /**
-     * Returns the configuration version loaded from disk (after migrations).
-     *
-     * @return the config version
-     */
     int version();
 
-    /**
-     * Returns whether a value exists at the given path.
-     *
-     * @param path dot-separated path (e.g. {@code alerts.message})
-     * @return true if present, otherwise false
-     */
     boolean contains(@NotNull String path);
 
-    /**
-     * Reads the raw value at the given path.
-     *
-     * @param path dot-separated path
-     * @return the raw value if present
-     */
     @NotNull Optional<Object> get(@NotNull String path);
 
-    /**
-     * Reads a value as a string.
-     *
-     * @param path dot-separated path
-     * @return the string value if present
-     */
     @NotNull Optional<String> getString(@NotNull String path);
 
-    /**
-     * Reads a value as an integer.
-     *
-     * @param path dot-separated path
-     * @return the integer value if present and parseable
-     */
     @NotNull Optional<Integer> getInt(@NotNull String path);
 
-    /**
-     * Reads a value as a boolean.
-     *
-     * @param path dot-separated path
-     * @return the boolean value if present and parseable
-     */
     @NotNull Optional<Boolean> getBoolean(@NotNull String path);
 
-    /**
-     * Reads a value as a double.
-     *
-     * @param path dot-separated path
-     * @return the double value if present and parseable
-     */
-    @NotNull Optional<Double> getDouble(@NotNull String path);
-
-    /**
-     * Reads a value as a list of strings.
-     * <p>
-     * If the value is missing, not a list, or an empty list, an empty list is returned.
-     *
-     * @param path dot-separated path
-     * @return an immutable list of strings (possibly empty)
-     */
     @NotNull List<@NotNull String> getStringList(@NotNull String path);
 
-    /**
-     * Returns a section if the value at the path is a map/object.
-     *
-     * @param path dot-separated path
-     * @return the section if present and a map
-     */
     @NotNull Optional<ConfigSection> getSection(@NotNull String path);
 
-    /**
-     * Returns an unmodifiable view of the underlying root map.
-     * <p>
-     * This is intended for advanced access patterns; prefer typed helpers where possible.
-     *
-     * @return the root map
-     */
     @NotNull Map<@NotNull String, @NotNull Object> asMap();
 
     /**
-     * Reads a string value using a key that provides a default.
-     *
-     * @param key key definition containing path and default value
-     * @return the configured value, or the key's default
+     * Typed-key reads. Fall back to the bundled-default value if the user file does not
+     * contain the key. Throw {@link IllegalStateException} if neither the user file nor
+     * the bundled defaults contain the key (which indicates a programming error: every
+     * declared key must exist in the bundled YAML).
      */
-    @NotNull
-    default String getString(@NotNull ConfigValueKey<String> key) {
-        return getString(key.path()).orElseGet(key::defaultValue);
-    }
+    @NotNull String getString(@NotNull ConfigKey<String> key);
 
-    /**
-     * Reads a string value as optional, using a key definition.
-     * <p>
-     * This is useful for keys that are intentionally optional.
-     *
-     * @param key key definition containing the path
-     * @return the configured value if present
-     */
-    @NotNull
-    default Optional<String> getOptionalString(@NotNull ConfigValueKey<String> key) {
-        return getString(key.path());
-    }
+    int getInt(@NotNull ConfigKey<Integer> key);
 
-    /**
-     * Reads an integer value using a key that provides a default.
-     *
-     * @param key key definition containing path and default value
-     * @return the configured value, or the key's default
-     */
-    default int getInt(@NotNull ConfigValueKey<Integer> key) {
-        return getInt(key.path()).orElseGet(key::defaultValue);
-    }
+    boolean getBoolean(@NotNull ConfigKey<Boolean> key);
 
-    /**
-     * Reads a boolean value using a key that provides a default.
-     *
-     * @param key key definition containing path and default value
-     * @return the configured value, or the key's default
-     */
-    default boolean getBoolean(@NotNull ConfigValueKey<Boolean> key) {
-        return getBoolean(key.path()).orElseGet(key::defaultValue);
-    }
-
-    /**
-     * Reads a double value using a key that provides a default.
-     *
-     * @param key key definition containing path and default value
-     * @return the configured value, or the key's default
-     */
-    default double getDouble(@NotNull ConfigValueKey<Double> key) {
-        return getDouble(key.path()).orElseGet(key::defaultValue);
-    }
-
-    /**
-     * Reads a list of strings and falls back to the provided default if the list is empty.
-     * <p>
-     * Note: this treats "missing" and "present-but-empty" the same.
-     *
-     * @param key key definition containing path and default value
-     * @return the configured list, or the key's default if empty
-     */
-    @NotNull
-    default List<@NotNull String> getStringListOrDefault(@NotNull ConfigValueKey<List<String>> key) {
-        List<String> v = getStringList(key.path());
-        return v.isEmpty() ? key.defaultValue() : v;
-    }
+    @NotNull List<@NotNull String> getStringList(@NotNull ConfigKey<List<String>> key);
 }

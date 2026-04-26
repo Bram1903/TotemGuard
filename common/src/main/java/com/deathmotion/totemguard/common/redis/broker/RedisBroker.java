@@ -19,12 +19,12 @@
 package com.deathmotion.totemguard.common.redis.broker;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.schema.RedisOptions;
 import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
 import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketCodec;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
-import com.deathmotion.totemguard.common.redis.options.RedisOptions;
 import io.lettuce.core.pubsub.RedisPubSubAdapter;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +51,7 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
     public RedisBroker(PacketRegistry registry, String identifier, RedisOptions.MessagingOptions options) {
         this.registry = registry;
         this.identifier = identifier;
-        this.channelName = options.getChannel() == null ? "" : options.getChannel().trim();
+        this.channelName = options.channel().trim();
         this.channelBytes = channelName.getBytes(StandardCharsets.UTF_8);
         this.configured = !channelName.isEmpty();
     }

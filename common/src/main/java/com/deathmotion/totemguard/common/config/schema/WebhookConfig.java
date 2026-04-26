@@ -16,26 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.config;
+package com.deathmotion.totemguard.common.config.schema;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
+import java.util.List;
 
 /**
- * Central access point for TotemGuard's configuration.
- * <p>
- * Reload is atomic: callers reading during a {@link #reload(ConfigFile)} or
- * {@link #reloadAll()} see either the old snapshot or the new one, never a partially
- * loaded one.
+ * Typed view of one Discord webhook channel. Internal type — fields may evolve across
+ * plugin versions.
  */
-public interface ConfigRepository {
-
-    @NotNull Path configDirectory();
-
-    @NotNull Config config(@NotNull ConfigFile file);
-
-    void reload(@NotNull ConfigFile file);
-
-    void reloadAll();
+public record WebhookConfig(
+        boolean enabled,
+        @NotNull String url,
+        @NotNull String username,
+        @NotNull String avatar,
+        @NotNull String title,
+        @NotNull String color,
+        boolean timestamp,
+        @NotNull String thumbnail,
+        @NotNull String footer,
+        @NotNull List<WebhookField> fields
+) {
+    public WebhookConfig {
+        fields = List.copyOf(fields);
+    }
 }

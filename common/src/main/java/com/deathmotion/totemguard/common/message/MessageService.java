@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.message;
 
 import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.api3.config.key.ConfigValueKey;
+import com.deathmotion.totemguard.api3.config.key.ConfigKey;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
@@ -48,10 +48,6 @@ public class MessageService implements Reloadable {
         this.messages = platform.getConfigRepository().config(ConfigFile.MESSAGES);
     }
 
-    private static @NotNull String nullToEmpty(@Nullable String s) {
-        return s == null ? "" : s;
-    }
-
     private static @NotNull Map<String, Object> safeExtras(@Nullable Map<String, Object> extras) {
         return extras == null ? Collections.emptyMap() : extras;
     }
@@ -61,34 +57,33 @@ public class MessageService implements Reloadable {
         this.messages = platform.getConfigRepository().config(ConfigFile.MESSAGES);
     }
 
-    public @NotNull String getString(@NotNull ConfigValueKey<String> key) {
-        return placeholder.get().replace(nullToEmpty(messages.getString(key)));
+    public @NotNull String getString(@NotNull ConfigKey<String> key) {
+        return placeholder.get().replace(messages.getString(key));
     }
 
-    public @NotNull Component getComponent(@NotNull ConfigValueKey<String> key) {
+    public @NotNull Component getComponent(@NotNull ConfigKey<String> key) {
         return MessageUtil.formatMessage(getString(key));
     }
 
-    public @NotNull String getString(@NotNull ConfigValueKey<String> key,
+    public @NotNull String getString(@NotNull ConfigKey<String> key,
                                      @NotNull TGPlayer player) {
         return getString(key, player, null, null);
     }
 
-    public @NotNull String getString(@NotNull ConfigValueKey<String> key,
+    public @NotNull String getString(@NotNull ConfigKey<String> key,
                                      @NotNull TGPlayer player,
                                      @Nullable CheckImpl check) {
         return getString(key, player, check, null);
     }
 
-    public @NotNull String getString(@NotNull ConfigValueKey<String> key,
+    public @NotNull String getString(@NotNull ConfigKey<String> key,
                                      @NotNull TGPlayer player,
                                      @Nullable CheckImpl check,
                                      @Nullable Map<String, Object> extras) {
-        String raw = nullToEmpty(messages.getString(key));
-        return placeholder.get().replace(raw, player, check, safeExtras(extras));
+        return placeholder.get().replace(messages.getString(key), player, check, safeExtras(extras));
     }
 
-    public @NotNull Component getComponent(@NotNull ConfigValueKey<String> key,
+    public @NotNull Component getComponent(@NotNull ConfigKey<String> key,
                                            @NotNull TGPlayer player,
                                            @Nullable CheckImpl check,
                                            @Nullable Map<String, Object> extras) {
@@ -99,13 +94,11 @@ public class MessageService implements Reloadable {
     public final @NotNull String getJoined(@NotNull TGPlayer player,
                                            @Nullable CheckImpl check,
                                            @Nullable Map<String, Object> extras,
-                                           @NotNull ConfigValueKey<String>... keys) {
-
+                                           @NotNull ConfigKey<String>... keys) {
         StringBuilder message = new StringBuilder();
-        for (ConfigValueKey<String> key : keys) {
-            message.append(nullToEmpty(messages.getString(key)));
+        for (ConfigKey<String> key : keys) {
+            message.append(messages.getString(key));
         }
-
         return placeholder.get().replace(message.toString(), player, check, safeExtras(extras));
     }
 }

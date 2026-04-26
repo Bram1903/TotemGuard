@@ -2,8 +2,12 @@ group = "com.deathmotion"
 
 val baseVersion = "3.0.0"
 val snapshot = true
+val gitHash: String? = resolveGitHash()
 
-version = baseVersion.withSnapshotMetadata(snapshot, resolveGitHash())
+extra["snapshot"] = snapshot
+extra["gitHash"] = gitHash
+
+version = baseVersion.withSnapshotMetadata(snapshot, gitHash)
 
 subprojects {
     group = rootProject.group

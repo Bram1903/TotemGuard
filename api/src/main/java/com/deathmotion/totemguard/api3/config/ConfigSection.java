@@ -72,14 +72,6 @@ public interface ConfigSection {
     @NotNull Optional<Boolean> getBoolean(@NotNull String path);
 
     /**
-     * Reads a value as a double.
-     *
-     * @param path dot-separated path relative to this section
-     * @return the double value if present and parseable
-     */
-    @NotNull Optional<Double> getDouble(@NotNull String path);
-
-    /**
      * Reads a value as a list of strings.
      * <p>
      * If the value is missing, not a list, or an empty list, an empty list is returned.

@@ -1,5 +1,6 @@
 package com.deathmotion.totemguard.common.util;
 
+import com.deathmotion.totemguard.api3.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import lombok.NonNull;
@@ -32,22 +33,22 @@ public final class ConsoleBanner {
                 "          %%%%%%%%%          "
         );
 
-        TGVersion version = TGVersions.CURRENT;
-
-        String versionString = version.snapshot()
-                ? version.major() + "." + version.minor() + "." + version.patch()
-                  + "-SNAPSHOT (" + version.snapshotCommit() + ")"
-                : version.major() + "." + version.minor() + "." + version.patch();
-
         List<String> text = List.of(
                 "TotemGuard",
-                "Version    : " + versionString,
+                "Version    : " + format(TGVersions.CURRENT),
+                "API        : " + format(TGAPIVersions.CURRENT),
                 "Build Time : " + BUILD_FORMAT.format(TGVersions.BUILD_TIMESTAMP),
-                "Edition    : Public",
                 "Authors    : Bram & OutDev"
         );
 
         logger.info(generateBanner(totem, text).toString());
+    }
+
+    private String format(TGVersion version) {
+        String base = version.major() + "." + version.minor() + "." + version.patch();
+        if (!version.snapshot()) return base;
+        String commit = version.snapshotCommit();
+        return commit != null ? base + "-SNAPSHOT (" + commit + ")" : base + "-SNAPSHOT";
     }
 
     private @NonNull StringBuilder generateBanner(List<String> totem, List<String> text) {

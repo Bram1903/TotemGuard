@@ -21,11 +21,11 @@ package com.deathmotion.totemguard.common.redis;
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.schema.RedisOptions;
 import com.deathmotion.totemguard.common.redis.broker.RedisBroker;
 import com.deathmotion.totemguard.common.redis.broker.handlers.SyncAlertMessageHandler;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
-import com.deathmotion.totemguard.common.redis.options.RedisOptions;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -55,7 +55,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
     @Override
     public boolean isEnabled() {
         RedisOptions current = this.options;
-        return current != null && current.isEnabled();
+        return current != null && current.enabled();
     }
 
     @Override
@@ -66,15 +66,15 @@ public final class RedisRepositoryImpl implements RedisRepository {
     public boolean shouldSendAlerts() {
         RedisOptions current = this.options;
         return isEnabled()
-                && current.getMessaging().hasChannel()
-                && current.getMessaging().isSendAlerts();
+                && current.messaging().hasChannel()
+                && current.messaging().sendAlerts();
     }
 
     public boolean shouldReceiveAlerts() {
         RedisOptions current = this.options;
         return isEnabled()
-                && current.getMessaging().hasChannel()
-                && current.getMessaging().isReceiveAlerts();
+                && current.messaging().hasChannel()
+                && current.messaging().receiveAlerts();
     }
 
     // Ephemeral — re-fetch per operation, do not cache.
@@ -97,7 +97,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
     }
 
     public synchronized void start() {
-        applyOptions(new RedisOptions(), false);
+        applyOptions(currentOptions(), false);
     }
 
     public synchronized void stop() {
@@ -108,7 +108,11 @@ public final class RedisRepositoryImpl implements RedisRepository {
     }
 
     public synchronized void restart() {
-        applyOptions(new RedisOptions(), true);
+        applyOptions(currentOptions(), true);
+    }
+
+    private RedisOptions currentOptions() {
+        return TGPlatform.getInstance().getConfigRepository().configView().redis();
     }
 
     private void applyOptions(RedisOptions newOptions, boolean restart) {
@@ -118,15 +122,15 @@ public final class RedisRepositoryImpl implements RedisRepository {
         teardownBroker();
 
         // Stop before wiring the new broker so addListener doesn't fire onConnected with a doomed conn.
-        if (restart || !newOptions.isEnabled()) {
+        if (restart || !newOptions.enabled()) {
             manager.stop();
         }
 
-        if (!newOptions.isEnabled()) {
+        if (!newOptions.enabled()) {
             return;
         }
 
-        RedisBroker newBroker = new RedisBroker(registry, identifier, newOptions.getMessaging());
+        RedisBroker newBroker = new RedisBroker(registry, identifier, newOptions.messaging());
         if (newBroker.isConfigured()) {
             manager.addListener(newBroker);
         }

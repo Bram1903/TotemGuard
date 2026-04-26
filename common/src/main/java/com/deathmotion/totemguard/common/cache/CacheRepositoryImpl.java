@@ -31,7 +31,17 @@ import java.util.logging.Level;
 public final class CacheRepositoryImpl {
 
     private static final long FAILURE_LOG_INTERVAL_NANOS = Duration.ofMinutes(1).toNanos();
+    private static final Codec<byte[]> RAW_CODEC = new Codec<>() {
+        @Override
+        public byte[] encode(byte[] value) {
+            return value;
+        }
 
+        @Override
+        public byte[] decode(byte[] raw) {
+            return raw;
+        }
+    };
     private final RedisCacheBackend redisBackend;
     private final LocalCacheBackend localBackend;
     private final AtomicLong lastFailureLogNanos = new AtomicLong(Long.MIN_VALUE);
@@ -151,16 +161,4 @@ public final class CacheRepositoryImpl {
                 "Redis cache " + op + " for key " + key
                         + " failed — falling back to local cache: " + ex.getMessage());
     }
-
-    private static final Codec<byte[]> RAW_CODEC = new Codec<>() {
-        @Override
-        public byte[] encode(byte[] value) {
-            return value;
-        }
-
-        @Override
-        public byte[] decode(byte[] raw) {
-            return raw;
-        }
-    };
 }

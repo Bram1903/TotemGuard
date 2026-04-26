@@ -8,11 +8,6 @@
 # The version of the discord file. DO NOT TOUCH!!!
 config_version: 1
 
-# Character used to replace literal backticks inside placeholder values rendered
-# in inline code spans (Discord ignores backslash escapes inside code spans).
-# Use a backtick here (`) to disable the substitution.
-backtick-replacement: "ʼ"
-
 # Webhook Alert Settings
 alerts:
   # Enable or disable alert webhooks.

@@ -36,6 +36,13 @@ import java.util.regex.Pattern;
  */
 public record CompiledDiscordTemplate(Segment[] segments) {
 
+    /**
+     * Substitute character used in place of literal backticks inside Discord code spans.
+     * <p>
+     * Discord ignores backslash escapes inside code spans, so a backtick in placeholder
+     * data would terminate the span. We replace it with a visually-similar character.
+     */
+    public static final char BACKTICK_REPLACEMENT = 'ʼ';
     private static final Pattern PLACEHOLDER = Pattern.compile("%([a-zA-Z0-9_]+)%");
 
     public static CompiledDiscordTemplate compile(@NotNull String template) {
@@ -65,9 +72,9 @@ public record CompiledDiscordTemplate(Segment[] segments) {
         return new CompiledDiscordTemplate(parts.toArray(Segment[]::new));
     }
 
-    private static String escape(String value, EscapeMode mode, char backtickReplacement) {
+    private static String escape(String value, EscapeMode mode) {
         if (mode == EscapeMode.NONE) return value;
-        if (mode == EscapeMode.CODE_SPAN) return escapeCodeSpan(value, backtickReplacement);
+        if (mode == EscapeMode.CODE_SPAN) return escapeCodeSpan(value);
         return escapeMarkdown(value);
     }
 
@@ -113,12 +120,11 @@ public record CompiledDiscordTemplate(Segment[] segments) {
 
     /**
      * Code span escaping: Discord ignores backslash escapes inside code spans,
-     * so backticks are replaced with a visually-similar substitute character.
-     * If replacement == '`', this is a no-op (user disabled the feature).
+     * so backticks are replaced with {@link #BACKTICK_REPLACEMENT}.
      */
-    public static String escapeCodeSpan(String s, char replacement) {
-        if (s == null || s.isEmpty() || replacement == '`') return s;
-        return s.replace('`', replacement);
+    public static String escapeCodeSpan(String s) {
+        if (s == null || s.isEmpty()) return s;
+        return s.replace('`', BACKTICK_REPLACEMENT);
     }
 
     /**
@@ -172,11 +178,10 @@ public record CompiledDiscordTemplate(Segment[] segments) {
     /**
      * Render the template by resolving placeholders with the supplied function.
      *
-     * @param resolver            resolves a placeholder key (without the surrounding {@code %}) to its value,
-     *                            or {@code null} if the placeholder could not be resolved
-     * @param backtickReplacement char substituted for literal backticks inside code spans ({@code '`'} disables substitution)
+     * @param resolver resolves a placeholder key (without the surrounding {@code %}) to its value,
+     *                 or {@code null} if the placeholder could not be resolved
      */
-    public String render(@NotNull Function<String, @Nullable String> resolver, char backtickReplacement) {
+    public String render(@NotNull Function<String, @Nullable String> resolver) {
         StringBuilder sb = new StringBuilder(segments.length * 32);
         for (Segment seg : segments) {
             if (seg instanceof Literal l) {
@@ -184,7 +189,7 @@ public record CompiledDiscordTemplate(Segment[] segments) {
             } else if (seg instanceof Placeholder p) {
                 String val = resolver.apply(p.key);
                 if (val != null) {
-                    sb.append(escape(val, p.mode, backtickReplacement));
+                    sb.append(escape(val, p.mode));
                 } else {
                     sb.append('%').append(p.key).append('%');
                 }

@@ -16,25 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.path;
+package com.deathmotion.totemguard.common.config.schema;
 
-import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 
-public final class PathResolver {
+import java.util.List;
 
-    private final PathRegistry registry;
-
-    public PathResolver(PathRegistry registry) {
-        this.registry = Objects.requireNonNull(registry, "registry");
-    }
-
-    public PathId resolve(String path) {
-        return registry.resolve(path);
-    }
-
-    public String[] tokens(String path) {
-        PathId id = registry.resolve(path);
-        if (!id.isInvalid()) return registry.tokens(id);
-        return new String[0];
+/**
+ * Typed view of one mod entry in {@code mods.yml}. Internal type — fields may evolve
+ * across plugin versions.
+ */
+public record ModConfig(
+        @NotNull String id,
+        @NotNull String severity,
+        @NotNull List<String> payloads
+) {
+    public ModConfig {
+        id = id.trim();
+        severity = severity.trim();
+        payloads = List.copyOf(payloads);
     }
 }

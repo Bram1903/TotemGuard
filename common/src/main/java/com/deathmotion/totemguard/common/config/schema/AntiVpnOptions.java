@@ -16,26 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.config;
+package com.deathmotion.totemguard.common.config.schema;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
-
 /**
- * Central access point for TotemGuard's configuration.
- * <p>
- * Reload is atomic: callers reading during a {@link #reload(ConfigFile)} or
- * {@link #reloadAll()} see either the old snapshot or the new one, never a partially
- * loaded one.
+ * Snapshot of the {@code anti-vpn.*} section of {@code config.yml}.
  */
-public interface ConfigRepository {
-
-    @NotNull Path configDirectory();
-
-    @NotNull Config config(@NotNull ConfigFile file);
-
-    void reload(@NotNull ConfigFile file);
-
-    void reloadAll();
+public record AntiVpnOptions(
+        boolean enabled,
+        @NotNull String provider,
+        @NotNull String apiKey,
+        boolean block
+) {
 }
