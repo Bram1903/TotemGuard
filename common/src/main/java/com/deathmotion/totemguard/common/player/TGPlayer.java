@@ -187,7 +187,7 @@ public class TGPlayer implements TGUser {
         platform.getScheduler().runAsyncTask(this::cacheData);
     }
 
-    private void resolveDatabaseProfile() {
+    void resolveDatabaseProfile() {
         if (!platform.getDatabaseRepository().isConnected()) return;
         try {
             Integer clientVersionId = user.getClientVersion() == null

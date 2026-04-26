@@ -202,4 +202,12 @@ public final class PlayerRepositoryImpl implements UserRepository {
     public @NotNull Collection<TGPlayer> getPlayers() {
         return players.values();
     }
+
+    public void backfillDatabaseProfiles() {
+        for (TGPlayer player : getPlayers()) {
+            if (player.getDatabasePlayerId() > 0) continue;
+            if (!player.isHasLoggedIn()) continue;
+            player.resolveDatabaseProfile();
+        }
+    }
 }

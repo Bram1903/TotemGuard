@@ -125,6 +125,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
 
             TGPlatform.getInstance().getLogger().info(
                     "Database ready (MySQL, serverId=" + serverId + ")");
+            backfillOnlineProfiles();
             return true;
         } catch (Exception ex) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
@@ -152,6 +153,12 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         ScheduledExecutorService current = this.reconnectExecutor;
         this.reconnectExecutor = null;
         if (current != null) current.shutdownNow();
+    }
+
+    private void backfillOnlineProfiles() {
+        TGPlatform platform = TGPlatform.getInstance();
+        if (platform.getPlayerRepository() == null) return;
+        platform.getScheduler().runAsyncTask(() -> platform.getPlayerRepository().backfillDatabaseProfiles());
     }
 
     private synchronized void reconnectTick() {
