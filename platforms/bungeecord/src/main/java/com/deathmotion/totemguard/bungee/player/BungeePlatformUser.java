@@ -1,6 +1,6 @@
 /*
  * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
- * Copyright (C) 2025 Bram and contributors
+ * Copyright (C) 2026 Bram and contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@ package com.deathmotion.totemguard.bungee.player;
 
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public class BungeePlatformUser implements PlatformUser {
@@ -31,8 +35,23 @@ public class BungeePlatformUser implements PlatformUser {
         this.bungeePlayer = bungeePlayer;
     }
 
+    private static BaseComponent[] toBungee(Component component) {
+        String legacy = LegacyComponentSerializer.legacySection().serialize(component);
+        return TextComponent.fromLegacyText(legacy);
+    }
+
     @Override
     public boolean hasPermission(String permission) {
         return bungeePlayer.hasPermission(permission);
+    }
+
+    @Override
+    public void sendMessage(Component message) {
+        bungeePlayer.sendMessage(toBungee(message));
+    }
+
+    @Override
+    public void kick(Component reason) {
+        bungeePlayer.disconnect(toBungee(reason));
     }
 }

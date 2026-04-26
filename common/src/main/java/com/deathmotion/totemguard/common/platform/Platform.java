@@ -21,10 +21,10 @@ package com.deathmotion.totemguard.common.platform;
 public enum Platform {
     PAPER,
     FABRIC,
-    SPONGE,
-    VELOCITY;
+    VELOCITY,
+    BUNGEE;
 
     public boolean isProxy() {
-        return this == VELOCITY;
+        return this == VELOCITY || this == BUNGEE;
     }
 }

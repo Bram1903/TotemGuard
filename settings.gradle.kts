@@ -1,13 +1,14 @@
 pluginManagement {
     repositories {
-        gradlePluginPortal()
+        maven("https://maven.fabricmc.net/")
         mavenCentral()
+        gradlePluginPortal()
     }
     includeBuild("build-logic")
 }
 
 dependencyResolutionManagement {
-    repositoriesMode = RepositoriesMode.PREFER_SETTINGS
+    repositoriesMode = RepositoriesMode.PREFER_PROJECT
     repositories {
         mavenCentral()
         maven("https://repo.codemc.io/repository/maven-releases/")
@@ -16,7 +17,7 @@ dependencyResolutionManagement {
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
         maven("https://oss.sonatype.org/content/groups/public/")
-        maven("https://repo.spongepowered.org/repository/maven-public/")
+        maven("https://maven.fabricmc.net/")
     }
 }
 
@@ -30,7 +31,7 @@ include(":api")
 include(":common")
 include(":platforms:bukkit")
 include(":platforms:velocity")
-//include(":platforms:bungeecord")
-//include(":platforms:sponge")
+include(":platforms:bungeecord")
+include(":platforms:fabric")
 include(":tests:api-bukkit-test-plugin")
 include(":tests:api-velocity-test-plugin")

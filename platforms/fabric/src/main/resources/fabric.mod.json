@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "totemguard",
+  "version": "${version}",
+  "name": "TotemGuard",
+  "description": "TotemGuard anticheat",
+  "authors": [
+    "Bram",
+    "OutDev"
+  ],
+  "license": "GPL-3.0",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "com.deathmotion.totemguard.fabric.TGFabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "fabric-api": ">=0.145.0",
+    "minecraft": ">=26.1",
+    "java": ">=25",
+    "packetevents": "*"
+  }
+}

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.event.packet;
 
-import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
@@ -30,13 +30,16 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 
 public class PacketCheckManagerListener extends PacketListenerAbstract {
 
-    public PacketCheckManagerListener() {
+    private final PlayerRepositoryImpl playerRepository;
+
+    public PacketCheckManagerListener(PlayerRepositoryImpl playerRepository) {
         super(PacketListenerPriority.LOW);
+        this.playerRepository = playerRepository;
     }
 
     @Override
     public void onPacketReceive(final PacketReceiveEvent event) {
-        TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(event.getUser());
+        TGPlayer player = playerRepository.getPlayer(event.getUser());
         if (player == null) return;
 
         if (event.getConnectionState() != ConnectionState.PLAY) {
@@ -62,7 +65,7 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
     @Override
     public void onPacketSend(final PacketSendEvent event) {
         if (event.getConnectionState() != ConnectionState.PLAY) return;
-        TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(event.getUser());
+        TGPlayer player = playerRepository.getPlayer(event.getUser());
         if (player == null) return;
 
         for (ProcessorOutbound processor : player.getProcessorOutbounds()) {

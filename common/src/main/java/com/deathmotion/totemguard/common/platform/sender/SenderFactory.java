@@ -21,17 +21,22 @@
 package com.deathmotion.totemguard.common.platform.sender;
 
 import net.kyori.adventure.text.Component;
+import org.incendo.cloud.SenderMapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Factory class to make a thread-safe sender instance
+ * Factory class to make a thread-safe sender instance.
+ *
+ * <p>Implements {@link SenderMapper} directly so subclasses don't need to repeat
+ * trivial {@code map}/{@code reverse} glue — they only define the abstract
+ * platform-specific accessors.</p>
  *
  * @param <T> the command sender type
  */
-public abstract class SenderFactory<T> {
+public abstract class SenderFactory<T> implements SenderMapper<T, Sender> {
     protected abstract UUID getUniqueId(T sender);
 
     protected abstract String getName(T sender);
@@ -63,5 +68,15 @@ public abstract class SenderFactory<T> {
     public final @NotNull T unwrap(@NotNull Sender sender) {
         Objects.requireNonNull(sender, "sender");
         return (T) sender.getNativeSender();
+    }
+
+    @Override
+    public final @NotNull Sender map(@NotNull T base) {
+        return wrap(base);
+    }
+
+    @Override
+    public final @NotNull T reverse(@NotNull Sender mapped) {
+        return unwrap(mapped);
     }
 }

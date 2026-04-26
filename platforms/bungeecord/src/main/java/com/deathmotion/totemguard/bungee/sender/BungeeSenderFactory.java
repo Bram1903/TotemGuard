@@ -16,52 +16,45 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Copied straight from Grim / Axionize as it looks well implemented, and I am not trying to reinvent the wheel
+package com.deathmotion.totemguard.bungee.sender;
 
-package com.deathmotion.totemguard.bukkit.sender;
-
-import com.deathmotion.totemguard.bukkit.TGBukkit;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.platform.sender.SenderFactory;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.command.RemoteConsoleCommandSender;
-import org.bukkit.entity.Player;
-import org.bukkit.permissions.Permission;
-import org.bukkit.permissions.PermissionDefault;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.UUID;
 
-public class BukkitSenderFactory extends SenderFactory<CommandSender> {
+public final class BungeeSenderFactory extends SenderFactory<CommandSender> {
 
     @Override
     protected String getName(CommandSender sender) {
-        return sender instanceof Player ? sender.getName() : Sender.CONSOLE_NAME;
+        return sender instanceof ProxiedPlayer ? sender.getName() : Sender.CONSOLE_NAME;
     }
 
     @Override
     protected UUID getUniqueId(CommandSender sender) {
-        if (sender instanceof Player) {
-            return ((Player) sender).getUniqueId();
+        if (sender instanceof ProxiedPlayer) {
+            return ((ProxiedPlayer) sender).getUniqueId();
         }
         return Sender.CONSOLE_UUID;
     }
 
     @Override
     protected void sendMessage(CommandSender sender, String message) {
-        sender.sendMessage(message);
+        sender.sendMessage(TextComponent.fromLegacyText(message));
     }
 
     @Override
     protected void sendMessage(CommandSender sender, Component message) {
-        // we can safely send async for players and the console - otherwise, send it sync
-        if (sender instanceof Player || sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender) {
-            sender.sendMessage(message);
-        } else {
-            FoliaScheduler.getGlobalRegionScheduler().run(TGBukkit.getInstance(), (o) -> sender.sendMessage(message));
-        }
+        String legacy = LegacyComponentSerializer.legacySection().serialize(message);
+        BaseComponent[] parts = TextComponent.fromLegacyText(legacy);
+        sender.sendMessage(parts);
     }
 
     @Override
@@ -71,21 +64,22 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> {
 
     @Override
     protected boolean hasPermission(CommandSender sender, String node, boolean defaultIfUnset) {
-        return sender.hasPermission(new Permission(node, defaultIfUnset ? PermissionDefault.TRUE : PermissionDefault.FALSE));
+        // BungeeCord's permission system has no notion of "default if unset" — fall back to the basic check.
+        return sender.hasPermission(node);
     }
 
     @Override
     protected void performCommand(CommandSender sender, String command) {
-        throw new UnsupportedOperationException();
+        ProxyServer.getInstance().getPluginManager().dispatchCommand(sender, command);
     }
 
     @Override
     protected boolean isConsole(CommandSender sender) {
-        return sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender;
+        return !(sender instanceof ProxiedPlayer);
     }
 
     @Override
     protected boolean isPlayer(CommandSender sender) {
-        return sender instanceof Player;
+        return sender instanceof ProxiedPlayer;
     }
 }

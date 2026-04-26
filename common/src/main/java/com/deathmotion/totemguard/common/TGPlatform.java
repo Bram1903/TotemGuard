@@ -116,6 +116,20 @@ public abstract class TGPlatform {
             return;
         }
 
+        // Fail fast on incomplete subclass wiring rather than NPE'ing on first login.
+        if (getPlatformUserFactory() == null) {
+            logger.severe("Platform " + platform + " did not provide a PlatformUserFactory — disabling.");
+            setEnabled(false);
+            disablePlugin();
+            return;
+        }
+        if (getScheduler() == null) {
+            logger.severe("Platform " + platform + " did not provide a Scheduler — disabling.");
+            setEnabled(false);
+            disablePlugin();
+            return;
+        }
+
         ConsoleBanner.print();
 
         reloadService = new ReloadService();
@@ -140,7 +154,7 @@ public abstract class TGPlatform {
         integrationRegistrar.enableAll();
 
         PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
-        PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener());
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener(playerRepository));
         PacketEvents.getAPI().getEventManager().registerListener(new GuiPacketListener());
 
         //noinspection resource

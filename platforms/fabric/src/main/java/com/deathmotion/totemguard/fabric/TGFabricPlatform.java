@@ -16,44 +16,46 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.bungee;
+package com.deathmotion.totemguard.fabric;
 
-import com.deathmotion.totemguard.bungee.player.BungeePlatformUserFactory;
-import com.deathmotion.totemguard.bungee.scheduler.BungeeScheduler;
-import com.deathmotion.totemguard.bungee.sender.BungeeSenderFactory;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.fabric.player.FabricPlatformUserFactory;
+import com.deathmotion.totemguard.fabric.scheduler.FabricScheduler;
+import com.deathmotion.totemguard.fabric.sender.FabricSenderFactory;
 import lombok.Getter;
-import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.ProxyServer;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.SharedConstants;
+import net.minecraft.server.MinecraftServer;
 import org.incendo.cloud.CommandManager;
-import org.incendo.cloud.bungee.BungeeCommandManager;
 import org.incendo.cloud.execution.ExecutionCoordinator;
+import org.incendo.cloud.fabric.FabricServerCommandManager;
+
+import java.nio.file.Path;
 
 @Getter
-public class TGBungeePlatform extends TGPlatform {
+public class TGFabricPlatform extends TGPlatform {
 
-    private final TGBungee plugin;
+    private final TGFabric mod;
+    private final Path configDirectory;
     private final Scheduler scheduler;
 
-    private final Lazy<BungeeSenderFactory> senderFactory;
-    private final Lazy<BungeePlatformUserFactory> platformUserFactory;
+    private final Lazy<FabricPlatformUserFactory> platformUserFactory;
+    private final Lazy<FabricSenderFactory> senderFactory;
     private final Lazy<CommandManager<Sender>> commandManager;
 
-    public TGBungeePlatform(TGBungee plugin) {
-        super(Platform.BUNGEE);
-        this.plugin = plugin;
-        this.scheduler = new BungeeScheduler(plugin);
-
-        this.senderFactory = Lazy.of(BungeeSenderFactory::new);
-        this.platformUserFactory = Lazy.of(BungeePlatformUserFactory::new);
-
-        this.commandManager = Lazy.of(() -> new BungeeCommandManager<>(
-                plugin,
+    public TGFabricPlatform(TGFabric mod, Path configDirectory) {
+        super(Platform.FABRIC);
+        this.mod = mod;
+        this.configDirectory = configDirectory;
+        this.scheduler = new FabricScheduler();
+        this.platformUserFactory = Lazy.of(FabricPlatformUserFactory::new);
+        this.senderFactory = Lazy.of(FabricSenderFactory::new);
+        this.commandManager = Lazy.of(() -> new FabricServerCommandManager<>(
                 ExecutionCoordinator.simpleCoordinator(),
                 senderFactory.get()
         ));
@@ -66,9 +68,9 @@ public class TGBungeePlatform extends TGPlatform {
 
     @Override
     public void dispatchCommand(String command) {
-        ProxyServer proxy = plugin.getProxy();
-        CommandSender console = proxy.getConsole();
-        proxy.getPluginManager().dispatchCommand(console, command);
+        MinecraftServer server = FabricServerHolder.server();
+        if (server == null) return;
+        server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), command);
     }
 
     @Override
@@ -78,7 +80,7 @@ public class TGBungeePlatform extends TGPlatform {
 
     @Override
     public void enableBStats() {
-        plugin.enableBStats();
+        // bstats has no Fabric module. Skip.
     }
 
     @Override
@@ -88,21 +90,21 @@ public class TGBungeePlatform extends TGPlatform {
 
     @Override
     public String getPluginDirectory() {
-        return plugin.getDataFolder().getAbsolutePath();
+        return configDirectory.toAbsolutePath().toString();
     }
 
     @Override
     public String getPlatformVersion() {
-        return plugin.getProxy().getVersion();
+        return SharedConstants.getCurrentVersion().name();
     }
 
     @Override
     public boolean isPluginEnabled(String pluginName) {
-        return plugin.getProxy().getPluginManager().getPlugin(pluginName) != null;
+        return FabricLoader.getInstance().isModLoaded(pluginName);
     }
 
     @Override
     public void disablePlugin() {
-        // BungeeCord has no per-plugin disable API. setEnabled(false) gates further work.
+
     }
 }

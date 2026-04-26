@@ -24,12 +24,10 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ConsoleCommandSource;
 import com.velocitypowered.api.proxy.Player;
 import net.kyori.adventure.text.Component;
-import org.incendo.cloud.SenderMapper;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public final class VelocitySenderFactory extends SenderFactory<CommandSource> implements SenderMapper<CommandSource, Sender> {
+public final class VelocitySenderFactory extends SenderFactory<CommandSource> {
 
     @Override
     protected String getName(final CommandSource sender) {
@@ -80,15 +78,5 @@ public final class VelocitySenderFactory extends SenderFactory<CommandSource> im
     @Override
     protected boolean isPlayer(final CommandSource sender) {
         return sender instanceof Player;
-    }
-
-    @Override
-    public @NotNull Sender map(final @NotNull CommandSource base) {
-        return this.wrap(base);
-    }
-
-    @Override
-    public @NotNull CommandSource reverse(final @NotNull Sender mapped) {
-        return this.unwrap(mapped);
     }
 }
