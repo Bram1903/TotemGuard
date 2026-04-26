@@ -18,104 +18,97 @@
 
 package com.deathmotion.totemguard.common.cache.backend;
 
-import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheBackend;
+import com.deathmotion.totemguard.common.cache.CacheBackendException;
+import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import io.lettuce.core.GetExArgs;
 import io.lettuce.core.SetArgs;
-import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.logging.Level;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+// Async commands with a tight per-op timeout so a half-dead connection can't freeze a tick.
 public final class RedisCacheBackend implements CacheBackend {
 
-    private final RedisRepositoryImpl redisRepository;
+    private static final long OP_TIMEOUT_MS = 250L;
 
-    public RedisCacheBackend(RedisRepositoryImpl redisRepository) {
-        this.redisRepository = redisRepository;
-    }
+    private final RedisRepositoryImpl repository;
 
-    private static byte[] bytes(String key) {
-        return key.getBytes(StandardCharsets.UTF_8);
-    }
-
-    private static void logWarn(String op, String key, Throwable t) {
-        TGPlatform.getInstance().getLogger().log(Level.WARNING,
-                "Redis cache " + op + " failed for key " + key + ": " + t.getMessage());
+    public RedisCacheBackend(RedisRepositoryImpl repository) {
+        this.repository = repository;
     }
 
     @Override
     public boolean isAvailable() {
-        return redisRepository.isConnected();
+        return repository.isConnected();
     }
 
     @Override
     public @Nullable byte[] get(String key) {
-        RedisCommands<byte[], byte[]> sync = sync();
-        if (sync == null) return null;
-        try {
-            return sync.get(bytes(key));
-        } catch (Exception ex) {
-            logWarn("get", key, ex);
-            return null;
-        }
+        return await("get", key, requireCommands().get(bytes(key)));
     }
 
     @Override
     public @Nullable byte[] getAndRefresh(String key, Duration ttl) {
-        RedisCommands<byte[], byte[]> sync = sync();
-        if (sync == null) return null;
-        try {
-            long seconds = Math.max(1, ttl.toSeconds());
-            return sync.getex(bytes(key), GetExArgs.Builder.ex(seconds));
-        } catch (Exception ex) {
-            logWarn("getAndRefresh", key, ex);
-            return null;
-        }
+        long seconds = Math.max(1, ttl.toSeconds());
+        return await("getAndRefresh", key, requireCommands().getex(bytes(key), GetExArgs.Builder.ex(seconds)));
     }
 
     @Override
     public void put(String key, byte[] value, Duration ttl) {
-        RedisCommands<byte[], byte[]> sync = sync();
-        if (sync == null) return;
-        try {
-            long seconds = Math.max(1, ttl.toSeconds());
-            sync.setex(bytes(key), seconds, value);
-        } catch (Exception ex) {
-            logWarn("put", key, ex);
-        }
+        long seconds = Math.max(1, ttl.toSeconds());
+        await("put", key, requireCommands().setex(bytes(key), seconds, value));
     }
 
     @Override
     public void remove(String key) {
-        RedisCommands<byte[], byte[]> sync = sync();
-        if (sync == null) return;
-        try {
-            sync.del(bytes(key));
-        } catch (Exception ex) {
-            logWarn("remove", key, ex);
-        }
+        await("remove", key, requireCommands().del(bytes(key)));
     }
 
     @Override
     public boolean putIfAbsent(String key, byte[] value, Duration ttl) {
-        RedisCommands<byte[], byte[]> sync = sync();
-        if (sync == null) return false;
+        long seconds = Math.max(1, ttl.toSeconds());
+        String response = await("putIfAbsent", key,
+                requireCommands().set(bytes(key), value, SetArgs.Builder.nx().ex(seconds)));
+        return "OK".equalsIgnoreCase(response);
+    }
+
+    private RedisAsyncCommands<byte[], byte[]> requireCommands() {
+        RedisConnection conn = repository.connection();
+        if (conn == null || !conn.isOpen()) {
+            throw new CacheBackendException("Redis cache backend is not available");
+        }
+        return conn.commands().async();
+    }
+
+    private static <T> @Nullable T await(String op, String key, CompletionStage<T> stage) {
         try {
-            long seconds = Math.max(1, ttl.toSeconds());
-            String response = sync.set(bytes(key), value, SetArgs.Builder.nx().ex(seconds));
-            return "OK".equalsIgnoreCase(response);
+            return stage.toCompletableFuture().get(OP_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException ex) {
+            stage.toCompletableFuture().cancel(true);
+            throw new CacheBackendException(
+                    "Redis cache " + op + " for key " + key + " timed out after " + OP_TIMEOUT_MS + "ms", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new CacheBackendException("Redis cache " + op + " for key " + key + " was interrupted", ex);
+        } catch (ExecutionException ex) {
+            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+            throw new CacheBackendException(
+                    "Redis cache " + op + " failed for key " + key + ": " + cause.getMessage(), cause);
         } catch (Exception ex) {
-            logWarn("putIfAbsent", key, ex);
-            return false;
+            throw new CacheBackendException(
+                    "Redis cache " + op + " failed for key " + key + ": " + ex.getMessage(), ex);
         }
     }
 
-    private @Nullable RedisCommands<byte[], byte[]> sync() {
-        if (!redisRepository.isConnected()) return null;
-        return redisRepository.sync();
+    private static byte[] bytes(String key) {
+        return key.getBytes(StandardCharsets.UTF_8);
     }
 }

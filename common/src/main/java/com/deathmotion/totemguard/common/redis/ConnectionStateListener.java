@@ -16,32 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.cache;
+package com.deathmotion.totemguard.common.redis;
 
-import org.jetbrains.annotations.Nullable;
+// Callbacks fire on the connection manager's executor and must not block.
+public interface ConnectionStateListener {
 
-import java.time.Duration;
+    default void onConnected(RedisConnection connection) {
+    }
 
-public interface CacheBackend {
-
-    boolean isAvailable();
-
-    /**
-     * Reads without touching the TTL.
-     */
-    byte @Nullable [] get(String key);
-
-    /**
-     * Reads and, on hit, resets the TTL to {@code ttl}.
-     */
-    byte @Nullable [] getAndRefresh(String key, Duration ttl);
-
-    void put(String key, byte[] value, Duration ttl);
-
-    void remove(String key);
-
-    /**
-     * @return {@code true} only if nothing was at {@code key}.
-     */
-    boolean putIfAbsent(String key, byte[] value, Duration ttl);
+    default void onDisconnected() {
+    }
 }

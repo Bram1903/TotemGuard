@@ -23,101 +23,317 @@ import com.deathmotion.totemguard.common.redis.options.RedisOptions;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
+import io.lettuce.core.SocketOptions;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.event.Event;
+import io.lettuce.core.event.connection.ConnectionActivatedEvent;
+import io.lettuce.core.event.connection.DisconnectedEvent;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import io.lettuce.core.resource.ClientResources;
-import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.Disposable;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+// Lettuce's auto-reconnect only covers drops on established channels — initial-connect retry is on us.
 final class RedisConnectionManager {
 
     private static final ByteArrayCodec CODEC = new ByteArrayCodec();
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration COMMAND_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(30);
 
     private final Object lock = new Object();
+    private final List<ConnectionStateListener> listeners = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean lettuceUp = new AtomicBoolean(false);
+    private final Logger logger;
 
-    private volatile @Nullable ConnectionHandle handle;
+    private @Nullable ScheduledExecutorService executor;
+    private @Nullable ClientResources resources;
+    private @Nullable RedisClient client;
+    private @Nullable RedisConnectionEventLogger eventLogger;
+    private @Nullable Disposable eventSubscription;
+    private @Nullable RedisOptions options;
+    private boolean started;
 
-    @Blocking
-    void start(RedisOptions options) {
+    private volatile @Nullable RedisConnection current;
+
+    RedisConnectionManager() {
+        this.logger = TGPlatform.getInstance().getLogger();
+    }
+
+    void addListener(ConnectionStateListener listener) {
+        listeners.add(listener);
+
+        ScheduledExecutorService exec;
+        RedisConnection snapshot;
+        boolean up;
         synchronized (lock) {
-            if (handle != null) {
-                return;
-            }
-
-            handle = open(options);
+            exec = executor;
+            snapshot = current;
+            up = lettuceUp.get();
         }
+        if (!up || exec == null || snapshot == null) {
+            return;
+        }
+        exec.execute(() -> dispatchConnected(listener, snapshot));
     }
 
-    @Blocking
-    void stop() {
-        close(swap(null));
-    }
-
-    @Blocking
-    void restart(RedisOptions options) {
-        close(swap(null));
-        start(options);
+    void removeListener(ConnectionStateListener listener) {
+        listeners.remove(listener);
     }
 
     boolean isConnected() {
-        ConnectionHandle currentHandle = handle;
-        return currentHandle != null && currentHandle.isConnected();
+        RedisConnection snapshot = current;
+        return lettuceUp.get() && snapshot != null && snapshot.isOpen();
     }
 
-    @Nullable StatefulRedisConnection<byte[], byte[]> connection() {
-        ConnectionHandle currentHandle = handle;
-        return currentHandle == null ? null : currentHandle.connection();
+    @Nullable RedisConnection connection() {
+        return current;
     }
 
-    @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection() {
-        ConnectionHandle currentHandle = handle;
-        return currentHandle == null ? null : currentHandle.pubSubConnection();
-    }
-
-    private @Nullable ConnectionHandle swap(@Nullable ConnectionHandle newHandle) {
+    void start(RedisOptions newOptions) {
         synchronized (lock) {
-            ConnectionHandle previous = this.handle;
-            this.handle = newHandle;
-            return previous;
+            if (started) return;
+            started = true;
+            options = newOptions;
+            executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "TotemGuard-Redis");
+                thread.setDaemon(true);
+                return thread;
+            });
+        }
+        scheduleConnect(0L);
+    }
+
+    void stop() {
+        ScheduledExecutorService executorRef;
+        ClientResources resourcesRef;
+        RedisClient clientRef;
+        Disposable subRef;
+        RedisConnectionEventLogger loggerRef;
+        RedisConnection connRef;
+
+        synchronized (lock) {
+            if (!started && executor == null) return;
+            started = false;
+            options = null;
+            executorRef = executor;
+            executor = null;
+            resourcesRef = resources;
+            resources = null;
+            clientRef = client;
+            client = null;
+            subRef = eventSubscription;
+            eventSubscription = null;
+            loggerRef = eventLogger;
+            eventLogger = null;
+            connRef = current;
+            current = null;
+        }
+
+        boolean wasUp = lettuceUp.compareAndSet(true, false);
+        if (wasUp) {
+            notifyDisconnected();
+        }
+
+        if (subRef != null) {
+            try {
+                subRef.dispose();
+            } catch (Exception ignored) {
+            }
+        }
+        if (loggerRef != null) {
+            try {
+                loggerRef.close();
+            } catch (Exception ignored) {
+            }
+        }
+        if (connRef != null) {
+            closeConnectionQuietly(connRef);
+        }
+        if (clientRef != null) {
+            try {
+                clientRef.shutdown();
+            } catch (Exception ignored) {
+            }
+        }
+        if (resourcesRef != null) {
+            try {
+                resourcesRef.shutdown();
+            } catch (Exception ignored) {
+            }
+        }
+        if (executorRef != null) {
+            executorRef.shutdownNow();
+            try {
+                executorRef.awaitTermination(2, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
-    private @Nullable ConnectionHandle open(RedisOptions options) {
-        ClientResources resources = ClientResources.create();
-        RedisClient client = RedisClient.create(resources, buildUri(options));
-        client.setOptions(ClientOptions.builder()
+    void restart(RedisOptions newOptions) {
+        stop();
+        start(newOptions);
+    }
+
+    private void scheduleConnect(long delaySeconds) {
+        ScheduledExecutorService exec;
+        synchronized (lock) {
+            if (!started) return;
+            exec = executor;
+        }
+        if (exec == null || exec.isShutdown()) return;
+        try {
+            exec.schedule(this::connectAttempt, delaySeconds, TimeUnit.SECONDS);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void connectAttempt() {
+        RedisOptions opts;
+        synchronized (lock) {
+            if (!started) return;
+            if (current != null) return;
+            opts = options;
+        }
+        if (opts == null) return;
+
+        ClientResources newResources = ClientResources.create();
+        RedisClient newClient = RedisClient.create(newResources, buildUri(opts));
+        newClient.setOptions(ClientOptions.builder()
                 .autoReconnect(true)
                 .pingBeforeActivateConnection(true)
+                .socketOptions(SocketOptions.builder()
+                        .connectTimeout(CONNECT_TIMEOUT)
+                        .build())
                 .build());
 
-        RedisConnectionEventLogger eventLogger = new RedisConnectionEventLogger();
-        eventLogger.start(resources);
+        RedisConnectionEventLogger newEventLogger = new RedisConnectionEventLogger(logger);
+        newEventLogger.attach(newResources);
+
+        StatefulRedisConnection<byte[], byte[]> commands = null;
+        StatefulRedisPubSubConnection<byte[], byte[]> pubSub = null;
+        Disposable transitionSub = null;
 
         try {
-            StatefulRedisConnection<byte[], byte[]> connection = client.connect(CODEC);
-            StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection = client.connectPubSub(CODEC);
-            eventLogger.markUp();
+            commands = newClient.connect(CODEC);
+            pubSub = newClient.connectPubSub(CODEC);
+            transitionSub = newResources.eventBus().get().subscribe(this::onLettuceEvent);
 
-            return new ConnectionHandle(resources, client, connection, pubSubConnection, eventLogger);
-        } catch (Exception exception) {
-            TGPlatform.getInstance().getLogger().warning("Failed to connect to Redis: " + exception.getMessage());
-            close(new ConnectionHandle(resources, client, null, null, eventLogger));
-            return null;
+            RedisConnection conn = new RedisConnection(commands, pubSub);
+
+            synchronized (lock) {
+                if (!started) {
+                    closeConnectionQuietly(conn);
+                    transitionSub.dispose();
+                    newEventLogger.close();
+                    safeShutdown(newClient);
+                    safeShutdown(newResources);
+                    return;
+                }
+                resources = newResources;
+                client = newClient;
+                eventLogger = newEventLogger;
+                eventSubscription = transitionSub;
+                current = conn;
+            }
+
+            lettuceUp.set(true);
+            notifyConnected(conn);
+        } catch (Exception ex) {
+            if (transitionSub != null) transitionSub.dispose();
+            newEventLogger.close();
+            closeConnectionQuietly(commands, pubSub);
+            safeShutdown(newClient);
+            safeShutdown(newResources);
+
+            logger.warning(
+                    "Failed to connect to Redis (" + ex.getClass().getSimpleName() + ": "
+                            + ex.getMessage() + ") — retrying in " + RETRY_INTERVAL.toSeconds() + "s");
+            scheduleConnect(RETRY_INTERVAL.toSeconds());
         }
     }
 
-    private RedisURI buildUri(RedisOptions options) {
-        RedisURI.Builder builder = RedisURI.builder()
-                .withHost(options.getHost())
-                .withPort(options.getPort())
-                .withTimeout(CONNECT_TIMEOUT);
+    private void onLettuceEvent(Event event) {
+        if (event instanceof DisconnectedEvent) {
+            handleLettuceDown();
+        } else if (event instanceof ConnectionActivatedEvent) {
+            handleLettuceUp();
+        }
+    }
 
-        String username = options.getUsername();
-        String password = options.getPassword();
+    private void handleLettuceDown() {
+        if (lettuceUp.compareAndSet(true, false)) {
+            notifyDisconnected();
+        }
+    }
+
+    private void handleLettuceUp() {
+        RedisConnection snapshot = current;
+        if (snapshot == null) return;
+        if (!lettuceUp.compareAndSet(false, true)) return;
+
+        ScheduledExecutorService exec;
+        synchronized (lock) {
+            exec = executor;
+        }
+        if (exec == null || exec.isShutdown()) {
+            notifyConnected(snapshot);
+            return;
+        }
+        try {
+            exec.execute(() -> notifyConnected(snapshot));
+        } catch (Exception ignored) {
+            notifyConnected(snapshot);
+        }
+    }
+
+    private void notifyConnected(RedisConnection conn) {
+        for (ConnectionStateListener listener : listeners) {
+            dispatchConnected(listener, conn);
+        }
+    }
+
+    private void notifyDisconnected() {
+        for (ConnectionStateListener listener : listeners) {
+            try {
+                listener.onDisconnected();
+            } catch (Exception ex) {
+                logger.log(Level.WARNING,
+                        "Redis state listener threw on disconnect (" + listener.getClass().getSimpleName() + ")", ex);
+            }
+        }
+    }
+
+    private void dispatchConnected(ConnectionStateListener listener, RedisConnection conn) {
+        try {
+            listener.onConnected(conn);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING,
+                    "Redis state listener threw on connect (" + listener.getClass().getSimpleName() + ")", ex);
+        }
+    }
+
+    private RedisURI buildUri(RedisOptions opts) {
+        RedisURI.Builder builder = RedisURI.builder()
+                .withHost(opts.getHost())
+                .withPort(opts.getPort())
+                .withTimeout(COMMAND_TIMEOUT);
+
+        String username = opts.getUsername();
+        String password = opts.getPassword();
 
         if (password != null && !password.isBlank()) {
             if (username != null && !username.isBlank()) {
@@ -130,58 +346,39 @@ final class RedisConnectionManager {
         return builder.build();
     }
 
-    private void close(@Nullable ConnectionHandle handle) {
-        if (handle == null) {
-            return;
-        }
-
-        handle.close();
+    private void closeConnectionQuietly(RedisConnection conn) {
+        closeConnectionQuietly(conn.commands(), conn.pubSub());
     }
 
-    private record ConnectionHandle(
-            ClientResources resources,
-            RedisClient client,
-            @Nullable StatefulRedisConnection<byte[], byte[]> connection,
-            @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection,
-            RedisConnectionEventLogger eventLogger
+    private void closeConnectionQuietly(
+            @Nullable StatefulRedisConnection<byte[], byte[]> commands,
+            @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSub
     ) {
-
-        private static void closeQuietly(@Nullable AutoCloseable closeable) {
-            if (closeable == null) {
-                return;
-            }
-
+        if (pubSub != null) {
             try {
-                closeable.close();
+                pubSub.close();
             } catch (Exception ignored) {
             }
         }
-
-        private static void shutdownQuietly(RedisClient client) {
+        if (commands != null) {
             try {
-                client.shutdown();
+                commands.close();
             } catch (Exception ignored) {
             }
         }
+    }
 
-        private static void shutdownQuietly(ClientResources resources) {
-            try {
-                resources.shutdown();
-            } catch (Exception ignored) {
-            }
+    private void safeShutdown(RedisClient client) {
+        try {
+            client.shutdown();
+        } catch (Exception ignored) {
         }
+    }
 
-        boolean isConnected() {
-            return connection != null && connection.isOpen() && eventLogger.isUp();
-        }
-
-        void close() {
-            eventLogger.markDown();
-            closeQuietly(eventLogger);
-            closeQuietly(pubSubConnection);
-            closeQuietly(connection);
-            shutdownQuietly(client);
-            shutdownQuietly(resources);
+    private void safeShutdown(ClientResources resources) {
+        try {
+            resources.shutdown();
+        } catch (Exception ignored) {
         }
     }
 }

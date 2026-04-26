@@ -16,32 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.cache;
+package com.deathmotion.totemguard.common.redis;
 
-import org.jetbrains.annotations.Nullable;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 
-import java.time.Duration;
+// Pub/sub commands block their connection, so they get a separate channel from regular traffic.
+public record RedisConnection(
+        StatefulRedisConnection<byte[], byte[]> commands,
+        StatefulRedisPubSubConnection<byte[], byte[]> pubSub
+) {
 
-public interface CacheBackend {
-
-    boolean isAvailable();
-
-    /**
-     * Reads without touching the TTL.
-     */
-    byte @Nullable [] get(String key);
-
-    /**
-     * Reads and, on hit, resets the TTL to {@code ttl}.
-     */
-    byte @Nullable [] getAndRefresh(String key, Duration ttl);
-
-    void put(String key, byte[] value, Duration ttl);
-
-    void remove(String key);
-
-    /**
-     * @return {@code true} only if nothing was at {@code key}.
-     */
-    boolean putIfAbsent(String key, byte[] value, Duration ttl);
+    public boolean isOpen() {
+        return commands.isOpen() && pubSub.isOpen();
+    }
 }

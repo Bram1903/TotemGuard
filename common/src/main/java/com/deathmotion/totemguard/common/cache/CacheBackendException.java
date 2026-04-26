@@ -18,30 +18,14 @@
 
 package com.deathmotion.totemguard.common.cache;
 
-import org.jetbrains.annotations.Nullable;
+// Signals an op failure (transport/timeout) — not a clean miss. Triggers local fallback.
+public final class CacheBackendException extends RuntimeException {
 
-import java.time.Duration;
+    public CacheBackendException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-public interface CacheBackend {
-
-    boolean isAvailable();
-
-    /**
-     * Reads without touching the TTL.
-     */
-    byte @Nullable [] get(String key);
-
-    /**
-     * Reads and, on hit, resets the TTL to {@code ttl}.
-     */
-    byte @Nullable [] getAndRefresh(String key, Duration ttl);
-
-    void put(String key, byte[] value, Duration ttl);
-
-    void remove(String key);
-
-    /**
-     * @return {@code true} only if nothing was at {@code key}.
-     */
-    boolean putIfAbsent(String key, byte[] value, Duration ttl);
+    public CacheBackendException(String message) {
+        super(message);
+    }
 }

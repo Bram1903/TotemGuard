@@ -35,8 +35,8 @@ public final class PacketRegistry {
     private final ConcurrentMap<Integer, List<PacketProcessor<?>>> processors = new ConcurrentHashMap<>();
 
     public PacketRegistry() {
-        for (Packets packet : Packets.values()) {
-            register(packet.packet());
+        for (Packets descriptor : Packets.values()) {
+            register(descriptor.packet());
         }
     }
 
@@ -44,47 +44,43 @@ public final class PacketRegistry {
         if (!packets.containsKey(packet.getId())) {
             throw new IllegalArgumentException("Unknown Redis packet ID: " + packet.getId());
         }
-
         processors.computeIfAbsent(packet.getId(), ignored -> new CopyOnWriteArrayList<>()).add(processor);
     }
 
     public void unregister(Packet<?> packet, PacketProcessor<?> processor) {
-        List<PacketProcessor<?>> packetProcessors = processors.get(packet.getId());
-        if (packetProcessors == null) {
-            return;
-        }
-
-        packetProcessors.remove(processor);
-        if (packetProcessors.isEmpty()) {
-            processors.remove(packet.getId(), packetProcessors);
+        List<PacketProcessor<?>> bound = processors.get(packet.getId());
+        if (bound == null) return;
+        bound.remove(processor);
+        if (bound.isEmpty()) {
+            processors.remove(packet.getId(), bound);
         }
     }
 
-    public void handlePacket(int packetId, ByteArrayDataInput dataInput) {
+    public void dispatch(int packetId, ByteArrayDataInput payload) {
         Packet<?> packet = packets.get(packetId);
         if (packet == null) {
             logger.warning("Received unknown Redis packet ID " + packetId + ".");
             return;
         }
 
-        List<PacketProcessor<?>> processorsForPacket = processors.get(packetId);
-        if (processorsForPacket == null || processorsForPacket.isEmpty()) {
-            return;
-        }
+        List<PacketProcessor<?>> bound = processors.get(packetId);
+        if (bound == null || bound.isEmpty()) return;
 
-        Object packetData;
+        Object decoded;
         try {
-            packetData = packet.read(dataInput);
-        } catch (Exception exception) {
-            logger.log(Level.WARNING, "Failed to decode Redis packet " + packetName(packet) + ".", exception);
+            decoded = packet.read(payload);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to decode Redis packet " + packetName(packet), ex);
             return;
         }
 
-        for (PacketProcessor<?> processor : processorsForPacket) {
+        for (PacketProcessor<?> processor : bound) {
             try {
-                processor.handleAny(packetData);
-            } catch (Exception exception) {
-                logger.log(Level.WARNING, "Failed to process Redis packet " + packetName(packet) + ".", exception);
+                processor.handleAny(decoded);
+            } catch (Exception ex) {
+                logger.log(Level.WARNING,
+                        "Processor " + processor.getClass().getSimpleName()
+                                + " failed for packet " + packetName(packet), ex);
             }
         }
     }

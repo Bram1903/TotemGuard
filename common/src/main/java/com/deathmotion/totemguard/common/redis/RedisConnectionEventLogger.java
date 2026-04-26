@@ -18,87 +18,71 @@
 
 package com.deathmotion.totemguard.common.redis;
 
-import com.deathmotion.totemguard.common.TGPlatform;
 import io.lettuce.core.event.connection.ConnectionActivatedEvent;
 import io.lettuce.core.event.connection.DisconnectedEvent;
 import io.lettuce.core.event.connection.ReconnectAttemptEvent;
 import io.lettuce.core.event.connection.ReconnectFailedEvent;
 import io.lettuce.core.resource.ClientResources;
+import org.jetbrains.annotations.Nullable;
 import reactor.core.Disposable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
+// Dedup so a flapping connection doesn't spam the console.
 final class RedisConnectionEventLogger implements AutoCloseable {
 
     private final Logger logger;
     private final AtomicBoolean up = new AtomicBoolean(false);
-    private final AtomicLong lastReconnectAttemptLogged = new AtomicLong(-1);
-    private final AtomicLong lastReconnectFailedLogged = new AtomicLong(-1);
-    private volatile Disposable subscription;
+    private final AtomicLong lastReconnectAttempt = new AtomicLong(-1);
+    private final AtomicLong lastReconnectFailure = new AtomicLong(-1);
+    private volatile @Nullable Disposable subscription;
 
-    public RedisConnectionEventLogger() {
-        logger = TGPlatform.getInstance().getLogger();
+    RedisConnectionEventLogger(Logger logger) {
+        this.logger = logger;
     }
 
-    void start(ClientResources resources) {
+    void attach(ClientResources resources) {
         close();
 
         this.subscription = resources.eventBus().get().subscribe(event -> {
             if (event instanceof ConnectionActivatedEvent) {
-                lastReconnectAttemptLogged.set(-1);
-                lastReconnectFailedLogged.set(-1);
+                lastReconnectAttempt.set(-1);
+                lastReconnectFailure.set(-1);
                 if (up.compareAndSet(false, true)) {
                     logger.info("Successfully connected to Redis.");
                 }
             } else if (event instanceof DisconnectedEvent) {
                 if (up.compareAndSet(true, false)) {
                     logger.severe("Redis connection was lost.");
-                    lastReconnectAttemptLogged.set(-1);
-                    lastReconnectFailedLogged.set(-1);
+                    lastReconnectAttempt.set(-1);
+                    lastReconnectFailure.set(-1);
                 }
-            } else if (event instanceof ReconnectAttemptEvent reconnectAttemptEvent) {
-                long attempt = reconnectAttemptEvent.getAttempt();
-                if (lastReconnectAttemptLogged.getAndSet(attempt) != attempt) {
+            } else if (event instanceof ReconnectAttemptEvent reconnectAttempt) {
+                long attempt = reconnectAttempt.getAttempt();
+                if (lastReconnectAttempt.getAndSet(attempt) != attempt) {
                     logger.warning("Attempting to reconnect to Redis (attempt " + attempt + ").");
                 }
-            } else if (event instanceof ReconnectFailedEvent reconnectFailedEvent) {
-                long attempt = reconnectFailedEvent.getAttempt();
-                if (lastReconnectFailedLogged.getAndSet(attempt) != attempt) {
-                    Throwable cause = reconnectFailedEvent.getCause();
-                    logger.warning(
-                            "Failed to reconnect to Redis (attempt " + attempt + "): " +
-                                    (cause == null ? "unknown error" : cause.getMessage())
-                    );
+            } else if (event instanceof ReconnectFailedEvent reconnectFailed) {
+                long attempt = reconnectFailed.getAttempt();
+                if (lastReconnectFailure.getAndSet(attempt) != attempt) {
+                    Throwable cause = reconnectFailed.getCause();
+                    logger.warning("Failed to reconnect to Redis (attempt " + attempt + "): "
+                            + (cause == null ? "unknown error" : cause.getMessage()));
                 }
             }
         });
     }
 
-    void markUp() {
-        up.set(true);
-        lastReconnectAttemptLogged.set(-1);
-        lastReconnectFailedLogged.set(-1);
-    }
-
-    void markDown() {
-        up.set(false);
-    }
-
-    boolean isUp() {
-        return up.get();
-    }
-
     @Override
     public void close() {
-        var sub = this.subscription;
+        Disposable sub = this.subscription;
         this.subscription = null;
-        if (sub != null && !sub.isDisposed()) {
-            try {
-                sub.dispose();
-            } catch (Exception ignored) {
-            }
+        if (sub == null || sub.isDisposed()) return;
+        try {
+            sub.dispose();
+        } catch (Exception ignored) {
         }
     }
 }

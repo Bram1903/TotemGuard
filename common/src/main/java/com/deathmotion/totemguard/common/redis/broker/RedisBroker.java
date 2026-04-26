@@ -19,157 +19,132 @@
 package com.deathmotion.totemguard.common.redis.broker;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
+import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
+import com.deathmotion.totemguard.common.redis.broker.packets.PacketCodec;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import com.deathmotion.totemguard.common.redis.options.RedisOptions;
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
-import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.pubsub.RedisPubSubAdapter;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> {
-
-    private static final int PROTOCOL_VERSION = 1;
+public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implements ConnectionStateListener {
 
     private final Logger logger = TGPlatform.getInstance().getLogger();
     private final PacketRegistry registry;
     private final String identifier;
     private final String channelName;
-    private final byte[] channel;
+    private final byte[] channelBytes;
+    private final boolean configured;
 
-    private volatile @Nullable StatefulRedisConnection<byte[], byte[]> connection;
-    private volatile @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection;
+    private final Object lock = new Object();
+    private volatile @Nullable RedisConnection connection;
 
     public RedisBroker(PacketRegistry registry, String identifier, RedisOptions.MessagingOptions options) {
         this.registry = registry;
         this.identifier = identifier;
         this.channelName = options.getChannel() == null ? "" : options.getChannel().trim();
-        this.channel = channelName.getBytes(StandardCharsets.UTF_8);
-    }
-
-    public void start(
-            @Nullable StatefulRedisConnection<byte[], byte[]> connection,
-            @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection
-    ) {
-        stop();
-
-        this.connection = connection;
-        this.pubSubConnection = pubSubConnection;
-
-        if (!isConfigured() || pubSubConnection == null) {
-            return;
-        }
-
-        pubSubConnection.addListener(this);
-
-        try {
-            pubSubConnection.async().subscribe(channel);
-        } catch (Exception exception) {
-            logger.log(Level.WARNING, "Failed to subscribe to Redis channel " + channelName, exception);
-        }
-    }
-
-    public void stop() {
-        StatefulRedisPubSubConnection<byte[], byte[]> currentPubSubConnection = this.pubSubConnection;
-
-        this.connection = null;
-        this.pubSubConnection = null;
-
-        if (currentPubSubConnection == null) {
-            return;
-        }
-
-        try {
-            currentPubSubConnection.removeListener(this);
-        } catch (Exception ignored) {
-        }
-
-        if (!isConfigured() || !currentPubSubConnection.isOpen()) {
-            return;
-        }
-
-        try {
-            currentPubSubConnection.async().unsubscribe(channel);
-        } catch (Exception ignored) {
-        }
-    }
-
-    public <T> boolean publish(Packet<T> packet, T payload) {
-        if (!isConfigured()) {
-            return false;
-        }
-
-        StatefulRedisConnection<byte[], byte[]> currentConnection = this.connection;
-        if (currentConnection == null || !currentConnection.isOpen()) {
-            return false;
-        }
-
-        ByteArrayDataOutput output = ByteStreams.newDataOutput();
-        output.writeByte(PROTOCOL_VERSION);
-        output.writeUTF(identifier);
-        output.writeInt(packet.getId());
-        packet.writeData(output, payload);
-
-        try {
-            currentConnection.async().publish(channel, output.toByteArray());
-            return true;
-        } catch (Exception exception) {
-            logger.log(
-                    Level.WARNING,
-                    "Failed to publish Redis packet " + packet.getClass().getSimpleName() + " to channel " + channelName,
-                    exception
-            );
-            return false;
-        }
+        this.channelBytes = channelName.getBytes(StandardCharsets.UTF_8);
+        this.configured = !channelName.isEmpty();
     }
 
     @Override
-    public void message(byte[] channelBytes, byte[] messageBytes) {
-        if (!isExpectedMessage(channelBytes, messageBytes)) {
-            return;
+    public void onConnected(RedisConnection conn) {
+        if (!configured) return;
+
+        StatefulRedisPubSubConnection<byte[], byte[]> pubSub = conn.pubSub();
+        synchronized (lock) {
+            // remove-then-add for idempotent re-arm across reconnects/restarts.
+            try {
+                pubSub.removeListener(this);
+            } catch (Exception ignored) {
+            }
+            pubSub.addListener(this);
+            this.connection = conn;
         }
+
+        pubSub.async().subscribe(channelBytes).whenComplete((ignored, error) -> {
+            if (error == null) return;
+            logger.log(Level.WARNING,
+                    "Failed to subscribe to Redis channel '" + channelName + "': " + error.getMessage());
+        });
+    }
+
+    @Override
+    public void onDisconnected() {
+        synchronized (lock) {
+            this.connection = null;
+        }
+    }
+
+    public <T> CompletionStage<Boolean> publish(Packet<T> packet, T payload) {
+        if (!configured) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        RedisConnection current = this.connection;
+        if (current == null || !current.isOpen()) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        byte[] frame;
+        try {
+            frame = PacketCodec.encode(identifier, packet, payload);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING,
+                    "Failed to encode Redis packet " + packet.getClass().getSimpleName(), ex);
+            return CompletableFuture.completedFuture(false);
+        }
+
+        return current.commands().async().publish(channelBytes, frame)
+                .toCompletableFuture()
+                .handle((received, error) -> {
+                    if (error != null) {
+                        logger.log(Level.WARNING,
+                                "Failed to publish Redis packet " + packet.getClass().getSimpleName()
+                                        + " to channel '" + channelName + "': " + error.getMessage());
+                        return false;
+                    }
+                    return true;
+                });
+    }
+
+    @Override
+    public void message(byte[] channel, byte[] message) {
+        if (!configured) return;
+        if (channel == null || message == null) return;
+        if (channel.length == 0 || message.length == 0) return;
+        if (!Arrays.equals(channel, channelBytes)) return;
 
         try {
-            ByteArrayDataInput input = ByteStreams.newDataInput(messageBytes);
-
-            int protocolVersion = input.readUnsignedByte();
-            if (protocolVersion != PROTOCOL_VERSION) {
-                logger.warning(
-                        "Ignoring Redis packet with unsupported protocol version " + protocolVersion +
-                                " on channel " + channelName + "."
-                );
+            PacketCodec.Frame frame = PacketCodec.decode(message);
+            if (frame.protocolVersion() != PacketCodec.PROTOCOL_VERSION) {
+                logger.warning("Ignoring Redis packet with unsupported protocol version "
+                        + frame.protocolVersion() + " on channel '" + channelName + "'.");
                 return;
             }
-
-            String senderIdentifier = input.readUTF();
-            if (identifier.equals(senderIdentifier)) {
+            if (identifier.equals(frame.senderId())) {
                 return;
             }
-
-            int packetId = input.readInt();
-            registry.handlePacket(packetId, input);
-        } catch (Exception exception) {
-            logger.log(Level.WARNING, "Failed to read Redis message from channel " + channelName, exception);
+            registry.dispatch(frame.packetId(), frame.payload());
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to read Redis message from channel '" + channelName + "'", ex);
         }
     }
 
-    private boolean isConfigured() {
-        return channel.length > 0;
+    public boolean isConfigured() {
+        return configured;
     }
 
-    private boolean isExpectedMessage(byte[] channelBytes, byte[] messageBytes) {
-        return channelBytes != null
-                && messageBytes != null
-                && channelBytes.length > 0
-                && messageBytes.length > 0
-                && Arrays.equals(channelBytes, channel);
+    public String channelName() {
+        return channelName;
     }
 }

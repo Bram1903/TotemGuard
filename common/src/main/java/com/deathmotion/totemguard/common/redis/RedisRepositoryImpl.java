@@ -26,25 +26,22 @@ import com.deathmotion.totemguard.common.redis.broker.handlers.SyncAlertMessageH
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import com.deathmotion.totemguard.common.redis.options.RedisOptions;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
-import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public final class RedisRepositoryImpl implements RedisRepository {
 
     private final RedisConnectionManager manager;
     private final PacketRegistry registry;
-    private final String identifier;
     private final List<Reloadable> handlers;
+    private final String identifier;
 
     private volatile @Nullable RedisOptions options;
     private volatile @Nullable RedisBroker broker;
-    private volatile boolean enabled;
 
     public RedisRepositoryImpl() {
         this.manager = new RedisConnectionManager();
@@ -57,100 +54,95 @@ public final class RedisRepositoryImpl implements RedisRepository {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        RedisOptions current = this.options;
+        return current != null && current.isEnabled();
     }
 
     @Override
     public boolean isConnected() {
-        return enabled && manager.isConnected();
-    }
-
-    public @Nullable StatefulRedisConnection<byte[], byte[]> connection() {
-        return manager.connection();
-    }
-
-    public @Nullable RedisCommands<byte[], byte[]> sync() {
-        StatefulRedisConnection<byte[], byte[]> currentConnection = connection();
-        return (currentConnection != null && currentConnection.isOpen()) ? currentConnection.sync() : null;
-    }
-
-    public @Nullable StatefulRedisPubSubConnection<byte[], byte[]> pubSubConnection() {
-        return manager.pubSubConnection();
+        return isEnabled() && manager.isConnected();
     }
 
     public boolean shouldSendAlerts() {
-        RedisOptions currentOptions = this.options;
-        return enabled
-                && currentOptions != null
-                && currentOptions.getMessaging().hasChannel()
-                && currentOptions.getMessaging().isSendAlerts();
+        RedisOptions current = this.options;
+        return isEnabled()
+                && current.getMessaging().hasChannel()
+                && current.getMessaging().isSendAlerts();
     }
 
     public boolean shouldReceiveAlerts() {
-        RedisOptions currentOptions = this.options;
-        return enabled
-                && currentOptions != null
-                && currentOptions.getMessaging().hasChannel()
-                && currentOptions.getMessaging().isReceiveAlerts();
+        RedisOptions current = this.options;
+        return isEnabled()
+                && current.getMessaging().hasChannel()
+                && current.getMessaging().isReceiveAlerts();
     }
 
-    public <T> boolean publish(Packet<T> packet, T payload) {
-        RedisBroker currentBroker = this.broker;
-        return currentBroker != null && currentBroker.publish(packet, payload);
+    // Ephemeral — re-fetch per operation, do not cache.
+    public @Nullable RedisConnection connection() {
+        return isEnabled() ? manager.connection() : null;
     }
 
-    @Blocking
+    public void addStateListener(ConnectionStateListener listener) {
+        manager.addListener(listener);
+    }
+
+    public void removeStateListener(ConnectionStateListener listener) {
+        manager.removeListener(listener);
+    }
+
+    public <T> CompletionStage<Boolean> publish(Packet<T> packet, T payload) {
+        RedisBroker current = this.broker;
+        if (current == null) return CompletableFuture.completedFuture(false);
+        return current.publish(packet, payload);
+    }
+
     public synchronized void start() {
         applyOptions(new RedisOptions(), false);
     }
 
-    @Blocking
     public synchronized void stop() {
-        enabled = false;
         options = null;
         reloadHandlers();
-        stopBroker();
+        teardownBroker();
         manager.stop();
     }
 
-    @Blocking
     public synchronized void restart() {
         applyOptions(new RedisOptions(), true);
     }
 
-    private void applyOptions(RedisOptions newOptions, boolean restartConnections) {
+    private void applyOptions(RedisOptions newOptions, boolean restart) {
         this.options = newOptions;
-        this.enabled = newOptions.isEnabled();
 
         reloadHandlers();
-        stopBroker();
+        teardownBroker();
 
-        if (!enabled) {
+        // Stop before wiring the new broker so addListener doesn't fire onConnected with a doomed conn.
+        if (restart || !newOptions.isEnabled()) {
             manager.stop();
+        }
+
+        if (!newOptions.isEnabled()) {
             return;
         }
 
-        if (restartConnections) {
-            manager.restart(newOptions);
-        } else {
-            manager.start(newOptions);
-        }
-
         RedisBroker newBroker = new RedisBroker(registry, identifier, newOptions.getMessaging());
-        newBroker.start(connection(), pubSubConnection());
+        if (newBroker.isConfigured()) {
+            manager.addListener(newBroker);
+        }
         this.broker = newBroker;
+
+        manager.start(newOptions);
     }
 
     private void reloadHandlers() {
         handlers.forEach(Reloadable::reload);
     }
 
-    private void stopBroker() {
-        RedisBroker currentBroker = this.broker;
+    private void teardownBroker() {
+        RedisBroker current = this.broker;
         this.broker = null;
-
-        if (currentBroker != null) {
-            currentBroker.stop();
-        }
+        if (current == null) return;
+        manager.removeListener(current);
     }
 }

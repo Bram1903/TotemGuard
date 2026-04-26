@@ -24,15 +24,17 @@ import com.deathmotion.totemguard.common.cache.backend.RedisCacheBackend;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
-/**
- * Routes every call to either Redis or the in-process backend — never both.
- */
+// Redis primary, local write-through mirror so reads survive transient Redis outages.
 public final class CacheRepositoryImpl {
+
+    private static final long FAILURE_LOG_INTERVAL_NANOS = Duration.ofMinutes(1).toNanos();
 
     private final RedisCacheBackend redisBackend;
     private final LocalCacheBackend localBackend;
+    private final AtomicLong lastFailureLogNanos = new AtomicLong(Long.MIN_VALUE);
 
     public CacheRepositoryImpl() {
         TGPlatform platform = TGPlatform.getInstance();
@@ -44,18 +46,82 @@ public final class CacheRepositoryImpl {
         return redisBackend.isAvailable();
     }
 
-    /**
-     * Reads without touching the TTL.
-     */
     public <V> @Nullable V get(String key, Codec<V> codec) {
-        return decode(key, backend().get(key), codec);
+        return decode(key, readBytes(key, false, Duration.ZERO), codec);
     }
 
-    /**
-     * Reads and, on hit, resets the TTL to {@code ttl}.
-     */
     public <V> @Nullable V getAndRefresh(String key, Codec<V> codec, Duration ttl) {
-        return decode(key, backend().getAndRefresh(key, ttl), codec);
+        return decode(key, readBytes(key, true, ttl), codec);
+    }
+
+    public <V> void put(String key, V value, Codec<V> codec, Duration ttl) {
+        byte[] raw = encode(key, value, codec);
+        if (raw == null) return;
+
+        localBackend.put(key, raw, ttl);
+
+        if (!redisBackend.isAvailable()) return;
+        try {
+            redisBackend.put(key, raw, ttl);
+        } catch (CacheBackendException ex) {
+            logFallback("put", key, ex);
+        }
+    }
+
+    public <V> boolean putIfAbsent(String key, V value, Codec<V> codec, Duration ttl) {
+        byte[] raw = encode(key, value, codec);
+        if (raw == null) return false;
+
+        if (!redisBackend.isAvailable()) {
+            return localBackend.putIfAbsent(key, raw, ttl);
+        }
+        try {
+            boolean claimed = redisBackend.putIfAbsent(key, raw, ttl);
+            if (claimed) localBackend.put(key, raw, ttl);
+            return claimed;
+        } catch (CacheBackendException ex) {
+            logFallback("putIfAbsent", key, ex);
+            return localBackend.putIfAbsent(key, raw, ttl);
+        }
+    }
+
+    public void remove(String key) {
+        localBackend.remove(key);
+        if (!redisBackend.isAvailable()) return;
+        try {
+            redisBackend.remove(key);
+        } catch (CacheBackendException ex) {
+            logFallback("remove", key, ex);
+        }
+    }
+
+    public boolean contains(String key) {
+        return get(key, RAW_CODEC) != null;
+    }
+
+    private byte @Nullable [] readBytes(String key, boolean refresh, Duration ttl) {
+        if (redisBackend.isAvailable()) {
+            try {
+                byte[] raw = refresh ? redisBackend.getAndRefresh(key, ttl) : redisBackend.get(key);
+                if (raw != null && refresh) {
+                    localBackend.put(key, raw, ttl);
+                }
+                return raw;
+            } catch (CacheBackendException ex) {
+                logFallback(refresh ? "getAndRefresh" : "get", key, ex);
+            }
+        }
+        return refresh ? localBackend.getAndRefresh(key, ttl) : localBackend.get(key);
+    }
+
+    private <V> byte[] encode(String key, V value, Codec<V> codec) {
+        try {
+            return codec.encode(value);
+        } catch (Exception ex) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING,
+                    "Cache encode failed for key " + key, ex);
+            return null;
+        }
     }
 
     private <V> @Nullable V decode(String key, byte[] raw, Codec<V> codec) {
@@ -65,47 +131,36 @@ public final class CacheRepositoryImpl {
         } catch (Exception ex) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
                     "Cache decode failed for key " + key, ex);
-            backend().remove(key);
+            try {
+                if (redisBackend.isAvailable()) redisBackend.remove(key);
+            } catch (CacheBackendException ignored) {
+            }
+            localBackend.remove(key);
             return null;
         }
     }
 
-    public <V> void put(String key, V value, Codec<V> codec, Duration ttl) {
-        byte[] raw;
-        try {
-            raw = codec.encode(value);
-        } catch (Exception ex) {
-            TGPlatform.getInstance().getLogger().log(Level.WARNING,
-                    "Cache encode failed for key " + key, ex);
+    private void logFallback(String op, String key, CacheBackendException ex) {
+        long now = System.nanoTime();
+        long last = lastFailureLogNanos.get();
+        if (last != Long.MIN_VALUE && now - last < FAILURE_LOG_INTERVAL_NANOS) {
             return;
         }
-        backend().put(key, raw, ttl);
+        if (!lastFailureLogNanos.compareAndSet(last, now)) return;
+        TGPlatform.getInstance().getLogger().log(Level.WARNING,
+                "Redis cache " + op + " for key " + key
+                        + " failed — falling back to local cache: " + ex.getMessage());
     }
 
-    /**
-     * @return {@code true} iff this caller claimed the slot.
-     */
-    public <V> boolean putIfAbsent(String key, V value, Codec<V> codec, Duration ttl) {
-        byte[] raw;
-        try {
-            raw = codec.encode(value);
-        } catch (Exception ex) {
-            TGPlatform.getInstance().getLogger().log(Level.WARNING,
-                    "Cache encode failed for key " + key, ex);
-            return false;
+    private static final Codec<byte[]> RAW_CODEC = new Codec<>() {
+        @Override
+        public byte[] encode(byte[] value) {
+            return value;
         }
-        return backend().putIfAbsent(key, raw, ttl);
-    }
 
-    public void remove(String key) {
-        backend().remove(key);
-    }
-
-    public boolean contains(String key) {
-        return backend().get(key) != null;
-    }
-
-    private CacheBackend backend() {
-        return redisBackend.isAvailable() ? redisBackend : localBackend;
-    }
+        @Override
+        public byte[] decode(byte[] raw) {
+            return raw;
+        }
+    };
 }
