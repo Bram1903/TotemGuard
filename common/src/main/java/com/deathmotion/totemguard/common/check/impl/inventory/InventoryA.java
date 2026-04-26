@@ -35,8 +35,8 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 
 // Flags impossible actions while an inventory is open:
 // aiming, placing a block, using an item, changing held slot, picking an item, picking a block,
-// picking an entity, attacking, swinging, moving, interacting with an entity, digging, dropping an item,
-// swapping offhand, releasing use, stabbing, sneaking, leaving a bed, sprinting, stopping a horse jump,
+// picking an entity, attacking, swinging, moving, interacting with an entity, digging, dropping an item (through a dig packet),
+// swapping offhand (through a dig packet), releasing use, stabbing, sneaking, leaving a bed, sprinting, stopping a horse jump,
 // opening a horse inventory, and starting an elytra glide.
 @CheckData(description = "Impossible action with open inventory", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
