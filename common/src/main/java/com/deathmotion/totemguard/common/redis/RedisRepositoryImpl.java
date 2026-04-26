@@ -49,7 +49,8 @@ public final class RedisRepositoryImpl implements RedisRepository {
         this.identifier = UUID.randomUUID().toString();
         this.handlers = List.of(new SyncAlertMessageHandler(TGPlatform.getInstance(), this, registry));
 
-        start();
+        // Initial start is blocking so the connection is up before any player can join.
+        applyOptions(currentOptions(), false, true);
     }
 
     @Override
@@ -97,7 +98,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
     }
 
     public synchronized void start() {
-        applyOptions(currentOptions(), false);
+        applyOptions(currentOptions(), false, false);
     }
 
     public synchronized void stop() {
@@ -108,14 +109,14 @@ public final class RedisRepositoryImpl implements RedisRepository {
     }
 
     public synchronized void restart() {
-        applyOptions(currentOptions(), true);
+        applyOptions(currentOptions(), true, false);
     }
 
     private RedisOptions currentOptions() {
         return TGPlatform.getInstance().getConfigRepository().configView().redis();
     }
 
-    private void applyOptions(RedisOptions newOptions, boolean restart) {
+    private void applyOptions(RedisOptions newOptions, boolean restart, boolean blocking) {
         this.options = newOptions;
 
         reloadHandlers();
@@ -136,7 +137,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         }
         this.broker = newBroker;
 
-        manager.start(newOptions);
+        manager.start(newOptions, blocking);
     }
 
     private void reloadHandlers() {

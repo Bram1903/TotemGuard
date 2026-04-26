@@ -57,7 +57,8 @@ public final class LoggerSuppressor {
     public static void suppressDefaultNoise() {
         suppress(List.of(
                 "com.deathmotion.totemguard.common.libs.lettuce.core.protocol.ConnectionWatchdog",
-                "com.deathmotion.totemguard.common.libs.lettuce.core.protocol.ReconnectionHandler"
+                "com.deathmotion.totemguard.common.libs.lettuce.core.protocol.ReconnectionHandler",
+                "com.deathmotion.totemguard.common.libs.hikari"
         ));
     }
 }

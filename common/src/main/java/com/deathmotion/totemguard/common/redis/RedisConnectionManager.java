@@ -102,6 +102,13 @@ final class RedisConnectionManager {
     }
 
     void start(RedisOptions newOptions) {
+        start(newOptions, false);
+    }
+
+    // blocking=true runs the initial connect on the calling thread so the
+    // connection is established before this method returns. Retries on failure
+    // still go through the executor.
+    void start(RedisOptions newOptions, boolean blocking) {
         synchronized (lock) {
             if (started) return;
             started = true;
@@ -112,7 +119,11 @@ final class RedisConnectionManager {
                 return thread;
             });
         }
-        scheduleConnect(0L);
+        if (blocking) {
+            connectAttempt();
+        } else {
+            scheduleConnect(0L);
+        }
     }
 
     void stop() {
