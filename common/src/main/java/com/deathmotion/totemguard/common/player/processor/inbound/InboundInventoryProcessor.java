@@ -74,8 +74,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             return;
         }
 
-        boolean tickBoundary = WrapperPlayClientPlayerFlying.isFlying(type)
-                || (type == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick());
+        boolean tickBoundary = WrapperPlayClientPlayerFlying.isFlying(type) || (type == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick());
         if (tickBoundary) {
             data.applyPendingOpenInventory();
             data.setServerOpenedInventoryThisTick(false);

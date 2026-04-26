@@ -56,6 +56,23 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         return null;
     }
 
+    public void validateMovement() {
+        if (!data.isOpenInventory()) return;
+        if (data.isServerOpenedInventoryThisTick()) return;
+
+        if (data.isSprinting()) {
+            failInventory("sprint");
+            return;
+        }
+
+        if (player.supportsEndTick()) {
+            final InputData input = data.getInputData();
+            if (input.isInput()) {
+                failInventory("move");
+            }
+        }
+    }
+
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (!data.isOpenInventory()) return;
@@ -78,10 +95,12 @@ public class InventoryA extends CheckImpl implements PacketCheck {
 
         if (type == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
             final InputData input = data.getInputData();
-            // Auto-jump releases PLAYER_INPUT packets even when idle — ignore the jump release tick.
-            if (input.current().jumping() || !input.previous().jumping()) {
-                failInventory("move");
+
+            if (!input.current().jumping() && input.previous().jumping()) {
+                return;
             }
+
+            failInventory("move");
             return;
         }
 

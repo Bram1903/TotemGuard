@@ -36,6 +36,10 @@ public class InputData {
         return current.isInput();
     }
 
+    public boolean isInput(boolean ignoreJumping) {
+        return current.isInput(ignoreJumping);
+    }
+
     public State current() {
         return current;
     }
@@ -57,8 +61,15 @@ public class InputData {
             return new State(false, false, false, false, false, false, false);
         }
 
-        // We love the auto jump setting
         public boolean isInput() {
+            return forward || backward || left || right || jumping || sneaking || sprinting;
+        }
+
+        public boolean isInput(boolean ignoreJumping) {
+            if (!ignoreJumping) {
+                return isInput();
+            }
+
             return forward || backward || left || right || sneaking || sprinting;
         }
     }
