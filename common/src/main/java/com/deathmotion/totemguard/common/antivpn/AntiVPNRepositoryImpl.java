@@ -46,20 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Coordinates VPN/proxy lookups for joining players.
- * <p>
- * Resolution order on every join:
- * <ol>
- *   <li>Reject obviously private/loopback IPs early — they can never be VPN exits.</li>
- *   <li>Read-through cache: distributed (Redis) → local memory, refreshed on hit.</li>
- *   <li>Persistent cache: {@code tg_vpn_cache} table (survives restarts; cross-server).</li>
- *   <li>Provider HTTP lookup; result is written through to every cache layer.</li>
- * </ol>
- * On a positive flag the {@link TGUserVPNDetectionEvent} is fired and, if not cancelled,
- * an alert is broadcast and the player is kicked when {@code anti-vpn.block} is true.
- * Provider failures default to "not VPN" so an outage never gates legitimate joins.
- */
 @Getter
 public class AntiVPNRepositoryImpl {
 
@@ -88,6 +74,22 @@ public class AntiVPNRepositoryImpl {
         this.messageService = platform.getMessageService();
         this.logger = platform.getLogger();
         reload();
+    }
+
+    private static byte @NotNull [] sha256(@NotNull String value) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 unavailable", ex);
+        }
+    }
+
+    private static String redactIp(String ip) {
+        int lastDot = ip.lastIndexOf('.');
+        if (lastDot > 0) return ip.substring(0, lastDot) + ".x";
+        int lastColon = ip.lastIndexOf(':');
+        if (lastColon > 0) return ip.substring(0, lastColon) + ":xxxx";
+        return "<redacted>";
     }
 
     public void reload() {
@@ -126,11 +128,6 @@ public class AntiVPNRepositoryImpl {
         logger.info("Anti-VPN enabled with provider " + adapter.getName());
     }
 
-    /**
-     * Entry point from {@link TGPlayer#onLogin()}.
-     * Already invoked from the platform async pool; we run synchronously here so the join
-     * sequence sees a settled {@code vpn} flag before anything else looks at the player.
-     */
     public void validateConnection(TGPlayer player) {
         AntiVPNAdapter adapter = this.activeAdapter;
         if (!enabled || adapter == null) return;
@@ -170,7 +167,6 @@ public class AntiVPNRepositoryImpl {
                     || address.isLoopbackAddress()
                     || address.isSiteLocalAddress()
                     || address.isLinkLocalAddress()) {
-                // Local/private — can't be a VPN exit and not worth burning a provider quota on.
                 return null;
             }
             return address.getHostAddress();
@@ -187,7 +183,6 @@ public class AntiVPNRepositoryImpl {
         try {
             Boolean persistent = databaseRepository.findVpnCache(sha256(ip), persistentFreshnessMillis);
             if (persistent != null) {
-                // Promote into the fast cache so the next hit on this server is in-memory only.
                 cacheRepository.put(CacheKeys.vpn(ip), persistent, CacheCodecs.BOOLEAN, MEMORY_CACHE_TTL);
             }
             return persistent;
@@ -224,22 +219,5 @@ public class AntiVPNRepositoryImpl {
         PlatformUser platformUser = player.getPlatformUser();
         if (platformUser == null) return;
         platformUser.kick(messageService.getComponent(MessagesKeys.ANTI_VPN_KICK, player, null, null));
-    }
-
-    private static byte @NotNull [] sha256(@NotNull String value) {
-        try {
-            return MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-        } catch (NoSuchAlgorithmException ex) {
-            // Every standard JVM ships SHA-256; if it's missing, the platform is unusable anyway.
-            throw new IllegalStateException("SHA-256 unavailable", ex);
-        }
-    }
-
-    private static String redactIp(String ip) {
-        int lastDot = ip.lastIndexOf('.');
-        if (lastDot > 0) return ip.substring(0, lastDot) + ".x";
-        int lastColon = ip.lastIndexOf(':');
-        if (lastColon > 0) return ip.substring(0, lastColon) + ":xxxx";
-        return "<redacted>";
     }
 }

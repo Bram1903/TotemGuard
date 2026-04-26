@@ -16,15 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.platform.player;
+package com.deathmotion.totemguard.api3.history;
 
-import net.kyori.adventure.text.Component;
+/**
+ * Outcome of {@link HistoryRepository#clear} — how many rows were actually removed
+ * across both tables. {@code 0/0} is a successful clear of an already-empty record.
+ */
+public record HistoryClearResult(long alertsRemoved, long punishmentsRemoved) {
 
-public interface PlatformUser {
-    boolean hasPermission(String permission);
-
-    void sendMessage(Component message);
-
-    // Safe from any thread; implementations hop to the right scheduler themselves.
-    void kick(Component reason);
+    public long total() {
+        return alertsRemoved + punishmentsRemoved;
+    }
 }

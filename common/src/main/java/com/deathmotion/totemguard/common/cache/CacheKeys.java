@@ -45,25 +45,30 @@ public final class CacheKeys {
         return PREFIX + "punish-lock:" + uuid;
     }
 
-    public static String alertHistoryPage(UUID uuid, int page, @Nullable String checkFilter) {
+    // Bumped on history clear; embedded into every key below to invalidate them all at once.
+    public static String historyVersion(UUID uuid) {
+        return PREFIX + "hist:ver:" + uuid;
+    }
+
+    public static String alertHistoryPage(UUID uuid, long version, int page, @Nullable String checkFilter) {
         String f = checkFilter == null ? "*" : checkFilter;
-        return PREFIX + "hist:alerts:" + uuid + ":" + f + ":p" + page;
+        return PREFIX + "hist:alerts:" + uuid + ":v" + version + ":" + f + ":p" + page;
     }
 
-    public static String alertHistoryCount(UUID uuid, @Nullable String checkFilter) {
+    public static String alertHistoryCount(UUID uuid, long version, @Nullable String checkFilter) {
         String f = checkFilter == null ? "*" : checkFilter;
-        return PREFIX + "hist:alerts-count:" + uuid + ":" + f;
+        return PREFIX + "hist:alerts-count:" + uuid + ":v" + version + ":" + f;
     }
 
-    public static String alertHistoryCheckSummaries(UUID uuid) {
-        return PREFIX + "hist:alert-checks:" + uuid;
+    public static String alertHistoryCheckSummaries(UUID uuid, long version) {
+        return PREFIX + "hist:alert-checks:" + uuid + ":v" + version;
     }
 
-    public static String punishmentHistoryPage(UUID uuid, int page) {
-        return PREFIX + "hist:punishments:" + uuid + ":p" + page;
+    public static String punishmentHistoryPage(UUID uuid, long version, int page) {
+        return PREFIX + "hist:punishments:" + uuid + ":v" + version + ":p" + page;
     }
 
-    public static String punishmentHistoryCount(UUID uuid) {
-        return PREFIX + "hist:punishments-count:" + uuid;
+    public static String punishmentHistoryCount(UUID uuid, long version) {
+        return PREFIX + "hist:punishments-count:" + uuid + ":v" + version;
     }
 }

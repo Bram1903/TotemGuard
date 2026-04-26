@@ -29,12 +29,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * Cross-server persistent layer of the VPN cache (the {@code tg_vpn_cache} table).
- * Sits behind the in-memory and Redis caches; the {@link com.deathmotion.totemguard.common.database.RetentionSweeper}
- * is the only thing that removes rows, so freshness is enforced by filtering on {@code cached_at}
- * against the configured retention window.
- */
 public final class VpnCacheDao {
 
     private static final int PROVIDER_MAX_LENGTH = 64;
@@ -45,11 +39,10 @@ public final class VpnCacheDao {
         this.connection = connection;
     }
 
-    /**
-     * @param freshAfterEpochMs only rows with {@code cached_at > freshAfterEpochMs} are returned;
-     *                          stale rows are ignored and will be cleaned up by the sweeper.
-     * @return {@code null} if the row is missing or older than the freshness cutoff.
-     */
+    private static String truncate(String value, int max) {
+        return value.length() <= max ? value : value.substring(0, max);
+    }
+
     @Blocking
     public @Nullable Boolean find(byte @NotNull [] ipHash, long freshAfterEpochMs) throws SQLException {
         try (Connection c = connection.borrow();
@@ -76,9 +69,5 @@ public final class VpnCacheDao {
             stmt.setLong(4, cachedAtEpochMs);
             stmt.executeUpdate();
         }
-    }
-
-    private static String truncate(String value, int max) {
-        return value.length() <= max ? value : value.substring(0, max);
     }
 }

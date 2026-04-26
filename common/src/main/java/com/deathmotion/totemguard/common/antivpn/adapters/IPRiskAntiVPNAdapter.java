@@ -31,13 +31,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 
-/**
- * <a href="https://iprisk.info">IPRisk</a> — keyless public endpoint. Treats {@code vpn},
- * {@code open_proxy}, and {@code data_center} flags as VPN-equivalent.
- */
 public class IPRiskAntiVPNAdapter extends AntiVPNAdapter {
 
     private static final String API_URL = "https://api.iprisk.info/v1/";
+
+    private static boolean readBoolean(@NotNull JsonObject json, @NotNull String key) {
+        return json.has(key) && !json.get(key).isJsonNull() && json.get(key).getAsBoolean();
+    }
 
     @Override
     public @NotNull String getName() {
@@ -63,7 +63,7 @@ public class IPRiskAntiVPNAdapter extends AntiVPNAdapter {
 
         JsonObject json;
         try {
-            //noinspection deprecation -- bundled Gson predates JsonParser.parseString
+            //noinspection deprecation
             json = new JsonParser().parse(body).getAsJsonObject();
         } catch (RuntimeException ex) {
             return null;
@@ -72,9 +72,5 @@ public class IPRiskAntiVPNAdapter extends AntiVPNAdapter {
         return readBoolean(json, "vpn")
                 || readBoolean(json, "open_proxy")
                 || readBoolean(json, "data_center");
-    }
-
-    private static boolean readBoolean(@NotNull JsonObject json, @NotNull String key) {
-        return json.has(key) && !json.get(key).isJsonNull() && json.get(key).getAsBoolean();
     }
 }

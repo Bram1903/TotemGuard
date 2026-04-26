@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api3.user;
 
+import com.deathmotion.totemguard.api3.history.HistoryView;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -53,4 +54,13 @@ public interface TGUser {
      * @return the new alert status after toggling.
      */
     boolean toggleAlerts();
+
+    /**
+     * Shortcut to this user's paginated alert and punishment history. Equivalent to
+     * {@code TotemGuard.getApi().getHistoryRepository().of(this)} but spares the caller
+     * from threading the UUID through.
+     *
+     * @return a {@link HistoryView} bound to this user; never {@code null}.
+     */
+    @NotNull HistoryView getHistory();
 }

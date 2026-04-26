@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player;
 
+import com.deathmotion.totemguard.api3.history.HistoryView;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
@@ -249,6 +250,11 @@ public class TGPlayer implements TGUser {
     @Override
     public boolean toggleAlerts() {
         return TGPlatform.getInstance().getAlertRepository().toggleAlerts(uuid);
+    }
+
+    @Override
+    public @NotNull HistoryView getHistory() {
+        return TGPlatform.getInstance().getHistoryRepository().of(uuid);
     }
 
     public ClientVersion getClientVersion() {

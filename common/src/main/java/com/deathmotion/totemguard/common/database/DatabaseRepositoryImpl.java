@@ -307,11 +307,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         prefs.upsert(uuid, enabled, System.currentTimeMillis());
     }
 
-    /**
-     * @param freshnessWindowMillis ignore rows older than this — they're stale even if the
-     *                              sweeper hasn't deleted them yet.
-     * @return cached {@code is_vpn} flag for the IP hash, or {@code null} if missing/stale.
-     */
     @Blocking
     public @Nullable Boolean findVpnCache(byte[] ipHash, long freshnessWindowMillis) throws SQLException {
         requireEnabled();
@@ -367,6 +362,21 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         AlertDao alerts = this.alertDao;
         if (alerts == null) throw new SQLException("Database not ready");
         return alerts.countByPlayerAndCheck(uuid, checkName);
+    }
+
+    // Returns [alertsRemoved, punishmentsRemoved]. Pending writes still in the batched
+    // AlertWriter queue will land after this returns — clear offline players only if
+    // strict consistency matters.
+    @Blocking
+    public long[] deleteHistory(UUID uuid) throws SQLException {
+        requireEnabled();
+        AlertDao alerts = this.alertDao;
+        PunishmentDao punishments = this.punishmentDao;
+        if (alerts == null || punishments == null) throw new SQLException("Database not ready");
+
+        long alertsRemoved = alerts.deleteByPlayer(uuid);
+        long punishmentsRemoved = punishments.deleteByPlayer(uuid);
+        return new long[]{alertsRemoved, punishmentsRemoved};
     }
 
     @Blocking

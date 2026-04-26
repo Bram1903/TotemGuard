@@ -18,11 +18,10 @@
 
 package com.deathmotion.totemguard.common.gui.screen.history;
 
+import com.deathmotion.totemguard.api3.history.AlertEntry;
+import com.deathmotion.totemguard.api3.history.HistoryError;
+import com.deathmotion.totemguard.api3.history.HistoryPage;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.cache.CacheCodecs;
-import com.deathmotion.totemguard.common.cache.CacheKeys;
-import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
-import com.deathmotion.totemguard.common.database.model.AlertRecord;
 import com.deathmotion.totemguard.common.gui.*;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -31,7 +30,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -42,8 +40,6 @@ import java.util.logging.Level;
  */
 public final class PlayerAlertsScreen extends GuiScreen {
 
-    static final int PAGE_SIZE = 21;
-    private static final Duration HISTORY_TTL = Duration.ofMinutes(2);
     private static final int[] CONTENT_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
@@ -55,8 +51,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
     private final int page;
     private final @Nullable String checkName;
 
-    private volatile @Nullable List<AlertRecord> loaded;
-    private volatile int totalCount = -1;
+    private volatile @Nullable HistoryPage<AlertEntry> loaded;
     private volatile @Nullable String loadError;
     private volatile boolean offline;
 
@@ -93,56 +88,19 @@ public final class PlayerAlertsScreen extends GuiScreen {
         TGPlatform platform = TGPlatform.getInstance();
 
         if (!platform.getDatabaseRepository().isConnected()) {
-            this.loaded = List.of();
-            this.totalCount = 0;
             this.offline = true;
             return;
         }
 
-        platform.getScheduler().runAsyncTask(() -> {
-            CacheRepositoryImpl cache = platform.getCacheRepository();
-            String pageKey = CacheKeys.alertHistoryPage(targetId, page, checkName);
-            String countKey = CacheKeys.alertHistoryCount(targetId, checkName);
-
-            List<AlertRecord> cachedPage = cache.get(pageKey, CacheCodecs.ALERT_RECORDS);
-            Integer cachedCount = cache.get(countKey, CacheCodecs.INT);
-            if (cachedPage != null && cachedCount != null) {
-                this.loaded = cachedPage;
-                this.totalCount = cachedCount;
-                platform.getGuiManager().refresh(session.viewerId());
-                return;
-            }
-
-            try {
-                List<AlertRecord> rows;
-                int total;
-                if (checkName == null) {
-                    rows = platform.getDatabaseRepository()
-                            .findAlertsByPlayer(targetId, PAGE_SIZE, page * PAGE_SIZE);
-                    total = platform.getDatabaseRepository().countAlertsByPlayer(targetId);
-                } else {
-                    rows = platform.getDatabaseRepository()
-                            .findAlertsByPlayerAndCheck(targetId, checkName, PAGE_SIZE, page * PAGE_SIZE);
-                    total = platform.getDatabaseRepository()
-                            .countAlertsByPlayerAndCheck(targetId, checkName);
-                }
-                this.loaded = rows;
-                this.totalCount = total;
-                cache.put(pageKey, rows, CacheCodecs.ALERT_RECORDS, HISTORY_TTL);
-                cache.put(countKey, total, CacheCodecs.INT, HISTORY_TTL);
-            } catch (Exception ex) {
-                // A drop between isConnected() and the query isn't worth a stack trace.
-                if (!platform.getDatabaseRepository().isConnected()) {
-                    this.loaded = List.of();
-                    this.totalCount = 0;
-                    this.offline = true;
-                } else {
-                    this.loaded = List.of();
-                    this.totalCount = 0;
-                    this.loadError = ex.getMessage();
-                    platform.getLogger().log(Level.WARNING,
-                            "Failed to load alert history for " + targetId, ex);
-                }
+        platform.getHistoryRepository().alerts(targetId, page, checkName).thenAccept(response -> {
+            if (response.ok()) {
+                this.loaded = response.value();
+            } else if (response.error() == HistoryError.DATABASE_UNAVAILABLE) {
+                this.offline = true;
+            } else {
+                this.loadError = response.message();
+                platform.getLogger().log(Level.WARNING,
+                        "Failed to load alert history for " + targetId + ": " + response.message());
             }
             platform.getGuiManager().refresh(session.viewerId());
         });
@@ -176,17 +134,6 @@ public final class PlayerAlertsScreen extends GuiScreen {
             return builder.build();
         }
 
-        List<AlertRecord> rows = this.loaded;
-
-        if (rows == null) {
-            builder.set(22, GuiItems.simple(
-                    ItemTypes.CLOCK,
-                    Component.text("Loading…", NamedTextColor.YELLOW),
-                    List.of(Component.text("Querying the database", NamedTextColor.GRAY))
-            ));
-            return builder.build();
-        }
-
         if (loadError != null) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
@@ -199,18 +146,30 @@ public final class PlayerAlertsScreen extends GuiScreen {
             return builder.build();
         }
 
+        HistoryPage<AlertEntry> result = this.loaded;
+
+        if (result == null) {
+            builder.set(22, GuiItems.simple(
+                    ItemTypes.CLOCK,
+                    Component.text("Loading…", NamedTextColor.YELLOW),
+                    List.of(Component.text("Querying the database", NamedTextColor.GRAY))
+            ));
+            return builder.build();
+        }
+
+        List<AlertEntry> rows = result.entries();
+
         if (rows.isEmpty() && page == 0) {
             builder.set(22, buildEmptyTile());
-            renderFooter(builder);
+            renderFooter(builder, result);
             return builder.build();
         }
 
         for (int i = 0; i < rows.size() && i < CONTENT_SLOTS.length; i++) {
-            AlertRecord record = rows.get(i);
-            builder.set(CONTENT_SLOTS[i], buildAlertTile(record));
+            builder.set(CONTENT_SLOTS[i], buildAlertTile(rows.get(i)));
         }
 
-        renderFooter(builder);
+        renderFooter(builder, result);
         return builder.build();
     }
 
@@ -233,7 +192,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
         );
     }
 
-    private ItemStack buildAlertTile(AlertRecord record) {
+    private ItemStack buildAlertTile(AlertEntry record) {
         List<Component> lore = new ArrayList<>();
         lore.add(GuiText.line("Violations", String.valueOf(record.violations())));
         lore.add(GuiText.line("Server", record.serverName()));
@@ -271,13 +230,11 @@ public final class PlayerAlertsScreen extends GuiScreen {
         );
     }
 
-    private void renderFooter(GuiRenderResult.Builder builder) {
-        int total = Math.max(0, totalCount);
-        int pages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
-        boolean hasPrev = page > 0;
-        boolean hasNext = (page + 1) < pages;
+    private void renderFooter(GuiRenderResult.Builder builder, HistoryPage<AlertEntry> result) {
+        int total = result.totalEntries();
+        int pages = result.totalPages();
 
-        if (hasPrev) {
+        if (result.hasPrevious()) {
             builder.set(48, GuiItems.simple(
                     ItemTypes.ARROW,
                     Component.text("Previous page", NamedTextColor.GOLD),
@@ -295,7 +252,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
                         GuiText.line("Matching alerts", String.valueOf(total)))
         ));
 
-        if (hasNext) {
+        if (result.hasNext()) {
             builder.set(50, GuiItems.simple(
                     ItemTypes.ARROW,
                     Component.text("Next page", NamedTextColor.GOLD),

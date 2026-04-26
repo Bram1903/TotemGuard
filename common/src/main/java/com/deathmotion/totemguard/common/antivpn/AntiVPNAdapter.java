@@ -25,14 +25,6 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.time.Duration;
 
-/**
- * Provider-specific VPN/proxy lookup. Implementations must be thread-safe — a single instance
- * is registered globally and queried concurrently from the player join async task.
- * <p>
- * Returning {@code null} from {@link #lookup} signals "no result, treat as not-VPN" so a
- * provider outage never blocks otherwise-legitimate joins; throwing is reserved for
- * unrecoverable bugs.
- */
 public abstract class AntiVPNAdapter {
 
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(5);
@@ -45,10 +37,6 @@ public abstract class AntiVPNAdapter {
 
     public abstract @NotNull String getName();
 
-    /**
-     * Whether this provider needs a non-blank API key to function. The repository will refuse
-     * to enable the feature if the key is missing.
-     */
     public boolean requiresApiKey() {
         return false;
     }
@@ -69,14 +57,6 @@ public abstract class AntiVPNAdapter {
         return HTTP_TIMEOUT;
     }
 
-    /**
-     * Performs a single synchronous lookup. Implementations are expected to swallow transient
-     * failures (HTTP 5xx, timeouts, malformed bodies) and return {@code null} so the repository
-     * can fall through to default-allow.
-     *
-     * @return {@code true} if the IP is a VPN/proxy/datacenter, {@code false} if clean,
-     * {@code null} if the lookup couldn't produce a verdict.
-     * @throws IOException only for genuinely unrecoverable IO issues — these are logged.
-     */
+    // null = inconclusive lookup; the repository treats it as not-VPN.
     public abstract @Nullable Boolean lookup(@NotNull String ip) throws IOException, InterruptedException;
 }

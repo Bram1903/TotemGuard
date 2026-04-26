@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.api3;
 import com.deathmotion.totemguard.api3.alert.AlertRepository;
 import com.deathmotion.totemguard.api3.config.ConfigRepository;
 import com.deathmotion.totemguard.api3.event.EventRepository;
+import com.deathmotion.totemguard.api3.history.HistoryRepository;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
@@ -101,4 +102,13 @@ public interface TotemGuardAPI {
      * @return the alert repository, never {@code null}
      */
     @NotNull AlertRepository getAlertRepository();
+
+    /**
+     * Returns the repository for paginated alert and punishment history. The same backing
+     * data the in-game history GUI shows, exposed through a strict pagination API so a
+     * single call can never request more than {@link HistoryRepository#pageSize()} rows.
+     *
+     * @return the history repository, never {@code null}
+     */
+    @NotNull HistoryRepository getHistoryRepository();
 }

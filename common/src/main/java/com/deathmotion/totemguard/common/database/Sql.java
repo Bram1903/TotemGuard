@@ -66,7 +66,6 @@ public final class Sql {
                     "  provider  = VALUES(provider), " +
                     "  cached_at = VALUES(cached_at)";
 
-    // Filters by cached_at against the configured retention TTL — no expires_at column needed.
     public static final String SELECT_VPN_CACHE =
             "SELECT is_vpn FROM tg_vpn_cache " +
                     "WHERE ip_hash = ? AND cached_at > ? " +
@@ -100,6 +99,16 @@ public final class Sql {
 
     public static final String DELETE_OLD_VPN_CACHE =
             "DELETE FROM tg_vpn_cache WHERE cached_at < ? LIMIT ?";
+
+    public static final String DELETE_ALERTS_BY_UUID =
+            "DELETE a FROM tg_alerts a " +
+                    "JOIN tg_players p ON a.player_id = p.id " +
+                    "WHERE p.uuid = ?";
+
+    public static final String DELETE_PUNISHMENTS_BY_UUID =
+            "DELETE pu FROM tg_punishments pu " +
+                    "JOIN tg_players p ON pu.player_id = p.id " +
+                    "WHERE p.uuid = ?";
 
     public static final String SELECT_ALERTS_BY_UUID =
             "SELECT a.id, c.name AS check_name, s.name AS server_name, " +

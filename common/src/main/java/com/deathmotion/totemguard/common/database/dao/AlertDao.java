@@ -116,6 +116,15 @@ public final class AlertDao {
     }
 
     @Blocking
+    public long deleteByPlayer(UUID uuid) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.DELETE_ALERTS_BY_UUID)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            return stmt.executeUpdate();
+        }
+    }
+
+    @Blocking
     public List<AlertRecord> findByPlayer(UUID uuid, int limit, int offset) throws SQLException {
         List<AlertRecord> out = new ArrayList<>();
         try (Connection c = connection.borrow();

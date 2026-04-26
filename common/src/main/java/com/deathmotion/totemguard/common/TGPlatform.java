@@ -36,6 +36,7 @@ import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.gui.GuiPacketListener;
+import com.deathmotion.totemguard.common.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
@@ -82,6 +83,7 @@ public abstract class TGPlatform {
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
     private AntiVPNRepositoryImpl antiVPNRepository;
+    private HistoryRepositoryImpl historyRepository;
     private GuiManager guiManager;
     private IntegrationRegistrar integrationRegistrar;
 
@@ -131,6 +133,7 @@ public abstract class TGPlatform {
         playerRepository = new PlayerRepositoryImpl();
         integrationRegistrar = new IntegrationRegistrar();
         guiManager = new GuiManager();
+        historyRepository = new HistoryRepositoryImpl();
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
 

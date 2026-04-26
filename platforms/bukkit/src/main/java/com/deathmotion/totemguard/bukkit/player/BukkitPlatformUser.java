@@ -46,7 +46,6 @@ public class BukkitPlatformUser implements PlatformUser {
 
     @Override
     public void kick(Component reason) {
-        // Folia requires kick to run on the player's region thread.
         FoliaScheduler.getEntityScheduler().run(bukkitPlayer, TGBukkit.getInstance(), (o) -> {
             if (bukkitPlayer.isOnline()) bukkitPlayer.kick(reason);
         }, null);

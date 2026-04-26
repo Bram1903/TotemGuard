@@ -16,15 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.platform.player;
+package com.deathmotion.totemguard.api3.history;
 
-import net.kyori.adventure.text.Component;
+/**
+ * Reason a {@link HistoryResponse} came back as a failure. Match on this in your handler
+ * to decide what to surface to the user (a soft warning vs. a real error report).
+ */
+public enum HistoryError {
 
-public interface PlatformUser {
-    boolean hasPermission(String permission);
+    /**
+     * The database is disabled in {@code config.yml} or is currently unreachable.
+     * Treat as a soft failure — retry once the connection is back.
+     */
+    DATABASE_UNAVAILABLE,
 
-    void sendMessage(Component message);
-
-    // Safe from any thread; implementations hop to the right scheduler themselves.
-    void kick(Component reason);
+    /**
+     * A query reached the database but failed to complete (driver error, malformed
+     * statement, timeout, etc.). The associated message contains the cause; this is
+     * always a bug worth surfacing to the operator.
+     */
+    INTERNAL_ERROR
 }

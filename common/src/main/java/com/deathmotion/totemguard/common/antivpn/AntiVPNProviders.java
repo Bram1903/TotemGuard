@@ -23,14 +23,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
-/**
- * Registry of all built-in {@link AntiVPNAdapter} instances. New providers should add
- * a single instance to {@link #ADAPTERS} and the rest of the lookup machinery will pick
- * them up by name from {@code anti-vpn.provider}.
- */
 public final class AntiVPNProviders {
 
     private static final List<AntiVPNAdapter> ADAPTERS = List.of(
@@ -52,12 +46,5 @@ public final class AntiVPNProviders {
                 .map(AntiVPNAdapter::getName)
                 .sorted(String.CASE_INSENSITIVE_ORDER)
                 .collect(Collectors.joining(", "));
-    }
-
-    @SuppressWarnings("unused")
-    public static @NotNull List<String> all() {
-        return ADAPTERS.stream()
-                .map(a -> a.getName().toLowerCase(Locale.ROOT))
-                .toList();
     }
 }

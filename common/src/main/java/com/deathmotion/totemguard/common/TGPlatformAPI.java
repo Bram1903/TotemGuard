@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.TotemGuardAPI;
 import com.deathmotion.totemguard.api3.alert.AlertRepository;
 import com.deathmotion.totemguard.api3.config.ConfigRepository;
 import com.deathmotion.totemguard.api3.event.EventRepository;
+import com.deathmotion.totemguard.api3.history.HistoryRepository;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
@@ -82,5 +83,10 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     @Override
     public @NotNull AlertRepository getAlertRepository() {
         return platform.getAlertRepository();
+    }
+
+    @Override
+    public @NotNull HistoryRepository getHistoryRepository() {
+        return platform.getHistoryRepository();
     }
 }
