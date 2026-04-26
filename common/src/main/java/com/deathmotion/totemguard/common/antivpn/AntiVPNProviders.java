@@ -19,11 +19,45 @@
 package com.deathmotion.totemguard.common.antivpn;
 
 import com.deathmotion.totemguard.common.antivpn.adapters.IPRiskAntiVPNAdapter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
-public class AntiVPNProviders {
-    public static List<AntiVPNAdapter> AntiVPNAdapters = List.of(
+/**
+ * Registry of all built-in {@link AntiVPNAdapter} instances. New providers should add
+ * a single instance to {@link #ADAPTERS} and the rest of the lookup machinery will pick
+ * them up by name from {@code anti-vpn.provider}.
+ */
+public final class AntiVPNProviders {
+
+    private static final List<AntiVPNAdapter> ADAPTERS = List.of(
             new IPRiskAntiVPNAdapter()
     );
+
+    private AntiVPNProviders() {
+    }
+
+    public static @Nullable AntiVPNAdapter byName(@NotNull String name) {
+        for (AntiVPNAdapter adapter : ADAPTERS) {
+            if (adapter.getName().equalsIgnoreCase(name)) return adapter;
+        }
+        return null;
+    }
+
+    public static @NotNull String availableNames() {
+        return ADAPTERS.stream()
+                .map(AntiVPNAdapter::getName)
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .collect(Collectors.joining(", "));
+    }
+
+    @SuppressWarnings("unused")
+    public static @NotNull List<String> all() {
+        return ADAPTERS.stream()
+                .map(a -> a.getName().toLowerCase(Locale.ROOT))
+                .toList();
+    }
 }

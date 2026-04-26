@@ -59,14 +59,18 @@ public final class Sql {
             "SELECT alerts_enabled FROM tg_staff_alert_prefs WHERE player_uuid = ?";
 
     public static final String UPSERT_VPN_CACHE =
-            "INSERT INTO tg_vpn_cache (ip_hash, is_vpn, provider, response, cached_at, expires_at) " +
-                    "VALUES (?, ?, ?, ?, ?, ?) " +
+            "INSERT INTO tg_vpn_cache (ip_hash, is_vpn, provider, cached_at) " +
+                    "VALUES (?, ?, ?, ?) " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "  is_vpn     = VALUES(is_vpn), " +
-                    "  provider   = VALUES(provider), " +
-                    "  response   = VALUES(response), " +
-                    "  cached_at  = VALUES(cached_at), " +
-                    "  expires_at = VALUES(expires_at)";
+                    "  is_vpn    = VALUES(is_vpn), " +
+                    "  provider  = VALUES(provider), " +
+                    "  cached_at = VALUES(cached_at)";
+
+    // Filters by cached_at against the configured retention TTL — no expires_at column needed.
+    public static final String SELECT_VPN_CACHE =
+            "SELECT is_vpn FROM tg_vpn_cache " +
+                    "WHERE ip_hash = ? AND cached_at > ? " +
+                    "LIMIT 1";
 
     public static final String INSERT_ALERT =
             "INSERT INTO tg_alerts " +

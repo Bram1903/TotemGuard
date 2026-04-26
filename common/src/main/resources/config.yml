@@ -59,7 +59,7 @@ anti-vpn:
   # Enable VPN detection.
   enabled: false
 
-  # The Anti VPN provider to use. (IPRisk, etc)
+  # The Anti VPN provider to use. (IPRisk is the only option currently)
   provider: IPRisk
 
   # The API key to use for the VPN provider (can leave blank or default if the provider doesn't require one)'.

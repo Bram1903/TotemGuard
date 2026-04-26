@@ -20,7 +20,9 @@ package com.deathmotion.totemguard.common.antivpn.adapters;
 
 import com.deathmotion.totemguard.common.antivpn.AntiVPNAdapter;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,6 +31,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * <a href="https://iprisk.info">IPRisk</a> — keyless public endpoint. Treats {@code vpn},
+ * {@code open_proxy}, and {@code data_center} flags as VPN-equivalent.
+ */
 public class IPRiskAntiVPNAdapter extends AntiVPNAdapter {
 
     private static final String API_URL = "https://api.iprisk.info/v1/";
@@ -39,32 +45,36 @@ public class IPRiskAntiVPNAdapter extends AntiVPNAdapter {
     }
 
     @Override
-    public boolean isVpn(@NotNull String ip) {
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(API_URL + URLEncoder.encode(ip, StandardCharsets.UTF_8)))
-                    .header("Accept", "application/json")
-                    .GET()
-                    .build();
+    public @Nullable Boolean lookup(@NotNull String ip) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL + URLEncoder.encode(ip, StandardCharsets.UTF_8)))
+                .header("Accept", "application/json")
+                .header("User-Agent", "TotemGuard/3")
+                .timeout(getHttpTimeout())
+                .GET()
+                .build();
 
-            HttpResponse<String> response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        String body = response.body();
 
-            if (response.statusCode() != 200 || response.body() == null || response.body().isBlank()) {
-                return false;
-            }
-
-            JsonObject json = getJsonParser().parse(response.body()).getAsJsonObject();
-
-            return getBoolean(json, "vpn") || getBoolean(json, "open_proxy") || getBoolean(json, "data_center");
-        } catch (IOException | InterruptedException | IllegalStateException ex) {
-            if (ex instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            return false;
+        if (response.statusCode() != 200 || body == null || body.isBlank()) {
+            return null;
         }
+
+        JsonObject json;
+        try {
+            //noinspection deprecation -- bundled Gson predates JsonParser.parseString
+            json = new JsonParser().parse(body).getAsJsonObject();
+        } catch (RuntimeException ex) {
+            return null;
+        }
+
+        return readBoolean(json, "vpn")
+                || readBoolean(json, "open_proxy")
+                || readBoolean(json, "data_center");
     }
 
-    private boolean getBoolean(@NotNull JsonObject json, @NotNull String key) {
+    private static boolean readBoolean(@NotNull JsonObject json, @NotNull String key) {
         return json.has(key) && !json.get(key).isJsonNull() && json.get(key).getAsBoolean();
     }
 }

@@ -1,6 +1,3 @@
--- TotemGuardV3 schema — MySQL / MariaDB.
--- Timestamps are BIGINT epoch milliseconds.
-
 CREATE TABLE IF NOT EXISTS tg_servers (
     id           SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name         VARCHAR(64) NOT NULL,
@@ -26,8 +23,6 @@ CREATE TABLE IF NOT EXISTS tg_players (
     KEY idx_tg_players_last_name (last_name)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;
 
--- A profile is the <player, server, client brand, client version> tuple.
--- Reused across rejoins so the same connection context only stores one row.
 CREATE TABLE IF NOT EXISTS tg_profiles (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     player_id       INT UNSIGNED NOT NULL,
@@ -63,7 +58,6 @@ CREATE TABLE IF NOT EXISTS tg_alerts (
     CONSTRAINT fk_tg_alerts_server  FOREIGN KEY (server_id)  REFERENCES tg_servers(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;
 
--- type: 0=GENERIC (not persisted), 1=KICK, 2=BAN. Never swept.
 CREATE TABLE IF NOT EXISTS tg_punishments (
     id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     profile_id   BIGINT UNSIGNED,
@@ -85,7 +79,6 @@ CREATE TABLE IF NOT EXISTS tg_punishments (
     CONSTRAINT fk_tg_punishments_server  FOREIGN KEY (server_id)  REFERENCES tg_servers(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;
 
--- Decoupled from tg_players so staff prefs survive DB resets.
 CREATE TABLE IF NOT EXISTS tg_staff_alert_prefs (
     player_uuid     BINARY(16) NOT NULL,
     alerts_enabled  TINYINT UNSIGNED NOT NULL,
@@ -97,9 +90,7 @@ CREATE TABLE IF NOT EXISTS tg_vpn_cache (
     ip_hash       BINARY(32) NOT NULL,
     is_vpn        TINYINT UNSIGNED NOT NULL,
     provider      VARCHAR(64),
-    response      VARCHAR(512),
     cached_at     BIGINT NOT NULL,
-    expires_at    BIGINT NOT NULL,
     PRIMARY KEY (ip_hash),
-    KEY idx_tg_vpn_cache_expires (expires_at)
+    KEY idx_tg_vpn_cache_cached_at (cached_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;

@@ -18,7 +18,9 @@
 
 package com.deathmotion.totemguard.bukkit.player;
 
+import com.deathmotion.totemguard.bukkit.TGBukkit;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
@@ -40,5 +42,13 @@ public class BukkitPlatformUser implements PlatformUser {
     @Override
     public void sendMessage(Component message) {
         bukkitPlayer.sendMessage(message);
+    }
+
+    @Override
+    public void kick(Component reason) {
+        // Folia requires kick to run on the player's region thread.
+        FoliaScheduler.getEntityScheduler().run(bukkitPlayer, TGBukkit.getInstance(), (o) -> {
+            if (bukkitPlayer.isOnline()) bukkitPlayer.kick(reason);
+        }, null);
     }
 }

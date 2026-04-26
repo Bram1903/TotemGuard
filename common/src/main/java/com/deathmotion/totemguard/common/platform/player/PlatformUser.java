@@ -24,4 +24,10 @@ public interface PlatformUser {
     boolean hasPermission(String permission);
 
     void sendMessage(Component message);
+
+    /**
+     * Disconnects the underlying player with the given reason. Safe to call from any thread —
+     * implementations are responsible for hopping to whatever scheduler the platform requires.
+     */
+    void kick(Component reason);
 }

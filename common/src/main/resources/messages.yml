@@ -32,4 +32,4 @@ alerts:
 reload: "%prefix% &aTotemGuard reloaded successfully!"
 anti-vpn:
   alert: "%prefix% &#fbaf00%tg_player% &7tried to join using a VPN"
-  kick_message: "&#fbaf00%tg_player% &7has been kicked for using a VPN"
+  kick: "%prefix% &7You are not allowed to join using a VPN."

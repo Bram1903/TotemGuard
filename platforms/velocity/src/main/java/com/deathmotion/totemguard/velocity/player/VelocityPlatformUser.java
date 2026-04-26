@@ -41,4 +41,9 @@ public class VelocityPlatformUser implements PlatformUser {
     public void sendMessage(Component message) {
         velocityPlayer.sendMessage(message);
     }
+
+    @Override
+    public void kick(Component reason) {
+        velocityPlayer.disconnect(reason);
+    }
 }

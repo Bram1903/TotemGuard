@@ -51,6 +51,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     private volatile @Nullable AlertDao alertDao;
     private volatile @Nullable PunishmentDao punishmentDao;
     private volatile @Nullable StaffAlertPrefDao staffAlertPrefDao;
+    private volatile @Nullable VpnCacheDao vpnCacheDao;
     private volatile @Nullable AlertWriter alertWriter;
     private volatile @Nullable RetentionSweeper retentionSweeper;
 
@@ -108,6 +109,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             AlertDao alerts = new AlertDao(connection);
             PunishmentDao punishments = new PunishmentDao(connection);
             StaffAlertPrefDao staffPrefs = new StaffAlertPrefDao(connection);
+            VpnCacheDao vpnCache = new VpnCacheDao(connection);
             AlertWriter writer = new AlertWriter(alerts);
             RetentionSweeper sweeper = new RetentionSweeper(alerts, opts);
 
@@ -119,6 +121,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             this.alertDao = alerts;
             this.punishmentDao = punishments;
             this.staffAlertPrefDao = staffPrefs;
+            this.vpnCacheDao = vpnCache;
             this.alertWriter = writer;
             this.retentionSweeper = sweeper;
             writer.start();
@@ -304,6 +307,28 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         prefs.upsert(uuid, enabled, System.currentTimeMillis());
     }
 
+    /**
+     * @param freshnessWindowMillis ignore rows older than this — they're stale even if the
+     *                              sweeper hasn't deleted them yet.
+     * @return cached {@code is_vpn} flag for the IP hash, or {@code null} if missing/stale.
+     */
+    @Blocking
+    public @Nullable Boolean findVpnCache(byte[] ipHash, long freshnessWindowMillis) throws SQLException {
+        requireEnabled();
+        VpnCacheDao dao = this.vpnCacheDao;
+        if (dao == null) throw new SQLException("Database not ready");
+        long cutoff = System.currentTimeMillis() - freshnessWindowMillis;
+        return dao.find(ipHash, cutoff);
+    }
+
+    @Blocking
+    public void upsertVpnCache(byte[] ipHash, boolean isVpn, String provider) throws SQLException {
+        requireEnabled();
+        VpnCacheDao dao = this.vpnCacheDao;
+        if (dao == null) throw new SQLException("Database not ready");
+        dao.upsert(ipHash, isVpn, provider, System.currentTimeMillis());
+    }
+
     @Blocking
     public List<AlertRecord> findAlertsByPlayer(UUID uuid, int limit, int offset) throws SQLException {
         requireEnabled();
@@ -382,6 +407,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         if (players != null) players.resetCache();
 
         this.staffAlertPrefDao = null;
+        this.vpnCacheDao = null;
         this.punishmentDao = null;
         this.alertDao = null;
         this.profileDao = null;
