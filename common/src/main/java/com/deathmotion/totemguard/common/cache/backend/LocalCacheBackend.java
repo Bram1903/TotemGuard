@@ -52,7 +52,7 @@ public final class LocalCacheBackend implements CacheBackend {
     }
 
     @Override
-    public @Nullable byte[] get(String key) {
+    public byte @Nullable [] get(String key) {
         Entry entry = view.get(key);
         if (entry == null) return null;
         if (entry.expired()) {
@@ -63,7 +63,7 @@ public final class LocalCacheBackend implements CacheBackend {
     }
 
     @Override
-    public @Nullable byte[] getAndRefresh(String key, Duration ttl) {
+    public byte @Nullable [] getAndRefresh(String key, Duration ttl) {
         byte[][] out = new byte[1][];
         view.computeIfPresent(key, (k, current) -> {
             if (current.expired()) return null;

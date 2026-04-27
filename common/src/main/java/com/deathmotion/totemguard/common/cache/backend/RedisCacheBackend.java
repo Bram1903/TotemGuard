@@ -75,12 +75,12 @@ public final class RedisCacheBackend implements CacheBackend {
     }
 
     @Override
-    public @Nullable byte[] get(String key) {
+    public byte @Nullable [] get(String key) {
         return await("get", key, requireCommands().get(bytes(key)));
     }
 
     @Override
-    public @Nullable byte[] getAndRefresh(String key, Duration ttl) {
+    public byte @Nullable [] getAndRefresh(String key, Duration ttl) {
         long seconds = Math.max(1, ttl.toSeconds());
         return await("getAndRefresh", key, requireCommands().getex(bytes(key), GetExArgs.Builder.ex(seconds)));
     }

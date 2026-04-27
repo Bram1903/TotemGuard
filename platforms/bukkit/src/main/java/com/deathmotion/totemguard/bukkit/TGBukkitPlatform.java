@@ -86,7 +86,7 @@ public class TGBukkitPlatform extends TGPlatform {
     }
 
     @Override
-    public org.incendo.cloud.CommandManager<Sender> getCommandManager() {
+    public CommandManager<Sender> getCommandManager() {
         return commandManager.get();
     }
 
