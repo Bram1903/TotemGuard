@@ -52,10 +52,10 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     private final ConfigRepositoryImpl configRepository;
     private final PlaceholderRepositoryImpl placeholderRepository;
 
-    // Same-JVM guard; the cross-server guard lives in the cache key.
     private final Set<UUID> inFlightPunishments = ConcurrentHashMap.newKeySet();
 
     private String defaultPunishment;
+    private PunishmentCommand defaultPunishmentCommand;
 
     public PunishmentRepositoryImpl() {
         this.platform = TGPlatform.getInstance();
@@ -69,11 +69,11 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     @Override
     public void reload() {
         this.defaultPunishment = configRepository.checks().defaultPunishment();
+        this.defaultPunishmentCommand = PunishmentCommand.parse(this.defaultPunishment);
     }
 
     @Override
     public boolean isPunishmentQueued(@NotNull UUID uuid) {
-        if (inFlightPunishments.contains(uuid)) return true;
         return cacheRepository.contains(CacheKeys.punishLock(uuid));
     }
 
@@ -83,7 +83,10 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         TGPlayer player = check.player;
         UUID playerUuid = player.getUuid();
 
-        if (!tryClaim(playerUuid)) return;
+        List<PunishmentCommand> commands = resolveCommands(check);
+        boolean containsBan = containsBan(commands);
+
+        if (!tryClaim(playerUuid, containsBan)) return;
 
         boolean keepDistributedLock = false;
         try {
@@ -94,7 +97,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             ));
             if (event.isCancelled()) return;
 
-            if (!executePunishment(check, debug)) {
+            if (!executePunishment(check, commands, debug)) {
                 platform.getLogger().warning(
                         "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
                 );
@@ -104,14 +107,15 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             platform.getDiscordWebhookService().sendPunishment(check, debug);
 
             check.clearViolations();
-            keepDistributedLock = true;
+            keepDistributedLock = containsBan;
         } finally {
-            finishClaim(playerUuid, keepDistributedLock);
+            finishClaim(playerUuid, containsBan, keepDistributedLock);
         }
     }
 
-    private boolean tryClaim(UUID uuid) {
+    private boolean tryClaim(UUID uuid, boolean distributed) {
         if (!inFlightPunishments.add(uuid)) return false;
+        if (!distributed) return true;
         boolean claimed = cacheRepository.putIfAbsent(
                 CacheKeys.punishLock(uuid),
                 System.currentTimeMillis(),
@@ -122,9 +126,9 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         return claimed;
     }
 
-    private void finishClaim(UUID uuid, boolean keepDistributedLock) {
+    private void finishClaim(UUID uuid, boolean distributed, boolean keepDistributedLock) {
         inFlightPunishments.remove(uuid);
-        if (!keepDistributedLock) {
+        if (distributed && !keepDistributedLock) {
             cacheRepository.remove(CacheKeys.punishLock(uuid));
         }
     }
@@ -133,10 +137,27 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         return check.isPunishable() && violations >= check.getMaxViolations();
     }
 
-    private boolean executePunishment(CheckImpl check, @Nullable String debug) {
-        List<PunishmentCommand> commands = check.getPunishCommands().isEmpty()
-                ? List.of(PunishmentCommand.parse("%default_punishment%"))
+    private List<PunishmentCommand> resolveCommands(CheckImpl check) {
+        return check.getPunishCommands().isEmpty()
+                ? List.of(defaultPunishmentCommand)
                 : check.getPunishCommands();
+    }
+
+    private boolean containsBan(List<PunishmentCommand> commands) {
+        for (PunishmentCommand command : commands) {
+            if (command.type() == PunishmentType.BAN) return true;
+            // User-defined commands may inline `%default_punishment%`; if the default
+            // resolves to a BAN, treat the whole batch as ban-bearing.
+            if (command.type() == PunishmentType.GENERIC
+                    && defaultPunishmentCommand.type() == PunishmentType.BAN
+                    && command.raw().contains("%default_punishment%")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean executePunishment(CheckImpl check, List<PunishmentCommand> commands, @Nullable String debug) {
         int dispatchedCommands = 0;
 
         for (PunishmentCommand command : commands) {

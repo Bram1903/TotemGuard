@@ -25,14 +25,16 @@ import java.util.UUID;
 public interface PunishmentRepository {
 
     /**
-     * Returns whether a punishment for the given player is currently queued or in-flight.
+     * Returns whether a {@link PunishmentType#BAN} for the given player is currently
+     * in-flight or recently dispatched.
      *
-     * <p>When Redis-backed caching is enabled, this reflects the shared cross-server lock
-     * used to prevent duplicate punishments. Otherwise, this reflects only the
-     * local in-flight punishment attempt on the current server.</p>
+     * <p>Only BAN-type punishments take this lock; KICK and GENERIC commands are
+     * always allowed to run again so re-flagging a player triggers another kick or
+     * announcement immediately. When Redis-backed caching is enabled, this reflects
+     * the shared cross-server ban lock; otherwise it reflects only the local node.</p>
      *
      * @param uuid the player UUID
-     * @return {@code true} if a punishment lock currently exists, otherwise {@code false}
+     * @return {@code true} if a ban lock currently exists, otherwise {@code false}
      */
     boolean isPunishmentQueued(@NotNull UUID uuid);
 }
