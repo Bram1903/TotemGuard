@@ -36,10 +36,4 @@ public interface TGUserVPNDetectionEvent extends TGUserEvent, Cancellable {
      * @return the detected IP address
      */
     @NotNull String getIp();
-
-    @Override
-    boolean isCancelled();
-
-    @Override
-    void setCancelled(boolean cancelled);
 }

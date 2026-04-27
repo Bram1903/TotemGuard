@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Tracks the latest published TotemGuard release.
@@ -60,13 +60,13 @@ public interface UpdateCheckerRepository {
      * servers in the fleet, and applied to local state, identical to the
      * periodic check path. The returned stage completes with the freshly
      * fetched version, or {@code null} if the request failed (HTTP error,
-     * network failure, malformed payload). The stage never completes
+     * network failure, malformed payload). The future never completes
      * exceptionally for those routine failures.
      * <p>
-     * Concurrent callers receive the same in-flight stage rather than each
+     * Concurrent callers receive the same in-flight future rather than each
      * triggering their own HTTP request.
      *
-     * @return a stage that completes when the fetch finishes
+     * @return a future that completes when the fetch finishes
      */
-    @NotNull CompletionStage<@Nullable TGVersion> checkNow();
+    @NotNull CompletableFuture<@Nullable TGVersion> checkNow();
 }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api3.user;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -29,9 +30,14 @@ public interface UserRepository {
 
     /**
      * Retrieves a user by their unique UUID.
+     * <p>
+     * This is a synchronous, in-memory lookup against the set of users currently tracked
+     * on this server. It is safe to call from any thread (including Bukkit event
+     * handlers) and never touches the database.
      *
      * @param uuid the UUID of the user
-     * @return the {@link TGUser} if found, or {@code null} if no such user exists
+     * @return the {@link TGUser} if currently online and tracked, or {@code null} if the
+     * user has never joined this server, has logged off, or has not yet been registered
      */
-    @Nullable TGUser getUser(UUID uuid);
+    @Nullable TGUser getUser(@NotNull UUID uuid);
 }

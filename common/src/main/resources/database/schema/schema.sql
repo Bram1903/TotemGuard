@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS tg_punishments (
     KEY idx_tg_punishments_check_created  (check_id, created_at),
     KEY idx_tg_punishments_server_created (server_id, created_at),
     KEY idx_tg_punishments_profile        (profile_id),
+    KEY idx_tg_punishments_created        (created_at),
     CONSTRAINT fk_tg_punishments_profile FOREIGN KEY (profile_id) REFERENCES tg_profiles(id) ON DELETE SET NULL,
     CONSTRAINT fk_tg_punishments_player  FOREIGN KEY (player_id)  REFERENCES tg_players(id)  ON DELETE CASCADE,
     CONSTRAINT fk_tg_punishments_check   FOREIGN KEY (check_id)   REFERENCES tg_checks(id),

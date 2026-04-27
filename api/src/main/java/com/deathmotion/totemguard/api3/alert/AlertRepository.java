@@ -18,24 +18,38 @@
 
 package com.deathmotion.totemguard.api3.alert;
 
+import com.deathmotion.totemguard.api3.user.TGUser;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
+/**
+ * In-memory toggle of staff alert subscriptions, keyed by UUID. Offers the same toggle
+ * surface as {@link TGUser#hasAlertsEnabled()} / {@link TGUser#toggleAlerts()} but
+ * without first requiring a {@code TGUser} handle, which is useful when all you have is
+ * a UUID from a Bukkit event.
+ * <p>
+ * Both methods only consider <em>online</em> staff: a UUID that is not currently in
+ * memory is treated as "alerts disabled". Toggling for an offline UUID does nothing
+ * and returns {@code false}.
+ */
 public interface AlertRepository {
 
-    /*
-     * Checks if the specified user has alerts enabled
+    /**
+     * Whether the given UUID currently has staff alerts enabled.
      *
-     * @param uuid The UUID of the user to check
-     * @return True if the user has alerts enabled, false otherwise
+     * @param uuid the UUID to check; must be online for the answer to be meaningful
+     * @return {@code true} if alerts are enabled, {@code false} otherwise (including
+     * the offline case)
      */
-    boolean hasAlertsEnabled(UUID uuid);
+    boolean hasAlertsEnabled(@NotNull UUID uuid);
 
-    /*
-     * Toggles the alert status for the specified user
+    /**
+     * Flips the alert state for the given UUID and notifies the user. No-op if the
+     * UUID is not currently online.
      *
-     * @param uuid The UUID of the user to toggle alerts for
-     * @return The new alert status after toggling
+     * @param uuid the UUID to toggle
+     * @return the new alert state, or {@code false} if the UUID is not online
      */
-    boolean toggleAlerts(UUID uuid);
+    boolean toggleAlerts(@NotNull UUID uuid);
 }

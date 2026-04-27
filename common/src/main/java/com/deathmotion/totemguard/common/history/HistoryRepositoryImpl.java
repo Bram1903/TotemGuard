@@ -57,8 +57,7 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
     }
 
     private static <T> Result<T> databaseUnavailable() {
-        return Result.failure(ResultError.DATABASE_UNAVAILABLE,
-                "Database is disabled or currently unreachable");
+        return Result.failure(ResultError.DATABASE_UNAVAILABLE);
     }
 
     private static <T> Result<T> internalError(String prefix, Throwable cause) {

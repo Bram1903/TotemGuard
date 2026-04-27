@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public final class StatsRepositoryImpl implements StatsRepository {
@@ -47,8 +48,7 @@ public final class StatsRepositoryImpl implements StatsRepository {
     }
 
     private static <T> Result<T> databaseUnavailable() {
-        return Result.failure(ResultError.DATABASE_UNAVAILABLE,
-                "Database is disabled or currently unreachable");
+        return Result.failure(ResultError.DATABASE_UNAVAILABLE);
     }
 
     private static <T> Result<T> internalError(String prefix, Throwable cause) {
@@ -74,7 +74,9 @@ public final class StatsRepositoryImpl implements StatsRepository {
                     alerts = db.countAlertsTotal();
                     punishments = db.countPunishmentsTotal();
                 } else {
-                    long since = System.currentTimeMillis() - window.window().toMillis();
+                    Duration duration = Objects.requireNonNull(window.window(),
+                            "non-all-time StatsWindow must carry a duration");
+                    long since = System.currentTimeMillis() - duration.toMillis();
                     alerts = db.countAlertsSince(since);
                     punishments = db.countPunishmentsSince(since);
                 }

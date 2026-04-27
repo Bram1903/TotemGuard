@@ -59,4 +59,19 @@ public record Result<T>(
     public static <T> @NotNull Result<T> failure(@NotNull ResultError error, @NotNull String message) {
         return new Result<>(false, null, error, message);
     }
+
+    /**
+     * Convenience overload that derives a default message from the error constant.
+     */
+    @Contract(value = "_ -> new", pure = true)
+    public static <T> @NotNull Result<T> failure(@NotNull ResultError error) {
+        return failure(error, defaultMessage(error));
+    }
+
+    private static String defaultMessage(ResultError error) {
+        return switch (error) {
+            case DATABASE_UNAVAILABLE -> "Database is disabled or currently unreachable";
+            case INTERNAL_ERROR -> "Internal error";
+        };
+    }
 }

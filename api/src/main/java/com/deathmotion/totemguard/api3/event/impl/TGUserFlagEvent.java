@@ -45,10 +45,4 @@ public interface TGUserFlagEvent extends TGUserEvent, Cancellable {
      * @return debug information, or null if not available
      */
     @Nullable String getDebug();
-
-    @Override
-    boolean isCancelled();
-
-    @Override
-    void setCancelled(boolean cancelled);
 }

@@ -41,7 +41,6 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -130,7 +129,7 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
     }
 
     @Override
-    public @NotNull CompletionStage<@Nullable TGVersion> checkNow() {
+    public @NotNull CompletableFuture<@Nullable TGVersion> checkNow() {
         CompletableFuture<TGVersion> existing = ongoingForcedFetch.get();
         if (existing != null) return existing;
 
