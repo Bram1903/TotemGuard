@@ -19,7 +19,9 @@
 package com.deathmotion.totemguard.common.gui.screen;
 
 import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api3.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.history.PlayerHistoryHubScreen;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -148,6 +150,14 @@ public final class PlayerProfileScreen extends GuiScreen {
             ), ctx -> {
                 if (ctx.session().viewerId().equals(target.getUuid())) {
                     ctx.message(Component.text("You cannot monitor your own inventory.", NamedTextColor.RED));
+                    return;
+                }
+
+                TGMonitorOpenEvent event = TGPlatform.getInstance().getEventRepository().post(
+                        new TGMonitorOpenEventImpl(ctx.session().viewerId(), target.getUuid())
+                );
+                if (event.isCancelled()) {
+                    ctx.message(Component.text("Opening the monitor was blocked.", NamedTextColor.RED));
                     return;
                 }
 

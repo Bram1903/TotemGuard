@@ -18,9 +18,11 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
+import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.gui.screen.PlayerMonitorScreen;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -68,7 +70,19 @@ public final class MonitorCommand extends AbstractCommand {
             return;
         }
 
-        if (!TGPlatform.getInstance().getGuiManager().open(sender, new PlayerMonitorScreen(target))) {
+        TGPlatform platform = TGPlatform.getInstance();
+        TGMonitorOpenEvent event = platform.getEventRepository().post(
+                new TGMonitorOpenEventImpl(sender.getUniqueId(), target.getUuid())
+        );
+        if (event.isCancelled()) {
+            sender.sendMessage(Component.text(
+                    "Opening the monitor was blocked.",
+                    NamedTextColor.RED
+            ));
+            return;
+        }
+
+        if (!platform.getGuiManager().open(sender, new PlayerMonitorScreen(target))) {
             sender.sendMessage(Component.text("Failed to open the monitor GUI.", NamedTextColor.RED));
         }
     }
