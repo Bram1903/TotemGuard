@@ -18,11 +18,6 @@ dependencies {
 
 tasks {
     shadowJar {
-        // Velocity bundles cloud-velocity + bstats-velocity + mysql; Velocity
-        // provides adventure natively (stays unbundled and unrelocated).
-        relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
-        relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
-        relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
         relocate("com.mysql", "com.deathmotion.totemguard.common.libs.mysql")
     }
 

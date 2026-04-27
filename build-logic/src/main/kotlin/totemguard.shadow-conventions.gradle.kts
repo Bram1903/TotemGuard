@@ -28,16 +28,8 @@ tasks.withType<ShadowJar>().configureEach {
     archiveClassifier = null
     destinationDirectory = rootProject.layout.buildDirectory
     exclude("META-INF/maven/**")
-    // MySQL connector ships these unprefixed text files at the jar root; they
-    // would otherwise leak straight into our final jar.
     exclude("INFO_BIN", "INFO_SRC", "LICENSE", "README", "LICENSE.txt", "README.txt")
 
-    // ONLY universal relocations live here — libs that every shaded platform
-    // bundles via :common's runtime classpath. Everything else (cloud, bstats,
-    // adventure, gson, mysql) is platform-specific because shadow rewrites
-    // references in :common's bytecode *unconditionally*: relocating a lib that
-    // isn't actually bundled on a given platform points :common's references at
-    // a path nobody provides at runtime → ClassNotFoundException.
     relocate("io.lettuce", "com.deathmotion.totemguard.common.libs.lettuce")
     relocate("io.netty", "com.deathmotion.totemguard.common.libs.netty")
     relocate("org.reactivestreams", "com.deathmotion.totemguard.common.libs.reactivestreams")
@@ -46,17 +38,14 @@ tasks.withType<ShadowJar>().configureEach {
     relocate("com.zaxxer.hikari", "com.deathmotion.totemguard.common.libs.hikari")
     relocate("com.google.errorprone.annotations", "com.deathmotion.totemguard.common.libs.errorprone.annotations")
     relocate("org.jspecify.annotations", "com.deathmotion.totemguard.common.libs.jspecify.annotations")
+    relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
+    relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
+    relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
 
     mergeServiceFiles()
 
     minimize {
-        exclude(dependency("com.github.ben-manes.caffeine:caffeine:.*"))
         exclude(dependency("org.bstats:.*:.*"))
-        // The MySQL driver is loaded reflectively via Class.forName(), so the
-        // Driver class has no compile-time reference for `minimize` to follow
-        // and gets stripped along with the rest of the connector. Keep the
-        // whole artifact even on platforms that don't bundle it (the exclude is
-        // a no-op there).
         exclude(dependency("com.mysql:.*"))
     }
 

@@ -18,11 +18,6 @@ tasks {
         manifest {
             attributes["paperweight-mappings-namespace"] = "mojang"
         }
-        // Bukkit bundles cloud-paper + bstats-bukkit; Paper provides adventure
-        // natively (so it stays unbundled and unrelocated).
-        relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
-        relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
-        relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
     }
 
     // 1.8.8 - 1.16.5 = Java 8
