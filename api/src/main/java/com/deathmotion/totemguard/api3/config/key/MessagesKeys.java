@@ -35,6 +35,8 @@ public final class MessagesKeys {
 
     public static final ConfigKey<String> RELOAD = ConfigKey.string("reload");
 
+    public static final ConfigKey<String> UPDATE_AVAILABLE = ConfigKey.string("update-checker.available");
+
     public static final ConfigKey<String> ANTI_VPN_ALERT = ConfigKey.string("anti-vpn.alert");
     public static final ConfigKey<String> ANTI_VPN_KICK = ConfigKey.string("anti-vpn.kick");
 

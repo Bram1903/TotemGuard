@@ -20,10 +20,7 @@ package com.deathmotion.totemguard.common.config.view;
 
 import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.key.ConfigKeys;
-import com.deathmotion.totemguard.common.config.schema.AntiVpnOptions;
-import com.deathmotion.totemguard.common.config.schema.CommandsOptions;
-import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
-import com.deathmotion.totemguard.common.config.schema.RedisOptions;
+import com.deathmotion.totemguard.common.config.schema.*;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -39,6 +36,7 @@ public final class ConfigView {
     private final RedisOptions redis;
     private final DatabaseOptions database;
     private final AntiVpnOptions antiVpn;
+    private final UpdateCheckerOptions updateChecker;
 
     public ConfigView(Config config) {
         this.version = config.version();
@@ -77,6 +75,10 @@ public final class ConfigView {
                 config.getString(ConfigKeys.VPN_API_KEY),
                 config.getBoolean(ConfigKeys.VPN_BLOCK)
         );
+        this.updateChecker = new UpdateCheckerOptions(
+                config.getBoolean(ConfigKeys.UPDATE_CHECKER_ENABLED),
+                config.getBoolean(ConfigKeys.UPDATE_CHECKER_NOTIFY_ON_JOIN)
+        );
     }
 
     public int version() {
@@ -101,5 +103,9 @@ public final class ConfigView {
 
     public @NotNull AntiVpnOptions antiVpn() {
         return antiVpn;
+    }
+
+    public @NotNull UpdateCheckerOptions updateChecker() {
+        return updateChecker;
     }
 }

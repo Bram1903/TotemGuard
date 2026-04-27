@@ -35,6 +35,7 @@ public class ReloadService {
         platform.getDatabaseRepository().restart();
         platform.getPunishmentRepository().reload();
         platform.getAntiVPNRepository().reload();
+        platform.getUpdateCheckerRepository().reload();
         platform.getDiscordWebhookService().reload();
 
         ModRegistry.load();

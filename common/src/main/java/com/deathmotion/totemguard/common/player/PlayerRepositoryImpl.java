@@ -72,15 +72,19 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
         final TGPlayer player = players.get(user);
 
+        PlatformUser platformUser;
         if (player != null) {
             playersByUuid.putIfAbsent(uuid, player);
             player.onLogin();
-            enableAlerts(uuid, player.getPlatformUser());
+            platformUser = player.getPlatformUser();
         } else {
             PlatformUserCreation platformUserCreation = platform.getPlatformUserFactory().create(uuid);
             if (platformUserCreation == null) return;
-            enableAlerts(uuid, platformUserCreation.getPlatformUser());
+            platformUser = platformUserCreation.getPlatformUser();
         }
+
+        enableAlerts(uuid, platformUser);
+        platform.getUpdateCheckerRepository().notifyIfOutdated(platformUser);
     }
 
     private void enableAlerts(UUID uuid, PlatformUser platformUser) {

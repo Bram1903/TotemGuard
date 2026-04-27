@@ -16,29 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis.broker.packets;
+package com.deathmotion.totemguard.common.config.schema;
 
-import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncAlertMessagePacket;
-import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncUpdateAvailablePacket;
-
-public enum Packets {
-
-    SYNC_ALERT_MESSAGE(new SyncAlertMessagePacket(1)),
-    SYNC_UPDATE_AVAILABLE(new SyncUpdateAvailablePacket(2));
-
-    private final Packet<?> packet;
-
-    Packets(Packet<?> packet) {
-        this.packet = packet;
-    }
-
-    public int getId() {
-        return packet.getId();
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> Packet<T> packet() {
-        return (Packet<T>) packet;
-    }
+/**
+ * Snapshot of the {@code update-checker.*} section of {@code config.yml}.
+ */
+public record UpdateCheckerOptions(
+        boolean enabled,
+        boolean notifyOnJoin
+) {
 }
-

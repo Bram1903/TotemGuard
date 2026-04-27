@@ -67,3 +67,14 @@ anti-vpn:
 
   # Whether to block VPN users from joining the server.
   block: true
+
+# Periodically checks GitHub for new TotemGuard releases (every 6h).
+# When Redis is enabled, results are shared across the fleet via cache + pub/sub
+# so a rolling-restart fleet typically reuses the first server's fetch instead
+# of all hitting GitHub.
+update-checker:
+  enabled: true
+
+  # Notify players holding `TotemGuardV3.UpdateNotify` (defaults to ops)
+  # on join when an update is available.
+  notify-on-join: true

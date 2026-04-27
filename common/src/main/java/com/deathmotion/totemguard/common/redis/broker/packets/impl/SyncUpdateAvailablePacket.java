@@ -16,29 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis.broker.packets;
+package com.deathmotion.totemguard.common.redis.broker.packets.impl;
 
-import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncAlertMessagePacket;
-import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncUpdateAvailablePacket;
+import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
 
-public enum Packets {
+/**
+ * Broadcast that the publishing server has discovered a new TotemGuard release.
+ * Payload is the raw GitHub tag (e.g. {@code v3.1.0}).
+ */
+public class SyncUpdateAvailablePacket extends Packet<String> {
 
-    SYNC_ALERT_MESSAGE(new SyncAlertMessagePacket(1)),
-    SYNC_UPDATE_AVAILABLE(new SyncUpdateAvailablePacket(2));
-
-    private final Packet<?> packet;
-
-    Packets(Packet<?> packet) {
-        this.packet = packet;
+    public SyncUpdateAvailablePacket(int id) {
+        super(id);
     }
 
-    public int getId() {
-        return packet.getId();
+    @Override
+    public String read(ByteArrayDataInput input) {
+        return input.readUTF();
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> Packet<T> packet() {
-        return (Packet<T>) packet;
+    @Override
+    public void writeData(ByteArrayDataOutput output, String tag) {
+        output.writeUTF(tag);
     }
 }
-

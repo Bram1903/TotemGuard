@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.RedisOptions;
 import com.deathmotion.totemguard.common.redis.broker.RedisBroker;
 import com.deathmotion.totemguard.common.redis.broker.handlers.SyncAlertMessageHandler;
+import com.deathmotion.totemguard.common.redis.broker.handlers.SyncUpdateAvailableHandler;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +48,10 @@ public final class RedisRepositoryImpl implements RedisRepository {
         this.manager = new RedisConnectionManager();
         this.registry = new PacketRegistry();
         this.identifier = UUID.randomUUID().toString();
-        this.handlers = List.of(new SyncAlertMessageHandler(TGPlatform.getInstance(), this, registry));
+        this.handlers = List.of(
+                new SyncAlertMessageHandler(TGPlatform.getInstance(), this, registry),
+                new SyncUpdateAvailableHandler(TGPlatform.getInstance(), this, registry)
+        );
 
         // Initial start is blocking so the connection is up before any player can join.
         applyOptions(currentOptions(), false, true);

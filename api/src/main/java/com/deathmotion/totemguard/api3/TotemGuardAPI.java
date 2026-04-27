@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.api3.history.HistoryRepository;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
+import com.deathmotion.totemguard.api3.update.UpdateCheckerRepository;
 import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import org.jetbrains.annotations.NotNull;
@@ -111,4 +112,16 @@ public interface TotemGuardAPI {
      * @return the history repository, never {@code null}
      */
     @NotNull HistoryRepository getHistoryRepository();
+
+    /**
+     * Returns the repository that tracks the latest published TotemGuard release.
+     * <p>
+     * Reads of {@link UpdateCheckerRepository#latestKnownVersion()} are cheap
+     * and reflect data shared across the fleet via Redis. Use
+     * {@link UpdateCheckerRepository#checkNow()} to trigger a fresh HTTP fetch
+     * when needed; the result is propagated to other servers automatically.
+     *
+     * @return the update checker repository, never {@code null}
+     */
+    @NotNull UpdateCheckerRepository getUpdateCheckerRepository();
 }

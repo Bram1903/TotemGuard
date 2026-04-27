@@ -30,6 +30,11 @@ alerts:
   command: "/tp %tg_player%"
 
 reload: "%prefix% &aTotemGuard reloaded successfully!"
+
+update-checker:
+  # %tg_update_current%: running version, %tg_update_latest%: newest release, %tg_update_url%: release page link.
+  available: "<click:open_url:'%tg_update_url%'><hover:show_text:'Click to download'>%prefix% &aA new version is available: &#fbaf00%tg_update_latest%&7 (running &#fbaf00%tg_update_current%&7).<newline>&#FEE067&nDownload here</hover></click>"
+
 anti-vpn:
   alert: "%prefix% &#fbaf00%tg_player% &7tried to join using a VPN"
   kick: "%prefix% &7You are not allowed to join using a VPN."

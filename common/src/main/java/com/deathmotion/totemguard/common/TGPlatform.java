@@ -47,6 +47,7 @@ import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
+import com.deathmotion.totemguard.common.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.util.*;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.google.common.base.Stopwatch;
@@ -83,6 +84,7 @@ public abstract class TGPlatform {
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
     private AntiVPNRepositoryImpl antiVPNRepository;
+    private UpdateCheckerRepositoryImpl updateCheckerRepository;
     private HistoryRepositoryImpl historyRepository;
     private GuiManager guiManager;
     private IntegrationRegistrar integrationRegistrar;
@@ -150,6 +152,7 @@ public abstract class TGPlatform {
         historyRepository = new HistoryRepositoryImpl();
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
+        updateCheckerRepository = new UpdateCheckerRepositoryImpl();
 
         integrationRegistrar.enableAll();
 
