@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.velocity.compatibility.VelocityCompatibility;
 import com.deathmotion.totemguard.velocity.player.VelocityPlatformUserFactory;
 import com.deathmotion.totemguard.velocity.scheduler.VelocityScheduler;
 import com.deathmotion.totemguard.velocity.sender.VelocitySenderFactory;
@@ -103,6 +104,11 @@ public class TGVelocityPlatform extends TGPlatform {
     public void disablePlugin() {
         // Velocity has no general "disable this plugin" API.
         // commonOnEnable() will set enabled=false to prevent further operations.
+    }
+
+    @Override
+    public boolean checkPlatformCompatibility() {
+        return VelocityCompatibility.check(getLogger(), getPlatformVersion());
     }
 }
 

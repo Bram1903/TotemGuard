@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.fabric.compatibility.FabricCompatibility;
 import com.deathmotion.totemguard.fabric.player.FabricPlatformUserFactory;
 import com.deathmotion.totemguard.fabric.scheduler.FabricScheduler;
 import com.deathmotion.totemguard.fabric.sender.FabricSenderFactory;
@@ -106,5 +107,10 @@ public class TGFabricPlatform extends TGPlatform {
     @Override
     public void disablePlugin() {
 
+    }
+
+    @Override
+    public boolean checkPlatformCompatibility() {
+        return FabricCompatibility.check(getLogger(), getPlatformVersion());
     }
 }

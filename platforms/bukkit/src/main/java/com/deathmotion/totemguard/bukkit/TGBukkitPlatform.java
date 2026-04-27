@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.bukkit;
 
+import com.deathmotion.totemguard.bukkit.compatibility.BukkitCompatibility;
 import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUserFactory;
 import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.bukkit.sender.BukkitSenderFactory;
@@ -118,5 +119,10 @@ public class TGBukkitPlatform extends TGPlatform {
     @Override
     public void disablePlugin() {
         Bukkit.getPluginManager().disablePlugin(plugin);
+    }
+
+    @Override
+    public boolean checkPlatformCompatibility() {
+        return BukkitCompatibility.check(getLogger());
     }
 }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.bungee;
 
+import com.deathmotion.totemguard.bungee.compatibility.BungeeCompatibility;
 import com.deathmotion.totemguard.bungee.player.BungeePlatformUserFactory;
 import com.deathmotion.totemguard.bungee.scheduler.BungeeScheduler;
 import com.deathmotion.totemguard.bungee.sender.BungeeSenderFactory;
@@ -104,5 +105,10 @@ public class TGBungeePlatform extends TGPlatform {
     @Override
     public void disablePlugin() {
         // BungeeCord has no per-plugin disable API. setEnabled(false) gates further work.
+    }
+
+    @Override
+    public boolean checkPlatformCompatibility() {
+        return BungeeCompatibility.check(getLogger(), getPlatformVersion());
     }
 }

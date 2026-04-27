@@ -198,4 +198,12 @@ public abstract class TGPlatform {
     public abstract boolean isPluginEnabled(String plugin);
 
     public abstract void disablePlugin();
+
+    /**
+     * Validates platform-specific runtime requirements (server software, server
+     * version, mod loader, etc.). Implementations are expected to log their
+     * own user-facing errors via {@link com.deathmotion.totemguard.common.util.CompatibilityLogger}
+     * before returning {@code false}.
+     */
+    public abstract boolean checkPlatformCompatibility();
 }
