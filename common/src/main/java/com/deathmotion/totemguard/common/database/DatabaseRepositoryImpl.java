@@ -395,6 +395,38 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         return punishments.countByPlayer(uuid);
     }
 
+    @Blocking
+    public int countAlertsTotal() throws SQLException {
+        requireEnabled();
+        AlertDao alerts = this.alertDao;
+        if (alerts == null) throw new SQLException("Database not ready");
+        return alerts.countAll();
+    }
+
+    @Blocking
+    public int countAlertsSince(long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        AlertDao alerts = this.alertDao;
+        if (alerts == null) throw new SQLException("Database not ready");
+        return alerts.countSince(sinceEpochMs);
+    }
+
+    @Blocking
+    public int countPunishmentsTotal() throws SQLException {
+        requireEnabled();
+        PunishmentDao punishments = this.punishmentDao;
+        if (punishments == null) throw new SQLException("Database not ready");
+        return punishments.countAll();
+    }
+
+    @Blocking
+    public int countPunishmentsSince(long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        PunishmentDao punishments = this.punishmentDao;
+        if (punishments == null) throw new SQLException("Database not ready");
+        return punishments.countSince(sinceEpochMs);
+    }
+
     private void applySchema() throws SQLException {
         SchemaInitializer init = new SchemaInitializer();
         try (Connection c = connection.borrow()) {

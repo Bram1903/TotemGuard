@@ -196,6 +196,26 @@ public final class AlertDao {
         }
     }
 
+    @Blocking
+    public int countAll() throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_ALERTS_TOTAL);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    @Blocking
+    public int countSince(long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_ALERTS_SINCE)) {
+            stmt.setLong(1, sinceEpochMs);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
     private long deleteOldChunked(String sql, long cutoffEpochMs, int chunkSize) throws SQLException {
         long total = 0;
         try (Connection c = connection.borrow();

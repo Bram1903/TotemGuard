@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api3.history;
 
+import com.deathmotion.totemguard.api3.result.Result;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,14 +57,14 @@ public interface HistoryRepository {
      * Removes every alert and punishment row for the target. Caches are invalidated
      * on completion so subsequent reads see an empty record.
      * <p>
-     * The future settles with a {@link HistoryResponse} carrying either the row counts
+     * The future settles with a {@link Result} carrying either the row counts
      * removed or a failure reason — it does not complete exceptionally for the database
      * being offline or a query failing.
      */
-    @NotNull CompletableFuture<HistoryResponse<HistoryClearResult>> clear(@NotNull UUID uuid);
+    @NotNull CompletableFuture<Result<HistoryClearResult>> clear(@NotNull UUID uuid);
 
     /**
      * Convenience overload of {@link #clear(UUID)}.
      */
-    @NotNull CompletableFuture<HistoryResponse<HistoryClearResult>> clear(@NotNull TGUser user);
+    @NotNull CompletableFuture<Result<HistoryClearResult>> clear(@NotNull TGUser user);
 }

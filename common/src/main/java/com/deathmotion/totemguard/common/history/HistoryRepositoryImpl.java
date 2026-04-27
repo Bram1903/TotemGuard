@@ -19,6 +19,8 @@
 package com.deathmotion.totemguard.common.history;
 
 import com.deathmotion.totemguard.api3.history.*;
+import com.deathmotion.totemguard.api3.result.Result;
+import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
@@ -54,14 +56,14 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
         this.cache = platform.getCacheRepository();
     }
 
-    private static <T> HistoryResponse<T> databaseUnavailable() {
-        return HistoryResponse.failure(HistoryError.DATABASE_UNAVAILABLE,
+    private static <T> Result<T> databaseUnavailable() {
+        return Result.failure(ResultError.DATABASE_UNAVAILABLE,
                 "Database is disabled or currently unreachable");
     }
 
-    private static <T> HistoryResponse<T> internalError(String prefix, Throwable cause) {
+    private static <T> Result<T> internalError(String prefix, Throwable cause) {
         String detail = cause.getMessage();
-        return HistoryResponse.failure(HistoryError.INTERNAL_ERROR,
+        return Result.failure(ResultError.INTERNAL_ERROR,
                 detail == null || detail.isBlank() ? prefix : prefix + ": " + detail);
     }
 
@@ -87,14 +89,14 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<HistoryClearResult>> clear(@NotNull UUID uuid) {
+    public @NotNull CompletableFuture<Result<HistoryClearResult>> clear(@NotNull UUID uuid) {
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
             try {
                 long[] removed = db.deleteHistory(uuid);
                 bumpVersion(uuid);
-                return HistoryResponse.ok(new HistoryClearResult(removed[0], removed[1]));
+                return Result.ok(new HistoryClearResult(removed[0], removed[1]));
             } catch (SQLException ex) {
                 return internalError("Failed to clear history", ex);
             }
@@ -102,7 +104,7 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<HistoryClearResult>> clear(@NotNull TGUser user) {
+    public @NotNull CompletableFuture<Result<HistoryClearResult>> clear(@NotNull TGUser user) {
         return clear(user.getUuid());
     }
 
@@ -116,7 +118,7 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
                 CacheCodecs.LONG, VERSION_TTL);
     }
 
-    public @NotNull CompletableFuture<HistoryResponse<HistoryPage<AlertEntry>>> alerts(UUID uuid, int rawPage, @Nullable String checkFilter) {
+    public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(UUID uuid, int rawPage, @Nullable String checkFilter) {
         int page = Math.max(0, rawPage);
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
@@ -146,11 +148,11 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
                 return internalError("Failed to load alert history", ex);
             }
 
-            return HistoryResponse.ok(buildPage(page, total, records.stream().map(HistoryMappers::toAlertEntry).toList()));
+            return Result.ok(buildPage(page, total, records.stream().map(HistoryMappers::toAlertEntry).toList()));
         });
     }
 
-    public @NotNull CompletableFuture<HistoryResponse<HistoryPage<PunishmentEntry>>> punishments(UUID uuid, int rawPage) {
+    public @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(UUID uuid, int rawPage) {
         int page = Math.max(0, rawPage);
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
@@ -176,11 +178,11 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
                 return internalError("Failed to load punishment history", ex);
             }
 
-            return HistoryResponse.ok(buildPage(page, total, records.stream().map(HistoryMappers::toPunishmentEntry).toList()));
+            return Result.ok(buildPage(page, total, records.stream().map(HistoryMappers::toPunishmentEntry).toList()));
         });
     }
 
-    public @NotNull CompletableFuture<HistoryResponse<Integer>> alertCount(UUID uuid, @Nullable String checkFilter) {
+    public @NotNull CompletableFuture<Result<Integer>> alertCount(UUID uuid, @Nullable String checkFilter) {
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
@@ -188,21 +190,21 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
             long version = versionFor(uuid);
             String countKey = CacheKeys.alertHistoryCount(uuid, version, checkFilter);
             Integer total = cache.getAndRefresh(countKey, CacheCodecs.INT, COUNT_TTL);
-            if (total != null) return HistoryResponse.ok(total);
+            if (total != null) return Result.ok(total);
 
             try {
                 int fresh = checkFilter == null
                         ? db.countAlertsByPlayer(uuid)
                         : db.countAlertsByPlayerAndCheck(uuid, checkFilter);
                 cache.put(countKey, fresh, CacheCodecs.INT, COUNT_TTL);
-                return HistoryResponse.ok(fresh);
+                return Result.ok(fresh);
             } catch (SQLException ex) {
                 return internalError("Failed to count alerts", ex);
             }
         });
     }
 
-    public @NotNull CompletableFuture<HistoryResponse<Integer>> punishmentCount(UUID uuid) {
+    public @NotNull CompletableFuture<Result<Integer>> punishmentCount(UUID uuid) {
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
@@ -210,19 +212,19 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
             long version = versionFor(uuid);
             String countKey = CacheKeys.punishmentHistoryCount(uuid, version);
             Integer total = cache.getAndRefresh(countKey, CacheCodecs.INT, COUNT_TTL);
-            if (total != null) return HistoryResponse.ok(total);
+            if (total != null) return Result.ok(total);
 
             try {
                 int fresh = db.countPunishmentsByPlayer(uuid);
                 cache.put(countKey, fresh, CacheCodecs.INT, COUNT_TTL);
-                return HistoryResponse.ok(fresh);
+                return Result.ok(fresh);
             } catch (SQLException ex) {
                 return internalError("Failed to count punishments", ex);
             }
         });
     }
 
-    public @NotNull CompletableFuture<HistoryResponse<List<AlertCheckSummary>>> alertCheckSummaries(UUID uuid) {
+    public @NotNull CompletableFuture<Result<List<AlertCheckSummary>>> alertCheckSummaries(UUID uuid) {
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
@@ -230,12 +232,12 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
             long version = versionFor(uuid);
             String key = CacheKeys.alertHistoryCheckSummaries(uuid, version);
             List<AlertCheckSummary> cached = cache.getAndRefresh(key, CacheCodecs.ALERT_CHECK_SUMMARIES, SUMMARY_TTL);
-            if (cached != null) return HistoryResponse.ok(cached);
+            if (cached != null) return Result.ok(cached);
 
             try {
                 List<AlertCheckSummary> fresh = db.findAlertCheckSummariesByPlayer(uuid);
                 cache.put(key, fresh, CacheCodecs.ALERT_CHECK_SUMMARIES, SUMMARY_TTL);
-                return HistoryResponse.ok(fresh);
+                return Result.ok(fresh);
             } catch (SQLException ex) {
                 return internalError("Failed to load alert summaries", ex);
             }

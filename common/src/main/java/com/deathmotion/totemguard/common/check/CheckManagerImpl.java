@@ -49,6 +49,8 @@ import java.util.Map;
 
 public class CheckManagerImpl {
 
+    private static volatile int knownCheckCount;
+
     public final ClassToInstanceMap<Check> allChecks;
     private final TGPlayer player;
 
@@ -108,6 +110,12 @@ public class CheckManagerImpl {
         for (Check check : allChecks.values()) {
             checksByName.put(check.getName(), (CheckImpl) check);
         }
+
+        knownCheckCount = allChecks.size();
+    }
+
+    public static int knownCheckCount() {
+        return knownCheckCount;
     }
 
     private boolean skip(Check check) {

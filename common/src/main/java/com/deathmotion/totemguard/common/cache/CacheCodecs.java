@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.database.model.AlertRecord;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
+import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -152,6 +153,27 @@ public final class CacheCodecs {
             });
         }
     };
+    public static final Codec<StatsSnapshot> STATS_SNAPSHOT = new Codec<>() {
+        @Override
+        public byte[] encode(StatsSnapshot value) throws Exception {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(8);
+            try (DataOutputStream out = new DataOutputStream(baos)) {
+                out.writeInt(value.alertCount());
+                out.writeInt(value.punishmentCount());
+            }
+            return baos.toByteArray();
+        }
+
+        @Override
+        public StatsSnapshot decode(byte[] bytes) throws Exception {
+            try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes))) {
+                int alerts = in.readInt();
+                int punishments = in.readInt();
+                return new StatsSnapshot(alerts, punishments);
+            }
+        }
+    };
+
     public static final Codec<List<AlertCheckSummary>> ALERT_CHECK_SUMMARIES = new Codec<>() {
         @Override
         public byte[] encode(List<AlertCheckSummary> list) throws Exception {

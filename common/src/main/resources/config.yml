@@ -24,7 +24,7 @@ database:
 
   host: localhost
   port: 3306
-  database: totemguard
+  database: TotemGuard
   username: root
   password: password
   # Extra JDBC parameters, e.g. useSSL=false&serverTimezone=UTC

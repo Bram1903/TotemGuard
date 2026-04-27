@@ -176,6 +176,18 @@ public final class Sql {
                     "JOIN tg_players p ON pu.player_id = p.id " +
                     "WHERE p.uuid = ?";
 
+    public static final String COUNT_ALERTS_TOTAL =
+            "SELECT COUNT(*) FROM tg_alerts";
+
+    public static final String COUNT_ALERTS_SINCE =
+            "SELECT COUNT(*) FROM tg_alerts WHERE created_at >= ?";
+
+    public static final String COUNT_PUNISHMENTS_TOTAL =
+            "SELECT COUNT(*) FROM tg_punishments";
+
+    public static final String COUNT_PUNISHMENTS_SINCE =
+            "SELECT COUNT(*) FROM tg_punishments WHERE created_at >= ?";
+
     private Sql() {
     }
 }

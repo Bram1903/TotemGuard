@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.history;
 
 import com.deathmotion.totemguard.api3.history.*;
+import com.deathmotion.totemguard.api3.result.Result;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,32 +47,32 @@ final class HistoryViewImpl implements HistoryView {
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<HistoryPage<AlertEntry>>> alerts(int page) {
+    public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page) {
         return repository.alerts(uuid, page, null);
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName) {
+    public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName) {
         return repository.alerts(uuid, page, checkName);
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<Integer>> alertCount() {
+    public @NotNull CompletableFuture<Result<Integer>> alertCount() {
         return repository.alertCount(uuid, null);
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<Integer>> alertCount(@Nullable String checkName) {
+    public @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName) {
         return repository.alertCount(uuid, checkName);
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<HistoryPage<PunishmentEntry>>> punishments(int page) {
+    public @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page) {
         return repository.punishments(uuid, page);
     }
 
     @Override
-    public @NotNull CompletableFuture<HistoryResponse<Integer>> punishmentCount() {
+    public @NotNull CompletableFuture<Result<Integer>> punishmentCount() {
         return repository.punishmentCount(uuid);
     }
 }

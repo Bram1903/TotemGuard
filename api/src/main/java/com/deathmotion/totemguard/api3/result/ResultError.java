@@ -16,17 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.history;
+package com.deathmotion.totemguard.api3.result;
 
 /**
- * Reason a {@link HistoryResponse} came back as a failure. Match on this in your handler
- * to decide what to surface to the user (a soft warning vs. a real error report).
+ * Reason a {@link Result} came back as a failure. Match on this in your handler to
+ * decide whether to surface a soft warning or a real error report. Shared by every
+ * data-backed repository in the API (history, statistics, etc.).
  */
-public enum HistoryError {
+public enum ResultError {
 
     /**
      * The database is disabled in {@code config.yml} or is currently unreachable.
-     * Treat as a soft failure — retry once the connection is back.
+     * Treat as a soft failure; retry once the connection is back.
      */
     DATABASE_UNAVAILABLE,
 

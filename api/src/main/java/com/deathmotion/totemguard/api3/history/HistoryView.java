@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api3.history;
 
+import com.deathmotion.totemguard.api3.result.Result;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,8 +32,8 @@ import java.util.concurrent.CompletableFuture;
  * and Redis caches before falling through to the database.
  * <p>
  * Every method completes asynchronously on TotemGuard's worker pool with a
- * {@link HistoryResponse} — the future itself never completes exceptionally for
- * expected failures (database offline, query error). Inspect {@link HistoryResponse#ok()}
+ * {@link Result} — the future itself never completes exceptionally for
+ * expected failures (database offline, query error). Inspect {@link Result#ok()}
  * to branch.
  */
 public interface HistoryView {
@@ -53,7 +54,7 @@ public interface HistoryView {
      * @param page zero-based page index. Negative values are treated as {@code 0};
      *             values past the end yield an empty page.
      */
-    @NotNull CompletableFuture<HistoryResponse<HistoryPage<AlertEntry>>> alerts(int page);
+    @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page);
 
     /**
      * Same as {@link #alerts(int)} but restricted to a specific check name.
@@ -61,25 +62,25 @@ public interface HistoryView {
      * @param checkName exact check name (e.g. {@code AutoTotemA}) — case-sensitive,
      *                  matched against the stored value. {@code null} returns all checks.
      */
-    @NotNull CompletableFuture<HistoryResponse<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName);
+    @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName);
 
     /**
      * Total number of alerts on record for this user (no filter).
      */
-    @NotNull CompletableFuture<HistoryResponse<Integer>> alertCount();
+    @NotNull CompletableFuture<Result<Integer>> alertCount();
 
     /**
      * Total alerts matching {@code checkName}, or all alerts if {@code null}.
      */
-    @NotNull CompletableFuture<HistoryResponse<Integer>> alertCount(@Nullable String checkName);
+    @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName);
 
     /**
      * Fetches one page of punishments (newest-first) for this user.
      */
-    @NotNull CompletableFuture<HistoryResponse<HistoryPage<PunishmentEntry>>> punishments(int page);
+    @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page);
 
     /**
      * Total number of punishments on record for this user.
      */
-    @NotNull CompletableFuture<HistoryResponse<Integer>> punishmentCount();
+    @NotNull CompletableFuture<Result<Integer>> punishmentCount();
 }

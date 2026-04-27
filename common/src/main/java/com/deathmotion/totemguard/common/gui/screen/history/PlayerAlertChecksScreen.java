@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.gui.screen.history;
 
-import com.deathmotion.totemguard.api3.history.HistoryError;
+import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.gui.*;
@@ -76,7 +76,7 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         platform.getHistoryRepository().alertCheckSummaries(targetId).thenAccept(response -> {
             if (response.ok()) {
                 this.loaded = response.value();
-            } else if (response.error() == HistoryError.DATABASE_UNAVAILABLE) {
+            } else if (response.error() == ResultError.DATABASE_UNAVAILABLE) {
                 this.loaded = List.of();
                 this.offline = true;
             } else {

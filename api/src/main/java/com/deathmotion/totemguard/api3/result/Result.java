@@ -16,24 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.history;
+package com.deathmotion.totemguard.api3.result;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Outcome of a single history operation. Always present on a settled future, so callers
- * never have to attach {@code .exceptionally(...)} just to learn that the database was
- * offline. Inspect {@link #ok()} first; on {@code false}, {@link #error()} and
- * {@link #message()} carry the reason.
+ * Outcome of a single asynchronous repository call. Always present on a settled future,
+ * so callers never have to attach {@code .exceptionally(...)} just to learn that the
+ * database was offline. Inspect {@link #ok()} first; on {@code false}, {@link #error()}
+ * and {@link #message()} carry the reason.
  *
  * <pre>
- *     user.getHistory().alerts(0).thenAccept(response -&gt; {
- *         if (response.ok()) {
- *             render(response.value());
+ *     repo.someCall().thenAccept(result -&gt; {
+ *         if (result.ok()) {
+ *             render(result.value());
  *         } else {
- *             player.sendMessage("History unavailable: " + response.message());
+ *             player.sendMessage("Unavailable: " + result.message());
  *         }
  *     });
  * </pre>
@@ -43,20 +43,20 @@ import org.jetbrains.annotations.Nullable;
  * @param error   the failure category, or {@code null} when {@code ok} is {@code true}.
  * @param message human-readable reason, never {@code null} when {@code ok} is {@code false}.
  */
-public record HistoryResponse<T>(
+public record Result<T>(
         boolean ok,
         @Nullable T value,
-        @Nullable HistoryError error,
+        @Nullable ResultError error,
         @Nullable String message
 ) {
 
     @Contract(value = "_ -> new", pure = true)
-    public static <T> @NotNull HistoryResponse<T> ok(@NotNull T value) {
-        return new HistoryResponse<>(true, value, null, null);
+    public static <T> @NotNull Result<T> ok(@NotNull T value) {
+        return new Result<>(true, value, null, null);
     }
 
     @Contract(value = "_, _ -> new", pure = true)
-    public static <T> @NotNull HistoryResponse<T> failure(@NotNull HistoryError error, @NotNull String message) {
-        return new HistoryResponse<>(false, null, error, message);
+    public static <T> @NotNull Result<T> failure(@NotNull ResultError error, @NotNull String message) {
+        return new Result<>(false, null, error, message);
     }
 }

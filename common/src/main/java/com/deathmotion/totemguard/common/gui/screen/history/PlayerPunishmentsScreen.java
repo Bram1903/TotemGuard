@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.gui.screen.history;
 
-import com.deathmotion.totemguard.api3.history.HistoryError;
 import com.deathmotion.totemguard.api3.history.HistoryPage;
 import com.deathmotion.totemguard.api3.history.PunishmentEntry;
+import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.api3.punishment.PunishmentType;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.gui.*;
@@ -94,7 +94,7 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         platform.getHistoryRepository().punishments(targetId, page).thenAccept(response -> {
             if (response.ok()) {
                 this.loaded = response.value();
-            } else if (response.error() == HistoryError.DATABASE_UNAVAILABLE) {
+            } else if (response.error() == ResultError.DATABASE_UNAVAILABLE) {
                 this.offline = true;
             } else {
                 this.loadError = response.message();

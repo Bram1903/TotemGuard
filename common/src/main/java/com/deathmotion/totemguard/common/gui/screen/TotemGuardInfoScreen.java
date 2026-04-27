@@ -18,31 +18,37 @@
 
 package com.deathmotion.totemguard.common.gui.screen;
 
-import com.deathmotion.totemguard.api3.TotemGuard;
+import com.deathmotion.totemguard.api3.versioning.TGAPIVersions;
+import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.commands.CommandDefaults;
-import com.deathmotion.totemguard.common.gui.*;
-import com.github.retrooper.packetevents.PacketEvents;
+import com.deathmotion.totemguard.common.check.CheckManagerImpl;
+import com.deathmotion.totemguard.common.gui.GuiItems;
+import com.deathmotion.totemguard.common.gui.GuiRenderResult;
+import com.deathmotion.totemguard.common.gui.GuiScreen;
+import com.deathmotion.totemguard.common.gui.GuiSession;
+import com.deathmotion.totemguard.common.gui.GuiText;
+import com.deathmotion.totemguard.api3.stats.StatsWindow;
+import com.deathmotion.totemguard.common.gui.screen.stats.StatisticsScreen;
+import com.deathmotion.totemguard.common.util.TGVersions;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 public final class TotemGuardInfoScreen extends GuiScreen {
 
-    private final int page;
-
-    public TotemGuardInfoScreen() {
-        this(0);
-    }
-
-    public TotemGuardInfoScreen(int page) {
-        this.page = page;
-    }
+    private static final DateTimeFormatter BUILD_TIME_FORMAT = DateTimeFormatter
+            .ofPattern("dd-MM-yyyy HH:mm", Locale.ROOT)
+            .withZone(ZoneId.systemDefault());
 
     @Override
     public String requiredPermission() {
@@ -51,55 +57,25 @@ public final class TotemGuardInfoScreen extends GuiScreen {
 
     @Override
     public GuiRenderResult render(GuiSession session) {
-        return page == 0 ? renderOverview() : renderRuntime(session);
-    }
-
-    private GuiRenderResult renderOverview() {
         TGPlatform platform = TGPlatform.getInstance();
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(3, Component.text("TotemGuard AntiCheat", TextColor.fromHexString("#574F4D")).decoration(TextDecoration.BOLD, true));
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(4,
+                Component.text("TotemGuard AntiCheat", TextColor.fromHexString("#574F4D"))
+                        .decoration(TextDecoration.BOLD, true));
         builder.fillEmpty(GuiItems.filler());
 
-        builder.set(10, GuiItems.simple(
-                ItemTypes.TOTEM_OF_UNDYING,
-                Component.text("Plugin", NamedTextColor.GREEN),
-                List.of(
-                        GuiText.line("Version", TotemGuard.get().getVersion().toString()),
-                        GuiText.line("Platform", platform.getPlatform().name()),
-                        GuiText.line("Platform build", platform.getPlatformVersion())
-                )
-        ));
+        builder.set(11, buildServicesTile(platform));
+        builder.set(13, buildInformationTile(platform));
 
-        builder.set(12, GuiItems.simple(
-                ItemTypes.PLAYER_HEAD,
-                Component.text("Tracked Players", NamedTextColor.AQUA),
-                List.of(
-                        GuiText.line("Repository size", String.valueOf(platform.getPlayerRepository().getPlayers().size())),
-                        GuiText.line("Alerts enabled", String.valueOf(platform.getAlertRepository().getEnabledAlerts().size())),
-                        GuiText.line("GUI sessions", String.valueOf(platform.getGuiManager().activeSessionCount()))
-                )
-        ));
+        boolean dbReady = platform.getDatabaseRepository().isConnected();
+        if (dbReady) {
+            builder.set(15, buildStatisticsTile(true),
+                    ctx -> ctx.open(new StatisticsScreen(StatsWindow.ALL_TIME)));
+        } else {
+            builder.set(15, buildStatisticsTile(false));
+        }
 
-        builder.set(14, GuiItems.simple(
-                ItemTypes.BOOK,
-                Component.text("Commands", NamedTextColor.YELLOW),
-                List.of(
-                        GuiText.line("Root", "/" + CommandDefaults.ROOT),
-                        GuiText.line("Aliases", String.join(", ", CommandDefaults.ALIASES)),
-                        GuiText.line("Examples", "/" + CommandDefaults.ROOT + " profile <player>")
-                )
-        ));
-
-        builder.set(16, GuiItems.simple(
-                ItemTypes.ARROW,
-                Component.text("Next Page", NamedTextColor.GOLD),
-                List.of(
-                        Component.text("Runtime, protocol,", NamedTextColor.GRAY),
-                        Component.text("and backend state", NamedTextColor.GRAY)
-                )
-        ), ctx -> ctx.open(new TotemGuardInfoScreen(1)));
-
-        builder.set(22, GuiItems.simple(
+        builder.set(31, GuiItems.simple(
                 ItemTypes.BARRIER,
                 Component.text("Close", NamedTextColor.RED),
                 List.of(Component.text("Close this screen", NamedTextColor.GRAY))
@@ -108,72 +84,80 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         return builder.build();
     }
 
-    private GuiRenderResult renderRuntime(GuiSession session) {
-        TGPlatform platform = TGPlatform.getInstance();
+    private static ItemStack buildServicesTile(TGPlatform platform) {
+        boolean dbConnected = platform.getDatabaseRepository().isConnected();
+        boolean dbEnabled = platform.getDatabaseRepository().isEnabled();
+        boolean redisConnected = platform.getRedisRepository().isConnected();
+        boolean redisEnabled = platform.getRedisRepository().isEnabled();
+        boolean antiVpnEnabled = platform.getAntiVPNRepository().isEnabled();
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(3, Component.text("TotemGuard Runtime", NamedTextColor.GOLD));
-        builder.fillEmpty(GuiItems.filler());
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Live status of external services", NamedTextColor.GRAY));
+        lore.add(Component.text("TotemGuard depends on.", NamedTextColor.GRAY));
+        lore.add(Component.empty());
+        lore.add(serviceLine("Database", dbEnabled, dbConnected));
+        lore.add(serviceLine("Redis", redisEnabled, redisConnected));
+        lore.add(serviceLine("Anti-VPN", antiVpnEnabled, antiVpnEnabled));
 
-        builder.set(10, GuiItems.simple(
-                ItemTypes.REDSTONE,
-                Component.text("Protocol", NamedTextColor.RED),
-                List.of(
-                        GuiText.line("PacketEvents", String.valueOf(PacketEvents.getAPI().getVersion())),
-                        GuiText.line("Server version", String.valueOf(PacketEvents.getAPI().getServerManager().getVersion())),
-                        GuiText.line("Enabled", String.valueOf(platform.isEnabled()))
-                )
-        ));
-
-        builder.set(12, GuiItems.simple(
+        return GuiItems.simple(
                 ItemTypes.ENDER_CHEST,
-                Component.text("Backend", NamedTextColor.LIGHT_PURPLE),
-                List.of(
-                        GuiText.status("Redis enabled", platform.getRedisRepository().isEnabled()),
-                        GuiText.status("Redis connected", platform.getRedisRepository().isConnected()),
-                        GuiText.status("Anti-VPN enabled", platform.getAntiVPNRepository().isEnabled())
-                )
-        ));
+                Component.text("Services", NamedTextColor.LIGHT_PURPLE),
+                lore
+        );
+    }
 
-        builder.set(14, GuiItems.simple(
-                ItemTypes.COMPASS,
-                Component.text("Live State", NamedTextColor.AQUA),
-                List.of(
-                        GuiText.line("Tracked players", String.valueOf(platform.getPlayerRepository().getPlayers().size())),
-                        GuiText.line("Loaded placeholders", String.valueOf(platform.getPlaceholderRepository().registeredKeys().size())),
-                        GuiText.line("Checks/player", platform.getPlayerRepository().getPlayers().stream()
-                                .map(player -> String.valueOf(player.getCheckManager().allChecks.size()))
-                                .findFirst()
-                                .orElse("0"))
-                )
-        ));
+    private static Component serviceLine(String label, boolean enabled, boolean connected) {
+        Component status;
+        if (!enabled) {
+            status = Component.text("Disabled", NamedTextColor.DARK_GRAY);
+        } else if (connected) {
+            status = Component.text("Connected", NamedTextColor.GREEN);
+        } else {
+            status = Component.text("Disconnected", NamedTextColor.RED);
+        }
+        return Component.text(label + ": ", NamedTextColor.GRAY).append(status);
+    }
 
-        builder.set(16, GuiItems.simple(
-                ItemTypes.PAPER,
-                Component.text("Known Players", NamedTextColor.YELLOW),
-                platform.getPlayerRepository().getPlayers().stream()
-                        .limit(5)
-                        .map(player -> Component.text(player.getName(), NamedTextColor.GRAY))
-                        .collect(Collectors.toList())
-        ));
+    private static ItemStack buildInformationTile(TGPlatform platform) {
+        TGVersion pluginVersion = TGVersions.CURRENT;
+        Instant buildTime = TGVersions.BUILD_TIMESTAMP;
+        int checkCount = CheckManagerImpl.knownCheckCount();
 
-        builder.set(18, GuiItems.simple(
-                ItemTypes.ARROW,
-                Component.text("Back", NamedTextColor.GOLD),
-                List.of(Component.text("Return to the overview", NamedTextColor.GRAY))
-        ), ctx -> {
-            if (session.hasParent()) {
-                ctx.back();
-            } else {
-                ctx.replace(new TotemGuardInfoScreen());
-            }
-        });
+        List<Component> lore = new ArrayList<>();
+        lore.add(GuiText.line("Version", pluginVersion.toString()));
+        lore.add(GuiText.line("API version", TGAPIVersions.CURRENT.toString()));
+        lore.add(GuiText.line("Build time", BUILD_TIME_FORMAT.format(buildTime)));
+        lore.add(GuiText.line("Platform", platform.getPlatform().name()));
+        lore.add(GuiText.line("Platform build", platform.getPlatformVersion()));
+        lore.add(GuiText.line("Checks registered", checkCount > 0 ? String.valueOf(checkCount) : "Pending first join"));
 
-        builder.set(22, GuiItems.simple(
-                ItemTypes.BARRIER,
-                Component.text("Close", NamedTextColor.RED),
-                List.of(Component.text("Close this screen", NamedTextColor.GRAY))
-        ), ctx -> ctx.close());
+        return GuiItems.simple(
+                ItemTypes.TOTEM_OF_UNDYING,
+                Component.text("Information", NamedTextColor.GREEN),
+                lore
+        );
+    }
 
-        return builder.build();
+    private static ItemStack buildStatisticsTile(boolean dbReady) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Aggregated alert and punishment", NamedTextColor.GRAY));
+        lore.add(Component.text("counts across all players.", NamedTextColor.GRAY));
+        lore.add(Component.empty());
+
+        if (dbReady) {
+            lore.add(Component.text("Click to browse ▶", NamedTextColor.DARK_GRAY));
+            return GuiItems.simple(
+                    ItemTypes.WRITABLE_BOOK,
+                    Component.text("Statistics", NamedTextColor.AQUA),
+                    lore
+            );
+        }
+        lore.add(Component.text("Database is offline.", NamedTextColor.RED));
+        lore.add(Component.text("Statistics are unavailable.", NamedTextColor.GRAY));
+        return GuiItems.simple(
+                ItemTypes.WRITTEN_BOOK,
+                Component.text("Statistics", NamedTextColor.DARK_GRAY),
+                lore
+        );
     }
 }

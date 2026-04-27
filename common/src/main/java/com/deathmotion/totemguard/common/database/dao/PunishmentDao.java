@@ -120,4 +120,24 @@ public final class PunishmentDao {
             return stmt.executeUpdate();
         }
     }
+
+    @Blocking
+    public int countAll() throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PUNISHMENTS_TOTAL);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    @Blocking
+    public int countSince(long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PUNISHMENTS_SINCE)) {
+            stmt.setLong(1, sinceEpochMs);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
 }

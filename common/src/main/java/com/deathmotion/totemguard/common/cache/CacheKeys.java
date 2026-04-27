@@ -71,4 +71,8 @@ public final class CacheKeys {
     public static String punishmentHistoryCount(UUID uuid, long version) {
         return PREFIX + "hist:punishments-count:" + uuid + ":v" + version;
     }
+
+    public static String statsSnapshot(String windowId) {
+        return PREFIX + "stats:" + windowId;
+    }
 }

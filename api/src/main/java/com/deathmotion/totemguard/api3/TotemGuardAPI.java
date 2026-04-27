@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.api3.history.HistoryRepository;
 import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api3.redis.RedisRepository;
+import com.deathmotion.totemguard.api3.stats.StatsRepository;
 import com.deathmotion.totemguard.api3.update.UpdateCheckerRepository;
 import com.deathmotion.totemguard.api3.user.UserRepository;
 import com.deathmotion.totemguard.api3.versioning.TGVersion;
@@ -112,6 +113,15 @@ public interface TotemGuardAPI {
      * @return the history repository, never {@code null}
      */
     @NotNull HistoryRepository getHistoryRepository();
+
+    /**
+     * Returns the repository for aggregate alert and punishment statistics. Counts cover
+     * every player on every server sharing the database; results are cached for a short
+     * window so repeated calls are cheap.
+     *
+     * @return the statistics repository, never {@code null}
+     */
+    @NotNull StatsRepository getStatsRepository();
 
     /**
      * Returns the repository that tracks the latest published TotemGuard release.
