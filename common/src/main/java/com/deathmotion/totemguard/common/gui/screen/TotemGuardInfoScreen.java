@@ -30,8 +30,6 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -133,8 +131,7 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         TGPlatform platform = TGPlatform.getInstance();
 
         GuiRenderResult.Builder builder = GuiRenderResult.builder(4,
-                Component.text("TotemGuard AntiCheat", TextColor.fromHexString("#574F4D"))
-                        .decoration(TextDecoration.BOLD, true));
+                GuiTitle.of("TotemGuard"));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(11, buildServicesTile(platform));

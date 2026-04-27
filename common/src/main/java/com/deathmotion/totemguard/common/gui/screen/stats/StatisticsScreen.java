@@ -84,7 +84,7 @@ public final class StatisticsScreen extends GuiScreen {
     @Override
     public GuiRenderResult render(GuiSession session) {
         GuiRenderResult.Builder builder = GuiRenderResult.builder(3,
-                Component.text("TotemGuard Statistics", NamedTextColor.AQUA));
+                GuiTitle.of("TotemGuard Statistics"));
         builder.fillEmpty(GuiItems.filler());
 
         if (session.hasParent()) {

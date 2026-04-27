@@ -63,7 +63,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
         TGPlayer target = TGPlatform.getInstance().getPlayerRepository().getPlayer(targetId);
         String targetName = target != null ? target.getName() : fallbackName;
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(6, Component.text("Monitor: " + targetName, NamedTextColor.GOLD));
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(6, GuiTitle.of("Monitor: " + targetName));
 
         if (session.viewerId().equals(targetId)) {
             builder.fillEmpty(GuiItems.filler());

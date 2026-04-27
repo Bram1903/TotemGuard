@@ -112,8 +112,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
                 ? "Alerts: " + targetName
                 : "Alerts [" + checkName + "]: " + targetName;
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
-                Component.text(title, NamedTextColor.GOLD));
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(6, GuiTitle.of(title));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(0, GuiItems.simple(

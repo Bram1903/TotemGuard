@@ -108,7 +108,7 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
     @Override
     public GuiRenderResult render(GuiSession session) {
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
-                Component.text("Punishments: " + targetName, NamedTextColor.GOLD));
+                GuiTitle.of("Punishments: " + targetName));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(0, GuiItems.simple(

@@ -53,7 +53,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         String targetName = target != null ? target.getName() : fallbackName;
 
         GuiRenderResult.Builder builder = GuiRenderResult.builder(3,
-                Component.text("History: " + targetName, NamedTextColor.GOLD));
+                GuiTitle.of("History: " + targetName));
         builder.fillEmpty(GuiItems.filler());
 
         if (session.hasParent()) {

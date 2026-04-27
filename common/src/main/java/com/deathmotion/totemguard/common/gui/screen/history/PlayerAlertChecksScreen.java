@@ -92,7 +92,7 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
     @Override
     public GuiRenderResult render(GuiSession session) {
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
-                Component.text("Alerts by check: " + targetName, NamedTextColor.GOLD));
+                GuiTitle.of("Alerts by check: " + targetName));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(0, GuiItems.simple(

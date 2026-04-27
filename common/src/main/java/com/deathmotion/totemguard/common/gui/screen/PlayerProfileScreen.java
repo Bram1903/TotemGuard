@@ -58,7 +58,7 @@ public final class PlayerProfileScreen extends GuiScreen {
         TGPlayer target = TGPlatform.getInstance().getPlayerRepository().getPlayer(targetId);
         String targetName = target != null ? target.getName() : fallbackName;
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(3, Component.text("Profile: " + targetName, NamedTextColor.GOLD));
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(3, GuiTitle.of("Profile: " + targetName));
         builder.fillEmpty(GuiItems.filler());
 
         if (session.hasParent()) {
