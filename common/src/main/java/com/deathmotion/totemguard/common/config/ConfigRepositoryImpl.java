@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api3.config.Config;
 import com.deathmotion.totemguard.api3.config.ConfigFile;
 import com.deathmotion.totemguard.api3.config.ConfigRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.legacy.V2ConfigMigrator;
 import com.deathmotion.totemguard.common.config.migration.MigrationRegistry;
 import com.deathmotion.totemguard.common.config.service.ConfigService;
 import com.deathmotion.totemguard.common.config.service.ConfigSnapshot;
@@ -61,6 +62,7 @@ public final class ConfigRepositoryImpl implements ConfigRepository {
     public ConfigRepositoryImpl() {
         TGPlatform platform = TGPlatform.getInstance();
         this.configDir = Paths.get(Objects.requireNonNull(platform.getPluginDirectory(), "pluginDirectory"));
+        new V2ConfigMigrator(platform.getLogger()).migrate(configDir);
         this.service = new ConfigService(
                 configDir,
                 ConfigRepositoryImpl.class.getClassLoader(),
