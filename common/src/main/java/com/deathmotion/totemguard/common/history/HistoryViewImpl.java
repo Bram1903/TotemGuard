@@ -18,7 +18,10 @@
 
 package com.deathmotion.totemguard.common.history;
 
-import com.deathmotion.totemguard.api3.history.*;
+import com.deathmotion.totemguard.api3.history.AlertEntry;
+import com.deathmotion.totemguard.api3.history.HistoryPage;
+import com.deathmotion.totemguard.api3.history.HistoryView;
+import com.deathmotion.totemguard.api3.history.PunishmentEntry;
 import com.deathmotion.totemguard.api3.result.Result;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -22,11 +22,7 @@ import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
 import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.gui.GuiItems;
-import com.deathmotion.totemguard.common.gui.GuiRenderResult;
-import com.deathmotion.totemguard.common.gui.GuiScreen;
-import com.deathmotion.totemguard.common.gui.GuiSession;
-import com.deathmotion.totemguard.common.gui.GuiText;
+import com.deathmotion.totemguard.common.gui.*;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
@@ -47,6 +43,14 @@ public final class StatisticsScreen extends GuiScreen {
 
     public StatisticsScreen(StatsWindow window) {
         this.window = window;
+    }
+
+    private static ItemStack loadingTile(String label) {
+        return GuiItems.simple(
+                ItemTypes.CLOCK,
+                Component.text(label, NamedTextColor.YELLOW),
+                List.of(Component.text("Querying the database", NamedTextColor.GRAY))
+        );
     }
 
     @Override
@@ -179,14 +183,6 @@ public final class StatisticsScreen extends GuiScreen {
                 ItemTypes.CLOCK,
                 Component.text("Current window", NamedTextColor.AQUA),
                 lore
-        );
-    }
-
-    private static ItemStack loadingTile(String label) {
-        return GuiItems.simple(
-                ItemTypes.CLOCK,
-                Component.text(label, NamedTextColor.YELLOW),
-                List.of(Component.text("Querying the database", NamedTextColor.GRAY))
         );
     }
 

@@ -19,11 +19,11 @@
 package com.deathmotion.totemguard.common.cache;
 
 import com.deathmotion.totemguard.api3.punishment.PunishmentType;
+import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.database.model.AlertRecord;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
-import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

@@ -20,8 +20,8 @@ package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.api3.history.HistoryPage;
 import com.deathmotion.totemguard.api3.history.PunishmentEntry;
-import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.api3.punishment.PunishmentType;
+import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.gui.*;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;

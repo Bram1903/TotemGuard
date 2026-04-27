@@ -18,16 +18,12 @@
 
 package com.deathmotion.totemguard.common.gui.screen;
 
+import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import com.deathmotion.totemguard.api3.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
-import com.deathmotion.totemguard.common.gui.GuiItems;
-import com.deathmotion.totemguard.common.gui.GuiRenderResult;
-import com.deathmotion.totemguard.common.gui.GuiScreen;
-import com.deathmotion.totemguard.common.gui.GuiSession;
-import com.deathmotion.totemguard.common.gui.GuiText;
-import com.deathmotion.totemguard.api3.stats.StatsWindow;
+import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.stats.StatisticsScreen;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -49,40 +45,6 @@ public final class TotemGuardInfoScreen extends GuiScreen {
     private static final DateTimeFormatter BUILD_TIME_FORMAT = DateTimeFormatter
             .ofPattern("dd-MM-yyyy HH:mm", Locale.ROOT)
             .withZone(ZoneId.systemDefault());
-
-    @Override
-    public String requiredPermission() {
-        return "TotemGuardV3.Gui.Info";
-    }
-
-    @Override
-    public GuiRenderResult render(GuiSession session) {
-        TGPlatform platform = TGPlatform.getInstance();
-
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(4,
-                Component.text("TotemGuard AntiCheat", TextColor.fromHexString("#574F4D"))
-                        .decoration(TextDecoration.BOLD, true));
-        builder.fillEmpty(GuiItems.filler());
-
-        builder.set(11, buildServicesTile(platform));
-        builder.set(13, buildInformationTile(platform));
-
-        boolean dbReady = platform.getDatabaseRepository().isConnected();
-        if (dbReady) {
-            builder.set(15, buildStatisticsTile(true),
-                    ctx -> ctx.open(new StatisticsScreen(StatsWindow.ALL_TIME)));
-        } else {
-            builder.set(15, buildStatisticsTile(false));
-        }
-
-        builder.set(31, GuiItems.simple(
-                ItemTypes.BARRIER,
-                Component.text("Close", NamedTextColor.RED),
-                List.of(Component.text("Close this screen", NamedTextColor.GRAY))
-        ), ctx -> ctx.close());
-
-        return builder.build();
-    }
 
     private static ItemStack buildServicesTile(TGPlatform platform) {
         boolean dbConnected = platform.getDatabaseRepository().isConnected();
@@ -159,5 +121,39 @@ public final class TotemGuardInfoScreen extends GuiScreen {
                 Component.text("Statistics", NamedTextColor.DARK_GRAY),
                 lore
         );
+    }
+
+    @Override
+    public String requiredPermission() {
+        return "TotemGuardV3.Gui.Info";
+    }
+
+    @Override
+    public GuiRenderResult render(GuiSession session) {
+        TGPlatform platform = TGPlatform.getInstance();
+
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(4,
+                Component.text("TotemGuard AntiCheat", TextColor.fromHexString("#574F4D"))
+                        .decoration(TextDecoration.BOLD, true));
+        builder.fillEmpty(GuiItems.filler());
+
+        builder.set(11, buildServicesTile(platform));
+        builder.set(13, buildInformationTile(platform));
+
+        boolean dbReady = platform.getDatabaseRepository().isConnected();
+        if (dbReady) {
+            builder.set(15, buildStatisticsTile(true),
+                    ctx -> ctx.open(new StatisticsScreen(StatsWindow.ALL_TIME)));
+        } else {
+            builder.set(15, buildStatisticsTile(false));
+        }
+
+        builder.set(31, GuiItems.simple(
+                ItemTypes.BARRIER,
+                Component.text("Close", NamedTextColor.RED),
+                List.of(Component.text("Close this screen", NamedTextColor.GRAY))
+        ), ctx -> ctx.close());
+
+        return builder.build();
     }
 }
