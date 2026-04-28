@@ -31,12 +31,29 @@ import java.util.*;
 public final class ModsView {
 
     private static final String DEFAULT_SEVERITY = "KICK";
+    private static final String DEFAULT_KICK_COMMAND = "kick %tg_player% Unfair Mod Detected: %tg_mod%";
+    private static final String DEFAULT_BAN_COMMAND = "ban %tg_player% Unfair Mod Detected: %tg_mod%";
+    private static final int DEFAULT_KICK_THEN_BAN_WINDOW_MINUTES = 30;
 
     private final int version;
+    private final String kickCommand;
+    private final String banCommand;
+    private final int kickThenBanWindowMinutes;
     private final Map<String, ModConfig> mods;
 
     public ModsView(Config config) {
         this.version = config.version();
+        this.kickCommand = config.getString("kick-command")
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse(DEFAULT_KICK_COMMAND);
+        this.banCommand = config.getString("ban-command")
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse(DEFAULT_BAN_COMMAND);
+        this.kickThenBanWindowMinutes = config.getInt("kick-then-ban-window-minutes")
+                .filter(value -> value > 0)
+                .orElse(DEFAULT_KICK_THEN_BAN_WINDOW_MINUTES);
 
         Map<String, ModConfig> parsed = new LinkedHashMap<>();
         config.getSection("mods").ifPresent(modsSection -> {
@@ -61,6 +78,18 @@ public final class ModsView {
 
     public int version() {
         return version;
+    }
+
+    public @NotNull String kickCommand() {
+        return kickCommand;
+    }
+
+    public @NotNull String banCommand() {
+        return banCommand;
+    }
+
+    public int kickThenBanWindowMinutes() {
+        return kickThenBanWindowMinutes;
     }
 
     public @NotNull Map<String, ModConfig> all() {

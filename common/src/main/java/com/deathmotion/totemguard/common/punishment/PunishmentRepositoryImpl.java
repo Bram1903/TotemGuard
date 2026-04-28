@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,11 +80,31 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
     public void punish(CheckImpl check, int violations, @Nullable String debug) {
         if (!canPunish(check, violations)) return;
+        runPunishment(check, resolveCommands(check), debug, Map.of(), true);
+    }
 
+    /**
+     * Punish using an explicit command list and placeholder extras, bypassing the standard
+     * {@code violations >= maxViolations} gate. Used when the command list is decided per
+     * detection (e.g. mod severity selecting between the configured kick or ban command)
+     * instead of read off the {@link CheckImpl}.
+     */
+    public void punishWith(CheckImpl check,
+                           List<PunishmentCommand> commands,
+                           @Nullable String debug,
+                           Map<String, Object> placeholderExtras) {
+        if (commands.isEmpty()) return;
+        runPunishment(check, commands, debug, placeholderExtras, false);
+    }
+
+    private void runPunishment(CheckImpl check,
+                               List<PunishmentCommand> commands,
+                               @Nullable String debug,
+                               Map<String, Object> placeholderExtras,
+                               boolean clearViolationsAfter) {
         TGPlayer player = check.player;
         UUID playerUuid = player.getUuid();
 
-        List<PunishmentCommand> commands = resolveCommands(check);
         boolean containsBan = containsBan(commands);
 
         if (!tryClaim(playerUuid, containsBan)) return;
@@ -97,7 +118,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             ));
             if (event.isCancelled()) return;
 
-            if (!executePunishment(check, commands, debug)) {
+            if (!executePunishment(check, commands, debug, placeholderExtras)) {
                 platform.getLogger().warning(
                         "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
                 );
@@ -106,7 +127,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
             platform.getDiscordWebhookService().sendPunishment(check, debug);
 
-            check.clearViolations();
+            if (clearViolationsAfter) check.clearViolations();
             keepDistributedLock = containsBan;
         } finally {
             finishClaim(playerUuid, containsBan, keepDistributedLock);
@@ -157,7 +178,10 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         return false;
     }
 
-    private boolean executePunishment(CheckImpl check, List<PunishmentCommand> commands, @Nullable String debug) {
+    private boolean executePunishment(CheckImpl check,
+                                      List<PunishmentCommand> commands,
+                                      @Nullable String debug,
+                                      Map<String, Object> placeholderExtras) {
         int dispatchedCommands = 0;
 
         for (PunishmentCommand command : commands) {
@@ -167,7 +191,9 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             }
 
             try {
-                String processed = placeholderRepository.replace(processedCommand, check.player, check).trim();
+                String processed = placeholderRepository
+                        .replace(processedCommand, check.player, check, placeholderExtras)
+                        .trim();
                 if (processed.isEmpty()) {
                     continue;
                 }

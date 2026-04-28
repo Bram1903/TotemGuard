@@ -21,59 +21,146 @@ package com.deathmotion.totemguard.common.check.impl.mods;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.ModConfig;
 import com.deathmotion.totemguard.common.config.view.ModsView;
+import com.deathmotion.totemguard.common.punishment.PunishmentCommand;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.*;
 
 public final class ModRegistry {
 
-    private static volatile Map<String, ModDefinition> DEFINITIONS = Map.of();
+    private static volatile Snapshot SNAPSHOT = Snapshot.empty();
 
     private ModRegistry() {
     }
 
-    public static Map<String, ModDefinition> getDefinitions() {
-        return DEFINITIONS;
+    public static @NotNull Snapshot snapshot() {
+        return SNAPSHOT;
     }
 
     public static void load() {
-        ModsView view = TGPlatform.getInstance().getConfigRepository().mods();
+        TGPlatform platform = TGPlatform.getInstance();
+        ModsView view = platform.getConfigRepository().mods();
 
-        LinkedHashMap<String, ModDefinition> loaded = new LinkedHashMap<>();
+        LinkedHashMap<String, ModDefinition> definitions = new LinkedHashMap<>();
+        Map<String, String> payloadOwners = new HashMap<>();
+        Map<String, String> translationOwners = new HashMap<>();
+
         for (ModConfig cfg : view.all().values()) {
-            List<String> payloads = normalizeValues(cfg.payloads(), true);
-            List<String> translations = normalizeValues(cfg.translations(), false);
-            if (payloads.isEmpty() && translations.isEmpty()) {
-                warn("Ignoring mod '" + cfg.id() + "' because it has no payloads or translations.");
-                continue;
-            }
-
             ModSeverity severity = ModSeverity.fromConfigValue(cfg.severity());
             if (severity == null) {
                 warn("Ignoring invalid severity '" + cfg.severity() + "' for mod '" + cfg.id()
-                        + "'. Valid values: LOG, KICK, BAN, KICK_THEN_BAN. Using KICK.");
+                        + "'. Valid values: LOG, KICK, BAN, KICK_THEN_BAN. Defaulting to KICK.");
                 severity = ModSeverity.KICK;
             }
 
-            loaded.put(cfg.id(), new ModDefinition(cfg.id(), severity, payloads, translations));
+            Set<String> payloads = claimUnique(cfg.id(), cfg.payloads(), payloadOwners, true, "payload");
+            Set<String> translations = claimUnique(cfg.id(), cfg.translations(), translationOwners, false, "translation");
+
+            if (payloads.isEmpty() && translations.isEmpty()) {
+                warn("Ignoring mod '" + cfg.id() + "' because it has no usable payloads or translations.");
+                continue;
+            }
+
+            definitions.put(cfg.id(), new ModDefinition(cfg.id(), severity, payloads, translations));
         }
 
-        DEFINITIONS = Collections.unmodifiableMap(loaded);
+        SNAPSHOT = new Snapshot(
+                Collections.unmodifiableMap(definitions),
+                buildPayloadEntries(definitions),
+                buildTranslationIndex(definitions),
+                PunishmentCommand.parse("[KICK] " + view.kickCommand()),
+                PunishmentCommand.parse("[BAN] " + view.banCommand()),
+                Duration.ofMinutes(view.kickThenBanWindowMinutes())
+        );
     }
 
-    private static List<String> normalizeValues(List<String> values, boolean lowerCase) {
-        if (values.isEmpty()) return List.of();
+    private static Set<String> claimUnique(
+            String modId,
+            Collection<String> rawValues,
+            Map<String, String> ownerIndex,
+            boolean lowerCase,
+            String label
+    ) {
+        if (rawValues.isEmpty()) return Set.of();
 
-        LinkedHashSet<String> normalized = new LinkedHashSet<>();
-        for (String value : values) {
-            if (value == null) continue;
-            String trimmed = value.trim();
+        LinkedHashSet<String> claimed = new LinkedHashSet<>();
+        for (String raw : rawValues) {
+            if (raw == null) continue;
+            String trimmed = raw.trim();
             if (trimmed.isEmpty()) continue;
-            normalized.add(lowerCase ? trimmed.toLowerCase(Locale.ROOT) : trimmed);
+
+            String key = lowerCase ? trimmed.toLowerCase(Locale.ROOT) : trimmed;
+            String owner = ownerIndex.putIfAbsent(key, modId);
+            if (owner == null) {
+                claimed.add(key);
+            } else if (!owner.equals(modId)) {
+                warn("Skipping duplicate " + label + " '" + trimmed + "' on mod '" + modId
+                        + "': already declared by '" + owner + "'.");
+            }
         }
-        return normalized.isEmpty() ? List.of() : List.copyOf(normalized);
+        return claimed;
+    }
+
+    private static List<PayloadEntry> buildPayloadEntries(Map<String, ModDefinition> definitions) {
+        List<PayloadEntry> entries = new ArrayList<>();
+        for (ModDefinition def : definitions.values()) {
+            for (String payload : def.payloads()) {
+                entries.add(new PayloadEntry(payload, def));
+            }
+        }
+        return List.copyOf(entries);
+    }
+
+    private static Map<String, ModDefinition> buildTranslationIndex(Map<String, ModDefinition> definitions) {
+        Map<String, ModDefinition> index = new HashMap<>();
+        for (ModDefinition def : definitions.values()) {
+            for (String translation : def.translations()) {
+                index.put(translation, def);
+            }
+        }
+        return Map.copyOf(index);
     }
 
     private static void warn(String message) {
         TGPlatform.getInstance().getLogger().warning("[mods.yml] " + message);
+    }
+
+    public record PayloadEntry(@NotNull String normalizedPayload, @NotNull ModDefinition mod) {
+    }
+
+    public record Snapshot(
+            @NotNull Map<String, ModDefinition> definitions,
+            @NotNull List<PayloadEntry> payloadEntries,
+            @NotNull Map<String, ModDefinition> translationIndex,
+            @NotNull PunishmentCommand kickCommand,
+            @NotNull PunishmentCommand banCommand,
+            @NotNull Duration kickThenBanWindow
+    ) {
+
+        static Snapshot empty() {
+            return new Snapshot(
+                    Map.of(),
+                    List.of(),
+                    Map.of(),
+                    PunishmentCommand.parse("[KICK] kick %tg_player%"),
+                    PunishmentCommand.parse("[BAN] ban %tg_player%"),
+                    Duration.ofMinutes(30)
+            );
+        }
+
+        public @Nullable ModDefinition matchPayload(@NotNull String normalizedChannel) {
+            for (PayloadEntry entry : payloadEntries) {
+                if (normalizedChannel.contains(entry.normalizedPayload())) {
+                    return entry.mod();
+                }
+            }
+            return null;
+        }
+
+        public @Nullable ModDefinition byTranslation(@NotNull String key) {
+            return translationIndex.get(key);
+        }
     }
 }

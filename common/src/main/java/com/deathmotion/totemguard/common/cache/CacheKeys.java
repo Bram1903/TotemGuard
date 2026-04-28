@@ -45,6 +45,10 @@ public final class CacheKeys {
         return PREFIX + "punish-lock:" + uuid;
     }
 
+    public static String modKickRecord(UUID uuid, String modId) {
+        return PREFIX + "mod-kick:" + uuid + ":" + modId;
+    }
+
     // Bumped on history clear; embedded into every key below to invalidate them all at once.
     public static String historyVersion(UUID uuid) {
         return PREFIX + "hist:ver:" + uuid;

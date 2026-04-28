@@ -5,29 +5,25 @@
 #      |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
 #                             \/      \/        \/           \/           \/
 
-# The version of the mods file. DO NOT TOUCH!!!
+# DO NOT TOUCH!!!
 config_version: 1
 
-# Kick
-kick-command: a
+kick-command: "kick %tg_player% Unfair Mod Detected: %tg_mod%"
+ban-command: "ban %tg_player% Unfair Mod Detected: %tg_mod%"
 
-# Ban
-ban-command: a
+# Window for KICK_THEN_BAN to escalate the next hit to a ban.
+kick-then-ban-window-minutes: 30
 
-# Severity Options:
-# LOG: Simply sends an alert in chat, like any other check
-# KICK: Kicks the player
-# BAN: Bans the player
-# KICK_THEN_BAN: Kicks the player for their first violation, then bans them for their second violation
-
+# severity: LOG | KICK | BAN | KICK_THEN_BAN
+# A payload or translation may belong to at most one mod.
 mods:
   AutoTotem:
-    severity: BAN
+    severity: KICK_THEN_BAN
     payloads:
       - autototem
 
   Meteor:
-    severity: BAN
+    severity: KICK_THEN_BAN
     translations:
       - key.meteor-client.open-gui
 

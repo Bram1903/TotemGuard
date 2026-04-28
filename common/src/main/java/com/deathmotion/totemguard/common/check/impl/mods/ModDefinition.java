@@ -20,25 +20,18 @@ package com.deathmotion.totemguard.common.check.impl.mods;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 
 public record ModDefinition(
         @NotNull String id,
         @NotNull ModSeverity severity,
-        @NotNull List<String> payloads,
-        @NotNull List<String> translations
+        @NotNull Set<String> payloads,
+        @NotNull Set<String> translations
 ) {
 
     public ModDefinition {
-        id = Objects.requireNonNull(id, "id").trim();
-        if (id.isBlank()) {
-            throw new IllegalArgumentException("id cannot be blank");
-        }
-
-        severity = Objects.requireNonNull(severity, "severity");
-        payloads = List.copyOf(Objects.requireNonNull(payloads, "payloads"));
-        translations = List.copyOf(Objects.requireNonNull(translations, "translations"));
+        payloads = Set.copyOf(payloads);
+        translations = Set.copyOf(translations);
     }
 
     public boolean hasPayloads() {
@@ -47,19 +40,5 @@ public record ModDefinition(
 
     public boolean hasTranslations() {
         return !translations.isEmpty();
-    }
-
-    public boolean matchesPayload(String value) {
-        if (value == null || value.isBlank() || payloads.isEmpty()) {
-            return false;
-        }
-
-        for (String payload : payloads) {
-            if (value.contains(payload)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
