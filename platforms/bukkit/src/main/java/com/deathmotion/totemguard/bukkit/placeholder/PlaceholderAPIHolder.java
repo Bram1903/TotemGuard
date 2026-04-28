@@ -32,17 +32,17 @@ public final class PlaceholderAPIHolder implements PlaceholderHolder {
 
     @Override
     public @Nullable String resolve(@NonNull String key, @NonNull PlaceholderContext context) {
-        if (context.user() == null) {
-            return null;
+        Player player = null;
+
+        if (context.user() instanceof TGPlayer tgPlayer) {
+            PlatformUser platformUser = tgPlayer.getPlatformUser();
+            if (platformUser instanceof BukkitPlatformUser bukkitUser) {
+                player = bukkitUser.getBukkitPlayer();
+            }
         }
 
-        if (!(context.user() instanceof TGPlayer tgPlayer)) return null;
-        PlatformUser platformUser = tgPlayer.getPlatformUser();
-        if (!(platformUser instanceof BukkitPlatformUser bukkitUser)) {
-            return null;
-        }
-
-        Player player = bukkitUser.getBukkitPlayer();
-        return PlaceholderAPI.setPlaceholders(player, "%" + key + "%");
+        String placeholder = "%" + key + "%";
+        String resolved = PlaceholderAPI.setPlaceholders(player, placeholder);
+        return placeholder.equals(resolved) ? null : resolved;
     }
 }
