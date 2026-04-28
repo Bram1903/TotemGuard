@@ -44,6 +44,9 @@ public final class ConfigKeys {
     public static final ConfigKey<Boolean> UPDATE_CHECKER_ENABLED = ConfigKey.bool("update-checker.enabled");
     public static final ConfigKey<Boolean> UPDATE_CHECKER_NOTIFY_ON_JOIN = ConfigKey.bool("update-checker.notify-on-join");
 
+    public static final ConfigKey<Boolean> ENTITY_SPOOFING_HEALTH = ConfigKey.bool("entity-spoofing.health");
+    public static final ConfigKey<Boolean> ENTITY_SPOOFING_ABSORPTION = ConfigKey.bool("entity-spoofing.absorption");
+
     public static final ConfigKey<Boolean> VPN_ENABLED = ConfigKey.bool("anti-vpn.enabled");
     public static final ConfigKey<String> VPN_PROVIDER = ConfigKey.string("anti-vpn.provider");
     public static final ConfigKey<String> VPN_API_KEY = ConfigKey.string("anti-vpn.api-key");

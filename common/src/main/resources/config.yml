@@ -68,6 +68,18 @@ anti-vpn:
   # Whether to block VPN users from joining the server.
   block: true
 
+# Hides sensitive information about other players from clients so cheaters can't
+# exploit it. None of these affect the receiving player's own data.
+entity-spoofing:
+  # Replaces the health metadata of other players with a random value in
+  # [0.5, max-health] so attack-priority cheats can't read true HP. Max-health
+  # is taken from the player's max-health attribute, capped at 20.
+  health: true
+
+  # Hides absorption hearts of other players by setting the absorption
+  # metadata to 0.
+  absorption: true
+
 # Periodically checks GitHub for new TotemGuard releases (every 6h).
 # When Redis is enabled, results are shared across the fleet via cache + pub/sub
 # so a rolling-restart fleet typically reuses the first server's fetch instead

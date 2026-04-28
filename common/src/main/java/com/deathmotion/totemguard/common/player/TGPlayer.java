@@ -152,6 +152,9 @@ public class TGPlayer implements TGUser {
             add(new OutboundInventoryProcessor(TGPlayer.this));
             add(new OutboundTeleportProcessor(TGPlayer.this));
             add(new OutboundMovementProcessor(TGPlayer.this));
+            add(new OutboundEntityProcessor(TGPlayer.this));
+            add(new OutboundCameraProcessor(TGPlayer.this));
+            add(new OutboundMetadataProcessor(TGPlayer.this));
         }};
     }
 

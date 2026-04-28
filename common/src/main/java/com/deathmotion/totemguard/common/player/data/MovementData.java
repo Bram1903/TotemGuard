@@ -46,6 +46,8 @@ public class MovementData {
     private boolean pendingServerRotationSync;
     private float pendingServerYaw;
     private float pendingServerPitch;
+    private boolean cameraIsSelf = true;
+    private boolean pendingCameraResync;
 
     public void handleFlying(WrapperPlayClientPlayerFlying packet) {
         previous = copy(current);
@@ -60,12 +62,14 @@ public class MovementData {
         boolean teleportResync = pendingTeleportResync;
         pendingTeleportResync = false;
         boolean serverRotationResync = isServerRotationResync(packet, yaw, pitch);
+        boolean cameraResync = !cameraIsSelf || pendingCameraResync;
+        pendingCameraResync = false;
         current = new Location(new Vector3d(x, y, z), yaw, pitch);
 
         boolean positionDifferent = hasPositionChanged(previous, current);
         boolean rotationDifferent = hasRotationChanged(previous, current);
 
-        if (teleportResync || serverRotationResync) {
+        if (teleportResync || serverRotationResync || cameraResync) {
             lastFlyingPositionChanged = false;
             lastFlyingRotationChanged = false;
         } else {
@@ -118,6 +122,16 @@ public class MovementData {
         queueServerRotationSync();
     }
 
+    public void handleCameraChange(boolean isSelf) {
+        // While the camera targets another entity, the vanilla client suppresses flying packets;
+        // when it returns to self, the next flying packet may carry a yaw/pitch that diverges from
+        // our last record, so mask that single delta to avoid false rotation flags.
+        if (this.cameraIsSelf != isSelf) {
+            pendingCameraResync = true;
+        }
+        this.cameraIsSelf = isSelf;
+    }
+
     public void reset() {
         current = emptyLocation();
         previous = emptyLocation();
@@ -131,6 +145,8 @@ public class MovementData {
         pendingServerRotationSync = false;
         pendingServerYaw = 0.0F;
         pendingServerPitch = 0.0F;
+        cameraIsSelf = true;
+        pendingCameraResync = false;
         pendingTeleports.clear();
     }
 

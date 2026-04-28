@@ -37,6 +37,7 @@ public final class ConfigView {
     private final DatabaseOptions database;
     private final AntiVpnOptions antiVpn;
     private final UpdateCheckerOptions updateChecker;
+    private final EntitySpoofingOptions entitySpoofing;
 
     public ConfigView(Config config) {
         this.version = config.version();
@@ -79,6 +80,10 @@ public final class ConfigView {
                 config.getBoolean(ConfigKeys.UPDATE_CHECKER_ENABLED),
                 config.getBoolean(ConfigKeys.UPDATE_CHECKER_NOTIFY_ON_JOIN)
         );
+        this.entitySpoofing = new EntitySpoofingOptions(
+                config.getBoolean(ConfigKeys.ENTITY_SPOOFING_HEALTH),
+                config.getBoolean(ConfigKeys.ENTITY_SPOOFING_ABSORPTION)
+        );
     }
 
     public int version() {
@@ -107,5 +112,9 @@ public final class ConfigView {
 
     public @NotNull UpdateCheckerOptions updateChecker() {
         return updateChecker;
+    }
+
+    public @NotNull EntitySpoofingOptions entitySpoofing() {
+        return entitySpoofing;
     }
 }

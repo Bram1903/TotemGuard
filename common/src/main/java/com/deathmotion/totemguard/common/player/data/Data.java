@@ -35,6 +35,7 @@ public class Data {
     private final TeleportData teleportData;
     private final InputData inputData;
     private final MovementData movementData;
+    private final WorldEntityData worldEntityData;
 
     private GameMode gameMode;
     private boolean sprinting;
@@ -58,6 +59,7 @@ public class Data {
         this.teleportData = new TeleportData();
         this.inputData = new InputData();
         this.movementData = new MovementData();
+        this.worldEntityData = new WorldEntityData();
     }
 
     public void setOpenInventory(boolean openInventory) {
