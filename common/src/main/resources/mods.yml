@@ -26,7 +26,17 @@ mods:
     payloads:
       - autototem
 
+  Meteor:
+    severity: BAN
+    translations:
+      - key.meteor-client.open-gui
+
   Tweakeroo:
     severity: KICK
     payloads:
       - servux:tweaks
+
+  AccurateBlockPlacement:
+    severity: KICK
+    translations:
+      - net.clayborn.accurateblockplacement.togglevanillaplacement

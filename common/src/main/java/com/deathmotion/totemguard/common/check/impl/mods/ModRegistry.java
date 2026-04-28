@@ -40,9 +40,10 @@ public final class ModRegistry {
 
         LinkedHashMap<String, ModDefinition> loaded = new LinkedHashMap<>();
         for (ModConfig cfg : view.all().values()) {
-            List<String> payloads = normalizePayloads(cfg.payloads());
-            if (payloads.isEmpty()) {
-                warn("Ignoring mod '" + cfg.id() + "' because it has no payloads.");
+            List<String> payloads = normalizeValues(cfg.payloads(), true);
+            List<String> translations = normalizeValues(cfg.translations(), false);
+            if (payloads.isEmpty() && translations.isEmpty()) {
+                warn("Ignoring mod '" + cfg.id() + "' because it has no payloads or translations.");
                 continue;
             }
 
@@ -53,20 +54,21 @@ public final class ModRegistry {
                 severity = ModSeverity.KICK;
             }
 
-            loaded.put(cfg.id(), new ModDefinition(cfg.id(), severity, payloads));
+            loaded.put(cfg.id(), new ModDefinition(cfg.id(), severity, payloads, translations));
         }
 
         DEFINITIONS = Collections.unmodifiableMap(loaded);
     }
 
-    private static List<String> normalizePayloads(List<String> values) {
+    private static List<String> normalizeValues(List<String> values, boolean lowerCase) {
         if (values.isEmpty()) return List.of();
 
         LinkedHashSet<String> normalized = new LinkedHashSet<>();
         for (String value : values) {
             if (value == null) continue;
-            String trimmed = value.trim().toLowerCase(Locale.ROOT);
-            if (!trimmed.isEmpty()) normalized.add(trimmed);
+            String trimmed = value.trim();
+            if (trimmed.isEmpty()) continue;
+            normalized.add(lowerCase ? trimmed.toLowerCase(Locale.ROOT) : trimmed);
         }
         return normalized.isEmpty() ? List.of() : List.copyOf(normalized);
     }

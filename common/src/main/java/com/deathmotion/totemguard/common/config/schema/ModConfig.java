@@ -29,11 +29,13 @@ import java.util.List;
 public record ModConfig(
         @NotNull String id,
         @NotNull String severity,
-        @NotNull List<String> payloads
+        @NotNull List<String> payloads,
+        @NotNull List<String> translations
 ) {
     public ModConfig {
         id = id.trim();
         severity = severity.trim();
         payloads = List.copyOf(payloads);
+        translations = List.copyOf(translations);
     }
 }

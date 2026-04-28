@@ -48,11 +48,12 @@ public final class ModsView {
                 if (entry.isEmpty()) continue;
 
                 List<String> payloads = entry.get().getStringList("payloads");
-                if (payloads.isEmpty()) continue;
+                List<String> translations = entry.get().getStringList("translations");
+                if (payloads.isEmpty() && translations.isEmpty()) continue;
 
                 String severity = entry.get().getString("severity").orElse(DEFAULT_SEVERITY);
 
-                parsed.put(trimmed, new ModConfig(trimmed, severity, payloads));
+                parsed.put(trimmed, new ModConfig(trimmed, severity, payloads, translations));
             }
         });
         this.mods = Collections.unmodifiableMap(parsed);
