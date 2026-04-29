@@ -57,13 +57,13 @@ final class ModTranslationDetector {
         this.player = player;
     }
 
-    boolean isActive() {
-        return active;
-    }
-
     private static String newId() {
         String value = Long.toUnsignedString(ThreadLocalRandom.current().nextLong(), 36);
         return value.length() <= ID_MAX_LENGTH ? value : value.substring(value.length() - ID_MAX_LENGTH);
+    }
+
+    boolean isActive() {
+        return active;
     }
 
     void rebuild(ModRegistry.Snapshot snapshot) {

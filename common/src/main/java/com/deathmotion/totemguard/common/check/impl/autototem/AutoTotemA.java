@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEve
 import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -34,13 +35,11 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 @CheckData(description = "Impossible click time difference", type = CheckType.AUTO_TOTEM)
 public class AutoTotemA extends CheckImpl implements EventCheck {
 
-    // Max ms between picking up a totem and placing it in the offhand — tighter than human reaction.
     private static final long MAX_CLICK_DIFF_MS = 75L;
-    // Max ms between totem consumption and the next totem reaching the offhand.
     private static final long MAX_USE_TO_PLACE_DIFF_MS = 1500L;
 
-    private Long lastTotemActivatedTimestamp;
-    private Long totemPickUpTimestamp;
+    private Long popTimestamp;
+    private Long pickupTimestamp;
 
     public AutoTotemA(TGPlayer player) {
         super(player);
@@ -48,66 +47,53 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
 
     @Override
     public <T extends Event> void handleEvent(T event) {
-        if (event instanceof TotemActivatedEvent totemActivatedEvent) {
-            onTotemActivated(totemActivatedEvent);
-        } else if (event instanceof InventoryChangedEvent setItemEvent) {
-            onInventoryChanged(setItemEvent);
+        if (event instanceof TotemActivatedEvent pop) {
+            popTimestamp = pop.getTimestamp();
+            pickupTimestamp = null;
+        } else if (event instanceof InventoryChangedEvent inventoryChanged) {
+            onInventoryChanged(inventoryChanged);
         }
-    }
-
-    private void onTotemActivated(TotemActivatedEvent event) {
-        lastTotemActivatedTimestamp = event.getTimestamp();
-        totemPickUpTimestamp = null;
     }
 
     private void onInventoryChanged(InventoryChangedEvent event) {
         if (event.getLastIssuer() != Issuer.CLIENT) return;
 
-        final CarriedItem carriedItem = event.getUpdatedCarriedItem();
-        if (carriedItem != null) {
-            final boolean wasCarryingTotem = carriedItem.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING;
-            if (inventory.isCarryingTotem() && !wasCarryingTotem) {
-                totemPickUpTimestamp = carriedItem.getTimestamp();
-            }
-        }
+        detectTotemPickedUp(event);
+        detectTotemPlacedInHand(event);
+    }
 
-        Long packetSourceTimestamp = null;
-        Long handTotemPlacedTimestamp = null;
+    private void detectTotemPickedUp(InventoryChangedEvent event) {
+        CarriedItem carried = event.getUpdatedCarriedItem();
+        if (carried == null) return;
+        if (carried.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING) return;
+        if (!inventory.isCarryingTotem()) return;
+
+        pickupTimestamp = carried.getTimestamp();
+    }
+
+    private void detectTotemPlacedInHand(InventoryChangedEvent event) {
+        if (popTimestamp == null || pickupTimestamp == null) return;
 
         for (InventorySlot changedSlot : event.getChangedSlots()) {
-            final int slot = changedSlot.getSlot();
-            final boolean slotHadTotem = changedSlot.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING;
-            final boolean slotHasTotem = changedSlot.getItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
+            if (!inventory.isHandSlot(changedSlot.getSlot())) continue;
+            if (changedSlot.getSlotAction() != SlotAction.CLICK) continue;
+            if (changedSlot.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING) continue;
+            if (changedSlot.getItem().getType() != ItemTypes.TOTEM_OF_UNDYING) continue;
 
-            if (!inventory.isHandSlot(slot) && slotHadTotem && !slotHasTotem) {
-                packetSourceTimestamp = packetSourceTimestamp == null
-                        ? changedSlot.getUpdated()
-                        : Math.min(packetSourceTimestamp, changedSlot.getUpdated());
-            }
-
-            if (inventory.isHandSlot(slot) && !slotHadTotem && slotHasTotem) {
-                handTotemPlacedTimestamp = changedSlot.getUpdated();
-            }
-        }
-
-        if (packetSourceTimestamp != null) {
-            totemPickUpTimestamp = packetSourceTimestamp;
-        }
-
-        if (handTotemPlacedTimestamp != null && totemPickUpTimestamp != null && lastTotemActivatedTimestamp != null) {
-            evaluate(handTotemPlacedTimestamp, totemPickUpTimestamp);
+            evaluate(changedSlot.getUpdated());
+            return;
         }
     }
 
-    private void evaluate(long placedAt, long pickedUpAt) {
-        final long clickDiff = Math.abs(placedAt - pickedUpAt);
-        final long useDiff = Math.abs(placedAt - lastTotemActivatedTimestamp);
+    private void evaluate(long placedAt) {
+        long clickDiff = placedAt - pickupTimestamp;
+        long useDiff = placedAt - popTimestamp;
 
-        if (clickDiff <= MAX_CLICK_DIFF_MS && useDiff <= MAX_USE_TO_PLACE_DIFF_MS) {
+        if (clickDiff >= 0 && clickDiff <= MAX_CLICK_DIFF_MS && useDiff >= 0 && useDiff <= MAX_USE_TO_PLACE_DIFF_MS) {
             fail();
         }
 
-        lastTotemActivatedTimestamp = null;
-        totemPickUpTimestamp = null;
+        popTimestamp = null;
+        pickupTimestamp = null;
     }
 }

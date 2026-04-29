@@ -27,11 +27,17 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 
 public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
 
+    private static final int TOTEM_OF_UNDYING_STATUS = 35;
+
     private final PacketLatencyHandler latencyHandler;
+
+    private boolean pendingTotemActivation;
 
     public OutboundTotemActivatedProcessor(TGPlayer player) {
         super(player);
@@ -41,22 +47,61 @@ public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
     @Override
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
-        if (event.getPacketType() != PacketType.Play.Server.SET_SLOT) return;
-        if (player.isManualCheckActive()) return;
+
+        final PacketTypeCommon type = event.getPacketType();
+        if (type == PacketType.Play.Server.ENTITY_STATUS) {
+            handleEntityStatus(event);
+        } else if (type == PacketType.Play.Server.SET_SLOT) {
+            handleSetSlot(event);
+        }
+    }
+
+    private void handleEntityStatus(PacketSendEvent event) {
+        final WrapperPlayServerEntityStatus packet = new WrapperPlayServerEntityStatus(event);
+        if (packet.getEntityId() != player.getUser().getEntityId()) return;
+        if (packet.getStatus() != TOTEM_OF_UNDYING_STATUS) return;
+
+        pendingTotemActivation = true;
+        log("ENTITY_STATUS 35 received -> pendingTotemActivation=true");
+    }
+
+    private void handleSetSlot(PacketSendEvent event) {
+        if (!pendingTotemActivation) return;
 
         final WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-        if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
+        if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
+            log("SET_SLOT skipped: wrong windowId=" + packet.getWindowId());
+            return;
+        }
 
         final int slot = packet.getSlot();
-        final ItemStack itemStack = packet.getItem();
-        final boolean wasCarryingTotem = player.getInventory().isTotemInSlot(slot);
-
-        if (wasCarryingTotem && itemStack.isEmpty()) {
-            latencyHandler.compensate(event, timestamp -> {
-                player.setLastTotemUse(timestamp);
-                player.getDebugOverlayManager().refresh();
-                TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, timestamp));
-            });
+        if (!player.getInventory().isHandSlot(slot)) {
+            log("SET_SLOT skipped: slot=" + slot + " is not a hand slot");
+            return;
         }
+
+        final ItemStack itemStack = packet.getItem();
+        if (!itemStack.isEmpty()) {
+            log("SET_SLOT skipped: item not empty (slot=" + slot + " type=" + itemStack.getType().getName() + ")");
+            return;
+        }
+        if (!player.getInventory().isTotemInSlot(slot)) {
+            log("SET_SLOT skipped: tracker says slot=" + slot + " did not hold a totem");
+            return;
+        }
+
+        pendingTotemActivation = false;
+        log("SET_SLOT consumed: slot=" + slot + " emptied, scheduling latency-compensated stamp");
+
+        latencyHandler.compensate(event, timestamp -> {
+            player.setLastTotemUse(timestamp);
+            player.getDebugOverlayManager().refresh();
+            TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, timestamp));
+            log("Latency callback fired -> lastTotemUse=" + timestamp + ", posted TotemActivatedEvent");
+        });
+    }
+
+    private void log(String msg) {
+        TGPlatform.getInstance().getLogger().info("[TotemPop] " + player.getName() + " " + msg);
     }
 }

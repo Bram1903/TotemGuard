@@ -71,10 +71,10 @@ public abstract class TGPlatform {
     private static TGPlatform instance;
     private final Platform platform;
     private final Logger logger;
-
+    private final List<PacketListenerAbstract> packetListeners = new ArrayList<>();
+    private final List<EventSubscription> internalSubscriptions = new ArrayList<>();
     @Setter
     private boolean enabled = true;
-
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
@@ -94,10 +94,6 @@ public abstract class TGPlatform {
     private StatsRepositoryImpl statsRepository;
     private GuiManager guiManager;
     private IntegrationRegistrar integrationRegistrar;
-
-    private final List<PacketListenerAbstract> packetListeners = new ArrayList<>();
-    private final List<EventSubscription> internalSubscriptions = new ArrayList<>();
-
     private TGPlatformAPI api;
 
     public TGPlatform(Platform platform) {

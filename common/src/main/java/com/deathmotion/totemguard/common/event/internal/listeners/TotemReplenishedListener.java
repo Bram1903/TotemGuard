@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.player.data.TotemData;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 
 import java.util.function.Consumer;
 
@@ -36,43 +37,44 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
         if (event.getLastIssuer() == Issuer.SERVER) return;
 
         TGPlayer player = event.getPlayer();
+
+        Long lastTotemUse = player.getLastTotemUse();
+        if (lastTotemUse == null) return;
+
         PacketInventory inventory = player.getInventory();
+        Long replenishedAt = null;
 
         for (InventorySlot inventorySlot : event.getChangedSlots()) {
             int slot = inventorySlot.getSlot();
+            if (!inventory.isHandSlot(slot)) continue;
 
-            if (!inventory.isHandSlot(slot) || !inventory.isTotemInSlot(slot)) {
-                continue;
-            }
+            boolean slotHadTotem = inventorySlot.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING;
+            boolean slotHasTotem = inventorySlot.getItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
+            if (slotHadTotem || !slotHasTotem) continue;
 
-            Long lastTotemUse = player.getLastTotemUse();
+            long updated = inventorySlot.getUpdated();
+            replenishedAt = (replenishedAt == null) ? updated : Math.min(replenishedAt, updated);
+        }
 
-            if (lastTotemUse == null) {
-                return;
-            }
+        if (replenishedAt == null) return;
 
-            long replenishedAt = inventorySlot.getUpdated();
-            long deltaRaw = replenishedAt - lastTotemUse;
-
-            if (deltaRaw < 0 || deltaRaw > TotemData.MAX_TRACKED_INTERVAL_MS) {
-                player.setLastTotemUse(null);
-                player.getDebugOverlayManager().refresh();
-                return;
-            }
-
-            player.getTotemData().getIntervals().add(deltaRaw);
-
-            TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
-                    player,
-                    lastTotemUse,
-                    replenishedAt
-            );
-            TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
-
+        long deltaRaw = replenishedAt - lastTotemUse;
+        if (deltaRaw < 0 || deltaRaw > TotemData.MAX_TRACKED_INTERVAL_MS) {
             player.setLastTotemUse(null);
             player.getDebugOverlayManager().refresh();
-
             return;
         }
+
+        player.getTotemData().getIntervals().add(deltaRaw);
+
+        TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
+                player,
+                lastTotemUse,
+                replenishedAt
+        );
+        TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
+
+        player.setLastTotemUse(null);
+        player.getDebugOverlayManager().refresh();
     }
 }
