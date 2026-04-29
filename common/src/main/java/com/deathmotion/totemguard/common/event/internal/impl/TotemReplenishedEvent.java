@@ -21,40 +21,36 @@ package com.deathmotion.totemguard.common.event.internal.impl;
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Fired when a player places a new totem of undying into the offhand
- * after a previous totem was activated.
- *
- * <p>
- * This event is used to calculate the time between totem activation and
- * replenishment in order to detect automated or unrealistic behavior.
- * </p>
- */
 @Getter
 public class TotemReplenishedEvent extends InternalPlayerEvent {
 
-    /**
-     * Timestamp (milliseconds since epoch) when the totem was activated.
-     */
     private final long totemActivatedTimestamp;
-
-    /**
-     * Timestamp (milliseconds since epoch) when the totem was replenished.
-     */
     private final long totemReplenishedTimestamp;
+    private final @Nullable Long totemPickupTimestamp;
 
     public TotemReplenishedEvent(
             TGPlayer player,
             long totemActivatedTimestamp,
-            long totemReplenishedTimestamp
+            long totemReplenishedTimestamp,
+            @Nullable Long totemPickupTimestamp
     ) {
         super(player, totemReplenishedTimestamp);
         this.totemActivatedTimestamp = totemActivatedTimestamp;
         this.totemReplenishedTimestamp = totemReplenishedTimestamp;
+        this.totemPickupTimestamp = totemPickupTimestamp;
     }
 
     public long getDelayMillis() {
         return totemReplenishedTimestamp - totemActivatedTimestamp;
+    }
+
+    public @Nullable Long getReactionMillis() {
+        return totemPickupTimestamp == null ? null : totemPickupTimestamp - totemActivatedTimestamp;
+    }
+
+    public @Nullable Long getClickMillis() {
+        return totemPickupTimestamp == null ? null : totemReplenishedTimestamp - totemPickupTimestamp;
     }
 }

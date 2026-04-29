@@ -90,3 +90,6 @@ update-checker:
   # Notify players holding `TotemGuardV3.UpdateNotify` (defaults to ops)
   # on join when an update is available.
   notify-on-join: true
+
+# Do not modify this list unless you know what you're doing.
+developer-overrides: []

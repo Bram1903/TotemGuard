@@ -145,6 +145,11 @@ public abstract class CheckImpl implements Check {
         return requiresTickEnd;
     }
 
+    @Override
+    public boolean isHeuristic() {
+        return false;
+    }
+
     public CheckSnapshot getSnapshot() {
         return new CheckSnapshot(name, buffer.get(), violations);
     }

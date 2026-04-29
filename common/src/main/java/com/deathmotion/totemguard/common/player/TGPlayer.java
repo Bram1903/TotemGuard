@@ -118,6 +118,10 @@ public class TGPlayer implements TGUser {
     @Nullable
     private Long lastTotemUse;
 
+    @Setter
+    @Nullable
+    private Long lastTotemPickup;
+
     @Getter
     @Setter
     private boolean vpn;

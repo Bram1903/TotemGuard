@@ -62,6 +62,8 @@ public final class ConfigKeys {
     public static final ConfigKey<Integer> DATABASE_RETENTION_ALERT_DAYS = ConfigKey.integer("database.retention.alerts-days");
     public static final ConfigKey<Integer> DATABASE_RETENTION_VPN_DAYS = ConfigKey.integer("database.retention.vpn-cache-days");
 
+    public static final ConfigKey<List<String>> DEVELOPER_OVERRIDES = ConfigKey.stringList("developer-overrides");
+
     private ConfigKeys() {
     }
 }

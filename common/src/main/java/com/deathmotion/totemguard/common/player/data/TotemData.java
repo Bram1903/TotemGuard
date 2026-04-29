@@ -21,12 +21,12 @@ package com.deathmotion.totemguard.common.player.data;
 import com.deathmotion.totemguard.common.util.datastructure.EvictingList;
 import lombok.Getter;
 
+@Getter
 public class TotemData {
 
     public static final long MAX_TRACKED_INTERVAL_MS = 2_000L;
 
-    @Getter
     private final EvictingList<Long> intervals = new EvictingList<>(50);
-
-
+    private final EvictingList<Long> reactionIntervals = new EvictingList<>(50);
+    private final EvictingList<Long> clickIntervals = new EvictingList<>(50);
 }

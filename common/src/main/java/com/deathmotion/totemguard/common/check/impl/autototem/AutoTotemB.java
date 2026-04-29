@@ -20,8 +20,7 @@ package com.deathmotion.totemguard.common.check.impl.autototem;
 
 import com.deathmotion.totemguard.api3.check.CheckType;
 import com.deathmotion.totemguard.api3.event.Event;
-import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.check.CheckImpl;
+import com.deathmotion.totemguard.common.check.HeuristicCheck;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
@@ -30,32 +29,40 @@ import com.deathmotion.totemguard.common.util.MathUtil;
 
 import java.util.List;
 
-@CheckData(description = "Suspicious replenish delay consistency", type = CheckType.AUTO_TOTEM)
-public class AutoTotemB extends CheckImpl implements EventCheck {
+@CheckData(description = "Suspicious totem delay consistency", type = CheckType.AUTO_TOTEM)
+public class AutoTotemB extends HeuristicCheck implements EventCheck {
 
-    private static final int MIN_INTERVALS = 3;
+    private final static int SAMPLE_SIZE = 5;
 
     public AutoTotemB(TGPlayer player) {
         super(player);
     }
 
     @Override
+    protected double flagThreshold() {
+        return 4.0;
+    }
+
+    @Override
+    protected double decayPerSecond() {
+        return 0;
+    }
+
+    @Override
     public <T extends Event> void handleEvent(T event) {
         if (!(event instanceof TotemReplenishedEvent)) return;
 
-        List<Long> intervals = player.getTotemData().getIntervals().getLast(MIN_INTERVALS);
-        int n = intervals.size();
+        List<Long> recent = player.getTotemData().getIntervals().getLast(SAMPLE_SIZE);
+        if (recent.size() < SAMPLE_SIZE) return;
 
-        if (n < MIN_INTERVALS) {
-            //log("skip: not enough delays (" + n + "/" + MIN_INTERVALS + ")");
-            return;
+        double stdDev = MathUtil.getStandardDeviation(recent);
+
+        if (stdDev < 5.0) {
+            punish(3.0);
+        } else if (stdDev < 15.0) {
+            punish(2.0);
+        } else if (stdDev > 60.0) {
+            reward(1.0);
         }
-
-        double standardDeviation = MathUtil.getStandardDeviation(intervals);
-        //log("stdDev=" + standardDeviation + " samples=" + intervals);
-    }
-
-    private void log(String msg) {
-        TGPlatform.getInstance().getLogger().info("[AutoTotemB] " + player.getName() + " " + msg);
     }
 }

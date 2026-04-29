@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.TotemData;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 
@@ -40,6 +41,8 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
 
         Long lastTotemUse = player.getLastTotemUse();
         if (lastTotemUse == null) return;
+
+        capturePickup(player, event);
 
         PacketInventory inventory = player.getInventory();
         Long replenishedAt = null;
@@ -60,21 +63,50 @@ public class TotemReplenishedListener implements Consumer<InventoryChangedEvent>
 
         long deltaRaw = replenishedAt - lastTotemUse;
         if (deltaRaw < 0 || deltaRaw > TotemData.MAX_TRACKED_INTERVAL_MS) {
-            player.setLastTotemUse(null);
-            player.getDebugOverlayManager().refresh();
+            clearTotemState(player);
             return;
         }
 
-        player.getTotemData().getIntervals().add(deltaRaw);
+        Long pickupAt = player.getLastTotemPickup();
+        TotemData totemData = player.getTotemData();
+        totemData.getIntervals().add(deltaRaw);
+
+        if (pickupAt != null) {
+            long reaction = pickupAt - lastTotemUse;
+            long click = replenishedAt - pickupAt;
+            if (reaction >= 0 && reaction <= TotemData.MAX_TRACKED_INTERVAL_MS) {
+                totemData.getReactionIntervals().add(reaction);
+            }
+            if (click >= 0 && click <= TotemData.MAX_TRACKED_INTERVAL_MS) {
+                totemData.getClickIntervals().add(click);
+            }
+        }
 
         TotemReplenishedEvent replenishedEvent = new TotemReplenishedEvent(
                 player,
                 lastTotemUse,
-                replenishedAt
+                replenishedAt,
+                pickupAt
         );
         TGPlatform.getInstance().getEventRepository().post(replenishedEvent);
 
+        clearTotemState(player);
+    }
+
+    private void capturePickup(TGPlayer player, InventoryChangedEvent event) {
+        if (player.getLastTotemPickup() != null) return;
+
+        CarriedItem carried = event.getUpdatedCarriedItem();
+        if (carried == null) return;
+        if (carried.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING) return;
+        if (!player.getInventory().isCarryingTotem()) return;
+
+        player.setLastTotemPickup(carried.getTimestamp());
+    }
+
+    private void clearTotemState(TGPlayer player) {
         player.setLastTotemUse(null);
+        player.setLastTotemPickup(null);
         player.getDebugOverlayManager().refresh();
     }
 }

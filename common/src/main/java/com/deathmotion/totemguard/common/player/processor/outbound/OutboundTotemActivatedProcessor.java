@@ -62,46 +62,28 @@ public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
         if (packet.getStatus() != TOTEM_OF_UNDYING_STATUS) return;
 
         pendingTotemActivation = true;
-        log("ENTITY_STATUS 35 received -> pendingTotemActivation=true");
     }
 
     private void handleSetSlot(PacketSendEvent event) {
         if (!pendingTotemActivation) return;
 
         final WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
-        if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
-            log("SET_SLOT skipped: wrong windowId=" + packet.getWindowId());
-            return;
-        }
+        if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) return;
 
         final int slot = packet.getSlot();
-        if (!player.getInventory().isHandSlot(slot)) {
-            log("SET_SLOT skipped: slot=" + slot + " is not a hand slot");
-            return;
-        }
+        if (!player.getInventory().isHandSlot(slot)) return;
 
         final ItemStack itemStack = packet.getItem();
-        if (!itemStack.isEmpty()) {
-            log("SET_SLOT skipped: item not empty (slot=" + slot + " type=" + itemStack.getType().getName() + ")");
-            return;
-        }
-        if (!player.getInventory().isTotemInSlot(slot)) {
-            log("SET_SLOT skipped: tracker says slot=" + slot + " did not hold a totem");
-            return;
-        }
+        if (!itemStack.isEmpty()) return;
+        if (!player.getInventory().isTotemInSlot(slot)) return;
 
         pendingTotemActivation = false;
-        log("SET_SLOT consumed: slot=" + slot + " emptied, scheduling latency-compensated stamp");
 
         latencyHandler.compensate(event, timestamp -> {
             player.setLastTotemUse(timestamp);
+            player.setLastTotemPickup(null);
             player.getDebugOverlayManager().refresh();
             TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, timestamp));
-            log("Latency callback fired -> lastTotemUse=" + timestamp + ", posted TotemActivatedEvent");
         });
-    }
-
-    private void log(String msg) {
-        TGPlatform.getInstance().getLogger().info("[TotemPop] " + player.getName() + " " + msg);
     }
 }

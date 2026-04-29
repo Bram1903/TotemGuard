@@ -80,6 +80,14 @@ public interface Check extends Reloadable {
     boolean requiresTickEnd();
 
     /**
+     * Indicates whether this check is heuristic-based (buffer + decay + sanity guards)
+     * rather than a deterministic packet/state assertion.
+     *
+     * @return {@code true} if the check is heuristic, {@code false} otherwise
+     */
+    boolean isHeuristic();
+
+    /**
      * Gets the current number of violations recorded by this check.
      *
      * @return the number of violations

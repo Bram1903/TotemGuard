@@ -223,6 +223,48 @@ public class MathUtil {
         return mode;
     }
 
+    public double getRange(Collection<? extends Number> data) {
+        if (data == null || data.isEmpty()) return 0.0;
+        double min = Double.POSITIVE_INFINITY;
+        double max = Double.NEGATIVE_INFINITY;
+        for (Number n : data) {
+            double v = n.doubleValue();
+            if (v < min) min = v;
+            if (v > max) max = v;
+        }
+        return max - min;
+    }
+
+    public double getCentralFraction(Collection<? extends Number> data, double center, double window) {
+        if (data == null || data.isEmpty()) return 1.0;
+        int near = 0;
+        for (Number n : data) {
+            if (Math.abs(n.doubleValue() - center) <= window) near++;
+        }
+        return (double) near / data.size();
+    }
+
+    public int getUniqueBinCount(Collection<? extends Number> data, double binWidth) {
+        if (data == null || data.isEmpty()) return 0;
+        if (binWidth <= 0.0) throw new IllegalArgumentException("binWidth must be positive");
+        Set<Long> bins = new HashSet<>();
+        for (Number n : data) {
+            bins.add((long) Math.floor(n.doubleValue() / binWidth));
+        }
+        return bins.size();
+    }
+
+    public double getInterquartileRange(Collection<? extends Number> data) {
+        if (data == null || data.size() < 4) return 0.0;
+        List<Double> sorted = new ArrayList<>(data.size());
+        for (Number n : data) sorted.add(n.doubleValue());
+        sorted.sort(Double::compareTo);
+        int n = sorted.size();
+        double q1 = sorted.get((int) Math.floor((n - 1) * 0.25));
+        double q3 = sorted.get((int) Math.floor((n - 1) * 0.75));
+        return q3 - q1;
+    }
+
     public double trim(int degree, double d) {
         StringBuilder format = new StringBuilder("#.#");
         for (int i = 1; i < degree; ++i) {

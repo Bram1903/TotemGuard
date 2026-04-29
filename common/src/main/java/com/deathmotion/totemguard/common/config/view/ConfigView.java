@@ -23,6 +23,10 @@ import com.deathmotion.totemguard.api3.config.key.ConfigKeys;
 import com.deathmotion.totemguard.common.config.schema.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * Internal typed view of {@code config.yml}. Owns the typed snapshots for each domain
  * subsection so consumers (database, redis, anti-vpn, commands) pull config values
@@ -38,6 +42,7 @@ public final class ConfigView {
     private final AntiVpnOptions antiVpn;
     private final UpdateCheckerOptions updateChecker;
     private final EntitySpoofingOptions entitySpoofing;
+    private final Set<String> developerOverrides;
 
     public ConfigView(Config config) {
         this.version = config.version();
@@ -84,6 +89,8 @@ public final class ConfigView {
                 config.getBoolean(ConfigKeys.ENTITY_SPOOFING_HEALTH),
                 config.getBoolean(ConfigKeys.ENTITY_SPOOFING_ABSORPTION)
         );
+        List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
+        this.developerOverrides = overrides.isEmpty() ? Set.of() : Set.copyOf(new HashSet<>(overrides));
     }
 
     public int version() {
@@ -116,5 +123,9 @@ public final class ConfigView {
 
     public @NotNull EntitySpoofingOptions entitySpoofing() {
         return entitySpoofing;
+    }
+
+    public boolean hasDeveloperOverride(@NotNull String flag) {
+        return developerOverrides.contains(flag);
     }
 }
