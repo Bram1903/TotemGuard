@@ -105,6 +105,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     private void handleOpenWindow(PacketSendEvent event) {
         WrapperPlayServerOpenWindow packet = new WrapperPlayServerOpenWindow(event);
         final int containerId = packet.getContainerId();
+        if (player.isModDetectionWindow(containerId)) return;
         latencyHandler.compensate(event, () -> {
             inventory.setOpenWindow(containerId, -1);
             data.setOpenInventory(true);
@@ -124,6 +125,8 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     }
 
     private void handleCloseWindow(PacketSendEvent event) {
+        WrapperPlayServerCloseWindow packet = new WrapperPlayServerCloseWindow(event);
+        if (player.isModDetectionWindow(packet.getWindowId())) return;
         latencyHandler.compensate(event, () -> {
             inventory.resetOpenWindow();
             data.setOpenInventory(false);
@@ -152,6 +155,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     private void handleSetSlot(PacketSendEvent event) {
         WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
         final int windowId = packet.getWindowId();
+        if (player.isModDetectionWindow(windowId)) return;
         final int slot = packet.getSlot();
         final int stateId = packet.getStateId();
         final ItemStack item = copyItemStack(packet.getItem());

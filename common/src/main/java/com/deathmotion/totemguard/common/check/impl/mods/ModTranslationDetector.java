@@ -154,7 +154,7 @@ final class ModTranslationDetector {
     }
 
     private void sendLookup(TranslationLookup lookup) {
-        int windowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
+        int windowId = player.getModDetectionWindowId();
         int stateId = ThreadLocalRandom.current().nextInt();
 
         player.getUser().sendPacket(new WrapperPlayServerOpenWindow(

@@ -19,11 +19,13 @@
 package com.deathmotion.totemguard.common.gui;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCreativeInventoryAction;
@@ -46,6 +48,10 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+            if (isModDetectionWindow(event.getUser(), packet.getWindowId())) {
+                event.setCancelled(true);
+                return;
+            }
             if (!guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
                 guiManager.trackClientWindowClick(event.getUser(), packet);
                 return;
@@ -65,6 +71,10 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
+            if (isModDetectionWindow(event.getUser(), packet.getWindowId())) {
+                event.setCancelled(true);
+                return;
+            }
             if (!guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
                 return;
             }
@@ -90,6 +100,7 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Server.WINDOW_ITEMS) {
             WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
+            if (isModDetectionWindow(event.getUser(), packet.getWindowId())) return;
             guiManager.trackWindowItems(
                     event.getUser(),
                     packet.getWindowId(),
@@ -107,6 +118,7 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Server.SET_SLOT) {
             WrapperPlayServerSetSlot packet = new WrapperPlayServerSetSlot(event);
+            if (isModDetectionWindow(event.getUser(), packet.getWindowId())) return;
             guiManager.trackWindowSlot(event.getUser(), packet.getWindowId(), packet.getSlot(), packet.getItem());
             return;
         }
@@ -119,6 +131,7 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Server.OPEN_WINDOW) {
             WrapperPlayServerOpenWindow packet = new WrapperPlayServerOpenWindow(event);
+            if (isModDetectionWindow(event.getUser(), packet.getContainerId())) return;
             if (guiManager.isGuiWindow(event.getUser(), packet.getContainerId())) {
                 return;
             }
@@ -129,6 +142,7 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Server.CLOSE_WINDOW) {
             WrapperPlayServerCloseWindow packet = new WrapperPlayServerCloseWindow(event);
+            if (isModDetectionWindow(event.getUser(), packet.getWindowId())) return;
             guiManager.handleInventoryClosePacket(event.getUser(), packet.getWindowId());
             return;
         }
@@ -142,6 +156,11 @@ public final class GuiPacketListener extends PacketListenerAbstract {
     @Override
     public void onUserDisconnect(UserDisconnectEvent event) {
         TGPlatform.getInstance().getGuiManager().handleUserDisconnect(event.getUser().getUUID());
+    }
+
+    private boolean isModDetectionWindow(User user, int windowId) {
+        TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(user);
+        return player != null && player.isModDetectionWindow(windowId);
     }
 
     private boolean shouldRouteGuiAction(WrapperPlayClientClickWindow packet, int guiSize) {

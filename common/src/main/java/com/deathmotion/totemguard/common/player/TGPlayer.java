@@ -65,6 +65,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -89,29 +90,38 @@ public class TGPlayer implements TGUser {
     private final PacketLatencyHandler latencyHandler;
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
+
     private final AtomicBoolean hasDisconnected = new AtomicBoolean();
+    private final int modDetectionWindowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
+
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
     private @Nullable PlatformPlayer platformPlayer;
+
     @Setter()
     private String clientBrand;
+
     /**
      * 0 while unresolved or when the database is disabled.
      */
     @Setter
     private volatile int databasePlayerId;
+
     /**
      * null while unresolved or when the database is disabled.
      */
     @Setter
     @Nullable
     private volatile Long databaseProfileId;
+
     @Setter
     @Nullable
     private Long lastTotemUse;
+
     @Getter
     @Setter
     private boolean vpn;
+
     /**
      * True while a staff-initiated {@code /tg check} is running against this player.
      * Server-originated inventory mutations performed by the command (clearing the
@@ -228,6 +238,10 @@ public class TGPlayer implements TGUser {
             platform.getLogger().warning(
                     "Failed to resolve database profile for " + user.getName() + ": " + ex.getMessage());
         }
+    }
+
+    public boolean isModDetectionWindow(int windowId) {
+        return windowId == modDetectionWindowId;
     }
 
     public void triggerInventoryEvent() {

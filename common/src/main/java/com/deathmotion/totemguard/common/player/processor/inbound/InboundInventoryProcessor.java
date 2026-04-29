@@ -70,6 +70,8 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     public void handleInboundPost(PacketReceiveEvent event) {
         PacketTypeCommon type = event.getPacketType();
         if (type == PacketType.Play.Client.CLOSE_WINDOW) {
+            WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
+            if (player.isModDetectionWindow(packet.getWindowId())) return;
             data.setInventoryMitigatedThisTick(false);
             return;
         }
@@ -113,6 +115,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
 
     private void handleClickWindow(PacketReceiveEvent event) {
         WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+        if (player.isModDetectionWindow(packet.getWindowId())) return;
         data.setOpenInventory(true);
 
         final int windowId = packet.getWindowId();
@@ -159,6 +162,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
 
     private void handleCloseWindow(PacketReceiveEvent event) {
         WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
+        if (player.isModDetectionWindow(packet.getWindowId())) return;
         data.setOpenInventory(false);
         if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
             recipeTracker.armAfterClientClose();
