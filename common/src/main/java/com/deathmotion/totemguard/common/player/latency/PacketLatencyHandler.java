@@ -64,12 +64,16 @@ public class PacketLatencyHandler {
         return pendingPacketLatencyTask;
     }
 
-    private void sendTransactionPacket(List<LongConsumer> callbacks) {
+    private void sendTransactionPacket(LongConsumer firstCallback, List<LongConsumer> additionalCallbacks) {
         if (player.getUser().getEncoderState() != ConnectionState.PLAY) return;
+        if (firstCallback == null) return;
 
         int transactionId = pingData.reserveNextTransactionId(maxTransactionId());
-        for (LongConsumer callback : callbacks) {
-            pingData.addTransactionCallback(transactionId, callback);
+        pingData.addTransactionCallback(transactionId, firstCallback);
+        if (additionalCallbacks != null) {
+            for (LongConsumer callback : additionalCallbacks) {
+                pingData.addTransactionCallback(transactionId, callback);
+            }
         }
 
         pingData.markTransactionSynthetic(transactionId);
@@ -94,15 +98,23 @@ public class PacketLatencyHandler {
 
     private final class PendingPacketLatencyTask implements Runnable {
 
-        private final List<LongConsumer> callbacks = new ArrayList<>();
+        private LongConsumer firstCallback;
+        private List<LongConsumer> additionalCallbacks;
 
         private void addCallback(LongConsumer callback) {
-            callbacks.add(callback);
+            if (firstCallback == null) {
+                firstCallback = callback;
+                return;
+            }
+            if (additionalCallbacks == null) {
+                additionalCallbacks = new ArrayList<>(2);
+            }
+            additionalCallbacks.add(callback);
         }
 
         @Override
         public void run() {
-            sendTransactionPacket(callbacks);
+            sendTransactionPacket(firstCallback, additionalCallbacks);
         }
     }
 }

@@ -44,7 +44,7 @@ public class EventRepositoryImpl implements EventRepository {
     private final Map<Class<?>, Class<?>[]> dispatchTypes = new ConcurrentHashMap<>();
     private final Map<DispatchPlanKey, RegisteredListener[]> dispatchPlans = new ConcurrentHashMap<>();
     private final AtomicLong nextSequence = new AtomicLong();
-    private final ThreadLocal<Integer> internalDispatchDepth = ThreadLocal.withInitial(() -> 0);
+    private final ThreadLocal<Integer> internalDispatchDepth = new ThreadLocal<>();
 
     @Override
     public <T extends Event> @NotNull EventSubscription subscribe(
@@ -104,7 +104,8 @@ public class EventRepositoryImpl implements EventRepository {
         );
 
         if (internalOnly) {
-            internalDispatchDepth.set(internalDispatchDepth.get() + 1);
+            Integer current = internalDispatchDepth.get();
+            internalDispatchDepth.set((current == null ? 0 : current) + 1);
         }
 
         try {
@@ -128,11 +129,14 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     private boolean shouldStayInternal(Event event) {
-        return event instanceof InternalEvent || internalDispatchDepth.get() > 0;
+        if (event instanceof InternalEvent) return true;
+        Integer depth = internalDispatchDepth.get();
+        return depth != null && depth > 0;
     }
 
     private void exitInternalDispatch() {
-        int remaining = internalDispatchDepth.get() - 1;
+        Integer current = internalDispatchDepth.get();
+        int remaining = (current == null ? 0 : current) - 1;
         if (remaining <= 0) internalDispatchDepth.remove();
         else internalDispatchDepth.set(remaining);
     }

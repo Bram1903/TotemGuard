@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.config.schema.UpdateCheckerOptions;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
+import com.deathmotion.totemguard.common.util.ReflectiveHttpClientCloser;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -79,6 +80,7 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
     private final HttpClient httpClient;
     private final RedisVersionCache redisCache;
     private final AtomicBoolean checkInFlight = new AtomicBoolean(false);
+    private final AtomicBoolean stopped = new AtomicBoolean(false);
     private final AtomicReference<CompletableFuture<TGVersion>> ongoingForcedFetch = new AtomicReference<>();
 
     private volatile UpdateCheckerOptions options;
@@ -194,11 +196,18 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
         return platform.getConfigRepository().configView().updateChecker();
     }
 
+    public void shutdown() {
+        stopped.set(true);
+        ReflectiveHttpClientCloser.tryClose(httpClient);
+    }
+
     private void scheduleCheck(long delay, TimeUnit unit) {
+        if (stopped.get()) return;
         platform.getScheduler().runAsyncTaskDelayed(this::performCheck, delay, unit);
     }
 
     private void performCheck() {
+        if (stopped.get()) return;
         if (!options.enabled()) return;
         if (!checkInFlight.compareAndSet(false, true)) return;
 
@@ -212,7 +221,7 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
             platform.getLogger().log(Level.FINE, "Update check failed: " + ex.getMessage(), ex);
         } finally {
             checkInFlight.set(false);
-            if (options.enabled()) {
+            if (!stopped.get() && options.enabled()) {
                 scheduleCheck(CHECK_INTERVAL.toSeconds(), TimeUnit.SECONDS);
             }
         }

@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.player.latency;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -38,14 +39,22 @@ public final class TransactionTimeoutWatchdog {
     private static final long PERIOD_SECONDS = 1L;
 
     private final PlayerRepositoryImpl playerRepository;
+    private ScheduledTask task;
 
     public TransactionTimeoutWatchdog(PlayerRepositoryImpl playerRepository) {
         this.playerRepository = playerRepository;
     }
 
     public void start() {
-        TGPlatform.getInstance().getScheduler().runAsyncTaskAtFixedRate(
+        task = TGPlatform.getInstance().getScheduler().runAsyncTaskAtFixedRate(
                 this::tick, PERIOD_SECONDS, PERIOD_SECONDS, TimeUnit.SECONDS);
+    }
+
+    public void stop() {
+        if (task != null) {
+            task.cancel();
+            task = null;
+        }
     }
 
     private void tick() {

@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.config.view.DiscordView;
 import com.deathmotion.totemguard.common.discord.webhook.*;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.ReflectiveHttpClientCloser;
 import com.deathmotion.totemguard.common.util.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -94,6 +95,7 @@ public final class DiscordWebhookService implements Reloadable {
     public void shutdown() {
         alertChannel.stop();
         punishmentChannel.stop();
+        ReflectiveHttpClientCloser.tryClose(httpClient);
     }
 
     public void sendAlert(@NotNull CheckImpl check, int violations, @Nullable String debug) {

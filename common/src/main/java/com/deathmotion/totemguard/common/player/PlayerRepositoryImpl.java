@@ -48,11 +48,17 @@ public final class PlayerRepositoryImpl implements UserRepository {
     private final ConcurrentMap<User, TGPlayer> players = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, TGPlayer> playersByUuid = new ConcurrentHashMap<>();
     private final Collection<UUID> exemptUsers = ConcurrentHashMap.newKeySet();
+    private final TransactionTimeoutWatchdog transactionTimeoutWatchdog;
 
     public PlayerRepositoryImpl() {
         platform = TGPlatform.getInstance();
         cacheRepository = platform.getCacheRepository();
-        new TransactionTimeoutWatchdog(this).start();
+        transactionTimeoutWatchdog = new TransactionTimeoutWatchdog(this);
+        transactionTimeoutWatchdog.start();
+    }
+
+    public void shutdown() {
+        transactionTimeoutWatchdog.stop();
     }
 
     public void onLoginPacket(final @NotNull User user) {

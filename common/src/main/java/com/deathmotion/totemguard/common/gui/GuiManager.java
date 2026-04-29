@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.gui;
 
+import com.deathmotion.totemguard.api3.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
@@ -49,10 +50,12 @@ public final class GuiManager {
     private final ConcurrentMap<UUID, GuiViewerInventory> viewerInventories = new ConcurrentHashMap<>();
     private final ConcurrentMap<GuiSubscriptionKey, Set<UUID>> subscriptions = new ConcurrentHashMap<>();
     private final AtomicInteger nextWindowId = new AtomicInteger(1);
+    private final EventSubscription inventoryChangedSubscription;
 
     public GuiManager() {
         this.platform = TGPlatform.getInstance();
-        this.platform.getEventRepository().subscribeInternal(InventoryChangedEvent.class, this::handleInventoryChanged);
+        this.inventoryChangedSubscription = this.platform.getEventRepository()
+                .subscribeInternal(InventoryChangedEvent.class, this::handleInventoryChanged);
     }
 
     private static Component deniedMessage(String permission) {
@@ -192,6 +195,13 @@ public final class GuiManager {
         for (UUID viewerId : List.copyOf(sessions.keySet())) {
             close(viewerId, false);
         }
+        try {
+            inventoryChangedSubscription.close();
+        } catch (Exception ex) {
+            platform.getLogger().log(Level.WARNING, "Failed to close GUI inventory subscription", ex);
+        }
+        viewerInventories.clear();
+        subscriptions.clear();
     }
 
     public int activeSessionCount() {

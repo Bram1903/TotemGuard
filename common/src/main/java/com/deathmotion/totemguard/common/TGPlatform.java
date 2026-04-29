@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api3.TotemGuard;
+import com.deathmotion.totemguard.api3.event.EventSubscription;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
@@ -51,11 +52,14 @@ import com.deathmotion.totemguard.common.stats.StatsRepositoryImpl;
 import com.deathmotion.totemguard.common.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.util.*;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.google.common.base.Stopwatch;
 import lombok.Getter;
 import lombok.Setter;
 import org.incendo.cloud.CommandManager;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Getter
@@ -90,6 +94,9 @@ public abstract class TGPlatform {
     private StatsRepositoryImpl statsRepository;
     private GuiManager guiManager;
     private IntegrationRegistrar integrationRegistrar;
+
+    private final List<PacketListenerAbstract> packetListeners = new ArrayList<>();
+    private final List<EventSubscription> internalSubscriptions = new ArrayList<>();
 
     private TGPlatformAPI api;
 
@@ -159,14 +166,12 @@ public abstract class TGPlatform {
 
         integrationRegistrar.enableAll();
 
-        PacketEvents.getAPI().getEventManager().registerListener(new PacketPlayerJoinQuit());
-        PacketEvents.getAPI().getEventManager().registerListener(new PacketCheckManagerListener(playerRepository));
-        PacketEvents.getAPI().getEventManager().registerListener(new GuiPacketListener());
+        registerPacketListener(new PacketPlayerJoinQuit());
+        registerPacketListener(new PacketCheckManagerListener(playerRepository));
+        registerPacketListener(new GuiPacketListener());
 
-        //noinspection resource
-        eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener());
-        //noinspection resource
-        eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener());
+        internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
+        internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
 
         // Load the API
         api = new TGPlatformAPI();
@@ -177,11 +182,36 @@ public abstract class TGPlatform {
     }
 
     public void commonOnDisable() {
+        for (PacketListenerAbstract listener : packetListeners) {
+            try {
+                PacketEvents.getAPI().getEventManager().unregisterListener(listener);
+            } catch (Exception ex) {
+                logger.warning("Failed to unregister packet listener " + listener.getClass().getName() + ": " + ex.getMessage());
+            }
+        }
+        packetListeners.clear();
+
+        for (EventSubscription subscription : internalSubscriptions) {
+            try {
+                subscription.close();
+            } catch (Exception ex) {
+                logger.warning("Failed to close internal event subscription: " + ex.getMessage());
+            }
+        }
+        internalSubscriptions.clear();
+
         if (integrationRegistrar != null) integrationRegistrar.disableAll();
+        if (playerRepository != null) playerRepository.shutdown();
+        if (updateCheckerRepository != null) updateCheckerRepository.shutdown();
         if (redisRepository != null) redisRepository.stop();
         if (databaseRepository != null) databaseRepository.stop();
         if (guiManager != null) guiManager.shutdown();
         if (discordWebhookService != null) discordWebhookService.shutdown();
+    }
+
+    private void registerPacketListener(PacketListenerAbstract listener) {
+        PacketEvents.getAPI().getEventManager().registerListener(listener);
+        packetListeners.add(listener);
     }
 
     public abstract Scheduler getScheduler();
