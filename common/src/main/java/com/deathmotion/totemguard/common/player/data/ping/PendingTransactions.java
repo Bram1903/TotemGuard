@@ -31,6 +31,7 @@ final class PendingTransactions {
     private volatile int pendingSyntheticCount;
     private volatile int acceptedTransactions;
     private volatile int acceptedSyntheticTransactions;
+    private volatile long oldestPendingSentAt;
 
     int reserveId(int maxPositiveId) {
         if (maxPositiveId < 1) {
@@ -61,6 +62,9 @@ final class PendingTransactions {
         pendingCount++;
         if (transaction.synthetic()) {
             pendingSyntheticCount++;
+        }
+        if (oldestPendingSentAt == 0L) {
+            oldestPendingSentAt = timestamp;
         }
     }
 
@@ -139,6 +143,10 @@ final class PendingTransactions {
         return acceptedSyntheticTransactions;
     }
 
+    long oldestPendingSentAt() {
+        return oldestPendingSentAt;
+    }
+
     private PendingTransaction staged(int id) {
         PendingTransaction transaction = staged.get(id);
         if (transaction != null) {
@@ -182,6 +190,14 @@ final class PendingTransactions {
                 pendingSyntheticCount--;
                 this.acceptedSyntheticTransactions++;
             }
+        }
+
+        PendingTransaction head = pending.peekFirst();
+        if (head == null) {
+            oldestPendingSentAt = 0L;
+        } else {
+            Long sent = head.sentAt();
+            oldestPendingSentAt = sent == null ? 0L : sent;
         }
     }
 

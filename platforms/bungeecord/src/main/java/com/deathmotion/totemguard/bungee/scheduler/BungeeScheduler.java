@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.bungee.scheduler;
 
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import net.md_5.bungee.api.plugin.Plugin;
 
@@ -45,5 +46,13 @@ public final class BungeeScheduler implements Scheduler {
     @Override
     public void runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit) {
         plugin.getProxy().getScheduler().schedule(plugin, task, delay, timeUnit);
+    }
+
+    @Override
+    public ScheduledTask runAsyncTaskAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit timeUnit) {
+        net.md_5.bungee.api.scheduler.ScheduledTask scheduled = plugin.getProxy()
+                .getScheduler()
+                .schedule(plugin, task, initialDelay, period, timeUnit);
+        return scheduled::cancel;
     }
 }

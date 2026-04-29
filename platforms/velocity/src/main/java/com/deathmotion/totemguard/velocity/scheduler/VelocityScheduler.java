@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.velocity.scheduler;
 
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.deathmotion.totemguard.velocity.TGVelocity;
 import com.google.inject.Inject;
@@ -56,5 +57,15 @@ public final class VelocityScheduler implements Scheduler {
                 .buildTask(plugin, task)
                 .delay(delay, timeUnit)
                 .schedule();
+    }
+
+    @Override
+    public ScheduledTask runAsyncTaskAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit timeUnit) {
+        com.velocitypowered.api.scheduler.ScheduledTask scheduled = this.proxy.getScheduler()
+                .buildTask(plugin, task)
+                .delay(initialDelay, timeUnit)
+                .repeat(period, timeUnit)
+                .schedule();
+        return scheduled::cancel;
     }
 }

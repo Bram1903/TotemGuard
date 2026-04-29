@@ -18,14 +18,12 @@
 
 package com.deathmotion.totemguard.fabric.scheduler;
 
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.deathmotion.totemguard.fabric.FabricServerHolder;
 import net.minecraft.server.MinecraftServer;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class FabricScheduler implements Scheduler {
@@ -65,5 +63,11 @@ public final class FabricScheduler implements Scheduler {
     @Override
     public void runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit) {
         asyncExecutor.schedule(task, delay, timeUnit);
+    }
+
+    @Override
+    public ScheduledTask runAsyncTaskAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit timeUnit) {
+        Future<?> handle = asyncExecutor.scheduleAtFixedRate(task, initialDelay, period, timeUnit);
+        return () -> handle.cancel(false);
     }
 }

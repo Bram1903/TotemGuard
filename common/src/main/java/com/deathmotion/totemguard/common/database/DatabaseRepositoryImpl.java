@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.deathmotion.totemguard.common.database.dao.*;
 import com.deathmotion.totemguard.common.database.model.*;
 import com.deathmotion.totemguard.common.database.schema.SchemaInitializer;
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,8 +33,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -44,7 +43,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     private final DatabaseConnectionManager connection = new DatabaseConnectionManager();
 
     private volatile @Nullable DatabaseOptions options;
-    private volatile @Nullable ScheduledExecutorService reconnectExecutor;
+    private volatile @Nullable ScheduledTask reconnectTask;
     private volatile @Nullable CatalogDao catalogDao;
     private volatile @Nullable PlayerDao playerDao;
     private volatile @Nullable ProfileDao profileDao;
@@ -142,21 +141,15 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     private void scheduleReconnect() {
-        if (reconnectExecutor != null) return;
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "TotemGuard-DB-Reconnect");
-            t.setDaemon(true);
-            return t;
-        });
-        this.reconnectExecutor = executor;
-        executor.scheduleAtFixedRate(this::reconnectTick,
-                RECONNECT_INTERVAL_SECONDS, RECONNECT_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        if (reconnectTask != null) return;
+        this.reconnectTask = TGPlatform.getInstance().getScheduler().runAsyncTaskAtFixedRate(
+                this::reconnectTick, RECONNECT_INTERVAL_SECONDS, RECONNECT_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     private void stopReconnectScheduler() {
-        ScheduledExecutorService current = this.reconnectExecutor;
-        this.reconnectExecutor = null;
-        if (current != null) current.shutdownNow();
+        ScheduledTask current = this.reconnectTask;
+        this.reconnectTask = null;
+        if (current != null) current.cancel();
     }
 
     private void backfillOnlineProfiles() {

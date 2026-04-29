@@ -106,6 +106,10 @@ public class PingData {
         return transactions.acceptedSyntheticCount();
     }
 
+    public long getOldestPendingTransactionSentAt() {
+        return transactions.oldestPendingSentAt();
+    }
+
     public void teleportSent(int teleportId) {
         transactions.trackTeleport(teleportId);
     }

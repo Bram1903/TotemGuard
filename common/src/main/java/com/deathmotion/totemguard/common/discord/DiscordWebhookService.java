@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.config.view.DiscordView;
 import com.deathmotion.totemguard.common.discord.webhook.*;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,9 +42,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,7 +66,6 @@ public final class DiscordWebhookService implements Reloadable {
     private final PlaceholderRepositoryImpl placeholderRepository;
 
     private final HttpClient httpClient;
-    private final ScheduledExecutorService scheduler;
 
     private final WebhookChannel alertChannel;
     private final WebhookChannel punishmentChannel;
@@ -77,12 +75,6 @@ public final class DiscordWebhookService implements Reloadable {
         this.configRepository = platform.getConfigRepository();
         this.placeholderRepository = platform.getPlaceholderRepository();
         this.httpClient = HttpClient.newBuilder().connectTimeout(HTTP_TIMEOUT).build();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(
-                r -> {
-                    Thread t = new Thread(r, "TotemGuard-DiscordWebhook");
-                    t.setDaemon(true);
-                    return t;
-                });
         this.alertChannel = new WebhookChannel(DiscordKeys.ALERTS_PREFIX);
         this.punishmentChannel = new WebhookChannel(DiscordKeys.PUNISHMENTS_PREFIX);
 
@@ -100,7 +92,8 @@ public final class DiscordWebhookService implements Reloadable {
     }
 
     public void shutdown() {
-        scheduler.shutdownNow();
+        alertChannel.stop();
+        punishmentChannel.stop();
     }
 
     public void sendAlert(@NotNull CheckImpl check, int violations, @Nullable String debug) {
@@ -275,6 +268,7 @@ public final class DiscordWebhookService implements Reloadable {
         private final AtomicBoolean started = new AtomicBoolean(false);
 
         private volatile ChannelConfig config = ChannelConfig.disabled();
+        private volatile ScheduledTask task;
 
         WebhookChannel(String prefix) {
             this.prefix = prefix;
@@ -295,8 +289,15 @@ public final class DiscordWebhookService implements Reloadable {
 
         void start() {
             if (started.compareAndSet(false, true)) {
-                scheduler.scheduleAtFixedRate(this::processQueue, 1L, 1L, TimeUnit.SECONDS);
+                this.task = platform.getScheduler().runAsyncTaskAtFixedRate(
+                        this::processQueue, 1L, 1L, TimeUnit.SECONDS);
             }
+        }
+
+        void stop() {
+            ScheduledTask current = this.task;
+            this.task = null;
+            if (current != null) current.cancel();
         }
 
         private void processQueue() {

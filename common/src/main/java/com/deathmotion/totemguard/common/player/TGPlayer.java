@@ -52,8 +52,10 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import lombok.Getter;
 import lombok.Setter;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +65,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Represents a player in TotemGuard. This object is bound to a single player and gets removed once the player leaves the server / proxy.
@@ -86,6 +89,7 @@ public class TGPlayer implements TGUser {
     private final PacketLatencyHandler latencyHandler;
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
+    private final AtomicBoolean hasDisconnected = new AtomicBoolean();
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
     private @Nullable PlatformPlayer platformPlayer;
@@ -189,6 +193,20 @@ public class TGPlayer implements TGUser {
 
     public void onLogout() {
         platform.getScheduler().runAsyncTask(this::cacheData);
+    }
+
+    public void timedOut() {
+        disconnect("[TotemGuard] Timed out");
+    }
+
+    public void disconnect(String reason) {
+        if (!hasDisconnected.compareAndSet(false, true)) return;
+        platform.getLogger().info("Disconnecting " + user.getName() + ": " + reason);
+        try {
+            user.sendPacket(new WrapperPlayServerDisconnect(Component.text(reason)));
+        } catch (Exception ignored) {
+        }
+        user.closeConnection();
     }
 
     void resolveDatabaseProfile() {

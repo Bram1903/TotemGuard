@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.player.latency.TransactionTimeoutWatchdog;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.jetbrains.annotations.NotNull;
@@ -51,6 +52,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
     public PlayerRepositoryImpl() {
         platform = TGPlatform.getInstance();
         cacheRepository = platform.getCacheRepository();
+        new TransactionTimeoutWatchdog(this).start();
     }
 
     public void onLoginPacket(final @NotNull User user) {

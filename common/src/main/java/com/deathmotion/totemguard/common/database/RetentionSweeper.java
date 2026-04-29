@@ -21,9 +21,8 @@ package com.deathmotion.totemguard.common.database;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.deathmotion.totemguard.common.database.dao.AlertDao;
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -40,7 +39,7 @@ public final class RetentionSweeper {
     private final int alertRetentionDays;
     private final int vpnRetentionDays;
 
-    private ScheduledExecutorService executor;
+    private ScheduledTask task;
 
     public RetentionSweeper(AlertDao alertDao, DatabaseOptions options) {
         this.alertDao = alertDao;
@@ -50,24 +49,16 @@ public final class RetentionSweeper {
 
     public void start() {
         if (alertRetentionDays <= 0 && vpnRetentionDays <= 0) return;
-        if (executor != null) return;
+        if (task != null) return;
 
-        executor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "TotemGuard-DB-Retention");
-            t.setDaemon(true);
-            return t;
-        });
-
-        executor.scheduleAtFixedRate(this::sweep,
-                INITIAL_DELAY_SECONDS, PERIOD_SECONDS, TimeUnit.SECONDS);
+        task = TGPlatform.getInstance().getScheduler().runAsyncTaskAtFixedRate(
+                this::sweep, INITIAL_DELAY_SECONDS, PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
     public void stop() {
-        ScheduledExecutorService current = this.executor;
-        this.executor = null;
-        if (current != null) {
-            current.shutdownNow();
-        }
+        ScheduledTask current = this.task;
+        this.task = null;
+        if (current != null) current.cancel();
     }
 
     private void sweep() {

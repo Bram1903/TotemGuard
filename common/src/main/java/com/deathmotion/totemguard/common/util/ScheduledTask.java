@@ -18,14 +18,6 @@
 
 package com.deathmotion.totemguard.common.util;
 
-import java.util.concurrent.TimeUnit;
-
-public interface Scheduler {
-    void runMainThreadTask(Runnable task);
-
-    void runAsyncTask(Runnable task);
-
-    void runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit);
-
-    ScheduledTask runAsyncTaskAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit timeUnit);
+public interface ScheduledTask {
+    void cancel();
 }

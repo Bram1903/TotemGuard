@@ -18,8 +18,10 @@
 
 package com.deathmotion.totemguard.bukkit.scheduler;
 
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
+import io.github.retrooper.packetevents.util.folia.TaskWrapper;
 import org.bukkit.plugin.Plugin;
 
 import java.util.concurrent.TimeUnit;
@@ -51,5 +53,12 @@ public class BukkitScheduler implements Scheduler {
         FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
             task.run();
         }, delay, timeUnit);
+    }
+
+    @Override
+    public ScheduledTask runAsyncTaskAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit timeUnit) {
+        TaskWrapper wrapper = FoliaScheduler.getAsyncScheduler().runAtFixedRate(
+                plugin, (o) -> task.run(), initialDelay, period, timeUnit);
+        return wrapper::cancel;
     }
 }
