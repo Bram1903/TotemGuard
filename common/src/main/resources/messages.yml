@@ -13,7 +13,7 @@ alerts:
   enabled: "%prefix% &aAlerts enabled"
   disabled: "%prefix% &cAlerts disabled"
 
-  message: "%prefix% &#FEE067%tg_player%&7 failed &#fbaf00%tg_check_name% &7VL[&#fbaf00%tg_check_violations%/∞&7]"
+  message: "%prefix% &#FEE067%tg_player%&7 failed &#fbaf00%tg_check_name% &7VL[&#fbaf00%tg_check_violations%/%tg_check_max_violations%&7]"
   hover: |-
     &#e7dec4Client Version: &#FEE067%tg_player_version% &#8f7440| &#e7dec4Client Brand: &#FEE067%tg_player_brand%
     
