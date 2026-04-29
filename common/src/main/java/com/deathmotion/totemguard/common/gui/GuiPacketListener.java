@@ -49,7 +49,6 @@ public final class GuiPacketListener extends PacketListenerAbstract {
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
             if (isModDetectionWindow(event.getUser(), packet.getWindowId())) {
-                event.setCancelled(true);
                 return;
             }
             if (!guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
@@ -71,10 +70,6 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
-            if (isModDetectionWindow(event.getUser(), packet.getWindowId())) {
-                event.setCancelled(true);
-                return;
-            }
             if (!guiManager.isGuiWindow(event.getUser(), packet.getWindowId())) {
                 return;
             }

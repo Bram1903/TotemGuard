@@ -48,12 +48,17 @@ final class ModTranslationDetector {
 
     private volatile List<TranslationLookup> lookups = List.of();
     private volatile Map<String, TranslationLookup> lookupsById = Map.of();
+    private volatile boolean active;
     private boolean started;
     private int nextIndex;
     private long runId;
 
     ModTranslationDetector(TGPlayer player) {
         this.player = player;
+    }
+
+    boolean isActive() {
+        return active;
     }
 
     private static String newId() {
@@ -82,6 +87,7 @@ final class ModTranslationDetector {
         synchronized (stateLock) {
             runId++;
             started = false;
+            active = false;
             nextIndex = 0;
             lookups = List.copyOf(rebuilt);
             lookupsById = Map.copyOf(byId);
@@ -93,6 +99,7 @@ final class ModTranslationDetector {
         synchronized (stateLock) {
             if (started || lookups.isEmpty()) return;
             started = true;
+            active = true;
             nextIndex = 0;
             runId++;
             currentRun = runId;
@@ -136,7 +143,10 @@ final class ModTranslationDetector {
         boolean hasMore;
 
         synchronized (stateLock) {
-            if (currentRun != runId || nextIndex >= lookups.size()) return;
+            if (currentRun != runId || nextIndex >= lookups.size()) {
+                active = false;
+                return;
+            }
             int endIndex = Math.min(lookups.size(), nextIndex + BATCH_SIZE);
             batch.addAll(lookups.subList(nextIndex, endIndex));
             nextIndex = endIndex;
@@ -150,7 +160,11 @@ final class ModTranslationDetector {
         for (TranslationLookup lookup : batch) sendLookup(lookup);
         if (wrapInBundle) player.getUser().sendPacket(boundary);
 
-        if (hasMore) scheduleBatch(currentRun, BATCH_DELAY_MILLIS);
+        if (hasMore) {
+            scheduleBatch(currentRun, BATCH_DELAY_MILLIS);
+        } else {
+            active = false;
+        }
     }
 
     private void sendLookup(TranslationLookup lookup) {

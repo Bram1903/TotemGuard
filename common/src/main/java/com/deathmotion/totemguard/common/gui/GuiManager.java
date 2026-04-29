@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEve
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
@@ -80,6 +81,12 @@ public final class GuiManager {
         String required = screen.requiredPermission();
         if (required != null && !sender.hasPermission(required)) {
             sender.sendMessage(deniedMessage(required));
+            return false;
+        }
+
+        TGPlayer viewer = platform.getPlayerRepository().getPlayer(user);
+        if (viewer != null && viewer.isModDetectionActive()) {
+            sender.sendMessage(Component.text("Mod detection is still running on your client — try again in a moment.", NamedTextColor.RED));
             return false;
         }
 

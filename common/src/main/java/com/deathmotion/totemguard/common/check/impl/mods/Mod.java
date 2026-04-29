@@ -78,6 +78,10 @@ public final class Mod extends CheckImpl implements PacketCheck {
         translationDetector.start();
     }
 
+    public boolean isDetectionActive() {
+        return translationDetector.isActive();
+    }
+
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         PacketTypeCommon type = event.getPacketType();

@@ -244,6 +244,11 @@ public class TGPlayer implements TGUser {
         return windowId == modDetectionWindowId;
     }
 
+    public boolean isModDetectionActive() {
+        Mod mod = checkManager.getPacketCheck(Mod.class);
+        return mod != null && mod.isDetectionActive();
+    }
+
     public void triggerInventoryEvent() {
         CarriedItem carriedItem = inventory.getCarriedItem();
         boolean carriedItemUpdated = carriedItem != null && carriedItem.isUpdated();
