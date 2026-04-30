@@ -18,6 +18,9 @@
 
 package com.deathmotion.totemguard.common.gui;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import net.kyori.adventure.text.Component;
@@ -33,13 +36,17 @@ public final class GuiText {
     }
 
     public static Component status(String label, boolean value) {
+        MessageService messages = TGPlatform.getInstance().getMessageService();
         return Component.text(label + ": ", Palette.LABEL)
-                .append(Component.text(value ? "Yes" : "No", value ? Palette.SUCCESS : Palette.DANGER));
+                .append(messages.getComponent(value ? MessagesKeys.GUI_STATUS_YES : MessagesKeys.GUI_STATUS_NO));
     }
 
     public static String itemSummary(ItemStack item) {
         if (item == null || item.isEmpty()) {
-            return "Empty";
+            // The configured value is rendered as a plain string inside an already-coloured
+            // line, so strip any leading hex codes the operator may have set.
+            String empty = TGPlatform.getInstance().getMessageService().getString(MessagesKeys.GUI_STATUS_EMPTY);
+            return empty.replaceAll("[&§]#[A-Fa-f0-9]{6}", "");
         }
         return item.getType().getName().getKey() + " x" + item.getAmount();
     }

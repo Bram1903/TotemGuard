@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.api3.config.key;
+package com.deathmotion.totemguard.common.config.key;
 
 /**
  * Constants for {@code discord.yml}.
@@ -28,7 +28,9 @@ package com.deathmotion.totemguard.api3.config.key;
  *           .orElseThrow();
  *   boolean enabled = alerts.getBoolean("enabled").orElse(false);
  * </pre>
- * Defaults live in the bundled {@code discord.yml} resource.
+ * Defaults live in the bundled {@code discord.yml} resource. These constants are an
+ * internal implementation detail of TotemGuard's bundled YAML — they are intentionally
+ * not part of the published API.
  */
 public final class DiscordKeys {
 

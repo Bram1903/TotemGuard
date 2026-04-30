@@ -23,9 +23,10 @@ import com.deathmotion.totemguard.api3.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.stats.StatisticsScreen;
-import com.deathmotion.totemguard.common.util.Palette;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -45,6 +46,7 @@ public final class TotemGuardInfoScreen extends GuiScreen {
             .withZone(ZoneId.systemDefault());
 
     private static ItemStack buildServicesTile(TGPlatform platform) {
+        MessageService messages = platform.getMessageService();
         boolean dbConnected = platform.getDatabaseRepository().isConnected();
         boolean dbEnabled = platform.getDatabaseRepository().isEnabled();
         boolean redisConnected = platform.getRedisRepository().isConnected();
@@ -52,81 +54,83 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         boolean antiVpnEnabled = platform.getAntiVPNRepository().isEnabled();
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Live status of external services", Palette.CONNECTIVE));
-        lore.add(Component.text("TotemGuard depends on.", Palette.CONNECTIVE));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SERVICES_LORE_1));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SERVICES_LORE_2));
         lore.add(Component.empty());
-        lore.add(serviceLine("Database", dbEnabled, dbConnected));
-        lore.add(serviceLine("Redis", redisEnabled, redisConnected));
-        lore.add(serviceLine("Anti-VPN", antiVpnEnabled, antiVpnEnabled));
+        lore.add(serviceLine(messages, "Database", dbEnabled, dbConnected));
+        lore.add(serviceLine(messages, "Redis", redisEnabled, redisConnected));
+        lore.add(serviceLine(messages, "Anti-VPN", antiVpnEnabled, antiVpnEnabled));
 
         return GuiItems.simple(
                 ItemTypes.ENDER_CHEST,
-                Component.text("Services", Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_INFO_SERVICES_TITLE),
                 lore
         );
     }
 
-    private static Component serviceLine(String label, boolean enabled, boolean connected) {
+    private static Component serviceLine(MessageService messages, String label, boolean enabled, boolean connected) {
         Component status;
         if (!enabled) {
-            status = Component.text("Disabled", Palette.CAPTION);
+            status = messages.getComponent(MessagesKeys.GUI_STATUS_DISABLED);
         } else if (connected) {
-            status = Component.text("Connected", Palette.SUCCESS);
+            status = messages.getComponent(MessagesKeys.GUI_STATUS_CONNECTED);
         } else {
-            status = Component.text("Disconnected", Palette.DANGER);
+            status = messages.getComponent(MessagesKeys.GUI_STATUS_DISCONNECTED);
         }
-        return Component.text(label + ": ", Palette.LABEL).append(status);
+        return GuiText.line(label, "").append(status);
     }
 
     private static ItemStack buildInformationTile(TGPlatform platform) {
+        MessageService messages = platform.getMessageService();
         TGVersion pluginVersion = TGVersions.CURRENT;
         Instant buildTime = TGVersions.BUILD_TIMESTAMP;
         int checkCount = CheckManagerImpl.knownCheckCount();
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Version", Palette.BRAND));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SECTION_VERSION));
         lore.add(GuiText.line("Plugin", pluginVersion.toDisplayString()));
         lore.add(GuiText.line("API", TGAPIVersions.CURRENT.toDisplayString()));
         lore.add(GuiText.line("Build time", BUILD_TIME_FORMAT.format(buildTime)));
 
         lore.add(Component.empty());
-        lore.add(Component.text("Platform", Palette.BRAND));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SECTION_PLATFORM));
         lore.add(GuiText.line("Implementation", platform.getPlatform().displayName()));
         lore.add(GuiText.line("Build", platform.getPlatformVersion()));
         lore.add(GuiText.line("Checks registered", checkCount > 0 ? String.valueOf(checkCount) : "Pending first join"));
 
         if (pluginVersion.snapshot() && pluginVersion.snapshotCommit() != null) {
             lore.add(Component.empty());
-            lore.add(Component.text("Development build", Palette.BRAND));
+            lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SECTION_DEV_BUILD));
             lore.add(GuiText.line("Commit", pluginVersion.snapshotCommit()));
         }
 
         return GuiItems.simple(
                 ItemTypes.TOTEM_OF_UNDYING,
-                Component.text("Information", Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_INFO_INFORMATION_TITLE),
                 lore
         );
     }
 
     private static ItemStack buildStatisticsTile(boolean dbReady) {
+        MessageService messages = TGPlatform.getInstance().getMessageService();
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Aggregated alert and punishment", Palette.CONNECTIVE));
-        lore.add(Component.text("counts across all players.", Palette.CONNECTIVE));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_STATISTICS_LORE_1));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_STATISTICS_LORE_2));
         lore.add(Component.empty());
 
         if (dbReady) {
-            lore.add(Component.text("Click to browse ▶", Palette.CAPTION));
+            lore.add(messages.getComponent(MessagesKeys.GUI_STATUS_CLICK_TO_BROWSE));
             return GuiItems.simple(
                     ItemTypes.WRITABLE_BOOK,
-                    Component.text("Statistics", Palette.BRAND),
+                    messages.getComponent(MessagesKeys.GUI_INFO_STATISTICS_TITLE),
                     lore
             );
         }
-        lore.add(Component.text("Database is offline.", Palette.DANGER));
-        lore.add(Component.text("Statistics are unavailable.", Palette.CONNECTIVE));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_STATISTICS_OFFLINE_1));
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_STATISTICS_OFFLINE_2));
         return GuiItems.simple(
                 ItemTypes.WRITTEN_BOOK,
-                Component.text("Statistics", Palette.CAPTION),
+                messages.getComponent(MessagesKeys.GUI_INFO_STATISTICS_DISABLED),
                 lore
         );
     }
@@ -139,9 +143,10 @@ public final class TotemGuardInfoScreen extends GuiScreen {
     @Override
     public GuiRenderResult render(GuiSession session) {
         TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
 
         GuiRenderResult.Builder builder = GuiRenderResult.builder(4,
-                GuiTitle.of("TotemGuard"));
+                GuiTitle.of(messages.getString(MessagesKeys.GUI_INFO_TITLE)));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(11, buildServicesTile(platform));
@@ -157,8 +162,8 @@ public final class TotemGuardInfoScreen extends GuiScreen {
 
         builder.set(31, GuiItems.simple(
                 ItemTypes.BARRIER,
-                Component.text("Close", Palette.DANGER),
-                List.of(Component.text("Close this screen", Palette.CONNECTIVE))
+                messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_TITLE),
+                List.of(messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_LORE))
         ), ctx -> ctx.close());
 
         return builder.build();

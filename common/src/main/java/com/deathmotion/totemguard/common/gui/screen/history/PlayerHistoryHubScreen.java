@@ -19,8 +19,10 @@
 package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -29,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -77,28 +80,30 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
 
     @Override
     public GuiRenderResult render(GuiSession session) {
-        TGPlayer target = TGPlatform.getInstance().getPlayerRepository().getPlayer(targetId);
+        TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
+        TGPlayer target = platform.getPlayerRepository().getPlayer(targetId);
         String targetName = target != null ? target.getName() : fallbackName;
 
         GuiRenderResult.Builder builder = GuiRenderResult.builder(3,
-                GuiTitle.of("History: " + targetName));
+                GuiTitle.of(messages.getString(MessagesKeys.GUI_HISTORY_HUB_TITLE, Map.of("tg_player", targetName))));
         builder.fillEmpty(GuiItems.filler());
 
         if (session.hasParent()) {
             builder.set(0, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Back", Palette.BRAND),
-                    List.of(Component.text("Return to the profile", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_BTN_BACK_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_BACK_TO_PROFILE_LORE))
             ), ctx -> ctx.back());
         } else {
             builder.set(0, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Close", Palette.DANGER),
-                    List.of(Component.text("Close this screen", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_LORE))
             ), ctx -> ctx.close());
         }
 
-        List<Component> headLore = buildHeadLore();
+        List<Component> headLore = buildHeadLore(messages);
         if (target != null) {
             builder.set(4, GuiItems.playerHead(
                     target.getUser().getProfile(),
@@ -113,7 +118,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
             ));
         }
 
-        boolean dbReady = TGPlatform.getInstance().getDatabaseRepository().isConnected();
+        boolean dbReady = platform.getDatabaseRepository().isConnected();
         boolean canViewAlerts = session.hasPermission("TotemGuardV3.Gui.History.Alerts");
         boolean canViewPunishments = session.hasPermission("TotemGuardV3.Gui.History.Punishments");
 
@@ -121,12 +126,12 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
             if (canViewAlerts) {
                 builder.set(11, GuiItems.simple(
                         ItemTypes.PAPER,
-                        Component.text("Alerts", Palette.BRAND),
+                        messages.getComponent(MessagesKeys.GUI_HISTORY_HUB_ALERTS_TITLE),
                         List.of(
-                                Component.text("Every violation TotemGuard has flagged", Palette.CONNECTIVE),
-                                Component.text("for this player, newest first.", Palette.CONNECTIVE),
+                                messages.getComponent(MessagesKeys.GUI_HISTORY_HUB_ALERTS_LORE_1),
+                                messages.getComponent(MessagesKeys.GUI_HISTORY_HUB_ALERTS_LORE_2),
                                 Component.empty(),
-                                Component.text("Click to browse ▶", Palette.CAPTION)
+                                messages.getComponent(MessagesKeys.GUI_STATUS_CLICK_TO_BROWSE)
                         )
                 ), ctx -> ctx.open(new PlayerAlertsScreen(targetId, targetName, 0)));
             }
@@ -134,22 +139,22 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
             if (canViewPunishments) {
                 builder.set(15, GuiItems.simple(
                         ItemTypes.IRON_AXE,
-                        Component.text("Punishments", Palette.DANGER),
+                        messages.getComponent(MessagesKeys.GUI_HISTORY_HUB_PUNISHMENTS_TITLE),
                         List.of(
-                                Component.text("Every kick or ban", Palette.CONNECTIVE),
-                                Component.text("TotemGuard dispatched, newest first.", Palette.CONNECTIVE),
+                                messages.getComponent(MessagesKeys.GUI_HISTORY_HUB_PUNISHMENTS_LORE_1),
+                                messages.getComponent(MessagesKeys.GUI_HISTORY_HUB_PUNISHMENTS_LORE_2),
                                 Component.empty(),
-                                Component.text("Click to browse ▶", Palette.CAPTION)
+                                messages.getComponent(MessagesKeys.GUI_STATUS_CLICK_TO_BROWSE)
                         )
                 ), ctx -> ctx.open(new PlayerPunishmentsScreen(targetId, targetName, 0)));
             }
         } else {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Database offline", Palette.DANGER),
+                    messages.getComponent(MessagesKeys.GUI_ERR_DATABASE_OFFLINE),
                     List.of(
-                            Component.text("History is unavailable - the database", Palette.CONNECTIVE),
-                            Component.text("is disabled or currently unreachable.", Palette.CONNECTIVE)
+                            messages.getComponent(MessagesKeys.GUI_HISTORY_HUB_DB_LORE_1),
+                            messages.getComponent(MessagesKeys.GUI_ERR_DB_UNREACHABLE)
                     )
             ));
         }
@@ -157,7 +162,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         return builder.build();
     }
 
-    private List<Component> buildHeadLore() {
+    private List<Component> buildHeadLore(MessageService messages) {
         List<Component> lore = new ArrayList<>();
         lore.add(GuiText.line("UUID", targetId.toString()));
 
@@ -170,7 +175,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
                     HistoryText.relative(rec.lastSeen()) + "  (" + HistoryText.absolute(rec.lastSeen()) + ")"));
         } else if (!dbAttempted) {
             lore.add(Component.empty());
-            lore.add(Component.text("Loading join times…", Palette.CONNECTIVE));
+            lore.add(messages.getComponent(MessagesKeys.GUI_LOADING_JOIN_TIMES));
         }
 
         return lore;

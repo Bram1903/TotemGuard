@@ -22,7 +22,9 @@ import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
 import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -90,31 +92,32 @@ public final class StatisticsScreen extends GuiScreen {
 
     @Override
     public GuiRenderResult render(GuiSession session) {
+        MessageService messages = TGPlatform.getInstance().getMessageService();
         GuiRenderResult.Builder builder = GuiRenderResult.builder(3,
-                GuiTitle.of("TotemGuard Statistics"));
+                GuiTitle.of(messages.getString(MessagesKeys.GUI_STATISTICS_TITLE)));
         builder.fillEmpty(GuiItems.filler());
 
         if (session.hasParent()) {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Back", Palette.BRAND),
-                    List.of(Component.text("Return to the overview", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_BTN_BACK_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_BACK_TO_OVERVIEW_LORE))
             ), ctx -> ctx.back());
         } else {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Close", Palette.DANGER),
-                    List.of(Component.text("Close this screen", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_LORE))
             ), ctx -> ctx.close());
         }
 
         if (offline) {
             builder.set(SLOT_CURRENT_WINDOW, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Database offline", Palette.DANGER),
+                    messages.getComponent(MessagesKeys.GUI_ERR_DATABASE_OFFLINE),
                     List.of(
-                            Component.text("Statistics are unavailable. The database", Palette.CONNECTIVE),
-                            Component.text("is disabled or currently unreachable.", Palette.CONNECTIVE)
+                            messages.getComponent(MessagesKeys.GUI_STATISTICS_DB_LORE_1),
+                            messages.getComponent(MessagesKeys.GUI_ERR_DB_UNREACHABLE)
                     )
             ));
             return builder.build();
@@ -123,27 +126,27 @@ public final class StatisticsScreen extends GuiScreen {
         if (loadError != null) {
             builder.set(SLOT_CURRENT_WINDOW, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Failed to load statistics", Palette.DANGER),
+                    messages.getComponent(MessagesKeys.GUI_ERR_FAILED_LOAD_STATS),
                     List.of(
-                            Component.text("Check the server log for details.", Palette.CONNECTIVE),
+                            messages.getComponent(MessagesKeys.GUI_ERR_CHECK_SERVER_LOG),
                             Component.text(loadError, Palette.VALUE_ON_DANGER)
                     )
             ));
-            renderFilters(builder);
+            renderFilters(builder, messages);
             return builder.build();
         }
 
-        builder.set(SLOT_CURRENT_WINDOW, currentWindowTile(this.loaded));
-        renderFilters(builder);
+        builder.set(SLOT_CURRENT_WINDOW, currentWindowTile(this.loaded, messages));
+        renderFilters(builder, messages);
         return builder.build();
     }
 
-    private ItemStack currentWindowTile(@Nullable StatsSnapshot snapshot) {
+    private ItemStack currentWindowTile(@Nullable StatsSnapshot snapshot, MessageService messages) {
         List<Component> lore = new ArrayList<>();
         lore.add(GuiText.line("Active window", window.label()));
         lore.add(Component.empty());
         if (snapshot == null) {
-            lore.add(Component.text("Querying the database…", Palette.CONNECTIVE));
+            lore.add(messages.getComponent(MessagesKeys.GUI_LOADING_QUERYING_DATABASE));
         } else {
             lore.add(GuiText.line("Alerts", String.valueOf(snapshot.alertCount())));
             lore.add(GuiText.line("Punishments", String.valueOf(snapshot.punishmentCount())));
@@ -151,16 +154,16 @@ public final class StatisticsScreen extends GuiScreen {
             lore.add(GuiText.line("DB size", formatBytes(snapshot.databaseBytes())));
         }
         lore.add(Component.empty());
-        lore.add(Component.text("Pick a different window below.", Palette.CAPTION));
+        lore.add(messages.getComponent(MessagesKeys.GUI_STATISTICS_PICK_WINDOW_LORE));
 
         return GuiItems.simple(
                 ItemTypes.CLOCK,
-                Component.text("Current window", Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_STATISTICS_CURRENT_WINDOW_TITLE),
                 lore
         );
     }
 
-    private void renderFilters(GuiRenderResult.Builder builder) {
+    private void renderFilters(GuiRenderResult.Builder builder, MessageService messages) {
         StatsWindow[] options = {
                 StatsWindow.LAST_24_HOURS,
                 StatsWindow.LAST_7_DAYS,
@@ -177,8 +180,8 @@ public final class StatisticsScreen extends GuiScreen {
                     active ? ItemTypes.LIME_DYE : ItemTypes.LIGHT_GRAY_DYE,
                     Component.text(option.label(), active ? Palette.SUCCESS : Palette.CAPTION),
                     active
-                            ? List.of(Component.text("Currently selected", Palette.SUCCESS))
-                            : List.of(Component.text("Click to switch ▶", Palette.CAPTION))
+                            ? List.of(messages.getComponent(MessagesKeys.GUI_STATUS_CURRENTLY_SELECTED))
+                            : List.of(messages.getComponent(MessagesKeys.GUI_STATUS_CLICK_TO_SWITCH))
             );
 
             if (active) {

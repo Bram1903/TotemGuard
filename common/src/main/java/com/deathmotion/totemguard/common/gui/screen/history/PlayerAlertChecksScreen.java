@@ -20,14 +20,17 @@ package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -91,21 +94,22 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
 
     @Override
     public GuiRenderResult render(GuiSession session) {
+        MessageService messages = TGPlatform.getInstance().getMessageService();
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
-                GuiTitle.of("Alerts by check: " + targetName));
+                GuiTitle.of(messages.getString(MessagesKeys.GUI_ALERT_CHECKS_TITLE, Map.of("tg_player", targetName))));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(0, GuiItems.simple(
                 ItemTypes.ARROW,
-                Component.text("Back", Palette.BRAND),
-                List.of(Component.text("Return to the full alerts feed", Palette.CONNECTIVE))
+                messages.getComponent(MessagesKeys.GUI_BTN_BACK_TITLE),
+                List.of(messages.getComponent(MessagesKeys.GUI_BTN_BACK_TO_ALERTS_LORE))
         ), ctx -> ctx.back());
 
         if (offline) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Database offline", Palette.DANGER),
-                    List.of(Component.text("Filtering is unavailable right now.", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_ERR_DATABASE_OFFLINE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_ALERT_CHECKS_FILTER_UNAVAILABLE))
             ));
             return builder.build();
         }
@@ -115,8 +119,8 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (all == null) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.CLOCK,
-                    Component.text("Loading…", Palette.BRAND),
-                    List.of(Component.text("Querying the database", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_LOADING_GENERIC),
+                    List.of(messages.getComponent(MessagesKeys.GUI_LOADING_QUERYING_DATABASE))
             ));
             return builder.build();
         }
@@ -124,9 +128,9 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (loadError != null) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Failed to load checks", Palette.DANGER),
+                    messages.getComponent(MessagesKeys.GUI_ERR_FAILED_LOAD_CHECKS),
                     List.of(
-                            Component.text("Check the server log for details.", Palette.CONNECTIVE),
+                            messages.getComponent(MessagesKeys.GUI_ERR_CHECK_SERVER_LOG),
                             Component.text(loadError, Palette.VALUE_ON_DANGER)
                     )
             ));
@@ -136,8 +140,8 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (all.isEmpty()) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.LIME_CONCRETE,
-                    Component.text("Clean record", Palette.SUCCESS),
-                    List.of(Component.text("No alerts have been logged for this player.", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_ALERT_CHECKS_EMPTY_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_ALERT_CHECKS_EMPTY_LORE))
             ));
             return builder.build();
         }
@@ -154,17 +158,17 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
                     List.of(
                             GuiText.line("Alerts", String.valueOf(summary.alertCount())),
                             Component.empty(),
-                            Component.text("Click to view only this check ▶", Palette.CAPTION)
+                            messages.getComponent(MessagesKeys.GUI_ALERT_CHECKS_VIEW_FILTER_HINT)
                     )
             ), ctx -> ctx.replace(new PlayerAlertsScreen(
                     targetId, targetName, 0, summary.checkName())));
         }
 
-        renderFooter(builder, all.size());
+        renderFooter(builder, all.size(), messages);
         return builder.build();
     }
 
-    private void renderFooter(GuiRenderResult.Builder builder, int total) {
+    private void renderFooter(GuiRenderResult.Builder builder, int total, MessageService messages) {
         int pages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
         boolean hasPrev = page > 0;
         boolean hasNext = (page + 1) < pages;
@@ -172,7 +176,7 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (hasPrev) {
             builder.set(48, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Previous page", Palette.BRAND),
+                    messages.getComponent(MessagesKeys.GUI_BTN_PREVIOUS_PAGE_TITLE),
                     List.of(Component.text("Page " + page, Palette.CONNECTIVE))
             ), ctx -> ctx.replace(new PlayerAlertChecksScreen(targetId, targetName, page - 1)));
         }
@@ -186,7 +190,7 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (hasNext) {
             builder.set(50, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Next page", Palette.BRAND),
+                    messages.getComponent(MessagesKeys.GUI_BTN_NEXT_PAGE_TITLE),
                     List.of(Component.text("Page " + (page + 2), Palette.CONNECTIVE))
             ), ctx -> ctx.replace(new PlayerAlertChecksScreen(targetId, targetName, page + 1)));
         }

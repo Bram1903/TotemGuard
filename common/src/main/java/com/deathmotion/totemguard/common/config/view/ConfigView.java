@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.config.view;
 
 import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.key.ConfigKeys;
+import com.deathmotion.totemguard.common.config.key.ConfigKeys;
 import com.deathmotion.totemguard.common.config.schema.*;
 import org.jetbrains.annotations.NotNull;
 

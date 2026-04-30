@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.commands;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.impl.*;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import org.incendo.cloud.CommandManager;
 
 public class CommandManagerImpl {
@@ -40,9 +41,15 @@ public class CommandManagerImpl {
         new MonitorCommand().register(commandManager);
         new ReloadCommand().register(commandManager);
         new AlertCommand().register(commandManager);
-        new DebugOverlayCommand().register(commandManager);
-        new InventoryCommand().register(commandManager);
-        new PlaceholderCommand().register(commandManager);
+
+        // Internal debug/inspection tools — only registered on snapshot builds so
+        // production servers don't see them. Their output is hardcoded against the
+        // Palette and intentionally not configurable.
+        if (TGVersions.CURRENT.snapshot()) {
+            new DebugOverlayCommand().register(commandManager);
+            new InventoryCommand().register(commandManager);
+            new PlaceholderCommand().register(commandManager);
+        }
 
         // /tg check needs real inventory access via PlatformPlayer, which only
         // exists on backend platforms. Skip on proxies (Velocity/Bungee).

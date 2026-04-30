@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.commands;
 
-import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.Command;
 import org.incendo.cloud.CommandManager;

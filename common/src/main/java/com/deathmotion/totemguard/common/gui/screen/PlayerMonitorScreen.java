@@ -19,7 +19,9 @@
 package com.deathmotion.totemguard.common.gui.screen;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
@@ -29,10 +31,7 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public final class PlayerMonitorScreen extends GuiScreen {
 
@@ -60,22 +59,22 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
     @Override
     public GuiRenderResult render(GuiSession session) {
-        TGPlayer target = TGPlatform.getInstance().getPlayerRepository().getPlayer(targetId);
+        TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
+        TGPlayer target = platform.getPlayerRepository().getPlayer(targetId);
         String targetName = target != null ? target.getName() : fallbackName;
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(6, GuiTitle.of("Monitor: " + targetName));
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
+                GuiTitle.of(messages.getString(MessagesKeys.GUI_MONITOR_TITLE, Map.of("tg_player", targetName))));
 
         if (session.viewerId().equals(targetId)) {
             builder.fillEmpty(GuiItems.filler());
             builder.set(13, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Self Monitor Disabled", Palette.DANGER),
-                    List.of(Component.text(
-                            "Monitoring your own inventory is disabled to prevent ghost item desync.",
-                            Palette.CONNECTIVE
-                    ))
+                    messages.getComponent(MessagesKeys.GUI_MONITOR_SELF_DISABLED_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_MONITOR_SELF_DISABLED_LORE))
             ));
-            builder.set(49, singleExitButton(session), ctx -> {
+            builder.set(49, singleExitButton(session, messages), ctx -> {
                 if (session.hasParent()) {
                     ctx.back();
                     return;
@@ -87,7 +86,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         if (target == null) {
             builder.set(0, emptyPane("Player"));
-            builder.set(8, singleExitButton(session), ctx -> {
+            builder.set(8, singleExitButton(session, messages), ctx -> {
                 if (session.hasParent()) {
                     ctx.back();
                     return;
@@ -96,10 +95,10 @@ public final class PlayerMonitorScreen extends GuiScreen {
             });
             builder.set(13, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text(targetName + " is no longer tracked", Palette.DANGER),
+                    messages.getComponent(MessagesKeys.GUI_MONITOR_UNTRACKED_TITLE, Map.of("tg_player", targetName)),
                     List.of(
                             GuiText.line("UUID", targetId.toString()),
-                            Component.text("All monitor viewers are closed", Palette.CONNECTIVE)
+                            messages.getComponent(MessagesKeys.GUI_MONITOR_UNTRACKED_LORE)
                     )
             ));
             return builder.build();
@@ -146,7 +145,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
         ));
         builder.set(4, GuiItems.simple(
                 ItemTypes.PAPER,
-                Component.text("Packet State", Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_MONITOR_PACKET_STATE_TITLE),
                 List.of(
                         GuiText.line("Last issuer", String.valueOf(inventory.getLastIssuer())),
                         GuiText.line("Selected hotbar", String.valueOf(inventory.getSelectedHotbarIndex())),
@@ -162,7 +161,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         builder.set(6, GuiItems.simple(
                 ItemTypes.COMPARATOR,
-                Component.text("Latency", Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_MONITOR_LATENCY_TITLE),
                 List.of(
                         GuiText.line("Transaction ping", String.valueOf(target.getPingData().getTransactionPing())),
                         GuiText.line("KeepAlive ping", String.valueOf(target.getPingData().getKeepAlivePing())),
@@ -172,15 +171,15 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         builder.set(7, GuiItems.simple(
                 ItemTypes.BOOK,
-                Component.text("Client", Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_MONITOR_CLIENT_TITLE),
                 List.of(
                         GuiText.line("Client version", target.getClientVersion().getReleaseName()),
                         GuiText.line("Brand", target.getClientBrand()),
-                        Component.text("Head opens the full profile.", Palette.CONNECTIVE)
+                        messages.getComponent(MessagesKeys.GUI_MONITOR_HEAD_TOOLTIP)
                 )
         ));
 
-        builder.set(8, singleExitButton(session), ctx -> {
+        builder.set(8, singleExitButton(session, messages), ctx -> {
             if (session.hasParent()) {
                 ctx.back();
                 return;
@@ -269,19 +268,19 @@ public final class PlayerMonitorScreen extends GuiScreen {
         );
     }
 
-    private ItemStack singleExitButton(GuiSession session) {
+    private ItemStack singleExitButton(GuiSession session, MessageService messages) {
         if (session.hasParent()) {
             return GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Return", Palette.BRAND),
-                    List.of(Component.text("Return to the previous screen", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_BTN_RETURN_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_RETURN_LORE))
             );
         }
 
         return GuiItems.simple(
                 ItemTypes.BARRIER,
-                Component.text("Close", Palette.DANGER),
-                List.of(Component.text("Close this screen", Palette.CONNECTIVE))
+                messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_TITLE),
+                List.of(messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_LORE))
         );
     }
 }

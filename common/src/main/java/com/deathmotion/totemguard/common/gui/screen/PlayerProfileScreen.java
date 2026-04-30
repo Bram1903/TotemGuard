@@ -21,21 +21,20 @@ package com.deathmotion.totemguard.common.gui.screen;
 import com.deathmotion.totemguard.api3.check.Check;
 import com.deathmotion.totemguard.api3.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
 import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.history.HistoryText;
 import com.deathmotion.totemguard.common.gui.screen.history.PlayerHistoryHubScreen;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 
 public final class PlayerProfileScreen extends GuiScreen {
@@ -87,21 +86,24 @@ public final class PlayerProfileScreen extends GuiScreen {
 
     @Override
     public GuiRenderResult render(GuiSession session) {
-        TGPlayer target = TGPlatform.getInstance().getPlayerRepository().getPlayer(targetId);
+        TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
+        TGPlayer target = platform.getPlayerRepository().getPlayer(targetId);
         String targetName = target != null ? target.getName() : fallbackName;
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(4, GuiTitle.of("Profile: " + targetName));
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(4,
+                GuiTitle.of(messages.getString(MessagesKeys.GUI_PROFILE_TITLE, Map.of("tg_player", targetName))));
         builder.fillEmpty(GuiItems.filler());
 
-        renderBackOrClose(builder, session);
+        renderBackOrClose(builder, session, messages);
 
         if (target == null) {
             builder.set(SLOT_HEAD, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text(targetName + " is no longer tracked", Palette.DANGER),
+                    messages.getComponent(MessagesKeys.GUI_PROFILE_UNTRACKED_TITLE, Map.of("tg_player", targetName)),
                     List.of(
                             GuiText.line("UUID", targetId.toString()),
-                            Component.text("The player left the repository.", Palette.CONNECTIVE)
+                            messages.getComponent(MessagesKeys.GUI_PROFILE_UNTRACKED_LORE)
                     )
             ));
             return builder.build();
@@ -110,47 +112,48 @@ public final class PlayerProfileScreen extends GuiScreen {
         builder.set(SLOT_HEAD, GuiItems.playerHead(
                 target.getUser().getProfile(),
                 Component.text(target.getName(), Palette.SUCCESS),
-                buildHeadLore(target)
+                buildHeadLore(target, messages)
         ));
 
-        renderMonitorButton(builder, session, target);
-        renderHistoryButton(builder, session, target);
+        renderMonitorButton(builder, session, target, messages);
+        renderHistoryButton(builder, session, target, messages);
 
         return builder.build();
     }
 
-    private void renderBackOrClose(GuiRenderResult.Builder builder, GuiSession session) {
+    private void renderBackOrClose(GuiRenderResult.Builder builder, GuiSession session, MessageService messages) {
         if (session.hasParent()) {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Back", Palette.BRAND),
-                    List.of(Component.text("Return to the previous screen", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_BTN_BACK_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_BACK_LORE))
             ), ctx -> ctx.back());
         } else {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Close", Palette.DANGER),
-                    List.of(Component.text("Close this screen", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_LORE))
             ), ctx -> ctx.close());
         }
     }
 
-    private void renderMonitorButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target) {
+    private void renderMonitorButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
         if (!session.hasPermission("TotemGuardV3.Gui.Monitor")) return;
 
         boolean self = session.viewerId().equals(target.getUuid());
         builder.set(SLOT_MONITOR, GuiItems.simple(
                 self ? ItemTypes.BARRIER : ItemTypes.CHEST,
-                Component.text(self ? "Self Monitor Disabled" : "Open Monitor",
-                        self ? Palette.CAPTION : Palette.BRAND),
                 self
-                        ? List.of(Component.text("Monitoring your own inventory is disabled", Palette.CONNECTIVE))
+                        ? messages.getComponent(MessagesKeys.GUI_PROFILE_MONITOR_SELF_TITLE)
+                        : messages.getComponent(MessagesKeys.GUI_PROFILE_MONITOR_OPEN_TITLE),
+                self
+                        ? List.of(messages.getComponent(MessagesKeys.GUI_PROFILE_MONITOR_SELF_LORE))
                         : List.of(
-                        Component.text("View the live packet inventory", Palette.CONNECTIVE),
-                        Component.text("and watch updates in-place", Palette.CONNECTIVE))
+                        messages.getComponent(MessagesKeys.GUI_PROFILE_MONITOR_OPEN_LORE_1),
+                        messages.getComponent(MessagesKeys.GUI_PROFILE_MONITOR_OPEN_LORE_2))
         ), ctx -> {
             if (ctx.session().viewerId().equals(target.getUuid())) {
-                ctx.message(Component.text("You cannot monitor your own inventory.", Palette.DANGER));
+                ctx.message(messages.getComponent(MessagesKeys.GUI_ERR_CANNOT_MONITOR_SELF));
                 return;
             }
 
@@ -158,7 +161,7 @@ public final class PlayerProfileScreen extends GuiScreen {
                     new TGMonitorOpenEventImpl(ctx.session().viewerId(), target.getUuid())
             );
             if (event.isCancelled()) {
-                ctx.message(Component.text("Opening the monitor was blocked.", Palette.DANGER));
+                ctx.message(messages.getComponent(MessagesKeys.GUI_ERR_MONITOR_BLOCKED));
                 return;
             }
 
@@ -166,20 +169,20 @@ public final class PlayerProfileScreen extends GuiScreen {
         });
     }
 
-    private void renderHistoryButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target) {
+    private void renderHistoryButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
         if (!session.hasPermission("TotemGuardV3.Gui.History")) return;
 
         builder.set(SLOT_HISTORY, GuiItems.simple(
                 ItemTypes.BOOK,
-                Component.text("History", Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_PROFILE_HISTORY_TITLE),
                 List.of(
-                        Component.text("Browse this player's alert and", Palette.CONNECTIVE),
-                        Component.text("punishment history from the database.", Palette.CONNECTIVE)
+                        messages.getComponent(MessagesKeys.GUI_PROFILE_HISTORY_LORE_1),
+                        messages.getComponent(MessagesKeys.GUI_PROFILE_HISTORY_LORE_2)
                 )
         ), ctx -> ctx.open(new PlayerHistoryHubScreen(target)));
     }
 
-    private List<Component> buildHeadLore(TGPlayer target) {
+    private List<Component> buildHeadLore(TGPlayer target, MessageService messages) {
         List<Component> lore = new ArrayList<>();
         lore.add(GuiText.line("Client version", target.getClientVersion().getReleaseName()));
         lore.add(GuiText.line("Client brand", target.getClientBrand()));
@@ -191,13 +194,13 @@ public final class PlayerProfileScreen extends GuiScreen {
         lore.add(GuiText.line("KeepAlive ping", target.getPingData().getKeepAlivePing() + " ms"));
         lore.add(GuiText.line("Transaction ping", target.getPingData().getTransactionPing() + " ms"));
 
-        appendViolationSummary(lore, target);
-        appendFirstJoined(lore);
+        appendViolationSummary(lore, target, messages);
+        appendFirstJoined(lore, messages);
 
         return lore;
     }
 
-    private void appendViolationSummary(List<Component> lore, TGPlayer target) {
+    private void appendViolationSummary(List<Component> lore, TGPlayer target, MessageService messages) {
         List<Check> active = target.getCheckManager().allChecks.values().stream()
                 .filter(check -> check.getViolations() > 0)
                 .sorted(Comparator.comparingInt(Check::getViolations).reversed())
@@ -205,7 +208,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         lore.add(Component.empty());
         if (active.isEmpty()) {
-            lore.add(Component.text("No active violations", Palette.SUCCESS));
+            lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_NO_VIOLATIONS));
             return;
         }
 
@@ -222,7 +225,7 @@ public final class PlayerProfileScreen extends GuiScreen {
         }
     }
 
-    private void appendFirstJoined(List<Component> lore) {
+    private void appendFirstJoined(List<Component> lore, MessageService messages) {
         PlayerRecord rec = this.dbRecord;
         if (rec != null) {
             lore.add(Component.empty());
@@ -233,7 +236,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         if (TGPlatform.getInstance().getDatabaseRepository().isConnected() && !dbAttempted) {
             lore.add(Component.empty());
-            lore.add(Component.text("First joined: loading…", Palette.CONNECTIVE));
+            lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_FIRST_JOINED_LOADING));
         }
     }
 }

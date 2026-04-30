@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -35,6 +34,10 @@ import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Snapshot-only inventory dump. Output is hardcoded against {@link Palette} on purpose —
+ * this is a developer-facing tool, not user-configurable surface.
+ */
 public final class InventoryCommand extends AbstractCommand {
 
     private static Component labeledSlot(String label, int slot, PacketInventory inv) {
@@ -73,7 +76,7 @@ public final class InventoryCommand extends AbstractCommand {
 
         TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(sender.getUniqueId());
         if (player == null) {
-            sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
+            sender.sendMessage(Component.text("Your player data could not be found in the player repository", Palette.DANGER));
             return;
         }
 

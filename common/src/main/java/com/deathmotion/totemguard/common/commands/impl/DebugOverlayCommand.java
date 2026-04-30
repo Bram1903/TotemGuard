@@ -18,10 +18,7 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
-import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
@@ -37,9 +34,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Snapshot-only debug command. Output is hardcoded against {@link Palette} on purpose —
+ * this is a developer-facing tool, not user-configurable surface.
+ */
 public final class DebugOverlayCommand extends AbstractCommand {
 
     @Override
@@ -72,7 +72,7 @@ public final class DebugOverlayCommand extends AbstractCommand {
 
         TGPlayer player = sender.getTGPlayer();
         if (player == null) {
-            sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
+            sender.sendMessage(Component.text("Your player data could not be found in the player repository", Palette.DANGER));
             return;
         }
 
@@ -140,30 +140,27 @@ public final class DebugOverlayCommand extends AbstractCommand {
 
         TGPlayer player = sender.getTGPlayer();
         if (player == null) {
-            sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
+            sender.sendMessage(Component.text("Your player data could not be found in the player repository", Palette.DANGER));
             return;
         }
 
         String overlayKey = context.get("overlay");
-        MessageService messages = TGPlatform.getInstance().getMessageService();
         DebugOverlayProvider provider = player.getDebugOverlayManager().getProvider(overlayKey);
         if (provider == null) {
-            sender.sendMessage(messages.getComponent(
-                    MessagesKeys.DEBUG_UNKNOWN_OVERLAY,
-                    Map.of("tg_overlay", overlayKey)
-            ));
+            sender.sendMessage(Component.text("Unknown debug overlay: " + overlayKey, Palette.DANGER));
             return;
         }
 
         if (!sender.hasPermission(perm(provider.getPermissionSuffix()))) {
-            sender.sendMessage(messages.getComponent(MessagesKeys.DEBUG_NO_PERMISSION));
+            sender.sendMessage(Component.text("You do not have permission to use this debug overlay.", Palette.DANGER));
             return;
         }
 
         boolean enabled = player.getDebugOverlayManager().toggle(provider.getKey());
-        sender.sendMessage(messages.getComponent(
-                enabled ? MessagesKeys.DEBUG_ENABLED : MessagesKeys.DEBUG_DISABLED,
-                Map.of("tg_overlay_name", provider.getDisplayName())
-        ));
+        sender.sendMessage(Component.text()
+                .append(Component.text(provider.getDisplayName(), Palette.VALUE))
+                .append(Component.text(" debug overlay " + (enabled ? "enabled" : "disabled") + ".",
+                        enabled ? Palette.SUCCESS : Palette.DANGER))
+                .build());
     }
 }

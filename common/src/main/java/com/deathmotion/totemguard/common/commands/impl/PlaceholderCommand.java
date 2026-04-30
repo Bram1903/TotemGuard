@@ -35,6 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Snapshot-only placeholder admin tool. Output is hardcoded against {@link Palette} on
+ * purpose — this is a developer-facing tool, not user-configurable surface.
+ */
 public final class PlaceholderCommand extends AbstractCommand {
 
     private final PlaceholderRepositoryImpl placeholderRepository;

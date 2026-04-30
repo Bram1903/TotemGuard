@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.common.discord;
 
-import com.deathmotion.totemguard.api3.config.key.DiscordKeys;
 import com.deathmotion.totemguard.api3.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
+import com.deathmotion.totemguard.common.config.key.DiscordKeys;
 import com.deathmotion.totemguard.common.config.schema.WebhookConfig;
 import com.deathmotion.totemguard.common.config.schema.WebhookField;
 import com.deathmotion.totemguard.common.config.view.DiscordView;

@@ -20,13 +20,13 @@ package com.deathmotion.totemguard.common.gui;
 
 import com.deathmotion.totemguard.api3.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -59,9 +59,10 @@ public final class GuiManager {
     }
 
     private static Component deniedMessage(String permission) {
-        return Component.text("You lack the permission ", Palette.DANGER)
-                .append(Component.text(permission, Palette.VALUE_ON_DANGER))
-                .append(Component.text(" to open that screen.", Palette.DANGER));
+        return TGPlatform.getInstance().getMessageService().getComponent(
+                MessagesKeys.GUI_ERR_NO_PERMISSION,
+                Map.of("tg_permission", permission)
+        );
     }
 
     private GuiViewerInventory inventoryFor(UUID viewerId) {
@@ -89,7 +90,7 @@ public final class GuiManager {
 
         TGPlayer viewer = platform.getPlayerRepository().getPlayer(user);
         if (viewer != null && viewer.isModDetectionActive()) {
-            sender.sendMessage(Component.text("Mod detection is still running on your client — try again in a moment.", Palette.DANGER));
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GUI_ERR_MOD_DETECTION_RUNNING));
             return false;
         }
 
