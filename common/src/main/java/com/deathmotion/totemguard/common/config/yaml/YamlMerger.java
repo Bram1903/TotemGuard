@@ -78,6 +78,111 @@ public final class YamlMerger {
     }
 
     /**
+     * Returns {@code currentText} with the value at the given nested key path replaced.
+     * <p>
+     * Scalars: the leaf line's indent, key, and inline comment (if any) are preserved.
+     * Lists: the leaf line plus all subsequent lines belonging to its block (indent strictly
+     * greater than the leaf) are rewritten as a fresh block-style list at the leaf indent.
+     * Comments interleaved INSIDE the existing list block are not preserved; comments and
+     * blank lines AFTER the last block line (before the next sibling) are preserved.
+     * <p>
+     * If any segment in the path is missing, or the leaf line isn't a {@code key:} entry,
+     * the input text is returned unchanged. Block scalars and multi-line scalar values
+     * aren't supported.
+     */
+    public static String setValueAtPath(String currentText, List<String> path, Object value) {
+        if (path.isEmpty()) return currentText;
+        String[] lines = splitLines(currentText);
+
+        int parentIndent = -1;
+        int searchStart = 0;
+        int searchEnd = lines.length;
+        int leafLine = -1;
+        int leafIndent = 0;
+
+        for (int i = 0; i < path.size(); i++) {
+            int targetIndent = parentIndent == -1 ? 0 : parentIndent + 2;
+            int found = findKeyLine(lines, searchStart, searchEnd, path.get(i), targetIndent);
+            if (found == -1) return currentText;
+
+            if (i == path.size() - 1) {
+                leafLine = found;
+                leafIndent = targetIndent;
+            } else {
+                parentIndent = targetIndent;
+                searchStart = found + 1;
+                searchEnd = endOfBlock(lines, found, targetIndent);
+            }
+        }
+
+        String original = lines[leafLine];
+        String trimmed = original.stripLeading();
+        int colon = trimmed.indexOf(':');
+        if (colon < 0) return currentText;
+
+        String indentPart = original.substring(0, original.length() - trimmed.length());
+        String keyPart = trimmed.substring(0, colon);
+
+        if (value instanceof List<?> list) {
+            int contentEnd = leafLine;
+            for (int i = leafLine + 1; i < lines.length; i++) {
+                String raw = lines[i];
+                String t = raw.stripLeading();
+                if (t.isEmpty() || t.startsWith("#")) continue;
+                int indent = raw.length() - t.length();
+                if (indent <= leafIndent) break;
+                contentEnd = i;
+            }
+
+            List<String> rendered = new ArrayList<>();
+            if (list.isEmpty()) {
+                rendered.add(indentPart + keyPart + ": []");
+            } else {
+                rendered.add(indentPart + keyPart + ":");
+                String itemIndent = " ".repeat(leafIndent + 2);
+                for (Object o : list) {
+                    rendered.add(itemIndent + "- " + renderScalar(o));
+                }
+            }
+
+            List<String> out = new ArrayList<>(lines.length);
+            for (int i = 0; i < leafLine; i++) out.add(lines[i]);
+            out.addAll(rendered);
+            for (int i = contentEnd + 1; i < lines.length; i++) out.add(lines[i]);
+            return joinLines(out.toArray(new String[0]));
+        }
+
+        String afterColon = trimmed.substring(colon + 1);
+        String inlineComment = extractInlineComment(afterColon);
+
+        String newLine = indentPart + keyPart + ": " + renderScalar(value);
+        if (!inlineComment.isEmpty()) {
+            newLine += "  " + inlineComment;
+        }
+
+        lines[leafLine] = newLine;
+        return joinLines(lines);
+    }
+
+    private static String extractInlineComment(String afterColon) {
+        boolean inSingle = false;
+        boolean inDouble = false;
+        char prev = ' ';
+        for (int i = 0; i < afterColon.length(); i++) {
+            char c = afterColon.charAt(i);
+            if (c == '"' && !inSingle) {
+                inDouble = !inDouble;
+            } else if (c == '\'' && !inDouble) {
+                inSingle = !inSingle;
+            } else if (c == '#' && !inSingle && !inDouble && Character.isWhitespace(prev)) {
+                return afterColon.substring(i);
+            }
+            prev = c;
+        }
+        return "";
+    }
+
+    /**
      * Renders a complete YAML document for a parsed map. Comments are NOT preserved.
      * Used after a migration changes the file shape, when the safe option is to rebuild.
      */

@@ -62,7 +62,10 @@ public final class ConfigRepositoryImpl implements ConfigRepository {
     public ConfigRepositoryImpl() {
         TGPlatform platform = TGPlatform.getInstance();
         this.configDir = Paths.get(Objects.requireNonNull(platform.getPluginDirectory(), "pluginDirectory"));
-        new V2ConfigMigrator(platform.getLogger()).migrate(configDir);
+
+        V2ConfigMigrator migrator = new V2ConfigMigrator(platform.getLogger());
+        V2ConfigMigrator.V2Migration migration = migrator.migrate(configDir);
+
         this.service = new ConfigService(
                 configDir,
                 ConfigRepositoryImpl.class.getClassLoader(),
@@ -74,6 +77,11 @@ public final class ConfigRepositoryImpl implements ConfigRepository {
         }
 
         reloadAll();
+
+        if (!migration.isEmpty()) {
+            migrator.applyOverrides(configDir, migration);
+            reloadAll();
+        }
     }
 
     @Override
