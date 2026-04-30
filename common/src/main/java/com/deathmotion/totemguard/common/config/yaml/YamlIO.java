@@ -18,7 +18,11 @@
 
 package com.deathmotion.totemguard.common.config.yaml;
 
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +35,18 @@ import java.util.Map;
 
 public final class YamlIO {
 
-    private final Yaml yaml = new Yaml();
+    private final Yaml yaml = newYaml();
+
+    private static Yaml newYaml() {
+        LoaderOptions loaderOptions = new LoaderOptions();
+        DumperOptions dumperOptions = new DumperOptions();
+        return new Yaml(
+                new Constructor(loaderOptions),
+                new Representer(dumperOptions),
+                dumperOptions,
+                loaderOptions,
+                new Yaml12Resolver());
+    }
 
     public String readString(Path file) {
         try {
