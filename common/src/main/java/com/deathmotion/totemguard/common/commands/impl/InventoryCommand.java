@@ -18,16 +18,18 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -36,15 +38,15 @@ import org.jetbrains.annotations.NotNull;
 public final class InventoryCommand extends AbstractCommand {
 
     private static Component labeledSlot(String label, int slot, PacketInventory inv) {
-        return Component.text(label + ": ", NamedTextColor.GRAY)
-                .append(formatItem(inv.getItem(slot), NamedTextColor.WHITE))
-                .append(Component.text(" (slot " + slot + ")", NamedTextColor.DARK_GRAY))
+        return Component.text(label + ": ", Palette.LABEL)
+                .append(formatItem(inv.getItem(slot), Palette.PARCH_50))
+                .append(Component.text(" (slot " + slot + ")", Palette.CAPTION))
                 .append(Component.newline());
     }
 
-    private static Component formatItem(ItemStack item, NamedTextColor color) {
+    private static Component formatItem(ItemStack item, TextColor color) {
         if (item == null || item.isEmpty()) {
-            return Component.text("Empty", NamedTextColor.DARK_GRAY);
+            return Component.text("Empty", Palette.CAPTION);
         }
 
         String typeName = item.getType().getName().getKey();
@@ -71,53 +73,53 @@ public final class InventoryCommand extends AbstractCommand {
 
         TGPlayer player = TGPlatform.getInstance().getPlayerRepository().getPlayer(sender.getUniqueId());
         if (player == null) {
-            sender.sendMessage(Component.text("Your player data could not be found in the player repository", NamedTextColor.RED));
+            sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
             return;
         }
 
         PacketInventory inv = player.getInventory();
 
         Component msg = Component.empty()
-                .append(Component.text("Packet Inventory Overview", NamedTextColor.GREEN, TextDecoration.BOLD))
+                .append(Component.text("Packet Inventory Overview", Palette.BRAND, TextDecoration.BOLD))
                 .append(Component.newline())
-                .append(Component.text("Open Inventory: ", NamedTextColor.GRAY))
+                .append(Component.text("Open Inventory: ", Palette.LABEL))
                 .append(
                         Component.text(
                                 player.getData().isOpenInventory() ? "Yes" : "No",
-                                player.getData().isOpenInventory() ? NamedTextColor.GREEN : NamedTextColor.RED
+                                player.getData().isOpenInventory() ? Palette.SUCCESS : Palette.DANGER
                         )
                 )
                 .append(Component.newline())
-                .append(Component.text("Selected hotbar index: ", NamedTextColor.GRAY))
-                .append(Component.text(String.valueOf(inv.getSelectedHotbarIndex()), NamedTextColor.YELLOW))
-                .append(Component.text(" (container slot ", NamedTextColor.GRAY))
-                .append(Component.text(String.valueOf(inv.getMainHandSlot()), NamedTextColor.YELLOW))
-                .append(Component.text(")", NamedTextColor.GRAY))
+                .append(Component.text("Selected hotbar index: ", Palette.LABEL))
+                .append(Component.text(String.valueOf(inv.getSelectedHotbarIndex()), Palette.VALUE))
+                .append(Component.text(" (container slot ", Palette.CONNECTIVE))
+                .append(Component.text(String.valueOf(inv.getMainHandSlot()), Palette.VALUE))
+                .append(Component.text(")", Palette.CONNECTIVE))
                 .append(Component.newline())
-                .append(Component.text("Carried: ", NamedTextColor.GRAY))
-                .append(formatItem(inv.getCarriedItem().getCurrentItem(), NamedTextColor.WHITE))
+                .append(Component.text("Carried: ", Palette.LABEL))
+                .append(formatItem(inv.getCarriedItem().getCurrentItem(), Palette.PARCH_50))
                 .append(Component.newline())
-                .append(Component.text("────────────────────────────", NamedTextColor.DARK_GRAY))
-                .append(Component.newline())
-                .append(Component.newline());
-
-        msg = msg.append(Component.text("Hands", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
-        msg = msg.append(Component.text("  Main hand: ", NamedTextColor.GRAY))
-                .append(formatItem(inv.getMainHandItem(), NamedTextColor.WHITE))
-                .append(Component.newline());
-        msg = msg.append(Component.text("  Offhand:   ", NamedTextColor.GRAY))
-                .append(formatItem(inv.getOffhandItem(), NamedTextColor.WHITE))
+                .append(Component.text("────────────────────────────", Palette.CAPTION))
                 .append(Component.newline())
                 .append(Component.newline());
 
-        msg = msg.append(Component.text("Armor", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
+        msg = msg.append(Component.text("Hands", Palette.BRAND, TextDecoration.BOLD)).append(Component.newline());
+        msg = msg.append(Component.text("  Main hand: ", Palette.LABEL))
+                .append(formatItem(inv.getMainHandItem(), Palette.PARCH_50))
+                .append(Component.newline());
+        msg = msg.append(Component.text("  Offhand:   ", Palette.LABEL))
+                .append(formatItem(inv.getOffhandItem(), Palette.PARCH_50))
+                .append(Component.newline())
+                .append(Component.newline());
+
+        msg = msg.append(Component.text("Armor", Palette.BRAND, TextDecoration.BOLD)).append(Component.newline());
         msg = msg.append(labeledSlot("  Helmet", InventoryConstants.SLOT_HELMET, inv));
         msg = msg.append(labeledSlot("  Chest", InventoryConstants.SLOT_CHESTPLATE, inv));
         msg = msg.append(labeledSlot("  Legs", InventoryConstants.SLOT_LEGGINGS, inv));
         msg = msg.append(labeledSlot("  Boots", InventoryConstants.SLOT_BOOTS, inv));
         msg = msg.append(Component.newline());
 
-        msg = msg.append(Component.text("Crafting", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
+        msg = msg.append(Component.text("Crafting", Palette.BRAND, TextDecoration.BOLD)).append(Component.newline());
         msg = msg.append(labeledSlot("  Result", InventoryConstants.SLOT_CRAFT_RESULT, inv));
         msg = msg.append(labeledSlot("  Slot 1", InventoryConstants.SLOT_CRAFT_1, inv));
         msg = msg.append(labeledSlot("  Slot 2", InventoryConstants.SLOT_CRAFT_2, inv));
@@ -125,36 +127,36 @@ public final class InventoryCommand extends AbstractCommand {
         msg = msg.append(labeledSlot("  Slot 4", InventoryConstants.SLOT_CRAFT_4, inv));
         msg = msg.append(Component.newline());
 
-        msg = msg.append(Component.text("Hotbar", NamedTextColor.AQUA, TextDecoration.BOLD)).append(Component.newline());
+        msg = msg.append(Component.text("Hotbar", Palette.BRAND, TextDecoration.BOLD)).append(Component.newline());
         int selected = inv.getSelectedHotbarIndex();
         for (int i = 0; i < 9; i++) {
             int slot = InventoryConstants.HOTBAR_START + i;
             boolean isSelected = (i == selected);
 
-            msg = msg.append(Component.text("  [" + i + "] ", NamedTextColor.GRAY))
+            msg = msg.append(Component.text("  [" + i + "] ", Palette.CAPTION))
                     .append(isSelected
-                            ? Component.text("▶ ", NamedTextColor.GOLD)
-                            : Component.text("  ", NamedTextColor.DARK_GRAY))
-                    .append(formatItem(inv.getItem(slot), isSelected ? NamedTextColor.YELLOW : NamedTextColor.WHITE))
-                    .append(Component.text(" (slot " + slot + ")", NamedTextColor.DARK_GRAY))
+                            ? Component.text("▶ ", Palette.BRAND)
+                            : Component.text("  ", Palette.CAPTION))
+                    .append(formatItem(inv.getItem(slot), isSelected ? Palette.VALUE : Palette.PARCH_50))
+                    .append(Component.text(" (slot " + slot + ")", Palette.CAPTION))
                     .append(Component.newline());
         }
         msg = msg.append(Component.newline());
 
-        msg = msg.append(Component.text("Inventory", NamedTextColor.AQUA, TextDecoration.BOLD))
+        msg = msg.append(Component.text("Inventory", Palette.BRAND, TextDecoration.BOLD))
                 .append(Component.newline());
 
         for (int row = 0; row < 3; row++) {
             int base = InventoryConstants.ITEMS_START + (row * 9);
 
-            msg = msg.append(Component.text("  Row " + (row + 1), NamedTextColor.GRAY))
+            msg = msg.append(Component.text("  Row " + (row + 1), Palette.LABEL))
                     .append(Component.newline());
 
             for (int col = 0; col < 9; col++) {
                 int slot = base + col;
 
-                msg = msg.append(Component.text("    Slot " + slot + ": ", NamedTextColor.DARK_GRAY))
-                        .append(formatItem(inv.getItem(slot), NamedTextColor.WHITE))
+                msg = msg.append(Component.text("    Slot " + slot + ": ", Palette.CAPTION))
+                        .append(formatItem(inv.getItem(slot), Palette.PARCH_50))
                         .append(Component.newline());
             }
         }

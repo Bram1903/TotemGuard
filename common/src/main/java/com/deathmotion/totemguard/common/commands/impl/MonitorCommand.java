@@ -18,21 +18,23 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.api3.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.gui.screen.PlayerMonitorScreen;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.NonNull;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
 
 public final class MonitorCommand extends AbstractCommand {
 
@@ -57,33 +59,29 @@ public final class MonitorCommand extends AbstractCommand {
             return;
         }
 
+        TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
+
         TGPlayer target = resolveTarget(sender, context.get("tg_player"));
         if (target == null) {
             return;
         }
 
         if (sender.getUniqueId().equals(target.getUuid())) {
-            sender.sendMessage(Component.text(
-                    "You cannot monitor your own inventory.",
-                    NamedTextColor.RED
-            ));
+            sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_SELF));
             return;
         }
 
-        TGPlatform platform = TGPlatform.getInstance();
         TGMonitorOpenEvent event = platform.getEventRepository().post(
                 new TGMonitorOpenEventImpl(sender.getUniqueId(), target.getUuid())
         );
         if (event.isCancelled()) {
-            sender.sendMessage(Component.text(
-                    "Opening the monitor was blocked.",
-                    NamedTextColor.RED
-            ));
+            sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_BLOCKED));
             return;
         }
 
         if (!platform.getGuiManager().open(sender, new PlayerMonitorScreen(target))) {
-            sender.sendMessage(Component.text("Failed to open the monitor GUI.", NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_OPEN_FAILED));
         }
     }
 
@@ -93,9 +91,9 @@ public final class MonitorCommand extends AbstractCommand {
             return target;
         }
 
-        sender.sendMessage(Component.text(
-                "Could not find a tracked TotemGuard player named '" + rawTarget + "'.",
-                NamedTextColor.RED
+        sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(
+                MessagesKeys.GENERAL_PLAYER_NOT_FOUND,
+                Map.of("tg_input", rawTarget)
         ));
         return null;
     }

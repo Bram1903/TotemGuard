@@ -19,16 +19,17 @@
 package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.api3.TotemGuard;
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.gui.screen.TotemGuardInfoScreen;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import lombok.NonNull;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
 
 public final class TotemGuardCommand extends AbstractCommand {
 
@@ -42,16 +43,21 @@ public final class TotemGuardCommand extends AbstractCommand {
 
     private void handleRoot(@NotNull CommandContext<Sender> context) {
         Sender sender = context.sender();
+        TGPlatform platform = TGPlatform.getInstance();
+
         if (!sender.isPlayer() || !sender.hasPermission(perm("gui"))) {
-            sender.sendMessage(Component.text(
-                    "TotemGuard " + TotemGuard.get().getVersion() + " on " + TGPlatform.getInstance().getPlatform().displayName(),
-                    NamedTextColor.YELLOW
+            sender.sendMessage(platform.getMessageService().getComponent(
+                    MessagesKeys.ROOT_VERSION,
+                    Map.of(
+                            "tg_version", TotemGuard.get().getVersion(),
+                            "tg_platform", platform.getPlatform().displayName()
+                    )
             ));
             return;
         }
 
-        if (!TGPlatform.getInstance().getGuiManager().open(sender, new TotemGuardInfoScreen())) {
-            sender.sendMessage(Component.text("Failed to open the TotemGuard GUI.", NamedTextColor.RED));
+        if (!platform.getGuiManager().open(sender, new TotemGuardInfoScreen())) {
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.ROOT_GUI_OPEN_FAILED));
         }
     }
 }

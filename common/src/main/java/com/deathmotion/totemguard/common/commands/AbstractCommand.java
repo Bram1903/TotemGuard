@@ -18,16 +18,14 @@
 
 package com.deathmotion.totemguard.common.commands;
 
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.Command;
 import org.incendo.cloud.CommandManager;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractCommand {
-
-    private static final Component PLAYER_ONLY = Component.text("You must be a player to use this command!", NamedTextColor.RED);
 
     protected abstract void register(@NotNull CommandManager<Sender> manager);
 
@@ -43,7 +41,7 @@ public abstract class AbstractCommand {
         if (sender.isPlayer()) {
             return true;
         }
-        sender.sendMessage(PLAYER_ONLY);
+        sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_ONLY));
         return false;
     }
 }

@@ -22,45 +22,46 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayFrame;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
+import com.deathmotion.totemguard.common.util.Palette;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 
 public final class TransactionDebugProvider implements DebugOverlayProvider {
 
     private static Component label(String text) {
-        return Component.text(text, NamedTextColor.GRAY);
+        return Component.text(text, Palette.LABEL);
     }
 
-    private static Component value(String text, NamedTextColor color) {
+    private static Component value(String text, TextColor color) {
         return Component.text(text, color);
     }
 
     private static Component separator() {
-        return Component.text(" | ", NamedTextColor.DARK_GRAY);
+        return Component.text(" | ", Palette.SEPARATOR);
     }
 
     private static String formatPing(int ping) {
         return ping < 0 ? "-" : ping + "ms";
     }
 
-    private static NamedTextColor pingColor(int ping) {
+    private static TextColor pingColor(int ping) {
         if (ping < 0) {
-            return NamedTextColor.GRAY;
+            return Palette.CONNECTIVE;
         }
 
         if (ping >= 250) {
-            return NamedTextColor.RED;
+            return Palette.DANGER;
         }
 
         if (ping >= 125) {
-            return NamedTextColor.YELLOW;
+            return Palette.WARN;
         }
 
-        return NamedTextColor.GREEN;
+        return Palette.SUCCESS;
     }
 
-    private static NamedTextColor countColor(int count) {
-        return count > 0 ? NamedTextColor.YELLOW : NamedTextColor.GREEN;
+    private static TextColor countColor(int count) {
+        return count > 0 ? Palette.WARN : Palette.SUCCESS;
     }
 
     private static String replyStatus(PingData pingData) {
@@ -87,16 +88,16 @@ public final class TransactionDebugProvider implements DebugOverlayProvider {
         return status.toString();
     }
 
-    private static NamedTextColor replyColor(PingData pingData) {
+    private static TextColor replyColor(PingData pingData) {
         if (!pingData.isObservedTransactionReply()) {
-            return NamedTextColor.GRAY;
+            return Palette.CONNECTIVE;
         }
 
         if (!pingData.isLastTransactionReplyValid() || pingData.isLastTransactionReplySkipped()) {
-            return NamedTextColor.RED;
+            return Palette.DANGER;
         }
 
-        return pingData.isLastTransactionReplySynthetic() ? NamedTextColor.AQUA : NamedTextColor.GREEN;
+        return pingData.isLastTransactionReplySynthetic() ? Palette.BRAND : Palette.SUCCESS;
     }
 
     private static String teleportStatus(PingData pingData) {
@@ -111,12 +112,12 @@ public final class TransactionDebugProvider implements DebugOverlayProvider {
         return "ok";
     }
 
-    private static NamedTextColor teleportColor(PingData pingData) {
+    private static TextColor teleportColor(PingData pingData) {
         if (!pingData.isObservedTeleportReply()) {
-            return NamedTextColor.GRAY;
+            return Palette.CONNECTIVE;
         }
 
-        return pingData.isLastTeleportReplySkipped() ? NamedTextColor.RED : NamedTextColor.GREEN;
+        return pingData.isLastTeleportReplySkipped() ? Palette.DANGER : Palette.SUCCESS;
     }
 
     @Override
@@ -142,13 +143,13 @@ public final class TransactionDebugProvider implements DebugOverlayProvider {
                 .append(separator())
                 .append(label("Own Q/A "))
                 .append(value(String.valueOf(pingData.getPendingSyntheticTransactionCount()), countColor(pingData.getPendingSyntheticTransactionCount())))
-                .append(Component.text("/", NamedTextColor.DARK_GRAY))
-                .append(value(String.valueOf(pingData.getAcceptedSyntheticTransactionCount()), NamedTextColor.AQUA))
+                .append(Component.text("/", Palette.CAPTION))
+                .append(value(String.valueOf(pingData.getAcceptedSyntheticTransactionCount()), Palette.BRAND))
                 .append(separator())
                 .append(label("All Q/A "))
                 .append(value(String.valueOf(pingData.getPendingTransactionCount()), countColor(pingData.getPendingTransactionCount())))
-                .append(Component.text("/", NamedTextColor.DARK_GRAY))
-                .append(value(String.valueOf(pingData.getAcceptedTransactionCount()), NamedTextColor.AQUA))
+                .append(Component.text("/", Palette.CAPTION))
+                .append(value(String.valueOf(pingData.getAcceptedTransactionCount()), Palette.BRAND))
                 .append(separator())
                 .append(label("Reply "))
                 .append(value(replyStatus(pingData), replyColor(pingData)))

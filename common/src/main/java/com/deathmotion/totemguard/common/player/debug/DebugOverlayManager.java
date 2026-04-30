@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.player.debug;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatTypes;
 import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage;
@@ -32,7 +33,6 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCh
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -112,7 +112,7 @@ public class DebugOverlayManager {
 
         for (Component line : frame.lines()) {
             if (!firstLine) {
-                rendered = rendered.append(Component.text(" || ", NamedTextColor.DARK_GRAY));
+                rendered = rendered.append(Component.text(" || ", Palette.SEPARATOR));
             }
 
             rendered = rendered.append(line);

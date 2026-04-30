@@ -25,11 +25,11 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.stats.StatisticsScreen;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -52,8 +52,8 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         boolean antiVpnEnabled = platform.getAntiVPNRepository().isEnabled();
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Live status of external services", NamedTextColor.GRAY));
-        lore.add(Component.text("TotemGuard depends on.", NamedTextColor.GRAY));
+        lore.add(Component.text("Live status of external services", Palette.CONNECTIVE));
+        lore.add(Component.text("TotemGuard depends on.", Palette.CONNECTIVE));
         lore.add(Component.empty());
         lore.add(serviceLine("Database", dbEnabled, dbConnected));
         lore.add(serviceLine("Redis", redisEnabled, redisConnected));
@@ -61,7 +61,7 @@ public final class TotemGuardInfoScreen extends GuiScreen {
 
         return GuiItems.simple(
                 ItemTypes.ENDER_CHEST,
-                Component.text("Services", NamedTextColor.LIGHT_PURPLE),
+                Component.text("Services", Palette.BRAND),
                 lore
         );
     }
@@ -69,13 +69,13 @@ public final class TotemGuardInfoScreen extends GuiScreen {
     private static Component serviceLine(String label, boolean enabled, boolean connected) {
         Component status;
         if (!enabled) {
-            status = Component.text("Disabled", NamedTextColor.DARK_GRAY);
+            status = Component.text("Disabled", Palette.CAPTION);
         } else if (connected) {
-            status = Component.text("Connected", NamedTextColor.GREEN);
+            status = Component.text("Connected", Palette.SUCCESS);
         } else {
-            status = Component.text("Disconnected", NamedTextColor.RED);
+            status = Component.text("Disconnected", Palette.DANGER);
         }
-        return Component.text(label + ": ", NamedTextColor.GRAY).append(status);
+        return Component.text(label + ": ", Palette.LABEL).append(status);
     }
 
     private static ItemStack buildInformationTile(TGPlatform platform) {
@@ -84,49 +84,49 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         int checkCount = CheckManagerImpl.knownCheckCount();
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Version", NamedTextColor.GOLD));
+        lore.add(Component.text("Version", Palette.BRAND));
         lore.add(GuiText.line("Plugin", pluginVersion.toDisplayString()));
         lore.add(GuiText.line("API", TGAPIVersions.CURRENT.toDisplayString()));
         lore.add(GuiText.line("Build time", BUILD_TIME_FORMAT.format(buildTime)));
 
         lore.add(Component.empty());
-        lore.add(Component.text("Platform", NamedTextColor.GOLD));
+        lore.add(Component.text("Platform", Palette.BRAND));
         lore.add(GuiText.line("Implementation", platform.getPlatform().displayName()));
         lore.add(GuiText.line("Build", platform.getPlatformVersion()));
         lore.add(GuiText.line("Checks registered", checkCount > 0 ? String.valueOf(checkCount) : "Pending first join"));
 
         if (pluginVersion.snapshot() && pluginVersion.snapshotCommit() != null) {
             lore.add(Component.empty());
-            lore.add(Component.text("Development build", NamedTextColor.GOLD));
+            lore.add(Component.text("Development build", Palette.BRAND));
             lore.add(GuiText.line("Commit", pluginVersion.snapshotCommit()));
         }
 
         return GuiItems.simple(
                 ItemTypes.TOTEM_OF_UNDYING,
-                Component.text("Information", NamedTextColor.GREEN),
+                Component.text("Information", Palette.BRAND),
                 lore
         );
     }
 
     private static ItemStack buildStatisticsTile(boolean dbReady) {
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Aggregated alert and punishment", NamedTextColor.GRAY));
-        lore.add(Component.text("counts across all players.", NamedTextColor.GRAY));
+        lore.add(Component.text("Aggregated alert and punishment", Palette.CONNECTIVE));
+        lore.add(Component.text("counts across all players.", Palette.CONNECTIVE));
         lore.add(Component.empty());
 
         if (dbReady) {
-            lore.add(Component.text("Click to browse ▶", NamedTextColor.DARK_GRAY));
+            lore.add(Component.text("Click to browse ▶", Palette.CAPTION));
             return GuiItems.simple(
                     ItemTypes.WRITABLE_BOOK,
-                    Component.text("Statistics", NamedTextColor.AQUA),
+                    Component.text("Statistics", Palette.BRAND),
                     lore
             );
         }
-        lore.add(Component.text("Database is offline.", NamedTextColor.RED));
-        lore.add(Component.text("Statistics are unavailable.", NamedTextColor.GRAY));
+        lore.add(Component.text("Database is offline.", Palette.DANGER));
+        lore.add(Component.text("Statistics are unavailable.", Palette.CONNECTIVE));
         return GuiItems.simple(
                 ItemTypes.WRITTEN_BOOK,
-                Component.text("Statistics", NamedTextColor.DARK_GRAY),
+                Component.text("Statistics", Palette.CAPTION),
                 lore
         );
     }
@@ -157,8 +157,8 @@ public final class TotemGuardInfoScreen extends GuiScreen {
 
         builder.set(31, GuiItems.simple(
                 ItemTypes.BARRIER,
-                Component.text("Close", NamedTextColor.RED),
-                List.of(Component.text("Close this screen", NamedTextColor.GRAY))
+                Component.text("Close", Palette.DANGER),
+                List.of(Component.text("Close this screen", Palette.CONNECTIVE))
         ), ctx -> ctx.close());
 
         return builder.build();

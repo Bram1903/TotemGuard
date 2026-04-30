@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.gui;
 
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 public final class GuiText {
 
@@ -28,13 +28,13 @@ public final class GuiText {
     }
 
     public static Component line(String label, String value) {
-        return Component.text(label + ": ", NamedTextColor.GRAY)
-                .append(Component.text(value, NamedTextColor.WHITE));
+        return Component.text(label + ": ", Palette.LABEL)
+                .append(Component.text(value, Palette.VALUE));
     }
 
     public static Component status(String label, boolean value) {
-        return Component.text(label + ": ", NamedTextColor.GRAY)
-                .append(Component.text(value ? "Yes" : "No", value ? NamedTextColor.GREEN : NamedTextColor.RED));
+        return Component.text(label + ": ", Palette.LABEL)
+                .append(Component.text(value ? "Yes" : "No", value ? Palette.SUCCESS : Palette.DANGER));
     }
 
     public static String itemSummary(ItemStack item) {

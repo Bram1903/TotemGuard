@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.config.key.ConfigKey;
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.api3.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
@@ -25,6 +27,7 @@ import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -34,8 +37,6 @@ import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import lombok.NonNull;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.description.Description;
@@ -43,6 +44,7 @@ import org.incendo.cloud.parser.standard.IntegerParser;
 import org.incendo.cloud.parser.standard.StringParser;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -91,58 +93,52 @@ public final class CheckCommand extends AbstractCommand {
         Sender sender = context.sender();
         String rawTarget = context.get("tg_player");
         int duration = context.<Integer>optional("duration").orElse(DEFAULT_CHECK_DURATION_MS);
+        MessageService messages = platform.getMessageService();
 
         TGPlayer target = TGPlayerSuggestionProvider.findPlayer(rawTarget);
         if (target == null) {
-            sender.sendMessage(Component.text(
-                    "Could not find a tracked TotemGuard player named '" + rawTarget + "'.",
-                    NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(
+                    MessagesKeys.GENERAL_PLAYER_NOT_FOUND,
+                    Map.of("tg_input", rawTarget)
+            ));
             return;
         }
 
         PlatformPlayer platformPlayer = target.getPlatformPlayer();
         if (platformPlayer == null) {
-            sender.sendMessage(Component.text(
-                    "This command is only available on backend servers.",
-                    NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(MessagesKeys.CHECK_BACKEND_ONLY));
             return;
         }
 
         if (target.isManualCheckActive()) {
-            sender.sendMessage(Component.text(
-                    target.getName() + " is already being checked.",
-                    NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(MessagesKeys.CHECK_ALREADY_CHECKING, target));
             return;
         }
 
         long now = System.currentTimeMillis();
         Long until = cooldownUntil.get(target.getUuid());
         if (until != null && until > now) {
-            sender.sendMessage(Component.text(
-                    target.getName() + " is on check cooldown for another " + (until - now) + "ms.",
-                    NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(
+                    MessagesKeys.CHECK_ON_COOLDOWN,
+                    target,
+                    Map.of("tg_remaining_ms", until - now)
+            ));
             return;
         }
 
         if (!platformPlayer.isInSurvivalOrAdventure()) {
-            sender.sendMessage(Component.text(
-                    target.getName() + " must be in survival or adventure mode.",
-                    NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(MessagesKeys.CHECK_WRONG_GAMEMODE, target));
             return;
         }
 
         if (platformPlayer.isInvulnerable()) {
-            sender.sendMessage(Component.text(
-                    target.getName() + " is invulnerable.",
-                    NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(MessagesKeys.CHECK_INVULNERABLE, target));
             return;
         }
 
         PacketInventory inventory = target.getInventory();
         if (!inventory.isTotemInSlot(InventoryConstants.SLOT_OFFHAND)) {
-            sender.sendMessage(Component.text(
-                    target.getName() + " does not have a totem in their offhand.",
-                    NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(MessagesKeys.CHECK_NO_TOTEM, target));
             return;
         }
 
@@ -187,9 +183,8 @@ public final class CheckCommand extends AbstractCommand {
                 () -> {
                     target.setManualCheckActive(false);
                     cooldownUntil.remove(target.getUuid());
-                    sender.sendMessage(Component.text(
-                            target.getName() + " could not be damaged; check aborted.",
-                            NamedTextColor.RED));
+                    sender.sendMessage(platform.getMessageService().getComponent(
+                            MessagesKeys.CHECK_DAMAGE_FAILED, target));
                 }
         );
     }
@@ -203,6 +198,7 @@ public final class CheckCommand extends AbstractCommand {
         handle.restore();
         target.setManualCheckActive(false);
 
+        MessageService messages = platform.getMessageService();
         if (flagged) {
             ManualTotemA check = target.getCheckManager().getManualCheck(ManualTotemA.class);
             if (check != null && check.isEnabled()) {
@@ -211,18 +207,18 @@ public final class CheckCommand extends AbstractCommand {
             // The AlertRepository buffers the flag and fans it out to staff / Redis /
             // punishment — but the sender may not have alerts enabled, so still give
             // them an immediate confirmation.
-            sender.sendMessage(Component.text()
-                    .append(Component.text(target.getName(), NamedTextColor.YELLOW))
-                    .append(Component.text(" re-totemed in ", NamedTextColor.RED))
-                    .append(Component.text(elapsedMs + "ms", NamedTextColor.YELLOW))
-                    .append(Component.text(" (window " + windowMs + "ms).", NamedTextColor.RED))
-                    .build());
+            sender.sendMessage(messages.getComponent(
+                    MessagesKeys.CHECK_FLAGGED,
+                    target,
+                    Map.of("tg_elapsed_ms", elapsedMs, "tg_window_ms", windowMs)
+            ));
         } else {
-            sender.sendMessage(Component.text()
-                    .append(Component.text(target.getName(), NamedTextColor.YELLOW))
-                    .append(Component.text(" passed the check.", NamedTextColor.GREEN))
-                    .build());
+            sendKey(sender, target, MessagesKeys.CHECK_PASSED);
         }
+    }
+
+    private void sendKey(Sender sender, TGPlayer target, ConfigKey<String> key) {
+        sender.sendMessage(platform.getMessageService().getComponent(key, target));
     }
 
 }

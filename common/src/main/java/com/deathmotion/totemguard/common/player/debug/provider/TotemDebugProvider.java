@@ -24,8 +24,9 @@ import com.deathmotion.totemguard.common.player.debug.DebugOverlayFrame;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.util.MathUtil;
+import com.deathmotion.totemguard.common.util.Palette;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 
 import java.util.List;
 import java.util.Locale;
@@ -33,15 +34,15 @@ import java.util.Locale;
 public final class TotemDebugProvider implements DebugOverlayProvider {
 
     private static Component label(String text) {
-        return Component.text(text, NamedTextColor.GRAY);
+        return Component.text(text, Palette.LABEL);
     }
 
-    private static Component value(String text, NamedTextColor color) {
+    private static Component value(String text, TextColor color) {
         return Component.text(text, color);
     }
 
     private static Component separator() {
-        return Component.text(" | ", NamedTextColor.DARK_GRAY);
+        return Component.text(" | ", Palette.SEPARATOR);
     }
 
     private static String formatDouble(double value) {
@@ -65,23 +66,23 @@ public final class TotemDebugProvider implements DebugOverlayProvider {
         boolean offhandTotem = player.getInventory().isTotemInSlot(InventoryConstants.SLOT_OFFHAND);
 
         String state;
-        NamedTextColor stateColor;
+        TextColor stateColor;
         if (lastUse != null) {
             long age = System.currentTimeMillis() - lastUse;
             if (age <= TotemData.MAX_TRACKED_INTERVAL_MS) {
                 state = "wait:" + age + "ms";
-                stateColor = NamedTextColor.YELLOW;
+                stateColor = Palette.WARN;
             } else {
                 state = "stale";
-                stateColor = NamedTextColor.GRAY;
+                stateColor = Palette.CONNECTIVE;
             }
         } else {
             state = "idle";
-            stateColor = NamedTextColor.GRAY;
+            stateColor = Palette.CONNECTIVE;
         }
 
         String offhandState = offhandTotem ? "totem" : "empty";
-        NamedTextColor offhandColor = offhandTotem ? NamedTextColor.GREEN : NamedTextColor.RED;
+        TextColor offhandColor = offhandTotem ? Palette.SUCCESS : Palette.DANGER;
 
         Long lastInterval = intervals.isEmpty() ? null : intervals.get(intervals.size() - 1);
         String lastDelay = lastInterval == null ? "-" : lastInterval + "ms";
@@ -97,16 +98,16 @@ public final class TotemDebugProvider implements DebugOverlayProvider {
                 .append(value(state, stateColor))
                 .append(separator())
                 .append(label("Last "))
-                .append(value(lastDelay, lastInterval == null ? NamedTextColor.GRAY : NamedTextColor.WHITE))
+                .append(value(lastDelay, lastInterval == null ? Palette.CONNECTIVE : Palette.VALUE))
                 .append(separator())
                 .append(label("Avg "))
-                .append(value(average, intervals.isEmpty() ? NamedTextColor.GRAY : NamedTextColor.WHITE))
+                .append(value(average, intervals.isEmpty() ? Palette.CONNECTIVE : Palette.VALUE))
                 .append(separator())
                 .append(label("SD "))
-                .append(value(deviation, intervals.size() < 2 ? NamedTextColor.GRAY : NamedTextColor.WHITE))
+                .append(value(deviation, intervals.size() < 2 ? Palette.CONNECTIVE : Palette.VALUE))
                 .append(separator())
                 .append(label("N "))
-                .append(value(String.valueOf(intervals.size()), intervals.isEmpty() ? NamedTextColor.GRAY : NamedTextColor.AQUA));
+                .append(value(String.valueOf(intervals.size()), intervals.isEmpty() ? Palette.CONNECTIVE : Palette.BRAND));
 
         return DebugOverlayFrame.of(line);
     }

@@ -18,13 +18,16 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
+import com.deathmotion.totemguard.common.util.Palette;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -34,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class DebugOverlayCommand extends AbstractCommand {
@@ -68,7 +72,7 @@ public final class DebugOverlayCommand extends AbstractCommand {
 
         TGPlayer player = sender.getTGPlayer();
         if (player == null) {
-            sender.sendMessage(Component.text("Your player data could not be found in the player repository", NamedTextColor.RED));
+            sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
             return;
         }
 
@@ -77,18 +81,18 @@ public final class DebugOverlayCommand extends AbstractCommand {
                 .collect(Collectors.joining(", "));
 
         Component message = Component.empty()
-                .append(Component.text("Debug Overlays", NamedTextColor.GREEN, TextDecoration.BOLD))
+                .append(Component.text("Debug Overlays", Palette.BRAND, TextDecoration.BOLD))
                 .append(Component.newline())
-                .append(Component.text("Use /tg debug <overlay> to toggle one.", NamedTextColor.GRAY))
+                .append(Component.text("Use /tg debug <overlay> to toggle one.", Palette.CONNECTIVE))
                 .append(Component.newline())
-                .append(Component.text("Available: ", NamedTextColor.GRAY))
-                .append(Component.text(overlays, NamedTextColor.YELLOW));
+                .append(Component.text("Available: ", Palette.LABEL))
+                .append(Component.text(overlays, Palette.VALUE));
 
         String activeOverlay = player.getDebugOverlayManager().getActiveOverlayKey();
         if (activeOverlay != null) {
             message = message.append(Component.newline())
-                    .append(Component.text("Active: ", NamedTextColor.GRAY))
-                    .append(Component.text(activeOverlay, NamedTextColor.YELLOW));
+                    .append(Component.text("Active: ", Palette.LABEL))
+                    .append(Component.text(activeOverlay, Palette.VALUE));
         }
 
         sender.sendMessage(message);
@@ -136,26 +140,30 @@ public final class DebugOverlayCommand extends AbstractCommand {
 
         TGPlayer player = sender.getTGPlayer();
         if (player == null) {
-            sender.sendMessage(Component.text("Your player data could not be found in the player repository", NamedTextColor.RED));
+            sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
             return;
         }
 
         String overlayKey = context.get("overlay");
+        MessageService messages = TGPlatform.getInstance().getMessageService();
         DebugOverlayProvider provider = player.getDebugOverlayManager().getProvider(overlayKey);
         if (provider == null) {
-            sender.sendMessage(Component.text("Unknown debug overlay: " + overlayKey, NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(
+                    MessagesKeys.DEBUG_UNKNOWN_OVERLAY,
+                    Map.of("tg_overlay", overlayKey)
+            ));
             return;
         }
 
         if (!sender.hasPermission(perm(provider.getPermissionSuffix()))) {
-            sender.sendMessage(Component.text("You do not have permission to use this debug overlay.", NamedTextColor.RED));
+            sender.sendMessage(messages.getComponent(MessagesKeys.DEBUG_NO_PERMISSION));
             return;
         }
 
         boolean enabled = player.getDebugOverlayManager().toggle(provider.getKey());
-        sender.sendMessage(Component.text(
-                provider.getDisplayName() + " debug overlay " + (enabled ? "enabled" : "disabled") + ".",
-                enabled ? NamedTextColor.GREEN : NamedTextColor.RED
+        sender.sendMessage(messages.getComponent(
+                enabled ? MessagesKeys.DEBUG_ENABLED : MessagesKeys.DEBUG_DISABLED,
+                Map.of("tg_overlay_name", provider.getDisplayName())
         ));
     }
 }

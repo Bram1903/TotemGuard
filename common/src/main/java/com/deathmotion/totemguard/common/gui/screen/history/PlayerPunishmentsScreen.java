@@ -25,11 +25,12 @@ import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -83,11 +84,11 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         };
     }
 
-    private static NamedTextColor colorFor(PunishmentType type) {
+    private static TextColor colorFor(PunishmentType type) {
         return switch (type) {
-            case GENERIC -> NamedTextColor.GRAY;
-            case KICK -> NamedTextColor.GOLD;
-            case BAN -> NamedTextColor.RED;
+            case GENERIC -> Palette.CONNECTIVE;
+            case KICK -> Palette.WARN;
+            case BAN -> Palette.DANGER;
         };
     }
 
@@ -133,17 +134,17 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
 
         builder.set(0, GuiItems.simple(
                 ItemTypes.ARROW,
-                Component.text("Back", NamedTextColor.GOLD),
-                List.of(Component.text("Return to the history menu", NamedTextColor.GRAY))
+                Component.text("Back", Palette.BRAND),
+                List.of(Component.text("Return to the history menu", Palette.CONNECTIVE))
         ), ctx -> ctx.back());
 
         if (offline) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Database offline", NamedTextColor.RED),
+                    Component.text("Database offline", Palette.DANGER),
                     List.of(
-                            Component.text("Punishment history is unavailable. The database", NamedTextColor.GRAY),
-                            Component.text("is disabled or currently unreachable.", NamedTextColor.GRAY)
+                            Component.text("Punishment history is unavailable. The database", Palette.CONNECTIVE),
+                            Component.text("is disabled or currently unreachable.", Palette.CONNECTIVE)
                     )
             ));
             return builder.build();
@@ -152,10 +153,10 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         if (loadError != null) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Failed to load punishments", NamedTextColor.RED),
+                    Component.text("Failed to load punishments", Palette.DANGER),
                     List.of(
-                            Component.text("Check the server log for details.", NamedTextColor.GRAY),
-                            Component.text(loadError, NamedTextColor.DARK_RED)
+                            Component.text("Check the server log for details.", Palette.CONNECTIVE),
+                            Component.text(loadError, Palette.VALUE_ON_DANGER)
                     )
             ));
             renderWindowFilters(builder);
@@ -167,8 +168,8 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         if (result == null) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.CLOCK,
-                    Component.text("Loading…", NamedTextColor.YELLOW),
-                    List.of(Component.text("Querying the database", NamedTextColor.GRAY))
+                    Component.text("Loading…", Palette.BRAND),
+                    List.of(Component.text("Querying the database", Palette.CONNECTIVE))
             ));
             renderWindowFilters(builder);
             return builder.build();
@@ -180,8 +181,8 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
             String suffix = window.isAllTime() ? "" : " in the " + window.label().toLowerCase();
             builder.set(22, GuiItems.simple(
                     ItemTypes.LIME_CONCRETE,
-                    Component.text("Clean record" + suffix, NamedTextColor.GREEN),
-                    List.of(Component.text("No punishments have been issued" + suffix + ".", NamedTextColor.GRAY))
+                    Component.text("Clean record" + suffix, Palette.SUCCESS),
+                    List.of(Component.text("No punishments have been issued" + suffix + ".", Palette.CONNECTIVE))
             ));
             renderWindowFilters(builder);
             return builder.build();
@@ -204,12 +205,12 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         lore.add(GuiText.line("When", HistoryText.relative(record.createdAt())
                 + "  (" + HistoryText.absolute(record.createdAt()) + ")"));
         lore.add(Component.empty());
-        lore.add(Component.text("Command:", NamedTextColor.GRAY));
-        lore.add(Component.text(record.command(), NamedTextColor.WHITE));
+        lore.add(Component.text("Command:", Palette.LABEL));
+        lore.add(Component.text(record.command(), Palette.CONNECTIVE));
         if (record.debug() != null && !record.debug().isEmpty()) {
             lore.add(Component.empty());
-            lore.add(Component.text("Debug:", NamedTextColor.GRAY));
-            lore.add(Component.text(record.debug(), NamedTextColor.WHITE));
+            lore.add(Component.text("Debug:", Palette.LABEL));
+            lore.add(Component.text(record.debug(), Palette.CONNECTIVE));
         }
 
         return GuiItems.simple(
@@ -227,10 +228,10 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
 
             ItemStack item = GuiItems.simple(
                     active ? ItemTypes.LIME_DYE : ItemTypes.LIGHT_GRAY_DYE,
-                    Component.text(option.label(), active ? NamedTextColor.GREEN : NamedTextColor.GRAY),
+                    Component.text(option.label(), active ? Palette.SUCCESS : Palette.CAPTION),
                     active
-                            ? List.of(Component.text("Currently selected", NamedTextColor.DARK_GREEN))
-                            : List.of(Component.text("Click to switch ▶", NamedTextColor.DARK_GRAY))
+                            ? List.of(Component.text("Currently selected", Palette.SUCCESS))
+                            : List.of(Component.text("Click to switch ▶", Palette.CAPTION))
             );
 
             if (active) {
@@ -249,8 +250,8 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         if (result.hasPrevious()) {
             builder.set(48, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Previous page", NamedTextColor.GOLD),
-                    List.of(Component.text("Page " + page, NamedTextColor.GRAY))
+                    Component.text("Previous page", Palette.BRAND),
+                    List.of(Component.text("Page " + page, Palette.CONNECTIVE))
             ), ctx -> ctx.replace(new PlayerPunishmentsScreen(targetId, targetName, page - 1, window)));
         }
 
@@ -260,15 +261,15 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
 
         builder.set(49, GuiItems.simple(
                 ItemTypes.PAPER,
-                Component.text("Page " + (page + 1) + " of " + pages, NamedTextColor.AQUA),
+                Component.text("Page " + (page + 1) + " of " + pages, Palette.BRAND),
                 footerLore
         ));
 
         if (result.hasNext()) {
             builder.set(50, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Next page", NamedTextColor.GOLD),
-                    List.of(Component.text("Page " + (page + 2), NamedTextColor.GRAY))
+                    Component.text("Next page", Palette.BRAND),
+                    List.of(Component.text("Page " + (page + 2), Palette.CONNECTIVE))
             ), ctx -> ctx.replace(new PlayerPunishmentsScreen(targetId, targetName, page + 1, window)));
         }
     }

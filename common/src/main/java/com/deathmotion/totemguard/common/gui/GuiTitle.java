@@ -18,18 +18,16 @@
 
 package com.deathmotion.totemguard.common.gui;
 
+import com.deathmotion.totemguard.common.util.Palette;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 public final class GuiTitle {
-
-    private static final TextColor COLOR = TextColor.fromHexString("#574F4D");
 
     private GuiTitle() {
     }
 
     public static Component of(String text) {
-        return Component.text(text, COLOR).decoration(TextDecoration.BOLD, true);
+        return Component.text(text, Palette.CAPTION).decoration(TextDecoration.BOLD, true);
     }
 }

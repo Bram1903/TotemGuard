@@ -22,9 +22,9 @@ import com.deathmotion.totemguard.api3.result.ResultError;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -97,15 +97,15 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
 
         builder.set(0, GuiItems.simple(
                 ItemTypes.ARROW,
-                Component.text("Back", NamedTextColor.GOLD),
-                List.of(Component.text("Return to the full alerts feed", NamedTextColor.GRAY))
+                Component.text("Back", Palette.BRAND),
+                List.of(Component.text("Return to the full alerts feed", Palette.CONNECTIVE))
         ), ctx -> ctx.back());
 
         if (offline) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Database offline", NamedTextColor.RED),
-                    List.of(Component.text("Filtering is unavailable right now.", NamedTextColor.GRAY))
+                    Component.text("Database offline", Palette.DANGER),
+                    List.of(Component.text("Filtering is unavailable right now.", Palette.CONNECTIVE))
             ));
             return builder.build();
         }
@@ -115,8 +115,8 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (all == null) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.CLOCK,
-                    Component.text("Loading…", NamedTextColor.YELLOW),
-                    List.of(Component.text("Querying the database", NamedTextColor.GRAY))
+                    Component.text("Loading…", Palette.BRAND),
+                    List.of(Component.text("Querying the database", Palette.CONNECTIVE))
             ));
             return builder.build();
         }
@@ -124,10 +124,10 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (loadError != null) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Failed to load checks", NamedTextColor.RED),
+                    Component.text("Failed to load checks", Palette.DANGER),
                     List.of(
-                            Component.text("Check the server log for details.", NamedTextColor.GRAY),
-                            Component.text(loadError, NamedTextColor.DARK_RED)
+                            Component.text("Check the server log for details.", Palette.CONNECTIVE),
+                            Component.text(loadError, Palette.VALUE_ON_DANGER)
                     )
             ));
             return builder.build();
@@ -136,8 +136,8 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (all.isEmpty()) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.LIME_CONCRETE,
-                    Component.text("Clean record", NamedTextColor.GREEN),
-                    List.of(Component.text("No alerts have been logged for this player.", NamedTextColor.GRAY))
+                    Component.text("Clean record", Palette.SUCCESS),
+                    List.of(Component.text("No alerts have been logged for this player.", Palette.CONNECTIVE))
             ));
             return builder.build();
         }
@@ -150,11 +150,11 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
             AlertCheckSummary summary = pageRows.get(i);
             builder.set(CONTENT_SLOTS[i], GuiItems.simple(
                     ItemTypes.PAPER,
-                    Component.text(summary.checkName(), NamedTextColor.YELLOW),
+                    Component.text(summary.checkName(), Palette.BRAND),
                     List.of(
                             GuiText.line("Alerts", String.valueOf(summary.alertCount())),
                             Component.empty(),
-                            Component.text("Click to view only this check ▶", NamedTextColor.DARK_GRAY)
+                            Component.text("Click to view only this check ▶", Palette.CAPTION)
                     )
             ), ctx -> ctx.replace(new PlayerAlertsScreen(
                     targetId, targetName, 0, summary.checkName())));
@@ -172,22 +172,22 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
         if (hasPrev) {
             builder.set(48, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Previous page", NamedTextColor.GOLD),
-                    List.of(Component.text("Page " + page, NamedTextColor.GRAY))
+                    Component.text("Previous page", Palette.BRAND),
+                    List.of(Component.text("Page " + page, Palette.CONNECTIVE))
             ), ctx -> ctx.replace(new PlayerAlertChecksScreen(targetId, targetName, page - 1)));
         }
 
         builder.set(49, GuiItems.simple(
                 ItemTypes.PAPER,
-                Component.text("Page " + (page + 1) + " of " + pages, NamedTextColor.AQUA),
+                Component.text("Page " + (page + 1) + " of " + pages, Palette.BRAND),
                 List.of(GuiText.line("Distinct checks", String.valueOf(total)))
         ));
 
         if (hasNext) {
             builder.set(50, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Next page", NamedTextColor.GOLD),
-                    List.of(Component.text("Page " + (page + 2), NamedTextColor.GRAY))
+                    Component.text("Next page", Palette.BRAND),
+                    List.of(Component.text("Page " + (page + 2), Palette.CONNECTIVE))
             ), ctx -> ctx.replace(new PlayerAlertChecksScreen(targetId, targetName, page + 1)));
         }
     }

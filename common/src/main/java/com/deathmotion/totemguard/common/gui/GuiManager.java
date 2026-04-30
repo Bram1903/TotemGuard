@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -33,7 +34,6 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,9 +59,9 @@ public final class GuiManager {
     }
 
     private static Component deniedMessage(String permission) {
-        return Component.text("You lack the permission ", NamedTextColor.RED)
-                .append(Component.text(permission, NamedTextColor.YELLOW))
-                .append(Component.text(" to open that screen.", NamedTextColor.RED));
+        return Component.text("You lack the permission ", Palette.DANGER)
+                .append(Component.text(permission, Palette.VALUE_ON_DANGER))
+                .append(Component.text(" to open that screen.", Palette.DANGER));
     }
 
     private GuiViewerInventory inventoryFor(UUID viewerId) {
@@ -89,7 +89,7 @@ public final class GuiManager {
 
         TGPlayer viewer = platform.getPlayerRepository().getPlayer(user);
         if (viewer != null && viewer.isModDetectionActive()) {
-            sender.sendMessage(Component.text("Mod detection is still running on your client — try again in a moment.", NamedTextColor.RED));
+            sender.sendMessage(Component.text("Mod detection is still running on your client — try again in a moment.", Palette.DANGER));
             return false;
         }
 

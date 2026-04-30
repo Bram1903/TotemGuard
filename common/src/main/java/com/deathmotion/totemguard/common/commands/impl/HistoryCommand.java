@@ -18,23 +18,24 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
 import com.deathmotion.totemguard.common.gui.screen.history.PlayerHistoryHubScreen;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.NonNull;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -76,6 +77,8 @@ public final class HistoryCommand extends AbstractCommand {
 
         String input = context.get("player");
         UUID maybeUuid = tryParseUuid(input);
+        TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
 
         // Online match is only reliable for names. A raw UUID skips straight to DB lookup
         // so staff can target the old holder of a recycled name.
@@ -87,33 +90,33 @@ public final class HistoryCommand extends AbstractCommand {
             }
         }
 
-        DatabaseRepositoryImpl database = TGPlatform.getInstance().getDatabaseRepository();
+        DatabaseRepositoryImpl database = platform.getDatabaseRepository();
         if (!database.isConnected()) {
-            sender.sendMessage(Component.text(
-                    "'" + input + "' is not online and the database is unavailable.",
-                    NamedTextColor.RED
+            sender.sendMessage(messages.getComponent(
+                    MessagesKeys.GENERAL_DATABASE_UNAVAILABLE,
+                    Map.of("tg_input", input)
             ));
             return;
         }
 
-        TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
+        platform.getScheduler().runAsyncTask(() -> {
             PlayerRecord record;
             try {
                 record = maybeUuid != null
                         ? database.findPlayerByUuid(maybeUuid)
                         : database.findPlayerByName(input);
             } catch (Exception ex) {
-                sender.sendMessage(Component.text(
-                        "Lookup failed: " + ex.getMessage(),
-                        NamedTextColor.RED
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.GENERAL_LOOKUP_FAILED,
+                        Map.of("tg_error", String.valueOf(ex.getMessage()))
                 ));
                 return;
             }
 
             if (record == null) {
-                sender.sendMessage(Component.text(
-                        "No TotemGuard records found for '" + input + "'.",
-                        NamedTextColor.RED
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.GENERAL_NO_RECORDS,
+                        Map.of("tg_input", input)
                 ));
                 return;
             }
@@ -123,10 +126,11 @@ public final class HistoryCommand extends AbstractCommand {
     }
 
     private void openFor(Sender sender, UUID targetId, String targetName) {
-        if (!TGPlatform.getInstance().getGuiManager().open(
+        TGPlatform platform = TGPlatform.getInstance();
+        if (!platform.getGuiManager().open(
                 sender, new PlayerHistoryHubScreen(targetId, targetName)
         )) {
-            sender.sendMessage(Component.text("Failed to open the history GUI.", NamedTextColor.RED));
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.HISTORY_OPEN_FAILED));
         }
     }
 }

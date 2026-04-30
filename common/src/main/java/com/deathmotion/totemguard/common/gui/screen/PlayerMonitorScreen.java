@@ -23,11 +23,11 @@ import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,10 +69,10 @@ public final class PlayerMonitorScreen extends GuiScreen {
             builder.fillEmpty(GuiItems.filler());
             builder.set(13, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Self Monitor Disabled", NamedTextColor.RED),
+                    Component.text("Self Monitor Disabled", Palette.DANGER),
                     List.of(Component.text(
                             "Monitoring your own inventory is disabled to prevent ghost item desync.",
-                            NamedTextColor.GRAY
+                            Palette.CONNECTIVE
                     ))
             ));
             builder.set(49, singleExitButton(session), ctx -> {
@@ -96,10 +96,10 @@ public final class PlayerMonitorScreen extends GuiScreen {
             });
             builder.set(13, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text(targetName + " is no longer tracked", NamedTextColor.RED),
+                    Component.text(targetName + " is no longer tracked", Palette.DANGER),
                     List.of(
                             GuiText.line("UUID", targetId.toString()),
-                            Component.text("All monitor viewers are closed", NamedTextColor.GRAY)
+                            Component.text("All monitor viewers are closed", Palette.CONNECTIVE)
                     )
             ));
             return builder.build();
@@ -109,7 +109,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         builder.set(0, GuiItems.playerHead(
                 target.getUser().getProfile(),
-                Component.text(target.getName(), NamedTextColor.GREEN),
+                Component.text(target.getName(), Palette.SUCCESS),
                 List.of(
                         GuiText.line("Client version", target.getClientVersion().getReleaseName()),
                         GuiText.line("Brand", target.getClientBrand()),
@@ -146,7 +146,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
         ));
         builder.set(4, GuiItems.simple(
                 ItemTypes.PAPER,
-                Component.text("Packet State", NamedTextColor.AQUA),
+                Component.text("Packet State", Palette.BRAND),
                 List.of(
                         GuiText.line("Last issuer", String.valueOf(inventory.getLastIssuer())),
                         GuiText.line("Selected hotbar", String.valueOf(inventory.getSelectedHotbarIndex())),
@@ -156,13 +156,13 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         builder.set(5, GuiItems.simple(
                 target.getData().isOpenInventory() ? ItemTypes.GREEN_WOOL : ItemTypes.RED_WOOL,
-                Component.text(target.getData().isOpenInventory() ? "Inventory Open" : "Inventory Closed", NamedTextColor.AQUA),
+                Component.text(target.getData().isOpenInventory() ? "Inventory Open" : "Inventory Closed", Palette.BRAND),
                 List.of(GuiText.status("Inventory open", target.getData().isOpenInventory()))
         ));
 
         builder.set(6, GuiItems.simple(
                 ItemTypes.COMPARATOR,
-                Component.text("Latency", NamedTextColor.LIGHT_PURPLE),
+                Component.text("Latency", Palette.BRAND),
                 List.of(
                         GuiText.line("Transaction ping", String.valueOf(target.getPingData().getTransactionPing())),
                         GuiText.line("KeepAlive ping", String.valueOf(target.getPingData().getKeepAlivePing())),
@@ -172,11 +172,11 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         builder.set(7, GuiItems.simple(
                 ItemTypes.BOOK,
-                Component.text("Client", NamedTextColor.YELLOW),
+                Component.text("Client", Palette.BRAND),
                 List.of(
                         GuiText.line("Client version", target.getClientVersion().getReleaseName()),
                         GuiText.line("Brand", target.getClientBrand()),
-                        Component.text("Head opens the full profile.", NamedTextColor.GRAY)
+                        Component.text("Head opens the full profile.", Palette.CONNECTIVE)
                 )
         ));
 
@@ -251,12 +251,12 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
     private ItemStack emptyPane(String label, List<Component> lore, com.github.retrooper.packetevents.protocol.item.type.ItemType type) {
         List<Component> fullLore = new ArrayList<>(lore.size() + 1);
-        fullLore.add(Component.text("Empty", NamedTextColor.GRAY));
+        fullLore.add(Component.text("Empty", Palette.CONNECTIVE));
         fullLore.addAll(lore);
 
         return GuiItems.simple(
                 type,
-                Component.text(label, NamedTextColor.WHITE),
+                Component.text(label, Palette.PARCH_50),
                 fullLore
         );
     }
@@ -264,7 +264,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
     private ItemStack separatorPane() {
         return GuiItems.simple(
                 ItemTypes.WHITE_STAINED_GLASS_PANE,
-                Component.text(" ", NamedTextColor.WHITE),
+                Component.text(" ", Palette.PARCH_50),
                 List.of()
         );
     }
@@ -273,15 +273,15 @@ public final class PlayerMonitorScreen extends GuiScreen {
         if (session.hasParent()) {
             return GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Return", NamedTextColor.GOLD),
-                    List.of(Component.text("Return to the previous screen", NamedTextColor.GRAY))
+                    Component.text("Return", Palette.BRAND),
+                    List.of(Component.text("Return to the previous screen", Palette.CONNECTIVE))
             );
         }
 
         return GuiItems.simple(
                 ItemTypes.BARRIER,
-                Component.text("Close", NamedTextColor.RED),
-                List.of(Component.text("Close this screen", NamedTextColor.GRAY))
+                Component.text("Close", Palette.DANGER),
+                List.of(Component.text("Close this screen", Palette.CONNECTIVE))
         );
     }
 }

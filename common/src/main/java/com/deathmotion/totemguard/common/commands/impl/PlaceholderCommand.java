@@ -23,9 +23,9 @@ import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.Palette;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -72,15 +72,15 @@ public final class PlaceholderCommand extends AbstractCommand {
 
     private void executePlaceholderCommand(@NonNull CommandContext<Sender> context) {
         Component msg = Component.empty()
-                .append(Component.text("TotemGuard Placeholder Tools", NamedTextColor.GREEN, TextDecoration.BOLD))
+                .append(Component.text("TotemGuard Placeholder Tools", Palette.BRAND, TextDecoration.BOLD))
                 .append(Component.newline())
-                .append(Component.text("Usage:", NamedTextColor.GRAY))
+                .append(Component.text("Usage:", Palette.LABEL))
                 .append(Component.newline())
-                .append(Component.text("  /tg placeholder list", NamedTextColor.YELLOW))
-                .append(Component.text(" - show all registered placeholder keys", NamedTextColor.GRAY))
+                .append(Component.text("  /tg placeholder list", Palette.VALUE))
+                .append(Component.text(" - show all registered placeholder keys", Palette.CONNECTIVE))
                 .append(Component.newline())
-                .append(Component.text("  /tg placeholder parse <message>", NamedTextColor.YELLOW))
-                .append(Component.text(" - parse placeholders in a message", NamedTextColor.GRAY));
+                .append(Component.text("  /tg placeholder parse <message>", Palette.VALUE))
+                .append(Component.text(" - parse placeholders in a message", Palette.CONNECTIVE));
 
         context.sender().sendMessage(msg);
     }
@@ -90,7 +90,7 @@ public final class PlaceholderCommand extends AbstractCommand {
         Set<String> patterns = placeholderRepository.registeredPatterns();
 
         if (keys.isEmpty() && patterns.isEmpty()) {
-            context.sender().sendMessage(Component.text("No placeholder providers are registered.", NamedTextColor.RED));
+            context.sender().sendMessage(Component.text("No placeholder providers are registered.", Palette.DANGER));
             return;
         }
 
@@ -104,30 +104,30 @@ public final class PlaceholderCommand extends AbstractCommand {
         int to = Math.min(from + pageSize, all.size());
 
         Component header = Component.empty()
-                .append(Component.text("Registered Placeholders", NamedTextColor.GREEN, TextDecoration.BOLD))
-                .append(Component.text(" (" + all.size() + ")", NamedTextColor.DARK_GRAY))
+                .append(Component.text("Registered Placeholders", Palette.BRAND, TextDecoration.BOLD))
+                .append(Component.text(" (" + all.size() + ")", Palette.CAPTION))
                 .append(Component.newline())
-                .append(Component.text("Showing page " + page + "/" + pages, NamedTextColor.GRAY))
+                .append(Component.text("Showing page " + page + "/" + pages, Palette.CONNECTIVE))
                 .append(Component.newline())
-                .append(Component.text("────────────────────────────", NamedTextColor.DARK_GRAY))
+                .append(Component.text("────────────────────────────", Palette.CAPTION))
                 .append(Component.newline());
 
         Component body = Component.empty();
         for (int i = from; i < to; i++) {
             String key = all.get(i);
-            body = body.append(Component.text("%" + key + "%", NamedTextColor.YELLOW))
-                    .append(Component.text("  ", NamedTextColor.DARK_GRAY));
+            body = body.append(Component.text("%" + key + "%", Palette.VALUE))
+                    .append(Component.text("  ", Palette.CAPTION));
             if ((i - from + 1) % 4 == 0) body = body.append(Component.newline());
         }
 
         if (!patterns.isEmpty()) {
             body = body.append(Component.newline())
                     .append(Component.newline())
-                    .append(Component.text("Dynamic Patterns", NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.text("Dynamic Patterns", Palette.BRAND, TextDecoration.BOLD))
                     .append(Component.newline());
 
             for (String pattern : patterns) {
-                body = body.append(Component.text(pattern, NamedTextColor.AQUA))
+                body = body.append(Component.text(pattern, Palette.VALUE))
                         .append(Component.newline());
             }
         }
@@ -150,13 +150,13 @@ public final class PlaceholderCommand extends AbstractCommand {
                 : placeholderRepository.replace(message);
 
         Component msg = Component.empty()
-                .append(Component.text("Placeholder Parse", NamedTextColor.GREEN, TextDecoration.BOLD))
+                .append(Component.text("Placeholder Parse", Palette.BRAND, TextDecoration.BOLD))
                 .append(Component.newline())
-                .append(Component.text("Input:  ", NamedTextColor.GRAY))
-                .append(Component.text(message, NamedTextColor.WHITE))
+                .append(Component.text("Input:  ", Palette.LABEL))
+                .append(Component.text(message, Palette.PARCH_50))
                 .append(Component.newline())
-                .append(Component.text("Output: ", NamedTextColor.GRAY))
-                .append(Component.text(parsed, NamedTextColor.WHITE));
+                .append(Component.text("Output: ", Palette.LABEL))
+                .append(Component.text(parsed, Palette.PARCH_50));
 
         context.sender().sendMessage(msg);
     }

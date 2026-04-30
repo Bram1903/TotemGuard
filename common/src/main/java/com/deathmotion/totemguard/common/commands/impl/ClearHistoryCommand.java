@@ -18,23 +18,24 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.api3.history.HistoryClearResult;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
+import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.NonNull;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.UUID;
 
 public final class ClearHistoryCommand extends AbstractCommand {
@@ -46,14 +47,6 @@ public final class ClearHistoryCommand extends AbstractCommand {
         } catch (IllegalArgumentException ex) {
             return null;
         }
-    }
-
-    private static Component buildSuccessMessage(String name, HistoryClearResult result) {
-        return Component.text("Cleared ", NamedTextColor.GREEN)
-                .append(Component.text(result.alertsRemoved() + " alert(s)", NamedTextColor.YELLOW))
-                .append(Component.text(" and ", NamedTextColor.GREEN))
-                .append(Component.text(result.punishmentsRemoved() + " punishment(s)", NamedTextColor.YELLOW))
-                .append(Component.text(" for " + name + ".", NamedTextColor.GREEN));
     }
 
     @Override
@@ -75,6 +68,8 @@ public final class ClearHistoryCommand extends AbstractCommand {
         Sender sender = context.sender();
         String input = context.get("player");
         UUID maybeUuid = tryParseUuid(input);
+        TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
 
         if (maybeUuid == null) {
             TGPlayer online = TGPlayerSuggestionProvider.findPlayer(input);
@@ -84,33 +79,33 @@ public final class ClearHistoryCommand extends AbstractCommand {
             }
         }
 
-        DatabaseRepositoryImpl database = TGPlatform.getInstance().getDatabaseRepository();
+        DatabaseRepositoryImpl database = platform.getDatabaseRepository();
         if (!database.isConnected()) {
-            sender.sendMessage(Component.text(
-                    "'" + input + "' is not online and the database is unavailable.",
-                    NamedTextColor.RED
+            sender.sendMessage(messages.getComponent(
+                    MessagesKeys.GENERAL_DATABASE_UNAVAILABLE,
+                    Map.of("tg_input", input)
             ));
             return;
         }
 
-        TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
+        platform.getScheduler().runAsyncTask(() -> {
             PlayerRecord record;
             try {
                 record = maybeUuid != null
                         ? database.findPlayerByUuid(maybeUuid)
                         : database.findPlayerByName(input);
             } catch (Exception ex) {
-                sender.sendMessage(Component.text(
-                        "Lookup failed: " + ex.getMessage(),
-                        NamedTextColor.RED
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.GENERAL_LOOKUP_FAILED,
+                        Map.of("tg_error", String.valueOf(ex.getMessage()))
                 ));
                 return;
             }
 
             if (record == null) {
-                sender.sendMessage(Component.text(
-                        "No TotemGuard records found for '" + input + "'.",
-                        NamedTextColor.RED
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.GENERAL_NO_RECORDS,
+                        Map.of("tg_input", input)
                 ));
                 return;
             }
@@ -120,18 +115,29 @@ public final class ClearHistoryCommand extends AbstractCommand {
     }
 
     private void runClear(Sender sender, UUID uuid, String name) {
-        sender.sendMessage(Component.text(
-                "Clearing history for " + name + "…",
-                NamedTextColor.GRAY
+        TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
+
+        sender.sendMessage(messages.getComponent(
+                MessagesKeys.CLEARHISTORY_CLEARING,
+                Map.of("tg_player", name)
         ));
 
-        TGPlatform.getInstance().getHistoryRepository().clear(uuid).thenAccept(response -> {
+        platform.getHistoryRepository().clear(uuid).thenAccept(response -> {
             if (response.ok()) {
-                sender.sendMessage(buildSuccessMessage(name, response.value()));
+                HistoryClearResult result = response.value();
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.CLEARHISTORY_CLEARED,
+                        Map.of(
+                                "tg_player", name,
+                                "tg_alerts_removed", result.alertsRemoved(),
+                                "tg_punishments_removed", result.punishmentsRemoved()
+                        )
+                ));
             } else {
-                sender.sendMessage(Component.text(
-                        "Failed to clear history: " + response.message(),
-                        NamedTextColor.RED
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.CLEARHISTORY_CLEAR_FAILED,
+                        Map.of("tg_error", String.valueOf(response.message()))
                 ));
             }
         });

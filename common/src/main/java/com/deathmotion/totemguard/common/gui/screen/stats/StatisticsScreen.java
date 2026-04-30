@@ -23,10 +23,10 @@ import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
 import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -97,24 +97,24 @@ public final class StatisticsScreen extends GuiScreen {
         if (session.hasParent()) {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Back", NamedTextColor.GOLD),
-                    List.of(Component.text("Return to the overview", NamedTextColor.GRAY))
+                    Component.text("Back", Palette.BRAND),
+                    List.of(Component.text("Return to the overview", Palette.CONNECTIVE))
             ), ctx -> ctx.back());
         } else {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Close", NamedTextColor.RED),
-                    List.of(Component.text("Close this screen", NamedTextColor.GRAY))
+                    Component.text("Close", Palette.DANGER),
+                    List.of(Component.text("Close this screen", Palette.CONNECTIVE))
             ), ctx -> ctx.close());
         }
 
         if (offline) {
             builder.set(SLOT_CURRENT_WINDOW, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Database offline", NamedTextColor.RED),
+                    Component.text("Database offline", Palette.DANGER),
                     List.of(
-                            Component.text("Statistics are unavailable. The database", NamedTextColor.GRAY),
-                            Component.text("is disabled or currently unreachable.", NamedTextColor.GRAY)
+                            Component.text("Statistics are unavailable. The database", Palette.CONNECTIVE),
+                            Component.text("is disabled or currently unreachable.", Palette.CONNECTIVE)
                     )
             ));
             return builder.build();
@@ -123,10 +123,10 @@ public final class StatisticsScreen extends GuiScreen {
         if (loadError != null) {
             builder.set(SLOT_CURRENT_WINDOW, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Failed to load statistics", NamedTextColor.RED),
+                    Component.text("Failed to load statistics", Palette.DANGER),
                     List.of(
-                            Component.text("Check the server log for details.", NamedTextColor.GRAY),
-                            Component.text(loadError, NamedTextColor.DARK_RED)
+                            Component.text("Check the server log for details.", Palette.CONNECTIVE),
+                            Component.text(loadError, Palette.VALUE_ON_DANGER)
                     )
             ));
             renderFilters(builder);
@@ -143,7 +143,7 @@ public final class StatisticsScreen extends GuiScreen {
         lore.add(GuiText.line("Active window", window.label()));
         lore.add(Component.empty());
         if (snapshot == null) {
-            lore.add(Component.text("Querying the database…", NamedTextColor.GRAY));
+            lore.add(Component.text("Querying the database…", Palette.CONNECTIVE));
         } else {
             lore.add(GuiText.line("Alerts", String.valueOf(snapshot.alertCount())));
             lore.add(GuiText.line("Punishments", String.valueOf(snapshot.punishmentCount())));
@@ -151,11 +151,11 @@ public final class StatisticsScreen extends GuiScreen {
             lore.add(GuiText.line("DB size", formatBytes(snapshot.databaseBytes())));
         }
         lore.add(Component.empty());
-        lore.add(Component.text("Pick a different window below.", NamedTextColor.DARK_GRAY));
+        lore.add(Component.text("Pick a different window below.", Palette.CAPTION));
 
         return GuiItems.simple(
                 ItemTypes.CLOCK,
-                Component.text("Current window", NamedTextColor.AQUA),
+                Component.text("Current window", Palette.BRAND),
                 lore
         );
     }
@@ -175,10 +175,10 @@ public final class StatisticsScreen extends GuiScreen {
 
             ItemStack item = GuiItems.simple(
                     active ? ItemTypes.LIME_DYE : ItemTypes.LIGHT_GRAY_DYE,
-                    Component.text(option.label(), active ? NamedTextColor.GREEN : NamedTextColor.GRAY),
+                    Component.text(option.label(), active ? Palette.SUCCESS : Palette.CAPTION),
                     active
-                            ? List.of(Component.text("Currently selected", NamedTextColor.DARK_GREEN))
-                            : List.of(Component.text("Click to switch ▶", NamedTextColor.DARK_GRAY))
+                            ? List.of(Component.text("Currently selected", Palette.SUCCESS))
+                            : List.of(Component.text("Click to switch ▶", Palette.CAPTION))
             );
 
             if (active) {

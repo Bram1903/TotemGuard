@@ -26,8 +26,8 @@ alerts:
   # Title of the embed.
   title: "TotemGuard Alert"
 
-  # Color of the embed, in hex (e.g. "#d9b61a").
-  color: "#d9b61a"
+  # Color of the embed, in hex (e.g. "#FBAF00").
+  color: "#FBAF00"
 
   # Include a timestamp on the embed.
   timestamp: true
@@ -70,7 +70,7 @@ punishments:
   username: "TotemGuard"
   avatar: "https://media.discordapp.net/attachments/892046266341662833/1496616437232697405/image.png"
   title: "TotemGuard Punishment"
-  color: "#d60010"
+  color: "#D4452C"
   timestamp: true
   thumbnail: "https://crafthead.net/helm/%tg_player_uuid%"
   footer: "Server: %tg_server%"

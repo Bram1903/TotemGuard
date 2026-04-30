@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api3.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
@@ -25,12 +26,12 @@ import com.deathmotion.totemguard.common.gui.screen.PlayerProfileScreen;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.NonNull;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
 
 public final class ProfileCommand extends AbstractCommand {
 
@@ -55,13 +56,14 @@ public final class ProfileCommand extends AbstractCommand {
             return;
         }
 
+        TGPlatform platform = TGPlatform.getInstance();
         TGPlayer target = resolveTarget(sender, context.get("tg_player"));
         if (target == null) {
             return;
         }
 
-        if (!TGPlatform.getInstance().getGuiManager().open(sender, new PlayerProfileScreen(target))) {
-            sender.sendMessage(Component.text("Failed to open the profile GUI.", NamedTextColor.RED));
+        if (!platform.getGuiManager().open(sender, new PlayerProfileScreen(target))) {
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.PROFILE_OPEN_FAILED));
         }
     }
 
@@ -71,9 +73,9 @@ public final class ProfileCommand extends AbstractCommand {
             return target;
         }
 
-        sender.sendMessage(Component.text(
-                "Could not find a tracked TotemGuard player named '" + rawTarget + "'.",
-                NamedTextColor.RED
+        sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(
+                MessagesKeys.GENERAL_PLAYER_NOT_FOUND,
+                Map.of("tg_input", rawTarget)
         ));
         return null;
     }

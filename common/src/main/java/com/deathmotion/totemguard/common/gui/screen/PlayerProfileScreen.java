@@ -27,9 +27,9 @@ import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.history.HistoryText;
 import com.deathmotion.totemguard.common.gui.screen.history.PlayerHistoryHubScreen;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -98,10 +98,10 @@ public final class PlayerProfileScreen extends GuiScreen {
         if (target == null) {
             builder.set(SLOT_HEAD, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text(targetName + " is no longer tracked", NamedTextColor.RED),
+                    Component.text(targetName + " is no longer tracked", Palette.DANGER),
                     List.of(
                             GuiText.line("UUID", targetId.toString()),
-                            Component.text("The player left the repository.", NamedTextColor.GRAY)
+                            Component.text("The player left the repository.", Palette.CONNECTIVE)
                     )
             ));
             return builder.build();
@@ -109,7 +109,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         builder.set(SLOT_HEAD, GuiItems.playerHead(
                 target.getUser().getProfile(),
-                Component.text(target.getName(), NamedTextColor.GREEN),
+                Component.text(target.getName(), Palette.SUCCESS),
                 buildHeadLore(target)
         ));
 
@@ -123,14 +123,14 @@ public final class PlayerProfileScreen extends GuiScreen {
         if (session.hasParent()) {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Back", NamedTextColor.GOLD),
-                    List.of(Component.text("Return to the previous screen", NamedTextColor.GRAY))
+                    Component.text("Back", Palette.BRAND),
+                    List.of(Component.text("Return to the previous screen", Palette.CONNECTIVE))
             ), ctx -> ctx.back());
         } else {
             builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Close", NamedTextColor.RED),
-                    List.of(Component.text("Close this screen", NamedTextColor.GRAY))
+                    Component.text("Close", Palette.DANGER),
+                    List.of(Component.text("Close this screen", Palette.CONNECTIVE))
             ), ctx -> ctx.close());
         }
     }
@@ -142,15 +142,15 @@ public final class PlayerProfileScreen extends GuiScreen {
         builder.set(SLOT_MONITOR, GuiItems.simple(
                 self ? ItemTypes.BARRIER : ItemTypes.CHEST,
                 Component.text(self ? "Self Monitor Disabled" : "Open Monitor",
-                        self ? NamedTextColor.RED : NamedTextColor.GOLD),
+                        self ? Palette.CAPTION : Palette.BRAND),
                 self
-                        ? List.of(Component.text("Monitoring your own inventory is disabled", NamedTextColor.GRAY))
+                        ? List.of(Component.text("Monitoring your own inventory is disabled", Palette.CONNECTIVE))
                         : List.of(
-                        Component.text("View the live packet inventory", NamedTextColor.GRAY),
-                        Component.text("and watch updates in-place", NamedTextColor.GRAY))
+                        Component.text("View the live packet inventory", Palette.CONNECTIVE),
+                        Component.text("and watch updates in-place", Palette.CONNECTIVE))
         ), ctx -> {
             if (ctx.session().viewerId().equals(target.getUuid())) {
-                ctx.message(Component.text("You cannot monitor your own inventory.", NamedTextColor.RED));
+                ctx.message(Component.text("You cannot monitor your own inventory.", Palette.DANGER));
                 return;
             }
 
@@ -158,7 +158,7 @@ public final class PlayerProfileScreen extends GuiScreen {
                     new TGMonitorOpenEventImpl(ctx.session().viewerId(), target.getUuid())
             );
             if (event.isCancelled()) {
-                ctx.message(Component.text("Opening the monitor was blocked.", NamedTextColor.RED));
+                ctx.message(Component.text("Opening the monitor was blocked.", Palette.DANGER));
                 return;
             }
 
@@ -171,10 +171,10 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         builder.set(SLOT_HISTORY, GuiItems.simple(
                 ItemTypes.BOOK,
-                Component.text("History", NamedTextColor.GOLD),
+                Component.text("History", Palette.BRAND),
                 List.of(
-                        Component.text("Browse this player's alert and", NamedTextColor.GRAY),
-                        Component.text("punishment history from the database.", NamedTextColor.GRAY)
+                        Component.text("Browse this player's alert and", Palette.CONNECTIVE),
+                        Component.text("punishment history from the database.", Palette.CONNECTIVE)
                 )
         ), ctx -> ctx.open(new PlayerHistoryHubScreen(target)));
     }
@@ -205,7 +205,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         lore.add(Component.empty());
         if (active.isEmpty()) {
-            lore.add(Component.text("No active violations", NamedTextColor.GREEN));
+            lore.add(Component.text("No active violations", Palette.SUCCESS));
             return;
         }
 
@@ -214,11 +214,11 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         active.stream().limit(VIOLATION_LIST_LIMIT).forEach(check -> lore.add(Component.text(
                 "  " + check.getName() + " - VL " + check.getViolations(),
-                NamedTextColor.GRAY)));
+                Palette.CONNECTIVE)));
 
         int hidden = active.size() - VIOLATION_LIST_LIMIT;
         if (hidden > 0) {
-            lore.add(Component.text("  + " + hidden + " more (see History)", NamedTextColor.DARK_GRAY));
+            lore.add(Component.text("  + " + hidden + " more (see History)", Palette.CAPTION));
         }
     }
 
@@ -233,7 +233,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         if (TGPlatform.getInstance().getDatabaseRepository().isConnected() && !dbAttempted) {
             lore.add(Component.empty());
-            lore.add(Component.text("First joined: loading…", NamedTextColor.GRAY));
+            lore.add(Component.text("First joined: loading…", Palette.CONNECTIVE));
         }
     }
 }

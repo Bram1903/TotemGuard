@@ -30,8 +30,8 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.Dummy;
+import com.deathmotion.totemguard.common.util.Palette;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 import java.util.List;
@@ -39,7 +39,7 @@ import java.util.Set;
 
 public final class GuiItems {
 
-    private static final Component BLANK_NAME = Component.text(" ", NamedTextColor.WHITE);
+    private static final Component BLANK_NAME = Component.text(" ", Palette.PARCH_50);
 
     private GuiItems() {
     }

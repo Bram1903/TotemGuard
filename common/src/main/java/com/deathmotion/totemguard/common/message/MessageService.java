@@ -66,6 +66,16 @@ public class MessageService implements Reloadable {
     }
 
     public @NotNull String getString(@NotNull ConfigKey<String> key,
+                                     @Nullable Map<String, Object> extras) {
+        return placeholder.get().replace(messages.getString(key), null, null, safeExtras(extras));
+    }
+
+    public @NotNull Component getComponent(@NotNull ConfigKey<String> key,
+                                           @Nullable Map<String, Object> extras) {
+        return MessageUtil.formatMessage(getString(key, extras));
+    }
+
+    public @NotNull String getString(@NotNull ConfigKey<String> key,
                                      @NotNull TGPlayer player) {
         return getString(key, player, null, null);
     }
@@ -88,6 +98,17 @@ public class MessageService implements Reloadable {
                                            @Nullable CheckImpl check,
                                            @Nullable Map<String, Object> extras) {
         return MessageUtil.formatMessage(getString(key, player, check, extras));
+    }
+
+    public @NotNull Component getComponent(@NotNull ConfigKey<String> key,
+                                           @NotNull TGPlayer player) {
+        return MessageUtil.formatMessage(getString(key, player, null, null));
+    }
+
+    public @NotNull Component getComponent(@NotNull ConfigKey<String> key,
+                                           @NotNull TGPlayer player,
+                                           @Nullable Map<String, Object> extras) {
+        return MessageUtil.formatMessage(getString(key, player, null, extras));
     }
 
     @SafeVarargs

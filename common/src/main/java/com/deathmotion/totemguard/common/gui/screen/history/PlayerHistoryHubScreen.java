@@ -22,9 +22,9 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -87,14 +87,14 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         if (session.hasParent()) {
             builder.set(0, GuiItems.simple(
                     ItemTypes.ARROW,
-                    Component.text("Back", NamedTextColor.GOLD),
-                    List.of(Component.text("Return to the profile", NamedTextColor.GRAY))
+                    Component.text("Back", Palette.BRAND),
+                    List.of(Component.text("Return to the profile", Palette.CONNECTIVE))
             ), ctx -> ctx.back());
         } else {
             builder.set(0, GuiItems.simple(
                     ItemTypes.BARRIER,
-                    Component.text("Close", NamedTextColor.RED),
-                    List.of(Component.text("Close this screen", NamedTextColor.GRAY))
+                    Component.text("Close", Palette.DANGER),
+                    List.of(Component.text("Close this screen", Palette.CONNECTIVE))
             ), ctx -> ctx.close());
         }
 
@@ -102,13 +102,13 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         if (target != null) {
             builder.set(4, GuiItems.playerHead(
                     target.getUser().getProfile(),
-                    Component.text(target.getName(), NamedTextColor.GREEN),
+                    Component.text(target.getName(), Palette.SUCCESS),
                     headLore
             ));
         } else {
             builder.set(4, GuiItems.simple(
                     ItemTypes.PLAYER_HEAD,
-                    Component.text(targetName, NamedTextColor.GREEN),
+                    Component.text(targetName, Palette.SUCCESS),
                     headLore
             ));
         }
@@ -121,12 +121,12 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
             if (canViewAlerts) {
                 builder.set(11, GuiItems.simple(
                         ItemTypes.PAPER,
-                        Component.text("Alerts", NamedTextColor.YELLOW),
+                        Component.text("Alerts", Palette.BRAND),
                         List.of(
-                                Component.text("Every violation TotemGuard has flagged", NamedTextColor.GRAY),
-                                Component.text("for this player, newest first.", NamedTextColor.GRAY),
+                                Component.text("Every violation TotemGuard has flagged", Palette.CONNECTIVE),
+                                Component.text("for this player, newest first.", Palette.CONNECTIVE),
                                 Component.empty(),
-                                Component.text("Click to browse ▶", NamedTextColor.DARK_GRAY)
+                                Component.text("Click to browse ▶", Palette.CAPTION)
                         )
                 ), ctx -> ctx.open(new PlayerAlertsScreen(targetId, targetName, 0)));
             }
@@ -134,22 +134,22 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
             if (canViewPunishments) {
                 builder.set(15, GuiItems.simple(
                         ItemTypes.IRON_AXE,
-                        Component.text("Punishments", NamedTextColor.RED),
+                        Component.text("Punishments", Palette.DANGER),
                         List.of(
-                                Component.text("Every kick or ban", NamedTextColor.GRAY),
-                                Component.text("TotemGuard dispatched, newest first.", NamedTextColor.GRAY),
+                                Component.text("Every kick or ban", Palette.CONNECTIVE),
+                                Component.text("TotemGuard dispatched, newest first.", Palette.CONNECTIVE),
                                 Component.empty(),
-                                Component.text("Click to browse ▶", NamedTextColor.DARK_GRAY)
+                                Component.text("Click to browse ▶", Palette.CAPTION)
                         )
                 ), ctx -> ctx.open(new PlayerPunishmentsScreen(targetId, targetName, 0)));
             }
         } else {
             builder.set(22, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
-                    Component.text("Database offline", NamedTextColor.RED),
+                    Component.text("Database offline", Palette.DANGER),
                     List.of(
-                            Component.text("History is unavailable - the database", NamedTextColor.GRAY),
-                            Component.text("is disabled or currently unreachable.", NamedTextColor.GRAY)
+                            Component.text("History is unavailable - the database", Palette.CONNECTIVE),
+                            Component.text("is disabled or currently unreachable.", Palette.CONNECTIVE)
                     )
             ));
         }
@@ -170,7 +170,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
                     HistoryText.relative(rec.lastSeen()) + "  (" + HistoryText.absolute(rec.lastSeen()) + ")"));
         } else if (!dbAttempted) {
             lore.add(Component.empty());
-            lore.add(Component.text("Loading join times…", NamedTextColor.GRAY));
+            lore.add(Component.text("Loading join times…", Palette.CONNECTIVE));
         }
 
         return lore;
