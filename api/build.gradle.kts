@@ -8,14 +8,10 @@ plugins {
 
 val apiBaseVersion = "1.0.0"
 val apiSnapshot = rootProject.extra["snapshot"] as Boolean
-val apiGitHash = rootProject.extra["gitHash"] as String?
 
 version = buildString {
     append(apiBaseVersion)
-    if (apiSnapshot) {
-        if (!apiGitHash.isNullOrBlank()) append("+").append(apiGitHash)
-        append("-SNAPSHOT")
-    }
+    if (apiSnapshot) append("-SNAPSHOT")
 }
 
 tgVersion {
