@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.common.history;
 
-import com.deathmotion.totemguard.api3.history.*;
-import com.deathmotion.totemguard.api3.result.Result;
-import com.deathmotion.totemguard.api3.result.ResultError;
-import com.deathmotion.totemguard.api3.stats.StatsWindow;
-import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api.history.*;
+import com.deathmotion.totemguard.api.result.Result;
+import com.deathmotion.totemguard.api.result.ResultError;
+import com.deathmotion.totemguard.api.stats.StatsWindow;
+import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;

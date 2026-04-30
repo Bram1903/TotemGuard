@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.event.api.impl;
 
-import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.event.api.EventImpl;
 import org.jetbrains.annotations.NotNull;
 

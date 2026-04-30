@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.config.service;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigFile;
-import com.deathmotion.totemguard.api3.config.ConfigSection;
-import com.deathmotion.totemguard.api3.config.key.ConfigKey;
+import com.deathmotion.totemguard.api.config.Config;
+import com.deathmotion.totemguard.api.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.ConfigSection;
+import com.deathmotion.totemguard.api.config.key.ConfigKey;
 import com.deathmotion.totemguard.common.config.yaml.DefaultsResolver;
 import com.deathmotion.totemguard.common.config.yaml.YamlMaps;
 import org.jetbrains.annotations.NotNull;

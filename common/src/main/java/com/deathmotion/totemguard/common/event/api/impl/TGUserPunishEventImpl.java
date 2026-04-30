@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.event.api.impl;
 
-import com.deathmotion.totemguard.api3.check.Check;
-import com.deathmotion.totemguard.api3.event.impl.TGUserPunishEvent;
-import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api.check.Check;
+import com.deathmotion.totemguard.api.event.impl.TGUserPunishEvent;
+import com.deathmotion.totemguard.api.user.TGUser;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;

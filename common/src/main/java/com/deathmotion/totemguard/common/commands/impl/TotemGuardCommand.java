@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api3.TotemGuard;
+import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;

@@ -1,7 +1,7 @@
 package com.deathmotion.totemguard.common.util;
 
-import com.deathmotion.totemguard.api3.versioning.TGAPIVersions;
-import com.deathmotion.totemguard.api3.versioning.TGVersion;
+import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.placeholder.holder.impl;
 
-import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.ConfigFile;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import com.deathmotion.totemguard.common.placeholder.holder.MapResolverHolder;

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.config.service;
 
-import com.deathmotion.totemguard.api3.config.ConfigFile;
+import com.deathmotion.totemguard.api.config.ConfigFile;
 import com.deathmotion.totemguard.common.config.migration.ConfigMigration;
 import com.deathmotion.totemguard.common.config.migration.MigrationContext;
 import com.deathmotion.totemguard.common.config.migration.MigrationRegistry;

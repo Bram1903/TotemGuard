@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api3.event.impl.TGMonitorOpenEvent;
+import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;

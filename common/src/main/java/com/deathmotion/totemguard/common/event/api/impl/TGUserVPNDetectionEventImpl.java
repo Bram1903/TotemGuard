@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.event.api.impl;
 
-import com.deathmotion.totemguard.api3.event.impl.TGUserVPNDetectionEvent;
-import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api.event.impl.TGUserVPNDetectionEvent;
+import com.deathmotion.totemguard.api.user.TGUser;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;

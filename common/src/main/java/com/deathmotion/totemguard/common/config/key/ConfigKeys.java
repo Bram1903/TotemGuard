@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.config.key;
 
-import com.deathmotion.totemguard.api3.config.key.ConfigKey;
+import com.deathmotion.totemguard.api.config.key.ConfigKey;
 
 import java.util.List;
 
@@ -28,7 +28,7 @@ import java.util.List;
  * Defaults are not declared here; they live in the bundled {@code config.yml} resource.
  * These constants are an internal implementation detail of TotemGuard's bundled YAML —
  * they are intentionally not part of the published API. External code that needs a value
- * should call {@link com.deathmotion.totemguard.api3.config.Config#getString(String)}
+ * should call {@link com.deathmotion.totemguard.api.config.Config#getString(String)}
  * (or one of its sibling path-based accessors) directly with the dotted path.
  */
 public final class ConfigKeys {

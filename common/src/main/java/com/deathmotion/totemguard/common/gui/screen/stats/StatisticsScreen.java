@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.gui.screen.stats;
 
-import com.deathmotion.totemguard.api3.result.ResultError;
-import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
-import com.deathmotion.totemguard.api3.stats.StatsWindow;
+import com.deathmotion.totemguard.api.result.ResultError;
+import com.deathmotion.totemguard.api.stats.StatsSnapshot;
+import com.deathmotion.totemguard.api.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
@@ -64,7 +64,7 @@ public final class StatisticsScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuardV3.Gui.Statistics";
+        return "TotemGuard.Gui.Statistics";
     }
 
     @Override

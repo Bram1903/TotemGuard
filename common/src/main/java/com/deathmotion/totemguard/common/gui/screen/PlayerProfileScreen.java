@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.gui.screen;
 
-import com.deathmotion.totemguard.api3.check.Check;
-import com.deathmotion.totemguard.api3.event.impl.TGMonitorOpenEvent;
+import com.deathmotion.totemguard.api.check.Check;
+import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
@@ -60,7 +60,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuardV3.Gui.Profile";
+        return "TotemGuard.Gui.Profile";
     }
 
     @Override
@@ -138,7 +138,7 @@ public final class PlayerProfileScreen extends GuiScreen {
     }
 
     private void renderMonitorButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
-        if (!session.hasPermission("TotemGuardV3.Gui.Monitor")) return;
+        if (!session.hasPermission("TotemGuard.Gui.Monitor")) return;
 
         boolean self = session.viewerId().equals(target.getUuid());
         builder.set(SLOT_MONITOR, GuiItems.simple(
@@ -170,7 +170,7 @@ public final class PlayerProfileScreen extends GuiScreen {
     }
 
     private void renderHistoryButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
-        if (!session.hasPermission("TotemGuardV3.Gui.History")) return;
+        if (!session.hasPermission("TotemGuard.Gui.History")) return;
 
         builder.set(SLOT_HISTORY, GuiItems.simple(
                 ItemTypes.BOOK,

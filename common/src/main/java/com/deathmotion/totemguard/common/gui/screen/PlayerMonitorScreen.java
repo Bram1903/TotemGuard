@@ -49,7 +49,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuardV3.Gui.Monitor";
+        return "TotemGuard.Gui.Monitor";
     }
 
     @Override

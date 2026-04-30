@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api3.history.HistoryView;
-import com.deathmotion.totemguard.api3.user.TGUser;
+import com.deathmotion.totemguard.api.history.HistoryView;
+import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;

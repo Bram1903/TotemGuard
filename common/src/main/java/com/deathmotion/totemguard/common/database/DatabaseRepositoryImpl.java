@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.database;
 
-import com.deathmotion.totemguard.api3.database.DatabaseRepository;
-import com.deathmotion.totemguard.api3.punishment.PunishmentType;
+import com.deathmotion.totemguard.api.database.DatabaseRepository;
+import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.deathmotion.totemguard.common.database.dao.*;

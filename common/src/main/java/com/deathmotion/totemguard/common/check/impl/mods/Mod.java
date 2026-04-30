@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.impl.mods;
 
-import com.deathmotion.totemguard.api3.check.CheckType;
+import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;

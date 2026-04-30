@@ -54,7 +54,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuardV3.Gui.History";
+        return "TotemGuard.Gui.History";
     }
 
     @Override
@@ -119,8 +119,8 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         }
 
         boolean dbReady = platform.getDatabaseRepository().isConnected();
-        boolean canViewAlerts = session.hasPermission("TotemGuardV3.Gui.History.Alerts");
-        boolean canViewPunishments = session.hasPermission("TotemGuardV3.Gui.History.Punishments");
+        boolean canViewAlerts = session.hasPermission("TotemGuard.Gui.History.Alerts");
+        boolean canViewPunishments = session.hasPermission("TotemGuard.Gui.History.Punishments");
 
         if (dbReady) {
             if (canViewAlerts) {

@@ -13,9 +13,9 @@ server: Default
 
 # The name of the root command for TotemGuard. (This requires a server restart to take effect)
 commands:
-  base: totemguard3
+  base: totemguard
   aliases:
-    - tg3
+    - tg
 
 # MySQL 8+ or MariaDB. Shared across servers; each row is tagged with
 # the server name above.
@@ -86,7 +86,7 @@ entity-spoofing:
 update-checker:
   enabled: true
 
-  # Notify players holding `TotemGuardV3.UpdateNotify` (defaults to ops)
+  # Notify players holding `TotemGuard.UpdateNotify` (defaults to ops)
   # on join when an update is available.
   notify-on-join: true
 

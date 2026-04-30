@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.bukkit.testplugin.events;
 
-import com.deathmotion.totemguard.api3.event.impl.TGUserFlagEvent;
+import com.deathmotion.totemguard.api.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.bukkit.testplugin.ApiTestPlugin;
 
 import java.util.function.Consumer;

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.fabric.compatibility;
 
-import com.deathmotion.totemguard.api3.versioning.TGVersion;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.util.CompatibilityLogger;
 import lombok.experimental.UtilityClass;
 

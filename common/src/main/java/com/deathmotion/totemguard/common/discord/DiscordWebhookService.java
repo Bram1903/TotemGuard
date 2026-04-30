@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.discord;
 
-import com.deathmotion.totemguard.api3.reload.Reloadable;
+import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;

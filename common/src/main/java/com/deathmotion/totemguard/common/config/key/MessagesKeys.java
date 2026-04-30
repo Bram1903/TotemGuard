@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.config.key;
 
-import com.deathmotion.totemguard.api3.config.key.ConfigKey;
+import com.deathmotion.totemguard.api.config.key.ConfigKey;
 
 /**
  * Typed paths into {@code messages.yml}.
@@ -27,7 +27,7 @@ import com.deathmotion.totemguard.api3.config.key.ConfigKey;
  * internal implementation detail of TotemGuard's bundled YAML — they are intentionally
  * not part of the published API so that the layout can evolve without breaking
  * downstream consumers. External code that needs a value should call
- * {@link com.deathmotion.totemguard.api3.config.Config#getString(String)} (or one of
+ * {@link com.deathmotion.totemguard.api.config.Config#getString(String)} (or one of
  * its sibling path-based accessors) directly with the dotted path.
  */
 public final class MessagesKeys {

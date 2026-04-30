@@ -29,7 +29,7 @@ import org.incendo.cloud.description.Description;
 @UtilityClass
 public class CommandDefaults {
 
-    public static final String PERMISSION_PREFIX = "TotemGuardV3.";
+    public static final String PERMISSION_PREFIX = "TotemGuard.";
 
     private static final CommandsOptions OPTIONS = TGPlatform.getInstance()
             .getConfigRepository()

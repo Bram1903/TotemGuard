@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.cache.backend;
 
-import com.deathmotion.totemguard.api3.versioning.TGVersion;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.cache.CacheBackend;
 import com.deathmotion.totemguard.common.cache.CacheBackendException;
 import com.deathmotion.totemguard.common.cache.CacheKeys;

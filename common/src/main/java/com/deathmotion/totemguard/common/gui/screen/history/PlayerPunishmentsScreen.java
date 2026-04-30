@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.common.gui.screen.history;
 
-import com.deathmotion.totemguard.api3.history.HistoryPage;
-import com.deathmotion.totemguard.api3.history.PunishmentEntry;
-import com.deathmotion.totemguard.api3.punishment.PunishmentType;
-import com.deathmotion.totemguard.api3.result.ResultError;
-import com.deathmotion.totemguard.api3.stats.StatsWindow;
+import com.deathmotion.totemguard.api.history.HistoryPage;
+import com.deathmotion.totemguard.api.history.PunishmentEntry;
+import com.deathmotion.totemguard.api.punishment.PunishmentType;
+import com.deathmotion.totemguard.api.result.ResultError;
+import com.deathmotion.totemguard.api.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
@@ -106,7 +106,7 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuardV3.Gui.History.Punishments";
+        return "TotemGuard.Gui.History.Punishments";
     }
 
     @Override

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.event.api.impl;
 
-import com.deathmotion.totemguard.api3.event.impl.TGMonitorOpenEvent;
+import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.event.api.EventImpl;
 import lombok.Getter;
 import lombok.Setter;

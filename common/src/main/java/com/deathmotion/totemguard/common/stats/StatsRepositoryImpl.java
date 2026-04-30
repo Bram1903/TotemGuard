@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.common.stats;
 
-import com.deathmotion.totemguard.api3.result.Result;
-import com.deathmotion.totemguard.api3.result.ResultError;
-import com.deathmotion.totemguard.api3.stats.StatsRepository;
-import com.deathmotion.totemguard.api3.stats.StatsSnapshot;
-import com.deathmotion.totemguard.api3.stats.StatsWindow;
+import com.deathmotion.totemguard.api.result.Result;
+import com.deathmotion.totemguard.api.result.ResultError;
+import com.deathmotion.totemguard.api.stats.StatsRepository;
+import com.deathmotion.totemguard.api.stats.StatsSnapshot;
+import com.deathmotion.totemguard.api.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;

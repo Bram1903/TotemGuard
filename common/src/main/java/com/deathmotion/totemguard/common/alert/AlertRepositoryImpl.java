@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.alert;
 
-import com.deathmotion.totemguard.api3.alert.AlertRepository;
+import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;

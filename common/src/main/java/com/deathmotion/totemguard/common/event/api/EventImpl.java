@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.event.api;
 
-import com.deathmotion.totemguard.api3.event.Event;
+import com.deathmotion.totemguard.api.event.Event;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 

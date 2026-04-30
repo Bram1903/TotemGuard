@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.check.type;
 
-import com.deathmotion.totemguard.api3.check.Check;
+import com.deathmotion.totemguard.api.check.Check;
 
 /**
  * Marker for checks that are never driven by packets or events and only fire

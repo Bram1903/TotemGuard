@@ -34,6 +34,7 @@ public final class Palette {
     public static final TextColor CONNECTIVE = PARCH_200;    // "failed", "VL[", debug, ms units
     public static final TextColor CAPTION = PARCH_300;    // "»", footers
     public static final TextColor SEPARATOR = GOLD_400;     // "|"
+
     private Palette() {
     }
 }

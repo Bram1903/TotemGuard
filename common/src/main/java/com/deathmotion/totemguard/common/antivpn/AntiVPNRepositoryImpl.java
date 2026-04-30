@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.antivpn;
 
-import com.deathmotion.totemguard.api3.event.impl.TGUserVPNDetectionEvent;
+import com.deathmotion.totemguard.api.event.impl.TGUserVPNDetectionEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;

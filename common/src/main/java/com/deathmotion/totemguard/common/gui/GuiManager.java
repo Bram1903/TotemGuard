@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.gui;
 
-import com.deathmotion.totemguard.api3.event.EventSubscription;
+import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;

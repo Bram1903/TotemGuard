@@ -19,7 +19,7 @@ version = buildString {
 }
 
 tgVersion {
-    packageName.set("com.deathmotion.totemguard.api3.versioning")
+    packageName.set("com.deathmotion.totemguard.api.versioning")
     className.set("TGAPIVersions")
 }
 

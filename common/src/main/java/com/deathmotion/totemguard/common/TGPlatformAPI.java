@@ -18,19 +18,19 @@
 
 package com.deathmotion.totemguard.common;
 
-import com.deathmotion.totemguard.api3.TotemGuardAPI;
-import com.deathmotion.totemguard.api3.alert.AlertRepository;
-import com.deathmotion.totemguard.api3.config.ConfigRepository;
-import com.deathmotion.totemguard.api3.event.EventRepository;
-import com.deathmotion.totemguard.api3.history.HistoryRepository;
-import com.deathmotion.totemguard.api3.placeholder.PlaceholderRepository;
-import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
-import com.deathmotion.totemguard.api3.redis.RedisRepository;
-import com.deathmotion.totemguard.api3.stats.StatsRepository;
-import com.deathmotion.totemguard.api3.update.UpdateCheckerRepository;
-import com.deathmotion.totemguard.api3.user.UserRepository;
-import com.deathmotion.totemguard.api3.versioning.TGAPIVersions;
-import com.deathmotion.totemguard.api3.versioning.TGVersion;
+import com.deathmotion.totemguard.api.TotemGuardAPI;
+import com.deathmotion.totemguard.api.alert.AlertRepository;
+import com.deathmotion.totemguard.api.config.ConfigRepository;
+import com.deathmotion.totemguard.api.event.EventRepository;
+import com.deathmotion.totemguard.api.history.HistoryRepository;
+import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
+import com.deathmotion.totemguard.api.punishment.PunishmentRepository;
+import com.deathmotion.totemguard.api.redis.RedisRepository;
+import com.deathmotion.totemguard.api.stats.StatsRepository;
+import com.deathmotion.totemguard.api.update.UpdateCheckerRepository;
+import com.deathmotion.totemguard.api.user.UserRepository;
+import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import org.jetbrains.annotations.NotNull;
 

@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.punishment;
 
-import com.deathmotion.totemguard.api3.event.impl.TGUserPunishEvent;
-import com.deathmotion.totemguard.api3.punishment.PunishmentRepository;
-import com.deathmotion.totemguard.api3.punishment.PunishmentType;
-import com.deathmotion.totemguard.api3.reload.Reloadable;
+import com.deathmotion.totemguard.api.event.impl.TGUserPunishEvent;
+import com.deathmotion.totemguard.api.punishment.PunishmentRepository;
+import com.deathmotion.totemguard.api.punishment.PunishmentType;
+import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;

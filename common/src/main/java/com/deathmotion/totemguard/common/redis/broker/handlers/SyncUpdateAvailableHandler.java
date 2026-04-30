@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.redis.broker.handlers;
 
-import com.deathmotion.totemguard.api3.reload.Reloadable;
+import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;

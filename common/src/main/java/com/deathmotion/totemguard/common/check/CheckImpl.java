@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.check;
 
-import com.deathmotion.totemguard.api3.check.Check;
-import com.deathmotion.totemguard.api3.check.CheckType;
-import com.deathmotion.totemguard.api3.event.impl.TGUserFlagEvent;
+import com.deathmotion.totemguard.api.check.Check;
+import com.deathmotion.totemguard.api.check.CheckType;
+import com.deathmotion.totemguard.api.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;

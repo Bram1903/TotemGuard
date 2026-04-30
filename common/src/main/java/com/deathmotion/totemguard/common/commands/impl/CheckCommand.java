@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api3.config.key.ConfigKey;
-import com.deathmotion.totemguard.api3.event.EventSubscription;
+import com.deathmotion.totemguard.api.config.key.ConfigKey;
+import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;

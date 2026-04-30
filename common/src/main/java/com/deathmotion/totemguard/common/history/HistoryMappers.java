@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.history;
 
-import com.deathmotion.totemguard.api3.history.AlertEntry;
-import com.deathmotion.totemguard.api3.history.PunishmentEntry;
+import com.deathmotion.totemguard.api.history.AlertEntry;
+import com.deathmotion.totemguard.api.history.PunishmentEntry;
 import com.deathmotion.totemguard.common.database.model.AlertRecord;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
 

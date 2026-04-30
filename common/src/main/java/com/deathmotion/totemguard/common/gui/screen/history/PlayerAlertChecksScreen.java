@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.gui.screen.history;
 
-import com.deathmotion.totemguard.api3.result.ResultError;
+import com.deathmotion.totemguard.api.result.ResultError;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
@@ -63,7 +63,7 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuardV3.Gui.History.Alerts";
+        return "TotemGuard.Gui.History.Alerts";
     }
 
     @Override

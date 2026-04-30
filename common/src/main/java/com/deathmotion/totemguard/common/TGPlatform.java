@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common;
 
-import com.deathmotion.totemguard.api3.TotemGuard;
-import com.deathmotion.totemguard.api3.event.EventSubscription;
+import com.deathmotion.totemguard.api.TotemGuard;
+import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;

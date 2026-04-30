@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.gui.screen;
 
-import com.deathmotion.totemguard.api3.stats.StatsWindow;
-import com.deathmotion.totemguard.api3.versioning.TGAPIVersions;
-import com.deathmotion.totemguard.api3.versioning.TGVersion;
+import com.deathmotion.totemguard.api.stats.StatsWindow;
+import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
@@ -137,7 +137,7 @@ public final class TotemGuardInfoScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuardV3.Gui.Info";
+        return "TotemGuard.Gui.Info";
     }
 
     @Override

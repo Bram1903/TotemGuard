@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.database.dao;
 
-import com.deathmotion.totemguard.api3.punishment.PunishmentType;
+import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import com.deathmotion.totemguard.common.database.DatabaseConnectionManager;
 import com.deathmotion.totemguard.common.database.Sql;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.punishment;
 
-import com.deathmotion.totemguard.api3.punishment.PunishmentType;
+import com.deathmotion.totemguard.api.punishment.PunishmentType;
 
 import java.util.Locale;
 

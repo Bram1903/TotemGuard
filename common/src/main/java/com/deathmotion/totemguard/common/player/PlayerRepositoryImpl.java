@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api3.user.TGUser;
-import com.deathmotion.totemguard.api3.user.UserRepository;
+import com.deathmotion.totemguard.api.user.TGUser;
+import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public final class PlayerRepositoryImpl implements UserRepository {
 
-    private static final String BYPASS_PERMISSION = "TotemGuardV3.Bypass";
+    private static final String BYPASS_PERMISSION = "TotemGuard.Bypass";
     private static final Duration ALERTS_TOGGLE_TTL = Duration.ofMinutes(30);
     private final TGPlatform platform;
     private final CacheRepositoryImpl cacheRepository;
@@ -96,7 +96,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
     }
 
     private void enableAlerts(UUID uuid, PlatformUser platformUser) {
-        if (!platformUser.hasPermission("TotemGuardV3.Alerts")) return;
+        if (!platformUser.hasPermission("TotemGuard.Alerts")) return;
 
         platform.getScheduler().runAsyncTask(() -> {
             boolean enabled = resolveAlertsEnabled(uuid);

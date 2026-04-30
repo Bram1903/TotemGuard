@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.update;
 
-import com.deathmotion.totemguard.api3.reload.Reloadable;
-import com.deathmotion.totemguard.api3.update.UpdateCheckerRepository;
-import com.deathmotion.totemguard.api3.versioning.TGVersion;
+import com.deathmotion.totemguard.api.reload.Reloadable;
+import com.deathmotion.totemguard.api.update.UpdateCheckerRepository;
+import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.config.schema.UpdateCheckerOptions;
@@ -172,7 +172,7 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
         if (latest == null) return;
         if (!TGVersions.CURRENT.isOlderThan(latest)) return;
 
-        if (!user.hasPermission("TotemGuardV3.UpdateNotify")) return;
+        if (!user.hasPermission("TotemGuard.UpdateNotify")) return;
 
         user.sendMessage(buildMessage(latest));
     }

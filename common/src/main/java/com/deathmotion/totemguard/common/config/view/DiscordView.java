@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.config.view;
 
-import com.deathmotion.totemguard.api3.config.Config;
-import com.deathmotion.totemguard.api3.config.ConfigSection;
+import com.deathmotion.totemguard.api.config.Config;
+import com.deathmotion.totemguard.api.config.ConfigSection;
 import com.deathmotion.totemguard.common.config.schema.WebhookConfig;
 import com.deathmotion.totemguard.common.config.schema.WebhookField;
 import org.jetbrains.annotations.NotNull;
