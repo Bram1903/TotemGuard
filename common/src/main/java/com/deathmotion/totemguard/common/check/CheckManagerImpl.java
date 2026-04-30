@@ -173,6 +173,12 @@ public class CheckManagerImpl {
         }
     }
 
+    public void clearAllViolations() {
+        for (CheckImpl check : checksByName.values()) {
+            check.clearViolations();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends PacketCheck> T getPacketCheck(Class<T> check) {
         return (T) packetChecks.get(check);

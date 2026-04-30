@@ -55,7 +55,6 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
     private final Set<UUID> inFlightPunishments = ConcurrentHashMap.newKeySet();
 
-    private String defaultPunishment;
     private PunishmentCommand defaultPunishmentCommand;
 
     public PunishmentRepositoryImpl() {
@@ -69,8 +68,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
     @Override
     public void reload() {
-        this.defaultPunishment = configRepository.checks().defaultPunishment();
-        this.defaultPunishmentCommand = PunishmentCommand.parse(this.defaultPunishment);
+        this.defaultPunishmentCommand = PunishmentCommand.parse(configRepository.checks().defaultPunishment());
     }
 
     @Override
@@ -83,12 +81,6 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         runPunishment(check, resolveCommands(check), debug, Map.of(), true);
     }
 
-    /**
-     * Punish using an explicit command list and placeholder extras, bypassing the standard
-     * {@code violations >= maxViolations} gate. Used when the command list is decided per
-     * detection (e.g. mod severity selecting between the configured kick or ban command)
-     * instead of read off the {@link CheckImpl}.
-     */
     public void punishWith(CheckImpl check,
                            List<PunishmentCommand> commands,
                            @Nullable String debug,
@@ -127,7 +119,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
             platform.getDiscordWebhookService().sendPunishment(check, debug);
 
-            if (clearViolationsAfter) check.clearViolations();
+            if (clearViolationsAfter) player.getCheckManager().clearAllViolations();
             keepDistributedLock = containsBan;
         } finally {
             finishClaim(playerUuid, containsBan, keepDistributedLock);
@@ -185,7 +177,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         int dispatchedCommands = 0;
 
         for (PunishmentCommand command : commands) {
-            String processedCommand = command.raw().replace("%default_punishment%", defaultPunishment).trim();
+            String processedCommand = command.raw().replace("%default_punishment%", defaultPunishmentCommand.raw()).trim();
             if (processedCommand.isEmpty()) {
                 continue;
             }

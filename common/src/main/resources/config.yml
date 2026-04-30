@@ -34,7 +34,7 @@ database:
   # are kept forever.
   retention:
     # 0 = keep forever.
-    alerts-days: 30
+    alerts-days: 0
     vpn-cache-days: 30
 
 # In a multiserver setup, enabling Redis is highly recommended.
@@ -48,7 +48,6 @@ redis:
   username: default
   password: yourPassword
 
-  # Alert Sync
   messaging:
     channel: totemguard
     send-alerts: true
@@ -92,4 +91,4 @@ update-checker:
   notify-on-join: true
 
 # Do not modify this list unless you know what you're doing.
-developer-overrides: []
+developer-overrides: [ ]
