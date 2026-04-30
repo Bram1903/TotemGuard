@@ -20,5 +20,5 @@ package com.deathmotion.totemguard.common.database.model;
 
 import java.util.UUID;
 
-public record PlayerRecord(int id, UUID uuid, String name) {
+public record PlayerRecord(int id, UUID uuid, String name, long firstSeen, long lastSeen) {
 }

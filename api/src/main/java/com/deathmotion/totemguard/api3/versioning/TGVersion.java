@@ -270,4 +270,14 @@ public class TGVersion implements Comparable<TGVersion> {
     public String toStringWithoutSnapshot() {
         return major + "." + minor + "." + patch;
     }
+
+    /**
+     * Returns the version with the {@code -SNAPSHOT} suffix preserved but the commit
+     * hash stripped, suitable for user-facing display where the hash adds noise.
+     *
+     * @return e.g. {@code "3.0.0"} for releases, {@code "3.0.0-SNAPSHOT"} for snapshots.
+     */
+    public String toDisplayString() {
+        return snapshot ? major + "." + minor + "." + patch + "-SNAPSHOT" : toStringWithoutSnapshot();
+    }
 }

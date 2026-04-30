@@ -44,7 +44,7 @@ public final class TotemGuardCommand extends AbstractCommand {
         Sender sender = context.sender();
         if (!sender.isPlayer() || !sender.hasPermission(perm("gui"))) {
             sender.sendMessage(Component.text(
-                    "TotemGuard " + TotemGuard.get().getVersion() + " on " + TGPlatform.getInstance().getPlatform().name(),
+                    "TotemGuard " + TotemGuard.get().getVersion() + " on " + TGPlatform.getInstance().getPlatform().displayName(),
                     NamedTextColor.YELLOW
             ));
             return;

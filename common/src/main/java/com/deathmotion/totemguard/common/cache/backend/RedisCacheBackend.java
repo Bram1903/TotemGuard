@@ -18,8 +18,10 @@
 
 package com.deathmotion.totemguard.common.cache.backend;
 
+import com.deathmotion.totemguard.api3.versioning.TGVersion;
 import com.deathmotion.totemguard.common.cache.CacheBackend;
 import com.deathmotion.totemguard.common.cache.CacheBackendException;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import io.lettuce.core.GetExArgs;
@@ -27,6 +29,7 @@ import io.lettuce.core.SetArgs;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
@@ -38,11 +41,22 @@ import java.util.concurrent.TimeoutException;
 public final class RedisCacheBackend implements CacheBackend {
 
     private static final long OP_TIMEOUT_MS = 250L;
+    private static final int VERSION_HEADER_BYTES = 6;
 
     private final RedisRepositoryImpl repository;
+    private final byte[] versionHeader;
 
-    public RedisCacheBackend(RedisRepositoryImpl repository) {
+    public RedisCacheBackend(RedisRepositoryImpl repository, TGVersion pluginVersion) {
         this.repository = repository;
+        this.versionHeader = encodeVersionHeader(pluginVersion);
+    }
+
+    private static byte[] encodeVersionHeader(TGVersion v) {
+        ByteBuffer bb = ByteBuffer.allocate(VERSION_HEADER_BYTES);
+        bb.putShort((short) v.major());
+        bb.putShort((short) v.minor());
+        bb.putShort((short) v.patch());
+        return bb.array();
     }
 
     private static <T> @Nullable T await(String op, String key, CompletionStage<T> stage) {
@@ -76,19 +90,19 @@ public final class RedisCacheBackend implements CacheBackend {
 
     @Override
     public byte @Nullable [] get(String key) {
-        return await("get", key, requireCommands().get(bytes(key)));
+        return unwrap(key, await("get", key, requireCommands().get(bytes(key))));
     }
 
     @Override
     public byte @Nullable [] getAndRefresh(String key, Duration ttl) {
         long seconds = Math.max(1, ttl.toSeconds());
-        return await("getAndRefresh", key, requireCommands().getex(bytes(key), GetExArgs.Builder.ex(seconds)));
+        return unwrap(key, await("getAndRefresh", key, requireCommands().getex(bytes(key), GetExArgs.Builder.ex(seconds))));
     }
 
     @Override
     public void put(String key, byte[] value, Duration ttl) {
         long seconds = Math.max(1, ttl.toSeconds());
-        await("put", key, requireCommands().setex(bytes(key), seconds, value));
+        await("put", key, requireCommands().setex(bytes(key), seconds, wrap(key, value)));
     }
 
     @Override
@@ -100,8 +114,32 @@ public final class RedisCacheBackend implements CacheBackend {
     public boolean putIfAbsent(String key, byte[] value, Duration ttl) {
         long seconds = Math.max(1, ttl.toSeconds());
         String response = await("putIfAbsent", key,
-                requireCommands().set(bytes(key), value, SetArgs.Builder.nx().ex(seconds)));
+                requireCommands().set(bytes(key), wrap(key, value), SetArgs.Builder.nx().ex(seconds)));
         return "OK".equalsIgnoreCase(response);
+    }
+
+    private boolean envelopeApplies(String key) {
+        return !key.startsWith(CacheKeys.UNVERSIONED_KEY_PREFIX);
+    }
+
+    private byte[] wrap(String key, byte[] payload) {
+        if (!envelopeApplies(key)) return payload;
+        byte[] out = new byte[VERSION_HEADER_BYTES + payload.length];
+        System.arraycopy(versionHeader, 0, out, 0, VERSION_HEADER_BYTES);
+        System.arraycopy(payload, 0, out, VERSION_HEADER_BYTES, payload.length);
+        return out;
+    }
+
+    private byte @Nullable [] unwrap(String key, byte @Nullable [] raw) {
+        if (raw == null) return null;
+        if (!envelopeApplies(key)) return raw;
+        if (raw.length < VERSION_HEADER_BYTES) return null;
+        for (int i = 0; i < VERSION_HEADER_BYTES; i++) {
+            if (raw[i] != versionHeader[i]) return null;
+        }
+        byte[] payload = new byte[raw.length - VERSION_HEADER_BYTES];
+        System.arraycopy(raw, VERSION_HEADER_BYTES, payload, 0, payload.length);
+        return payload;
     }
 
     private RedisAsyncCommands<byte[], byte[]> requireCommands() {

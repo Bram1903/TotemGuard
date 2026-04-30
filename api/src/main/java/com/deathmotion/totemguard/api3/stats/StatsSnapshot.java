@@ -19,12 +19,25 @@
 package com.deathmotion.totemguard.api3.stats;
 
 /**
- * Aggregated alert and punishment counts for a {@link StatsWindow}, taken across every
- * player. Returned by {@link StatsRepository#snapshot(StatsWindow)} inside a
+ * Aggregated counts for a {@link StatsWindow}, taken across every player. Returned by
+ * {@link StatsRepository#snapshot(StatsWindow)} inside a
  * {@link com.deathmotion.totemguard.api3.result.Result}.
+ *
+ * <p>{@code databaseBytes} is exact for {@link StatsWindow#ALL_TIME} (sum of
+ * {@code data_length + index_length} across the {@code tg_*} tables) and a per-window
+ * estimate otherwise (avg row size of the event tables × rows in window). Treat the
+ * windowed value as a magnitude indicator, not a precise figure.
  *
  * @param alertCount      total alerts logged in the window
  * @param punishmentCount total punishments dispatched in the window
+ * @param uniquePlayers   distinct players with {@code last_seen} inside the window
+ *                        ({@code COUNT(*) FROM tg_players} for all-time)
+ * @param databaseBytes   storage attributable to the window (see class docs)
  */
-public record StatsSnapshot(int alertCount, int punishmentCount) {
+public record StatsSnapshot(
+        int alertCount,
+        int punishmentCount,
+        int uniquePlayers,
+        long databaseBytes
+) {
 }

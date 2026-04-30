@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.history;
 import com.deathmotion.totemguard.api3.history.*;
 import com.deathmotion.totemguard.api3.result.Result;
 import com.deathmotion.totemguard.api3.result.ResultError;
+import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import com.deathmotion.totemguard.api3.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
@@ -36,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -117,30 +119,27 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
                 CacheCodecs.LONG, VERSION_TTL);
     }
 
-    public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(UUID uuid, int rawPage, @Nullable String checkFilter) {
+    public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(
+            UUID uuid, int rawPage, @Nullable String checkFilter, @NotNull StatsWindow window) {
         int page = Math.max(0, rawPage);
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
 
             long version = versionFor(uuid);
-            String pageKey = CacheKeys.alertHistoryPage(uuid, version, page, checkFilter);
-            String countKey = CacheKeys.alertHistoryCount(uuid, version, checkFilter);
+            String pageKey = CacheKeys.alertHistoryPage(uuid, version, page, checkFilter, window.id());
+            String countKey = CacheKeys.alertHistoryCount(uuid, version, checkFilter, window.id());
 
             List<AlertRecord> records = cache.getAndRefresh(pageKey, CacheCodecs.ALERT_RECORDS, PAGE_TTL);
             Integer total = cache.getAndRefresh(countKey, CacheCodecs.INT, COUNT_TTL);
 
             try {
                 if (records == null) {
-                    records = checkFilter == null
-                            ? db.findAlertsByPlayer(uuid, PAGE_SIZE, page * PAGE_SIZE)
-                            : db.findAlertsByPlayerAndCheck(uuid, checkFilter, PAGE_SIZE, page * PAGE_SIZE);
+                    records = loadAlertPage(db, uuid, checkFilter, window, page);
                     cache.put(pageKey, records, CacheCodecs.ALERT_RECORDS, PAGE_TTL);
                 }
                 if (total == null) {
-                    total = checkFilter == null
-                            ? db.countAlertsByPlayer(uuid)
-                            : db.countAlertsByPlayerAndCheck(uuid, checkFilter);
+                    total = loadAlertCount(db, uuid, checkFilter, window);
                     cache.put(countKey, total, CacheCodecs.INT, COUNT_TTL);
                 }
             } catch (SQLException ex) {
@@ -151,26 +150,59 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
         });
     }
 
-    public @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(UUID uuid, int rawPage) {
+    private List<AlertRecord> loadAlertPage(
+            DatabaseRepositoryImpl db, UUID uuid, @Nullable String checkFilter, StatsWindow window, int page) throws SQLException {
+        int offset = page * PAGE_SIZE;
+        if (window.isAllTime()) {
+            return checkFilter == null
+                    ? db.findAlertsByPlayer(uuid, PAGE_SIZE, offset)
+                    : db.findAlertsByPlayerAndCheck(uuid, checkFilter, PAGE_SIZE, offset);
+        }
+        long since = sinceFor(window);
+        return checkFilter == null
+                ? db.findAlertsByPlayerSince(uuid, since, PAGE_SIZE, offset)
+                : db.findAlertsByPlayerAndCheckSince(uuid, checkFilter, since, PAGE_SIZE, offset);
+    }
+
+    private int loadAlertCount(
+            DatabaseRepositoryImpl db, UUID uuid, @Nullable String checkFilter, StatsWindow window) throws SQLException {
+        if (window.isAllTime()) {
+            return checkFilter == null
+                    ? db.countAlertsByPlayer(uuid)
+                    : db.countAlertsByPlayerAndCheck(uuid, checkFilter);
+        }
+        long since = sinceFor(window);
+        return checkFilter == null
+                ? db.countAlertsByPlayerSince(uuid, since)
+                : db.countAlertsByPlayerAndCheckSince(uuid, checkFilter, since);
+    }
+
+    private long sinceFor(StatsWindow window) {
+        Duration duration = Objects.requireNonNull(window.window(),
+                "non-all-time StatsWindow must carry a duration");
+        return System.currentTimeMillis() - duration.toMillis();
+    }
+
+    public @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(UUID uuid, int rawPage, @NotNull StatsWindow window) {
         int page = Math.max(0, rawPage);
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
 
             long version = versionFor(uuid);
-            String pageKey = CacheKeys.punishmentHistoryPage(uuid, version, page);
-            String countKey = CacheKeys.punishmentHistoryCount(uuid, version);
+            String pageKey = CacheKeys.punishmentHistoryPage(uuid, version, page, window.id());
+            String countKey = CacheKeys.punishmentHistoryCount(uuid, version, window.id());
 
             List<PunishmentRecord> records = cache.getAndRefresh(pageKey, CacheCodecs.PUNISHMENT_RECORDS, PAGE_TTL);
             Integer total = cache.getAndRefresh(countKey, CacheCodecs.INT, COUNT_TTL);
 
             try {
                 if (records == null) {
-                    records = db.findPunishmentsByPlayer(uuid, PAGE_SIZE, page * PAGE_SIZE);
+                    records = loadPunishmentPage(db, uuid, window, page);
                     cache.put(pageKey, records, CacheCodecs.PUNISHMENT_RECORDS, PAGE_TTL);
                 }
                 if (total == null) {
-                    total = db.countPunishmentsByPlayer(uuid);
+                    total = loadPunishmentCount(db, uuid, window);
                     cache.put(countKey, total, CacheCodecs.INT, COUNT_TTL);
                 }
             } catch (SQLException ex) {
@@ -181,20 +213,30 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
         });
     }
 
-    public @NotNull CompletableFuture<Result<Integer>> alertCount(UUID uuid, @Nullable String checkFilter) {
+    private List<PunishmentRecord> loadPunishmentPage(
+            DatabaseRepositoryImpl db, UUID uuid, StatsWindow window, int page) throws SQLException {
+        int offset = page * PAGE_SIZE;
+        if (window.isAllTime()) return db.findPunishmentsByPlayer(uuid, PAGE_SIZE, offset);
+        return db.findPunishmentsByPlayerSince(uuid, sinceFor(window), PAGE_SIZE, offset);
+    }
+
+    private int loadPunishmentCount(DatabaseRepositoryImpl db, UUID uuid, StatsWindow window) throws SQLException {
+        if (window.isAllTime()) return db.countPunishmentsByPlayer(uuid);
+        return db.countPunishmentsByPlayerSince(uuid, sinceFor(window));
+    }
+
+    public @NotNull CompletableFuture<Result<Integer>> alertCount(UUID uuid, @Nullable String checkFilter, @NotNull StatsWindow window) {
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
 
             long version = versionFor(uuid);
-            String countKey = CacheKeys.alertHistoryCount(uuid, version, checkFilter);
+            String countKey = CacheKeys.alertHistoryCount(uuid, version, checkFilter, window.id());
             Integer total = cache.getAndRefresh(countKey, CacheCodecs.INT, COUNT_TTL);
             if (total != null) return Result.ok(total);
 
             try {
-                int fresh = checkFilter == null
-                        ? db.countAlertsByPlayer(uuid)
-                        : db.countAlertsByPlayerAndCheck(uuid, checkFilter);
+                int fresh = loadAlertCount(db, uuid, checkFilter, window);
                 cache.put(countKey, fresh, CacheCodecs.INT, COUNT_TTL);
                 return Result.ok(fresh);
             } catch (SQLException ex) {
@@ -203,18 +245,18 @@ public final class HistoryRepositoryImpl implements HistoryRepository {
         });
     }
 
-    public @NotNull CompletableFuture<Result<Integer>> punishmentCount(UUID uuid) {
+    public @NotNull CompletableFuture<Result<Integer>> punishmentCount(UUID uuid, @NotNull StatsWindow window) {
         return supplyAsync(() -> {
             DatabaseRepositoryImpl db = platform.getDatabaseRepository();
             if (!db.isConnected()) return databaseUnavailable();
 
             long version = versionFor(uuid);
-            String countKey = CacheKeys.punishmentHistoryCount(uuid, version);
+            String countKey = CacheKeys.punishmentHistoryCount(uuid, version, window.id());
             Integer total = cache.getAndRefresh(countKey, CacheCodecs.INT, COUNT_TTL);
             if (total != null) return Result.ok(total);
 
             try {
-                int fresh = db.countPunishmentsByPlayer(uuid);
+                int fresh = loadPunishmentCount(db, uuid, window);
                 cache.put(countKey, fresh, CacheCodecs.INT, COUNT_TTL);
                 return Result.ok(fresh);
             } catch (SQLException ex) {

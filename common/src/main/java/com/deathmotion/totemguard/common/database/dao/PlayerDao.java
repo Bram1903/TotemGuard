@@ -100,14 +100,36 @@ public final class PlayerDao {
         }
     }
 
+    @Blocking
+    public int countAll() throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_TOTAL);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    @Blocking
+    public int countActiveSince(long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_SINCE)) {
+            stmt.setLong(1, sinceEpochMs);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
     private @Nullable PlayerRecord readSingle(PreparedStatement stmt) throws SQLException {
         try (ResultSet rs = stmt.executeQuery()) {
             if (rs.next()) {
                 int id = rs.getInt("id");
                 UUID uuid = UuidBytes.fromBytes(rs.getBytes("uuid"));
                 String canonicalName = rs.getString("last_name");
+                long firstSeen = rs.getLong("first_seen");
+                long lastSeen = rs.getLong("last_seen");
                 idCache.put(uuid, id);
-                return new PlayerRecord(id, uuid, canonicalName);
+                return new PlayerRecord(id, uuid, canonicalName, firstSeen, lastSeen);
             }
         }
         return null;

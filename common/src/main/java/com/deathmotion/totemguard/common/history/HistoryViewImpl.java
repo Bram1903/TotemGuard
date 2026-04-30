@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.api3.history.HistoryPage;
 import com.deathmotion.totemguard.api3.history.HistoryView;
 import com.deathmotion.totemguard.api3.history.PunishmentEntry;
 import com.deathmotion.totemguard.api3.result.Result;
+import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,31 +52,61 @@ final class HistoryViewImpl implements HistoryView {
 
     @Override
     public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page) {
-        return repository.alerts(uuid, page, null);
+        return repository.alerts(uuid, page, null, StatsWindow.ALL_TIME);
     }
 
     @Override
     public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName) {
-        return repository.alerts(uuid, page, checkName);
+        return repository.alerts(uuid, page, checkName, StatsWindow.ALL_TIME);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @NotNull StatsWindow window) {
+        return repository.alerts(uuid, page, null, window);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName, @NotNull StatsWindow window) {
+        return repository.alerts(uuid, page, checkName, window);
     }
 
     @Override
     public @NotNull CompletableFuture<Result<Integer>> alertCount() {
-        return repository.alertCount(uuid, null);
+        return repository.alertCount(uuid, null, StatsWindow.ALL_TIME);
     }
 
     @Override
     public @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName) {
-        return repository.alertCount(uuid, checkName);
+        return repository.alertCount(uuid, checkName, StatsWindow.ALL_TIME);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Result<Integer>> alertCount(@NotNull StatsWindow window) {
+        return repository.alertCount(uuid, null, window);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName, @NotNull StatsWindow window) {
+        return repository.alertCount(uuid, checkName, window);
     }
 
     @Override
     public @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page) {
-        return repository.punishments(uuid, page);
+        return repository.punishments(uuid, page, StatsWindow.ALL_TIME);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page, @NotNull StatsWindow window) {
+        return repository.punishments(uuid, page, window);
     }
 
     @Override
     public @NotNull CompletableFuture<Result<Integer>> punishmentCount() {
-        return repository.punishmentCount(uuid);
+        return repository.punishmentCount(uuid, StatsWindow.ALL_TIME);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Result<Integer>> punishmentCount(@NotNull StatsWindow window) {
+        return repository.punishmentCount(uuid, window);
     }
 }

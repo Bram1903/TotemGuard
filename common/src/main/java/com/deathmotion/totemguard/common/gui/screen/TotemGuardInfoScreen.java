@@ -84,12 +84,22 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         int checkCount = CheckManagerImpl.knownCheckCount();
 
         List<Component> lore = new ArrayList<>();
-        lore.add(GuiText.line("Version", pluginVersion.toString()));
-        lore.add(GuiText.line("API version", TGAPIVersions.CURRENT.toString()));
+        lore.add(Component.text("Version", NamedTextColor.GOLD));
+        lore.add(GuiText.line("Plugin", pluginVersion.toDisplayString()));
+        lore.add(GuiText.line("API", TGAPIVersions.CURRENT.toDisplayString()));
         lore.add(GuiText.line("Build time", BUILD_TIME_FORMAT.format(buildTime)));
-        lore.add(GuiText.line("Platform", platform.getPlatform().name()));
-        lore.add(GuiText.line("Platform build", platform.getPlatformVersion()));
+
+        lore.add(Component.empty());
+        lore.add(Component.text("Platform", NamedTextColor.GOLD));
+        lore.add(GuiText.line("Implementation", platform.getPlatform().displayName()));
+        lore.add(GuiText.line("Build", platform.getPlatformVersion()));
         lore.add(GuiText.line("Checks registered", checkCount > 0 ? String.valueOf(checkCount) : "Pending first join"));
+
+        if (pluginVersion.snapshot() && pluginVersion.snapshotCommit() != null) {
+            lore.add(Component.empty());
+            lore.add(Component.text("Development build", NamedTextColor.GOLD));
+            lore.add(GuiText.line("Commit", pluginVersion.snapshotCommit()));
+        }
 
         return GuiItems.simple(
                 ItemTypes.TOTEM_OF_UNDYING,

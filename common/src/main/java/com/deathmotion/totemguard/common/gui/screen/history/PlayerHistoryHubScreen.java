@@ -19,19 +19,26 @@
 package com.deathmotion.totemguard.common.gui.screen.history;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.database.model.PlayerRecord;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public final class PlayerHistoryHubScreen extends GuiScreen {
 
     private final UUID targetId;
     private final String fallbackName;
+
+    private volatile @Nullable PlayerRecord dbRecord;
+    private volatile boolean dbAttempted;
 
     public PlayerHistoryHubScreen(TGPlayer player) {
         this(player.getUuid(), player.getName());
@@ -45,6 +52,27 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
     @Override
     public String requiredPermission() {
         return "TotemGuardV3.Gui.History";
+    }
+
+    @Override
+    public void onOpen(GuiSession session) {
+        TGPlatform platform = TGPlatform.getInstance();
+        if (!platform.getDatabaseRepository().isConnected()) {
+            this.dbAttempted = true;
+            return;
+        }
+
+        platform.getScheduler().runAsyncTask(() -> {
+            try {
+                this.dbRecord = platform.getDatabaseRepository().findPlayerByUuid(targetId);
+            } catch (Exception ex) {
+                platform.getLogger().log(Level.WARNING,
+                        "Failed to load history times for " + targetId + ": " + ex.getMessage());
+            } finally {
+                this.dbAttempted = true;
+                platform.getGuiManager().refresh(session.viewerId());
+            }
+        });
     }
 
     @Override
@@ -70,17 +98,18 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
             ), ctx -> ctx.close());
         }
 
+        List<Component> headLore = buildHeadLore();
         if (target != null) {
             builder.set(4, GuiItems.playerHead(
                     target.getUser().getProfile(),
                     Component.text(target.getName(), NamedTextColor.GREEN),
-                    List.of(GuiText.line("UUID", target.getUuid().toString()))
+                    headLore
             ));
         } else {
             builder.set(4, GuiItems.simple(
                     ItemTypes.PLAYER_HEAD,
                     Component.text(targetName, NamedTextColor.GREEN),
-                    List.of(GuiText.line("UUID", targetId.toString()))
+                    headLore
             ));
         }
 
@@ -119,7 +148,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
                     ItemTypes.RED_CONCRETE,
                     Component.text("Database offline", NamedTextColor.RED),
                     List.of(
-                            Component.text("History is unavailable — the database", NamedTextColor.GRAY),
+                            Component.text("History is unavailable - the database", NamedTextColor.GRAY),
                             Component.text("is disabled or currently unreachable.", NamedTextColor.GRAY)
                     )
             ));
@@ -128,4 +157,22 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         return builder.build();
     }
 
+    private List<Component> buildHeadLore() {
+        List<Component> lore = new ArrayList<>();
+        lore.add(GuiText.line("UUID", targetId.toString()));
+
+        PlayerRecord rec = this.dbRecord;
+        if (rec != null) {
+            lore.add(Component.empty());
+            lore.add(GuiText.line("First joined",
+                    HistoryText.relative(rec.firstSeen()) + "  (" + HistoryText.absolute(rec.firstSeen()) + ")"));
+            lore.add(GuiText.line("Last joined",
+                    HistoryText.relative(rec.lastSeen()) + "  (" + HistoryText.absolute(rec.lastSeen()) + ")"));
+        } else if (!dbAttempted) {
+            lore.add(Component.empty());
+            lore.add(Component.text("Loading join times…", NamedTextColor.GRAY));
+        }
+
+        return lore;
+    }
 }

@@ -35,6 +35,10 @@ import java.util.logging.Level;
 
 public final class StatisticsScreen extends GuiScreen {
 
+    private static final int SLOT_BACK = 0;
+    private static final int SLOT_CURRENT_WINDOW = 13;
+    private static final int[] FILTER_SLOTS = {19, 21, 23, 25};
+
     private final StatsWindow window;
 
     private volatile @Nullable StatsSnapshot loaded;
@@ -45,12 +49,15 @@ public final class StatisticsScreen extends GuiScreen {
         this.window = window;
     }
 
-    private static ItemStack loadingTile(String label) {
-        return GuiItems.simple(
-                ItemTypes.CLOCK,
-                Component.text(label, NamedTextColor.YELLOW),
-                List.of(Component.text("Querying the database", NamedTextColor.GRAY))
-        );
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        double kb = bytes / 1024.0;
+        if (kb < 1024) return String.format("%.1f KB", kb);
+        double mb = kb / 1024.0;
+        if (mb < 1024) return String.format("%.1f MB", mb);
+        double gb = mb / 1024.0;
+        if (gb < 1024) return String.format("%.2f GB", gb);
+        return String.format("%.2f TB", gb / 1024.0);
     }
 
     @Override
@@ -88,13 +95,13 @@ public final class StatisticsScreen extends GuiScreen {
         builder.fillEmpty(GuiItems.filler());
 
         if (session.hasParent()) {
-            builder.set(0, GuiItems.simple(
+            builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.ARROW,
                     Component.text("Back", NamedTextColor.GOLD),
                     List.of(Component.text("Return to the overview", NamedTextColor.GRAY))
             ), ctx -> ctx.back());
         } else {
-            builder.set(0, GuiItems.simple(
+            builder.set(SLOT_BACK, GuiItems.simple(
                     ItemTypes.BARRIER,
                     Component.text("Close", NamedTextColor.RED),
                     List.of(Component.text("Close this screen", NamedTextColor.GRAY))
@@ -102,7 +109,7 @@ public final class StatisticsScreen extends GuiScreen {
         }
 
         if (offline) {
-            builder.set(13, GuiItems.simple(
+            builder.set(SLOT_CURRENT_WINDOW, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
                     Component.text("Database offline", NamedTextColor.RED),
                     List.of(
@@ -114,7 +121,7 @@ public final class StatisticsScreen extends GuiScreen {
         }
 
         if (loadError != null) {
-            builder.set(13, GuiItems.simple(
+            builder.set(SLOT_CURRENT_WINDOW, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
                     Component.text("Failed to load statistics", NamedTextColor.RED),
                     List.of(
@@ -126,44 +133,9 @@ public final class StatisticsScreen extends GuiScreen {
             return builder.build();
         }
 
-        StatsSnapshot snapshot = this.loaded;
-
-        if (snapshot == null) {
-            builder.set(11, loadingTile("Total alerts"));
-            builder.set(13, currentWindowTile(null));
-            builder.set(15, loadingTile("Total punishments"));
-            renderFilters(builder);
-            return builder.build();
-        }
-
-        builder.set(11, alertsTile(snapshot.alertCount()));
-        builder.set(13, currentWindowTile(snapshot));
-        builder.set(15, punishmentsTile(snapshot.punishmentCount()));
-
+        builder.set(SLOT_CURRENT_WINDOW, currentWindowTile(this.loaded));
         renderFilters(builder);
         return builder.build();
-    }
-
-    private ItemStack alertsTile(int count) {
-        return GuiItems.simple(
-                ItemTypes.PAPER,
-                Component.text("Total alerts", NamedTextColor.YELLOW),
-                List.of(
-                        GuiText.line("Window", window.label()),
-                        GuiText.line("Count", String.valueOf(count))
-                )
-        );
-    }
-
-    private ItemStack punishmentsTile(int count) {
-        return GuiItems.simple(
-                ItemTypes.IRON_AXE,
-                Component.text("Total punishments", NamedTextColor.RED),
-                List.of(
-                        GuiText.line("Window", window.label()),
-                        GuiText.line("Count", String.valueOf(count))
-                )
-        );
     }
 
     private ItemStack currentWindowTile(@Nullable StatsSnapshot snapshot) {
@@ -175,6 +147,8 @@ public final class StatisticsScreen extends GuiScreen {
         } else {
             lore.add(GuiText.line("Alerts", String.valueOf(snapshot.alertCount())));
             lore.add(GuiText.line("Punishments", String.valueOf(snapshot.punishmentCount())));
+            lore.add(GuiText.line("Unique players", String.valueOf(snapshot.uniquePlayers())));
+            lore.add(GuiText.line("DB size", formatBytes(snapshot.databaseBytes())));
         }
         lore.add(Component.empty());
         lore.add(Component.text("Pick a different window below.", NamedTextColor.DARK_GRAY));
@@ -193,11 +167,10 @@ public final class StatisticsScreen extends GuiScreen {
                 StatsWindow.LAST_30_DAYS,
                 StatsWindow.ALL_TIME
         };
-        int[] slots = {19, 21, 23, 25};
 
         for (int i = 0; i < options.length; i++) {
             StatsWindow option = options[i];
-            int slot = slots[i];
+            int slot = FILTER_SLOTS[i];
             boolean active = option == window;
 
             ItemStack item = GuiItems.simple(

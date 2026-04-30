@@ -112,7 +112,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
                 Component.text(target.getName(), NamedTextColor.GREEN),
                 List.of(
                         GuiText.line("Client version", target.getClientVersion().getReleaseName()),
-                        GuiText.line("Brand", target.getClientBrand() == null ? "Unknown" : target.getClientBrand()),
+                        GuiText.line("Brand", target.getClientBrand()),
                         GuiText.line("Selected hotbar", String.valueOf(inventory.getSelectedHotbarIndex()))
                 )
         ), ctx -> ctx.open(new PlayerProfileScreen(target)));
@@ -175,7 +175,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
                 Component.text("Client", NamedTextColor.YELLOW),
                 List.of(
                         GuiText.line("Client version", target.getClientVersion().getReleaseName()),
-                        GuiText.line("Brand", target.getClientBrand() == null ? "Unknown" : target.getClientBrand()),
+                        GuiText.line("Brand", target.getClientBrand()),
                         Component.text("Head opens the full profile.", NamedTextColor.GRAY)
                 )
         ));

@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.cache;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.backend.LocalCacheBackend;
 import com.deathmotion.totemguard.common.cache.backend.RedisCacheBackend;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
@@ -48,7 +49,7 @@ public final class CacheRepositoryImpl {
 
     public CacheRepositoryImpl() {
         TGPlatform platform = TGPlatform.getInstance();
-        this.redisBackend = new RedisCacheBackend(platform.getRedisRepository());
+        this.redisBackend = new RedisCacheBackend(platform.getRedisRepository(), TGVersions.CURRENT);
         this.localBackend = new LocalCacheBackend();
     }
 

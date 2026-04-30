@@ -26,6 +26,8 @@ public final class CacheKeys {
 
     private static final String PREFIX = "totemguard:";
 
+    public static final String UNVERSIONED_KEY_PREFIX = PREFIX + "punish-lock:";
+
     private CacheKeys() {
     }
 
@@ -42,7 +44,7 @@ public final class CacheKeys {
     }
 
     public static String punishLock(UUID uuid) {
-        return PREFIX + "punish-lock:" + uuid;
+        return UNVERSIONED_KEY_PREFIX + uuid;
     }
 
     public static String modKickRecord(UUID uuid, String modId) {
@@ -54,26 +56,26 @@ public final class CacheKeys {
         return PREFIX + "hist:ver:" + uuid;
     }
 
-    public static String alertHistoryPage(UUID uuid, long version, int page, @Nullable String checkFilter) {
+    public static String alertHistoryPage(UUID uuid, long version, int page, @Nullable String checkFilter, String windowId) {
         String f = checkFilter == null ? "*" : checkFilter;
-        return PREFIX + "hist:alerts:" + uuid + ":v" + version + ":" + f + ":p" + page;
+        return PREFIX + "hist:alerts:" + uuid + ":v" + version + ":" + windowId + ":" + f + ":p" + page;
     }
 
-    public static String alertHistoryCount(UUID uuid, long version, @Nullable String checkFilter) {
+    public static String alertHistoryCount(UUID uuid, long version, @Nullable String checkFilter, String windowId) {
         String f = checkFilter == null ? "*" : checkFilter;
-        return PREFIX + "hist:alerts-count:" + uuid + ":v" + version + ":" + f;
+        return PREFIX + "hist:alerts-count:" + uuid + ":v" + version + ":" + windowId + ":" + f;
     }
 
     public static String alertHistoryCheckSummaries(UUID uuid, long version) {
         return PREFIX + "hist:alert-checks:" + uuid + ":v" + version;
     }
 
-    public static String punishmentHistoryPage(UUID uuid, long version, int page) {
-        return PREFIX + "hist:punishments:" + uuid + ":v" + version + ":p" + page;
+    public static String punishmentHistoryPage(UUID uuid, long version, int page, String windowId) {
+        return PREFIX + "hist:punishments:" + uuid + ":v" + version + ":" + windowId + ":p" + page;
     }
 
-    public static String punishmentHistoryCount(UUID uuid, long version) {
-        return PREFIX + "hist:punishments-count:" + uuid + ":v" + version;
+    public static String punishmentHistoryCount(UUID uuid, long version, String windowId) {
+        return PREFIX + "hist:punishments-count:" + uuid + ":v" + version + ":" + windowId;
     }
 
     public static String statsSnapshot(String windowId) {

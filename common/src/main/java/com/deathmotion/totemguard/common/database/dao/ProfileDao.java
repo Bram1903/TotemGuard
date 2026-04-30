@@ -46,10 +46,10 @@ public final class ProfileDao {
     public long resolveOrCreate(
             int playerId,
             int serverId,
-            @Nullable String clientBrand,
-            @Nullable Integer clientVersion
+            String clientBrand,
+            int clientVersion
     ) throws SQLException {
-        String brand = clientBrand == null ? null : truncate(clientBrand, 64);
+        String brand = truncate(clientBrand, 64);
 
         try (Connection c = connection.borrow()) {
             Long existing = findExisting(c, playerId, serverId, brand, clientVersion);
@@ -58,10 +58,8 @@ public final class ProfileDao {
             try (PreparedStatement insert = c.prepareStatement(Sql.INSERT_PROFILE, Statement.RETURN_GENERATED_KEYS)) {
                 insert.setInt(1, playerId);
                 insert.setInt(2, serverId);
-                if (brand == null) insert.setNull(3, Types.VARCHAR);
-                else insert.setString(3, brand);
-                if (clientVersion == null) insert.setNull(4, Types.SMALLINT);
-                else insert.setInt(4, clientVersion);
+                insert.setString(3, brand);
+                insert.setInt(4, clientVersion);
                 try {
                     insert.executeUpdate();
                     try (ResultSet keys = insert.getGeneratedKeys()) {
@@ -82,16 +80,14 @@ public final class ProfileDao {
             Connection c,
             int playerId,
             int serverId,
-            @Nullable String brand,
-            @Nullable Integer clientVersion
+            String brand,
+            int clientVersion
     ) throws SQLException {
         try (PreparedStatement lookup = c.prepareStatement(Sql.SELECT_PROFILE_ID)) {
             lookup.setInt(1, playerId);
             lookup.setInt(2, serverId);
-            if (brand == null) lookup.setNull(3, Types.VARCHAR);
-            else lookup.setString(3, brand);
-            if (clientVersion == null) lookup.setNull(4, Types.SMALLINT);
-            else lookup.setInt(4, clientVersion);
+            lookup.setString(3, brand);
+            lookup.setInt(4, clientVersion);
             try (ResultSet rs = lookup.executeQuery()) {
                 if (rs.next()) return rs.getLong(1);
             }

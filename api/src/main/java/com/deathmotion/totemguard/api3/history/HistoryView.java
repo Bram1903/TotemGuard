@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.api3.history;
 
 import com.deathmotion.totemguard.api3.result.Result;
+import com.deathmotion.totemguard.api3.stats.StatsWindow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +36,10 @@ import java.util.concurrent.CompletableFuture;
  * {@link Result} — the future itself never completes exceptionally for
  * expected failures (database offline, query error). Inspect {@link Result#ok()}
  * to branch.
+ * <p>
+ * Every method has an overload accepting a {@link StatsWindow} that restricts the
+ * query to events whose {@code created_at} (alerts/punishments) falls inside the
+ * window. The no-window overloads behave like passing {@link StatsWindow#ALL_TIME}.
  */
 public interface HistoryView {
 
@@ -65,6 +70,16 @@ public interface HistoryView {
     @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName);
 
     /**
+     * Same as {@link #alerts(int)} but restricted to {@code window}.
+     */
+    @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @NotNull StatsWindow window);
+
+    /**
+     * Same as {@link #alerts(int, String)} but restricted to {@code window}.
+     */
+    @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName, @NotNull StatsWindow window);
+
+    /**
      * Total number of alerts on record for this user (no filter).
      */
     @NotNull CompletableFuture<Result<Integer>> alertCount();
@@ -75,12 +90,32 @@ public interface HistoryView {
     @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName);
 
     /**
+     * Total alerts inside {@code window}.
+     */
+    @NotNull CompletableFuture<Result<Integer>> alertCount(@NotNull StatsWindow window);
+
+    /**
+     * Total alerts matching {@code checkName} (or all if {@code null}) inside {@code window}.
+     */
+    @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName, @NotNull StatsWindow window);
+
+    /**
      * Fetches one page of punishments (newest-first) for this user.
      */
     @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page);
 
     /**
+     * Same as {@link #punishments(int)} but restricted to {@code window}.
+     */
+    @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page, @NotNull StatsWindow window);
+
+    /**
      * Total number of punishments on record for this user.
      */
     @NotNull CompletableFuture<Result<Integer>> punishmentCount();
+
+    /**
+     * Total punishments inside {@code window}.
+     */
+    @NotNull CompletableFuture<Result<Integer>> punishmentCount(@NotNull StatsWindow window);
 }

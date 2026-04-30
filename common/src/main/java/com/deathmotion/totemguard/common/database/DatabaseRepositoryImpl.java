@@ -51,6 +51,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     private volatile @Nullable PunishmentDao punishmentDao;
     private volatile @Nullable StaffAlertPrefDao staffAlertPrefDao;
     private volatile @Nullable VpnCacheDao vpnCacheDao;
+    private volatile @Nullable SchemaInfoDao schemaInfoDao;
     private volatile @Nullable AlertWriter alertWriter;
     private volatile @Nullable RetentionSweeper retentionSweeper;
 
@@ -109,6 +110,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             PunishmentDao punishments = new PunishmentDao(connection);
             StaffAlertPrefDao staffPrefs = new StaffAlertPrefDao(connection);
             VpnCacheDao vpnCache = new VpnCacheDao(connection);
+            SchemaInfoDao schemaInfo = new SchemaInfoDao(connection);
             AlertWriter writer = new AlertWriter(alerts);
             RetentionSweeper sweeper = new RetentionSweeper(alerts, opts);
 
@@ -121,6 +123,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             this.punishmentDao = punishments;
             this.staffAlertPrefDao = staffPrefs;
             this.vpnCacheDao = vpnCache;
+            this.schemaInfoDao = schemaInfo;
             this.alertWriter = writer;
             this.retentionSweeper = sweeper;
             writer.start();
@@ -183,8 +186,8 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     public long[] resolveProfile(
             UUID uuid,
             String name,
-            @Nullable String clientBrand,
-            @Nullable Integer clientVersion,
+            String clientBrand,
+            int clientVersion,
             long nowEpochMs
     ) throws SQLException {
         requireEnabled();
@@ -367,8 +370,8 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         PunishmentDao punishments = this.punishmentDao;
         if (alerts == null || punishments == null) throw new SQLException("Database not ready");
 
-        long alertsRemoved = alerts.deleteByPlayer(uuid);
-        long punishmentsRemoved = punishments.deleteByPlayer(uuid);
+        long alertsRemoved = alerts.deleteByPlayer(uuid, 10_000);
+        long punishmentsRemoved = punishments.deleteByPlayer(uuid, 10_000);
         return new long[]{alertsRemoved, punishmentsRemoved};
     }
 
@@ -389,14 +392,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     @Blocking
-    public int countAlertsTotal() throws SQLException {
-        requireEnabled();
-        AlertDao alerts = this.alertDao;
-        if (alerts == null) throw new SQLException("Database not ready");
-        return alerts.countAll();
-    }
-
-    @Blocking
     public int countAlertsSince(long sinceEpochMs) throws SQLException {
         requireEnabled();
         AlertDao alerts = this.alertDao;
@@ -405,19 +400,83 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     @Blocking
-    public int countPunishmentsTotal() throws SQLException {
-        requireEnabled();
-        PunishmentDao punishments = this.punishmentDao;
-        if (punishments == null) throw new SQLException("Database not ready");
-        return punishments.countAll();
-    }
-
-    @Blocking
     public int countPunishmentsSince(long sinceEpochMs) throws SQLException {
         requireEnabled();
         PunishmentDao punishments = this.punishmentDao;
         if (punishments == null) throw new SQLException("Database not ready");
         return punishments.countSince(sinceEpochMs);
+    }
+
+    @Blocking
+    public int countPlayersTotal() throws SQLException {
+        requireEnabled();
+        PlayerDao players = this.playerDao;
+        if (players == null) throw new SQLException("Database not ready");
+        return players.countAll();
+    }
+
+    @Blocking
+    public int countPlayersActiveSince(long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        PlayerDao players = this.playerDao;
+        if (players == null) throw new SQLException("Database not ready");
+        return players.countActiveSince(sinceEpochMs);
+    }
+
+    @Blocking
+    public java.util.Map<String, SchemaInfoDao.TableSize> tableSizes() throws SQLException {
+        requireEnabled();
+        SchemaInfoDao schema = this.schemaInfoDao;
+        if (schema == null) throw new SQLException("Database not ready");
+        return schema.tableSizes();
+    }
+
+    @Blocking
+    public int countAlertsByPlayerSince(UUID uuid, long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        AlertDao alerts = this.alertDao;
+        if (alerts == null) throw new SQLException("Database not ready");
+        return alerts.countByPlayerSince(uuid, sinceEpochMs);
+    }
+
+    @Blocking
+    public int countAlertsByPlayerAndCheckSince(UUID uuid, String checkName, long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        AlertDao alerts = this.alertDao;
+        if (alerts == null) throw new SQLException("Database not ready");
+        return alerts.countByPlayerAndCheckSince(uuid, checkName, sinceEpochMs);
+    }
+
+    @Blocking
+    public List<PunishmentRecord> findPunishmentsByPlayerSince(UUID uuid, long sinceEpochMs, int limit, int offset) throws SQLException {
+        requireEnabled();
+        PunishmentDao punishments = this.punishmentDao;
+        if (punishments == null) throw new SQLException("Database not ready");
+        return punishments.findByPlayerSince(uuid, sinceEpochMs, limit, offset);
+    }
+
+    @Blocking
+    public int countPunishmentsByPlayerSince(UUID uuid, long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        PunishmentDao punishments = this.punishmentDao;
+        if (punishments == null) throw new SQLException("Database not ready");
+        return punishments.countByPlayerSince(uuid, sinceEpochMs);
+    }
+
+    @Blocking
+    public List<AlertRecord> findAlertsByPlayerSince(UUID uuid, long sinceEpochMs, int limit, int offset) throws SQLException {
+        requireEnabled();
+        AlertDao alerts = this.alertDao;
+        if (alerts == null) throw new SQLException("Database not ready");
+        return alerts.findByPlayerSince(uuid, sinceEpochMs, limit, offset);
+    }
+
+    @Blocking
+    public List<AlertRecord> findAlertsByPlayerAndCheckSince(UUID uuid, String checkName, long sinceEpochMs, int limit, int offset) throws SQLException {
+        requireEnabled();
+        AlertDao alerts = this.alertDao;
+        if (alerts == null) throw new SQLException("Database not ready");
+        return alerts.findByPlayerAndCheckSince(uuid, checkName, sinceEpochMs, limit, offset);
     }
 
     private void applySchema() throws SQLException {
@@ -443,6 +502,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
 
         this.staffAlertPrefDao = null;
         this.vpnCacheDao = null;
+        this.schemaInfoDao = null;
         this.punishmentDao = null;
         this.alertDao = null;
         this.profileDao = null;

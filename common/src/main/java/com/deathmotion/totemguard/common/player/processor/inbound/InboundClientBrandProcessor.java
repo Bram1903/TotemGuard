@@ -53,7 +53,7 @@ public class InboundClientBrandProcessor extends ProcessorInbound {
     private void handle(String channel, byte[] data) {
         if (!channel.equals(CHANNEL)) return;
 
-        String brand = "vanilla";
+        String brand = "Vanilla";
 
         if (data.length > 64 || data.length == 0) {
             player.setClientBrand(brand);

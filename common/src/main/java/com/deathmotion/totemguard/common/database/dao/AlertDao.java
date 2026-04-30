@@ -116,12 +116,19 @@ public final class AlertDao {
     }
 
     @Blocking
-    public long deleteByPlayer(UUID uuid) throws SQLException {
+    public long deleteByPlayer(UUID uuid, int chunkSize) throws SQLException {
+        long total = 0;
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.DELETE_ALERTS_BY_UUID)) {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
-            return stmt.executeUpdate();
+            stmt.setInt(2, chunkSize);
+            while (true) {
+                int removed = stmt.executeUpdate();
+                total += removed;
+                if (removed < chunkSize) break;
+            }
         }
+        return total;
     }
 
     @Blocking
@@ -197,11 +204,60 @@ public final class AlertDao {
     }
 
     @Blocking
-    public int countAll() throws SQLException {
+    public List<AlertRecord> findByPlayerSince(UUID uuid, long sinceEpochMs, int limit, int offset) throws SQLException {
+        List<AlertRecord> out = new ArrayList<>();
         try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_ALERTS_TOTAL);
-             ResultSet rs = stmt.executeQuery()) {
-            return rs.next() ? rs.getInt(1) : 0;
+             PreparedStatement stmt = c.prepareStatement(Sql.SELECT_ALERTS_BY_UUID_SINCE)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            stmt.setLong(2, sinceEpochMs);
+            stmt.setInt(3, limit);
+            stmt.setInt(4, offset);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) out.add(readAlertRow(rs));
+            }
+        }
+        return out;
+    }
+
+    @Blocking
+    public int countByPlayerSince(UUID uuid, long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_ALERTS_BY_UUID_SINCE)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            stmt.setLong(2, sinceEpochMs);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    @Blocking
+    public List<AlertRecord> findByPlayerAndCheckSince(UUID uuid, String checkName, long sinceEpochMs, int limit, int offset) throws SQLException {
+        List<AlertRecord> out = new ArrayList<>();
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.SELECT_ALERTS_BY_UUID_CHECK_SINCE)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            stmt.setString(2, checkName);
+            stmt.setLong(3, sinceEpochMs);
+            stmt.setInt(4, limit);
+            stmt.setInt(5, offset);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) out.add(readAlertRow(rs));
+            }
+        }
+        return out;
+    }
+
+    @Blocking
+    public int countByPlayerAndCheckSince(UUID uuid, String checkName, long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_ALERTS_BY_UUID_CHECK_SINCE)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            stmt.setString(2, checkName);
+            stmt.setLong(3, sinceEpochMs);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
         }
     }
 

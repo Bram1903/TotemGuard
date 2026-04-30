@@ -28,10 +28,12 @@ import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
+import com.deathmotion.totemguard.common.database.dao.SchemaInfoDao.TableSize;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -68,25 +70,54 @@ public final class StatsRepositoryImpl implements StatsRepository {
             if (cached != null) return Result.ok(cached);
 
             try {
-                int alerts;
-                int punishments;
-                if (window.isAllTime()) {
-                    alerts = db.countAlertsTotal();
-                    punishments = db.countPunishmentsTotal();
-                } else {
-                    Duration duration = Objects.requireNonNull(window.window(),
-                            "non-all-time StatsWindow must carry a duration");
-                    long since = System.currentTimeMillis() - duration.toMillis();
-                    alerts = db.countAlertsSince(since);
-                    punishments = db.countPunishmentsSince(since);
-                }
-                StatsSnapshot fresh = new StatsSnapshot(alerts, punishments);
+                StatsSnapshot fresh = window.isAllTime() ? loadAllTime(db) : loadWindowed(db, window);
                 cache.put(key, fresh, CacheCodecs.STATS_SNAPSHOT, STATS_TTL);
                 return Result.ok(fresh);
             } catch (SQLException ex) {
                 return internalError("Failed to load statistics", ex);
             }
         });
+    }
+
+    private StatsSnapshot loadAllTime(DatabaseRepositoryImpl db) throws SQLException {
+        Map<String, TableSize> sizes = db.tableSizes();
+        int alerts = estimatedRows(sizes, "tg_alerts");
+        int punishments = estimatedRows(sizes, "tg_punishments");
+        int uniquePlayers = db.countPlayersTotal();
+        long bytes = computeBytes(sizes, alerts, punishments);
+        return new StatsSnapshot(alerts, punishments, uniquePlayers, bytes);
+    }
+
+    private int estimatedRows(Map<String, TableSize> sizes, String tableName) {
+        TableSize t = sizes.get(tableName);
+        if (t == null) return 0;
+        return (int) Math.min(t.rows(), Integer.MAX_VALUE);
+    }
+
+    private StatsSnapshot loadWindowed(DatabaseRepositoryImpl db, StatsWindow window) throws SQLException {
+        Duration duration = Objects.requireNonNull(window.window(),
+                "non-all-time StatsWindow must carry a duration");
+        long since = System.currentTimeMillis() - duration.toMillis();
+
+        Map<String, TableSize> sizes = db.tableSizes();
+        int alerts = db.countAlertsSince(since);
+        int punishments = db.countPunishmentsSince(since);
+        int uniquePlayers = db.countPlayersActiveSince(since);
+        long bytes = computeBytes(sizes, alerts, punishments);
+        return new StatsSnapshot(alerts, punishments, uniquePlayers, bytes);
+    }
+
+    private long computeBytes(Map<String, TableSize> sizes, int alertsInWindow, int punishmentsInWindow) {
+        long bytes = 0;
+        for (TableSize t : sizes.values()) {
+            long rows = switch (t.name()) {
+                case "tg_alerts" -> alertsInWindow;
+                case "tg_punishments" -> punishmentsInWindow;
+                default -> t.rows();
+            };
+            bytes += t.avgRowLength() * Math.max(0L, rows);
+        }
+        return bytes;
     }
 
     private <T> CompletableFuture<T> supplyAsync(BlockingSupplier<T> supplier) {

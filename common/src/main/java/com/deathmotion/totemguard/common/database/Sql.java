@@ -37,16 +37,14 @@ public final class Sql {
                     "  last_name = VALUES(last_name), " +
                     "  last_seen = VALUES(last_seen)";
 
-    // Minecraft names are unique case-insensitively. utf8mb4_bin collation makes '=' case-sensitive,
-    // so we compare on LOWER(). Full scan is fine — tg_players is small (player count, not alert count).
     // Order by last_seen DESC so the active holder of a recycled name wins when an old row still lingers.
     public static final String SELECT_PLAYER_BY_NAME =
-            "SELECT id, uuid, last_name FROM tg_players " +
-                    "WHERE LOWER(last_name) = LOWER(?) " +
+            "SELECT id, uuid, last_name, first_seen, last_seen FROM tg_players " +
+                    "WHERE last_name_lower = LOWER(?) " +
                     "ORDER BY last_seen DESC LIMIT 1";
 
     public static final String SELECT_PLAYER_BY_UUID =
-            "SELECT id, uuid, last_name FROM tg_players WHERE uuid = ? LIMIT 1";
+            "SELECT id, uuid, last_name, first_seen, last_seen FROM tg_players WHERE uuid = ? LIMIT 1";
 
     public static final String UPSERT_STAFF_ALERT_PREF =
             "INSERT INTO tg_staff_alert_prefs (player_uuid, alerts_enabled, updated_at) " +
@@ -82,12 +80,11 @@ public final class Sql {
                     "(profile_id, player_id, server_id, check_id, type, command, debug, created_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-    // NULL-safe lookup: VARCHAR(64) brand and SMALLINT version can both be null.
     public static final String SELECT_PROFILE_ID =
             "SELECT id FROM tg_profiles " +
                     "WHERE player_id = ? AND server_id = ? " +
-                    "  AND client_brand   <=> ? " +
-                    "  AND client_version <=> ? " +
+                    "  AND client_brand   = ? " +
+                    "  AND client_version = ? " +
                     "LIMIT 1";
 
     public static final String INSERT_PROFILE =
@@ -103,12 +100,12 @@ public final class Sql {
     public static final String DELETE_ALERTS_BY_UUID =
             "DELETE a FROM tg_alerts a " +
                     "JOIN tg_players p ON a.player_id = p.id " +
-                    "WHERE p.uuid = ?";
+                    "WHERE p.uuid = ? LIMIT ?";
 
     public static final String DELETE_PUNISHMENTS_BY_UUID =
             "DELETE pu FROM tg_punishments pu " +
                     "JOIN tg_players p ON pu.player_id = p.id " +
-                    "WHERE p.uuid = ?";
+                    "WHERE p.uuid = ? LIMIT ?";
 
     public static final String SELECT_ALERTS_BY_UUID =
             "SELECT a.id, c.name AS check_name, s.name AS server_name, " +
@@ -171,22 +168,84 @@ public final class Sql {
                     "ORDER BY pu.created_at DESC " +
                     "LIMIT ? OFFSET ?";
 
+    public static final String SELECT_PUNISHMENTS_BY_UUID_SINCE =
+            "SELECT pu.id, c.name AS check_name, s.name AS server_name, " +
+                    "       pu.type, pu.command, pu.debug, pu.created_at " +
+                    "FROM tg_punishments pu " +
+                    "JOIN tg_players p ON pu.player_id = p.id " +
+                    "JOIN tg_checks  c ON pu.check_id  = c.id " +
+                    "JOIN tg_servers s ON pu.server_id = s.id " +
+                    "WHERE p.uuid = ? AND pu.created_at >= ? " +
+                    "ORDER BY pu.created_at DESC " +
+                    "LIMIT ? OFFSET ?";
+
     public static final String COUNT_PUNISHMENTS_BY_UUID =
             "SELECT COUNT(*) FROM tg_punishments pu " +
                     "JOIN tg_players p ON pu.player_id = p.id " +
                     "WHERE p.uuid = ?";
 
-    public static final String COUNT_ALERTS_TOTAL =
-            "SELECT COUNT(*) FROM tg_alerts";
+    public static final String COUNT_PUNISHMENTS_BY_UUID_SINCE =
+            "SELECT COUNT(*) FROM tg_punishments pu " +
+                    "JOIN tg_players p ON pu.player_id = p.id " +
+                    "WHERE p.uuid = ? AND pu.created_at >= ?";
 
     public static final String COUNT_ALERTS_SINCE =
             "SELECT COUNT(*) FROM tg_alerts WHERE created_at >= ?";
 
-    public static final String COUNT_PUNISHMENTS_TOTAL =
-            "SELECT COUNT(*) FROM tg_punishments";
-
     public static final String COUNT_PUNISHMENTS_SINCE =
             "SELECT COUNT(*) FROM tg_punishments WHERE created_at >= ?";
+
+    public static final String COUNT_PLAYERS_TOTAL =
+            "SELECT COUNT(*) FROM tg_players";
+
+    public static final String COUNT_PLAYERS_SINCE =
+            "SELECT COUNT(*) FROM tg_players WHERE last_seen >= ?";
+
+    public static final String SELECT_TG_TABLE_SIZES =
+            "SELECT table_name, table_rows, avg_row_length " +
+                    "FROM information_schema.tables " +
+                    "WHERE table_schema = DATABASE() AND table_name LIKE 'tg\\_%'";
+
+    public static final String SELECT_ALERTS_BY_UUID_SINCE =
+            "SELECT a.id, c.name AS check_name, s.name AS server_name, " +
+                    "       a.violations, a.debug, " +
+                    "       a.keepalive_ping, a.transaction_ping, " +
+                    "       prof.client_brand, prof.client_version, " +
+                    "       a.created_at " +
+                    "FROM tg_alerts a " +
+                    "JOIN tg_players p ON a.player_id = p.id " +
+                    "JOIN tg_checks  c ON a.check_id  = c.id " +
+                    "JOIN tg_servers s ON a.server_id = s.id " +
+                    "LEFT JOIN tg_profiles prof ON a.profile_id = prof.id " +
+                    "WHERE p.uuid = ? AND a.created_at >= ? " +
+                    "ORDER BY a.created_at DESC " +
+                    "LIMIT ? OFFSET ?";
+
+    public static final String COUNT_ALERTS_BY_UUID_SINCE =
+            "SELECT COUNT(*) FROM tg_alerts a " +
+                    "JOIN tg_players p ON a.player_id = p.id " +
+                    "WHERE p.uuid = ? AND a.created_at >= ?";
+
+    public static final String SELECT_ALERTS_BY_UUID_CHECK_SINCE =
+            "SELECT a.id, c.name AS check_name, s.name AS server_name, " +
+                    "       a.violations, a.debug, " +
+                    "       a.keepalive_ping, a.transaction_ping, " +
+                    "       prof.client_brand, prof.client_version, " +
+                    "       a.created_at " +
+                    "FROM tg_alerts a " +
+                    "JOIN tg_players p ON a.player_id = p.id " +
+                    "JOIN tg_checks  c ON a.check_id  = c.id " +
+                    "JOIN tg_servers s ON a.server_id = s.id " +
+                    "LEFT JOIN tg_profiles prof ON a.profile_id = prof.id " +
+                    "WHERE p.uuid = ? AND c.name = ? AND a.created_at >= ? " +
+                    "ORDER BY a.created_at DESC " +
+                    "LIMIT ? OFFSET ?";
+
+    public static final String COUNT_ALERTS_BY_UUID_CHECK_SINCE =
+            "SELECT COUNT(*) FROM tg_alerts a " +
+                    "JOIN tg_players p ON a.player_id = p.id " +
+                    "JOIN tg_checks  c ON a.check_id  = c.id " +
+                    "WHERE p.uuid = ? AND c.name = ? AND a.created_at >= ?";
 
     private Sql() {
     }

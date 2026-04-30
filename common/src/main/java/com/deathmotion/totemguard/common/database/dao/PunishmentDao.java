@@ -113,21 +113,62 @@ public final class PunishmentDao {
     }
 
     @Blocking
-    public long deleteByPlayer(UUID uuid) throws SQLException {
+    public List<PunishmentRecord> findByPlayerSince(UUID uuid, long sinceEpochMs, int limit, int offset) throws SQLException {
+        List<PunishmentRecord> out = new ArrayList<>();
         try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.DELETE_PUNISHMENTS_BY_UUID)) {
+             PreparedStatement stmt = c.prepareStatement(Sql.SELECT_PUNISHMENTS_BY_UUID_SINCE)) {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
-            return stmt.executeUpdate();
+            stmt.setLong(2, sinceEpochMs);
+            stmt.setInt(3, limit);
+            stmt.setInt(4, offset);
+            try (ResultSet rs = stmt.executeQuery()) {
+                PunishmentType[] types = PunishmentType.values();
+                while (rs.next()) {
+                    int ordinal = rs.getInt("type");
+                    PunishmentType type = (ordinal >= 0 && ordinal < types.length)
+                            ? types[ordinal]
+                            : PunishmentType.GENERIC;
+                    out.add(new PunishmentRecord(
+                            rs.getLong("id"),
+                            rs.getString("check_name"),
+                            rs.getString("server_name"),
+                            type,
+                            rs.getString("command"),
+                            rs.getString("debug"),
+                            rs.getLong("created_at")
+                    ));
+                }
+            }
+        }
+        return out;
+    }
+
+    @Blocking
+    public int countByPlayerSince(UUID uuid, long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PUNISHMENTS_BY_UUID_SINCE)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            stmt.setLong(2, sinceEpochMs);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
         }
     }
 
     @Blocking
-    public int countAll() throws SQLException {
+    public long deleteByPlayer(UUID uuid, int chunkSize) throws SQLException {
+        long total = 0;
         try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PUNISHMENTS_TOTAL);
-             ResultSet rs = stmt.executeQuery()) {
-            return rs.next() ? rs.getInt(1) : 0;
+             PreparedStatement stmt = c.prepareStatement(Sql.DELETE_PUNISHMENTS_BY_UUID)) {
+            stmt.setBytes(1, UuidBytes.toBytes(uuid));
+            stmt.setInt(2, chunkSize);
+            while (true) {
+                int removed = stmt.executeUpdate();
+                total += removed;
+                if (removed < chunkSize) break;
+            }
         }
+        return total;
     }
 
     @Blocking

@@ -99,7 +99,7 @@ public class TGPlayer implements TGUser {
     private @Nullable PlatformPlayer platformPlayer;
 
     @Setter()
-    private String clientBrand;
+    private String clientBrand = "Unknown";
 
     /**
      * 0 while unresolved or when the database is disabled.
@@ -226,14 +226,11 @@ public class TGPlayer implements TGUser {
     void resolveDatabaseProfile() {
         if (!platform.getDatabaseRepository().isConnected()) return;
         try {
-            Integer clientVersionId = user.getClientVersion() == null
-                    ? null
-                    : user.getClientVersion().getProtocolVersion();
             long[] result = platform.getDatabaseRepository().resolveProfile(
                     uuid,
                     user.getName(),
                     clientBrand,
-                    clientVersionId,
+                    getClientVersion().getProtocolVersion(),
                     System.currentTimeMillis()
             );
             this.databasePlayerId = (int) result[0];

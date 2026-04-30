@@ -156,6 +156,12 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                 : check.getPunishCommands();
     }
 
+    private PunishmentType effectiveType(PunishmentCommand command) {
+        if (command.type() != PunishmentType.GENERIC) return command.type();
+        if (command.raw().contains("%default_punishment%")) return defaultPunishmentCommand.type();
+        return PunishmentType.GENERIC;
+    }
+
     private boolean containsBan(List<PunishmentCommand> commands) {
         for (PunishmentCommand command : commands) {
             if (command.type() == PunishmentType.BAN) return true;
@@ -192,9 +198,9 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
                 platform.dispatchCommand(processed);
                 dispatchedCommands++;
-                // GENERIC commands are dispatched but not persisted.
-                if (command.type() != PunishmentType.GENERIC) {
-                    recordPunishment(check, command.type(), processed, debug);
+                PunishmentType effectiveType = effectiveType(command);
+                if (effectiveType != PunishmentType.GENERIC) {
+                    recordPunishment(check, effectiveType, processed, debug);
                 }
             } catch (Exception exception) {
                 platform.getLogger().log(

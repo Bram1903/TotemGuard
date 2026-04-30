@@ -23,7 +23,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-final class HistoryText {
+public final class HistoryText {
 
     private static final DateTimeFormatter ABSOLUTE = DateTimeFormatter
             .ofPattern("dd-MM-yyyy HH:mm", Locale.ROOT)
@@ -32,7 +32,7 @@ final class HistoryText {
     private HistoryText() {
     }
 
-    static String relative(long epochMs) {
+    public static String relative(long epochMs) {
         long deltaSeconds = Math.max(0, (System.currentTimeMillis() - epochMs) / 1000);
         if (deltaSeconds < 60) return deltaSeconds + "s ago";
         if (deltaSeconds < 3600) return (deltaSeconds / 60) + "m ago";
@@ -41,7 +41,7 @@ final class HistoryText {
         return (deltaSeconds / 2_592_000) + "mo ago";
     }
 
-    static String absolute(long epochMs) {
+    public static String absolute(long epochMs) {
         return ABSOLUTE.format(Instant.ofEpochMilli(epochMs));
     }
 }
