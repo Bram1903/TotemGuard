@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.event.impl.TGUserPunishEvent;
 import com.deathmotion.totemguard.api.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import com.deathmotion.totemguard.api.reload.Reloadable;
+import com.deathmotion.totemguard.api.user.BanAnimation;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
@@ -130,11 +131,12 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                 }
             };
 
+            BanAnimation animation = player.getBanAnimation();
             if (configRepository.configView().banAnimationEnabled()
                     && containsRemoval(commands)
-                    && BanAnimation.isSupported(player)) {
-                BanAnimation.play(player);
-                platform.getScheduler().runAsyncTaskDelayed(executeAndCleanup, BanAnimation.ANIMATION_DURATION_MS, TimeUnit.MILLISECONDS);
+                    && animation.isSupported()) {
+                animation.play();
+                platform.getScheduler().runAsyncTaskDelayed(executeAndCleanup, animation.getDurationMs(), TimeUnit.MILLISECONDS);
             } else {
                 executeAndCleanup.run();
             }

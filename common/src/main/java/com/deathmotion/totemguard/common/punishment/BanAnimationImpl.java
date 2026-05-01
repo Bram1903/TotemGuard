@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.punishment;
 
+import com.deathmotion.totemguard.api.user.BanAnimation;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemDeathProtection;
@@ -34,28 +35,43 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import java.util.List;
 import java.util.UUID;
 
-public final class BanAnimation {
+public final class BanAnimationImpl implements BanAnimation {
 
-    public static final long ANIMATION_DURATION_MS = 1250L;
+    private static final long DURATION_MS = 1250L;
     private static final int TOTEM_OF_UNDYING_STATUS = 35;
     private static final String SKIN_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTlmOTJkMjI3YTY2MDg0NGI2OWY1OWMzOTRkNDNhY2U3MWNiMzZkMzIzNTIxMTQ4YWYxMTQ2MzdhMDg0ZjZiZCJ9fX0=";
-
     private static final UUID PROFILE_ID = new UUID(0L, 0L);
 
-    private BanAnimation() {
+    private final TGPlayer player;
+
+    public BanAnimationImpl(TGPlayer player) {
+        this.player = player;
     }
 
-    /**
-     * @return {@code true} if the client supports the hacker-head pop. Older
-     * clients can't render it (the totem-pop check is hardcoded to the totem
-     * item type pre-1.21.2), so callers should skip the animation entirely.
-     */
-    public static boolean isSupported(TGPlayer player) {
+    private static ItemStack buildHead() {
+        ItemProfile.Property property = new ItemProfile.Property("textures", SKIN_TEXTURE, null);
+        ItemProfile profile = new ItemProfile(null, PROFILE_ID, List.of(property));
+        return ItemStack.builder()
+                .type(ItemTypes.PLAYER_HEAD)
+                .amount(1)
+                .component(ComponentTypes.DEATH_PROTECTION, new ItemDeathProtection(List.of()))
+                .component(ComponentTypes.PROFILE, profile)
+                .build();
+    }
+
+    @Override
+    public boolean isSupported() {
         return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2);
     }
 
-    public static void play(TGPlayer player) {
-        if (!isSupported(player)) return;
+    @Override
+    public long getDurationMs() {
+        return DURATION_MS;
+    }
+
+    @Override
+    public void play() {
+        if (!isSupported()) return;
 
         User user = player.getUser();
         int entityId = user.getEntityId();
@@ -72,16 +88,5 @@ public final class BanAnimation {
                 entityId,
                 List.of(new Equipment(EquipmentSlot.MAIN_HAND, originalMainHand))
         ));
-    }
-
-    private static ItemStack buildHead() {
-        ItemProfile.Property property = new ItemProfile.Property("textures", SKIN_TEXTURE, null);
-        ItemProfile profile = new ItemProfile(null, PROFILE_ID, List.of(property));
-        return ItemStack.builder()
-                .type(ItemTypes.PLAYER_HEAD)
-                .amount(1)
-                .component(ComponentTypes.DEATH_PROTECTION, new ItemDeathProtection(List.of()))
-                .component(ComponentTypes.PROFILE, profile)
-                .build();
     }
 }

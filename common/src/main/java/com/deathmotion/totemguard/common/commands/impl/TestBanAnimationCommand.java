@@ -18,11 +18,11 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api.user.BanAnimation;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.punishment.BanAnimation;
 import com.deathmotion.totemguard.common.util.Palette;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
@@ -56,17 +56,18 @@ public final class TestBanAnimationCommand extends AbstractCommand {
             return;
         }
 
-        if (!BanAnimation.isSupported(player)) {
+        BanAnimation animation = player.getBanAnimation();
+        if (!animation.isSupported()) {
             sender.sendMessage(Component.text("Ban animation requires a 1.21.2+ client.", Palette.DANGER));
             return;
         }
 
-        BanAnimation.play(player);
+        animation.play();
         sender.sendMessage(Component.text("Played ban animation.", Palette.BRAND));
 
         TGPlatform.getInstance().getScheduler().runAsyncTaskDelayed(
                 () -> player.disconnect("Test ban animation"),
-                BanAnimation.ANIMATION_DURATION_MS,
+                animation.getDurationMs(),
                 TimeUnit.MILLISECONDS
         );
     }

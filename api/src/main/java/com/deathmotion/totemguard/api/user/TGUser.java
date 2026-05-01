@@ -63,4 +63,12 @@ public interface TGUser {
      * @return a {@link HistoryView} bound to this user; never {@code null}.
      */
     @NotNull HistoryView getHistory();
+
+    /**
+     * Returns this user's ban-animation handle. A small controller that lets
+     * callers play the animation and inspect its support and duration.
+     *
+     * @return the ban-animation handle bound to this user. Never {@code null}.
+     */
+    @NotNull BanAnimation getBanAnimation();
 }

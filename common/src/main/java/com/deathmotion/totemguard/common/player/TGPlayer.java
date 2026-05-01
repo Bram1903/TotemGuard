@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player;
 
 import com.deathmotion.totemguard.api.history.HistoryView;
+import com.deathmotion.totemguard.api.user.BanAnimation;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
@@ -48,6 +49,7 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.*;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
+import com.deathmotion.totemguard.common.punishment.BanAnimationImpl;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -88,19 +90,17 @@ public class TGPlayer implements TGUser {
     private final InventoryRecipeTracker inventoryRecipeTracker;
     private final DebugOverlayManager debugOverlayManager;
     private final PacketLatencyHandler latencyHandler;
+    private final BanAnimation banAnimation;
     private final List<ProcessorInbound> processorInbounds;
     private final List<ProcessorOutbound> processorOutbounds;
 
     private final AtomicBoolean hasDisconnected = new AtomicBoolean();
     private final int modDetectionWindowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
-
     private boolean hasLoggedIn;
     private PlatformUser platformUser;
     private @Nullable PlatformPlayer platformPlayer;
-
     @Setter()
     private String clientBrand = "Unknown";
-
     /**
      * 0 while unresolved or when the database is disabled.
      */
@@ -151,6 +151,7 @@ public class TGPlayer implements TGUser {
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());
         this.latencyHandler = new PacketLatencyHandler(this);
+        this.banAnimation = new BanAnimationImpl(this);
         this.checkManager = new CheckManagerImpl(this);
 
         this.processorInbounds = new ArrayList<>() {{
@@ -296,6 +297,11 @@ public class TGPlayer implements TGUser {
     @Override
     public @NotNull HistoryView getHistory() {
         return TGPlatform.getInstance().getHistoryRepository().of(uuid);
+    }
+
+    @Override
+    public @NotNull BanAnimation getBanAnimation() {
+        return banAnimation;
     }
 
     public ClientVersion getClientVersion() {
