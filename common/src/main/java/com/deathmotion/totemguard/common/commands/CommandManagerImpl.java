@@ -48,6 +48,7 @@ public class CommandManagerImpl {
             new InventoryCommand().register(commandManager);
             new PlaceholderCommand().register(commandManager);
             new TesterCommand().register(commandManager);
+            new TestBanAnimationCommand().register(commandManager);
         }
 
         // /tg check needs real inventory access via PlatformPlayer, which only

@@ -42,6 +42,7 @@ public final class ConfigView {
     private final AntiVpnOptions antiVpn;
     private final UpdateCheckerOptions updateChecker;
     private final EntitySpoofingOptions entitySpoofing;
+    private final boolean banAnimationEnabled;
     private final Set<String> developerOverrides;
 
     public ConfigView(Config config) {
@@ -91,6 +92,7 @@ public final class ConfigView {
                 config.getBoolean(ConfigKeys.ENTITY_SPOOFING_HEALTH),
                 config.getBoolean(ConfigKeys.ENTITY_SPOOFING_ABSORPTION)
         );
+        this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
         List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
         this.developerOverrides = overrides.isEmpty() ? Set.of() : Set.copyOf(new HashSet<>(overrides));
     }
@@ -125,6 +127,10 @@ public final class ConfigView {
 
     public @NotNull EntitySpoofingOptions entitySpoofing() {
         return entitySpoofing;
+    }
+
+    public boolean banAnimationEnabled() {
+        return banAnimationEnabled;
     }
 
     public boolean hasDeveloperOverride(@NotNull String flag) {

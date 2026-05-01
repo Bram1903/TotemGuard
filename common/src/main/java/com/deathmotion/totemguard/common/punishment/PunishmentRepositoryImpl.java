@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadable {
@@ -101,7 +102,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
         if (!tryClaim(playerUuid, containsBan)) return;
 
-        boolean keepDistributedLock = false;
+        boolean handedOff = false;
         try {
             TGUserPunishEvent event = eventRepository.post(new TGUserPunishEventImpl(
                     player,
@@ -110,19 +111,36 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             ));
             if (event.isCancelled()) return;
 
-            if (!executePunishment(check, commands, debug, placeholderExtras)) {
-                platform.getLogger().warning(
-                        "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
-                );
-                return;
+            Runnable executeAndCleanup = () -> {
+                boolean keepDistributedLock = false;
+                try {
+                    if (!executePunishment(check, commands, debug, placeholderExtras)) {
+                        platform.getLogger().warning(
+                                "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
+                        );
+                        return;
+                    }
+
+                    platform.getDiscordWebhookService().sendPunishment(check, debug);
+
+                    if (clearViolationsAfter) player.getCheckManager().clearAllViolations();
+                    keepDistributedLock = containsBan;
+                } finally {
+                    finishClaim(playerUuid, containsBan, keepDistributedLock);
+                }
+            };
+
+            if (configRepository.configView().banAnimationEnabled()
+                    && containsRemoval(commands)
+                    && BanAnimation.isSupported(player)) {
+                BanAnimation.play(player);
+                platform.getScheduler().runAsyncTaskDelayed(executeAndCleanup, BanAnimation.ANIMATION_DURATION_MS, TimeUnit.MILLISECONDS);
+            } else {
+                executeAndCleanup.run();
             }
-
-            platform.getDiscordWebhookService().sendPunishment(check, debug);
-
-            if (clearViolationsAfter) player.getCheckManager().clearAllViolations();
-            keepDistributedLock = containsBan;
+            handedOff = true;
         } finally {
-            finishClaim(playerUuid, containsBan, keepDistributedLock);
+            if (!handedOff) finishClaim(playerUuid, containsBan, false);
         }
     }
 
@@ -169,6 +187,20 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             // resolves to a BAN, treat the whole batch as ban-bearing.
             if (command.type() == PunishmentType.GENERIC
                     && defaultPunishmentCommand.type() == PunishmentType.BAN
+                    && command.raw().contains("%default_punishment%")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsRemoval(List<PunishmentCommand> commands) {
+        for (PunishmentCommand command : commands) {
+            PunishmentType type = command.type();
+            if (type == PunishmentType.BAN || type == PunishmentType.KICK) return true;
+            if (type == PunishmentType.GENERIC
+                    && (defaultPunishmentCommand.type() == PunishmentType.BAN
+                    || defaultPunishmentCommand.type() == PunishmentType.KICK)
                     && command.raw().contains("%default_punishment%")) {
                 return true;
             }

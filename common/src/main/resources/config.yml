@@ -84,6 +84,12 @@ entity-spoofing:
   # metadata to 0.
   absorption: true
 
+# Just before a player is kicked or banned, show them a fake totem-pop animation
+# using a player head with a hacker skin. The head is sent via packets only
+# the real inventory is never touched, so nothing is lost on re-join.
+ban-animation:
+  enabled: true
+
 # Periodically checks GitHub for new TotemGuard releases (every 6h).
 # When Redis is enabled, results are shared across the fleet via cache + pub/sub
 # so a rolling-restart fleet typically reuses the first server's fetch instead
