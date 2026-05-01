@@ -115,7 +115,6 @@ public abstract class CheckImpl implements Check {
         if (!shouldFail(debug)) return false;
         violations++;
 
-        //TGPlatform.getInstance().getLogger().info("Player " + player.getName() + " failed " + name + " VL: " + getViolations() + (debug != null ? " | Debug: " + debug : ""));
         TGPlatform.getInstance().getAlertRepository().alert(this, violations, debug);
         return true;
     }

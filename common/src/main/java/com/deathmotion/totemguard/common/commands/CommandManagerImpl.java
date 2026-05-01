@@ -42,13 +42,12 @@ public class CommandManagerImpl {
         new ReloadCommand().register(commandManager);
         new AlertCommand().register(commandManager);
 
-        // Internal debug/inspection tools — only registered on snapshot builds so
-        // production servers don't see them. Their output is hardcoded against the
-        // Palette and intentionally not configurable.
+        // Only register on development builds
         if (TGVersions.CURRENT.snapshot()) {
             new DebugOverlayCommand().register(commandManager);
             new InventoryCommand().register(commandManager);
             new PlaceholderCommand().register(commandManager);
+            new TesterCommand().register(commandManager);
         }
 
         // /tg check needs real inventory access via PlatformPlayer, which only

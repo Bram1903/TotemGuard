@@ -46,6 +46,9 @@ public class AlertRepositoryImpl implements AlertRepository {
     @Getter
     private final ConcurrentHashMap<UUID, PlatformUser> enabledAlerts = new ConcurrentHashMap<>();
 
+    @Getter
+    private final TesterAlertRoster testerAlertRoster = new TesterAlertRoster();
+
     private final ConcurrentHashMap<UUID, PlayerChatBuffer> chatBuffers = new ConcurrentHashMap<>();
 
     public AlertRepositoryImpl() {
@@ -80,6 +83,7 @@ public class AlertRepositoryImpl implements AlertRepository {
 
     public void removeUser(UUID uuid) {
         enabledAlerts.remove(uuid);
+        testerAlertRoster.clear(uuid);
 
         PlayerChatBuffer playerChatBuffer = chatBuffers.remove(uuid);
         if (playerChatBuffer != null) {
@@ -88,6 +92,7 @@ public class AlertRepositoryImpl implements AlertRepository {
     }
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
+        sendTesterAlert(check, violations, debug);
         bufferChatAlert(check, violations, debug);
         // Sample ping here so the row reflects latency at flag time.
         int keepalivePing = check.player.getPingData().getKeepAlivePing();
@@ -108,10 +113,18 @@ public class AlertRepositoryImpl implements AlertRepository {
         });
     }
 
+    private void sendTesterAlert(CheckImpl check, int violations, @Nullable String debug) {
+        PlatformUser tester = testerAlertRoster.get(check.player.getUuid());
+        if (tester == null) return;
+        // Bypass the chat buffer entirely so testers see every flag in real time —
+        // no 1s window, no per-check merging.
+        tester.sendMessage(AlertBuilder.build(check, violations, debug));
+    }
+
     private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug) {
         chatBuffers.computeIfAbsent(
                 check.player.getUuid(),
-                ignored -> new PlayerChatBuffer(platform.getScheduler(), this::broadcast, CHAT_BUFFER_WINDOW_SECONDS)
+                ignored -> new PlayerChatBuffer(platform.getScheduler(), this::broadcastFlag, CHAT_BUFFER_WINDOW_SECONDS)
         ).buffer(check, violations, debug);
     }
 
@@ -133,6 +146,21 @@ public class AlertRepositoryImpl implements AlertRepository {
                         enabled ? MessagesKeys.ALERTS_ENABLED : MessagesKeys.ALERTS_DISABLED
                 )
         );
+    }
+
+    private void broadcastFlag(UUID violatorUuid, Component message) {
+        boolean violatorIsTester = testerAlertRoster.contains(violatorUuid);
+        enabledAlerts.forEach((uuid, player) -> {
+            // Tester already received the unbuffered message. skip to avoid a duplicate.
+            if (violatorIsTester && uuid.equals(violatorUuid)) return;
+            player.sendMessage(message);
+        });
+
+        if (!platform.getRedisRepository().shouldSendAlerts()) {
+            return;
+        }
+
+        platform.getRedisRepository().publish(Packets.SYNC_ALERT_MESSAGE.packet(), message);
     }
 
     private void broadcast(Component message, boolean syncRedis) {

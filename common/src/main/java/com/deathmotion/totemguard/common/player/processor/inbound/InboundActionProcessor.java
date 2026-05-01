@@ -51,7 +51,6 @@ public class InboundActionProcessor extends ProcessorInbound {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.ANIMATION) {
-            // This misses breaking blocks (needs fixing)
             if (tickData.isInvalidLeftClick()) return;
             clickData.recordLeftClick();
         } else if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {

@@ -48,7 +48,6 @@ public final class FabricScheduler implements Scheduler {
     public void runMainThreadTask(Runnable task) {
         MinecraftServer server = FabricServerHolder.server();
         if (server == null) {
-            // Server not running; fall back to async so the task still completes.
             asyncExecutor.execute(task);
             return;
         }

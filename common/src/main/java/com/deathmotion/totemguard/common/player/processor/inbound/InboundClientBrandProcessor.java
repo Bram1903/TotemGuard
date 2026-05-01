@@ -64,8 +64,8 @@ public class InboundClientBrandProcessor extends ProcessorInbound {
         byte[] minusLength = new byte[data.length - 1];
         System.arraycopy(data, 1, minusLength, 0, minusLength.length);
 
-        brand = new String(minusLength).replace(" (Velocity)", ""); // removes velocity's brand suffix
-        brand = ChatUtil.stripColor(brand); // strip color codes from client brand
+        brand = new String(minusLength).replace(" (Velocity)", "");
+        brand = ChatUtil.stripColor(brand);
 
         player.setClientBrand(brand);
         hasBrand = true;

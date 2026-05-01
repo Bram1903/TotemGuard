@@ -169,7 +169,6 @@ public abstract class TGPlatform {
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
         internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
 
-        // Load the API
         api = new TGPlatformAPI();
         TotemGuard.init(api);
 

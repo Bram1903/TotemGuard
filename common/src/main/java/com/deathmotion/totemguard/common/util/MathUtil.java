@@ -51,14 +51,12 @@ public class MathUtil {
 
         values.sort(Double::compareTo);
 
-        // Not enough points to form meaningful quartiles
         if (values.size() < 4) {
             return new Pair<>(new ArrayList<>(), new ArrayList<>());
         }
 
         final int n = values.size();
 
-        // Split around median; exclude median from both halves when n is odd
         final List<Double> lower = values.subList(0, n / 2);
         final List<Double> upper = values.subList((n + 1) / 2, n);
 
@@ -190,7 +188,6 @@ public class MathUtil {
 
         if (m2 == 0.0) return Double.NaN;
 
-        // sample standard deviation
         final double s = Math.sqrt(m2 / (n - 1.0));
 
         return (n * m3) / ((n - 1.0) * (n - 2.0) * s * s * s);
@@ -274,7 +271,6 @@ public class MathUtil {
         return Double.parseDouble(twoDForm.format(d).replaceAll(",", "."));
     }
 
-    //0x4000
     public long gcd(long limit, long a, long b) {
         return (b <= limit) ? a : gcd(limit, b, a % b);
     }

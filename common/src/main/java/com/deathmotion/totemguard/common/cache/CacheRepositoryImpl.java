@@ -28,7 +28,6 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
-// Redis primary, local write-through mirror so reads survive transient Redis outages.
 public final class CacheRepositoryImpl {
 
     private static final long FAILURE_LOG_INTERVAL_NANOS = Duration.ofMinutes(1).toNanos();

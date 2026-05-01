@@ -54,7 +54,6 @@ public class ClickData {
         rightClicks = 0;
 
         if (leftClicksPerSecond == 0 && rightClicksPerSecond == 0) return;
-        //TGPlatform.getInstance().getLogger().info("CPS Updated: L=" + leftClicksPerSecond + " R=" + rightClicksPerSecond);
     }
 
     public void checkPost() {

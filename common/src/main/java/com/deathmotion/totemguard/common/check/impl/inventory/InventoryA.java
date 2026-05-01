@@ -41,6 +41,8 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 @CheckData(description = "Impossible action with open inventory", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
 
+    private boolean movementFlagged;
+
     public InventoryA(TGPlayer player) {
         super(player);
     }
@@ -57,25 +59,32 @@ public class InventoryA extends CheckImpl implements PacketCheck {
     }
 
     public void validateMovement() {
-        if (!data.isOpenInventory()) return;
-        if (data.isServerOpenedInventoryThisTick()) return;
-
-        if (data.isSprinting()) {
-            failInventory("sprint");
+        if (!data.isOpenInventory()) {
+            movementFlagged = false;
             return;
         }
+        if (data.isServerOpenedInventoryThisTick()) return;
 
-        if (player.supportsEndTick()) {
-            final InputData input = data.getInputData();
-            if (input.isInput()) {
-                failInventory("move");
-            }
+        boolean sprinting = data.isSprinting();
+        boolean hasInput = player.supportsEndTick() && data.getInputData().isInput();
+
+        if (!sprinting && !hasInput) {
+            // No active movement → the latch releases so a future press flags again.
+            movementFlagged = false;
+            return;
         }
+        if (movementFlagged) return;
+
+        movementFlagged = true;
+        failInventory(sprinting ? "sprint" : "move");
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!data.isOpenInventory()) return;
+        if (!data.isOpenInventory()) {
+            movementFlagged = false;
+            return;
+        }
         if (data.isServerOpenedInventoryThisTick()) return;
 
         final PacketTypeCommon type = event.getPacketType();
@@ -99,8 +108,17 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             if (!input.current().jumping() && input.previous().jumping()) {
                 return;
             }
+            if (movementFlagged) {
+                // Same press-release cycle as a prior flag — when input drops to
+                // zero the cycle is over, so release the latch for the next event.
+                if (!input.isInput()) movementFlagged = false;
+                return;
+            }
 
             failInventory("move");
+            // If the packet is a pure release (current=empty), the event ends here
+            // and the next press should flag fresh; otherwise hold the latch.
+            movementFlagged = input.isInput();
             return;
         }
 

@@ -323,7 +323,6 @@ public final class DiscordWebhookService implements Reloadable {
                                     try {
                                         rateLimitedUntil.set((long) (Double.parseDouble(r) * 1000L));
                                     } catch (NumberFormatException ignored) {
-                                        // fall back to one-second backoff
                                         rateLimitedUntil.set(System.currentTimeMillis() + 1000L);
                                     }
                                 });

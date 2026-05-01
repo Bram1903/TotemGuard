@@ -96,8 +96,6 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
     }
 
     private String buildTitle(MessageService messages) {
-        // The message template owns the "Punishments: " prefix. Window modifier
-        // is folded into the player placeholder so the YAML stays in control.
         StringBuilder name = new StringBuilder();
         if (!window.isAllTime()) name.append(window.id()).append(' ');
         name.append(targetName);

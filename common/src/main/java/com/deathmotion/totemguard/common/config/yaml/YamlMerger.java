@@ -335,7 +335,6 @@ public final class YamlMerger {
         char last = s.charAt(s.length() - 1);
         if (Character.isWhitespace(first) || Character.isWhitespace(last)) return true;
         if ("[]{}|>&*!%@`,?".indexOf(first) >= 0) return true;
-        // YAML reserved literal scalars
         return s.equalsIgnoreCase("yes") || s.equalsIgnoreCase("no")
                 || s.equalsIgnoreCase("true") || s.equalsIgnoreCase("false")
                 || s.equalsIgnoreCase("null") || s.equalsIgnoreCase("on") || s.equalsIgnoreCase("off");

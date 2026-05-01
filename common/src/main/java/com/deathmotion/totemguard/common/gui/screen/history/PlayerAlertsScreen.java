@@ -97,8 +97,6 @@ public final class PlayerAlertsScreen extends GuiScreen {
     }
 
     private String buildTitle(MessageService messages) {
-        // The message template owns the "Alerts: " prefix. Window and check-filter
-        // modifiers are folded into the player placeholder so the YAML stays in control.
         StringBuilder name = new StringBuilder();
         if (!window.isAllTime()) name.append(window.id()).append(' ');
         if (checkName != null) {

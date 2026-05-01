@@ -39,6 +39,8 @@ public final class MessagesKeys {
     public static final ConfigKey<String> ALERTS_COMMAND = ConfigKey.string("alerts.command");
     public static final ConfigKey<String> ALERTS_ENABLED = ConfigKey.string("alerts.enabled");
     public static final ConfigKey<String> ALERTS_DISABLED = ConfigKey.string("alerts.disabled");
+    public static final ConfigKey<String> TESTER_ENABLED = ConfigKey.string("alerts.tester.enabled");
+    public static final ConfigKey<String> TESTER_DISABLED = ConfigKey.string("alerts.tester.disabled");
 
     public static final ConfigKey<String> RELOAD = ConfigKey.string("reload");
 
@@ -83,7 +85,6 @@ public final class MessagesKeys {
     // tools. Their output is hardcoded against the Palette and intentionally not exposed
     // here.
 
-    // ─── GUI shared keys ───
     public static final ConfigKey<String> GUI_BTN_CLOSE_TITLE = ConfigKey.string("gui.button.close.title");
     public static final ConfigKey<String> GUI_BTN_CLOSE_LORE = ConfigKey.string("gui.button.close.lore");
     public static final ConfigKey<String> GUI_BTN_BACK_TITLE = ConfigKey.string("gui.button.back.title");
@@ -127,7 +128,6 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_LOADING_QUERYING_DATABASE = ConfigKey.string("gui.loading.querying-database");
     public static final ConfigKey<String> GUI_LOADING_JOIN_TIMES = ConfigKey.string("gui.loading.join-times");
 
-    // ─── Per-screen keys ───
     public static final ConfigKey<String> GUI_INFO_TITLE = ConfigKey.string("gui.info.title");
     public static final ConfigKey<String> GUI_INFO_SERVICES_TITLE = ConfigKey.string("gui.info.services-title");
     public static final ConfigKey<String> GUI_INFO_SERVICES_LORE_1 = ConfigKey.string("gui.info.services-lore-1");

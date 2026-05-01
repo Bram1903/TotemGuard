@@ -34,16 +34,12 @@ public class MessageUtil {
         final StringBuilder sb = new StringBuilder(message.length());
         for (int i = 0; i < message.length(); ++i) {
             final char c = message.charAt(i);
-            // Escape a newline
             if (c == '\n') {
                 sb.append("\\n");
-            }  // Escape Markdown special characters
-            else if (c == '`' || c == '*' || c == '_' || c == '~' || c == '|') {
+            } else if (c == '`' || c == '*' || c == '_' || c == '~' || c == '|') {
                 sb.append('\\').append(c);
             } else {
-                // Escape "# ", "> ", etc
                 if (c == '#' || c == '>' || c == '-') {
-                    // check if there's a space next
                     if (((i + 1 < message.length()) && (message.charAt(i + 1) == ' '))
                             && ((i == 0) || (message.charAt(i - 1) == '\n'))) {
                         sb.append("\\").append(c);

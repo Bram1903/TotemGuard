@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.latency.TransactionTimeoutWatchdog;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.jetbrains.annotations.NotNull;
@@ -92,6 +93,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         }
 
         enableAlerts(uuid, platformUser);
+        enableTesterAlerts(uuid, platformUser);
         platform.getUpdateCheckerRepository().notifyIfOutdated(platformUser);
     }
 
@@ -104,6 +106,12 @@ public final class PlayerRepositoryImpl implements UserRepository {
                 platform.getAlertRepository().toggleAlerts(uuid);
             }
         });
+    }
+
+    private void enableTesterAlerts(UUID uuid, PlatformUser platformUser) {
+        if (!TGVersions.CURRENT.snapshot()) return;
+        if (!platformUser.hasPermission("TotemGuard.Tester")) return;
+        platform.getAlertRepository().getTesterAlertRoster().enable(uuid, platformUser);
     }
 
     /**

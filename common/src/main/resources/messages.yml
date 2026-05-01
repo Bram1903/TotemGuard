@@ -15,6 +15,10 @@ alerts:
   enabled: "%prefix% &#6FB04AAlerts enabled"
   disabled: "%prefix% &#D4452CAlerts disabled"
 
+  tester:
+    enabled: "%prefix% &#6FB04ATester alerts enabled &#B8AC8F(only your own flags)"
+    disabled: "%prefix% &#D4452CTester alerts disabled"
+
   message: "%prefix% &#FEE067%tg_player%&#B8AC8F failed &#FBAF00%tg_check_name% &#B8AC8FVL[&#FBAF00%tg_check_violations%&#B8AC8F/&#FBAF00%tg_check_max_violations%&#B8AC8F]"
   hover: |-
     &#E7DEC4Client Version: &#FEE067%tg_player_version% &#8F7440| &#E7DEC4Client Brand: &#FEE067%tg_player_brand%
