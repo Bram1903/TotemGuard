@@ -42,6 +42,8 @@ public final class BanAnimationImpl implements BanAnimation {
     private static final String SKIN_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTlmOTJkMjI3YTY2MDg0NGI2OWY1OWMzOTRkNDNhY2U3MWNiMzZkMzIzNTIxMTQ4YWYxMTQ2MzdhMDg0ZjZiZCJ9fX0=";
     private static final UUID PROFILE_ID = new UUID(0L, 0L);
 
+    private static final ItemStack HACKER_HEAD = buildHead();
+
     private final TGPlayer player;
 
     public BanAnimationImpl(TGPlayer player) {
@@ -77,11 +79,10 @@ public final class BanAnimationImpl implements BanAnimation {
         int entityId = user.getEntityId();
 
         ItemStack originalMainHand = player.getInventory().getMainHandItem();
-        ItemStack head = buildHead();
 
         user.sendPacketSilently(new WrapperPlayServerEntityEquipment(
                 entityId,
-                List.of(new Equipment(EquipmentSlot.MAIN_HAND, head))
+                List.of(new Equipment(EquipmentSlot.MAIN_HAND, HACKER_HEAD))
         ));
         user.sendPacketSilently(new WrapperPlayServerEntityStatus(entityId, TOTEM_OF_UNDYING_STATUS));
         user.sendPacketSilently(new WrapperPlayServerEntityEquipment(
