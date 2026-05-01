@@ -176,6 +176,18 @@ gui:
     history-title: "&#FBAF00History"
     history-lore-1: "&#B8AC8FBrowse this player's alert and"
     history-lore-2: "&#B8AC8Fpunishment history from the database."
+    head:
+      uuid-label: "UUID"
+      client-version-label: "Client version"
+      client-brand-label: "Client brand"
+      vpn-label: "VPN flagged"
+      keepalive-ping-label: "KeepAlive ping"
+      transaction-ping-label: "Transaction ping"
+      first-joined-label: "First joined"
+      violations-label: "Violations this session"
+      violations-summary: "%tg_total_vl% across %tg_active_checks% check(s)"
+      violations-entry: "&#B8AC8F  %tg_check_name% - VL %tg_check_vl%"
+      violations-overflow: "&#6E6651  + %tg_hidden% more check(s)"
 
   # /tg monitor <player>
   monitor:

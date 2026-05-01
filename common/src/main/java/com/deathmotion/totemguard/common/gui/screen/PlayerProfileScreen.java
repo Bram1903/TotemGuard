@@ -103,7 +103,7 @@ public final class PlayerProfileScreen extends GuiScreen {
                     ItemTypes.RED_CONCRETE,
                     messages.getComponent(MessagesKeys.GUI_PROFILE_UNTRACKED_TITLE, Map.of("tg_player", targetName)),
                     List.of(
-                            GuiText.line("UUID", targetId.toString()),
+                            GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_UUID_LABEL), targetId.toString()),
                             messages.getComponent(MessagesKeys.GUI_PROFILE_UNTRACKED_LORE)
                     )
             ));
@@ -185,15 +185,19 @@ public final class PlayerProfileScreen extends GuiScreen {
 
     private List<Component> buildHeadLore(TGPlayer target, MessageService messages) {
         List<Component> lore = new ArrayList<>();
-        lore.add(GuiText.line("Client version", target.getClientVersion().getReleaseName()));
-        lore.add(GuiText.line("Client brand", target.getClientBrand()));
+        lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_CLIENT_VERSION_LABEL),
+                target.getClientVersion().getReleaseName()));
+        lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_CLIENT_BRAND_LABEL),
+                target.getClientBrand()));
         if (TGPlatform.getInstance().getAntiVPNRepository().isEnabled()) {
-            lore.add(GuiText.status("VPN flagged", target.isVpn()));
+            lore.add(GuiText.status(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_VPN_LABEL), target.isVpn()));
         }
 
         lore.add(Component.empty());
-        lore.add(GuiText.line("KeepAlive ping", target.getPingData().getKeepAlivePing() + " ms"));
-        lore.add(GuiText.line("Transaction ping", target.getPingData().getTransactionPing() + " ms"));
+        lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_KEEPALIVE_PING_LABEL),
+                target.getPingData().getKeepAlivePing() + " ms"));
+        lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_TRANSACTION_PING_LABEL),
+                target.getPingData().getTransactionPing() + " ms"));
 
         appendViolationSummary(lore, target, messages);
         appendFirstJoined(lore, messages);
@@ -214,15 +218,21 @@ public final class PlayerProfileScreen extends GuiScreen {
         }
 
         int totalVl = active.stream().mapToInt(Check::getViolations).sum();
-        lore.add(GuiText.line("Total violations", totalVl + " across " + active.size() + " check(s)"));
+        lore.add(GuiText.line(
+                messages.getString(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_LABEL),
+                messages.getString(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_SUMMARY, Map.of(
+                        "tg_total_vl", totalVl,
+                        "tg_active_checks", active.size()))));
 
-        active.stream().limit(VIOLATION_LIST_LIMIT).forEach(check -> lore.add(Component.text(
-                "  " + check.getName() + " - VL " + check.getViolations(),
-                Palette.CONNECTIVE)));
+        active.stream().limit(VIOLATION_LIST_LIMIT).forEach(check -> lore.add(
+                messages.getComponent(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_ENTRY, Map.of(
+                        "tg_check_name", check.getName(),
+                        "tg_check_vl", check.getViolations()))));
 
         int hidden = active.size() - VIOLATION_LIST_LIMIT;
         if (hidden > 0) {
-            lore.add(Component.text("  + " + hidden + " more (see History)", Palette.CAPTION));
+            lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_OVERFLOW,
+                    Map.of("tg_hidden", hidden)));
         }
     }
 
@@ -230,7 +240,7 @@ public final class PlayerProfileScreen extends GuiScreen {
         PlayerRecord rec = this.dbRecord;
         if (rec != null) {
             lore.add(Component.empty());
-            lore.add(GuiText.line("First joined",
+            lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_FIRST_JOINED_LABEL),
                     HistoryText.relative(rec.firstSeen()) + "  (" + HistoryText.absolute(rec.firstSeen()) + ")"));
             return;
         }

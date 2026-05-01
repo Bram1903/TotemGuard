@@ -156,6 +156,17 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_PROFILE_HISTORY_TITLE = ConfigKey.string("gui.profile.history-title");
     public static final ConfigKey<String> GUI_PROFILE_HISTORY_LORE_1 = ConfigKey.string("gui.profile.history-lore-1");
     public static final ConfigKey<String> GUI_PROFILE_HISTORY_LORE_2 = ConfigKey.string("gui.profile.history-lore-2");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_UUID_LABEL = ConfigKey.string("gui.profile.head.uuid-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_CLIENT_VERSION_LABEL = ConfigKey.string("gui.profile.head.client-version-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_CLIENT_BRAND_LABEL = ConfigKey.string("gui.profile.head.client-brand-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_VPN_LABEL = ConfigKey.string("gui.profile.head.vpn-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_KEEPALIVE_PING_LABEL = ConfigKey.string("gui.profile.head.keepalive-ping-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_TRANSACTION_PING_LABEL = ConfigKey.string("gui.profile.head.transaction-ping-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_FIRST_JOINED_LABEL = ConfigKey.string("gui.profile.head.first-joined-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_VIOLATIONS_LABEL = ConfigKey.string("gui.profile.head.violations-label");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_VIOLATIONS_SUMMARY = ConfigKey.string("gui.profile.head.violations-summary");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_VIOLATIONS_ENTRY = ConfigKey.string("gui.profile.head.violations-entry");
+    public static final ConfigKey<String> GUI_PROFILE_HEAD_VIOLATIONS_OVERFLOW = ConfigKey.string("gui.profile.head.violations-overflow");
 
     public static final ConfigKey<String> GUI_MONITOR_TITLE = ConfigKey.string("gui.monitor.title");
     public static final ConfigKey<String> GUI_MONITOR_UNTRACKED_TITLE = ConfigKey.string("gui.monitor.untracked-title");

@@ -59,7 +59,7 @@ public class ProtocolG extends CheckImpl implements PacketCheck {
         byte mask = encode(packet);
 
         if (hasPrevious && mask == previousMask) {
-            fail("mask=" + Integer.toBinaryString(mask & 0xFF));
+            fail();
         }
 
         hasPrevious = true;
