@@ -43,9 +43,9 @@ public final class ConfigKeys {
     public static final ConfigKey<Integer> REDIS_PORT = ConfigKey.integer("redis.port");
     public static final ConfigKey<String> REDIS_USERNAME = ConfigKey.string("redis.username");
     public static final ConfigKey<String> REDIS_PASSWORD = ConfigKey.string("redis.password");
-    public static final ConfigKey<String> REDIS_MESSAGING_CHANNEL = ConfigKey.string("redis.messaging.channel");
-    public static final ConfigKey<Boolean> REDIS_MESSAGING_SEND_ALERTS = ConfigKey.bool("redis.messaging.send-alerts");
-    public static final ConfigKey<Boolean> REDIS_MESSAGING_RECEIVE_ALERTS = ConfigKey.bool("redis.messaging.receive-alerts");
+    public static final ConfigKey<String> REDIS_MESSAGING_ALERTS_CHANNEL = ConfigKey.string("redis.messaging.alerts.channel");
+    public static final ConfigKey<Boolean> REDIS_MESSAGING_ALERTS_SEND = ConfigKey.bool("redis.messaging.alerts.send");
+    public static final ConfigKey<Boolean> REDIS_MESSAGING_ALERTS_RECEIVE = ConfigKey.bool("redis.messaging.alerts.receive");
 
     public static final ConfigKey<Boolean> UPDATE_CHECKER_ENABLED = ConfigKey.bool("update-checker.enabled");
     public static final ConfigKey<Boolean> UPDATE_CHECKER_NOTIFY_ON_JOIN = ConfigKey.bool("update-checker.notify-on-join");

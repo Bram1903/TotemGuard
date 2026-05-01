@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.redis.broker.packets.impl;
 
+import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
@@ -29,7 +30,7 @@ import com.google.common.io.ByteArrayDataOutput;
 public class SyncUpdateAvailablePacket extends Packet<String> {
 
     public SyncUpdateAvailablePacket(int id) {
-        super(id);
+        super(id, MessagingTopic.UPDATES);
     }
 
     @Override

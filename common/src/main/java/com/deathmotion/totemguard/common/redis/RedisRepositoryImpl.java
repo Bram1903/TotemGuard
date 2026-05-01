@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.redis.RedisRepository;
 import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.RedisOptions;
+import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.RedisBroker;
 import com.deathmotion.totemguard.common.redis.broker.handlers.SyncAlertMessageHandler;
 import com.deathmotion.totemguard.common.redis.broker.handlers.SyncUpdateAvailableHandler;
@@ -68,18 +69,22 @@ public final class RedisRepositoryImpl implements RedisRepository {
         return isEnabled() && manager.isConnected();
     }
 
-    public boolean shouldSendAlerts() {
+    public boolean shouldSend(MessagingTopic topic) {
         RedisOptions current = this.options;
-        return isEnabled()
-                && current.messaging().hasChannel()
-                && current.messaging().sendAlerts();
+        if (current == null || !current.enabled()) return false;
+        return switch (topic) {
+            case ALERTS -> current.messaging().alerts().send();
+            case UPDATES -> true;
+        };
     }
 
-    public boolean shouldReceiveAlerts() {
+    public boolean shouldReceive(MessagingTopic topic) {
         RedisOptions current = this.options;
-        return isEnabled()
-                && current.messaging().hasChannel()
-                && current.messaging().receiveAlerts();
+        if (current == null || !current.enabled()) return false;
+        return switch (topic) {
+            case ALERTS -> current.messaging().alerts().receive();
+            case UPDATES -> true;
+        };
     }
 
     // Ephemeral — re-fetch per operation, do not cache.
@@ -136,9 +141,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         }
 
         RedisBroker newBroker = new RedisBroker(registry, identifier, newOptions.messaging());
-        if (newBroker.isConfigured()) {
-            manager.addListener(newBroker);
-        }
+        manager.addListener(newBroker);
         this.broker = newBroker;
 
         manager.start(newOptions, blocking);

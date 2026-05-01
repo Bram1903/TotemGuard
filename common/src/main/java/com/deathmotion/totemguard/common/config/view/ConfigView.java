@@ -58,9 +58,11 @@ public final class ConfigView {
                 config.getString(ConfigKeys.REDIS_USERNAME),
                 config.getString(ConfigKeys.REDIS_PASSWORD),
                 new RedisOptions.MessagingOptions(
-                        config.getString(ConfigKeys.REDIS_MESSAGING_CHANNEL),
-                        config.getBoolean(ConfigKeys.REDIS_MESSAGING_SEND_ALERTS),
-                        config.getBoolean(ConfigKeys.REDIS_MESSAGING_RECEIVE_ALERTS)
+                        new RedisOptions.AlertsOptions(
+                                config.getString(ConfigKeys.REDIS_MESSAGING_ALERTS_CHANNEL),
+                                config.getBoolean(ConfigKeys.REDIS_MESSAGING_ALERTS_SEND),
+                                config.getBoolean(ConfigKeys.REDIS_MESSAGING_ALERTS_RECEIVE)
+                        )
                 )
         );
         this.database = new DatabaseOptions(

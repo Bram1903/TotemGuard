@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
@@ -156,7 +157,7 @@ public class AlertRepositoryImpl implements AlertRepository {
             player.sendMessage(message);
         });
 
-        if (!platform.getRedisRepository().shouldSendAlerts()) {
+        if (!platform.getRedisRepository().shouldSend(MessagingTopic.ALERTS)) {
             return;
         }
 
@@ -166,7 +167,7 @@ public class AlertRepositoryImpl implements AlertRepository {
     private void broadcast(Component message, boolean syncRedis) {
         enabledAlerts.values().forEach(player -> player.sendMessage(message));
 
-        if (!syncRedis || !platform.getRedisRepository().shouldSendAlerts()) {
+        if (!syncRedis || !platform.getRedisRepository().shouldSend(MessagingTopic.ALERTS)) {
             return;
         }
 

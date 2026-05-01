@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.config.schema.UpdateCheckerOptions;
 import com.deathmotion.totemguard.common.platform.player.PlatformUser;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.util.ReflectiveHttpClientCloser;
 import com.deathmotion.totemguard.common.util.TGVersions;
@@ -297,6 +298,7 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
     private void publishToFleet(String tag) {
         RedisRepositoryImpl redis = platform.getRedisRepository();
         if (!redis.isConnected()) return;
+        if (!redis.shouldSend(MessagingTopic.UPDATES)) return;
         redis.publish(Packets.SYNC_UPDATE_AVAILABLE.<String>packet(), tag);
     }
 

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.redis.broker.packets;
 
+import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 
@@ -29,9 +30,15 @@ import com.google.common.io.ByteArrayDataOutput;
 public abstract class Packet<T> {
 
     private final int id;
+    private final MessagingTopic topic;
 
-    protected Packet(int id) {
+    protected Packet(int id, MessagingTopic topic) {
         this.id = id;
+        this.topic = topic;
+    }
+
+    public final MessagingTopic topic() {
+        return topic;
     }
 
     /**

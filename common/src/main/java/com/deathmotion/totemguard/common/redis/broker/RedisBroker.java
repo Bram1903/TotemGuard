@@ -30,7 +30,9 @@ import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.logging.Level;
@@ -41,9 +43,8 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
     private final Logger logger = TGPlatform.getInstance().getLogger();
     private final PacketRegistry registry;
     private final String identifier;
-    private final String channelName;
-    private final byte[] channelBytes;
-    private final boolean configured;
+    private final EnumMap<MessagingTopic, byte[]> channelBytesByTopic;
+    private final byte[][] subscribedChannels;
 
     private final Object lock = new Object();
     private volatile @Nullable RedisConnection connection;
@@ -51,18 +52,25 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
     public RedisBroker(PacketRegistry registry, String identifier, RedisOptions.MessagingOptions options) {
         this.registry = registry;
         this.identifier = identifier;
-        this.channelName = options.channel().trim();
-        this.channelBytes = channelName.getBytes(StandardCharsets.UTF_8);
-        this.configured = !channelName.isEmpty();
+        this.channelBytesByTopic = new EnumMap<>(MessagingTopic.class);
+
+        // De-dupe so colliding topic channels (e.g. alerts.channel: "updates")
+        // don't get subscribed twice. Packet ID disambiguates on receive.
+        Set<String> uniqueChannels = new LinkedHashSet<>();
+        for (MessagingTopic topic : MessagingTopic.values()) {
+            String channelName = options.channelFor(topic);
+            channelBytesByTopic.put(topic, channelName.getBytes(StandardCharsets.UTF_8));
+            uniqueChannels.add(channelName);
+        }
+        this.subscribedChannels = uniqueChannels.stream()
+                .map(name -> name.getBytes(StandardCharsets.UTF_8))
+                .toArray(byte[][]::new);
     }
 
     @Override
     public void onConnected(RedisConnection conn) {
-        if (!configured) return;
-
         StatefulRedisPubSubConnection<byte[], byte[]> pubSub = conn.pubSub();
         synchronized (lock) {
-            // remove-then-add for idempotent re-arm across reconnects/restarts.
             try {
                 pubSub.removeListener(this);
             } catch (Exception ignored) {
@@ -71,10 +79,10 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
             this.connection = conn;
         }
 
-        pubSub.async().subscribe(channelBytes).whenComplete((ignored, error) -> {
+        pubSub.async().subscribe(subscribedChannels).whenComplete((ignored, error) -> {
             if (error == null) return;
             logger.log(Level.WARNING,
-                    "Failed to subscribe to Redis channel '" + channelName + "': " + error.getMessage());
+                    "Failed to subscribe to TotemGuard Redis channels: " + error.getMessage());
         });
     }
 
@@ -86,12 +94,15 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
     }
 
     public <T> CompletionStage<Boolean> publish(Packet<T> packet, T payload) {
-        if (!configured) {
+        RedisConnection current = this.connection;
+        if (current == null || !current.isOpen()) {
             return CompletableFuture.completedFuture(false);
         }
 
-        RedisConnection current = this.connection;
-        if (current == null || !current.isOpen()) {
+        byte[] channel = channelBytesByTopic.get(packet.topic());
+        if (channel == null) {
+            logger.warning("No Redis channel resolved for topic " + packet.topic()
+                    + "; dropping packet " + packet.getClass().getSimpleName());
             return CompletableFuture.completedFuture(false);
         }
 
@@ -104,13 +115,13 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
             return CompletableFuture.completedFuture(false);
         }
 
-        return current.commands().async().publish(channelBytes, frame)
+        return current.commands().async().publish(channel, frame)
                 .toCompletableFuture()
                 .handle((received, error) -> {
                     if (error != null) {
                         logger.log(Level.WARNING,
                                 "Failed to publish Redis packet " + packet.getClass().getSimpleName()
-                                        + " to channel '" + channelName + "': " + error.getMessage());
+                                        + ": " + error.getMessage());
                         return false;
                     }
                     return true;
@@ -119,16 +130,14 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
 
     @Override
     public void message(byte[] channel, byte[] message) {
-        if (!configured) return;
         if (channel == null || message == null) return;
         if (channel.length == 0 || message.length == 0) return;
-        if (!Arrays.equals(channel, channelBytes)) return;
 
         try {
             PacketCodec.Frame frame = PacketCodec.decode(message);
             if (frame.protocolVersion() != PacketCodec.PROTOCOL_VERSION) {
                 logger.warning("Ignoring Redis packet with unsupported protocol version "
-                        + frame.protocolVersion() + " on channel '" + channelName + "'.");
+                        + frame.protocolVersion() + ".");
                 return;
             }
             if (identifier.equals(frame.senderId())) {
@@ -136,15 +145,7 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
             }
             registry.dispatch(frame.packetId(), frame.payload());
         } catch (Exception ex) {
-            logger.log(Level.WARNING, "Failed to read Redis message from channel '" + channelName + "'", ex);
+            logger.log(Level.WARNING, "Failed to read Redis message", ex);
         }
-    }
-
-    public boolean isConfigured() {
-        return configured;
-    }
-
-    public String channelName() {
-        return channelName;
     }
 }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.redis.broker.packets.impl;
 
+import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
@@ -30,7 +31,7 @@ import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 public class SyncAlertMessagePacket extends Packet<Component> {
 
     public SyncAlertMessagePacket(int id) {
-        super(id);
+        super(id, MessagingTopic.ALERTS);
     }
 
     @Override

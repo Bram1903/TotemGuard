@@ -48,10 +48,15 @@ redis:
   username: default
   password: yourPassword
 
+  # All channels are namespaced under "totemguard:". Override `alerts.channel`
+  # to scope alerts to a cluster (e.g. "events" → "totemguard:events");
+  # leave blank for the default "totemguard:alerts".
+  # Multiple message types can use the same channel (handled by the packet id)
   messaging:
-    channel: totemguard
-    send-alerts: true
-    receive-alerts: true
+    alerts:
+      channel: ""
+      send: true
+      receive: true
 
 # Enables the Anti-VPN Detection feature.
 anti-vpn:

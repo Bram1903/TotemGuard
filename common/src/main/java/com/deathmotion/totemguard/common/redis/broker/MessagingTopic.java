@@ -16,28 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.config.schema;
+package com.deathmotion.totemguard.common.redis.broker;
 
-import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
-import org.jetbrains.annotations.NotNull;
+public enum MessagingTopic {
 
-public record RedisOptions(
-        boolean enabled,
-        @NotNull String host,
-        int port,
-        @NotNull String username,
-        @NotNull String password,
-        @NotNull MessagingOptions messaging
-) {
+    ALERTS("alerts", true),
+    UPDATES("updates", false);
 
-    public record MessagingOptions(@NotNull AlertsOptions alerts) {
+    public static final String PREFIX = "totemguard";
 
-        public @NotNull String channelFor(@NotNull MessagingTopic topic) {
-            String override = topic == MessagingTopic.ALERTS ? alerts.channel() : "";
-            return topic.channelName(override);
-        }
+    private final String defaultName;
+    private final boolean overridable;
+
+    MessagingTopic(String defaultName, boolean overridable) {
+        this.defaultName = defaultName;
+        this.overridable = overridable;
     }
 
-    public record AlertsOptions(@NotNull String channel, boolean send, boolean receive) {
+    public String channelName(String override) {
+        String name = (overridable && override != null && !override.isBlank())
+                ? override.trim()
+                : defaultName;
+        return PREFIX + ":" + name;
     }
 }
