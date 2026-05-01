@@ -88,7 +88,7 @@ public class InventoryConstants {
                 recipeId,
                 RECIPE_PROBE_DISPLAY,
                 null,
-                RecipeBookCategories.CRAFTING_BUILDING_BLOCKS,
+                RecipeBookCategories.CRAFTING_EQUIPMENT,
                 List.of(RECIPE_PROBE_INGREDIENT_SET)
         );
     }

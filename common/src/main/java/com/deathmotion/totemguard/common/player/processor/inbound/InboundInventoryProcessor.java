@@ -171,7 +171,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
 
     private void handleSetRecipeBookState(PacketReceiveEvent event) {
         WrapperPlayClientSetRecipeBookState packet = new WrapperPlayClientSetRecipeBookState(event);
-        recipeTracker.recordClientState(packet.getBookType(), packet.isBookOpen());
+        recipeTracker.recordClientState(packet.getBookType(), packet.isBookOpen(), packet.isFilterActive());
     }
 
     private void handleSetDisplayedRecipe(PacketReceiveEvent event) {

@@ -82,6 +82,7 @@ public class Data {
                     + " &7their inventory.";
             Component inventoryMessage = MessageUtil.formatMessage(message);
 
+            //player.getUser().sendMessage(inventoryMessage);
             platform.getGuiManager().refreshMonitor(player.getUuid());
         }
     }
