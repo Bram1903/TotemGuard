@@ -18,21 +18,21 @@ kick-then-ban-window-minutes: 30
 # A payload or translation may belong to at most one mod.
 mods:
   AutoTotem:
-    severity: KICK_THEN_BAN
+    severity: LOG
     payloads:
       - autototem
 
   Meteor:
-    severity: KICK_THEN_BAN
+    severity: LOG
     translations:
       - key.meteor-client.open-gui
 
   Tweakeroo:
-    severity: KICK
+    severity: LOG
     payloads:
       - servux:tweaks
 
   AccurateBlockPlacement:
-    severity: KICK
+    severity: LOG
     translations:
       - net.clayborn.accurateblockplacement.togglevanillaplacement

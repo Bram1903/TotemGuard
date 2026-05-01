@@ -32,7 +32,7 @@ AutoTotemB:
 InventoryA:
   enabled: true
   punishable: false
-  mitigate: true
+  mitigate: false
   max-violations: 2
 
   punishment-commands:
@@ -41,7 +41,7 @@ InventoryA:
 InventoryB:
   enabled: true
   punishable: false
-  mitigate: true
+  mitigate: false
   max-violations: 2
 
   punishment-commands:
@@ -50,7 +50,7 @@ InventoryB:
 InventoryC:
   enabled: true
   punishable: false
-  mitigate: true
+  mitigate: false
   max-violations: 2
 
   punishment-commands:

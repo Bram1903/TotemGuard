@@ -49,7 +49,7 @@ public final class TotemGuardCommand extends AbstractCommand {
             sender.sendMessage(platform.getMessageService().getComponent(
                     MessagesKeys.ROOT_VERSION,
                     Map.of(
-                            "tg_version", TotemGuard.get().getVersion(),
+                            "tg_version", TotemGuard.get().getVersion().toDisplayString(),
                             "tg_platform", platform.getPlatform().displayName()
                     )
             ));
