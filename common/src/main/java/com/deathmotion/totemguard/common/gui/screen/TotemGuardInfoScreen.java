@@ -41,6 +41,7 @@ import java.util.Locale;
 
 public final class TotemGuardInfoScreen extends GuiScreen {
 
+    public static final String PERMISSION = "TotemGuard.Gui.Info";
     private static final DateTimeFormatter BUILD_TIME_FORMAT = DateTimeFormatter
             .ofPattern("dd-MM-yyyy HH:mm", Locale.ROOT)
             .withZone(ZoneId.systemDefault());
@@ -137,7 +138,7 @@ public final class TotemGuardInfoScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuard.Gui.Info";
+        return PERMISSION;
     }
 
     @Override

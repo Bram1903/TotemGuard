@@ -64,7 +64,7 @@ public final class HistoryCommand extends AbstractCommand {
                                 StringParser.stringParser(),
                                 TGPlayerSuggestionProvider.suggestionProvider()
                         )
-                        .permission(perm("gui.history"))
+                        .permission(PlayerHistoryHubScreen.PERMISSION)
                         .handler(this::openHistoryGui)
         );
     }

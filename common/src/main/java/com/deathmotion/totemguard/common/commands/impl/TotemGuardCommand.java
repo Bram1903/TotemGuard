@@ -45,7 +45,7 @@ public final class TotemGuardCommand extends AbstractCommand {
         Sender sender = context.sender();
         TGPlatform platform = TGPlatform.getInstance();
 
-        if (!sender.isPlayer() || !sender.hasPermission(perm("gui"))) {
+        if (!sender.isPlayer() || !sender.hasPermission(TotemGuardInfoScreen.PERMISSION)) {
             sender.sendMessage(platform.getMessageService().getComponent(
                     MessagesKeys.ROOT_VERSION,
                     Map.of(

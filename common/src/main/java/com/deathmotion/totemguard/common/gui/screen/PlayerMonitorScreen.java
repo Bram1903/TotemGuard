@@ -35,6 +35,7 @@ import java.util.*;
 
 public final class PlayerMonitorScreen extends GuiScreen {
 
+    public static final String PERMISSION = "TotemGuard.Gui.Monitor";
     private final UUID targetId;
     private final String fallbackName;
 
@@ -49,7 +50,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuard.Gui.Monitor";
+        return PERMISSION;
     }
 
     @Override

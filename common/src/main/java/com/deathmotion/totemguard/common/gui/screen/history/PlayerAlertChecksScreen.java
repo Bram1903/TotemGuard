@@ -63,7 +63,7 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuard.Gui.History.Alerts";
+        return PlayerAlertsScreen.PERMISSION;
     }
 
     @Override

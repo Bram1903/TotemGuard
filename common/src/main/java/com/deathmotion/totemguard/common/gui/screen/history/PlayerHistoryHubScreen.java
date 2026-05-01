@@ -37,9 +37,9 @@ import java.util.logging.Level;
 
 public final class PlayerHistoryHubScreen extends GuiScreen {
 
+    public static final String PERMISSION = "TotemGuard.Gui.History";
     private final UUID targetId;
     private final String fallbackName;
-
     private volatile @Nullable PlayerRecord dbRecord;
     private volatile boolean dbAttempted;
 
@@ -54,7 +54,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuard.Gui.History";
+        return PERMISSION;
     }
 
     @Override
@@ -119,8 +119,8 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         }
 
         boolean dbReady = platform.getDatabaseRepository().isConnected();
-        boolean canViewAlerts = session.hasPermission("TotemGuard.Gui.History.Alerts");
-        boolean canViewPunishments = session.hasPermission("TotemGuard.Gui.History.Punishments");
+        boolean canViewAlerts = session.hasPermission(PlayerAlertsScreen.PERMISSION);
+        boolean canViewPunishments = session.hasPermission(PlayerPunishmentsScreen.PERMISSION);
 
         if (dbReady) {
             if (canViewAlerts) {

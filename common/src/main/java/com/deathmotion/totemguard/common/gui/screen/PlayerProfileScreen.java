@@ -39,6 +39,7 @@ import java.util.logging.Level;
 
 public final class PlayerProfileScreen extends GuiScreen {
 
+    public static final String PERMISSION = "TotemGuard.Gui.Profile";
     private static final int SLOT_MONITOR = 11;
     private static final int SLOT_HEAD = 13;
     private static final int SLOT_HISTORY = 15;
@@ -60,7 +61,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuard.Gui.Profile";
+        return PERMISSION;
     }
 
     @Override
@@ -138,7 +139,7 @@ public final class PlayerProfileScreen extends GuiScreen {
     }
 
     private void renderMonitorButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
-        if (!session.hasPermission("TotemGuard.Gui.Monitor")) return;
+        if (!session.hasPermission(PlayerMonitorScreen.PERMISSION)) return;
 
         boolean self = session.viewerId().equals(target.getUuid());
         builder.set(SLOT_MONITOR, GuiItems.simple(
@@ -170,7 +171,7 @@ public final class PlayerProfileScreen extends GuiScreen {
     }
 
     private void renderHistoryButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
-        if (!session.hasPermission("TotemGuard.Gui.History")) return;
+        if (!session.hasPermission(PlayerHistoryHubScreen.PERMISSION)) return;
 
         builder.set(SLOT_HISTORY, GuiItems.simple(
                 ItemTypes.BOOK,

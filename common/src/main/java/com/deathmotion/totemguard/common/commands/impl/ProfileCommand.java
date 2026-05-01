@@ -45,7 +45,7 @@ public final class ProfileCommand extends AbstractCommand {
                                 StringParser.stringParser(),
                                 TGPlayerSuggestionProvider.suggestionProvider()
                         )
-                        .permission(perm("gui.profile"))
+                        .permission(PlayerProfileScreen.PERMISSION)
                         .handler(this::openProfileGui)
         );
     }

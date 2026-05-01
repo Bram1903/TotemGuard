@@ -48,7 +48,7 @@ public final class MonitorCommand extends AbstractCommand {
                                 StringParser.stringParser(),
                                 TGPlayerSuggestionProvider.suggestionProvider()
                         )
-                        .permission(perm("gui.monitor"))
+                        .permission(PlayerMonitorScreen.PERMISSION)
                         .handler(this::openMonitorGui)
         );
     }

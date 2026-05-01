@@ -46,6 +46,7 @@ import java.util.logging.Level;
  */
 public final class PlayerPunishmentsScreen extends GuiScreen {
 
+    public static final String PERMISSION = "TotemGuard.Gui.History.Punishments";
     private static final int[] CONTENT_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
@@ -58,12 +59,10 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
             StatsWindow.LAST_30_DAYS,
             StatsWindow.ALL_TIME
     };
-
     private final UUID targetId;
     private final String targetName;
     private final int page;
     private final StatsWindow window;
-
     private volatile @Nullable HistoryPage<PunishmentEntry> loaded;
     private volatile @Nullable String loadError;
     private volatile boolean offline;
@@ -104,7 +103,7 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuard.Gui.History.Punishments";
+        return PERMISSION;
     }
 
     @Override
