@@ -69,7 +69,6 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         boolean hasInput = player.supportsEndTick() && data.getInputData().isInput();
 
         if (!sprinting && !hasInput) {
-            // No active movement → the latch releases so a future press flags again.
             movementFlagged = false;
             return;
         }
@@ -109,15 +108,11 @@ public class InventoryA extends CheckImpl implements PacketCheck {
                 return;
             }
             if (movementFlagged) {
-                // Same press-release cycle as a prior flag — when input drops to
-                // zero the cycle is over, so release the latch for the next event.
                 if (!input.isInput()) movementFlagged = false;
                 return;
             }
 
             failInventory("move");
-            // If the packet is a pure release (current=empty), the event ends here
-            // and the next press should flag fresh; otherwise hold the latch.
             movementFlagged = input.isInput();
             return;
         }
@@ -133,24 +128,18 @@ public class InventoryA extends CheckImpl implements PacketCheck {
                 case START_DIGGING, FINISHED_DIGGING, CANCELLED_DIGGING -> failInventory("dig");
                 case DROP_ITEM, DROP_ITEM_STACK -> failInventory("drop");
                 case SWAP_ITEM_WITH_OFFHAND -> failInventory("swap offhand");
-                case RELEASE_USE_ITEM -> failInventory("release");
                 case STAB -> failInventory("stab");
             }
             return;
         }
 
         if (type == PacketType.Play.Client.ENTITY_ACTION) {
-            // STOP_SNEAKING / STOP_SPRINTING / START_JUMPING_WITH_HORSE can fire once
-            // on the screen-open transition (KeyMapping.releaseAll), so they're allowed.
             switch (new WrapperPlayClientEntityAction(event).getAction()) {
                 case START_SNEAKING -> failInventory("sneak");
                 case LEAVE_BED -> failInventory("leave bed");
                 case START_SPRINTING -> failInventory("sprint");
-                case STOP_JUMPING_WITH_HORSE -> failInventory("stop ride jump");
                 case OPEN_HORSE_INVENTORY -> failInventory("open horse inv");
                 case START_FLYING_WITH_ELYTRA -> failInventory("start glide");
-                case STOP_SNEAKING, STOP_SPRINTING, START_JUMPING_WITH_HORSE -> {
-                }
             }
         }
     }
