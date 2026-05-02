@@ -24,45 +24,27 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerInput;
 
 @RequiresTickEnd
 @CheckData(description = "Duplicate consecutive player input", type = CheckType.PROTOCOL)
 public class ProtocolG extends CheckImpl implements PacketCheck {
 
-    private boolean hasPrevious;
-    private byte previousMask;
+    private final InputData inputData;
 
     public ProtocolG(TGPlayer player) {
         super(player);
-    }
-
-    private static byte encode(WrapperPlayClientPlayerInput packet) {
-        int v = 0;
-        if (packet.isForward()) v |= 1;
-        if (packet.isBackward()) v |= 1 << 1;
-        if (packet.isLeft()) v |= 1 << 2;
-        if (packet.isRight()) v |= 1 << 3;
-        if (packet.isJump()) v |= 1 << 4;
-        if (packet.isShift()) v |= 1 << 5;
-        if (packet.isSprint()) v |= 1 << 6;
-        return (byte) v;
+        this.inputData = player.getData().getInputData();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.PLAYER_INPUT) return;
 
-        WrapperPlayClientPlayerInput packet = new WrapperPlayClientPlayerInput(event);
-        byte mask = encode(packet);
-
-        if (hasPrevious && mask == previousMask) {
+        if (inputData.current().equals(inputData.previous())) {
             fail();
         }
-
-        hasPrevious = true;
-        previousMask = mask;
     }
 }
