@@ -37,12 +37,12 @@ public class InputData {
         this.previous = null;
     }
 
-    public boolean isInput() {
-        return current != null && current.isInput();
+    public boolean hasMovement() {
+        return current != null && current.hasMovement();
     }
 
-    public boolean isInput(boolean ignoreJumping) {
-        return current != null && current.isInput(ignoreJumping);
+    public boolean hasMovement(boolean ignoreJumping) {
+        return current != null && current.hasMovement(ignoreJumping);
     }
 
     public boolean isDuplicate() {
@@ -72,16 +72,16 @@ public class InputData {
             return new State(false, false, false, false, false, false, false);
         }
 
-        public boolean isInput() {
-            return forward || backward || left || right || jumping || sneaking || sprinting;
+        public boolean hasMovement() {
+            return forward || backward || left || right || jumping;
         }
 
-        public boolean isInput(boolean ignoreJumping) {
+        public boolean hasMovement(boolean ignoreJumping) {
             if (!ignoreJumping) {
-                return isInput();
+                return hasMovement();
             }
 
-            return forward || backward || left || right || sneaking || sprinting;
+            return forward || backward || left || right;
         }
     }
 }

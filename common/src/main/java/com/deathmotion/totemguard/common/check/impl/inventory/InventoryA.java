@@ -66,7 +66,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         if (data.isServerOpenedInventoryThisTick()) return;
 
         boolean sprinting = data.isSprinting();
-        boolean hasInput = player.supportsEndTick() && data.getInputData().isInput();
+        boolean hasInput = player.supportsEndTick() && data.getInputData().hasMovement();
 
         if (!sprinting && !hasInput) {
             movementFlagged = false;
@@ -110,12 +110,12 @@ public class InventoryA extends CheckImpl implements PacketCheck {
                 return;
             }
             if (movementFlagged) {
-                if (!input.isInput()) movementFlagged = false;
+                if (!input.hasMovement()) movementFlagged = false;
                 return;
             }
 
             failInventory("move");
-            movementFlagged = input.isInput();
+            movementFlagged = input.hasMovement();
             return;
         }
 

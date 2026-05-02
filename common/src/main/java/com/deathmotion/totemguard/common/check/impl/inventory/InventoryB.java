@@ -46,7 +46,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             if (data.isSprinting()) {
                 failInventory("click (sprinting");
-            } else if (inputData.isInput(true)) {
+            } else if (inputData.hasMovement(true)) {
                 failInventory("click (move)");
             }
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
@@ -54,7 +54,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
 
             if (data.isSprinting()) {
                 fail("close (sprinting)");
-            } else if (inputData.isInput(true)) {
+            } else if (inputData.hasMovement(true)) {
                 fail("close (move)");
             }
         }
