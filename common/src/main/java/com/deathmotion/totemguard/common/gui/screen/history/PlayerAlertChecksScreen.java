@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.util.NumberFormatter;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;
@@ -156,7 +157,7 @@ public final class PlayerAlertChecksScreen extends GuiScreen {
                     ItemTypes.PAPER,
                     Component.text(summary.checkName(), Palette.BRAND),
                     List.of(
-                            GuiText.line("Alerts", String.valueOf(summary.alertCount())),
+                            GuiText.line("Alerts", NumberFormatter.grouped(summary.alertCount())),
                             Component.empty(),
                             messages.getComponent(MessagesKeys.GUI_ALERT_CHECKS_VIEW_FILTER_HINT)
                     )

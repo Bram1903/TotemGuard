@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.util.NumberFormatter;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -148,9 +149,9 @@ public final class StatisticsScreen extends GuiScreen {
         if (snapshot == null) {
             lore.add(messages.getComponent(MessagesKeys.GUI_LOADING_QUERYING_DATABASE));
         } else {
-            lore.add(GuiText.line("Alerts", String.valueOf(snapshot.alertCount())));
-            lore.add(GuiText.line("Punishments", String.valueOf(snapshot.punishmentCount())));
-            lore.add(GuiText.line("Unique players", String.valueOf(snapshot.uniquePlayers())));
+            lore.add(GuiText.line("Alerts", NumberFormatter.grouped(snapshot.alertCount())));
+            lore.add(GuiText.line("Punishments", NumberFormatter.grouped(snapshot.punishmentCount())));
+            lore.add(GuiText.line("Unique players", NumberFormatter.grouped(snapshot.uniquePlayers())));
             lore.add(GuiText.line("DB size", formatBytes(snapshot.databaseBytes())));
         }
         lore.add(Component.empty());

@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.util.NumberFormatter;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
@@ -261,7 +262,7 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
 
         List<Component> footerLore = new ArrayList<>();
         footerLore.add(GuiText.line("Window", window.label()));
-        footerLore.add(GuiText.line("Matching punishments", String.valueOf(total)));
+        footerLore.add(GuiText.line("Matching punishments", NumberFormatter.grouped(total)));
 
         builder.set(49, GuiItems.simple(
                 ItemTypes.PAPER,

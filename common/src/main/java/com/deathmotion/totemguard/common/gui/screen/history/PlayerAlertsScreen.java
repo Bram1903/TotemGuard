@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.util.NumberFormatter;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -224,7 +225,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
 
     private ItemStack buildAlertTile(AlertEntry record, MessageService messages) {
         List<Component> lore = new ArrayList<>();
-        lore.add(GuiText.line("Violations", String.valueOf(record.violations())));
+        lore.add(GuiText.line("Violations", NumberFormatter.grouped(record.violations())));
         lore.add(GuiText.line("Server", record.serverName()));
         lore.add(GuiText.line("When", HistoryText.relative(record.createdAt())
                 + "  (" + HistoryText.absolute(record.createdAt()) + ")"));
@@ -298,7 +299,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
         List<Component> footerLore = new ArrayList<>();
         footerLore.add(GuiText.line("Window", window.label()));
         if (checkName != null) footerLore.add(GuiText.line("Check filter", checkName));
-        footerLore.add(GuiText.line("Matching alerts", String.valueOf(total)));
+        footerLore.add(GuiText.line("Matching alerts", NumberFormatter.grouped(total)));
 
         builder.set(49, GuiItems.simple(
                 ItemTypes.PAPER,
