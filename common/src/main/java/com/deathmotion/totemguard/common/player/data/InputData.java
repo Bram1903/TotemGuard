@@ -18,10 +18,14 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
+import org.jetbrains.annotations.Nullable;
+
 public class InputData {
 
-    private State current = State.empty();
-    private State previous = State.empty();
+    @Nullable
+    private State current = null;
+    @Nullable
+    private State previous = null;
 
     public void setState(boolean forward, boolean backward, boolean left, boolean right, boolean jumping, boolean sneaking, boolean sprinting) {
         this.previous = this.current;
@@ -29,21 +33,28 @@ public class InputData {
     }
 
     public void reset() {
-        setState(false, false, false, false, false, false, false);
+        this.current = null;
+        this.previous = null;
     }
 
     public boolean isInput() {
-        return current.isInput();
+        return current != null && current.isInput();
     }
 
     public boolean isInput(boolean ignoreJumping) {
-        return current.isInput(ignoreJumping);
+        return current != null && current.isInput(ignoreJumping);
     }
 
+    public boolean isDuplicate() {
+        return current != null && previous != null && current.equals(previous);
+    }
+
+    @Nullable
     public State current() {
         return current;
     }
 
+    @Nullable
     public State previous() {
         return previous;
     }

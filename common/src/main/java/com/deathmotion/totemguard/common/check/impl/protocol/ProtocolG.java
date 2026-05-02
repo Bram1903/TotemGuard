@@ -43,7 +43,7 @@ public class ProtocolG extends CheckImpl implements PacketCheck {
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.PLAYER_INPUT) return;
 
-        if (inputData.current().equals(inputData.previous())) {
+        if (inputData.isDuplicate()) {
             fail();
         }
     }

@@ -46,6 +46,7 @@ public class ProtocolF extends CheckImpl implements PacketCheck {
         if (packet.getEntityId() != player.getUser().getEntityId()) return;
 
         InputData.State state = data.getInputData().current();
+        if (state == null) return;
         if (!state.forward() || state.backward()) {
             fail("forward=" + state.forward() + ",back=" + state.backward());
         }
