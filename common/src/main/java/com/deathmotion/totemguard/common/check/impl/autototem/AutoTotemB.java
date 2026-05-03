@@ -56,11 +56,12 @@ public class AutoTotemB extends HeuristicCheck implements EventCheck {
         if (recent.size() < SAMPLE_SIZE) return;
 
         double stdDev = MathUtil.getStandardDeviation(recent);
+        String debug = "stdDev=" + String.format("%.2f", stdDev);
 
         if (stdDev < 5.0) {
-            punish(3.0);
+            punish(3.0, debug);
         } else if (stdDev < 15.0) {
-            punish(2.0);
+            punish(2.0, debug);
         } else if (stdDev > 60.0) {
             reward(1.0);
         }
