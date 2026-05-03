@@ -50,7 +50,6 @@ public class InventoryA extends CheckImpl implements PacketCheck {
     private static String staticReason(PacketTypeCommon type) {
         if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
         if (type == PacketType.Play.Client.USE_ITEM) return "use";
-        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) return "change slot";
         if (type == PacketType.Play.Client.PICK_ITEM) return "pick item";
         if (type == PacketType.Play.Client.PICK_ITEM_FROM_BLOCK) return "pick block";
         if (type == PacketType.Play.Client.PICK_ITEM_FROM_ENTITY) return "pick entity";
@@ -92,6 +91,12 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             if (data.getMovementData().isLastFlyingRotationChanged() && data.getGameMode() != GameMode.SPECTATOR) {
                 failInventory("aim");
             }
+            return;
+        }
+
+        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
+            if (data.isClientOpenedInventoryThisTick()) return;
+            failInventory("change slot");
             return;
         }
 

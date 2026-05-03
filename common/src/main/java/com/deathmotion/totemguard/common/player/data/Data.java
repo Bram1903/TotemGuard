@@ -48,6 +48,7 @@ public class Data {
     private long inventoryOpenedAt;
 
     private boolean serverOpenedInventoryThisTick;
+    private boolean clientOpenedInventoryThisTick;
 
     private boolean inventoryMitigated;
     private boolean inventoryMitigatedThisTick;
@@ -82,7 +83,7 @@ public class Data {
                     + " &7their inventory.";
             Component inventoryMessage = MessageUtil.formatMessage(message);
 
-            //player.getUser().sendMessage(inventoryMessage);
+            player.getUser().sendMessage(inventoryMessage);
             platform.getGuiManager().refreshMonitor(player.getUuid());
         }
     }
@@ -107,6 +108,7 @@ public class Data {
         }
 
         pendingOpenInventory = false;
+        if (!openInventory) clientOpenedInventoryThisTick = true;
         setOpenInventory(true);
     }
 }

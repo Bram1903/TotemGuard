@@ -76,10 +76,13 @@ public class InboundInventoryProcessor extends ProcessorInbound {
             return;
         }
 
-        boolean tickBoundary = WrapperPlayClientPlayerFlying.isFlying(type) || (type == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick());
+        boolean tickBoundary = player.supportsEndTick()
+                ? type == PacketType.Play.Client.CLIENT_TICK_END
+                : WrapperPlayClientPlayerFlying.isFlying(type);
         if (tickBoundary) {
-            data.applyPendingOpenInventory();
             data.setServerOpenedInventoryThisTick(false);
+            data.setClientOpenedInventoryThisTick(false);
+            data.applyPendingOpenInventory();
         }
     }
 
@@ -116,7 +119,10 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     private void handleClickWindow(PacketReceiveEvent event) {
         WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
+
+        boolean wasOpen = data.isOpenInventory();
         data.setOpenInventory(true);
+        if (!wasOpen) data.setClientOpenedInventoryThisTick(true);
 
         final int windowId = packet.getWindowId();
         final int containerSlot = packet.getSlot();
