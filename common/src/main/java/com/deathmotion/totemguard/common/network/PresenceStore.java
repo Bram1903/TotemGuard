@@ -1,0 +1,421 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.common.network;
+
+import com.deathmotion.totemguard.common.redis.RedisConnection;
+import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import com.github.retrooper.packetevents.protocol.player.TextureProperty;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import io.lettuce.core.*;
+import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.api.sync.RedisCommands;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public final class PresenceStore {
+
+    public static final long PLAYER_TTL_MS = 60_000L;
+    public static final long OWNED_SET_TTL_MS = 600_000L;
+    public static final long SERVER_STALE_MS = 30_000L;
+    public static final long CLEANUP_LOCK_TTL_MS = 60_000L;
+    static final String NS = "totemguard:";
+    static final byte[] KEY_PLAYERS = (NS + "players").getBytes(StandardCharsets.UTF_8);
+    static final byte[] KEY_NAMES = (NS + "names").getBytes(StandardCharsets.UTF_8);
+    static final byte[] KEY_SERVERS = (NS + "servers").getBytes(StandardCharsets.UTF_8);
+    static final String KEY_PLAYER_PREFIX = NS + "p:";
+    static final String KEY_SERVER_PLAYERS_PREFIX = NS + "s:";
+    static final String KEY_CLEANUP_LOCK_PREFIX = NS + "cleanup:";
+    private static final long PIPELINE_TIMEOUT_SECONDS = 5L;
+
+    private static final byte[] FIELD_NAME = bytes("name");
+    private static final byte[] FIELD_IID = bytes("iid");
+    private static final byte[] FIELD_SRV = bytes("srv");
+    private static final byte[] FIELD_TEX_NAME = bytes("tex_name");
+    private static final byte[] FIELD_TEX_VALUE = bytes("tex_value");
+    private static final byte[] FIELD_TEX_SIG = bytes("tex_sig");
+    private static final byte DELIMITER = 0;
+
+    private final RedisRepositoryImpl redis;
+    private final Logger logger;
+
+    public PresenceStore(RedisRepositoryImpl redis, Logger logger) {
+        this.redis = redis;
+        this.logger = logger;
+    }
+
+    private static void addTextureFields(Map<byte[], byte[]> fields, @Nullable UserProfile profile) {
+        if (profile == null) return;
+        List<TextureProperty> props = profile.getTextureProperties();
+        if (props == null || props.isEmpty()) return;
+        TextureProperty first = props.get(0);
+        if (first == null) return;
+        fields.put(FIELD_TEX_NAME, bytes(first.getName()));
+        fields.put(FIELD_TEX_VALUE, bytes(first.getValue()));
+        if (first.getSignature() != null) {
+            fields.put(FIELD_TEX_SIG, bytes(first.getSignature()));
+        }
+    }
+
+    private static @Nullable String decodeKv(@Nullable KeyValue<byte[], byte[]> kv) {
+        if (kv == null || !kv.hasValue()) return null;
+        return new String(kv.getValue(), StandardCharsets.UTF_8);
+    }
+
+    private static byte[] playerKey(UUID uuid) {
+        return bytes(KEY_PLAYER_PREFIX + uuid);
+    }
+
+    private static byte[] serverPlayersKey(UUID instanceId) {
+        return bytes(KEY_SERVER_PLAYERS_PREFIX + instanceId + ":p");
+    }
+
+    private static byte[] encodeNameMember(String lowername, String displayName) {
+        byte[] lb = lowername.getBytes(StandardCharsets.UTF_8);
+        byte[] db = displayName.getBytes(StandardCharsets.UTF_8);
+        byte[] out = new byte[lb.length + 1 + db.length];
+        System.arraycopy(lb, 0, out, 0, lb.length);
+        out[lb.length] = DELIMITER;
+        System.arraycopy(db, 0, out, lb.length + 1, db.length);
+        return out;
+    }
+
+    private static @Nullable String extractDisplay(byte[] member) {
+        if (member == null) return null;
+        for (int i = 0; i < member.length; i++) {
+            if (member[i] == DELIMITER) {
+                return new String(member, i + 1, member.length - i - 1, StandardCharsets.UTF_8);
+            }
+        }
+        return new String(member, StandardCharsets.UTF_8);
+    }
+
+    private static @Nullable String decodeString(byte @Nullable [] bytes) {
+        return bytes == null ? null : new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    private static long parseLastHeartbeat(byte @Nullable [] value) {
+        String str = decodeString(value);
+        if (str == null) return 0L;
+        int last = str.lastIndexOf('|');
+        if (last < 0) return 0L;
+        try {
+            return Long.parseLong(str.substring(last + 1));
+        } catch (NumberFormatException ex) {
+            return 0L;
+        }
+    }
+
+    private static byte[] bytes(String s) {
+        return s.getBytes(StandardCharsets.UTF_8);
+    }
+
+    public void addPlayer(@NotNull UUID playerUuid, @NotNull String name,
+                          @NotNull UUID instanceId, @NotNull String serverName,
+                          @Nullable UserProfile profile) {
+        RedisAsyncCommands<byte[], byte[]> c = async();
+        if (c == null) return;
+        try {
+            String lowername = name.toLowerCase(Locale.ROOT);
+            byte[] playerKey = playerKey(playerUuid);
+            byte[] uuidBytes = bytes(playerUuid.toString());
+            byte[] serverPlayersKey = serverPlayersKey(instanceId);
+
+            Map<byte[], byte[]> playerFields = new HashMap<>();
+            playerFields.put(FIELD_NAME, bytes(name));
+            playerFields.put(FIELD_IID, bytes(instanceId.toString()));
+            playerFields.put(FIELD_SRV, bytes(serverName));
+            addTextureFields(playerFields, profile);
+
+            List<RedisFuture<?>> futures = new ArrayList<>(6);
+            futures.add(c.hset(playerKey, playerFields));
+            futures.add(c.pexpire(playerKey, PLAYER_TTL_MS));
+            futures.add(c.hset(KEY_PLAYERS, bytes(lowername), uuidBytes));
+            futures.add(c.zadd(KEY_NAMES, 0d, encodeNameMember(lowername, name)));
+            futures.add(c.sadd(serverPlayersKey, uuidBytes));
+            futures.add(c.pexpire(serverPlayersKey, OWNED_SET_TTL_MS));
+
+            awaitPipeline("addPlayer(" + name + ")", futures);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to write presence for " + name, ex);
+        }
+    }
+
+    public @Nullable UserProfile loadProfile(@NotNull UUID playerUuid) {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return null;
+        try {
+            byte[] playerKey = playerKey(playerUuid);
+            List<KeyValue<byte[], byte[]>> values = c.hmget(playerKey,
+                    FIELD_NAME, FIELD_TEX_NAME, FIELD_TEX_VALUE, FIELD_TEX_SIG);
+            if (values == null || values.size() < 4) return null;
+            String name = decodeKv(values.get(0));
+            if (name == null) return null;
+            UserProfile profile = new UserProfile(playerUuid, name);
+            String texName = decodeKv(values.get(1));
+            String texValue = decodeKv(values.get(2));
+            String texSig = decodeKv(values.get(3));
+            if (texName != null && texValue != null) {
+                profile.getTextureProperties().add(new TextureProperty(texName, texValue, texSig));
+            }
+            return profile;
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "loadProfile(" + playerUuid + ") failed", ex);
+            return null;
+        }
+    }
+
+    public void removePlayer(@NotNull UUID playerUuid, @NotNull String name, @NotNull UUID instanceId) {
+        RedisAsyncCommands<byte[], byte[]> c = async();
+        if (c == null) return;
+        try {
+            String lowername = name.toLowerCase(Locale.ROOT);
+            List<RedisFuture<?>> futures = new ArrayList<>(4);
+            futures.add(c.del(playerKey(playerUuid)));
+            futures.add(c.hdel(KEY_PLAYERS, bytes(lowername)));
+            futures.add(c.zrem(KEY_NAMES, encodeNameMember(lowername, name)));
+            futures.add(c.srem(serverPlayersKey(instanceId), bytes(playerUuid.toString())));
+            awaitPipeline("removePlayer(" + name + ")", futures);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to clear presence for " + name, ex);
+        }
+    }
+
+    public void updateHostServerName(@NotNull UUID instanceId, @NotNull String newName,
+                                     @NotNull Iterable<UUID> ownedPlayers) {
+        RedisAsyncCommands<byte[], byte[]> c = async();
+        if (c == null) return;
+        try {
+            byte[] nameBytes = bytes(newName);
+            List<RedisFuture<?>> futures = new ArrayList<>();
+            for (UUID uuid : ownedPlayers) {
+                futures.add(c.hset(playerKey(uuid), FIELD_SRV, nameBytes));
+            }
+            if (!futures.isEmpty()) awaitPipeline("updateHostServerName", futures);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to update host server name to " + newName, ex);
+        }
+    }
+
+    public void heartbeatHost(@NotNull UUID instanceId, @NotNull String serverName,
+                              @NotNull Iterable<UUID> ownedPlayers) {
+        RedisAsyncCommands<byte[], byte[]> c = async();
+        if (c == null) return;
+        try {
+            long now = System.currentTimeMillis();
+            byte[] entry = bytes(serverName + "|" + now);
+            byte[] serverPlayersKey = serverPlayersKey(instanceId);
+
+            List<RedisFuture<?>> futures = new ArrayList<>();
+            futures.add(c.hset(KEY_SERVERS, bytes(instanceId.toString()), entry));
+            futures.add(c.pexpire(serverPlayersKey, OWNED_SET_TTL_MS));
+            for (UUID uuid : ownedPlayers) {
+                futures.add(c.pexpire(playerKey(uuid), PLAYER_TTL_MS));
+            }
+            awaitPipeline("heartbeatHost", futures);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to heartbeat host presence", ex);
+        }
+    }
+
+    public void purgeServer(@NotNull UUID instanceId) {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return;
+        try {
+            byte[] serverPlayersKey = serverPlayersKey(instanceId);
+            for (byte[] uuidBytes : c.smembers(serverPlayersKey)) {
+                UUID playerUuid;
+                try {
+                    playerUuid = UUID.fromString(new String(uuidBytes, StandardCharsets.UTF_8));
+                } catch (IllegalArgumentException ex) {
+                    continue;
+                }
+                byte[] playerKey = playerKey(playerUuid);
+                String name = decodeString(c.hget(playerKey, FIELD_NAME));
+                if (name != null) {
+                    String lowername = name.toLowerCase(Locale.ROOT);
+                    c.hdel(KEY_PLAYERS, bytes(lowername));
+                    c.zrem(KEY_NAMES, encodeNameMember(lowername, name));
+                }
+                c.del(playerKey);
+            }
+            c.del(serverPlayersKey);
+            c.hdel(KEY_SERVERS, bytes(instanceId.toString()));
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to purge server " + instanceId, ex);
+        }
+    }
+
+    public void sweepStaleServers(@NotNull UUID ourInstanceId) {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return;
+        try {
+            Map<byte[], byte[]> servers = c.hgetall(KEY_SERVERS);
+            if (servers == null || servers.isEmpty()) return;
+            long cutoff = System.currentTimeMillis() - SERVER_STALE_MS;
+
+            for (Map.Entry<byte[], byte[]> entry : servers.entrySet()) {
+                UUID iid;
+                try {
+                    iid = UUID.fromString(new String(entry.getKey(), StandardCharsets.UTF_8));
+                } catch (IllegalArgumentException ex) {
+                    continue;
+                }
+                if (iid.equals(ourInstanceId)) continue;
+                long lastHb = parseLastHeartbeat(entry.getValue());
+                if (lastHb >= cutoff) continue;
+
+                byte[] lockKey = bytes(KEY_CLEANUP_LOCK_PREFIX + iid);
+                String acquired = c.set(lockKey, bytes(ourInstanceId.toString()),
+                        io.lettuce.core.SetArgs.Builder.nx().px(CLEANUP_LOCK_TTL_MS));
+                if (acquired == null) continue;
+                try {
+                    purgeServer(iid);
+                } finally {
+                    c.del(lockKey);
+                }
+            }
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to sweep stale servers", ex);
+        }
+    }
+
+    public @Nullable RemotePlayerEntry findByUuid(@NotNull UUID playerUuid) {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return null;
+        try {
+            return readPlayer(c, playerUuid);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "findByUuid(" + playerUuid + ") failed", ex);
+            return null;
+        }
+    }
+
+    public @Nullable RemotePlayerEntry findByName(@NotNull String name) {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return null;
+        try {
+            byte[] uuidBytes = c.hget(KEY_PLAYERS, bytes(name.toLowerCase(Locale.ROOT)));
+            if (uuidBytes == null) return null;
+            UUID uuid = UUID.fromString(new String(uuidBytes, StandardCharsets.UTF_8));
+            return readPlayer(c, uuid);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "findByName(" + name + ") failed", ex);
+            return null;
+        }
+    }
+
+    public @NotNull List<String> suggestNames(@NotNull String prefix, int limit) {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return List.of();
+        try {
+            String lower = prefix.toLowerCase(Locale.ROOT);
+            Range<byte[]> range;
+            if (lower.isEmpty()) {
+                range = Range.unbounded();
+            } else {
+                byte[] start = bytes(lower);
+                byte[] end = new byte[start.length + 1];
+                System.arraycopy(start, 0, end, 0, start.length);
+                end[start.length] = (byte) 0xff;
+                range = Range.from(Range.Boundary.including(start), Range.Boundary.including(end));
+            }
+            List<byte[]> raw = c.zrangebylex(KEY_NAMES, range, Limit.create(0, limit));
+            if (raw == null || raw.isEmpty()) return List.of();
+            List<String> result = new ArrayList<>(raw.size());
+            for (byte[] member : raw) {
+                String display = extractDisplay(member);
+                if (display != null) result.add(display);
+            }
+            return result;
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "suggestNames(" + prefix + ") failed", ex);
+            return List.of();
+        }
+    }
+
+    public int trackedPlayerCount() {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return 0;
+        try {
+            Long len = c.hlen(KEY_PLAYERS);
+            return len == null ? 0 : len.intValue();
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
+    public int countServers() {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return 0;
+        try {
+            Map<byte[], byte[]> servers = c.hgetall(KEY_SERVERS);
+            if (servers == null || servers.isEmpty()) return 0;
+            long cutoff = System.currentTimeMillis() - SERVER_STALE_MS;
+            int count = 0;
+            for (Map.Entry<byte[], byte[]> entry : servers.entrySet()) {
+                if (parseLastHeartbeat(entry.getValue()) >= cutoff) count++;
+            }
+            return count;
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
+    private @Nullable RemotePlayerEntry readPlayer(RedisCommands<byte[], byte[]> c, UUID uuid) {
+        List<KeyValue<byte[], byte[]>> values = c.hmget(playerKey(uuid), FIELD_NAME, FIELD_IID, FIELD_SRV);
+        if (values == null || values.size() < 3) return null;
+        String name = decodeKv(values.get(0));
+        String iidStr = decodeKv(values.get(1));
+        String srv = decodeKv(values.get(2));
+        if (name == null || iidStr == null || srv == null) return null;
+        UUID iid;
+        try {
+            iid = UUID.fromString(iidStr);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+        return new RemotePlayerEntry(uuid, name, iid, srv);
+    }
+
+    private @Nullable RedisCommands<byte[], byte[]> sync() {
+        RedisConnection conn = redis.connection();
+        if (conn == null || !conn.isOpen()) return null;
+        return conn.commands().sync();
+    }
+
+    private @Nullable RedisAsyncCommands<byte[], byte[]> async() {
+        RedisConnection conn = redis.connection();
+        if (conn == null || !conn.isOpen()) return null;
+        return conn.commands().async();
+    }
+
+    private void awaitPipeline(String op, List<RedisFuture<?>> futures) {
+        if (futures.isEmpty()) return;
+        boolean ok = LettuceFutures.awaitAll(
+                PIPELINE_TIMEOUT_SECONDS, TimeUnit.SECONDS,
+                futures.toArray(new RedisFuture<?>[0]));
+        if (!ok) logger.log(Level.WARNING, "Redis pipeline " + op + " timed out");
+    }
+}

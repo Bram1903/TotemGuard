@@ -31,12 +31,10 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientWi
 public class InboundPingProcessor extends ProcessorInbound {
 
     private final PingData pingData;
-    private final boolean proxy;
 
     public InboundPingProcessor(TGPlayer player) {
         super(player);
         this.pingData = player.getPingData();
-        this.proxy = player.getPlatform().getPlatform().isProxy();
     }
 
     @Override
@@ -47,16 +45,10 @@ public class InboundPingProcessor extends ProcessorInbound {
             WrapperPlayClientWindowConfirmation packet = new WrapperPlayClientWindowConfirmation(event);
             pingData.transactionReceived(packet.getActionId(), event.getTimestamp());
             player.getDebugOverlayManager().refresh();
-            if (proxy && pingData.shouldCancelTransactionReplyOnProxy()) {
-                event.setCancelled(true);
-            }
         } else if (packetType == PacketType.Play.Client.PONG) {
             WrapperPlayClientPong packet = new WrapperPlayClientPong(event);
             pingData.transactionReceived(packet.getId(), event.getTimestamp());
             player.getDebugOverlayManager().refresh();
-            if (proxy && pingData.shouldCancelTransactionReplyOnProxy()) {
-                event.setCancelled(true);
-            }
         } else if (packetType == PacketType.Play.Client.KEEP_ALIVE) {
             WrapperPlayClientKeepAlive packet = new WrapperPlayClientKeepAlive(event);
             pingData.keepAliveReceived(packet.getId(), event.getTimestamp());

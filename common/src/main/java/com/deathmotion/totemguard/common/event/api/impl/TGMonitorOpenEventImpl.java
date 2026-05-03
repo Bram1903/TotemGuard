@@ -19,10 +19,12 @@
 package com.deathmotion.totemguard.common.event.api.impl;
 
 import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
+import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.event.api.EventImpl;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -31,12 +33,30 @@ public final class TGMonitorOpenEventImpl extends EventImpl implements TGMonitor
 
     private final @NotNull UUID viewerUuid;
     private final @NotNull UUID targetUuid;
+    private final @NotNull String targetName;
+    private final @Nullable TGUser targetUser;
+    private final @NotNull UUID targetServerInstanceId;
+    private final @NotNull String targetServerName;
+    private final @Nullable String targetProxyServerId;
+    private final boolean crossServer;
+    private final boolean serverSwitch;
 
     @Setter
     private boolean cancelled;
 
-    public TGMonitorOpenEventImpl(@NotNull UUID viewerUuid, @NotNull UUID targetUuid) {
+    public TGMonitorOpenEventImpl(@NotNull UUID viewerUuid, @NotNull UUID targetUuid,
+                                  @NotNull String targetName, @Nullable TGUser targetUser,
+                                  @NotNull UUID targetServerInstanceId, @NotNull String targetServerName,
+                                  @Nullable String targetProxyServerId,
+                                  boolean crossServer, boolean serverSwitch) {
         this.viewerUuid = viewerUuid;
         this.targetUuid = targetUuid;
+        this.targetName = targetName;
+        this.targetUser = targetUser;
+        this.targetServerInstanceId = targetServerInstanceId;
+        this.targetServerName = targetServerName;
+        this.targetProxyServerId = targetProxyServerId;
+        this.crossServer = crossServer;
+        this.serverSwitch = serverSwitch;
     }
 }

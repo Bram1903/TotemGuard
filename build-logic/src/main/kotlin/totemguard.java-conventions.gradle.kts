@@ -28,7 +28,7 @@ tasks.named<ProcessResources>("processResources").configure {
     val versionWithoutHash = provider { project.version.toString().withoutSnapshotHash() }
     inputs.property("version", versionWithoutHash)
 
-    filesMatching(listOf("plugin.yml", "velocity-plugin.json", "bungee.yml", "fabric.mod.json")) {
+    filesMatching(listOf("plugin.yml", "fabric.mod.json")) {
         expand("version" to versionWithoutHash.get())
     }
 }

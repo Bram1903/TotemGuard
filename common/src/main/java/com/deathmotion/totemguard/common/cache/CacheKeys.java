@@ -43,6 +43,14 @@ public final class CacheKeys {
         return PREFIX + "alerts-toggle:" + uuid;
     }
 
+    public static String testerToggle(UUID uuid) {
+        return PREFIX + "tester-toggle:" + uuid;
+    }
+
+    public static String focusTarget(UUID viewerUuid) {
+        return PREFIX + "focus:" + viewerUuid;
+    }
+
     public static String punishLock(UUID uuid) {
         return UNVERSIONED_KEY_PREFIX + uuid;
     }

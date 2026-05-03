@@ -24,8 +24,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.RedisOptions;
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.RedisBroker;
-import com.deathmotion.totemguard.common.redis.broker.handlers.SyncAlertMessageHandler;
-import com.deathmotion.totemguard.common.redis.broker.handlers.SyncUpdateAvailableHandler;
+import com.deathmotion.totemguard.common.redis.broker.handlers.*;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +50,14 @@ public final class RedisRepositoryImpl implements RedisRepository {
         this.identifier = UUID.randomUUID().toString();
         this.handlers = List.of(
                 new SyncAlertMessageHandler(TGPlatform.getInstance(), this, registry),
-                new SyncUpdateAvailableHandler(TGPlatform.getInstance(), this, registry)
+                new SyncUpdateAvailableHandler(TGPlatform.getInstance(), this, registry),
+                new SyncServerOfflineHandler(TGPlatform.getInstance(), this, registry),
+                new SyncPlayerJoinHandler(TGPlatform.getInstance(), this, registry),
+                new SyncPlayerQuitHandler(TGPlatform.getInstance(), this, registry),
+                new SyncTeleportRequestHandler(TGPlatform.getInstance(), this, registry),
+                new SyncMonitorSubscribeHandler(TGPlatform.getInstance(), this, registry),
+                new SyncMonitorUnsubscribeHandler(TGPlatform.getInstance(), this, registry),
+                new SyncMonitorUpdateHandler(TGPlatform.getInstance(), this, registry)
         );
 
         // Initial start is blocking so the connection is up before any player can join.
@@ -74,7 +80,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         if (current == null || !current.enabled()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().send();
-            case UPDATES -> true;
+            case UPDATES, PRESENCE -> true;
         };
     }
 
@@ -83,7 +89,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         if (current == null || !current.enabled()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().receive();
-            case UPDATES -> true;
+            case UPDATES, PRESENCE -> true;
         };
     }
 

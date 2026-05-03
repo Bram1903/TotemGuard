@@ -26,6 +26,9 @@ import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.gui.screen.PlayerMonitorScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
+import com.deathmotion.totemguard.common.network.ServerIdentity;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.NonNull;
@@ -35,6 +38,7 @@ import org.incendo.cloud.parser.standard.StringParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
+import java.util.UUID;
 
 public final class MonitorCommand extends AbstractCommand {
 
@@ -61,40 +65,62 @@ public final class MonitorCommand extends AbstractCommand {
 
         TGPlatform platform = TGPlatform.getInstance();
         MessageService messages = platform.getMessageService();
+        String rawTarget = context.get("tg_player");
 
-        TGPlayer target = resolveTarget(sender, context.get("tg_player"));
-        if (target == null) {
-            return;
+        UUID targetUuid;
+        String targetName;
+        PlayerMonitorScreen screen;
+        TGPlayer localTarget;
+        UUID targetServerInstanceId;
+        String targetServerName;
+
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        ServerIdentity self = presence != null ? presence.identity() : null;
+
+        TGPlayer local = TGPlayerSuggestionProvider.findPlayer(rawTarget);
+        if (local != null) {
+            targetUuid = local.getUuid();
+            targetName = local.getName();
+            screen = new PlayerMonitorScreen(local);
+            localTarget = local;
+            targetServerInstanceId = self != null ? self.instanceId() : new UUID(0L, 0L);
+            targetServerName = self != null ? self.displayName() : "";
+        } else {
+            RemotePlayerEntry remote = TGPlayerSuggestionProvider.findNetworkPlayer(rawTarget);
+            if (remote == null) {
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.GENERAL_PLAYER_NOT_FOUND,
+                        Map.of("tg_input", rawTarget)
+                ));
+                return;
+            }
+            targetUuid = remote.playerUuid();
+            targetName = remote.playerName();
+            screen = new PlayerMonitorScreen(targetUuid, targetName);
+            localTarget = null;
+            targetServerInstanceId = remote.serverInstanceId();
+            targetServerName = remote.serverName();
         }
 
-        if (sender.getUniqueId().equals(target.getUuid())) {
+        if (sender.getUniqueId().equals(targetUuid)) {
             sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_SELF));
             return;
         }
 
+        boolean crossServer = self == null || !self.instanceId().equals(targetServerInstanceId);
+        String proxyServerId = platform.resolveProxyServerId(targetServerName);
         TGMonitorOpenEvent event = platform.getEventRepository().post(
-                new TGMonitorOpenEventImpl(sender.getUniqueId(), target.getUuid())
+                new TGMonitorOpenEventImpl(
+                        sender.getUniqueId(), targetUuid, targetName, localTarget,
+                        targetServerInstanceId, targetServerName, proxyServerId, crossServer, false)
         );
         if (event.isCancelled()) {
             sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_BLOCKED));
             return;
         }
 
-        if (!platform.getGuiManager().open(sender, new PlayerMonitorScreen(target))) {
+        if (!platform.getGuiManager().open(sender, screen)) {
             sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_OPEN_FAILED));
         }
-    }
-
-    private TGPlayer resolveTarget(Sender sender, String rawTarget) {
-        TGPlayer target = TGPlayerSuggestionProvider.findPlayer(rawTarget);
-        if (target != null) {
-            return target;
-        }
-
-        sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(
-                MessagesKeys.GENERAL_PLAYER_NOT_FOUND,
-                Map.of("tg_input", rawTarget)
-        ));
-        return null;
     }
 }

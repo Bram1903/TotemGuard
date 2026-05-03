@@ -60,8 +60,9 @@ public final class FabricScheduler implements Scheduler {
     }
 
     @Override
-    public void runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit) {
-        asyncExecutor.schedule(task, delay, timeUnit);
+    public ScheduledTask runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit) {
+        ScheduledFuture<?> handle = asyncExecutor.schedule(task, delay, timeUnit);
+        return () -> handle.cancel(false);
     }
 
     @Override

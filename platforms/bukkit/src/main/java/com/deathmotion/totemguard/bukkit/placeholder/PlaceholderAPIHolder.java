@@ -20,8 +20,8 @@ package com.deathmotion.totemguard.bukkit.placeholder;
 
 import com.deathmotion.totemguard.api.placeholder.PlaceholderContext;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
-import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUser;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.bukkit.player.BukkitPlatformPlayer;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
@@ -35,9 +35,9 @@ public final class PlaceholderAPIHolder implements PlaceholderHolder {
         Player player = null;
 
         if (context.user() instanceof TGPlayer tgPlayer) {
-            PlatformUser platformUser = tgPlayer.getPlatformUser();
-            if (platformUser instanceof BukkitPlatformUser bukkitUser) {
-                player = bukkitUser.getBukkitPlayer();
+            PlatformPlayer platformPlayer = tgPlayer.getPlatformPlayer();
+            if (platformPlayer instanceof BukkitPlatformPlayer bukkitPlayer) {
+                player = bukkitPlayer.getBukkitPlayer();
             }
         }
 

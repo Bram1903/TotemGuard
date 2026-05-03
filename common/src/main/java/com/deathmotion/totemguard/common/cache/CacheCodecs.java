@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.cache;
 import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import com.deathmotion.totemguard.api.stats.StatsSnapshot;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
+import com.deathmotion.totemguard.common.cache.data.FocusTarget;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.database.model.AlertRecord;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
@@ -32,6 +33,7 @@ import java.io.DataOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public final class CacheCodecs {
 
@@ -174,6 +176,29 @@ public final class CacheCodecs {
                 int uniquePlayers = in.readInt();
                 long databaseBytes = in.readLong();
                 return new StatsSnapshot(alerts, punishments, uniquePlayers, databaseBytes);
+            }
+        }
+    };
+
+    public static final Codec<FocusTarget> FOCUS_TARGET = new Codec<>() {
+        @Override
+        public byte[] encode(FocusTarget value) throws Exception {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (DataOutputStream out = new DataOutputStream(baos)) {
+                out.writeLong(value.targetUuid().getMostSignificantBits());
+                out.writeLong(value.targetUuid().getLeastSignificantBits());
+                writeUtf8(out, value.displayLabel());
+            }
+            return baos.toByteArray();
+        }
+
+        @Override
+        public FocusTarget decode(byte[] bytes) throws Exception {
+            try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes))) {
+                long msb = in.readLong();
+                long lsb = in.readLong();
+                String label = readUtf8(in);
+                return new FocusTarget(new UUID(msb, lsb), label);
             }
         }
     };

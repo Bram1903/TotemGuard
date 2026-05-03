@@ -22,8 +22,7 @@ import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
@@ -34,6 +33,7 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import net.kyori.adventure.text.Component;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -143,10 +143,9 @@ public final class GuiManager {
         String required = screen.requiredPermission();
         if (required == null) return true;
 
-        PlatformUserCreation creation = platform.getPlatformUserFactory().create(viewerId);
-        if (creation == null) return false;
+        PlatformPlayer viewer = platform.getPlatformPlayerFactory().create(viewerId);
+        if (viewer == null) return false;
 
-        PlatformUser viewer = creation.getPlatformUser();
         if (viewer.hasPermission(required)) return true;
 
         viewer.sendMessage(deniedMessage(required));
@@ -498,7 +497,6 @@ public final class GuiManager {
 
         close(uuid, false);
         viewerInventories.remove(uuid);
-        closeSubscribers(GuiSubscriptionKey.monitor(uuid));
     }
 
     public void refreshMonitor(UUID uuid) {
@@ -507,6 +505,18 @@ public final class GuiManager {
         }
 
         refreshSubscribers(GuiSubscriptionKey.monitor(uuid));
+    }
+
+    public void closeMonitor(UUID targetUuid) {
+        if (targetUuid == null) return;
+        closeSubscribers(GuiSubscriptionKey.monitor(targetUuid));
+    }
+
+    public @NotNull Set<UUID> monitorViewers(UUID targetUuid) {
+        if (targetUuid == null) return Set.of();
+        Set<UUID> viewers = subscriptions.get(GuiSubscriptionKey.monitor(targetUuid));
+        if (viewers == null || viewers.isEmpty()) return Set.of();
+        return Set.copyOf(viewers);
     }
 
     private void handleInventoryChanged(InventoryChangedEvent event) {

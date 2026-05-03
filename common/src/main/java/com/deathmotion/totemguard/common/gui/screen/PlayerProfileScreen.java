@@ -28,9 +28,12 @@ import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.history.HistoryText;
 import com.deathmotion.totemguard.common.gui.screen.history.PlayerHistoryHubScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +52,9 @@ public final class PlayerProfileScreen extends GuiScreen {
     private final String fallbackName;
     private volatile @Nullable PlayerRecord dbRecord;
     private volatile boolean dbAttempted;
+    private volatile @Nullable RemotePlayerEntry remoteEntry;
+    private volatile @Nullable UserProfile remoteProfile;
+    private volatile boolean presenceAttempted;
 
     public PlayerProfileScreen(TGPlayer player) {
         this(player.getUuid(), player.getName());
@@ -59,6 +65,11 @@ public final class PlayerProfileScreen extends GuiScreen {
         this.fallbackName = fallbackName;
     }
 
+    private static PlayerHistoryHubScreen historyHub(UUID targetUuid, String targetName) {
+        TGPlayer local = TGPlatform.getInstance().getPlayerRepository().getPlayer(targetUuid);
+        return local != null ? new PlayerHistoryHubScreen(local) : new PlayerHistoryHubScreen(targetUuid, targetName);
+    }
+
     @Override
     public String requiredPermission() {
         return PERMISSION;
@@ -67,19 +78,40 @@ public final class PlayerProfileScreen extends GuiScreen {
     @Override
     public void onOpen(GuiSession session) {
         TGPlatform platform = TGPlatform.getInstance();
-        if (!platform.getDatabaseRepository().isConnected()) {
-            this.dbAttempted = true;
-            return;
-        }
+
+        boolean dbReady = platform.getDatabaseRepository().isConnected();
+        boolean needsRemoteLookup = platform.getPlayerRepository().getPlayer(targetId) == null
+                && platform.getNetworkPresenceRepository() != null;
+
+        if (!dbReady) this.dbAttempted = true;
+        if (!needsRemoteLookup) this.presenceAttempted = true;
+        if (!dbReady && !needsRemoteLookup) return;
 
         platform.getScheduler().runAsyncTask(() -> {
             try {
-                this.dbRecord = platform.getDatabaseRepository().findPlayerByUuid(targetId);
-            } catch (Exception ex) {
-                platform.getLogger().log(Level.WARNING,
-                        "Failed to load profile times for " + targetId + ": " + ex.getMessage());
+                if (dbReady) {
+                    try {
+                        this.dbRecord = platform.getDatabaseRepository().findPlayerByUuid(targetId);
+                    } catch (Exception ex) {
+                        platform.getLogger().log(Level.WARNING,
+                                "Failed to load profile times for " + targetId + ": " + ex.getMessage());
+                    } finally {
+                        this.dbAttempted = true;
+                    }
+                }
+                if (needsRemoteLookup) {
+                    try {
+                        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+                        this.remoteEntry = presence.findByUuid(targetId);
+                        this.remoteProfile = presence.loadProfile(targetId);
+                    } catch (Exception ex) {
+                        platform.getLogger().log(Level.WARNING,
+                                "Failed to load remote presence for " + targetId + ": " + ex.getMessage());
+                    } finally {
+                        this.presenceAttempted = true;
+                    }
+                }
             } finally {
-                this.dbAttempted = true;
                 platform.getGuiManager().refresh(session.viewerId());
             }
         });
@@ -90,7 +122,11 @@ public final class PlayerProfileScreen extends GuiScreen {
         TGPlatform platform = TGPlatform.getInstance();
         MessageService messages = platform.getMessageService();
         TGPlayer target = platform.getPlayerRepository().getPlayer(targetId);
-        String targetName = target != null ? target.getName() : fallbackName;
+
+        RemotePlayerEntry remote = target == null ? this.remoteEntry : null;
+
+        String targetName = target != null ? target.getName()
+                : (remote != null ? remote.playerName() : fallbackName);
 
         GuiRenderResult.Builder builder = GuiRenderResult.builder(4,
                 GuiTitle.of(messages.getString(MessagesKeys.GUI_PROFILE_TITLE, Map.of("tg_player", targetName))));
@@ -98,7 +134,7 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         renderBackOrClose(builder, session, messages);
 
-        if (target == null) {
+        if (target == null && remote == null && presenceAttempted) {
             builder.set(SLOT_HEAD, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
                     messages.getComponent(MessagesKeys.GUI_PROFILE_UNTRACKED_TITLE, Map.of("tg_player", targetName)),
@@ -110,14 +146,30 @@ public final class PlayerProfileScreen extends GuiScreen {
             return builder.build();
         }
 
-        builder.set(SLOT_HEAD, GuiItems.playerHead(
-                target.getUser().getProfile(),
-                Component.text(target.getName(), Palette.SUCCESS),
-                buildHeadLore(target, messages)
-        ));
+        if (target != null) {
+            builder.set(SLOT_HEAD, GuiItems.playerHead(
+                    target.getUser().getProfile(),
+                    Component.text(target.getName(), Palette.SUCCESS),
+                    buildHeadLore(target, messages)
+            ));
+        } else if (remote != null) {
+            UserProfile profile = this.remoteProfile;
+            if (profile == null) profile = new UserProfile(remote.playerUuid(), remote.playerName());
+            builder.set(SLOT_HEAD, GuiItems.playerHead(
+                    profile,
+                    Component.text(remote.playerName(), Palette.SUCCESS),
+                    buildRemoteHeadLore(remote, messages)
+            ));
+        } else {
+            builder.set(SLOT_HEAD, GuiItems.simple(
+                    ItemTypes.PLAYER_HEAD,
+                    Component.text(targetName, Palette.SUCCESS),
+                    List.of(messages.getComponent(MessagesKeys.GUI_PROFILE_FIRST_JOINED_LOADING))
+            ));
+        }
 
-        renderMonitorButton(builder, session, target, messages);
-        renderHistoryButton(builder, session, target, messages);
+        renderMonitorButton(builder, session, targetId, targetName, messages);
+        renderHistoryButton(builder, session, targetId, targetName, messages);
 
         return builder.build();
     }
@@ -138,10 +190,10 @@ public final class PlayerProfileScreen extends GuiScreen {
         }
     }
 
-    private void renderMonitorButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
+    private void renderMonitorButton(GuiRenderResult.Builder builder, GuiSession session, UUID targetUuid, String targetName, MessageService messages) {
         if (!session.hasPermission(PlayerMonitorScreen.PERMISSION)) return;
 
-        boolean self = session.viewerId().equals(target.getUuid());
+        boolean self = session.viewerId().equals(targetUuid);
         builder.set(SLOT_MONITOR, GuiItems.simple(
                 self ? ItemTypes.BARRIER : ItemTypes.CHEST,
                 self
@@ -153,24 +205,43 @@ public final class PlayerProfileScreen extends GuiScreen {
                         messages.getComponent(MessagesKeys.GUI_PROFILE_MONITOR_OPEN_LORE_1),
                         messages.getComponent(MessagesKeys.GUI_PROFILE_MONITOR_OPEN_LORE_2))
         ), ctx -> {
-            if (ctx.session().viewerId().equals(target.getUuid())) {
+            if (ctx.session().viewerId().equals(targetUuid)) {
                 ctx.message(messages.getComponent(MessagesKeys.GUI_ERR_CANNOT_MONITOR_SELF));
                 return;
             }
 
-            TGMonitorOpenEvent event = TGPlatform.getInstance().getEventRepository().post(
-                    new TGMonitorOpenEventImpl(ctx.session().viewerId(), target.getUuid())
+            TGPlatform plat = TGPlatform.getInstance();
+            TGPlayer freshLocal = plat.getPlayerRepository().getPlayer(targetUuid);
+            UUID serverInstanceId;
+            String serverName;
+            if (freshLocal != null) {
+                serverInstanceId = plat.getNetworkPresenceRepository().identity().instanceId();
+                serverName = plat.getNetworkPresenceRepository().identity().displayName();
+            } else if (this.remoteEntry != null) {
+                serverInstanceId = this.remoteEntry.serverInstanceId();
+                serverName = this.remoteEntry.serverName();
+            } else {
+                ctx.message(messages.getComponent(MessagesKeys.GUI_ERR_MONITOR_BLOCKED));
+                return;
+            }
+            boolean crossServer = !plat.getNetworkPresenceRepository().identity().instanceId().equals(serverInstanceId);
+            String proxyServerId = plat.resolveProxyServerId(serverName);
+
+            TGMonitorOpenEvent event = plat.getEventRepository().post(
+                    new TGMonitorOpenEventImpl(
+                            ctx.session().viewerId(), targetUuid, targetName, freshLocal,
+                            serverInstanceId, serverName, proxyServerId, crossServer, false)
             );
             if (event.isCancelled()) {
                 ctx.message(messages.getComponent(MessagesKeys.GUI_ERR_MONITOR_BLOCKED));
                 return;
             }
 
-            ctx.open(new PlayerMonitorScreen(target));
+            ctx.open(new PlayerMonitorScreen(targetUuid, targetName));
         });
     }
 
-    private void renderHistoryButton(GuiRenderResult.Builder builder, GuiSession session, TGPlayer target, MessageService messages) {
+    private void renderHistoryButton(GuiRenderResult.Builder builder, GuiSession session, UUID targetUuid, String targetName, MessageService messages) {
         if (!session.hasPermission(PlayerHistoryHubScreen.PERMISSION)) return;
 
         builder.set(SLOT_HISTORY, GuiItems.simple(
@@ -180,7 +251,16 @@ public final class PlayerProfileScreen extends GuiScreen {
                         messages.getComponent(MessagesKeys.GUI_PROFILE_HISTORY_LORE_1),
                         messages.getComponent(MessagesKeys.GUI_PROFILE_HISTORY_LORE_2)
                 )
-        ), ctx -> ctx.open(new PlayerHistoryHubScreen(target)));
+        ), ctx -> ctx.open(historyHub(targetUuid, targetName)));
+    }
+
+    private List<Component> buildRemoteHeadLore(RemotePlayerEntry remote, MessageService messages) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_UUID_LABEL),
+                remote.playerUuid().toString()));
+        lore.add(GuiText.line("Server", remote.serverName()));
+        appendFirstJoined(lore, messages);
+        return lore;
     }
 
     private List<Component> buildHeadLore(TGPlayer target, MessageService messages) {

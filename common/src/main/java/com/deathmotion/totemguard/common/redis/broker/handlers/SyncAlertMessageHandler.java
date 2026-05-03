@@ -26,17 +26,14 @@ import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketProcessor;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
-import net.kyori.adventure.text.Component;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncAlertMessagePacket;
 
-/**
- * Handler for processing synchronization of alert messages.
- */
-public final class SyncAlertMessageHandler implements PacketProcessor<Component>, Reloadable {
+public final class SyncAlertMessageHandler implements PacketProcessor<SyncAlertMessagePacket.Payload>, Reloadable {
 
     private final TGPlatform platform;
     private final RedisRepositoryImpl redisRepository;
     private final PacketRegistry registry;
-    private final Packet<Component> packet;
+    private final Packet<SyncAlertMessagePacket.Payload> packet;
 
     public SyncAlertMessageHandler(TGPlatform platform, RedisRepositoryImpl redisRepository, PacketRegistry registry) {
         this.platform = platform;
@@ -46,12 +43,12 @@ public final class SyncAlertMessageHandler implements PacketProcessor<Component>
     }
 
     @Override
-    public void handle(Component alertComponent) {
+    public void handle(SyncAlertMessagePacket.Payload payload) {
         if (platform.getAlertRepository() == null) {
             return;
         }
 
-        platform.getAlertRepository().broadcastRawComponent(alertComponent);
+        platform.getAlertRepository().acceptRemoteAlert(payload);
     }
 
     @Override

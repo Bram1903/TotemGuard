@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.history.HistoryRepository;
+import com.deathmotion.totemguard.api.network.NetworkRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api.redis.RedisRepository;
@@ -122,6 +123,18 @@ public interface TotemGuardAPI {
      * @return the statistics repository, never {@code null}
      */
     @NotNull StatsRepository getStatsRepository();
+
+    /**
+     * Returns the cross-server network view: connected backend count, tracked
+     * player count, this server's display name, and Redis connection state.
+     * <p>
+     * Useful for dashboards and integrations that want to know how big the
+     * TotemGuard fleet currently is. All accessors degrade gracefully when
+     * Redis is offline.
+     *
+     * @return the network repository, never {@code null}
+     */
+    @NotNull NetworkRepository getNetworkRepository();
 
     /**
      * Returns the repository that tracks the latest published TotemGuard release.

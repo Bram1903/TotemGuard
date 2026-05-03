@@ -21,7 +21,8 @@ package com.deathmotion.totemguard.common.redis.broker;
 public enum MessagingTopic {
 
     ALERTS("alerts", true),
-    UPDATES("updates", false);
+    UPDATES("updates", false),
+    PRESENCE("presence", false);
 
     public static final String PREFIX = "totemguard";
 

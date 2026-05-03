@@ -23,19 +23,17 @@ import com.deathmotion.totemguard.common.util.Scheduler;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 
 final class PlayerChatBuffer {
 
     private final Scheduler scheduler;
-    private final BiConsumer<UUID, Component> broadcaster;
+    private final FlagBroadcaster broadcaster;
     private final long bufferWindowSeconds;
     private final ConcurrentHashMap<String, ChatBuffer> checkBuffers = new ConcurrentHashMap<>();
 
-    PlayerChatBuffer(Scheduler scheduler, BiConsumer<UUID, Component> broadcaster, long bufferWindowSeconds) {
+    PlayerChatBuffer(Scheduler scheduler, FlagBroadcaster broadcaster, long bufferWindowSeconds) {
         this.scheduler = scheduler;
         this.broadcaster = broadcaster;
         this.bufferWindowSeconds = bufferWindowSeconds;
@@ -76,6 +74,6 @@ final class PlayerChatBuffer {
                 chatBuffer.getViolations(),
                 chatBuffer.getDebug()
         );
-        broadcaster.accept(check.player.getUuid(), alertMessage);
+        broadcaster.broadcast(check.player.getUuid(), check.player.getName(), alertMessage);
     }
 }

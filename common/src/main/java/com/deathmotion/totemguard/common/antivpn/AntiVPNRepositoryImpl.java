@@ -31,7 +31,7 @@ import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserVPNDetectionEventImpl;
 import com.deathmotion.totemguard.common.message.MessageService;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -216,8 +216,8 @@ public class AntiVPNRepositoryImpl {
 
         if (!shouldBlock) return;
 
-        PlatformUser platformUser = player.getPlatformUser();
-        if (platformUser == null) return;
-        platformUser.kick(messageService.getComponent(MessagesKeys.ANTI_VPN_KICK, player, null, null));
+        PlatformPlayer platformPlayer = player.getPlatformPlayer();
+        if (platformPlayer == null) return;
+        platformPlayer.kick(messageService.getComponent(MessagesKeys.ANTI_VPN_KICK, player, null, null));
     }
 }

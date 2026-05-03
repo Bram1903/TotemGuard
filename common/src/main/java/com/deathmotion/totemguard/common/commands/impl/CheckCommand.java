@@ -52,15 +52,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-/**
- * {@code /tg check <player> [duration]} — briefly clears the target's offhand
- * totem and watches whether they put a new one back within {@code duration}
- * milliseconds. A hit implies an auto-totem macro; a timeout is a pass.
- *
- * <p>Backend-only. {@link com.deathmotion.totemguard.common.commands.CommandManagerImpl}
- * skips registration on proxy platforms since we need real inventory access via
- * {@link PlatformPlayer}.</p>
- */
 public final class CheckCommand extends AbstractCommand {
 
     private static final int DEFAULT_CHECK_DURATION_MS = 1000;
@@ -87,7 +78,7 @@ public final class CheckCommand extends AbstractCommand {
         manager.command(
                 base(manager)
                         .literal("check", Description.of("Force the target to re-totem and flag if they do"))
-                        .required("tg_player", StringParser.stringParser(), TGPlayerSuggestionProvider.suggestionProvider())
+                        .required("tg_player", StringParser.stringParser(), TGPlayerSuggestionProvider.suggestionProviderExcludingSelf())
                         .optional("duration", IntegerParser.integerParser(MIN_DURATION_MS, MAX_DURATION_MS))
                         .permission(perm("check"))
                         .handler(this::handle)
@@ -110,10 +101,6 @@ public final class CheckCommand extends AbstractCommand {
         }
 
         PlatformPlayer platformPlayer = target.getPlatformPlayer();
-        if (platformPlayer == null) {
-            sender.sendMessage(messages.getComponent(MessagesKeys.CHECK_BACKEND_ONLY));
-            return;
-        }
 
         if (target.isManualCheckActive()) {
             sender.sendMessage(messages.getComponent(MessagesKeys.CHECK_ALREADY_CHECKING, target));

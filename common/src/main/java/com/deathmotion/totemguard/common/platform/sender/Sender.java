@@ -130,10 +130,6 @@ public interface Sender {
      *     <li>Yarn: {@code net.minecraft.server.command.ServerCommandSource}</li>
      *     <li>Mojmap: {@code net.minecraft.commands.CommandSourceStack}</li>
      *     </ul>
-     * <li>Velocity: {@code com.velocitypowered.api.command.CommandSource}</li>
-     * <li>BungeeCord: {@code net.md_5.bungee.api.CommandSender}</li>
-     * <li>Sponge: {@code org.spongepowered.api.command.CommandCause}</li>
-     * <li>Forge/NeoForge: {@code net.minecraft.commands.CommandSourceStack}</li>
      * </ul>
      */
     @NotNull Object getNativeSender();

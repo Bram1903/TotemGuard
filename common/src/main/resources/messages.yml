@@ -19,6 +19,14 @@ alerts:
     enabled: "%prefix% &#6FB04ATester alerts enabled &#B8AC8F(only your own flags)"
     disabled: "%prefix% &#D4452CTester alerts disabled"
 
+  focus:
+    enabled: "%prefix% &#6FB04AFocus enabled on &#FEE067%tg_player%"
+    disabled: "%prefix% &#D4452CFocus disabled"
+    none-active: "%prefix% &#D4452CYou have no focus active."
+    target-offline: "%prefix% &#D4452CFocus target &#FEE067%tg_player% &#D4452Cwent offline."
+    not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
+    self-not-allowed: "%prefix% &#D4452CYou cannot focus on yourself."
+
   message: "%prefix% &#FEE067%tg_player%&#B8AC8F failed &#FBAF00%tg_check_name% &#B8AC8FVL[&#FBAF00%tg_check_violations%&#B8AC8F/&#FBAF00%tg_check_max_violations%&#B8AC8F]"
   hover: |-
     &#E7DEC4Client Version: &#FEE067%tg_player_version% &#8F7440| &#E7DEC4Client Brand: &#FEE067%tg_player_brand%
@@ -58,13 +66,12 @@ commands:
     gui-open-failed: "%prefix% &#D4452CFailed to open the TotemGuard GUI."
 
   check:
-    backend-only: "%prefix% &#D4452CThis command is only available on backend servers."
     already-checking: "%prefix% &#F5A48F%tg_player% &#D4452Cis already being checked."
     on-cooldown: "%prefix% &#F5A48F%tg_player% &#D4452Cis on check cooldown for another &#F5A48F%tg_remaining_ms%ms&#D4452C."
     wrong-gamemode: "%prefix% &#F5A48F%tg_player% &#D4452Cmust be in survival or adventure mode."
     invulnerable: "%prefix% &#F5A48F%tg_player% &#D4452Cis invulnerable."
     no-totem: "%prefix% &#F5A48F%tg_player% &#D4452Cdoes not have a totem in their offhand."
-    damage-failed: "%prefix% &#F5A48F%tg_player% &#D4452Ccould not be damaged; check aborted."
+    damage-failed: "%prefix% &#F5A48F%tg_player% &#D4452Ccould not be damaged. Check aborted."
     flagged: "%prefix% &#FEE067%tg_player%&#B8AC8F re-totemed in &#FBAF00%tg_elapsed_ms%ms&#B8AC8F (window &#FBAF00%tg_window_ms%ms&#B8AC8F)."
     passed: "%prefix% &#FEE067%tg_player% &#6FB04Apassed the check."
 
@@ -72,6 +79,14 @@ commands:
     self-monitor: "%prefix% &#D4452CYou cannot monitor your own inventory."
     blocked: "%prefix% &#D4452COpening the monitor was blocked."
     open-failed: "%prefix% &#D4452CFailed to open the monitor GUI."
+
+  teleport:
+    no-redis: "%prefix% &#D4452CTeleport service unavailable."
+    different-proxy: "%prefix% &#D4452CCannot teleport to &#FEE067%tg_player%&#D4452C from here."
+    not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
+    self-not-allowed: "%prefix% &#D4452CYou cannot teleport to yourself."
+    same-server: "%prefix% &#6FB04ATeleporting you to &#FEE067%tg_player%&#6FB04A."
+    cross-server: "%prefix% &#6FB04ATeleporting you to &#FEE067%tg_player%&#6FB04A."
 
   history:
     open-failed: "%prefix% &#D4452CFailed to open the history GUI."
@@ -129,7 +144,7 @@ gui:
 
   error:
     no-permission: "&#D4452CYou lack the permission &#F5A48F%tg_permission% &#D4452Cto open that screen."
-    mod-detection-running: "&#D4452CMod detection is still running on your client — try again in a moment."
+    mod-detection-running: "&#D4452CMod detection is still running on your client. Try again in a moment."
     cannot-monitor-self: "&#D4452CYou cannot monitor your own inventory."
     monitor-blocked: "&#D4452COpening the monitor was blocked."
     database-offline: "&#D4452CDatabase offline"
@@ -148,8 +163,7 @@ gui:
   info:
     title: "TotemGuard"
     services-title: "&#FBAF00Services"
-    services-lore-1: "&#B8AC8FLive status of external services"
-    services-lore-2: "&#B8AC8FTotemGuard depends on."
+    services-lore-1: "&#B8AC8FLive status of TotemGuard services"
     information-title: "&#FBAF00Information"
     section-version: "&#FBAF00Version"
     section-platform: "&#FBAF00Platform"
@@ -160,6 +174,8 @@ gui:
     statistics-lore-2: "&#B8AC8Fcounts across all players."
     statistics-offline-1: "&#D4452CDatabase is offline."
     statistics-offline-2: "&#B8AC8FStatistics are unavailable."
+    network-backends: "&#B8AC8FBackends synced: &#FEE067%tg_count%"
+    network-players: "&#B8AC8FTracked players: &#FEE067%tg_count%"
 
   # /tg profile <player>
   profile:
@@ -201,7 +217,7 @@ gui:
     latency-title: "&#FBAF00Latency"
     client-title: "&#FBAF00Client"
 
-  # /tg history <player> — entry hub.
+  # /tg history <player>: entry hub.
   history-hub:
     title: "History: %tg_player%"
     db-unavailable-lore-1: "&#B8AC8FHistory is unavailable - the database"

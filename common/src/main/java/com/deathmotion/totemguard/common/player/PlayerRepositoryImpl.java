@@ -18,15 +18,24 @@
 
 package com.deathmotion.totemguard.common.player;
 
+import com.deathmotion.totemguard.api.event.impl.TGFocusEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.alert.AlertFilter;
+import com.deathmotion.totemguard.common.alert.RealtimeAlertRoster;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.cache.data.FocusTarget;
+import com.deathmotion.totemguard.common.commands.impl.FocusCommand;
+import com.deathmotion.totemguard.common.commands.impl.TesterCommand;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.event.api.impl.TGFocusEventImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.latency.TransactionTimeoutWatchdog;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
@@ -36,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -81,37 +91,87 @@ public final class PlayerRepositoryImpl implements UserRepository {
 
         final TGPlayer player = players.get(user);
 
-        PlatformUser platformUser;
+        PlatformPlayer platformPlayer;
         if (player != null) {
             playersByUuid.putIfAbsent(uuid, player);
             player.onLogin();
-            platformUser = player.getPlatformUser();
+            platformPlayer = player.getPlatformPlayer();
         } else {
-            PlatformUserCreation platformUserCreation = platform.getPlatformUserFactory().create(uuid);
-            if (platformUserCreation == null) return;
-            platformUser = platformUserCreation.getPlatformUser();
+            platformPlayer = platform.getPlatformPlayerFactory().create(uuid);
         }
+        if (platformPlayer == null) return;
 
-        enableAlerts(uuid, platformUser);
-        enableTesterAlerts(uuid, platformUser);
-        platform.getUpdateCheckerRepository().notifyIfOutdated(platformUser);
+        restoreSubscriptions(uuid, platformPlayer);
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        if (presence != null) {
+            presence.onLocalPlayerJoin(uuid, user.getName(), user.getProfile());
+        }
+        platform.getUpdateCheckerRepository().notifyIfOutdated(platformPlayer);
     }
 
-    private void enableAlerts(UUID uuid, PlatformUser platformUser) {
-        if (!platformUser.hasPermission("TotemGuard.Alerts")) return;
+    private void restoreSubscriptions(UUID uuid, PlatformPlayer platformPlayer) {
+        boolean wantsAlerts = platformPlayer.hasPermission("TotemGuard.Alerts");
+        boolean canFocus = platformPlayer.hasPermission("TotemGuard.Focus");
+        boolean wantsTester = TGVersions.CURRENT.snapshot()
+                && platformPlayer.hasPermission("TotemGuard.Tester");
+        if (!wantsAlerts && !wantsTester && !canFocus) return;
 
         platform.getScheduler().runAsyncTask(() -> {
-            boolean enabled = resolveAlertsEnabled(uuid);
-            if (enabled) {
+            if (wantsAlerts && resolveAlertsEnabled(uuid)) {
                 platform.getAlertRepository().toggleAlerts(uuid);
+            }
+
+            RealtimeAlertRoster roster = platform.getAlertRepository().getRealtimeRoster();
+            boolean focusRestored = canFocus && tryRestoreFocus(uuid, platformPlayer, roster);
+
+            if (!focusRestored && wantsTester && resolveTesterEnabled(uuid)) {
+                if (roster.get(uuid) == null) {
+                    roster.put(uuid, platformPlayer, new AlertFilter.Self(uuid), null);
+                    platformPlayer.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TESTER_ENABLED));
+                }
             }
         });
     }
 
-    private void enableTesterAlerts(UUID uuid, PlatformUser platformUser) {
-        if (!TGVersions.CURRENT.snapshot()) return;
-        if (!platformUser.hasPermission("TotemGuard.Tester")) return;
-        platform.getAlertRepository().getTesterAlertRoster().enable(uuid, platformUser);
+    private boolean tryRestoreFocus(UUID viewerUuid, PlatformPlayer viewer, RealtimeAlertRoster roster) {
+        FocusTarget cached = cacheRepository.getAndRefresh(
+                CacheKeys.focusTarget(viewerUuid), CacheCodecs.FOCUS_TARGET, FocusCommand.FOCUS_TTL);
+        if (cached == null) return false;
+
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        RemotePlayerEntry target = presence == null ? null : presence.findByUuid(cached.targetUuid());
+        if (target == null) {
+            cacheRepository.remove(CacheKeys.focusTarget(viewerUuid));
+            return false;
+        }
+
+        TGPlayer localTarget = platform.getPlayerRepository().getPlayer(target.playerUuid());
+        String proxyServerId = platform.resolveProxyServerId(target.serverName());
+        TGFocusEvent event = platform.getEventRepository().post(TGFocusEventImpl.enabling(
+                viewerUuid, target.playerUuid(), target.playerName(), localTarget,
+                target.serverInstanceId(), target.serverName(), proxyServerId, true));
+        if (event.isCancelled()) {
+            cacheRepository.remove(CacheKeys.focusTarget(viewerUuid));
+            return false;
+        }
+
+        roster.put(viewerUuid, viewer, new AlertFilter.Violator(cached.targetUuid()), target.playerName());
+        viewer.sendMessage(platform.getMessageService().getComponent(
+                MessagesKeys.FOCUS_ENABLED,
+                Map.of("tg_player", target.playerName())
+        ));
+        return true;
+    }
+
+    private boolean resolveTesterEnabled(UUID uuid) {
+        Boolean cached = cacheRepository.getAndRefresh(
+                CacheKeys.testerToggle(uuid), CacheCodecs.BOOLEAN, TesterCommand.TESTER_TOGGLE_TTL);
+        if (cached != null) return cached;
+
+        boolean firstTimeDefault = true;
+        cacheRepository.put(CacheKeys.testerToggle(uuid), firstTimeDefault,
+                CacheCodecs.BOOLEAN, TesterCommand.TESTER_TOGGLE_TTL);
+        return firstTimeDefault;
     }
 
     /**
@@ -157,6 +217,12 @@ public final class PlayerRepositoryImpl implements UserRepository {
         clearExempt(uuid);
         platform.getAlertRepository().removeUser(uuid);
 
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        String name = user.getName();
+        if (presence != null && name != null) {
+            presence.onLocalPlayerQuit(uuid, name);
+        }
+
         final TGPlayer player = players.remove(user);
         playersByUuid.remove(uuid);
         if (player == null) return;
@@ -190,7 +256,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         exemptUsers.remove(uuid);
     }
 
-    public boolean shouldCheck(final @NotNull User user, final @Nullable PlatformUser platformUser) {
+    public boolean shouldCheck(final @NotNull User user, final @Nullable PlatformPlayer platformPlayer) {
         final UUID uuid = user.getUUID();
         if (uuid == null) return false;
 
@@ -202,7 +268,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
             return false;
         }
 
-        if (platformUser != null && platformUser.hasPermission(BYPASS_PERMISSION)) {
+        if (platformPlayer != null && platformPlayer.hasPermission(BYPASS_PERMISSION)) {
             setExempt(uuid, true);
             return false;
         }

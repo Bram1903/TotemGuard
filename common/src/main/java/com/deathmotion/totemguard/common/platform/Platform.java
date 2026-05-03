@@ -20,9 +20,7 @@ package com.deathmotion.totemguard.common.platform;
 
 public enum Platform {
     PAPER("Paper"),
-    FABRIC("Fabric"),
-    VELOCITY("Velocity"),
-    BUNGEE("BungeeCord");
+    FABRIC("Fabric");
 
     private final String displayName;
 
@@ -32,9 +30,5 @@ public enum Platform {
 
     public String displayName() {
         return displayName;
-    }
-
-    public boolean isProxy() {
-        return this == VELOCITY || this == BUNGEE;
     }
 }

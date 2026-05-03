@@ -20,29 +20,77 @@ package com.deathmotion.totemguard.api.event.impl;
 
 import com.deathmotion.totemguard.api.event.Cancellable;
 import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.api.user.TGUser;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 /**
- * Fired when a staff member opens the TotemGuard monitor GUI on another player.
+ * Fired when a staff member opens the TotemGuard monitor GUI on another
+ * player, and re-fired whenever a monitored target migrates to a different
+ * backend in the fleet.
  * <p>
- * The {@linkplain #getViewerUuid() caller} is the viewer opening the monitor;
- * the {@linkplain #getTargetUuid() target} is the player whose inventory will be
- * displayed. Cancelling the event prevents the GUI from opening, which lets
- * servers gate inventory monitoring on staff state (e.g., block during events, or for specific targets).
+ * Cancelling the event blocks the open (or, on a re-fire, closes the
+ * already-open GUI for that viewer). Plugins can use this to forbid
+ * monitoring on specific servers — for example, suppressing inventory
+ * monitoring while the target is on a PvP arena.
  */
 public interface TGMonitorOpenEvent extends Event, Cancellable {
 
     /**
-     * The UUID of the staff member opening the monitor.
+     * UUID of the staff member opening (or already viewing) the monitor.
      */
     @NotNull UUID getViewerUuid();
 
     /**
-     * The UUID of the player about to be monitored.
+     * UUID of the player being monitored.
      */
     @NotNull UUID getTargetUuid();
+
+    /**
+     * Display name of the player being monitored, as known to the network at
+     * dispatch time.
+     */
+    @NotNull String getTargetName();
+
+    /**
+     * The target's {@link TGUser} handle when they are online on this server.
+     * {@code null} for cross-server targets.
+     */
+    @Nullable TGUser getTargetUser();
+
+    /**
+     * Stable per-instance UUID of the backend currently hosting the target.
+     */
+    @NotNull UUID getTargetServerInstanceId();
+
+    /**
+     * TotemGuard's friendly identity for the server hosting the target —
+     * the name configured in {@code config.yml} and shown in alerts and
+     * GUIs. Not necessarily the proxy's route name.
+     */
+    @NotNull String getTargetServerName();
+
+    /**
+     * The proxy-side route id for the server hosting the target — the
+     * value the proxy uses to send a player to that backend. {@code null}
+     * when no proxy is attached, or when the friendly server name has no
+     * entry in the proxy's config.
+     */
+    @Nullable String getTargetProxyServerId();
+
+    /**
+     * {@code true} when the target is on a different backend than the viewer.
+     */
+    boolean isCrossServer();
+
+    /**
+     * {@code true} when this event is being re-fired because the target
+     * moved to a different backend while the viewer's monitor GUI was
+     * already open. {@code false} on the initial open from the command.
+     */
+    boolean isServerSwitch();
 
     @Override
     boolean isCancelled();

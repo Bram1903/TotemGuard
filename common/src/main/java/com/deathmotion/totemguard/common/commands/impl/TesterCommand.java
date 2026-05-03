@@ -19,26 +19,37 @@
 package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.alert.AlertFilter;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
-import com.deathmotion.totemguard.common.alert.TesterAlertRoster;
+import com.deathmotion.totemguard.common.alert.AlertSubscription;
+import com.deathmotion.totemguard.common.alert.RealtimeAlertRoster;
+import com.deathmotion.totemguard.common.cache.CacheCodecs;
+import com.deathmotion.totemguard.common.cache.CacheKeys;
+import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
+import java.time.Duration;
 import java.util.UUID;
 
 public final class TesterCommand extends AbstractCommand {
 
+    public static final Duration TESTER_TOGGLE_TTL = Duration.ofMinutes(30);
+
     private final TGPlatform platform;
     private final AlertRepositoryImpl alertRepository;
+    private final CacheRepositoryImpl cacheRepository;
 
     public TesterCommand() {
         this.platform = TGPlatform.getInstance();
         this.alertRepository = platform.getAlertRepository();
+        this.cacheRepository = platform.getCacheRepository();
     }
 
     @Override
@@ -58,16 +69,23 @@ public final class TesterCommand extends AbstractCommand {
         }
 
         UUID uuid = sender.getUniqueId();
-        TesterAlertRoster roster = alertRepository.getTesterAlertRoster();
+        RealtimeAlertRoster roster = alertRepository.getRealtimeRoster();
+        AlertSubscription current = roster.get(uuid);
 
-        if (roster.contains(uuid)) {
-            roster.disable(uuid);
-            return;
+        boolean enabled;
+        if (current != null && current.filter() instanceof AlertFilter.Self) {
+            roster.remove(uuid);
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TESTER_DISABLED));
+            enabled = false;
+        } else {
+            PlatformPlayer viewer = platform.getPlatformPlayerFactory().create(uuid);
+            if (viewer == null) return;
+            roster.put(uuid, viewer, new AlertFilter.Self(uuid), null);
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TESTER_ENABLED));
+            enabled = true;
         }
 
-        PlatformUserCreation creation = platform.getPlatformUserFactory().create(uuid);
-        if (creation == null) return;
-
-        roster.enable(uuid, creation.getPlatformUser());
+        platform.getScheduler().runAsyncTask(() -> cacheRepository.put(
+                CacheKeys.testerToggle(uuid), enabled, CacheCodecs.BOOLEAN, TESTER_TOGGLE_TTL));
     }
 }

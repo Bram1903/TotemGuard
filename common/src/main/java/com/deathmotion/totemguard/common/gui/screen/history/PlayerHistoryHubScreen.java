@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +43,7 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
     private final String fallbackName;
     private volatile @Nullable PlayerRecord dbRecord;
     private volatile boolean dbAttempted;
+    private volatile @Nullable UserProfile remoteProfile;
 
     public PlayerHistoryHubScreen(TGPlayer player) {
         this(player.getUuid(), player.getName());
@@ -60,19 +62,35 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
     @Override
     public void onOpen(GuiSession session) {
         TGPlatform platform = TGPlatform.getInstance();
-        if (!platform.getDatabaseRepository().isConnected()) {
-            this.dbAttempted = true;
-            return;
-        }
+
+        boolean dbReady = platform.getDatabaseRepository().isConnected();
+        boolean needsRemoteLookup = platform.getPlayerRepository().getPlayer(targetId) == null
+                && platform.getNetworkPresenceRepository() != null;
+
+        if (!dbReady) this.dbAttempted = true;
+        if (!dbReady && !needsRemoteLookup) return;
 
         platform.getScheduler().runAsyncTask(() -> {
             try {
-                this.dbRecord = platform.getDatabaseRepository().findPlayerByUuid(targetId);
-            } catch (Exception ex) {
-                platform.getLogger().log(Level.WARNING,
-                        "Failed to load history times for " + targetId + ": " + ex.getMessage());
+                if (dbReady) {
+                    try {
+                        this.dbRecord = platform.getDatabaseRepository().findPlayerByUuid(targetId);
+                    } catch (Exception ex) {
+                        platform.getLogger().log(Level.WARNING,
+                                "Failed to load history times for " + targetId + ": " + ex.getMessage());
+                    } finally {
+                        this.dbAttempted = true;
+                    }
+                }
+                if (needsRemoteLookup) {
+                    try {
+                        this.remoteProfile = platform.getNetworkPresenceRepository().loadProfile(targetId);
+                    } catch (Exception ex) {
+                        platform.getLogger().log(Level.WARNING,
+                                "Failed to load remote profile for " + targetId + ": " + ex.getMessage());
+                    }
+                }
             } finally {
-                this.dbAttempted = true;
                 platform.getGuiManager().refresh(session.viewerId());
             }
         });
@@ -104,10 +122,11 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         }
 
         List<Component> headLore = buildHeadLore(messages);
-        if (target != null) {
+        UserProfile profile = resolveProfile(target, targetName);
+        if (profile != null) {
             builder.set(4, GuiItems.playerHead(
-                    target.getUser().getProfile(),
-                    Component.text(target.getName(), Palette.SUCCESS),
+                    profile,
+                    Component.text(targetName, Palette.SUCCESS),
                     headLore
             ));
         } else {
@@ -160,6 +179,13 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         }
 
         return builder.build();
+    }
+
+    private @Nullable UserProfile resolveProfile(@Nullable TGPlayer target, String targetName) {
+        if (target != null) return target.getUser().getProfile();
+        UserProfile cached = this.remoteProfile;
+        if (cached != null) return cached;
+        return new UserProfile(targetId, targetName);
     }
 
     private List<Component> buildHeadLore(MessageService messages) {

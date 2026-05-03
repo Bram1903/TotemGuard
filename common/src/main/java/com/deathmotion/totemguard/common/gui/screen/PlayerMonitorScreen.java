@@ -22,13 +22,15 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.monitor.MonitorRepository;
+import com.deathmotion.totemguard.common.monitor.MonitorSnapshot;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import net.kyori.adventure.text.Component;
 
 import java.util.*;
@@ -36,8 +38,10 @@ import java.util.*;
 public final class PlayerMonitorScreen extends GuiScreen {
 
     public static final String PERMISSION = "TotemGuard.Gui.Monitor";
+
     private final UUID targetId;
     private final String fallbackName;
+    private volatile @org.jetbrains.annotations.Nullable UserProfile cachedRemoteProfile;
 
     public PlayerMonitorScreen(TGPlayer player) {
         this(player.getUuid(), player.getName());
@@ -59,11 +63,43 @@ public final class PlayerMonitorScreen extends GuiScreen {
     }
 
     @Override
+    public void onOpen(GuiSession session) {
+        TGPlatform platform = TGPlatform.getInstance();
+        MonitorRepository monitor = platform.getMonitorRepository();
+        if (monitor != null) monitor.openLocalMonitor(targetId);
+
+        if (platform.getPlayerRepository().getPlayer(targetId) == null
+                && platform.getNetworkPresenceRepository() != null) {
+            platform.getScheduler().runAsyncTask(() -> {
+                try {
+                    this.cachedRemoteProfile = platform.getNetworkPresenceRepository().loadProfile(targetId);
+                } catch (Exception ignored) {
+                } finally {
+                    platform.getGuiManager().refresh(session.viewerId());
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onClose(GuiSession session) {
+        MonitorRepository monitor = TGPlatform.getInstance().getMonitorRepository();
+        if (monitor != null) monitor.closeLocalMonitor(targetId);
+    }
+
+    @Override
     public GuiRenderResult render(GuiSession session) {
         TGPlatform platform = TGPlatform.getInstance();
         MessageService messages = platform.getMessageService();
-        TGPlayer target = platform.getPlayerRepository().getPlayer(targetId);
-        String targetName = target != null ? target.getName() : fallbackName;
+
+        TGPlayer local = platform.getPlayerRepository().getPlayer(targetId);
+        MonitorRepository monitor = platform.getMonitorRepository();
+        MonitorSnapshot snapshot = local != null
+                ? MonitorSnapshot.captureFrom(local,
+                platform.getNetworkPresenceRepository().identity().displayName())
+                : (monitor != null ? monitor.lastSnapshot(targetId) : null);
+
+        String targetName = snapshot != null ? snapshot.playerName() : fallbackName;
 
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
                 GuiTitle.of(messages.getString(MessagesKeys.GUI_MONITOR_TITLE, Map.of("tg_player", targetName))));
@@ -85,7 +121,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
             return builder.build();
         }
 
-        if (target == null) {
+        if (snapshot == null) {
             builder.set(0, emptyPane("Player"));
             builder.set(8, singleExitButton(session, messages), ctx -> {
                 if (session.hasParent()) {
@@ -105,42 +141,51 @@ public final class PlayerMonitorScreen extends GuiScreen {
             return builder.build();
         }
 
-        PacketInventory inventory = target.getInventory();
+        UserProfile profile;
+        if (local != null) {
+            profile = local.getUser().getProfile();
+        } else {
+            UserProfile cached = this.cachedRemoteProfile;
+            profile = cached != null ? cached : new UserProfile(snapshot.targetUuid(), snapshot.playerName());
+        }
 
         builder.set(0, GuiItems.playerHead(
-                target.getUser().getProfile(),
-                Component.text(target.getName(), Palette.SUCCESS),
+                profile,
+                Component.text(snapshot.playerName(), Palette.SUCCESS),
                 List.of(
-                        GuiText.line("Client version", target.getClientVersion().getReleaseName()),
-                        GuiText.line("Brand", target.getClientBrand()),
-                        GuiText.line("Selected hotbar", String.valueOf(inventory.getSelectedHotbarIndex()))
+                        GuiText.line("Client version", snapshot.clientVersion()),
+                        GuiText.line("Brand", snapshot.clientBrand()),
+                        GuiText.line("Selected hotbar", String.valueOf(snapshot.selectedHotbarIndex())),
+                        GuiText.line("Server", snapshot.serverName())
                 )
-        ), ctx -> ctx.open(new PlayerProfileScreen(target)));
+        ), ctx -> {
+            if (local != null) ctx.open(new PlayerProfileScreen(local));
+        });
 
         builder.set(1, displaySlot(
-                inventory.getMainHandItem(),
+                snapshot.mainHandItem(),
                 "Main Hand",
                 List.of(
-                        GuiText.line("Packet slot", String.valueOf(inventory.getMainHandSlot())),
-                        GuiText.line("Summary", GuiText.itemSummary(inventory.getMainHandItem()))
+                        GuiText.line("Packet slot", String.valueOf(snapshot.mainHandSlot())),
+                        GuiText.line("Summary", GuiText.itemSummary(snapshot.mainHandItem()))
                 ),
                 ItemTypes.WHITE_STAINED_GLASS_PANE
         ));
         builder.set(2, displaySlot(
-                inventory.getOffhandItem(),
+                snapshot.offhandItem(),
                 "Offhand",
                 List.of(
                         GuiText.line("Packet slot", String.valueOf(InventoryConstants.SLOT_OFFHAND)),
-                        GuiText.line("Summary", GuiText.itemSummary(inventory.getOffhandItem()))
+                        GuiText.line("Summary", GuiText.itemSummary(snapshot.offhandItem()))
                 ),
                 ItemTypes.WHITE_STAINED_GLASS_PANE
         ));
         builder.set(3, displaySlot(
-                inventory.getCarriedItem().getCurrentItem(),
+                snapshot.carriedItem(),
                 "Carried Item",
                 List.of(
-                        GuiText.line("Updated slot", String.valueOf(inventory.getCarriedItem().getSlot())),
-                        GuiText.line("Summary", GuiText.itemSummary(inventory.getCarriedItem().getCurrentItem()))
+                        GuiText.line("Updated slot", String.valueOf(snapshot.carriedItemSlot())),
+                        GuiText.line("Summary", GuiText.itemSummary(snapshot.carriedItem()))
                 ),
                 ItemTypes.WHITE_STAINED_GLASS_PANE
         ));
@@ -148,25 +193,25 @@ public final class PlayerMonitorScreen extends GuiScreen {
                 ItemTypes.PAPER,
                 messages.getComponent(MessagesKeys.GUI_MONITOR_PACKET_STATE_TITLE),
                 List.of(
-                        GuiText.line("Last issuer", String.valueOf(inventory.getLastIssuer())),
-                        GuiText.line("Selected hotbar", String.valueOf(inventory.getSelectedHotbarIndex())),
-                        GuiText.line("Main hand slot", String.valueOf(inventory.getMainHandSlot()))
+                        GuiText.line("Last issuer", snapshot.lastIssuer()),
+                        GuiText.line("Selected hotbar", String.valueOf(snapshot.selectedHotbarIndex())),
+                        GuiText.line("Main hand slot", String.valueOf(snapshot.mainHandSlot()))
                 )
         ));
 
         builder.set(5, GuiItems.simple(
-                target.getData().isOpenInventory() ? ItemTypes.GREEN_WOOL : ItemTypes.RED_WOOL,
-                Component.text(target.getData().isOpenInventory() ? "Inventory Open" : "Inventory Closed", Palette.BRAND),
-                List.of(GuiText.status("Inventory open", target.getData().isOpenInventory()))
+                snapshot.inventoryOpen() ? ItemTypes.GREEN_WOOL : ItemTypes.RED_WOOL,
+                Component.text(snapshot.inventoryOpen() ? "Inventory Open" : "Inventory Closed", Palette.BRAND),
+                List.of(GuiText.status("Inventory open", snapshot.inventoryOpen()))
         ));
 
         builder.set(6, GuiItems.simple(
                 ItemTypes.COMPARATOR,
                 messages.getComponent(MessagesKeys.GUI_MONITOR_LATENCY_TITLE),
                 List.of(
-                        GuiText.line("Transaction ping", String.valueOf(target.getPingData().getTransactionPing())),
-                        GuiText.line("KeepAlive ping", String.valueOf(target.getPingData().getKeepAlivePing())),
-                        GuiText.line("Pending tx", String.valueOf(target.getPingData().getPendingTransactionCount()))
+                        GuiText.line("Transaction ping", String.valueOf(snapshot.transactionPing())),
+                        GuiText.line("KeepAlive ping", String.valueOf(snapshot.keepAlivePing())),
+                        GuiText.line("Pending tx", String.valueOf(snapshot.pendingTransactionCount()))
                 )
         ));
 
@@ -174,8 +219,8 @@ public final class PlayerMonitorScreen extends GuiScreen {
                 ItemTypes.BOOK,
                 messages.getComponent(MessagesKeys.GUI_MONITOR_CLIENT_TITLE),
                 List.of(
-                        GuiText.line("Client version", target.getClientVersion().getReleaseName()),
-                        GuiText.line("Brand", target.getClientBrand()),
+                        GuiText.line("Client version", snapshot.clientVersion()),
+                        GuiText.line("Brand", snapshot.clientBrand()),
                         messages.getComponent(MessagesKeys.GUI_MONITOR_HEAD_TOOLTIP)
                 )
         ));
@@ -193,39 +238,39 @@ public final class PlayerMonitorScreen extends GuiScreen {
         }
 
         builder.set(14, displaySlot(
-                inventory.getItem(InventoryConstants.SLOT_HELMET),
+                snapshot.itemAt(InventoryConstants.SLOT_HELMET),
                 "Helmet",
                 List.of(GuiText.line("Packet slot", String.valueOf(InventoryConstants.SLOT_HELMET))),
                 ItemTypes.WHITE_STAINED_GLASS_PANE
         ));
         builder.set(15, displaySlot(
-                inventory.getItem(InventoryConstants.SLOT_CHESTPLATE),
+                snapshot.itemAt(InventoryConstants.SLOT_CHESTPLATE),
                 "Chestplate",
                 List.of(GuiText.line("Packet slot", String.valueOf(InventoryConstants.SLOT_CHESTPLATE))),
                 ItemTypes.WHITE_STAINED_GLASS_PANE
         ));
         builder.set(16, displaySlot(
-                inventory.getItem(InventoryConstants.SLOT_LEGGINGS),
+                snapshot.itemAt(InventoryConstants.SLOT_LEGGINGS),
                 "Leggings",
                 List.of(GuiText.line("Packet slot", String.valueOf(InventoryConstants.SLOT_LEGGINGS))),
                 ItemTypes.WHITE_STAINED_GLASS_PANE
         ));
         builder.set(17, displaySlot(
-                inventory.getItem(InventoryConstants.SLOT_BOOTS),
+                snapshot.itemAt(InventoryConstants.SLOT_BOOTS),
                 "Boots",
                 List.of(GuiText.line("Packet slot", String.valueOf(InventoryConstants.SLOT_BOOTS))),
                 ItemTypes.WHITE_STAINED_GLASS_PANE
         ));
 
-        copyRange(builder, inventory, InventoryConstants.ITEMS_START, 18, 27);
-        copyRange(builder, inventory, InventoryConstants.HOTBAR_START, 45, 9);
+        copyRange(builder, snapshot, InventoryConstants.ITEMS_START, 18, 27);
+        copyRange(builder, snapshot, InventoryConstants.HOTBAR_START, 45, 9);
 
         return builder.build();
     }
 
-    private void copyRange(GuiRenderResult.Builder builder, PacketInventory inventory, int sourceStart, int targetStart, int amount) {
+    private void copyRange(GuiRenderResult.Builder builder, MonitorSnapshot snapshot, int sourceStart, int targetStart, int amount) {
         for (int index = 0; index < amount; index++) {
-            ItemStack item = inventory.getItem(sourceStart + index);
+            ItemStack item = snapshot.itemAt(sourceStart + index);
             if (item == null || item.isEmpty()) {
                 continue;
             }
@@ -249,7 +294,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
         return emptyPane(label, lore, ItemTypes.WHITE_STAINED_GLASS_PANE);
     }
 
-    private ItemStack emptyPane(String label, List<Component> lore, com.github.retrooper.packetevents.protocol.item.type.ItemType type) {
+    private ItemStack emptyPane(String label, List<Component> lore, ItemType type) {
         List<Component> fullLore = new ArrayList<>(lore.size() + 1);
         fullLore.add(Component.text("Empty", Palette.CONNECTIVE));
         fullLore.addAll(lore);

@@ -19,13 +19,16 @@
 package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.bukkit.compatibility.BukkitCompatibility;
-import com.deathmotion.totemguard.bukkit.player.BukkitPlatformUserFactory;
+import com.deathmotion.totemguard.bukkit.network.BukkitCrossServerTeleportRouter;
+import com.deathmotion.totemguard.bukkit.network.BungeeChannelManager;
+import com.deathmotion.totemguard.bukkit.player.BukkitPlatformPlayerFactory;
 import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.bukkit.sender.BukkitSenderFactory;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.Platform;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import lombok.Getter;
@@ -38,6 +41,7 @@ import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import org.incendo.cloud.setting.Configurable;
 
+
 @Getter
 public class TGBukkitPlatform extends TGPlatform {
 
@@ -45,8 +49,10 @@ public class TGBukkitPlatform extends TGPlatform {
     private final Scheduler scheduler;
 
     private final Lazy<BukkitSenderFactory> senderFactory;
-    private final Lazy<BukkitPlatformUserFactory> platformUserFactory;
+    private final Lazy<BukkitPlatformPlayerFactory> platformPlayerFactory;
     private final Lazy<CommandManager<Sender>> commandManager;
+    private final Lazy<BukkitCrossServerTeleportRouter> teleportRouter;
+    private final Lazy<BungeeChannelManager> bungeeChannelManager;
 
     public TGBukkitPlatform(TGBukkit plugin) {
         super(Platform.PAPER);
@@ -54,7 +60,10 @@ public class TGBukkitPlatform extends TGPlatform {
         this.scheduler = new BukkitScheduler(plugin);
 
         this.senderFactory = Lazy.of(BukkitSenderFactory::new);
-        this.platformUserFactory = Lazy.of(() -> new BukkitPlatformUserFactory(plugin));
+        this.platformPlayerFactory = Lazy.of(() -> new BukkitPlatformPlayerFactory(plugin));
+
+        this.teleportRouter = Lazy.of(() -> new BukkitCrossServerTeleportRouter(this));
+        this.bungeeChannelManager = Lazy.of(() -> new BungeeChannelManager(plugin, this));
 
         this.commandManager = Lazy.of(() -> {
             LegacyPaperCommandManager<Sender> manager = new LegacyPaperCommandManager<>(
@@ -97,8 +106,8 @@ public class TGBukkitPlatform extends TGPlatform {
     }
 
     @Override
-    public PlatformUserFactory getPlatformUserFactory() {
-        return platformUserFactory.get();
+    public PlatformPlayerFactory getPlatformPlayerFactory() {
+        return platformPlayerFactory.get();
     }
 
     @Override
@@ -124,5 +133,25 @@ public class TGBukkitPlatform extends TGPlatform {
     @Override
     public boolean checkPlatformCompatibility() {
         return BukkitCompatibility.check(getLogger());
+    }
+
+    @Override
+    public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
+        teleportRouter.get().accept(payload);
+    }
+
+    @Override
+    public boolean canRouteToServer(String serverName) {
+        return bungeeChannelManager.get().isServerOnThisProxy(serverName);
+    }
+
+    @Override
+    public String resolveServerName(String serverName) {
+        return bungeeChannelManager.get().resolveServerName(serverName);
+    }
+
+    @Override
+    public String resolveProxyServerId(String serverName) {
+        return bungeeChannelManager.get().resolveProxyServerId(serverName);
     }
 }

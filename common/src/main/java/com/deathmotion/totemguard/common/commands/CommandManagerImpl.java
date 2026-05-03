@@ -41,6 +41,7 @@ public class CommandManagerImpl {
         new MonitorCommand().register(commandManager);
         new ReloadCommand().register(commandManager);
         new AlertCommand().register(commandManager);
+        new FocusCommand().register(commandManager);
 
         // Only register on development builds
         if (TGVersions.CURRENT.snapshot()) {
@@ -51,10 +52,7 @@ public class CommandManagerImpl {
             new TestBanAnimationCommand().register(commandManager);
         }
 
-        // /tg check needs real inventory access via PlatformPlayer, which only
-        // exists on backend platforms. Skip on proxies (Velocity/Bungee).
-        if (!TGPlatform.getInstance().getPlatform().isProxy()) {
-            new CheckCommand().register(commandManager);
-        }
+        new CheckCommand().register(commandManager);
+        new TeleportCommand().register(commandManager);
     }
 }

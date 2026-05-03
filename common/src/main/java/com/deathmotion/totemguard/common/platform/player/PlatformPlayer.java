@@ -18,21 +18,29 @@
 
 package com.deathmotion.totemguard.common.platform.player;
 
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
-/**
- * Backend-only view of a player. Exists on Bukkit/Fabric/Sponge where we can
- * touch the real server-side inventory and health; not created on proxy
- * platforms like Velocity, where {@code TGPlayer#getPlatformPlayer()} returns
- * {@code null}.
- */
 public interface PlatformPlayer {
+
+    boolean hasPermission(@NotNull String permission);
+
+    void sendMessage(@NotNull Component message);
+
+    void kick(@NotNull Component reason);
 
     boolean isInSurvivalOrAdventure();
 
     boolean isInvulnerable();
+
+    @org.jetbrains.annotations.Nullable
+    String getWorldName();
+
+    void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch);
+
+    void routeToProxyServer(@NotNull String targetServerName);
 
     /**
      * Starts a manual-check window on the target's region thread:

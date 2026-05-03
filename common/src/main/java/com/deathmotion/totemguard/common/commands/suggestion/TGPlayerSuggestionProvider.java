@@ -19,12 +19,15 @@
 package com.deathmotion.totemguard.common.commands.suggestion;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.incendo.cloud.suggestion.SuggestionProvider;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public final class TGPlayerSuggestionProvider {
 
@@ -32,17 +35,40 @@ public final class TGPlayerSuggestionProvider {
     }
 
     public static SuggestionProvider<Sender> suggestionProvider() {
-        return SuggestionProvider.blockingStrings((ctx, input) -> suggestions(input.lastRemainingToken()));
+        return SuggestionProvider.blockingStrings((ctx, input) -> suggestions(input.lastRemainingToken(), null));
+    }
+
+    public static SuggestionProvider<Sender> suggestionProviderExcludingSelf() {
+        return SuggestionProvider.blockingStrings((ctx, input) ->
+                suggestions(input.lastRemainingToken(), ctx.sender().getName()));
     }
 
     public static Iterable<String> suggestions(String currentInput) {
-        String normalized = currentInput == null ? "" : currentInput.toLowerCase(Locale.ROOT);
+        return suggestions(currentInput, null);
+    }
 
-        return TGPlatform.getInstance().getPlayerRepository().getPlayers().stream()
-                .map(TGPlayer::getName)
-                .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(normalized))
-                .sorted(String::compareToIgnoreCase)
-                .toList();
+    public static Iterable<String> suggestions(String currentInput, @Nullable String excludeName) {
+        String prefix = currentInput == null ? "" : currentInput;
+        Set<String> names = new LinkedHashSet<>();
+
+        NetworkPresenceRepository presence = TGPlatform.getInstance().getNetworkPresenceRepository();
+        if (presence != null) {
+            for (String name : presence.suggestNames(prefix)) {
+                if (excludeName != null && name.equalsIgnoreCase(excludeName)) continue;
+                names.add(name);
+            }
+        }
+
+        String lower = prefix.toLowerCase(java.util.Locale.ROOT);
+        for (TGPlayer player : TGPlatform.getInstance().getPlayerRepository().getPlayers()) {
+            String name = player.getName();
+            if (name == null) continue;
+            if (excludeName != null && name.equalsIgnoreCase(excludeName)) continue;
+            if (lower.isEmpty() || name.toLowerCase(java.util.Locale.ROOT).startsWith(lower)) {
+                names.add(name);
+            }
+        }
+        return names;
     }
 
     public static @Nullable TGPlayer findPlayer(String name) {
@@ -57,5 +83,12 @@ public final class TGPlayerSuggestionProvider {
         }
 
         return null;
+    }
+
+    public static @Nullable RemotePlayerEntry findNetworkPlayer(String name) {
+        if (name == null || name.isBlank()) return null;
+        NetworkPresenceRepository presence = TGPlatform.getInstance().getNetworkPresenceRepository();
+        if (presence == null) return null;
+        return presence.findByName(name);
     }
 }

@@ -20,12 +20,12 @@ package com.deathmotion.totemguard.fabric;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.Platform;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.deathmotion.totemguard.fabric.compatibility.FabricCompatibility;
-import com.deathmotion.totemguard.fabric.player.FabricPlatformUserFactory;
+import com.deathmotion.totemguard.fabric.player.FabricPlatformPlayerFactory;
 import com.deathmotion.totemguard.fabric.scheduler.FabricScheduler;
 import com.deathmotion.totemguard.fabric.sender.FabricSenderFactory;
 import lombok.Getter;
@@ -45,7 +45,7 @@ public class TGFabricPlatform extends TGPlatform {
     private final Path configDirectory;
     private final Scheduler scheduler;
 
-    private final Lazy<FabricPlatformUserFactory> platformUserFactory;
+    private final Lazy<FabricPlatformPlayerFactory> platformPlayerFactory;
     private final Lazy<FabricSenderFactory> senderFactory;
     private final Lazy<CommandManager<Sender>> commandManager;
 
@@ -54,7 +54,7 @@ public class TGFabricPlatform extends TGPlatform {
         this.mod = mod;
         this.configDirectory = configDirectory;
         this.scheduler = new FabricScheduler();
-        this.platformUserFactory = Lazy.of(FabricPlatformUserFactory::new);
+        this.platformPlayerFactory = Lazy.of(FabricPlatformPlayerFactory::new);
         this.senderFactory = Lazy.of(FabricSenderFactory::new);
         this.commandManager = Lazy.of(() -> new FabricServerCommandManager<>(
                 ExecutionCoordinator.simpleCoordinator(),
@@ -85,8 +85,8 @@ public class TGFabricPlatform extends TGPlatform {
     }
 
     @Override
-    public PlatformUserFactory getPlatformUserFactory() {
-        return platformUserFactory.get();
+    public PlatformPlayerFactory getPlatformPlayerFactory() {
+        return platformPlayerFactory.get();
     }
 
     @Override

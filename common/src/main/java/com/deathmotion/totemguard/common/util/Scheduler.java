@@ -25,7 +25,7 @@ public interface Scheduler {
 
     void runAsyncTask(Runnable task);
 
-    void runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit);
+    ScheduledTask runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit);
 
     ScheduledTask runAsyncTaskAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit timeUnit);
 }

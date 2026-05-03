@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.screen.PlayerProfileScreen;
+import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import lombok.NonNull;
@@ -57,26 +58,26 @@ public final class ProfileCommand extends AbstractCommand {
         }
 
         TGPlatform platform = TGPlatform.getInstance();
-        TGPlayer target = resolveTarget(sender, context.get("tg_player"));
-        if (target == null) {
-            return;
+        String rawTarget = context.get("tg_player");
+
+        PlayerProfileScreen screen;
+        TGPlayer local = TGPlayerSuggestionProvider.findPlayer(rawTarget);
+        if (local != null) {
+            screen = new PlayerProfileScreen(local);
+        } else {
+            RemotePlayerEntry remote = TGPlayerSuggestionProvider.findNetworkPlayer(rawTarget);
+            if (remote == null) {
+                sender.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.GENERAL_PLAYER_NOT_FOUND,
+                        Map.of("tg_input", rawTarget)
+                ));
+                return;
+            }
+            screen = new PlayerProfileScreen(remote.playerUuid(), remote.playerName());
         }
 
-        if (!platform.getGuiManager().open(sender, new PlayerProfileScreen(target))) {
+        if (!platform.getGuiManager().open(sender, screen)) {
             sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.PROFILE_OPEN_FAILED));
         }
-    }
-
-    private TGPlayer resolveTarget(Sender sender, String rawTarget) {
-        TGPlayer target = TGPlayerSuggestionProvider.findPlayer(rawTarget);
-        if (target != null) {
-            return target;
-        }
-
-        sender.sendMessage(TGPlatform.getInstance().getMessageService().getComponent(
-                MessagesKeys.GENERAL_PLAYER_NOT_FOUND,
-                Map.of("tg_input", rawTarget)
-        ));
-        return null;
     }
 }

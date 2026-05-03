@@ -86,10 +86,6 @@ public class PingData {
         transactions.markSynthetic(id);
     }
 
-    public boolean shouldCancelTransactionReplyOnProxy() {
-        return lastTransactionReplySynthetic;
-    }
-
     public int getPendingTransactionCount() {
         return transactions.pendingCount();
     }

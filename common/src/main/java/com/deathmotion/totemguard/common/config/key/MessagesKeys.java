@@ -42,6 +42,20 @@ public final class MessagesKeys {
     public static final ConfigKey<String> TESTER_ENABLED = ConfigKey.string("alerts.tester.enabled");
     public static final ConfigKey<String> TESTER_DISABLED = ConfigKey.string("alerts.tester.disabled");
 
+    public static final ConfigKey<String> FOCUS_ENABLED = ConfigKey.string("alerts.focus.enabled");
+    public static final ConfigKey<String> FOCUS_DISABLED = ConfigKey.string("alerts.focus.disabled");
+    public static final ConfigKey<String> FOCUS_NONE_ACTIVE = ConfigKey.string("alerts.focus.none-active");
+    public static final ConfigKey<String> FOCUS_TARGET_OFFLINE = ConfigKey.string("alerts.focus.target-offline");
+    public static final ConfigKey<String> FOCUS_NOT_FOUND = ConfigKey.string("alerts.focus.not-found");
+    public static final ConfigKey<String> FOCUS_SELF = ConfigKey.string("alerts.focus.self-not-allowed");
+
+    public static final ConfigKey<String> TELEPORT_NOT_FOUND = ConfigKey.string("commands.teleport.not-found");
+    public static final ConfigKey<String> TELEPORT_SELF = ConfigKey.string("commands.teleport.self-not-allowed");
+    public static final ConfigKey<String> TELEPORT_SAME_SERVER = ConfigKey.string("commands.teleport.same-server");
+    public static final ConfigKey<String> TELEPORT_CROSS_SERVER = ConfigKey.string("commands.teleport.cross-server");
+    public static final ConfigKey<String> TELEPORT_NO_REDIS = ConfigKey.string("commands.teleport.no-redis");
+    public static final ConfigKey<String> TELEPORT_DIFFERENT_PROXY = ConfigKey.string("commands.teleport.different-proxy");
+
     public static final ConfigKey<String> RELOAD = ConfigKey.string("reload");
 
     public static final ConfigKey<String> UPDATE_AVAILABLE = ConfigKey.string("update-checker.available");
@@ -59,7 +73,6 @@ public final class MessagesKeys {
     public static final ConfigKey<String> ROOT_VERSION = ConfigKey.string("commands.root.version");
     public static final ConfigKey<String> ROOT_GUI_OPEN_FAILED = ConfigKey.string("commands.root.gui-open-failed");
 
-    public static final ConfigKey<String> CHECK_BACKEND_ONLY = ConfigKey.string("commands.check.backend-only");
     public static final ConfigKey<String> CHECK_ALREADY_CHECKING = ConfigKey.string("commands.check.already-checking");
     public static final ConfigKey<String> CHECK_ON_COOLDOWN = ConfigKey.string("commands.check.on-cooldown");
     public static final ConfigKey<String> CHECK_WRONG_GAMEMODE = ConfigKey.string("commands.check.wrong-gamemode");
@@ -131,7 +144,6 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_INFO_TITLE = ConfigKey.string("gui.info.title");
     public static final ConfigKey<String> GUI_INFO_SERVICES_TITLE = ConfigKey.string("gui.info.services-title");
     public static final ConfigKey<String> GUI_INFO_SERVICES_LORE_1 = ConfigKey.string("gui.info.services-lore-1");
-    public static final ConfigKey<String> GUI_INFO_SERVICES_LORE_2 = ConfigKey.string("gui.info.services-lore-2");
     public static final ConfigKey<String> GUI_INFO_INFORMATION_TITLE = ConfigKey.string("gui.info.information-title");
     public static final ConfigKey<String> GUI_INFO_SECTION_VERSION = ConfigKey.string("gui.info.section-version");
     public static final ConfigKey<String> GUI_INFO_SECTION_PLATFORM = ConfigKey.string("gui.info.section-platform");
@@ -142,6 +154,8 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_INFO_STATISTICS_LORE_2 = ConfigKey.string("gui.info.statistics-lore-2");
     public static final ConfigKey<String> GUI_INFO_STATISTICS_OFFLINE_1 = ConfigKey.string("gui.info.statistics-offline-1");
     public static final ConfigKey<String> GUI_INFO_STATISTICS_OFFLINE_2 = ConfigKey.string("gui.info.statistics-offline-2");
+    public static final ConfigKey<String> GUI_INFO_NETWORK_BACKENDS = ConfigKey.string("gui.info.network-backends");
+    public static final ConfigKey<String> GUI_INFO_NETWORK_PLAYERS = ConfigKey.string("gui.info.network-players");
 
     public static final ConfigKey<String> GUI_PROFILE_TITLE = ConfigKey.string("gui.profile.title");
     public static final ConfigKey<String> GUI_PROFILE_UNTRACKED_TITLE = ConfigKey.string("gui.profile.untracked-title");

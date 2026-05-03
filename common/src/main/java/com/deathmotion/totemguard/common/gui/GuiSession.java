@@ -19,8 +19,7 @@
 package com.deathmotion.totemguard.common.gui;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.player.User;
 
@@ -125,9 +124,7 @@ public final class GuiSession {
 
     public boolean hasPermission(String permission) {
         if (permission == null) return true;
-        PlatformUserCreation creation = TGPlatform.getInstance().getPlatformUserFactory().create(viewerId);
-        if (creation == null) return false;
-        PlatformUser viewer = creation.getPlatformUser();
+        PlatformPlayer viewer = TGPlatform.getInstance().getPlatformPlayerFactory().create(viewerId);
         return viewer != null && viewer.hasPermission(permission);
     }
 

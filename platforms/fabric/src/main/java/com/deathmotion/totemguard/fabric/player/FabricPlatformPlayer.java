@@ -20,11 +20,20 @@ package com.deathmotion.totemguard.fabric.player;
 
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
+import com.deathmotion.totemguard.fabric.FabricServerHolder;
 import lombok.Getter;
+import me.lucko.fabric.api.permissions.v0.Permissions;
+import net.kyori.adventure.platform.modcommon.MinecraftServerAudiences;
+import net.kyori.adventure.text.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.PermissionLevel;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.GameType;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class FabricPlatformPlayer implements PlatformPlayer {
@@ -34,6 +43,32 @@ public class FabricPlatformPlayer implements PlatformPlayer {
 
     public FabricPlatformPlayer(ServerPlayer fabricPlayer) {
         this.fabricPlayer = fabricPlayer;
+    }
+
+    private static ServerLevel findLevel(MinecraftServer server, String worldName) {
+        for (ServerLevel level : server.getAllLevels()) {
+            if (level.dimension().identifier().toString().equals(worldName)) return level;
+        }
+        return null;
+    }
+
+    @Override
+    public boolean hasPermission(@NotNull String permission) {
+        return Permissions.check(fabricPlayer, permission, PermissionLevel.GAMEMASTERS);
+    }
+
+    @Override
+    public void sendMessage(@NotNull Component message) {
+        MinecraftServer server = resolveServer();
+        if (server == null) return;
+        MinecraftServerAudiences.of(server).audience(fabricPlayer).sendMessage(message);
+    }
+
+    @Override
+    public void kick(@NotNull Component reason) {
+        MinecraftServer server = resolveServer();
+        if (server == null) return;
+        fabricPlayer.connection.disconnect(MinecraftServerAudiences.of(server).asNative(reason));
     }
 
     @Override
@@ -48,7 +83,32 @@ public class FabricPlatformPlayer implements PlatformPlayer {
     }
 
     @Override
+    public String getWorldName() {
+        return fabricPlayer.level().dimension().identifier().toString();
+    }
+
+    @Override
+    public void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch) {
+        MinecraftServer server = resolveServer();
+        if (server == null) return;
+        server.execute(() -> {
+            ServerLevel destination = findLevel(server, worldName);
+            if (destination == null) destination = fabricPlayer.level();
+            fabricPlayer.teleportTo(destination, x, y, z, Set.<Relative>of(), yaw, pitch, true);
+        });
+    }
+
+    @Override
+    public void routeToProxyServer(@NotNull String targetServerName) {
+    }
+
+    @Override
     public void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted, @NotNull Runnable onDamageRefused) {
         onDamageRefused.run();
+    }
+
+    private MinecraftServer resolveServer() {
+        MinecraftServer cached = FabricServerHolder.server();
+        return cached != null ? cached : fabricPlayer.level().getServer();
     }
 }

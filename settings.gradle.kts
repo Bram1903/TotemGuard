@@ -30,8 +30,5 @@ rootProject.name = "TotemGuard"
 include(":api")
 include(":common")
 include(":platforms:bukkit")
-include(":platforms:velocity")
-include(":platforms:bungeecord")
 include(":platforms:fabric")
 include(":tests:api-bukkit-test-plugin")
-include(":tests:api-velocity-test-plugin")

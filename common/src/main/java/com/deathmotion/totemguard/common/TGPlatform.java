@@ -40,13 +40,17 @@ import com.deathmotion.totemguard.common.gui.GuiPacketListener;
 import com.deathmotion.totemguard.common.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.monitor.MonitorRepository;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.ServerIdentity;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserFactory;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.stats.StatsRepositoryImpl;
 import com.deathmotion.totemguard.common.update.UpdateCheckerRepositoryImpl;
@@ -94,6 +98,8 @@ public abstract class TGPlatform {
     private StatsRepositoryImpl statsRepository;
     private GuiManager guiManager;
     private IntegrationRegistrar integrationRegistrar;
+    private NetworkPresenceRepository networkPresenceRepository;
+    private MonitorRepository monitorRepository;
     private TGPlatformAPI api;
 
     public TGPlatform(Platform platform) {
@@ -124,8 +130,8 @@ public abstract class TGPlatform {
         }
 
         // Fail fast on incomplete subclass wiring rather than NPE'ing on first login.
-        if (getPlatformUserFactory() == null) {
-            logger.severe("Platform " + platform + " did not provide a PlatformUserFactory — disabling.");
+        if (getPlatformPlayerFactory() == null) {
+            logger.severe("Platform " + platform + " did not provide a PlatformPlayerFactory — disabling.");
             setEnabled(false);
             disablePlugin();
             return;
@@ -159,6 +165,16 @@ public abstract class TGPlatform {
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
+        networkPresenceRepository = new NetworkPresenceRepository(
+                this,
+                ServerIdentity.create(configRepository.configView().server())
+        );
+        networkPresenceRepository.addListener(alertRepository);
+        networkPresenceRepository.start();
+
+        monitorRepository = new MonitorRepository(this);
+        networkPresenceRepository.addListener(monitorRepository);
+        monitorRepository.start();
 
         integrationRegistrar.enableAll();
 
@@ -196,6 +212,8 @@ public abstract class TGPlatform {
         internalSubscriptions.clear();
 
         if (integrationRegistrar != null) integrationRegistrar.disableAll();
+        if (monitorRepository != null) monitorRepository.stop();
+        if (networkPresenceRepository != null) networkPresenceRepository.stop();
         if (playerRepository != null) playerRepository.shutdown();
         if (updateCheckerRepository != null) updateCheckerRepository.shutdown();
         if (redisRepository != null) redisRepository.stop();
@@ -217,7 +235,7 @@ public abstract class TGPlatform {
 
     public abstract void enableBStats();
 
-    public abstract PlatformUserFactory getPlatformUserFactory();
+    public abstract PlatformPlayerFactory getPlatformPlayerFactory();
 
     public abstract String getPluginDirectory();
 
@@ -234,4 +252,19 @@ public abstract class TGPlatform {
      * before returning {@code false}.
      */
     public abstract boolean checkPlatformCompatibility();
+
+    public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
+    }
+
+    public boolean canRouteToServer(String serverName) {
+        return true;
+    }
+
+    public String resolveServerName(String serverName) {
+        return serverName;
+    }
+
+    public @org.jetbrains.annotations.Nullable String resolveProxyServerId(String serverName) {
+        return null;
+    }
 }

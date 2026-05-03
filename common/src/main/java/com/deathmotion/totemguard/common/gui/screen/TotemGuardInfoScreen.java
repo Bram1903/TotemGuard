@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.stats.StatisticsScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -38,6 +39,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class TotemGuardInfoScreen extends GuiScreen {
 
@@ -56,11 +58,25 @@ public final class TotemGuardInfoScreen extends GuiScreen {
 
         List<Component> lore = new ArrayList<>();
         lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SERVICES_LORE_1));
-        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SERVICES_LORE_2));
         lore.add(Component.empty());
         lore.add(serviceLine(messages, "Database", dbEnabled, dbConnected));
         lore.add(serviceLine(messages, "Redis", redisEnabled, redisConnected));
         lore.add(serviceLine(messages, "Anti-VPN", antiVpnEnabled, antiVpnEnabled));
+
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        if (redisEnabled && redisConnected && presence != null) {
+            int fleetSize = presence.fleetSize();
+            int trackedPlayers = presence.trackedPlayerCount();
+            lore.add(Component.empty());
+            lore.add(messages.getComponent(
+                    MessagesKeys.GUI_INFO_NETWORK_BACKENDS,
+                    Map.of("tg_count", fleetSize)
+            ));
+            lore.add(messages.getComponent(
+                    MessagesKeys.GUI_INFO_NETWORK_PLAYERS,
+                    Map.of("tg_count", trackedPlayers)
+            ));
+        }
 
         return GuiItems.simple(
                 ItemTypes.ENDER_CHEST,

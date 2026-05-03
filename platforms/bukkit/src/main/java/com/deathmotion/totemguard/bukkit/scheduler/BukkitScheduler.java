@@ -49,10 +49,11 @@ public class BukkitScheduler implements Scheduler {
     }
 
     @Override
-    public void runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit) {
-        FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
+    public ScheduledTask runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit) {
+        TaskWrapper wrapper = FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
             task.run();
         }, delay, timeUnit);
+        return wrapper::cancel;
     }
 
     @Override

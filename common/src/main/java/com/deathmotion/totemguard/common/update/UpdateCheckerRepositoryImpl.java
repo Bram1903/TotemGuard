@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.api.versioning.TGVersion;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.config.schema.UpdateCheckerOptions;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
@@ -165,7 +165,7 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
      * Send the "update available" message to the given user when an update has
      * been confirmed and the user is allowed to receive these notifications.
      */
-    public void notifyIfOutdated(PlatformUser user) {
+    public void notifyIfOutdated(PlatformPlayer user) {
         UpdateCheckerOptions opts = this.options;
         if (!opts.enabled() || !opts.notifyOnJoin()) return;
 

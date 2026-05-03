@@ -31,8 +31,6 @@ import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserJoinEventImpl;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
-import com.deathmotion.totemguard.common.platform.player.PlatformUser;
-import com.deathmotion.totemguard.common.platform.player.PlatformUserCreation;
 import com.deathmotion.totemguard.common.player.data.ClickData;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.TickData;
@@ -70,9 +68,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Represents a player in TotemGuard. This object is bound to a single player and gets removed once the player leaves the server / proxy.
- */
 @Getter
 public class TGPlayer implements TGUser {
 
@@ -97,7 +92,6 @@ public class TGPlayer implements TGUser {
     private final AtomicBoolean hasDisconnected = new AtomicBoolean();
     private final int modDetectionWindowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
     private boolean hasLoggedIn;
-    private PlatformUser platformUser;
     private @Nullable PlatformPlayer platformPlayer;
     @Setter()
     private String clientBrand = "Unknown";
@@ -181,16 +175,13 @@ public class TGPlayer implements TGUser {
         TGPlatform platform = TGPlatform.getInstance();
         PlayerRepositoryImpl playerRepository = platform.getPlayerRepository();
 
-        PlatformUserCreation platformUserCreation = platform.getPlatformUserFactory().create(uuid);
-        if (platformUserCreation == null) {
+        platformPlayer = platform.getPlatformPlayerFactory().create(uuid);
+        if (platformPlayer == null) {
             playerRepository.removeUser(user);
             return;
         }
 
-        platformUser = platformUserCreation.getPlatformUser();
-        platformPlayer = platformUserCreation.getPlatformPlayer();
-
-        if (!playerRepository.shouldCheck(user, platformUser)) {
+        if (!playerRepository.shouldCheck(user, platformPlayer)) {
             playerRepository.removeUser(user);
             return;
         }

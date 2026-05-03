@@ -1,9 +1,0 @@
-name: TotemGuard
-authors:
-  - Bram
-  - OutDev
-description: TotemGuard anticheat — BungeeCord proxy module.
-main: com.deathmotion.totemguard.bungee.TGBungee
-version: ${version}
-depends:
-  - packetevents
