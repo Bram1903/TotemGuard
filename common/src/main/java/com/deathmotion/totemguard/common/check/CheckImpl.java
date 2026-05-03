@@ -124,9 +124,14 @@ public abstract class CheckImpl implements Check {
             return;
         }
 
-        if (mitigate && data.isOpenInventory() && !data.isInventoryMitigated()) {
+        if (!data.isOpenInventory()) return;
+
+        if (mitigate) {
+            if (data.isInventoryMitigated()) return;
             data.setInventoryMitigated(true);
             player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
+        } else {
+            data.setOpenInventory(false);
         }
     }
 
