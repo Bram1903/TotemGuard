@@ -39,8 +39,8 @@ public final class CacheKeys {
         return PREFIX + "checks:" + uuid;
     }
 
-    public static String alertsToggle(UUID uuid) {
-        return PREFIX + "alerts-toggle:" + uuid;
+    public static String alertsPref(UUID uuid) {
+        return PREFIX + "alerts-pref:" + uuid;
     }
 
     public static String testerToggle(UUID uuid) {
@@ -59,7 +59,6 @@ public final class CacheKeys {
         return PREFIX + "mod-kick:" + uuid + ":" + modId;
     }
 
-    // Bumped on history clear; embedded into every key below to invalidate them all at once.
     public static String historyVersion(UUID uuid) {
         return PREFIX + "hist:ver:" + uuid;
     }

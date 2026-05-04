@@ -53,6 +53,9 @@ public final class MonitorRepository implements PresenceListener {
     private final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, Long>> hostSubscribers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, AtomicInteger> viewerRefcount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, MonitorSnapshot> latestSnapshot = new ConcurrentHashMap<>();
+    // Last snapshot we actually published per target. Lets the heartbeat tick skip the
+    // publish + N-fanout cost when nothing material changed since the previous tick.
+    private final ConcurrentHashMap<UUID, MonitorSnapshot> lastPublishedSnapshot = new ConcurrentHashMap<>();
 
     private final AtomicBoolean started = new AtomicBoolean();
     private @Nullable ScheduledTask publishTask;
@@ -116,6 +119,7 @@ public final class MonitorRepository implements PresenceListener {
         hostSubscribers.clear();
         viewerRefcount.clear();
         latestSnapshot.clear();
+        lastPublishedSnapshot.clear();
     }
 
     public void openLocalMonitor(@NotNull UUID targetUuid) {
@@ -167,7 +171,10 @@ public final class MonitorRepository implements PresenceListener {
         ConcurrentHashMap<UUID, Long> subs = hostSubscribers.get(payload.targetUuid());
         if (subs == null) return;
         subs.remove(payload.viewerInstanceId());
-        if (subs.isEmpty()) hostSubscribers.remove(payload.targetUuid(), subs);
+        if (subs.isEmpty()) {
+            hostSubscribers.remove(payload.targetUuid(), subs);
+            lastPublishedSnapshot.remove(payload.targetUuid());
+        }
     }
 
     private void publishHostUpdates() {
@@ -184,12 +191,22 @@ public final class MonitorRepository implements PresenceListener {
         TGPlayer local = platform.getPlayerRepository().getPlayer(target);
         if (local == null) {
             hostSubscribers.remove(target);
+            lastPublishedSnapshot.remove(target);
             return;
         }
         try {
             MonitorSnapshot snapshot = MonitorSnapshot.captureFrom(
                     local, platform.getNetworkPresenceRepository().identity().displayName());
-            platform.getRedisRepository().publish(Packets.SYNC_MONITOR_UPDATE.packet(), snapshot);
+
+            MonitorSnapshot previous = lastPublishedSnapshot.get(target);
+            if (previous != null && snapshot.contentEquals(previous)) return;
+            lastPublishedSnapshot.put(target, snapshot);
+
+            // Unicast: send to each viewer's server only, not the whole fleet.
+            for (UUID viewerInstance : subs.keySet()) {
+                platform.getRedisRepository().publishToInstance(
+                        viewerInstance, Packets.SYNC_MONITOR_UPDATE.packet(), snapshot);
+            }
         } catch (Exception ex) {
             platform.getLogger().log(Level.WARNING, "Failed to capture monitor snapshot for " + target, ex);
         }
@@ -201,7 +218,10 @@ public final class MonitorRepository implements PresenceListener {
         while (it.hasNext()) {
             Map.Entry<UUID, ConcurrentHashMap<UUID, Long>> entry = it.next();
             entry.getValue().entrySet().removeIf(viewerEntry -> viewerEntry.getValue() <= now);
-            if (entry.getValue().isEmpty()) it.remove();
+            if (entry.getValue().isEmpty()) {
+                it.remove();
+                lastPublishedSnapshot.remove(entry.getKey());
+            }
         }
     }
 
@@ -232,6 +252,7 @@ public final class MonitorRepository implements PresenceListener {
     public void onPlayerOffline(UUID playerUuid, RemotePlayerEntry lastKnown) {
         hostSubscribers.remove(playerUuid);
         latestSnapshot.remove(playerUuid);
+        lastPublishedSnapshot.remove(playerUuid);
         if (platform.getGuiManager() != null) {
             platform.getGuiManager().closeMonitor(playerUuid);
         }

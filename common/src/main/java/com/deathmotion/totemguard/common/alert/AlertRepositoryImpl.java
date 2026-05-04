@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.alert;
 
 import com.deathmotion.totemguard.api.alert.AlertRepository;
+import com.deathmotion.totemguard.api.config.key.ConfigKey;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.check.CheckImpl;
@@ -31,12 +32,14 @@ import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncAlertMessagePacket;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncFocusAlertPacket;
 import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,6 +53,8 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
 
     @Getter
     private final ConcurrentHashMap<UUID, PlatformPlayer> enabledAlerts = new ConcurrentHashMap<>();
+
+    private final Set<UUID> localOnlyAlerts = ConcurrentHashMap.newKeySet();
 
     @Getter
     private final RealtimeAlertRoster realtimeRoster = new RealtimeAlertRoster();
@@ -67,12 +72,17 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
         return enabledAlerts.containsKey(uuid);
     }
 
+    public boolean isLocalOnly(UUID uuid) {
+        return localOnlyAlerts.contains(uuid);
+    }
+
     @Override
     public boolean toggleAlerts(UUID uuid) {
         if (enabledAlerts.containsKey(uuid)) {
             PlatformPlayer user = enabledAlerts.remove(uuid);
+            localOnlyAlerts.remove(uuid);
             if (user != null) {
-                sendToggleAlertMessage(user, false);
+                sendStatusMessage(user, MessagesKeys.ALERTS_DISABLED);
             }
             return false;
         }
@@ -81,12 +91,44 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
         if (platformPlayer == null) return false;
 
         enabledAlerts.put(uuid, platformPlayer);
-        sendToggleAlertMessage(platformPlayer, true);
+        sendStatusMessage(platformPlayer, localOnlyAlerts.contains(uuid)
+                ? MessagesKeys.ALERTS_ENABLED_LOCAL_ONLY
+                : MessagesKeys.ALERTS_ENABLED);
         return true;
+    }
+
+    public boolean toggleLocalOnly(UUID uuid) {
+        PlatformPlayer player = enabledAlerts.get(uuid);
+        if (player == null) {
+            player = TGPlatform.getInstance().getPlatformPlayerFactory().create(uuid);
+            if (player == null) return false;
+            enabledAlerts.put(uuid, player);
+        }
+
+        boolean nowLocalOnly;
+        if (localOnlyAlerts.remove(uuid)) {
+            nowLocalOnly = false;
+        } else {
+            localOnlyAlerts.add(uuid);
+            nowLocalOnly = true;
+        }
+        sendStatusMessage(player, nowLocalOnly
+                ? MessagesKeys.ALERTS_LOCAL_ONLY_ENABLED
+                : MessagesKeys.ALERTS_LOCAL_ONLY_DISABLED);
+        return nowLocalOnly;
+    }
+
+    public void primeLocalOnly(UUID uuid, boolean localOnly) {
+        if (localOnly) {
+            localOnlyAlerts.add(uuid);
+        } else {
+            localOnlyAlerts.remove(uuid);
+        }
     }
 
     public void removeUser(UUID uuid) {
         enabledAlerts.remove(uuid);
+        localOnlyAlerts.remove(uuid);
         realtimeRoster.remove(uuid);
 
         PlayerChatBuffer playerChatBuffer = chatBuffers.remove(uuid);
@@ -101,10 +143,10 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
         Component realtimeMessage = AlertBuilder.build(check, violations, debug);
         realtimeRoster.deliver(violatorUuid, realtimeMessage);
 
-        if (platform.getRedisRepository().shouldSend(MessagingTopic.ALERTS) && violatorName != null) {
+        if (platform.getRedisRepository().isEnabled() && violatorName != null) {
             platform.getScheduler().runAsyncTask(() -> platform.getRedisRepository().publish(
-                    Packets.SYNC_ALERT_MESSAGE.packet(),
-                    SyncAlertMessagePacket.Payload.realtime(violatorUuid, violatorName, realtimeMessage)
+                    Packets.SYNC_FOCUS_ALERT.packet(),
+                    new SyncFocusAlertPacket.Payload(violatorUuid, violatorName, realtimeMessage)
             ));
         }
 
@@ -144,32 +186,24 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
     }
 
     public void acceptRemoteAlert(SyncAlertMessagePacket.Payload payload) {
-        Component message = payload.component();
-        UUID violatorUuid = payload.violatorUuid();
-
-        if (payload.realtime()) {
-            if (violatorUuid == null) return;
-            for (AlertSubscription sub : realtimeRoster.matching(violatorUuid)) {
-                if (sub.filter() instanceof AlertFilter.Violator) {
-                    sub.viewer().sendMessage(message);
-                }
-            }
-            return;
-        }
-
-        deliverToBroadcastViewers(violatorUuid, message);
+        deliverToBroadcastViewers(payload.violatorUuid(), payload.component(), true);
     }
 
-    private void sendToggleAlertMessage(PlatformPlayer platformPlayer, boolean enabled) {
-        platformPlayer.sendMessage(
-                messageService.getComponent(
-                        enabled ? MessagesKeys.ALERTS_ENABLED : MessagesKeys.ALERTS_DISABLED
-                )
-        );
+    public void acceptRemoteFocusAlert(SyncFocusAlertPacket.Payload payload) {
+        UUID violatorUuid = payload.violatorUuid();
+        Component message = payload.component();
+        for (AlertSubscription sub : realtimeRoster.matching(violatorUuid)) {
+            if (!(sub.filter() instanceof AlertFilter.Violator)) continue;
+            sub.viewer().sendMessage(message);
+        }
+    }
+
+    private void sendStatusMessage(PlatformPlayer platformPlayer, ConfigKey<String> key) {
+        platformPlayer.sendMessage(messageService.getComponent(key));
     }
 
     private void broadcastFlag(UUID violatorUuid, String violatorName, Component message) {
-        deliverToBroadcastViewers(violatorUuid, message);
+        deliverToBroadcastViewers(violatorUuid, message, false);
 
         if (!platform.getRedisRepository().shouldSend(MessagingTopic.ALERTS)) {
             return;
@@ -194,9 +228,10 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
         );
     }
 
-    private void deliverToBroadcastViewers(@Nullable UUID violatorUuid, Component message) {
+    private void deliverToBroadcastViewers(@Nullable UUID violatorUuid, Component message, boolean remote) {
         for (Map.Entry<UUID, PlatformPlayer> entry : enabledAlerts.entrySet()) {
             UUID viewerUuid = entry.getKey();
+            if (remote && localOnlyAlerts.contains(viewerUuid)) continue;
             AlertSubscription rt = realtimeRoster.get(viewerUuid);
             if (rt == null) {
                 entry.getValue().sendMessage(message);

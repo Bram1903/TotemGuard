@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public record MonitorSnapshot(
@@ -98,5 +99,27 @@ public record MonitorSnapshot(
 
     public @NotNull ItemStack offhandItem() {
         return itemAt(InventoryConstants.SLOT_OFFHAND);
+    }
+
+    /**
+     * Field-by-field equality excluding {@link #capturedAtMillis}, used to skip publishing
+     * heartbeat snapshots that didn't change anything material since the last tick.
+     */
+    public boolean contentEquals(@NotNull MonitorSnapshot other) {
+        return selectedHotbarIndex == other.selectedHotbarIndex
+                && mainHandSlot == other.mainHandSlot
+                && inventoryOpen == other.inventoryOpen
+                && keepAlivePing == other.keepAlivePing
+                && transactionPing == other.transactionPing
+                && pendingTransactionCount == other.pendingTransactionCount
+                && carriedItemSlot == other.carriedItemSlot
+                && targetUuid.equals(other.targetUuid)
+                && playerName.equals(other.playerName)
+                && serverName.equals(other.serverName)
+                && clientVersion.equals(other.clientVersion)
+                && clientBrand.equals(other.clientBrand)
+                && lastIssuer.equals(other.lastIssuer)
+                && Objects.equals(carriedItem, other.carriedItem)
+                && inventoryItems.equals(other.inventoryItems);
     }
 }

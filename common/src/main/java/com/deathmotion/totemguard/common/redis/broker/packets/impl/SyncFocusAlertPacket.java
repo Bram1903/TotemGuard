@@ -20,44 +20,36 @@ package com.deathmotion.totemguard.common.redis.broker.packets.impl;
 
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
-import com.deathmotion.totemguard.common.redis.broker.packets.PacketIO;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public class SyncAlertMessagePacket extends Packet<SyncAlertMessagePacket.Payload> {
+public class SyncFocusAlertPacket extends Packet<SyncFocusAlertPacket.Payload> {
 
-    public SyncAlertMessagePacket(int id) {
-        super(id, MessagingTopic.ALERTS);
+    public SyncFocusAlertPacket(int id) {
+        super(id, MessagingTopic.FOCUS);
     }
 
     @Override
     public Payload read(ByteArrayDataInput input) {
-        UUID violatorUuid = PacketIO.readOptionalUUID(input);
-        String violatorName = PacketIO.readOptionalString(input);
+        UUID violatorUuid = new UUID(input.readLong(), input.readLong());
+        String violatorName = input.readUTF();
         Component component = GsonComponentSerializer.gson().deserialize(input.readUTF());
         return new Payload(violatorUuid, violatorName, component);
     }
 
     @Override
     public void writeData(ByteArrayDataOutput output, Payload payload) {
-        PacketIO.writeOptionalUUID(output, payload.violatorUuid);
-        PacketIO.writeOptionalString(output, payload.violatorName);
+        output.writeLong(payload.violatorUuid.getMostSignificantBits());
+        output.writeLong(payload.violatorUuid.getLeastSignificantBits());
+        output.writeUTF(payload.violatorName);
         output.writeUTF(GsonComponentSerializer.gson().serialize(payload.component));
     }
 
-    public record Payload(@Nullable UUID violatorUuid, @Nullable String violatorName, Component component) {
-
-        public static Payload broadcast(Component component) {
-            return new Payload(null, null, component);
-        }
-
-        public static Payload flag(UUID violatorUuid, String violatorName, Component component) {
-            return new Payload(violatorUuid, violatorName, component);
-        }
+    public record Payload(@NotNull UUID violatorUuid, @NotNull String violatorName, @NotNull Component component) {
     }
 }

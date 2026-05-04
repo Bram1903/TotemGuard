@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
+import com.deathmotion.totemguard.common.database.model.StaffAlertPref;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -55,6 +56,13 @@ public final class AlertCommand extends AbstractCommand {
                         .permission(perm("alerts"))
                         .handler(this::toggleAlerts)
         );
+        manager.command(
+                base(manager)
+                        .literal("alerts")
+                        .literal("local")
+                        .permission(perm("alerts"))
+                        .handler(this::toggleLocalOnly)
+        );
     }
 
     private void toggleAlerts(final @NotNull CommandContext<Sender> context) {
@@ -63,15 +71,32 @@ public final class AlertCommand extends AbstractCommand {
             return;
         }
 
-        boolean enabled = alertRepository.toggleAlerts(sender.getUniqueId());
+        UUID uuid = sender.getUniqueId();
+        boolean enabled = alertRepository.toggleAlerts(uuid);
+        boolean localOnly = alertRepository.isLocalOnly(uuid);
+        persistPreference(uuid, enabled, localOnly);
+    }
 
+    private void toggleLocalOnly(final @NotNull CommandContext<Sender> context) {
+        final Sender sender = context.sender();
+        if (!requirePlayer(sender)) {
+            return;
+        }
+
+        UUID uuid = sender.getUniqueId();
+        boolean localOnly = alertRepository.toggleLocalOnly(uuid);
+        boolean enabled = alertRepository.hasAlertsEnabled(uuid);
+        persistPreference(uuid, enabled, localOnly);
+    }
+
+    private void persistPreference(UUID uuid, boolean enabled, boolean localOnly) {
+        StaffAlertPref pref = new StaffAlertPref(enabled, localOnly);
         platform.getScheduler().runAsyncTask(() -> {
-            UUID uuid = sender.getUniqueId();
-            cacheManager.put(CacheKeys.alertsToggle(uuid),
-                    enabled, CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+            cacheManager.put(CacheKeys.alertsPref(uuid),
+                    pref, CacheCodecs.STAFF_ALERT_PREF, ALERTS_TOGGLE_TTL);
             if (platform.getDatabaseRepository().isConnected()) {
                 try {
-                    platform.getDatabaseRepository().upsertStaffAlertPref(uuid, enabled);
+                    platform.getDatabaseRepository().upsertStaffAlertPref(uuid, enabled, localOnly);
                 } catch (Exception ex) {
                     platform.getLogger().warning(
                             "Failed to persist alert toggle for " + uuid + ": " + ex.getMessage());

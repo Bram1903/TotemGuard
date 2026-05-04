@@ -37,7 +37,6 @@ public final class Sql {
                     "  last_name = VALUES(last_name), " +
                     "  last_seen = VALUES(last_seen)";
 
-    // Order by last_seen DESC so the active holder of a recycled name wins when an old row still lingers.
     public static final String SELECT_PLAYER_BY_NAME =
             "SELECT id, uuid, last_name, first_seen, last_seen FROM tg_players " +
                     "WHERE last_name_lower = LOWER(?) " +
@@ -47,14 +46,15 @@ public final class Sql {
             "SELECT id, uuid, last_name, first_seen, last_seen FROM tg_players WHERE uuid = ? LIMIT 1";
 
     public static final String UPSERT_STAFF_ALERT_PREF =
-            "INSERT INTO tg_staff_alert_prefs (player_uuid, alerts_enabled, updated_at) " +
-                    "VALUES (?, ?, ?) " +
+            "INSERT INTO tg_staff_alert_prefs (player_uuid, alerts_enabled, local_only, updated_at) " +
+                    "VALUES (?, ?, ?, ?) " +
                     "ON DUPLICATE KEY UPDATE " +
                     "  alerts_enabled = VALUES(alerts_enabled), " +
-                    "  updated_at = VALUES(updated_at)";
+                    "  local_only     = VALUES(local_only), " +
+                    "  updated_at     = VALUES(updated_at)";
 
     public static final String SELECT_STAFF_ALERT_PREF =
-            "SELECT alerts_enabled FROM tg_staff_alert_prefs WHERE player_uuid = ?";
+            "SELECT alerts_enabled, local_only FROM tg_staff_alert_prefs WHERE player_uuid = ?";
 
     public static final String UPSERT_VPN_CACHE =
             "INSERT INTO tg_vpn_cache (ip_hash, is_vpn, provider, cached_at) " +

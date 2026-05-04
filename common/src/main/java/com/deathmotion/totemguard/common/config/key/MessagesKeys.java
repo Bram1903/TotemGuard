@@ -38,7 +38,10 @@ public final class MessagesKeys {
     public static final ConfigKey<String> ALERTS_HOVER = ConfigKey.string("alerts.hover");
     public static final ConfigKey<String> ALERTS_COMMAND = ConfigKey.string("alerts.command");
     public static final ConfigKey<String> ALERTS_ENABLED = ConfigKey.string("alerts.enabled");
+    public static final ConfigKey<String> ALERTS_ENABLED_LOCAL_ONLY = ConfigKey.string("alerts.enabled-local-only");
     public static final ConfigKey<String> ALERTS_DISABLED = ConfigKey.string("alerts.disabled");
+    public static final ConfigKey<String> ALERTS_LOCAL_ONLY_ENABLED = ConfigKey.string("alerts.local-only-enabled");
+    public static final ConfigKey<String> ALERTS_LOCAL_ONLY_DISABLED = ConfigKey.string("alerts.local-only-disabled");
     public static final ConfigKey<String> TESTER_ENABLED = ConfigKey.string("alerts.tester.enabled");
     public static final ConfigKey<String> TESTER_DISABLED = ConfigKey.string("alerts.tester.disabled");
 

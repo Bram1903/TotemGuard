@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.redis.broker.RedisBroker;
 import com.deathmotion.totemguard.common.redis.broker.handlers.*;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -44,12 +45,16 @@ public final class RedisRepositoryImpl implements RedisRepository {
     private volatile @Nullable RedisOptions options;
     private volatile @Nullable RedisBroker broker;
 
-    public RedisRepositoryImpl() {
+    public RedisRepositoryImpl(@NotNull UUID instanceId) {
         this.manager = new RedisConnectionManager();
         this.registry = new PacketRegistry();
-        this.identifier = UUID.randomUUID().toString();
+        // Use the shared ServerIdentity instance id so the broker's own-message rejection
+        // and the per-instance unicast channel suffix line up with what publishers use
+        // (e.g. MonitorRepository.publishSubscribe sends presence.identity().instanceId()).
+        this.identifier = instanceId.toString();
         this.handlers = List.of(
                 new SyncAlertMessageHandler(TGPlatform.getInstance(), this, registry),
+                new SyncFocusAlertHandler(TGPlatform.getInstance(), this, registry),
                 new SyncUpdateAvailableHandler(TGPlatform.getInstance(), this, registry),
                 new SyncServerOfflineHandler(TGPlatform.getInstance(), this, registry),
                 new SyncPlayerJoinHandler(TGPlatform.getInstance(), this, registry),
@@ -80,7 +85,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         if (current == null || !current.enabled()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().send();
-            case UPDATES, PRESENCE -> true;
+            case FOCUS, UPDATES, PRESENCE -> true;
         };
     }
 
@@ -89,7 +94,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         if (current == null || !current.enabled()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().receive();
-            case UPDATES, PRESENCE -> true;
+            case FOCUS, UPDATES, PRESENCE -> true;
         };
     }
 
@@ -110,6 +115,12 @@ public final class RedisRepositoryImpl implements RedisRepository {
         RedisBroker current = this.broker;
         if (current == null) return CompletableFuture.completedFuture(false);
         return current.publish(packet, payload);
+    }
+
+    public <T> CompletionStage<Boolean> publishToInstance(UUID targetInstance, Packet<T> packet, T payload) {
+        RedisBroker current = this.broker;
+        if (current == null) return CompletableFuture.completedFuture(false);
+        return current.publishToInstance(targetInstance, packet, payload);
     }
 
     public synchronized void start() {

@@ -30,7 +30,8 @@ public enum Packets {
     SYNC_TELEPORT_REQUEST(new SyncTeleportRequestPacket(7)),
     SYNC_MONITOR_SUBSCRIBE(new SyncMonitorSubscribePacket(8)),
     SYNC_MONITOR_UNSUBSCRIBE(new SyncMonitorUnsubscribePacket(9)),
-    SYNC_MONITOR_UPDATE(new SyncMonitorUpdatePacket(10));
+    SYNC_MONITOR_UPDATE(new SyncMonitorUpdatePacket(10)),
+    SYNC_FOCUS_ALERT(new SyncFocusAlertPacket(11));
 
     private final Packet<?> packet;
 

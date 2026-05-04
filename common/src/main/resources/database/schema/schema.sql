@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS tg_punishments (
 CREATE TABLE IF NOT EXISTS tg_staff_alert_prefs (
     player_uuid     BINARY(16) NOT NULL,
     alerts_enabled  TINYINT UNSIGNED NOT NULL,
+    local_only      TINYINT UNSIGNED NOT NULL DEFAULT 0,
     updated_at      BIGINT NOT NULL,
     PRIMARY KEY (player_uuid)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;

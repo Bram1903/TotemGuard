@@ -13,7 +13,10 @@ prefix: "&#FBAF00&lTG &r&#6E6651»"
 
 alerts:
   enabled: "%prefix% &#6FB04AAlerts enabled"
+  enabled-local-only: "%prefix% &#6FB04AAlerts enabled &#B8AC8F(local only)"
   disabled: "%prefix% &#D4452CAlerts disabled"
+  local-only-enabled: "%prefix% &#6FB04ANow only showing alerts from your local server"
+  local-only-disabled: "%prefix% &#6FB04AAlerts now showing from all servers"
 
   tester:
     enabled: "%prefix% &#6FB04ATester alerts enabled &#B8AC8F(only your own flags)"

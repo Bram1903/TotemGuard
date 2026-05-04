@@ -288,7 +288,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     @Blocking
-    public @Nullable Boolean findStaffAlertPref(UUID uuid) throws SQLException {
+    public @Nullable StaffAlertPref findStaffAlertPref(UUID uuid) throws SQLException {
         requireEnabled();
         StaffAlertPrefDao prefs = this.staffAlertPrefDao;
         if (prefs == null) throw new SQLException("Database not ready");
@@ -296,11 +296,11 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     @Blocking
-    public void upsertStaffAlertPref(UUID uuid, boolean enabled) throws SQLException {
+    public void upsertStaffAlertPref(UUID uuid, boolean enabled, boolean localOnly) throws SQLException {
         requireEnabled();
         StaffAlertPrefDao prefs = this.staffAlertPrefDao;
         if (prefs == null) throw new SQLException("Database not ready");
-        prefs.upsert(uuid, enabled, System.currentTimeMillis());
+        prefs.upsert(uuid, enabled, localOnly, System.currentTimeMillis());
     }
 
     @Blocking
@@ -360,9 +360,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         return alerts.countByPlayerAndCheck(uuid, checkName);
     }
 
-    // Returns [alertsRemoved, punishmentsRemoved]. Pending writes still in the batched
-    // AlertWriter queue will land after this returns — clear offline players only if
-    // strict consistency matters.
     @Blocking
     public long[] deleteHistory(UUID uuid) throws SQLException {
         requireEnabled();

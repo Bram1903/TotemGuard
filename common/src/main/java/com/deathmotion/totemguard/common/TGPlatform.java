@@ -151,7 +151,12 @@ public abstract class TGPlatform {
         configRepository = new ConfigRepositoryImpl();
         ModRegistry.load();
         placeholderRepository = new PlaceholderRepositoryImpl();
-        redisRepository = new RedisRepositoryImpl();
+        // ServerIdentity is shared between RedisRepository (broker sender id + unicast
+        // channel suffix) and NetworkPresenceRepository (publisher of the same instance
+        // id in subscribe packets). They MUST be the same UUID, otherwise per-instance
+        // unicast channels don't line up.
+        ServerIdentity serverIdentity = ServerIdentity.create(configRepository.configView().server());
+        redisRepository = new RedisRepositoryImpl(serverIdentity.instanceId());
         databaseRepository = new DatabaseRepositoryImpl();
         cacheRepository = new CacheRepositoryImpl();
         messageService = new MessageService();
@@ -167,10 +172,7 @@ public abstract class TGPlatform {
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
-        networkPresenceRepository = new NetworkPresenceRepository(
-                this,
-                ServerIdentity.create(configRepository.configView().server())
-        );
+        networkPresenceRepository = new NetworkPresenceRepository(this, serverIdentity);
         networkPresenceRepository.addListener(alertRepository);
         networkPresenceRepository.start();
 

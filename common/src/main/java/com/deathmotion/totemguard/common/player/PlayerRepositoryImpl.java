@@ -31,6 +31,7 @@ import com.deathmotion.totemguard.common.cache.data.FocusTarget;
 import com.deathmotion.totemguard.common.commands.impl.FocusCommand;
 import com.deathmotion.totemguard.common.commands.impl.TesterCommand;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.database.model.StaffAlertPref;
 import com.deathmotion.totemguard.common.event.api.impl.TGFocusEventImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
@@ -117,8 +118,12 @@ public final class PlayerRepositoryImpl implements UserRepository {
         if (!wantsAlerts && !wantsTester && !canFocus) return;
 
         platform.getScheduler().runAsyncTask(() -> {
-            if (wantsAlerts && resolveAlertsEnabled(uuid)) {
-                platform.getAlertRepository().toggleAlerts(uuid);
+            if (wantsAlerts) {
+                StaffAlertPref pref = resolveStaffAlertPref(uuid);
+                platform.getAlertRepository().primeLocalOnly(uuid, pref.localOnly());
+                if (pref.enabled()) {
+                    platform.getAlertRepository().toggleAlerts(uuid);
+                }
             }
 
             RealtimeAlertRoster roster = platform.getAlertRepository().getRealtimeRoster();
@@ -174,20 +179,17 @@ public final class PlayerRepositoryImpl implements UserRepository {
         return firstTimeDefault;
     }
 
-    /**
-     * Cache → DB → first-time default (on).
-     */
-    private boolean resolveAlertsEnabled(UUID uuid) {
-        Boolean cached = cacheRepository.getAndRefresh(
-                CacheKeys.alertsToggle(uuid), CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+    private StaffAlertPref resolveStaffAlertPref(UUID uuid) {
+        StaffAlertPref cached = cacheRepository.getAndRefresh(
+                CacheKeys.alertsPref(uuid), CacheCodecs.STAFF_ALERT_PREF, ALERTS_TOGGLE_TTL);
         if (cached != null) return cached;
 
         if (platform.getDatabaseRepository().isConnected()) {
             try {
-                Boolean stored = platform.getDatabaseRepository().findStaffAlertPref(uuid);
+                StaffAlertPref stored = platform.getDatabaseRepository().findStaffAlertPref(uuid);
                 if (stored != null) {
-                    cacheRepository.put(CacheKeys.alertsToggle(uuid), stored,
-                            CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+                    cacheRepository.put(CacheKeys.alertsPref(uuid), stored,
+                            CacheCodecs.STAFF_ALERT_PREF, ALERTS_TOGGLE_TTL);
                     return stored;
                 }
             } catch (Exception ex) {
@@ -196,12 +198,13 @@ public final class PlayerRepositoryImpl implements UserRepository {
             }
         }
 
-        boolean firstTimeDefault = true;
-        cacheRepository.put(CacheKeys.alertsToggle(uuid), firstTimeDefault,
-                CacheCodecs.BOOLEAN, ALERTS_TOGGLE_TTL);
+        StaffAlertPref firstTimeDefault = new StaffAlertPref(true, false);
+        cacheRepository.put(CacheKeys.alertsPref(uuid), firstTimeDefault,
+                CacheCodecs.STAFF_ALERT_PREF, ALERTS_TOGGLE_TTL);
         if (platform.getDatabaseRepository().isConnected()) {
             try {
-                platform.getDatabaseRepository().upsertStaffAlertPref(uuid, firstTimeDefault);
+                platform.getDatabaseRepository().upsertStaffAlertPref(
+                        uuid, firstTimeDefault.enabled(), firstTimeDefault.localOnly());
             } catch (Exception ex) {
                 platform.getLogger().warning(
                         "Failed to persist default staff alert preference for " + uuid + ": " + ex.getMessage());

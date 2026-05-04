@@ -16,29 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.redis.broker;
+package com.deathmotion.totemguard.common.database.model;
 
-public enum MessagingTopic {
-
-    ALERTS("alerts", true),
-    FOCUS("focus", false),
-    UPDATES("updates", false),
-    PRESENCE("presence", false);
-
-    public static final String PREFIX = "totemguard";
-
-    private final String defaultName;
-    private final boolean overridable;
-
-    MessagingTopic(String defaultName, boolean overridable) {
-        this.defaultName = defaultName;
-        this.overridable = overridable;
-    }
-
-    public String channelName(String override) {
-        String name = (overridable && override != null && !override.isBlank())
-                ? override.trim()
-                : defaultName;
-        return PREFIX + ":" + name;
-    }
+public record StaffAlertPref(boolean enabled, boolean localOnly) {
 }

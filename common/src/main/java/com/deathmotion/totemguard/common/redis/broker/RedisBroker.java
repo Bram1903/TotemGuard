@@ -33,12 +33,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implements ConnectionStateListener {
+
+    /**
+     * Prefix for per-server unicast channels (e.g. monitor snapshots routed only to the
+     * viewer's server). Each broker subscribes to {@code totemguard:unicast:<myInstanceId>}
+     * so senders can target a specific instance instead of fanning the message out to the
+     * whole fleet.
+     */
+    private static final String UNICAST_CHANNEL_PREFIX = MessagingTopic.PREFIX + ":unicast:";
 
     private final Logger logger = TGPlatform.getInstance().getLogger();
     private final PacketRegistry registry;
@@ -62,9 +71,14 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
             channelBytesByTopic.put(topic, channelName.getBytes(StandardCharsets.UTF_8));
             uniqueChannels.add(channelName);
         }
+        uniqueChannels.add(UNICAST_CHANNEL_PREFIX + identifier);
         this.subscribedChannels = uniqueChannels.stream()
                 .map(name -> name.getBytes(StandardCharsets.UTF_8))
                 .toArray(byte[][]::new);
+    }
+
+    private static byte[] unicastChannelFor(UUID targetInstance) {
+        return (UNICAST_CHANNEL_PREFIX + targetInstance).getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -122,6 +136,40 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
                         logger.log(Level.WARNING,
                                 "Failed to publish Redis packet " + packet.getClass().getSimpleName()
                                         + ": " + error.getMessage());
+                        return false;
+                    }
+                    return true;
+                });
+    }
+
+    /**
+     * Publishes a packet to a single server instance via its unicast channel rather than
+     * the topic-wide broadcast channel. Used for high-volume per-viewer streams (monitor
+     * snapshots) where fanning the bytes out to every server in the fleet would waste
+     * bandwidth on N-1 uninterested peers.
+     */
+    public <T> CompletionStage<Boolean> publishToInstance(UUID targetInstance, Packet<T> packet, T payload) {
+        RedisConnection current = this.connection;
+        if (current == null || !current.isOpen()) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        byte[] frame;
+        try {
+            frame = PacketCodec.encode(identifier, packet, payload);
+        } catch (Exception ex) {
+            logger.log(Level.WARNING,
+                    "Failed to encode Redis packet " + packet.getClass().getSimpleName(), ex);
+            return CompletableFuture.completedFuture(false);
+        }
+
+        return current.commands().async().publish(unicastChannelFor(targetInstance), frame)
+                .toCompletableFuture()
+                .handle((received, error) -> {
+                    if (error != null) {
+                        logger.log(Level.WARNING,
+                                "Failed to publish Redis packet " + packet.getClass().getSimpleName()
+                                        + " to " + targetInstance + ": " + error.getMessage());
                         return false;
                     }
                     return true;

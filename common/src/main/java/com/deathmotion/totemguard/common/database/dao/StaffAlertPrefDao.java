@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.database.dao;
 
 import com.deathmotion.totemguard.common.database.DatabaseConnectionManager;
 import com.deathmotion.totemguard.common.database.Sql;
+import com.deathmotion.totemguard.common.database.model.StaffAlertPref;
 import com.deathmotion.totemguard.common.database.util.UuidBytes;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
@@ -42,24 +43,27 @@ public final class StaffAlertPrefDao {
      * @return {@code null} if the UUID has no stored preference yet.
      */
     @Blocking
-    public @Nullable Boolean find(UUID uuid) throws SQLException {
+    public @Nullable StaffAlertPref find(UUID uuid) throws SQLException {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.SELECT_STAFF_ALERT_PREF)) {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) return null;
-                return rs.getInt(1) != 0;
+                boolean enabled = rs.getInt(1) != 0;
+                boolean localOnly = rs.getInt(2) != 0;
+                return new StaffAlertPref(enabled, localOnly);
             }
         }
     }
 
     @Blocking
-    public void upsert(UUID uuid, boolean enabled, long nowEpochMs) throws SQLException {
+    public void upsert(UUID uuid, boolean enabled, boolean localOnly, long nowEpochMs) throws SQLException {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.UPSERT_STAFF_ALERT_PREF)) {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
             stmt.setInt(2, enabled ? 1 : 0);
-            stmt.setLong(3, nowEpochMs);
+            stmt.setInt(3, localOnly ? 1 : 0);
+            stmt.setLong(4, nowEpochMs);
             stmt.executeUpdate();
         }
     }

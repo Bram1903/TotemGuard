@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.cache.data.FocusTarget;
 import com.deathmotion.totemguard.common.database.model.AlertCheckSummary;
 import com.deathmotion.totemguard.common.database.model.AlertRecord;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
+import com.deathmotion.totemguard.common.database.model.StaffAlertPref;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,6 +47,20 @@ public final class CacheCodecs {
         @Override
         public Boolean decode(byte[] bytes) {
             return bytes.length > 0 && bytes[0] != 0;
+        }
+    };
+
+    public static final Codec<StaffAlertPref> STAFF_ALERT_PREF = new Codec<>() {
+        @Override
+        public byte[] encode(StaffAlertPref value) {
+            int bits = (value.enabled() ? 0x1 : 0) | (value.localOnly() ? 0x2 : 0);
+            return new byte[]{(byte) bits};
+        }
+
+        @Override
+        public StaffAlertPref decode(byte[] bytes) {
+            int bits = bytes.length > 0 ? bytes[0] : 0;
+            return new StaffAlertPref((bits & 0x1) != 0, (bits & 0x2) != 0);
         }
     };
 
