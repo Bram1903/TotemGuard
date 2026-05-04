@@ -40,7 +40,6 @@ public final class SchemaInitializer {
         boolean previousAutoCommit = connection.getAutoCommit();
         try {
             connection.setAutoCommit(true);
-            new LegacyTableMigrator().migrate(connection);
             try (Statement stmt = connection.createStatement()) {
                 for (String sql : statements) {
                     stmt.execute(sql);
