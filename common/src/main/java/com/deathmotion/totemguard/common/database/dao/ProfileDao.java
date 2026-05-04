@@ -25,10 +25,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
 
-/**
- * Reuses existing rows when <player, server, brand, version> already exists;
- * otherwise inserts a fresh one.
- */
 public final class ProfileDao {
 
     private final DatabaseConnectionManager connection;
@@ -37,28 +33,16 @@ public final class ProfileDao {
         this.connection = connection;
     }
 
-    private static String truncate(String value, int max) {
-        if (value.length() <= max) return value;
-        return value.substring(0, max);
-    }
-
     @Blocking
-    public long resolveOrCreate(
-            int playerId,
-            int serverId,
-            String clientBrand,
-            int clientVersion
-    ) throws SQLException {
-        String brand = truncate(clientBrand, 64);
-
+    public long resolveOrCreate(int playerId, int serverId, int brandId, int clientVersion) throws SQLException {
         try (Connection c = connection.borrow()) {
-            Long existing = findExisting(c, playerId, serverId, brand, clientVersion);
+            Long existing = findExisting(c, playerId, serverId, brandId, clientVersion);
             if (existing != null) return existing;
 
             try (PreparedStatement insert = c.prepareStatement(Sql.INSERT_PROFILE, Statement.RETURN_GENERATED_KEYS)) {
                 insert.setInt(1, playerId);
                 insert.setInt(2, serverId);
-                insert.setString(3, brand);
+                insert.setInt(3, brandId);
                 insert.setInt(4, clientVersion);
                 try {
                     insert.executeUpdate();
@@ -66,8 +50,7 @@ public final class ProfileDao {
                         if (keys.next()) return keys.getLong(1);
                     }
                 } catch (SQLException ex) {
-                    // Two servers may race on the same profile tuple. Fall back to a lookup.
-                    Long raced = findExisting(c, playerId, serverId, brand, clientVersion);
+                    Long raced = findExisting(c, playerId, serverId, brandId, clientVersion);
                     if (raced != null) return raced;
                     throw ex;
                 }
@@ -76,17 +59,11 @@ public final class ProfileDao {
         throw new SQLException("tg_profiles insert did not return a generated key");
     }
 
-    private @Nullable Long findExisting(
-            Connection c,
-            int playerId,
-            int serverId,
-            String brand,
-            int clientVersion
-    ) throws SQLException {
+    private @Nullable Long findExisting(Connection c, int playerId, int serverId, int brandId, int clientVersion) throws SQLException {
         try (PreparedStatement lookup = c.prepareStatement(Sql.SELECT_PROFILE_ID)) {
             lookup.setInt(1, playerId);
             lookup.setInt(2, serverId);
-            lookup.setString(3, brand);
+            lookup.setInt(3, brandId);
             lookup.setInt(4, clientVersion);
             try (ResultSet rs = lookup.executeQuery()) {
                 if (rs.next()) return rs.getLong(1);

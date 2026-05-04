@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
 import com.deathmotion.totemguard.common.database.dao.SchemaInfoDao.TableSize;
+import com.deathmotion.totemguard.common.database.dao.StatsRollupDao;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
@@ -40,6 +41,9 @@ import java.util.concurrent.CompletableFuture;
 public final class StatsRepositoryImpl implements StatsRepository {
 
     static final Duration STATS_TTL = Duration.ofMinutes(2);
+
+    private static final String ALERTS_TABLE = "tg_alerts";
+    private static final String PUNISHMENTS_TABLE = "tg_punishments";
 
     private final TGPlatform platform;
     private final CacheRepositoryImpl cache;
@@ -57,6 +61,12 @@ public final class StatsRepositoryImpl implements StatsRepository {
         String detail = cause.getMessage();
         return Result.failure(ResultError.INTERNAL_ERROR,
                 detail == null || detail.isBlank() ? prefix : prefix + ": " + detail);
+    }
+
+    private static int clampToInt(long value) {
+        if (value <= 0L) return 0;
+        if (value >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        return (int) value;
     }
 
     @Override
@@ -80,18 +90,13 @@ public final class StatsRepositoryImpl implements StatsRepository {
     }
 
     private StatsSnapshot loadAllTime(DatabaseRepositoryImpl db) throws SQLException {
-        Map<String, TableSize> sizes = db.tableSizes();
-        int alerts = estimatedRows(sizes, "tg_alerts");
-        int punishments = estimatedRows(sizes, "tg_punishments");
+        StatsRollupDao.Totals totals = db.statsTotalsAllTime();
+        int alerts = clampToInt(totals.alerts());
+        int punishments = clampToInt(totals.punishments());
         int uniquePlayers = db.countPlayersTotal();
-        long bytes = computeBytes(sizes, alerts, punishments);
-        return new StatsSnapshot(alerts, punishments, uniquePlayers, bytes);
-    }
-
-    private int estimatedRows(Map<String, TableSize> sizes, String tableName) {
-        TableSize t = sizes.get(tableName);
-        if (t == null) return 0;
-        return (int) Math.min(t.rows(), Integer.MAX_VALUE);
+        int flaggedPlayers = db.countPlayersFlaggedTotal();
+        long bytes = totalDiskBytes(db.tableSizes());
+        return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, bytes);
     }
 
     private StatsSnapshot loadWindowed(DatabaseRepositoryImpl db, StatsWindow window) throws SQLException {
@@ -99,24 +104,27 @@ public final class StatsRepositoryImpl implements StatsRepository {
                 "non-all-time StatsWindow must carry a duration");
         long since = System.currentTimeMillis() - duration.toMillis();
 
-        Map<String, TableSize> sizes = db.tableSizes();
-        int alerts = db.countAlertsSince(since);
-        int punishments = db.countPunishmentsSince(since);
+        StatsRollupDao.Totals totals = db.statsTotalsSince(since);
+        int alerts = clampToInt(totals.alerts());
+        int punishments = clampToInt(totals.punishments());
         int uniquePlayers = db.countPlayersActiveSince(since);
-        long bytes = computeBytes(sizes, alerts, punishments);
-        return new StatsSnapshot(alerts, punishments, uniquePlayers, bytes);
+        int flaggedPlayers = db.countPlayersFlaggedSince(since);
+        long bytes = windowedEventBytes(db.tableSizes(), totals);
+        return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, bytes);
     }
 
-    private long computeBytes(Map<String, TableSize> sizes, int alertsInWindow, int punishmentsInWindow) {
-        long bytes = 0;
-        for (TableSize t : sizes.values()) {
-            long rows = switch (t.name()) {
-                case "tg_alerts" -> alertsInWindow;
-                case "tg_punishments" -> punishmentsInWindow;
-                default -> t.rows();
-            };
-            bytes += t.avgRowLength() * Math.max(0L, rows);
-        }
+    private long totalDiskBytes(Map<String, TableSize> sizes) {
+        long bytes = 0L;
+        for (TableSize t : sizes.values()) bytes += t.bytes();
+        return bytes;
+    }
+
+    private long windowedEventBytes(Map<String, TableSize> sizes, StatsRollupDao.Totals totals) {
+        long bytes = 0L;
+        TableSize alertsTable = sizes.get(ALERTS_TABLE);
+        if (alertsTable != null) bytes += alertsTable.avgBytesPerRow() * Math.max(0L, totals.alerts());
+        TableSize punishmentsTable = sizes.get(PUNISHMENTS_TABLE);
+        if (punishmentsTable != null) bytes += punishmentsTable.avgBytesPerRow() * Math.max(0L, totals.punishments());
         return bytes;
     }
 

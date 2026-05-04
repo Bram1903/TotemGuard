@@ -52,6 +52,16 @@ public final class StatisticsScreen extends GuiScreen {
         this.window = window;
     }
 
+    private static Component flaggedPlayersLine(StatsSnapshot snapshot) {
+        long flagged = snapshot.flaggedPlayers();
+        long unique = snapshot.uniquePlayers();
+        Component line = GuiText.line("Flagged players", NumberFormatter.grouped(flagged));
+        if (unique <= 0) return line;
+        double pct = (flagged * 100.0) / unique;
+        String formatted = String.format(java.util.Locale.ROOT, "%.1f%%", pct);
+        return line.append(Component.text(" (" + formatted + ")", Palette.CAPTION));
+    }
+
     private static String formatBytes(long bytes) {
         if (bytes < 1024) return bytes + " B";
         double kb = bytes / 1024.0;
@@ -152,6 +162,7 @@ public final class StatisticsScreen extends GuiScreen {
             lore.add(GuiText.line("Alerts", NumberFormatter.grouped(snapshot.alertCount())));
             lore.add(GuiText.line("Punishments", NumberFormatter.grouped(snapshot.punishmentCount())));
             lore.add(GuiText.line("Unique players", NumberFormatter.grouped(snapshot.uniquePlayers())));
+            lore.add(flaggedPlayersLine(snapshot));
             lore.add(GuiText.line("DB size", formatBytes(snapshot.databaseBytes())));
         }
         lore.add(Component.empty());

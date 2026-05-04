@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.database.dao;
 import com.deathmotion.totemguard.common.database.DatabaseConnectionManager;
 import com.deathmotion.totemguard.common.database.Sql;
 import com.deathmotion.totemguard.common.database.model.StaffAlertPref;
+import com.deathmotion.totemguard.common.database.util.EpochSeconds;
 import com.deathmotion.totemguard.common.database.util.UuidBytes;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
@@ -63,7 +64,7 @@ public final class StaffAlertPrefDao {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
             stmt.setInt(2, enabled ? 1 : 0);
             stmt.setInt(3, localOnly ? 1 : 0);
-            stmt.setLong(4, nowEpochMs);
+            stmt.setInt(4, EpochSeconds.fromMillis(nowEpochMs));
             stmt.executeUpdate();
         }
     }

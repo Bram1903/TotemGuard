@@ -60,7 +60,7 @@ public class ProtocolD extends CheckImpl implements PacketCheck {
 
     private void handleAttack(int targetEntityId) {
         if (targetEntityId != lastAttackedEntityId && ++attacks > 1) {
-            fail("attacks=" + attacks);
+            fail("attacks={0}", attacks);
         }
 
         lastAttackedEntityId = targetEntityId;

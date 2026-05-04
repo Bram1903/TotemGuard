@@ -25,6 +25,8 @@ import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.deathmotion.totemguard.common.database.dao.*;
 import com.deathmotion.totemguard.common.database.model.*;
 import com.deathmotion.totemguard.common.database.schema.SchemaInitializer;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
+import com.deathmotion.totemguard.common.database.util.EpochSeconds;
 import com.deathmotion.totemguard.common.util.ScheduledTask;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
@@ -52,6 +54,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     private volatile @Nullable StaffAlertPrefDao staffAlertPrefDao;
     private volatile @Nullable VpnCacheDao vpnCacheDao;
     private volatile @Nullable SchemaInfoDao schemaInfoDao;
+    private volatile @Nullable StatsRollupDao statsRollupDao;
     private volatile @Nullable AlertWriter alertWriter;
     private volatile @Nullable RetentionSweeper retentionSweeper;
 
@@ -111,8 +114,9 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             StaffAlertPrefDao staffPrefs = new StaffAlertPrefDao(connection);
             VpnCacheDao vpnCache = new VpnCacheDao(connection);
             SchemaInfoDao schemaInfo = new SchemaInfoDao(connection);
-            AlertWriter writer = new AlertWriter(alerts);
-            RetentionSweeper sweeper = new RetentionSweeper(alerts, opts);
+            StatsRollupDao statsRollup = new StatsRollupDao(connection);
+            AlertWriter writer = new AlertWriter(alerts, players, statsRollup);
+            RetentionSweeper sweeper = new RetentionSweeper(connection, vpnCache, opts);
 
             int serverId = catalog.resolveAndCacheThisServerId(opts.serverName());
 
@@ -124,8 +128,12 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             this.staffAlertPrefDao = staffPrefs;
             this.vpnCacheDao = vpnCache;
             this.schemaInfoDao = schemaInfo;
+            this.statsRollupDao = statsRollup;
             this.alertWriter = writer;
             this.retentionSweeper = sweeper;
+            // Reorganize p_future into real monthly partitions before any inserts
+            // so the first alert lands in a pruning-friendly partition.
+            sweeper.bootstrap();
             writer.start();
             sweeper.start();
 
@@ -135,7 +143,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             return true;
         } catch (Exception ex) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
-                    "Database initialization failed — will retry every "
+                    "Database initialization failed, will retry every "
                             + RECONNECT_INTERVAL_SECONDS + "s until reachable ("
                             + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")");
             tearDown();
@@ -176,20 +184,9 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         }
     }
 
-    /**
-     * Upserts the player row and resolves a profile id for the <player, server, brand, version> tuple.
-     * Off main/netty thread only.
-     *
-     * @return {@code [playerId, profileId]}
-     */
     @Blocking
-    public long[] resolveProfile(
-            UUID uuid,
-            String name,
-            String clientBrand,
-            int clientVersion,
-            long nowEpochMs
-    ) throws SQLException {
+    public long[] resolveProfile(UUID uuid, String name, String clientBrand, int clientVersion, long nowEpochMs)
+            throws SQLException {
         requireEnabled();
         PlayerDao players = this.playerDao;
         ProfileDao profiles = this.profileDao;
@@ -198,14 +195,12 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             throw new SQLException("Database not ready");
         }
         int playerId = players.upsertAndResolveId(uuid, name, nowEpochMs);
+        int brandId = catalog.resolveBrandId(clientBrand);
         long profileId = profiles.resolveOrCreate(
-                playerId, catalog.thisServerIdOrThrow(), clientBrand, clientVersion);
+                playerId, catalog.thisServerIdOrThrow(), brandId, clientVersion);
         return new long[]{playerId, profileId};
     }
 
-    /**
-     * Case-insensitive name lookup for offline history browsing. Null if not stored.
-     */
     @Blocking
     public @Nullable PlayerRecord findPlayerByName(String name) throws SQLException {
         requireEnabled();
@@ -222,22 +217,27 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         return players.findByUuid(uuid);
     }
 
+    public void recordAlert(@Nullable Long profileId,
+                            int playerId,
+                            String checkName,
+                            @Nullable String debug,
+                            long createdAt) {
+        recordAlert(profileId, playerId, checkName, debug, null, createdAt);
+    }
+
     /**
-     * Non-blocking enqueue of an alert. Safe to call from any thread.
-     * Alerts with {@code playerId <= 0} are dropped (profile not ready yet).
+     * @param compiledDebug optional precompiled (template, args). When non-null the
+     *                      auto numeric extractor is skipped and the supplied template
+     *                      is interned directly.
      */
-    public void recordAlert(
-            @Nullable Long profileId,
-            int playerId,
-            String checkName,
-            int violations,
-            @Nullable String debug,
-            @Nullable Integer keepalivePing,
-            @Nullable Integer transactionPing,
-            long createdAt
-    ) {
+    public void recordAlert(@Nullable Long profileId,
+                            int playerId,
+                            String checkName,
+                            @Nullable String debug,
+                            @Nullable DebugTemplate.Compiled compiledDebug,
+                            long createdAt) {
         if (!isConnected()) return;
-        if (playerId <= 0) return;
+        if (playerId <= 0 || profileId == null) return;
         AlertWriter writer = this.alertWriter;
         CatalogDao catalog = this.catalogDao;
         if (writer == null || catalog == null) return;
@@ -245,10 +245,13 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
             try {
                 int checkId = catalog.resolveCheckId(checkName);
-                int serverId = catalog.thisServerIdOrThrow();
+                DebugTemplate.Compiled compiled = compiledDebug != null ? compiledDebug : DebugTemplate.compile(debug);
+                Integer debugId = compiled == null ? null : catalog.resolveDebugTemplateId(compiled.template());
+                String debugArgs = compiled == null ? null : compiled.args();
                 writer.submit(new PendingAlert(
-                        profileId, playerId, serverId, checkId, violations, debug,
-                        keepalivePing, transactionPing, createdAt));
+                        profileId, playerId, checkId,
+                        debugId, debugArgs,
+                        EpochSeconds.fromMillis(createdAt)));
             } catch (Exception ex) {
                 TGPlatform.getInstance().getLogger().log(Level.WARNING,
                         "Failed to enqueue alert for " + checkName, ex);
@@ -256,30 +259,32 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         });
     }
 
-    /**
-     * Non-blocking — inserts on the scheduler, no batching.
-     */
-    public void recordPunishment(
-            @Nullable Long profileId,
-            int playerId,
-            String checkName,
-            PunishmentType type,
-            String expandedCommand,
-            @Nullable String debug,
-            long createdAt
-    ) {
+    public void recordPunishment(@Nullable Long profileId,
+                                 int playerId,
+                                 String checkName,
+                                 PunishmentType type,
+                                 String commandTemplate,
+                                 @Nullable String commandArgs,
+                                 @Nullable String debug,
+                                 @Nullable DebugTemplate.Compiled compiledDebug,
+                                 long createdAt) {
         if (!isConnected()) return;
-        if (playerId <= 0) return;
+        if (playerId <= 0 || profileId == null) return;
         PunishmentDao punishments = this.punishmentDao;
         CatalogDao catalog = this.catalogDao;
-        if (punishments == null || catalog == null) return;
+        StatsRollupDao rollup = this.statsRollupDao;
+        if (punishments == null || catalog == null || rollup == null) return;
 
         TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
             try {
                 int checkId = catalog.resolveCheckId(checkName);
-                int serverId = catalog.thisServerIdOrThrow();
-                punishments.insert(profileId, playerId, serverId, checkId,
-                        type, expandedCommand, debug, createdAt);
+                int commandId = catalog.resolvePunishmentCommandId(commandTemplate);
+                DebugTemplate.Compiled compiled = compiledDebug != null ? compiledDebug : DebugTemplate.compile(debug);
+                Integer debugId = compiled == null ? null : catalog.resolveDebugTemplateId(compiled.template());
+                String debugArgs = compiled == null ? null : compiled.args();
+                punishments.insert(profileId, playerId, checkId, type,
+                        commandId, commandArgs, debugId, debugArgs, createdAt);
+                rollup.incrementPunishments(EpochSeconds.dayFromMillis(createdAt), 1);
             } catch (Exception ex) {
                 TGPlatform.getInstance().getLogger().log(Level.WARNING,
                         "Failed to persist punishment for " + checkName, ex);
@@ -313,11 +318,11 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     @Blocking
-    public void upsertVpnCache(byte[] ipHash, boolean isVpn, String provider) throws SQLException {
+    public void upsertVpnCache(byte[] ipHash, boolean isVpn) throws SQLException {
         requireEnabled();
         VpnCacheDao dao = this.vpnCacheDao;
         if (dao == null) throw new SQLException("Database not ready");
-        dao.upsert(ipHash, isVpn, provider, System.currentTimeMillis());
+        dao.upsert(ipHash, isVpn, System.currentTimeMillis());
     }
 
     @Blocking
@@ -389,19 +394,19 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     }
 
     @Blocking
-    public int countAlertsSince(long sinceEpochMs) throws SQLException {
+    public StatsRollupDao.Totals statsTotalsAllTime() throws SQLException {
         requireEnabled();
-        AlertDao alerts = this.alertDao;
-        if (alerts == null) throw new SQLException("Database not ready");
-        return alerts.countSince(sinceEpochMs);
+        StatsRollupDao rollup = this.statsRollupDao;
+        if (rollup == null) throw new SQLException("Database not ready");
+        return rollup.sumAllTime();
     }
 
     @Blocking
-    public int countPunishmentsSince(long sinceEpochMs) throws SQLException {
+    public StatsRollupDao.Totals statsTotalsSince(long sinceEpochMs) throws SQLException {
         requireEnabled();
-        PunishmentDao punishments = this.punishmentDao;
-        if (punishments == null) throw new SQLException("Database not ready");
-        return punishments.countSince(sinceEpochMs);
+        StatsRollupDao rollup = this.statsRollupDao;
+        if (rollup == null) throw new SQLException("Database not ready");
+        return rollup.sumSince(sinceEpochMs);
     }
 
     @Blocking
@@ -418,6 +423,22 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         PlayerDao players = this.playerDao;
         if (players == null) throw new SQLException("Database not ready");
         return players.countActiveSince(sinceEpochMs);
+    }
+
+    @Blocking
+    public int countPlayersFlaggedTotal() throws SQLException {
+        requireEnabled();
+        PlayerDao players = this.playerDao;
+        if (players == null) throw new SQLException("Database not ready");
+        return players.countFlaggedTotal();
+    }
+
+    @Blocking
+    public int countPlayersFlaggedSince(long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        PlayerDao players = this.playerDao;
+        if (players == null) throw new SQLException("Database not ready");
+        return players.countFlaggedSince(sinceEpochMs);
     }
 
     @Blocking
@@ -500,6 +521,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         this.staffAlertPrefDao = null;
         this.vpnCacheDao = null;
         this.schemaInfoDao = null;
+        this.statsRollupDao = null;
         this.punishmentDao = null;
         this.alertDao = null;
         this.profileDao = null;

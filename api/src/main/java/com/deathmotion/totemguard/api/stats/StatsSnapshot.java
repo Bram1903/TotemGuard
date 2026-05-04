@@ -23,21 +23,26 @@ package com.deathmotion.totemguard.api.stats;
  * {@link StatsRepository#snapshot(StatsWindow)} inside a
  * {@link com.deathmotion.totemguard.api.result.Result}.
  *
- * <p>{@code databaseBytes} is exact for {@link StatsWindow#ALL_TIME} (sum of
- * {@code data_length + index_length} across the {@code tg_*} tables) and a per-window
- * estimate otherwise (avg row size of the event tables × rows in window). Treat the
- * windowed value as a magnitude indicator, not a precise figure.
+ * <p>{@code databaseBytes} is the exact on-disk size for {@link StatsWindow#ALL_TIME}
+ * (sum of {@code data_length + index_length} across the {@code tg_*} tables). For a
+ * rolling window it is a proportional estimate of just the alert + punishment row
+ * footprint (avg row size of those tables x rows in window), so it scales linearly
+ * with the window length and is comparable across the 24h / 7d / 30d tabs.
  *
- * @param alertCount      total alerts logged in the window
- * @param punishmentCount total punishments dispatched in the window
- * @param uniquePlayers   distinct players with {@code last_seen} inside the window
- *                        ({@code COUNT(*) FROM tg_players} for all-time)
- * @param databaseBytes   storage attributable to the window (see class docs)
+ * @param alertCount      total alerts logged in the window.
+ * @param punishmentCount total punishments dispatched in the window.
+ * @param uniquePlayers   distinct players who joined inside the window
+ *                        ({@code COUNT(*) FROM tg_players WHERE last_seen >= since}),
+ *                        or the row count of {@code tg_players} for all-time.
+ * @param flaggedPlayers  distinct players who had at least one alert in the window
+ *                        (driven by {@code tg_players.last_flagged_at}).
+ * @param databaseBytes   storage attributable to the window (see class docs).
  */
 public record StatsSnapshot(
         int alertCount,
         int punishmentCount,
         int uniquePlayers,
+        int flaggedPlayers,
         long databaseBytes
 ) {
 }

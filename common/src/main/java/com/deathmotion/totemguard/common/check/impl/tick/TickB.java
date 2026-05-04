@@ -47,7 +47,7 @@ public class TickB extends CheckImpl implements PacketCheck {
             }
 
             if (pingData.isLastTransactionReplySkipped()) {
-                fail("type=transaction,skipped=" + pingData.getLastSkippedTransactionReplyCount());
+                fail("type=transaction,skipped={0}", pingData.getLastSkippedTransactionReplyCount());
             }
         } else if (packetType == PacketType.Play.Client.KEEP_ALIVE) {
             if (!pingData.isLastKeepAliveReplyValid()) {
@@ -56,11 +56,11 @@ public class TickB extends CheckImpl implements PacketCheck {
             }
 
             if (pingData.isLastKeepAliveReplySkipped()) {
-                fail("type=keepalive,skipped=" + pingData.getLastSkippedKeepAliveReplyCount());
+                fail("type=keepalive,skipped={0}", pingData.getLastSkippedKeepAliveReplyCount());
             }
         } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM) {
             if (pingData.isLastTeleportReplySkipped()) {
-                fail("type=teleport,skipped=" + pingData.getLastSkippedTeleportReplyCount());
+                fail("type=teleport,skipped={0}", pingData.getLastSkippedTeleportReplyCount());
             }
         }
     }

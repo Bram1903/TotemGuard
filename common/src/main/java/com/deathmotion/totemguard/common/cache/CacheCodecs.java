@@ -111,12 +111,9 @@ public final class CacheCodecs {
                 out.writeLong(r.id());
                 writeUtf8(out, r.checkName());
                 writeUtf8(out, r.serverName());
-                out.writeInt(r.violations());
                 writeNullableUtf8(out, r.debug());
-                writeNullableInt(out, r.keepalivePing());
-                writeNullableInt(out, r.transactionPing());
-                writeNullableUtf8(out, r.clientBrand());
-                writeNullableInt(out, r.clientVersion());
+                writeUtf8(out, r.clientBrand());
+                out.writeInt(r.clientVersion());
                 out.writeLong(r.createdAt());
             });
         }
@@ -127,12 +124,9 @@ public final class CacheCodecs {
                     in.readLong(),
                     readUtf8(in),
                     readUtf8(in),
+                    readNullableUtf8(in),
+                    readUtf8(in),
                     in.readInt(),
-                    readNullableUtf8(in),
-                    readNullableInt(in),
-                    readNullableInt(in),
-                    readNullableUtf8(in),
-                    readNullableInt(in),
                     in.readLong()
             ));
         }
@@ -171,11 +165,12 @@ public final class CacheCodecs {
     public static final Codec<StatsSnapshot> STATS_SNAPSHOT = new Codec<>() {
         @Override
         public byte[] encode(StatsSnapshot value) throws Exception {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(24);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(28);
             try (DataOutputStream out = new DataOutputStream(baos)) {
                 out.writeInt(value.alertCount());
                 out.writeInt(value.punishmentCount());
                 out.writeInt(value.uniquePlayers());
+                out.writeInt(value.flaggedPlayers());
                 out.writeLong(value.databaseBytes());
             }
             return baos.toByteArray();
@@ -187,8 +182,9 @@ public final class CacheCodecs {
                 int alerts = in.readInt();
                 int punishments = in.readInt();
                 int uniquePlayers = in.readInt();
+                int flaggedPlayers = in.readInt();
                 long databaseBytes = in.readLong();
-                return new StatsSnapshot(alerts, punishments, uniquePlayers, databaseBytes);
+                return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, databaseBytes);
             }
         }
     };

@@ -32,19 +32,7 @@ public final class ManualTotemA extends CheckImpl implements ManualCheck {
         super(player);
     }
 
-    /**
-     * Called by {@code /tg check} when the target re-totemed within the window.
-     * Routes through the normal {@link CheckImpl#fail(String)} path so alerts
-     * hit the chat buffer, Redis sync, and punishment repository like any
-     * other flag.
-     */
     public boolean handle(Sender staff, long elapsedMs, long windowMs) {
-        return fail(debugInfo(staff, elapsedMs, windowMs));
-    }
-
-    private String debugInfo(Sender staff, long elapsedMs, long windowMs) {
-        return "Staff=" + staff.getName()
-                + ", Elapsed=" + elapsedMs + "ms"
-                + ", Window=" + windowMs + "ms";
+        return fail("staff={0},elapsed={1}ms,window={2}ms", staff.getName(), elapsedMs, windowMs);
     }
 }

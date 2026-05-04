@@ -225,27 +225,16 @@ public final class PlayerAlertsScreen extends GuiScreen {
 
     private ItemStack buildAlertTile(AlertEntry record, MessageService messages) {
         List<Component> lore = new ArrayList<>();
-        lore.add(GuiText.line("Violations", NumberFormatter.grouped(record.violations())));
         lore.add(GuiText.line("Server", record.serverName()));
         lore.add(GuiText.line("When", HistoryText.relative(record.createdAt())
                 + "  (" + HistoryText.absolute(record.createdAt()) + ")"));
 
         String version = formatClientVersion(record.clientVersion());
         String brand = record.clientBrand();
-        if (version != null || (brand != null && !brand.isBlank())) {
+        if (version != null || !brand.isBlank()) {
             lore.add(Component.empty());
             if (version != null) lore.add(GuiText.line("Client", version));
-            if (brand != null && !brand.isBlank()) lore.add(GuiText.line("Brand", brand));
-        }
-
-        if (record.keepalivePing() != null || record.transactionPing() != null) {
-            lore.add(Component.empty());
-            if (record.keepalivePing() != null) {
-                lore.add(GuiText.line("KeepAlive ping", record.keepalivePing() + " ms"));
-            }
-            if (record.transactionPing() != null) {
-                lore.add(GuiText.line("Transaction ping", record.transactionPing() + " ms"));
-            }
+            if (!brand.isBlank()) lore.add(GuiText.line("Brand", brand));
         }
 
         if (record.debug() != null && !record.debug().isEmpty()) {

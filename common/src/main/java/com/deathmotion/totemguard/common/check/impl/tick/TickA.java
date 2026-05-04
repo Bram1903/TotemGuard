@@ -50,7 +50,7 @@ public class TickA extends CheckImpl implements PacketCheck {
             }
 
             if (!receivedTickEnd) {
-                fail("type=flying, packets=" + flyingPackets);
+                fail("type=flying,packets={0}", flyingPackets);
             }
             receivedTickEnd = false;
             flyingPackets++;
@@ -58,7 +58,7 @@ public class TickA extends CheckImpl implements PacketCheck {
             receivedTickEnd = true;
 
             if (flyingPackets > 1) {
-                fail("type=end, packets=" + flyingPackets);
+                fail("type=end,packets={0}", flyingPackets);
             }
             flyingPackets = 0;
         }

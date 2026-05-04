@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.ManualCheck;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,8 +39,15 @@ public final class Mod extends CheckImpl implements ManualCheck {
         punishable = false;
     }
 
-    public boolean reportFlag(@Nullable String debug, @NotNull Map<String, Object> extras) {
-        return fail(debug, extras);
+    public boolean reportFlag(@NotNull Map<String, Object> extras,
+                              @NotNull String template,
+                              @Nullable Object @NotNull ... args) {
+        return fail(extras, template, args);
+    }
+
+    public boolean reportFlag(@NotNull Map<String, Object> extras,
+                              @NotNull DebugTemplate.Compiled compiled) {
+        return failPrecompiled(extras, compiled);
     }
 
     @Override

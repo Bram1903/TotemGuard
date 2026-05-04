@@ -21,21 +21,21 @@ package com.deathmotion.totemguard.common.database.dao;
 import com.deathmotion.totemguard.common.database.DatabaseConnectionManager;
 import com.deathmotion.totemguard.common.database.Sql;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
+import com.deathmotion.totemguard.common.database.util.EpochSeconds;
 import com.deathmotion.totemguard.common.database.util.UuidBytes;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * Upserts a player row and caches the uuid→id mapping in memory.
- */
 public final class PlayerDao {
 
     private final DatabaseConnectionManager connection;
@@ -52,19 +52,18 @@ public final class PlayerDao {
     @Blocking
     public int upsertAndResolveId(UUID uuid, String name, long nowEpochMs) throws SQLException {
         Integer cached = idCache.get(uuid);
+        int nowSeconds = EpochSeconds.fromMillis(nowEpochMs);
         try (Connection c = connection.borrow()) {
             try (PreparedStatement upsert = c.prepareStatement(Sql.UPSERT_PLAYER)) {
                 upsert.setBytes(1, UuidBytes.toBytes(uuid));
                 upsert.setString(2, name);
-                upsert.setLong(3, nowEpochMs);
-                upsert.setLong(4, nowEpochMs);
+                upsert.setInt(3, nowSeconds);
+                upsert.setInt(4, nowSeconds);
                 upsert.executeUpdate();
             }
             if (cached != null) return cached;
 
-            try (PreparedStatement select = c.prepareStatement(
-                    "SELECT id FROM tg_players WHERE uuid = ?"
-            )) {
+            try (PreparedStatement select = c.prepareStatement("SELECT id FROM tg_players WHERE uuid = ?")) {
                 select.setBytes(1, UuidBytes.toBytes(uuid));
                 try (ResultSet rs = select.executeQuery()) {
                     if (rs.next()) {
@@ -78,10 +77,30 @@ public final class PlayerDao {
         throw new SQLException("Failed to resolve tg_players.id for " + uuid);
     }
 
-    /**
-     * Case-insensitive lookup by last known name. When a name has been recycled, the
-     * most recently seen holder wins. Returns the canonical stored casing.
-     */
+    @Blocking
+    public void bumpLastFlaggedAt(@NotNull Set<Integer> playerIds, long flaggedAtEpochMs) throws SQLException {
+        if (playerIds.isEmpty()) return;
+        int flaggedAt = EpochSeconds.fromMillis(flaggedAtEpochMs);
+
+        StringBuilder sql = new StringBuilder(Sql.UPDATE_PLAYERS_LAST_FLAGGED_AT_PREFIX);
+        for (int i = 0; i < playerIds.size(); i++) {
+            if (i > 0) sql.append(',');
+            sql.append('?');
+        }
+        sql.append(')');
+
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(sql.toString())) {
+            stmt.setInt(1, flaggedAt);
+            stmt.setInt(2, flaggedAt);
+            int idx = 3;
+            for (int playerId : playerIds) {
+                stmt.setInt(idx++, playerId);
+            }
+            stmt.executeUpdate();
+        }
+    }
+
     @Blocking
     public @Nullable PlayerRecord findByName(String name) throws SQLException {
         try (Connection c = connection.borrow();
@@ -112,8 +131,28 @@ public final class PlayerDao {
     @Blocking
     public int countActiveSince(long sinceEpochMs) throws SQLException {
         try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_SINCE)) {
-            stmt.setLong(1, sinceEpochMs);
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_ACTIVE_SINCE)) {
+            stmt.setInt(1, EpochSeconds.fromMillis(sinceEpochMs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    @Blocking
+    public int countFlaggedTotal() throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_FLAGGED_TOTAL);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    @Blocking
+    public int countFlaggedSince(long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_FLAGGED_SINCE)) {
+            stmt.setInt(1, EpochSeconds.fromMillis(sinceEpochMs));
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
             }
@@ -126,8 +165,8 @@ public final class PlayerDao {
                 int id = rs.getInt("id");
                 UUID uuid = UuidBytes.fromBytes(rs.getBytes("uuid"));
                 String canonicalName = rs.getString("last_name");
-                long firstSeen = rs.getLong("first_seen");
-                long lastSeen = rs.getLong("last_seen");
+                long firstSeen = EpochSeconds.toMillis(rs.getLong("first_seen"));
+                long lastSeen = EpochSeconds.toMillis(rs.getLong("last_seen"));
                 idCache.put(uuid, id);
                 return new PlayerRecord(id, uuid, canonicalName, firstSeen, lastSeen);
             }

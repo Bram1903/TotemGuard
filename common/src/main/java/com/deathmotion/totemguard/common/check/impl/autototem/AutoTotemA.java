@@ -90,7 +90,7 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
         long useDiff = placedAt - popTimestamp;
 
         if (clickDiff >= 0 && clickDiff <= MAX_CLICK_DIFF_MS && useDiff >= 0 && useDiff <= MAX_USE_TO_PLACE_DIFF_MS) {
-            fail();
+            fail("clickDiff={0}ms,useDiff={1}ms", clickDiff, useDiff);
         }
 
         popTimestamp = null;

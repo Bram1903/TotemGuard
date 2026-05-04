@@ -18,24 +18,16 @@
 
 package com.deathmotion.totemguard.common.database;
 
-/**
- * Hikari pool sizing and alert-batch tuning. These are implementation knobs, not
- * user-configurable settings; they live here rather than in {@code config.yml}.
- */
 public final class DatabaseTuning {
 
-    public static final int POOL_MAX_SIZE = 10;
+    public static final int POOL_MAX_SIZE = 8;
     public static final int POOL_MIN_IDLE = 2;
     public static final int POOL_CONNECTION_TIMEOUT_MS = 5_000;
     public static final int POOL_IDLE_TIMEOUT_MS = 60_000;
     public static final int POOL_MAX_LIFETIME_MS = 1_800_000;
-
-    /**
-     * Flush whichever comes first.
-     */
     public static final int BATCH_MAX_SIZE = 100;
-    public static final int BATCH_FLUSH_INTERVAL_MS = 1_000;
-    public static final int BATCH_QUEUE_CAPACITY = 10_000;
+    public static final int BATCH_FLUSH_INTERVAL_MS = 500;
+    public static final int BATCH_QUEUE_CAPACITY = 5_000;
 
     private DatabaseTuning() {
     }

@@ -46,13 +46,21 @@ public final class SchemaInfoDao {
             while (rs.next()) {
                 String name = rs.getString("table_name");
                 long rows = rs.getLong("table_rows");
-                long avgRowLength = rs.getLong("avg_row_length");
-                out.put(name, new TableSize(name, rows, avgRowLength));
+                long dataLength = rs.getLong("data_length");
+                long indexLength = rs.getLong("index_length");
+                out.put(name, new TableSize(name, rows, dataLength, indexLength));
             }
         }
         return out;
     }
 
-    public record TableSize(String name, long rows, long avgRowLength) {
+    public record TableSize(String name, long rows, long dataLength, long indexLength) {
+        public long bytes() {
+            return dataLength + indexLength;
+        }
+
+        public long avgBytesPerRow() {
+            return rows <= 0L ? 0L : (dataLength + indexLength) / rows;
+        }
     }
 }

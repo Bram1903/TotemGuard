@@ -22,6 +22,8 @@ import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import com.deathmotion.totemguard.common.database.DatabaseConnectionManager;
 import com.deathmotion.totemguard.common.database.Sql;
 import com.deathmotion.totemguard.common.database.model.PunishmentRecord;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
+import com.deathmotion.totemguard.common.database.util.EpochSeconds;
 import com.deathmotion.totemguard.common.database.util.UuidBytes;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Nullable;
@@ -39,120 +41,80 @@ public final class PunishmentDao {
         this.connection = connection;
     }
 
-    private static String truncate(String value, int max) {
-        if (value.length() <= max) return value;
-        return value.substring(0, max);
+    private static PunishmentRecord readRow(ResultSet rs, PunishmentType[] types) throws SQLException {
+        int ordinal = rs.getInt("type");
+        PunishmentType type = (ordinal >= 0 && ordinal < types.length) ? types[ordinal] : PunishmentType.GENERIC;
+        String renderedCommand = DebugTemplate.render(rs.getString("command_template"), rs.getString("command_args"));
+        String renderedDebug = DebugTemplate.render(rs.getString("debug_template"), rs.getString("debug_args"));
+        return new PunishmentRecord(
+                rs.getLong("id"),
+                rs.getString("check_name"),
+                rs.getString("server_name"),
+                type,
+                renderedCommand,
+                renderedDebug,
+                EpochSeconds.toMillis(rs.getLong("created_at"))
+        );
     }
 
     @Blocking
-    public void insert(
-            @Nullable Long profileId,
-            int playerId,
-            int serverId,
-            int checkId,
-            PunishmentType type,
-            String expandedCommand,
-            @Nullable String debug,
-            long createdAt
-    ) throws SQLException {
+    public void insert(long profileId,
+                       int playerId,
+                       int checkId,
+                       PunishmentType type,
+                       int commandId,
+                       @Nullable String commandArgs,
+                       @Nullable Integer debugId,
+                       @Nullable String debugArgs,
+                       long createdAtEpochMs) throws SQLException {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.INSERT_PUNISHMENT)) {
-            if (profileId == null) stmt.setNull(1, Types.BIGINT);
-            else stmt.setLong(1, profileId);
+            stmt.setLong(1, profileId);
             stmt.setInt(2, playerId);
-            stmt.setInt(3, serverId);
-            stmt.setInt(4, checkId);
-            stmt.setInt(5, type.ordinal());
-            stmt.setString(6, truncate(expandedCommand, 256));
-            if (debug == null) stmt.setNull(7, Types.VARCHAR);
-            else stmt.setString(7, truncate(debug, 128));
-            stmt.setLong(8, createdAt);
+            stmt.setInt(3, checkId);
+            stmt.setInt(4, type.ordinal());
+            stmt.setInt(5, commandId);
+            if (commandArgs == null) stmt.setNull(6, Types.VARCHAR);
+            else stmt.setString(6, commandArgs);
+            if (debugId == null) stmt.setNull(7, Types.INTEGER);
+            else stmt.setInt(7, debugId);
+            if (debugArgs == null) stmt.setNull(8, Types.VARCHAR);
+            else stmt.setString(8, debugArgs);
+            stmt.setInt(9, EpochSeconds.fromMillis(createdAtEpochMs));
             stmt.executeUpdate();
         }
     }
 
     @Blocking
     public List<PunishmentRecord> findByPlayer(UUID uuid, int limit, int offset) throws SQLException {
-        List<PunishmentRecord> out = new ArrayList<>();
-        try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.SELECT_PUNISHMENTS_BY_UUID)) {
+        return findRows(Sql.SELECT_PUNISHMENTS_BY_UUID, stmt -> {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
             stmt.setInt(2, limit);
             stmt.setInt(3, offset);
-            try (ResultSet rs = stmt.executeQuery()) {
-                PunishmentType[] types = PunishmentType.values();
-                while (rs.next()) {
-                    int ordinal = rs.getInt("type");
-                    PunishmentType type = (ordinal >= 0 && ordinal < types.length)
-                            ? types[ordinal]
-                            : PunishmentType.GENERIC;
-                    out.add(new PunishmentRecord(
-                            rs.getLong("id"),
-                            rs.getString("check_name"),
-                            rs.getString("server_name"),
-                            type,
-                            rs.getString("command"),
-                            rs.getString("debug"),
-                            rs.getLong("created_at")
-                    ));
-                }
-            }
-        }
-        return out;
+        });
     }
 
     @Blocking
     public int countByPlayer(UUID uuid) throws SQLException {
-        try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PUNISHMENTS_BY_UUID)) {
-            stmt.setBytes(1, UuidBytes.toBytes(uuid));
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
-            }
-        }
+        return countRows(Sql.COUNT_PUNISHMENTS_BY_UUID, stmt -> stmt.setBytes(1, UuidBytes.toBytes(uuid)));
     }
 
     @Blocking
     public List<PunishmentRecord> findByPlayerSince(UUID uuid, long sinceEpochMs, int limit, int offset) throws SQLException {
-        List<PunishmentRecord> out = new ArrayList<>();
-        try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.SELECT_PUNISHMENTS_BY_UUID_SINCE)) {
+        return findRows(Sql.SELECT_PUNISHMENTS_BY_UUID_SINCE, stmt -> {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
-            stmt.setLong(2, sinceEpochMs);
+            stmt.setInt(2, EpochSeconds.fromMillis(sinceEpochMs));
             stmt.setInt(3, limit);
             stmt.setInt(4, offset);
-            try (ResultSet rs = stmt.executeQuery()) {
-                PunishmentType[] types = PunishmentType.values();
-                while (rs.next()) {
-                    int ordinal = rs.getInt("type");
-                    PunishmentType type = (ordinal >= 0 && ordinal < types.length)
-                            ? types[ordinal]
-                            : PunishmentType.GENERIC;
-                    out.add(new PunishmentRecord(
-                            rs.getLong("id"),
-                            rs.getString("check_name"),
-                            rs.getString("server_name"),
-                            type,
-                            rs.getString("command"),
-                            rs.getString("debug"),
-                            rs.getLong("created_at")
-                    ));
-                }
-            }
-        }
-        return out;
+        });
     }
 
     @Blocking
     public int countByPlayerSince(UUID uuid, long sinceEpochMs) throws SQLException {
-        try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PUNISHMENTS_BY_UUID_SINCE)) {
+        return countRows(Sql.COUNT_PUNISHMENTS_BY_UUID_SINCE, stmt -> {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));
-            stmt.setLong(2, sinceEpochMs);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
-            }
-        }
+            stmt.setInt(2, EpochSeconds.fromMillis(sinceEpochMs));
+        });
     }
 
     @Blocking
@@ -171,14 +133,31 @@ public final class PunishmentDao {
         return total;
     }
 
-    @Blocking
-    public int countSince(long sinceEpochMs) throws SQLException {
+    private List<PunishmentRecord> findRows(String sql, StatementBinder binder) throws SQLException {
+        List<PunishmentRecord> out = new ArrayList<>();
+        PunishmentType[] types = PunishmentType.values();
         try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PUNISHMENTS_SINCE)) {
-            stmt.setLong(1, sinceEpochMs);
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            binder.bind(stmt);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) out.add(readRow(rs, types));
+            }
+        }
+        return out;
+    }
+
+    private int countRows(String sql, StatementBinder binder) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            binder.bind(stmt);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
             }
         }
+    }
+
+    @FunctionalInterface
+    private interface StatementBinder {
+        void bind(PreparedStatement stmt) throws SQLException;
     }
 }

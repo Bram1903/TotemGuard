@@ -29,9 +29,11 @@ import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserPunishEventImpl;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
+import com.deathmotion.totemguard.common.placeholder.engine.PlaceholderEngine;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,21 +81,35 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     }
 
     public void punish(CheckImpl check, int violations, @Nullable String debug) {
+        punish(check, violations, debug, null);
+    }
+
+    public void punish(CheckImpl check, int violations, @Nullable String debug,
+                       @Nullable DebugTemplate.Compiled compiledDebug) {
         if (!canPunish(check, violations)) return;
-        runPunishment(check, resolveCommands(check), debug, Map.of(), true);
+        runPunishment(check, resolveCommands(check), debug, compiledDebug, Map.of(), true);
     }
 
     public void punishWith(CheckImpl check,
                            List<PunishmentCommand> commands,
                            @Nullable String debug,
                            Map<String, Object> placeholderExtras) {
+        punishWith(check, commands, debug, null, placeholderExtras);
+    }
+
+    public void punishWith(CheckImpl check,
+                           List<PunishmentCommand> commands,
+                           @Nullable String debug,
+                           @Nullable DebugTemplate.Compiled compiledDebug,
+                           Map<String, Object> placeholderExtras) {
         if (commands.isEmpty()) return;
-        runPunishment(check, commands, debug, placeholderExtras, false);
+        runPunishment(check, commands, debug, compiledDebug, placeholderExtras, false);
     }
 
     private void runPunishment(CheckImpl check,
                                List<PunishmentCommand> commands,
                                @Nullable String debug,
+                               @Nullable DebugTemplate.Compiled compiledDebug,
                                Map<String, Object> placeholderExtras,
                                boolean clearViolationsAfter) {
         TGPlayer player = check.player;
@@ -115,7 +131,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             Runnable executeAndCleanup = () -> {
                 boolean keepDistributedLock = false;
                 try {
-                    if (!executePunishment(check, commands, debug, placeholderExtras)) {
+                    if (!executePunishment(check, commands, debug, compiledDebug, placeholderExtras)) {
                         platform.getLogger().warning(
                                 "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
                         );
@@ -213,6 +229,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     private boolean executePunishment(CheckImpl check,
                                       List<PunishmentCommand> commands,
                                       @Nullable String debug,
+                                      @Nullable DebugTemplate.Compiled compiledDebug,
                                       Map<String, Object> placeholderExtras) {
         int dispatchedCommands = 0;
 
@@ -223,18 +240,18 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             }
 
             try {
-                String processed = placeholderRepository
-                        .replace(processedCommand, check.player, check, placeholderExtras)
-                        .trim();
-                if (processed.isEmpty()) {
+                PlaceholderEngine.Capture capture = placeholderRepository.replaceCapturing(
+                        processedCommand, check.player, check, placeholderExtras);
+                String dispatched = capture.dispatched().trim();
+                if (dispatched.isEmpty()) {
                     continue;
                 }
 
-                platform.dispatchCommand(processed);
+                platform.dispatchCommand(dispatched);
                 dispatchedCommands++;
                 PunishmentType effectiveType = effectiveType(command);
                 if (effectiveType != PunishmentType.GENERIC) {
-                    recordPunishment(check, effectiveType, processed, debug);
+                    recordPunishment(check, effectiveType, capture.template(), capture.args(), debug, compiledDebug);
                 }
             } catch (Exception exception) {
                 platform.getLogger().log(
@@ -248,15 +265,19 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         return dispatchedCommands > 0;
     }
 
-    private void recordPunishment(CheckImpl check, PunishmentType type, String dispatched, @Nullable String debug) {
+    private void recordPunishment(CheckImpl check, PunishmentType type, String commandTemplate,
+                                  @Nullable String commandArgs,
+                                  @Nullable String debug, @Nullable DebugTemplate.Compiled compiledDebug) {
         TGPlayer player = check.player;
         platform.getDatabaseRepository().recordPunishment(
                 player.getDatabaseProfileId(),
                 player.getDatabasePlayerId(),
                 check.getName(),
                 type,
-                dispatched,
+                commandTemplate,
+                commandArgs,
                 debug,
+                compiledDebug,
                 System.currentTimeMillis()
         );
     }

@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
@@ -112,18 +113,35 @@ public abstract class CheckImpl implements Check {
     }
 
     protected boolean fail() {
-        return fail(null);
-    }
-
-    protected boolean fail(@Nullable String debug) {
-        return fail(debug, Map.of());
-    }
-
-    protected boolean fail(@Nullable String debug, @NotNull Map<String, Object> extras) {
-        if (!shouldFail(debug)) return false;
+        if (!shouldFail(null)) return false;
         violations++;
 
-        TGPlatform.getInstance().getAlertRepository().alert(this, violations, debug, extras);
+        TGPlatform.getInstance().getAlertRepository().alert(this, violations, null, null, Map.of());
+        return true;
+    }
+
+    protected boolean fail(@NotNull String template, @Nullable Object @NotNull ... args) {
+        DebugTemplate.Compiled compiled = DebugTemplate.precompiled(template, args);
+        String rendered = compiled == null ? null : DebugTemplate.render(compiled.template(), compiled.args());
+        if (!shouldFail(rendered)) return false;
+        violations++;
+
+        TGPlatform.getInstance().getAlertRepository().alert(this, violations, rendered, compiled, Map.of());
+        return true;
+    }
+
+    protected boolean fail(@NotNull Map<String, Object> extras,
+                           @NotNull String template,
+                           @Nullable Object @NotNull ... args) {
+        return failPrecompiled(extras, DebugTemplate.precompiled(template, args));
+    }
+
+    protected boolean failPrecompiled(@NotNull Map<String, Object> extras, @NotNull DebugTemplate.Compiled compiled) {
+        String rendered = DebugTemplate.render(compiled.template(), compiled.args());
+        if (!shouldFail(rendered)) return false;
+        violations++;
+
+        TGPlatform.getInstance().getAlertRepository().alert(this, violations, rendered, compiled, extras);
         return true;
     }
 
@@ -131,8 +149,8 @@ public abstract class CheckImpl implements Check {
         return MessagesKeys.ALERTS_MESSAGE;
     }
 
-    protected void failInventory(@Nullable String debug) {
-        if (!fail(debug)) {
+    protected void failInventory(@NotNull String template, @Nullable Object @NotNull ... args) {
+        if (!fail(template, args)) {
             return;
         }
 

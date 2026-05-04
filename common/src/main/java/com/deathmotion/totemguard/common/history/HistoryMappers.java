@@ -33,10 +33,7 @@ final class HistoryMappers {
                 record.id(),
                 record.checkName(),
                 record.serverName(),
-                record.violations(),
                 record.debug(),
-                record.keepalivePing(),
-                record.transactionPing(),
                 record.clientBrand(),
                 record.clientVersion(),
                 record.createdAt()

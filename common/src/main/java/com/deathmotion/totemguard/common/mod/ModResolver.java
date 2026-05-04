@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.api.mod.ModAction;
 import com.deathmotion.totemguard.api.mod.ModSeverity;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.event.api.impl.TGModDetectionResolvedEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.punishment.PunishmentCommand;
@@ -91,13 +92,17 @@ public final class ModResolver {
         extras.put("tg_mod_probes_answered", detector.answeredCount());
         extras.put("tg_mod_probes_missing", detector.sentCount() - detector.answeredCount());
 
-        String debug = "Unresponsive: " + detector.answeredCount() + "/" + detector.sentCount() + " probes answered";
-        if (!modCheck.reportFlag(debug, extras)) return;
+        DebugTemplate.Compiled compiled = DebugTemplate.precompiled(
+                "Unresponsive: {0}/{1} probes answered",
+                detector.answeredCount(), detector.sentCount());
+        if (!modCheck.reportFlag(extras, compiled)) return;
+        String debug = DebugTemplate.render(compiled.template(), compiled.args());
 
         platform.getPunishmentRepository().punishWith(
                 modCheck,
                 List.of(snapshot.unresponsiveKickCommand()),
                 debug,
+                compiled,
                 extras
         );
     }
@@ -137,16 +142,18 @@ public final class ModResolver {
 
         ModListRendering rendering = ModListRendering.build(alertMods, snapshot);
         Map<String, Object> extras = buildExtras(alertMods, action, rendering);
-        String debug = buildDebug(rendering, late);
+        DebugTemplate.Compiled compiled = DebugTemplate.precompiled(
+                late ? "{0} (late)" : "{0}", rendering.list());
+        String debug = DebugTemplate.render(compiled.template(), compiled.args());
 
-        if (!modCheck.reportFlag(debug, extras)) return;
+        if (!modCheck.reportFlag(extras, compiled)) return;
 
         switch (action) {
             case NONE -> rememberLogged(player.getUuid(), alertMods);
             case KICK, KICK_THEN_BAN ->
-                    dispatchPunishment(player, alertMods, modCheck, snapshot.kickCommand(), snapshot, debug, extras, false);
+                    dispatchPunishment(player, alertMods, modCheck, snapshot.kickCommand(), snapshot, debug, compiled, extras, false);
             case BAN ->
-                    dispatchPunishment(player, alertMods, modCheck, snapshot.banCommand(), snapshot, debug, extras, true);
+                    dispatchPunishment(player, alertMods, modCheck, snapshot.banCommand(), snapshot, debug, compiled, extras, true);
         }
     }
 
@@ -166,10 +173,6 @@ public final class ModResolver {
         extras.put("tg_mod_action_label", styledLabel(action));
         extras.put("tg_mod", mods.iterator().next().id());
         return extras;
-    }
-
-    private String buildDebug(ModListRendering rendering, boolean late) {
-        return late ? rendering.list() + " (late)" : rendering.list();
     }
 
     private ModAction decideAction(Set<DetectedMod> mods, Set<String> warnedSet) {
@@ -208,9 +211,10 @@ public final class ModResolver {
                                     PunishmentCommand command,
                                     ModRegistry.Snapshot snapshot,
                                     String debug,
+                                    DebugTemplate.Compiled compiled,
                                     Map<String, Object> extras,
                                     boolean ban) {
-        platform.getPunishmentRepository().punishWith(modCheck, List.of(command), debug, extras);
+        platform.getPunishmentRepository().punishWith(modCheck, List.of(command), debug, compiled, extras);
 
         if (ban) {
             kickThenBanTracker.clear(player.getUuid());

@@ -46,7 +46,7 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
         }
 
         if (slot < 0 || slot > 8) {
-            fail("slot=" + slot);
+            fail("slot={0}", slot);
         }
 
         lastSlot = slot;

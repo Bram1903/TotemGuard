@@ -155,7 +155,7 @@ public class AntiVPNRepositoryImpl {
         }
         if (lookup == null) return;
 
-        writeCaches(ip, lookup, adapter.getName());
+        writeCaches(ip, lookup);
         handleVpnResult(player, ip, lookup);
     }
 
@@ -192,13 +192,13 @@ public class AntiVPNRepositoryImpl {
         }
     }
 
-    private void writeCaches(String ip, boolean vpn, String providerName) {
+    private void writeCaches(String ip, boolean vpn) {
         cacheRepository.put(CacheKeys.vpn(ip), vpn, CacheCodecs.BOOLEAN, MEMORY_CACHE_TTL);
 
         if (!databaseRepository.isConnected()) return;
         TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
             try {
-                databaseRepository.upsertVpnCache(sha256(ip), vpn, providerName);
+                databaseRepository.upsertVpnCache(sha256(ip), vpn);
             } catch (Exception ex) {
                 logger.log(Level.WARNING, "Failed to persist VPN cache row", ex);
             }

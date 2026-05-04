@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.database.dao;
 
 import com.deathmotion.totemguard.common.database.DatabaseConnectionManager;
 import com.deathmotion.totemguard.common.database.Sql;
+import com.deathmotion.totemguard.common.database.util.EpochSeconds;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,16 +32,10 @@ import java.sql.SQLException;
 
 public final class VpnCacheDao {
 
-    private static final int PROVIDER_MAX_LENGTH = 64;
-
     private final DatabaseConnectionManager connection;
 
     public VpnCacheDao(DatabaseConnectionManager connection) {
         this.connection = connection;
-    }
-
-    private static String truncate(String value, int max) {
-        return value.length() <= max ? value : value.substring(0, max);
     }
 
     @Blocking
@@ -48,7 +43,7 @@ public final class VpnCacheDao {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.SELECT_VPN_CACHE)) {
             stmt.setBytes(1, ipHash);
-            stmt.setLong(2, freshAfterEpochMs);
+            stmt.setInt(2, EpochSeconds.fromMillis(freshAfterEpochMs));
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) return null;
                 return rs.getInt(1) != 0;
@@ -57,17 +52,29 @@ public final class VpnCacheDao {
     }
 
     @Blocking
-    public void upsert(byte @NotNull [] ipHash,
-                       boolean isVpn,
-                       @NotNull String provider,
-                       long cachedAtEpochMs) throws SQLException {
+    public void upsert(byte @NotNull [] ipHash, boolean isVpn, long cachedAtEpochMs) throws SQLException {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.UPSERT_VPN_CACHE)) {
             stmt.setBytes(1, ipHash);
             stmt.setInt(2, isVpn ? 1 : 0);
-            stmt.setString(3, truncate(provider, PROVIDER_MAX_LENGTH));
-            stmt.setLong(4, cachedAtEpochMs);
+            stmt.setInt(3, EpochSeconds.fromMillis(cachedAtEpochMs));
             stmt.executeUpdate();
         }
+    }
+
+    @Blocking
+    public long deleteOlderThan(long cutoffEpochMs, int chunkSize) throws SQLException {
+        long total = 0;
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.DELETE_OLD_VPN_CACHE)) {
+            stmt.setInt(1, EpochSeconds.fromMillis(cutoffEpochMs));
+            stmt.setInt(2, chunkSize);
+            while (true) {
+                int removed = stmt.executeUpdate();
+                total += removed;
+                if (removed < chunkSize) break;
+            }
+        }
+        return total;
     }
 }

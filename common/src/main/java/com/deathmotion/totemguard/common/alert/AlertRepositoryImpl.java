@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.PresenceListener;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
@@ -138,10 +139,15 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
     }
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
-        alert(check, violations, debug, Map.of());
+        alert(check, violations, debug, null, Map.of());
     }
 
     public void alert(CheckImpl check, int violations, @Nullable String debug, Map<String, Object> extras) {
+        alert(check, violations, debug, null, extras);
+    }
+
+    public void alert(CheckImpl check, int violations, @Nullable String debug,
+                      @Nullable DebugTemplate.Compiled compiledDebug, Map<String, Object> extras) {
         UUID violatorUuid = check.player.getUuid();
         String violatorName = check.player.getName();
         Component realtimeMessage = AlertBuilder.build(check, violations, debug, extras);
@@ -156,21 +162,17 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
 
         bufferChatAlert(check, violations, debug, extras);
 
-        int keepalivePing = check.player.getPingData().getKeepAlivePing();
-        int transactionPing = check.player.getPingData().getTransactionPing();
         platform.getDatabaseRepository().recordAlert(
                 check.player.getDatabaseProfileId(),
                 check.player.getDatabasePlayerId(),
                 check.getName(),
-                violations,
                 debug,
-                keepalivePing >= 0 ? keepalivePing : null,
-                transactionPing >= 0 ? transactionPing : null,
+                compiledDebug,
                 System.currentTimeMillis()
         );
         platform.getScheduler().runAsyncTask(() -> {
             platform.getDiscordWebhookService().sendAlert(check, violations, debug);
-            punishmentRepository.punish(check, violations, debug);
+            punishmentRepository.punish(check, violations, debug, compiledDebug);
         });
     }
 

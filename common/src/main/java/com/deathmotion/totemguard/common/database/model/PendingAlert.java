@@ -21,14 +21,11 @@ package com.deathmotion.totemguard.common.database.model;
 import org.jetbrains.annotations.Nullable;
 
 public record PendingAlert(
-        @Nullable Long profileId,
+        long profileId,
         int playerId,
-        int serverId,
         int checkId,
-        int violations,
-        @Nullable String debug,
-        @Nullable Integer keepalivePing,
-        @Nullable Integer transactionPing,
-        long createdAt
+        @Nullable Integer debugId,
+        @Nullable String debugArgs,
+        int createdAtSeconds
 ) {
 }

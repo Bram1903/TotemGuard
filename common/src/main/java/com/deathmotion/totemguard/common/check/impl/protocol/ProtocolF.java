@@ -48,7 +48,7 @@ public class ProtocolF extends CheckImpl implements PacketCheck {
         InputData.State state = data.getInputData().current();
         if (state == null) return;
         if (!state.forward() || state.backward()) {
-            fail("forward=" + state.forward() + ",back=" + state.backward());
+            fail("forward={0},back={1}", state.forward(), state.backward());
         }
     }
 }

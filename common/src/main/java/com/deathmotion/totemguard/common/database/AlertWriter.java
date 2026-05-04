@@ -20,63 +20,69 @@ package com.deathmotion.totemguard.common.database;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.database.dao.AlertDao;
+import com.deathmotion.totemguard.common.database.dao.PlayerDao;
+import com.deathmotion.totemguard.common.database.dao.StatsRollupDao;
 import com.deathmotion.totemguard.common.database.model.PendingAlert;
+import com.deathmotion.totemguard.common.database.util.EpochSeconds;
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
-/**
- * Bounded queue + single worker thread that flushes alerts in batches.
- * When the queue fills up (DB is down or slow) new alerts are dropped.
- */
 public final class AlertWriter {
 
     private final AlertDao alertDao;
+    private final PlayerDao playerDao;
+    private final StatsRollupDao statsRollupDao;
     private final LinkedBlockingQueue<PendingAlert> queue;
     private final int batchMaxSize;
-    private final long flushIntervalNs;
+    private final long flushIntervalMs;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private volatile Thread worker;
+    private final AtomicBoolean flushing = new AtomicBoolean(false);
+    private volatile ScheduledTask task;
     private volatile long lastDropWarnNs = 0L;
 
-    public AlertWriter(AlertDao alertDao) {
+    public AlertWriter(AlertDao alertDao, PlayerDao playerDao, StatsRollupDao statsRollupDao) {
         this.alertDao = alertDao;
+        this.playerDao = playerDao;
+        this.statsRollupDao = statsRollupDao;
         this.queue = new LinkedBlockingQueue<>(DatabaseTuning.BATCH_QUEUE_CAPACITY);
         this.batchMaxSize = DatabaseTuning.BATCH_MAX_SIZE;
-        this.flushIntervalNs = TimeUnit.MILLISECONDS.toNanos(DatabaseTuning.BATCH_FLUSH_INTERVAL_MS);
+        this.flushIntervalMs = DatabaseTuning.BATCH_FLUSH_INTERVAL_MS;
     }
 
     public void start() {
         if (!running.compareAndSet(false, true)) return;
-        Thread t = new Thread(this::runLoop, "TotemGuard-DB-Writer");
-        t.setDaemon(true);
-        this.worker = t;
-        t.start();
+        this.task = TGPlatform.getInstance().getScheduler().runAsyncTaskAtFixedRate(
+                this::flushTick, flushIntervalMs, flushIntervalMs, TimeUnit.MILLISECONDS);
     }
 
     public void stop() {
         if (!running.compareAndSet(true, false)) return;
-        Thread t = this.worker;
-        this.worker = null;
-        if (t != null) {
-            t.interrupt();
+        ScheduledTask current = this.task;
+        this.task = null;
+        if (current != null) current.cancel();
+
+        // The platform scheduler's cancel() doesn't wait for an in-flight tick.
+        // Spin briefly until any concurrent flush completes, then drain ourselves.
+        // Without this wait the synchronous flushTick() would hit the re-entrancy
+        // guard and skip pending alerts on /tg reload.
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (flushing.get() && System.nanoTime() < deadline) {
             try {
-                t.join(TimeUnit.SECONDS.toMillis(5));
+                Thread.sleep(5);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
+                break;
             }
         }
-        drainAndFlush();
+        flushTick();
     }
 
-    /**
-     * @return {@code false} if the queue was full and the alert was dropped.
-     */
     public boolean submit(PendingAlert alert) {
         if (!running.get()) return false;
         if (!queue.offer(alert)) {
@@ -90,54 +96,59 @@ public final class AlertWriter {
         return queue.size();
     }
 
-    private void runLoop() {
-        List<PendingAlert> batch = new ArrayList<>(batchMaxSize);
-        while (running.get()) {
-            try {
-                PendingAlert head = queue.poll(flushIntervalNs, TimeUnit.NANOSECONDS);
-                if (head != null) {
-                    batch.add(head);
-                    queue.drainTo(batch, batchMaxSize - batch.size());
-                }
-                if (!batch.isEmpty()) {
-                    try {
-                        alertDao.insertBatch(batch);
-                    } catch (Exception ex) {
-                        TGPlatform.getInstance().getLogger().log(Level.WARNING,
-                                "Failed to flush " + batch.size() + " alert(s) to database", ex);
-                    } finally {
-                        batch.clear();
-                    }
-                }
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Throwable t) {
-                TGPlatform.getInstance().getLogger().log(Level.SEVERE,
-                        "Unexpected error in alert writer loop", t);
+    private void flushTick() {
+        if (!flushing.compareAndSet(false, true)) return;
+        try {
+            while (true) {
+                List<PendingAlert> batch = new ArrayList<>(Math.min(batchMaxSize, queue.size()));
+                queue.drainTo(batch, batchMaxSize);
+                if (batch.isEmpty()) return;
+                flush(batch);
+                if (batch.size() < batchMaxSize) return;
             }
+        } finally {
+            flushing.set(false);
         }
     }
 
-    private void drainAndFlush() {
-        if (queue.isEmpty()) return;
-        List<PendingAlert> batch = new ArrayList<>();
-        queue.drainTo(batch);
-        if (batch.isEmpty()) return;
+    private void flush(List<PendingAlert> batch) {
         try {
             alertDao.insertBatch(batch);
         } catch (Exception ex) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
-                    "Failed to drain " + batch.size() + " alert(s) on shutdown", ex);
+                    "Failed to flush " + batch.size() + " alert(s) to database", ex);
+            return;
+        }
+
+        try {
+            Set<Integer> uniquePlayers = new HashSet<>(batch.size() * 2);
+            Map<Integer, Integer> alertsPerDay = new HashMap<>();
+            long maxFlaggedAtMs = 0L;
+            for (PendingAlert alert : batch) {
+                uniquePlayers.add(alert.playerId());
+                int day = EpochSeconds.dayFromSeconds(alert.createdAtSeconds());
+                alertsPerDay.merge(day, 1, Integer::sum);
+                long ms = EpochSeconds.toMillis(alert.createdAtSeconds() & 0xFFFFFFFFL);
+                if (ms > maxFlaggedAtMs) maxFlaggedAtMs = ms;
+            }
+
+            if (!uniquePlayers.isEmpty()) {
+                playerDao.bumpLastFlaggedAt(uniquePlayers, maxFlaggedAtMs);
+            }
+            for (Map.Entry<Integer, Integer> entry : alertsPerDay.entrySet()) {
+                statsRollupDao.incrementAlerts(entry.getKey(), entry.getValue());
+            }
+        } catch (Exception ex) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING,
+                    "Alert batch persisted, but rollup updates failed for " + batch.size() + " row(s)", ex);
         }
     }
 
     private void warnDrop() {
         long now = System.nanoTime();
-        // One warning per 10s — avoids log spam when the DB is down.
         if (now - lastDropWarnNs < TimeUnit.SECONDS.toNanos(10)) return;
         lastDropWarnNs = now;
         TGPlatform.getInstance().getLogger().warning(
-                "TotemGuard database queue is full — dropping alerts. Check DB health.");
+                "TotemGuard database queue is full, dropping alerts. Check DB health.");
     }
 }

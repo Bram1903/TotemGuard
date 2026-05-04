@@ -29,15 +29,15 @@ import java.sql.SQLException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * Resolves and caches server/check name → id mappings.
- */
 public final class CatalogDao {
 
     private final DatabaseConnectionManager connection;
 
     private final ConcurrentMap<String, Integer> serverIds = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Integer> checkIds = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Integer> brandIds = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Integer> debugTemplateIds = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Integer> punishmentCommandIds = new ConcurrentHashMap<>();
 
     private volatile int thisServerId = -1;
 
@@ -48,19 +48,10 @@ public final class CatalogDao {
     public void resetCache() {
         serverIds.clear();
         checkIds.clear();
+        brandIds.clear();
+        debugTemplateIds.clear();
+        punishmentCommandIds.clear();
         thisServerId = -1;
-    }
-
-    @Blocking
-    public synchronized int resolveServerId(String name) throws SQLException {
-        Integer cached = serverIds.get(name);
-        if (cached != null) return cached;
-
-        try (Connection c = connection.borrow()) {
-            int id = upsertAndFetchId(c, "tg_servers", Sql.UPSERT_SERVER, name);
-            serverIds.put(name, id);
-            return id;
-        }
     }
 
     @Blocking
@@ -77,33 +68,58 @@ public final class CatalogDao {
     }
 
     @Blocking
+    public int resolveServerId(String name) throws SQLException {
+        return resolve(serverIds, name, Sql.UPSERT_SERVER, Sql.SELECT_SERVER_ID, "tg_servers");
+    }
+
+    @Blocking
     public int resolveCheckId(String name) throws SQLException {
-        Integer cached = checkIds.get(name);
+        return resolve(checkIds, name, Sql.UPSERT_CHECK, Sql.SELECT_CHECK_ID, "tg_checks");
+    }
+
+    @Blocking
+    public int resolveBrandId(String name) throws SQLException {
+        return resolve(brandIds, name, Sql.UPSERT_BRAND, Sql.SELECT_BRAND_ID, "tg_client_brands");
+    }
+
+    @Blocking
+    public int resolveDebugTemplateId(String template) throws SQLException {
+        return resolve(debugTemplateIds, template,
+                Sql.UPSERT_DEBUG_TEMPLATE, Sql.SELECT_DEBUG_TEMPLATE_ID, "tg_debug_messages");
+    }
+
+    @Blocking
+    public int resolvePunishmentCommandId(String command) throws SQLException {
+        return resolve(punishmentCommandIds, command,
+                Sql.UPSERT_PUNISHMENT_COMMAND, Sql.SELECT_PUNISHMENT_COMMAND_ID, "tg_punishment_commands");
+    }
+
+    private int resolve(ConcurrentMap<String, Integer> cache, String value,
+                        String upsertSql, String selectSql, String tableLabel) throws SQLException {
+        Integer cached = cache.get(value);
         if (cached != null) return cached;
 
-        synchronized (checkIds) {
-            cached = checkIds.get(name);
+        synchronized (cache) {
+            cached = cache.get(value);
             if (cached != null) return cached;
 
             try (Connection c = connection.borrow()) {
-                int id = upsertAndFetchId(c, "tg_checks", Sql.UPSERT_CHECK, name);
-                checkIds.put(name, id);
-                return id;
+                try (PreparedStatement upsert = c.prepareStatement(upsertSql)) {
+                    upsert.setString(1, value);
+                    upsert.executeUpdate();
+                }
+                try (PreparedStatement select = c.prepareStatement(selectSql)) {
+                    select.setString(1, value);
+                    try (ResultSet rs = select.executeQuery()) {
+                        if (rs.next()) {
+                            int id = rs.getInt(1);
+                            cache.put(value, id);
+                            return id;
+                        }
+                    }
+                }
             }
+            throw new SQLException("Failed to resolve id in " + tableLabel + " for value of length " + value.length());
         }
-    }
-
-    private int upsertAndFetchId(Connection c, String table, String upsertSql, String name) throws SQLException {
-        try (PreparedStatement upsert = c.prepareStatement(upsertSql)) {
-            upsert.setString(1, name);
-            upsert.executeUpdate();
-        }
-        try (PreparedStatement select = c.prepareStatement("SELECT id FROM " + table + " WHERE name = ?")) {
-            select.setString(1, name);
-            try (ResultSet rs = select.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
-            }
-        }
-        throw new SQLException("Failed to resolve id for " + table + "." + name);
     }
 }

@@ -24,28 +24,23 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Public projection of a single recorded alert. Equivalent to one row in the GUI history.
  *
- * @param id              primary key in {@code tg_alerts}; useful as a stable identifier
- *                        when threading user input back to a specific alert.
- * @param checkName       the check that flagged the player (e.g. {@code AutoTotemA}).
- * @param serverName      the name of the server that wrote the alert (multi-server installs).
- * @param violations      running violation level at the time the alert was emitted.
- * @param debug           free-form debug payload from the check, or {@code null}.
- * @param keepalivePing   keepalive RTT in ms when the alert fired, or {@code null} if unknown.
- * @param transactionPing transaction RTT in ms, or {@code null}.
- * @param clientBrand     Minecraft client brand string (e.g. {@code vanilla}, {@code lunarclient}).
- * @param clientVersion   protocol version number, or {@code null} if not yet known.
- * @param createdAt       epoch ms when the alert was logged.
+ * @param id            primary key in {@code tg_alerts}; useful as a stable identifier
+ *                      when threading user input back to a specific alert.
+ * @param checkName     the check that flagged the player (e.g. {@code AutoTotemA}).
+ * @param serverName    the name of the server that wrote the alert (multi-server installs).
+ * @param debug         the rendered debug payload from the check, or {@code null} if the
+ *                      check did not provide one. Template args are already substituted.
+ * @param clientBrand   Minecraft client brand string (e.g. {@code vanilla}, {@code lunarclient}).
+ * @param clientVersion protocol version number recorded on the matching profile.
+ * @param createdAt     epoch ms when the alert was logged.
  */
 public record AlertEntry(
         long id,
         @NotNull String checkName,
         @NotNull String serverName,
-        int violations,
         @Nullable String debug,
-        @Nullable Integer keepalivePing,
-        @Nullable Integer transactionPing,
-        @Nullable String clientBrand,
-        @Nullable Integer clientVersion,
+        @NotNull String clientBrand,
+        int clientVersion,
         long createdAt
 ) {
 }

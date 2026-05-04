@@ -45,7 +45,7 @@ public class TickC extends CheckImpl implements PacketCheck {
         }
 
         if (teleportData.lastTeleportConfirmSkipped()) {
-            fail("skipped=" + teleportData.getLastSkippedTeleportCount());
+            fail("skipped={0}", teleportData.getLastSkippedTeleportCount());
         }
     }
 }

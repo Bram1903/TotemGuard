@@ -118,6 +118,18 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
         return replace(message, player, check, Map.of());
     }
 
+    public @NotNull com.deathmotion.totemguard.common.placeholder.engine.PlaceholderEngine.Capture replaceCapturing(
+            @NotNull String message,
+            @Nullable TGPlayer player,
+            @Nullable CheckImpl check,
+            @NotNull Map<String, Object> extras) {
+        return engine.replaceCapturing(
+                message,
+                new InternalContext(platform, player, check),
+                new PlaceholderContext(player, check, extras)
+        );
+    }
+
     @Override
     public @NotNull Set<String> registeredKeys() {
         return engine.registeredKeys();

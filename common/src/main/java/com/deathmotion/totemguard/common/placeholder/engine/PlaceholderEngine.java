@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.placeholder.engine;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderContext;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderProvider;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderHolder;
 import com.deathmotion.totemguard.common.util.SortedMerge;
 import org.jetbrains.annotations.NotNull;
@@ -109,6 +110,72 @@ public final class PlaceholderEngine {
         return out.toString();
     }
 
+    public @NotNull Capture replaceCapturing(@NotNull String message,
+                                             @NotNull InternalContext internalCtx,
+                                             @NotNull PlaceholderContext apiCtx) {
+        if (message.isEmpty() || message.indexOf('%') == -1) {
+            return new Capture(message, message, null);
+        }
+
+        StringBuilder dispatched = new StringBuilder(message.length());
+        StringBuilder template = new StringBuilder(message.length());
+        StringBuilder argsJoined = new StringBuilder();
+        int argIndex = 0;
+        int cursor = 0;
+        int length = message.length();
+
+        while (cursor < length) {
+            int start = message.indexOf('%', cursor);
+            if (start < 0 || start == length - 1) {
+                dispatched.append(message, cursor, length);
+                template.append(message, cursor, length);
+                break;
+            }
+
+            int end = message.indexOf('%', start + 1);
+            if (end < 0) {
+                dispatched.append(message, cursor, length);
+                template.append(message, cursor, length);
+                break;
+            }
+
+            String key = message.substring(start + 1, end);
+            if (!isValidKey(key)) {
+                dispatched.append(message, cursor, end + 1);
+                template.append(message, cursor, end + 1);
+                cursor = end + 1;
+                continue;
+            }
+
+            dispatched.append(message, cursor, start);
+            template.append(message, cursor, start);
+
+            String replacement = resolveExtra(key, apiCtx.extras());
+            if (replacement == null) {
+                replacement = internalResolvers.resolve(key, internalCtx);
+            }
+            if (replacement == null) {
+                replacement = apiResolvers.resolve(key, apiCtx);
+            }
+
+            if (replacement != null) {
+                dispatched.append(replacement);
+                template.append('{').append(argIndex).append('}');
+                if (argIndex > 0) argsJoined.append(DebugTemplate.ARG_DELIMITER);
+                argsJoined.append(replacement);
+                argIndex++;
+            } else {
+                dispatched.append(message, start, end + 1);
+                template.append(message, start, end + 1);
+            }
+
+            cursor = end + 1;
+        }
+
+        String args = argIndex == 0 ? null : argsJoined.toString();
+        return new Capture(dispatched.toString(), template.toString(), args);
+    }
+
     public @NotNull Set<String> registeredKeys() {
         return registeredKeys;
     }
@@ -144,6 +211,9 @@ public final class PlaceholderEngine {
     @FunctionalInterface
     private interface Resolver<C> {
         @Nullable String resolve(@NotNull String key, @NotNull C context);
+    }
+
+    public record Capture(@NotNull String dispatched, @NotNull String template, @Nullable String args) {
     }
 
     private static final class ResolverCatalog<C> {

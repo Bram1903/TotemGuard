@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class HeuristicCheck extends CheckImpl {
@@ -55,7 +56,17 @@ public abstract class HeuristicCheck extends CheckImpl {
         return true;
     }
 
-    protected final boolean punish(double weight, @Nullable String debug) {
+    protected final boolean punish(double weight) {
+        if (!buildPressure(weight)) return false;
+        return fail();
+    }
+
+    protected final boolean punish(double weight, @NotNull String template, @Nullable Object @NotNull ... args) {
+        if (!buildPressure(weight)) return false;
+        return fail(template, args);
+    }
+
+    private boolean buildPressure(double weight) {
         if (guarded()) return false;
 
         applyDecay();
@@ -63,13 +74,9 @@ public abstract class HeuristicCheck extends CheckImpl {
 
         if (after >= flagThreshold()) {
             buffer.reset();
-            return fail(debug);
+            return true;
         }
         return false;
-    }
-
-    protected final boolean punish(double weight) {
-        return punish(weight, null);
     }
 
     protected final void reward(double weight) {
