@@ -81,8 +81,8 @@ public class Data {
             String message = "&a[Inventory] &7" + player.getName() + " has "
                     + (openInventory ? "&aopened" : "&cclosed")
                     + " &7their inventory.";
-            Component inventoryMessage = MessageUtil.formatMessage(message);
 
+            //Component inventoryMessage = MessageUtil.formatMessage(message);
             //player.getUser().sendMessage(inventoryMessage);
             platform.getGuiManager().refreshMonitor(player.getUuid());
         }
