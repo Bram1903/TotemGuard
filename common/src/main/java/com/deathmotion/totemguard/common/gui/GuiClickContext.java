@@ -47,13 +47,15 @@ public final class GuiClickContext {
     }
 
     public void open(GuiScreen screen) {
-        manager.pushScreen(session.viewerId(), screen);
-        this.rendered = true;
+        if (manager.pushScreen(session.viewerId(), screen)) {
+            this.rendered = true;
+        }
     }
 
     public void replace(GuiScreen screen) {
-        manager.replaceScreen(session.viewerId(), screen);
-        this.rendered = true;
+        if (manager.replaceScreen(session.viewerId(), screen)) {
+            this.rendered = true;
+        }
     }
 
     public void back() {

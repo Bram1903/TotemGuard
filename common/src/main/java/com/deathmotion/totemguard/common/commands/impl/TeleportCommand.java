@@ -31,6 +31,8 @@ import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -148,8 +150,8 @@ public final class TeleportCommand extends AbstractCommand {
             return;
         }
 
-        TGPlayer senderTg = platform.getPlayerRepository().getPlayer(sender.getUniqueId());
-        if (senderTg == null) {
+        User senderUser = PacketEvents.getAPI().getPlayerManager().getUser(sender.getNativeSender());
+        if (senderUser == null) {
             sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
             return;
         }
@@ -164,7 +166,7 @@ public final class TeleportCommand extends AbstractCommand {
                 expiresAt
         );
         presence.publishTeleportRequest(payload);
-        platform.getBungeeChannelManager().routeToProxyServer(senderTg.getUser(), resolvedServer);
+        platform.getBungeeChannelManager().routeToProxyServer(senderUser, resolvedServer);
         sender.sendMessage(platform.getMessageService().getComponent(
                 MessagesKeys.TELEPORT_CROSS_SERVER,
                 Map.of("tg_player", target.playerName(), "tg_server", resolvedServer)

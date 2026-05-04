@@ -105,27 +105,28 @@ public final class GuiManager {
         return true;
     }
 
-    public void pushScreen(UUID viewerId, GuiScreen screen) {
+    public boolean pushScreen(UUID viewerId, GuiScreen screen) {
         GuiSession session = sessions.get(viewerId);
         if (session == null || !isInteractive(session)) {
-            return;
+            return false;
         }
         if (!checkPermission(viewerId, screen)) {
-            return;
+            return false;
         }
 
         session.push(screen);
         screen.onOpen(session);
         render(session, true);
+        return true;
     }
 
-    public void replaceScreen(UUID viewerId, GuiScreen screen) {
+    public boolean replaceScreen(UUID viewerId, GuiScreen screen) {
         GuiSession session = sessions.get(viewerId);
         if (session == null || !isInteractive(session)) {
-            return;
+            return false;
         }
         if (!checkPermission(viewerId, screen)) {
-            return;
+            return false;
         }
 
         GuiScreen current = session.currentScreen();
@@ -137,6 +138,7 @@ public final class GuiManager {
         session.push(screen);
         screen.onOpen(session);
         render(session, true);
+        return true;
     }
 
     private boolean checkPermission(UUID viewerId, GuiScreen screen) {

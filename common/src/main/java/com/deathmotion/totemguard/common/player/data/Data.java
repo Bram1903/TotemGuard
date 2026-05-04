@@ -20,11 +20,9 @@ package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.util.MessageUtil;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.text.Component;
 
 @Getter
 @Setter
