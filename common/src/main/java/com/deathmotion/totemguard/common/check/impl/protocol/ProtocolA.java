@@ -27,51 +27,29 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 
 @RequiresTickEnd
-@CheckData(description = "Slot change after action in same tick", type = CheckType.PROTOCOL)
+@CheckData(description = "Slot change after block place in same tick", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
-    private boolean sawFlushingAction;
+    private boolean blockPlaced;
 
     public ProtocolA(TGPlayer player) {
         super(player);
-    }
-
-    private static boolean isFlushingAction(PacketTypeCommon type, PacketReceiveEvent event) {
-        if (type == PacketType.Play.Client.ATTACK
-                || type == PacketType.Play.Client.INTERACT_ENTITY
-                || type == PacketType.Play.Client.USE_ITEM
-                || type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            return true;
-        }
-        if (type == PacketType.Play.Client.PLAYER_DIGGING) {
-            DiggingAction action = new WrapperPlayClientPlayerDigging(event).getAction();
-            return action == DiggingAction.RELEASE_USE_ITEM || action == DiggingAction.STAB;
-        }
-        return false;
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon type = event.getPacketType();
 
-        if (type == PacketType.Play.Client.CLIENT_TICK_END) {
-            sawFlushingAction = false;
-            return;
-        }
-
-        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            if (sawFlushingAction) {
+        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
+            blockPlaced = true;
+        } else if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
+            if (blockPlaced) {
                 fail();
             }
-            return;
-        }
-
-        if (isFlushingAction(type, event)) {
-            sawFlushingAction = true;
+        } else if (type == PacketType.Play.Client.CLIENT_TICK_END) {
+            blockPlaced = false;
         }
     }
 }
