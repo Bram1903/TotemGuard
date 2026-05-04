@@ -37,6 +37,7 @@ public class ReloadService {
         platform.getAntiVPNRepository().reload();
         platform.getUpdateCheckerRepository().reload();
         platform.getDiscordWebhookService().reload();
+        platform.refreshProxyTopology();
 
         ModRegistry.load();
 

@@ -148,6 +148,12 @@ public final class TeleportCommand extends AbstractCommand {
             return;
         }
 
+        TGPlayer senderTg = platform.getPlayerRepository().getPlayer(sender.getUniqueId());
+        if (senderTg == null) {
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
+            return;
+        }
+
         long expiresAt = System.currentTimeMillis() + REQUEST_TTL_MILLIS;
         SyncTeleportRequestPacket.Payload payload = new SyncTeleportRequestPacket.Payload(
                 UUID.randomUUID(),
@@ -158,7 +164,7 @@ public final class TeleportCommand extends AbstractCommand {
                 expiresAt
         );
         presence.publishTeleportRequest(payload);
-        senderPlatform.routeToProxyServer(resolvedServer);
+        platform.getBungeeChannelManager().routeToProxyServer(senderTg.getUser(), resolvedServer);
         sender.sendMessage(platform.getMessageService().getComponent(
                 MessagesKeys.TELEPORT_CROSS_SERVER,
                 Map.of("tg_player", target.playerName(), "tg_server", resolvedServer)

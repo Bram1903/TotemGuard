@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.bukkit.compatibility.BukkitCompatibility;
 import com.deathmotion.totemguard.bukkit.network.BukkitCrossServerTeleportRouter;
-import com.deathmotion.totemguard.bukkit.network.BungeeChannelManager;
 import com.deathmotion.totemguard.bukkit.player.BukkitPlatformPlayerFactory;
 import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.bukkit.sender.BukkitSenderFactory;
@@ -52,7 +51,6 @@ public class TGBukkitPlatform extends TGPlatform {
     private final Lazy<BukkitPlatformPlayerFactory> platformPlayerFactory;
     private final Lazy<CommandManager<Sender>> commandManager;
     private final Lazy<BukkitCrossServerTeleportRouter> teleportRouter;
-    private final Lazy<BungeeChannelManager> bungeeChannelManager;
 
     public TGBukkitPlatform(TGBukkit plugin) {
         super(Platform.PAPER);
@@ -63,7 +61,6 @@ public class TGBukkitPlatform extends TGPlatform {
         this.platformPlayerFactory = Lazy.of(() -> new BukkitPlatformPlayerFactory(plugin));
 
         this.teleportRouter = Lazy.of(() -> new BukkitCrossServerTeleportRouter(this));
-        this.bungeeChannelManager = Lazy.of(() -> new BungeeChannelManager(plugin, this));
 
         this.commandManager = Lazy.of(() -> {
             LegacyPaperCommandManager<Sender> manager = new LegacyPaperCommandManager<>(
@@ -138,20 +135,5 @@ public class TGBukkitPlatform extends TGPlatform {
     @Override
     public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
         teleportRouter.get().accept(payload);
-    }
-
-    @Override
-    public boolean canRouteToServer(String serverName) {
-        return bungeeChannelManager.get().isServerOnThisProxy(serverName);
-    }
-
-    @Override
-    public String resolveServerName(String serverName) {
-        return bungeeChannelManager.get().resolveServerName(serverName);
-    }
-
-    @Override
-    public String resolveProxyServerId(String serverName) {
-        return bungeeChannelManager.get().resolveProxyServerId(serverName);
     }
 }

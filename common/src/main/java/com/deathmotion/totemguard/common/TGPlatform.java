@@ -41,6 +41,7 @@ import com.deathmotion.totemguard.common.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.monitor.MonitorRepository;
+import com.deathmotion.totemguard.common.network.BungeeChannelManager;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ServerIdentity;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
@@ -99,6 +100,7 @@ public abstract class TGPlatform {
     private GuiManager guiManager;
     private IntegrationRegistrar integrationRegistrar;
     private NetworkPresenceRepository networkPresenceRepository;
+    private BungeeChannelManager bungeeChannelManager;
     private MonitorRepository monitorRepository;
     private TGPlatformAPI api;
 
@@ -178,9 +180,12 @@ public abstract class TGPlatform {
 
         integrationRegistrar.enableAll();
 
+        bungeeChannelManager = new BungeeChannelManager(this);
+
         registerPacketListener(new PacketPlayerJoinQuit());
         registerPacketListener(new PacketCheckManagerListener(playerRepository));
         registerPacketListener(new GuiPacketListener());
+        registerPacketListener(bungeeChannelManager);
 
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
         internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
@@ -257,14 +262,18 @@ public abstract class TGPlatform {
     }
 
     public boolean canRouteToServer(String serverName) {
-        return true;
+        return bungeeChannelManager.isServerOnThisProxy(serverName);
     }
 
     public String resolveServerName(String serverName) {
-        return serverName;
+        return bungeeChannelManager.resolveServerName(serverName);
     }
 
     public @org.jetbrains.annotations.Nullable String resolveProxyServerId(String serverName) {
-        return null;
+        return bungeeChannelManager.resolveProxyServerId(serverName);
+    }
+
+    public void refreshProxyTopology() {
+        bungeeChannelManager.refresh();
     }
 }

@@ -21,8 +21,6 @@ package com.deathmotion.totemguard.bukkit.player;
 import com.deathmotion.totemguard.bukkit.TGBukkit;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -46,8 +44,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 public class BukkitPlatformPlayer implements PlatformPlayer {
-
-    public static final String BUNGEE_CHANNEL = "BungeeCord";
 
     private static final double FORCED_DAMAGE = 1_000.0;
 
@@ -102,18 +98,6 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
             World destWorld = world != null ? world : bukkitPlayer.getWorld();
             Location destination = new Location(destWorld, x, y, z, yaw, pitch);
             bukkitPlayer.teleportAsync(destination);
-        }, null);
-    }
-
-    @Override
-    public void routeToProxyServer(@NotNull String targetServerName) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("Connect");
-        out.writeUTF(targetServerName);
-        byte[] payload = out.toByteArray();
-        FoliaScheduler.getEntityScheduler().run(bukkitPlayer, plugin, (o) -> {
-            if (!bukkitPlayer.isOnline()) return;
-            bukkitPlayer.sendPluginMessage(plugin, BUNGEE_CHANNEL, payload);
         }, null);
     }
 

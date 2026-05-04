@@ -99,10 +99,6 @@ public class FabricPlatformPlayer implements PlatformPlayer {
     }
 
     @Override
-    public void routeToProxyServer(@NotNull String targetServerName) {
-    }
-
-    @Override
     public void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted, @NotNull Runnable onDamageRefused) {
         onDamageRefused.run();
     }

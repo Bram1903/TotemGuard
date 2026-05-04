@@ -16,22 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.bukkit.network;
+package com.deathmotion.totemguard.common.network;
 
-import com.deathmotion.totemguard.bukkit.player.BukkitPlatformPlayer;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPluginMessage;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,28 +40,17 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class BungeeChannelManager implements PluginMessageListener, Listener {
+public final class BungeeChannelManager extends PacketListenerAbstract {
 
-    private final Plugin plugin;
+    private static final String LEGACY_CHANNEL = "BungeeCord";
+    private static final String MODERN_CHANNEL = "bungeecord:main";
+
     private final TGPlatform platform;
     private final AtomicReference<@Nullable String> proxyServerName = new AtomicReference<>();
     private final AtomicReference<@Nullable Set<String>> proxyServerSet = new AtomicReference<>();
 
-    public BungeeChannelManager(Plugin plugin, TGPlatform platform) {
-        this.plugin = plugin;
+    public BungeeChannelManager(TGPlatform platform) {
         this.platform = platform;
-    }
-
-    public void register() {
-        Bukkit.getMessenger().registerOutgoingPluginChannel(plugin, BukkitPlatformPlayer.BUNGEE_CHANNEL);
-        Bukkit.getMessenger().registerIncomingPluginChannel(plugin, BukkitPlatformPlayer.BUNGEE_CHANNEL, this);
-        Bukkit.getPluginManager().registerEvents(this, plugin);
-
-        Player carrier = Bukkit.getOnlinePlayers().stream().findFirst().orElse(null);
-        if (carrier != null) {
-            sendSubchannel(carrier, "GetServer");
-            sendSubchannel(carrier, "GetServers");
-        }
     }
 
     public @Nullable String proxyServerName() {
@@ -96,19 +84,41 @@ public final class BungeeChannelManager implements PluginMessageListener, Listen
         return null;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        if (proxyServerName.get() != null && proxyServerSet.get() != null) return;
-        Player carrier = event.getPlayer();
-        if (proxyServerName.get() == null) sendSubchannel(carrier, "GetServer");
-        if (proxyServerSet.get() == null) sendSubchannel(carrier, "GetServers");
+    public void routeToProxyServer(@NotNull User user, @NotNull String targetServerName) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF("Connect");
+        out.writeUTF(targetServerName);
+        sendBungeePayload(user, out.toByteArray());
+    }
+
+    public void refresh() {
+        proxyServerName.set(null);
+        proxyServerSet.set(null);
+        User carrier = pickCarrier();
+        if (carrier != null) queryProxy(carrier);
     }
 
     @Override
-    public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, byte @NotNull [] message) {
-        if (!BukkitPlatformPlayer.BUNGEE_CHANNEL.equals(channel)) return;
+    public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() != PacketType.Play.Server.JOIN_GAME) return;
+        if (proxyServerName.get() != null && proxyServerSet.get() != null) return;
+
+        User user = event.getUser();
+        event.getTasksAfterSend().add(() -> {
+            if (user.getConnectionState() == ConnectionState.PLAY) queryProxy(user);
+        });
+    }
+
+    @Override
+    public void onPacketReceive(PacketReceiveEvent event) {
+        if (event.getPacketType() != PacketType.Play.Client.PLUGIN_MESSAGE) return;
+
+        WrapperPlayClientPluginMessage wrapper = new WrapperPlayClientPluginMessage(event);
+        String channel = wrapper.getChannelName();
+        if (!LEGACY_CHANNEL.equals(channel) && !MODERN_CHANNEL.equals(channel)) return;
+
         try {
-            ByteArrayDataInput in = ByteStreams.newDataInput(message);
+            ByteArrayDataInput in = ByteStreams.newDataInput(wrapper.getData());
             String sub = in.readUTF();
             switch (sub) {
                 case "GetServer" -> {
@@ -134,13 +144,25 @@ public final class BungeeChannelManager implements PluginMessageListener, Listen
         }
     }
 
-    private void sendSubchannel(Player carrier, String subchannel) {
+    private void queryProxy(@NotNull User user) {
+        if (proxyServerName.get() == null) sendBungeeSubchannel(user, "GetServer");
+        if (proxyServerSet.get() == null) sendBungeeSubchannel(user, "GetServers");
+    }
+
+    private void sendBungeeSubchannel(@NotNull User user, @NotNull String subchannel) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(subchannel);
-        byte[] payload = out.toByteArray();
-        FoliaScheduler.getEntityScheduler().run(carrier, plugin, (o) -> {
-            if (!carrier.isOnline()) return;
-            carrier.sendPluginMessage(plugin, BukkitPlatformPlayer.BUNGEE_CHANNEL, payload);
-        }, null);
+        sendBungeePayload(user, out.toByteArray());
+    }
+
+    private void sendBungeePayload(@NotNull User user, byte @NotNull [] payload) {
+        user.sendPacket(new WrapperPlayServerPluginMessage(MODERN_CHANNEL, payload));
+    }
+
+    private @Nullable User pickCarrier() {
+        for (User user : PacketEvents.getAPI().getProtocolManager().getUsers()) {
+            if (user.getConnectionState() == ConnectionState.PLAY) return user;
+        }
+        return null;
     }
 }

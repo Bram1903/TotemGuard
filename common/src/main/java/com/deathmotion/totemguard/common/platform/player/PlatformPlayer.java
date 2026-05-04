@@ -40,8 +40,6 @@ public interface PlatformPlayer {
 
     void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch);
 
-    void routeToProxyServer(@NotNull String targetServerName);
-
     /**
      * Starts a manual-check window on the target's region thread:
      * <ol>
