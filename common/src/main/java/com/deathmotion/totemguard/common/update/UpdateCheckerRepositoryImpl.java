@@ -308,10 +308,10 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
         if (current.isOlderThan(latest)) {
             platform.getLogger().info(
                     "A new TotemGuard release is available: " + latest
-                            + " (running " + current + "). Download at " + RELEASE_PAGE_URL);
+                            + " (running " + current.toDisplayString() + "). Download at " + RELEASE_PAGE_URL);
         } else if (current.isNewerThan(latest)) {
             platform.getLogger().info(
-                    "Running a development build " + current + " ahead of latest release " + latest);
+                    "Running a development build " + current.toDisplayString() + " ahead of latest release " + latest);
         }
     }
 
