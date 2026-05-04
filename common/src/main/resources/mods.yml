@@ -8,14 +8,21 @@
 # DO NOT TOUCH!!!
 config_version: 1
 
-kick-command: "kick %tg_player% Unfair Mod Detected: %tg_mod%"
-ban-command: "ban %tg_player% Unfair Mod Detected: %tg_mod%"
+# Placeholders: %tg_player%, %tg_mod_list%, %tg_mod_count%, %tg_mod_overflow_count%, %tg_mod%
+kick-command: "kick %tg_player% Unfair mods detected: %tg_mod_list%"
+ban-command: "ban %tg_player% Unfair mods detected: %tg_mod_list%"
 
-# Window for KICK_THEN_BAN to escalate the next hit to a ban.
+# Used when the client filtered our verification probes. Not part of kick-then-ban.
+unresponsive-kick-command: "kick %tg_player% Failed to verify client modifications."
+
+# KICK_THEN_BAN: re-join with a previously warned mod -> ban; with a brand-new mod -> kick.
 kick-then-ban-window-minutes: 30
 
-# severity: LOG | KICK | BAN | KICK_THEN_BAN
-# A payload or translation may belong to at most one mod.
+# Caps the mod list shown in messages; extras collapse into the overflow suffix.
+mod-list-limit: 8
+mod-list-overflow-format: " (+%tg_mod_overflow_count% more)"
+
+# severity: LOG | KICK | BAN | KICK_THEN_BAN. Each payload/translation belongs to one mod.
 mods:
   AutoTotem:
     severity: LOG

@@ -16,27 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.mods;
+package com.deathmotion.totemguard.api.mod;
 
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Locale;
-
-public enum ModSeverity {
-    LOG,
-    KICK,
-    BAN,
-    KICK_THEN_BAN;
-
-    public static @Nullable ModSeverity fromConfigValue(@Nullable String value) {
-        if (value == null || value.isBlank()) {
-            return KICK;
-        }
-
-        try {
-            return valueOf(value.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
-    }
+/**
+ * A single mod that was detected for a player during one detection session.
+ *
+ * @param id              the mod identifier as declared in {@code mods.yml}
+ * @param severity        the configured severity of this mod
+ * @param detectionMethod the signal that produced the detection
+ */
+public record DetectedMod(
+        @NotNull String id,
+        @NotNull ModSeverity severity,
+        @NotNull ModDetectionMethod detectionMethod
+) {
 }

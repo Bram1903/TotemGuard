@@ -138,9 +138,13 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
     }
 
     public void alert(CheckImpl check, int violations, @Nullable String debug) {
+        alert(check, violations, debug, Map.of());
+    }
+
+    public void alert(CheckImpl check, int violations, @Nullable String debug, Map<String, Object> extras) {
         UUID violatorUuid = check.player.getUuid();
         String violatorName = check.player.getName();
-        Component realtimeMessage = AlertBuilder.build(check, violations, debug);
+        Component realtimeMessage = AlertBuilder.build(check, violations, debug, extras);
         realtimeRoster.deliver(violatorUuid, realtimeMessage);
 
         if (platform.getRedisRepository().isEnabled() && violatorName != null) {
@@ -150,7 +154,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
             ));
         }
 
-        bufferChatAlert(check, violations, debug);
+        bufferChatAlert(check, violations, debug, extras);
 
         int keepalivePing = check.player.getPingData().getKeepAlivePing();
         int transactionPing = check.player.getPingData().getTransactionPing();
@@ -170,11 +174,11 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
         });
     }
 
-    private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug) {
+    private void bufferChatAlert(CheckImpl check, int violations, @Nullable String debug, Map<String, Object> extras) {
         chatBuffers.computeIfAbsent(
                 check.player.getUuid(),
                 ignored -> new PlayerChatBuffer(platform.getScheduler(), this::broadcastFlag, CHAT_BUFFER_WINDOW_SECONDS)
-        ).buffer(check, violations, debug);
+        ).buffer(check, violations, debug, extras);
     }
 
     public void broadcast(String message) {

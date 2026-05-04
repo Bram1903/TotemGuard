@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.history.HistoryRepository;
+import com.deathmotion.totemguard.api.mod.ModDetectionRepository;
 import com.deathmotion.totemguard.api.network.NetworkRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
 import com.deathmotion.totemguard.api.punishment.PunishmentRepository;
@@ -147,4 +148,17 @@ public interface TotemGuardAPI {
      * @return the update checker repository, never {@code null}
      */
     @NotNull UpdateCheckerRepository getUpdateCheckerRepository();
+
+    /**
+     * Returns the repository for the mod detection subsystem.
+     * <p>
+     * Mod detection runs as its own service, separate from the per-tick check
+     * pipeline. Each player's session accumulates detections from plugin-channel
+     * registrations, plugin-messages, and translation probes, then resolves on
+     * the next tick boundary into a single
+     * {@link com.deathmotion.totemguard.api.event.impl.TGModDetectionResolvedEvent}.
+     *
+     * @return the mod detection repository, never {@code null}
+     */
+    @NotNull ModDetectionRepository getModDetectionRepository();
 }

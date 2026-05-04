@@ -27,7 +27,6 @@ import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
-import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserJoinEventImpl;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
@@ -191,13 +190,14 @@ public class TGPlayer implements TGUser {
         platform.getScheduler().runAsyncTask(() -> {
             applyCachedData();
             hasLoggedIn = true;
-            checkManager.getPacketCheck(Mod.class).handle();
+            platform.getModDetectionService().onPlayerLogin(this);
             platform.getAntiVPNRepository().validateConnection(this);
             resolveDatabaseProfile();
         });
     }
 
     public void onLogout() {
+        platform.getModDetectionService().onPlayerLogout(uuid);
         platform.getScheduler().runAsyncTask(this::cacheData);
     }
 
@@ -238,8 +238,7 @@ public class TGPlayer implements TGUser {
     }
 
     public boolean isModDetectionActive() {
-        Mod mod = checkManager.getPacketCheck(Mod.class);
-        return mod != null && mod.isDetectionActive();
+        return platform.getModDetectionService().isDetectionActiveFor(uuid);
     }
 
     public void triggerInventoryEvent() {

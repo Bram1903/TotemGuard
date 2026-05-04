@@ -32,9 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public final class CacheCodecs {
 
@@ -214,6 +212,28 @@ public final class CacheCodecs {
                 long lsb = in.readLong();
                 String label = readUtf8(in);
                 return new FocusTarget(new UUID(msb, lsb), label);
+            }
+        }
+    };
+
+    public static final Codec<Set<String>> STRING_SET = new Codec<>() {
+        @Override
+        public byte[] encode(Set<String> value) throws Exception {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (DataOutputStream out = new DataOutputStream(baos)) {
+                out.writeInt(value.size());
+                for (String item : value) writeUtf8(out, item);
+            }
+            return baos.toByteArray();
+        }
+
+        @Override
+        public Set<String> decode(byte[] bytes) throws Exception {
+            try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes))) {
+                int n = in.readInt();
+                LinkedHashSet<String> out = new LinkedHashSet<>(n);
+                for (int i = 0; i < n; i++) out.add(readUtf8(in));
+                return out;
             }
         }
     };

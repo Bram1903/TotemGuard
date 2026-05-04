@@ -26,8 +26,10 @@ import com.deathmotion.totemguard.common.util.MessageUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public final class AlertBuilder {
@@ -38,13 +40,20 @@ public final class AlertBuilder {
     }
 
     public static Component build(CheckImpl check, int violations, @Nullable String debugInfo) {
-        MessageService messageService = TGPlatform.getInstance().getMessageService();
-        Map<String, Object> extras = Map.of(
-                "tg_check_violations", violations,
-                "tg_check_debug", debugInfo == null ? UNSPECIFIED_DEBUG : debugInfo
-        );
+        return build(check, violations, debugInfo, Map.of());
+    }
 
-        Component alert = messageService.getComponent(MessagesKeys.ALERTS_MESSAGE, check.player, check, extras);
+    public static Component build(CheckImpl check,
+                                  int violations,
+                                  @Nullable String debugInfo,
+                                  @NotNull Map<String, Object> extraPlaceholders) {
+        MessageService messageService = TGPlatform.getInstance().getMessageService();
+        Map<String, Object> extras = new HashMap<>(extraPlaceholders.size() + 2);
+        extras.put("tg_check_violations", violations);
+        extras.put("tg_check_debug", debugInfo == null ? UNSPECIFIED_DEBUG : debugInfo);
+        extras.putAll(extraPlaceholders);
+
+        Component alert = messageService.getComponent(check.getAlertMessageKey(), check.player, check, extras);
 
         String hoverText = messageService.getString(MessagesKeys.ALERTS_HOVER, check.player, check, extras).stripTrailing();
         if (!hoverText.isBlank()) {

@@ -46,6 +46,10 @@ alerts:
     &#E7DEC4Click to &#FBAF00teleport &#E7DEC4to &#FEE067%tg_player%&#E7DEC4.
   command: "/tp %tg_player%"
 
+mod-detection:
+  alert:
+    message: "%prefix% &#FEE067%tg_player%&#B8AC8F failed &#FBAF00Mod Detection"
+
 reload: "%prefix% &#6FB04ATotemGuard reloaded successfully!"
 
 update-checker:

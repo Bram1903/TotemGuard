@@ -20,11 +20,13 @@ package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.check.CheckType;
+import com.deathmotion.totemguard.api.config.key.ConfigKey;
 import com.deathmotion.totemguard.api.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
@@ -32,10 +34,12 @@ import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.punishment.PunishmentCommand;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class CheckImpl implements Check {
 
@@ -112,11 +116,19 @@ public abstract class CheckImpl implements Check {
     }
 
     protected boolean fail(@Nullable String debug) {
+        return fail(debug, Map.of());
+    }
+
+    protected boolean fail(@Nullable String debug, @NotNull Map<String, Object> extras) {
         if (!shouldFail(debug)) return false;
         violations++;
 
-        TGPlatform.getInstance().getAlertRepository().alert(this, violations, debug);
+        TGPlatform.getInstance().getAlertRepository().alert(this, violations, debug, extras);
         return true;
+    }
+
+    public @NotNull ConfigKey<String> getAlertMessageKey() {
+        return MessagesKeys.ALERTS_MESSAGE;
     }
 
     protected void failInventory(@Nullable String debug) {

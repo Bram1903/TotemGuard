@@ -19,24 +19,30 @@
 package com.deathmotion.totemguard.common.alert;
 
 import com.deathmotion.totemguard.common.check.CheckImpl;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ChatBuffer {
     private final CheckImpl check;
     private final AtomicInteger violations = new AtomicInteger();
     private volatile @Nullable String debug;
+    private volatile @NotNull Map<String, Object> extras = Map.of();
 
     ChatBuffer(CheckImpl check) {
         this.check = check;
     }
 
-    void update(int newViolations, @Nullable String debug) {
+    void update(int newViolations, @Nullable String debug, @NotNull Map<String, Object> extras) {
         violations.accumulateAndGet(newViolations, Math::max);
 
         if (debug != null) {
             this.debug = debug;
+        }
+        if (!extras.isEmpty()) {
+            this.extras = Map.copyOf(extras);
         }
     }
 
@@ -50,5 +56,9 @@ public final class ChatBuffer {
 
     @Nullable String getDebug() {
         return debug;
+    }
+
+    @NotNull Map<String, Object> getExtras() {
+        return extras;
     }
 }

@@ -85,7 +85,6 @@ public class CheckManagerImpl {
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
-                .put(Mod.class, new Mod(player))
                 .build();
 
         ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = ImmutableClassToInstanceMap.<ExtendedCheck>builder()
@@ -93,6 +92,7 @@ public class CheckManagerImpl {
 
         this.manualChecks = ImmutableClassToInstanceMap.<ManualCheck>builder()
                 .put(ManualTotemA.class, new ManualTotemA(player))
+                .put(Mod.class, new Mod(player))
                 .build();
 
         this.allChecks = ImmutableClassToInstanceMap.<Check>builder()

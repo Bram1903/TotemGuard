@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.mods;
+package com.deathmotion.totemguard.common.mod;
 
+import com.deathmotion.totemguard.api.mod.ModSeverity;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
@@ -32,13 +33,5 @@ public record ModDefinition(
     public ModDefinition {
         payloads = Set.copyOf(payloads);
         translations = Set.copyOf(translations);
-    }
-
-    public boolean hasPayloads() {
-        return !payloads.isEmpty();
-    }
-
-    public boolean hasTranslations() {
-        return !translations.isEmpty();
     }
 }

@@ -31,14 +31,21 @@ import java.util.*;
 public final class ModsView {
 
     private static final String DEFAULT_SEVERITY = "KICK";
-    private static final String DEFAULT_KICK_COMMAND = "kick %tg_player% Unfair Mod Detected: %tg_mod%";
-    private static final String DEFAULT_BAN_COMMAND = "ban %tg_player% Unfair Mod Detected: %tg_mod%";
+    private static final String DEFAULT_KICK_COMMAND = "kick %tg_player% Unfair mods detected: %tg_mod_list%";
+    private static final String DEFAULT_BAN_COMMAND = "ban %tg_player% Unfair mods detected: %tg_mod_list%";
+    private static final String DEFAULT_UNRESPONSIVE_KICK_COMMAND =
+            "kick %tg_player% Failed to verify client modifications (no response to verification probes).";
     private static final int DEFAULT_KICK_THEN_BAN_WINDOW_MINUTES = 30;
+    private static final int DEFAULT_MOD_LIST_LIMIT = 8;
+    private static final String DEFAULT_MOD_LIST_OVERFLOW = " (+%tg_mod_overflow_count% more)";
 
     private final int version;
     private final String kickCommand;
     private final String banCommand;
+    private final String unresponsiveKickCommand;
     private final int kickThenBanWindowMinutes;
+    private final int modListLimit;
+    private final String modListOverflowFormat;
     private final Map<String, ModConfig> mods;
 
     public ModsView(Config config) {
@@ -51,9 +58,19 @@ public final class ModsView {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .orElse(DEFAULT_BAN_COMMAND);
+        this.unresponsiveKickCommand = config.getString("unresponsive-kick-command")
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse(DEFAULT_UNRESPONSIVE_KICK_COMMAND);
         this.kickThenBanWindowMinutes = config.getInt("kick-then-ban-window-minutes")
                 .filter(value -> value > 0)
                 .orElse(DEFAULT_KICK_THEN_BAN_WINDOW_MINUTES);
+        this.modListLimit = config.getInt("mod-list-limit")
+                .filter(value -> value > 0)
+                .orElse(DEFAULT_MOD_LIST_LIMIT);
+        this.modListOverflowFormat = config.getString("mod-list-overflow-format")
+                .filter(s -> !s.isEmpty())
+                .orElse(DEFAULT_MOD_LIST_OVERFLOW);
 
         Map<String, ModConfig> parsed = new LinkedHashMap<>();
         config.getSection("mods").ifPresent(modsSection -> {
@@ -88,8 +105,20 @@ public final class ModsView {
         return banCommand;
     }
 
+    public @NotNull String unresponsiveKickCommand() {
+        return unresponsiveKickCommand;
+    }
+
     public int kickThenBanWindowMinutes() {
         return kickThenBanWindowMinutes;
+    }
+
+    public int modListLimit() {
+        return modListLimit;
+    }
+
+    public @NotNull String modListOverflowFormat() {
+        return modListOverflowFormat;
     }
 
     public @NotNull Map<String, ModConfig> all() {

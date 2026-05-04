@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
-import com.deathmotion.totemguard.common.check.impl.mods.ModRegistry;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
@@ -40,6 +39,7 @@ import com.deathmotion.totemguard.common.gui.GuiPacketListener;
 import com.deathmotion.totemguard.common.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.mod.*;
 import com.deathmotion.totemguard.common.monitor.MonitorRepository;
 import com.deathmotion.totemguard.common.network.BungeeChannelManager;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
@@ -62,6 +62,7 @@ import com.google.common.base.Stopwatch;
 import lombok.Getter;
 import lombok.Setter;
 import org.incendo.cloud.CommandManager;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -102,6 +103,7 @@ public abstract class TGPlatform {
     private NetworkPresenceRepository networkPresenceRepository;
     private BungeeChannelManager bungeeChannelManager;
     private MonitorRepository monitorRepository;
+    private ModDetectionService modDetectionService;
     private TGPlatformAPI api;
 
     public TGPlatform(Platform platform) {
@@ -184,9 +186,16 @@ public abstract class TGPlatform {
 
         bungeeChannelManager = new BungeeChannelManager(this);
 
+        ModKickThenBanTracker kickThenBanTracker = new ModKickThenBanTracker(cacheRepository);
+        ModLogAlertTracker logAlertTracker = new ModLogAlertTracker(cacheRepository);
+        networkPresenceRepository.addListener(logAlertTracker);
+        ModResolver modResolver = new ModResolver(this, kickThenBanTracker, logAlertTracker);
+        modDetectionService = new ModDetectionService(this, modResolver, kickThenBanTracker);
+
         registerPacketListener(new PacketPlayerJoinQuit());
         registerPacketListener(new PacketCheckManagerListener(playerRepository));
         registerPacketListener(new GuiPacketListener());
+        registerPacketListener(new ModPacketObserver(modDetectionService));
         registerPacketListener(bungeeChannelManager);
 
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
@@ -252,12 +261,6 @@ public abstract class TGPlatform {
 
     public abstract void disablePlugin();
 
-    /**
-     * Validates platform-specific runtime requirements (server software, server
-     * version, mod loader, etc.). Implementations are expected to log their
-     * own user-facing errors via {@link com.deathmotion.totemguard.common.util.CompatibilityLogger}
-     * before returning {@code false}.
-     */
     public abstract boolean checkPlatformCompatibility();
 
     public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
@@ -271,7 +274,7 @@ public abstract class TGPlatform {
         return bungeeChannelManager.resolveServerName(serverName);
     }
 
-    public @org.jetbrains.annotations.Nullable String resolveProxyServerId(String serverName) {
+    public @Nullable String resolveProxyServerId(String serverName) {
         return bungeeChannelManager.resolveProxyServerId(serverName);
     }
 

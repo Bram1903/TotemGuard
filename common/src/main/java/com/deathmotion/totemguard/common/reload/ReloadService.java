@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.reload;
 
 import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.check.impl.mods.ModRegistry;
+import com.deathmotion.totemguard.common.mod.ModRegistry;
 import org.jetbrains.annotations.Blocking;
 
 public class ReloadService {

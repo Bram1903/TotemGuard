@@ -55,8 +55,12 @@ public final class CacheKeys {
         return UNVERSIONED_KEY_PREFIX + uuid;
     }
 
-    public static String modKickRecord(UUID uuid, String modId) {
-        return PREFIX + "mod-kick:" + uuid + ":" + modId;
+    public static String modKickThenBanWarning(UUID uuid) {
+        return PREFIX + "mod-warn:" + uuid;
+    }
+
+    public static String modLogAlerted(UUID uuid) {
+        return PREFIX + "mod-logged:" + uuid;
     }
 
     public static String historyVersion(UUID uuid) {

@@ -21,8 +21,10 @@ package com.deathmotion.totemguard.common.alert;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import net.kyori.adventure.text.Component;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -39,22 +41,22 @@ final class PlayerChatBuffer {
         this.bufferWindowSeconds = bufferWindowSeconds;
     }
 
-    void buffer(CheckImpl check, int violations, @Nullable String debug) {
+    void buffer(CheckImpl check, int violations, @Nullable String debug, @NotNull Map<String, Object> extras) {
         String checkName = check.getName();
 
         ChatBuffer existing = checkBuffers.get(checkName);
         if (existing != null) {
-            existing.update(violations, debug);
+            existing.update(violations, debug, extras);
             return;
         }
 
         ChatBuffer fresh = new ChatBuffer(check);
-        fresh.update(violations, debug);
+        fresh.update(violations, debug, extras);
 
         ChatBuffer prior = checkBuffers.putIfAbsent(checkName, fresh);
         if (prior != null) {
             // Lost the race — merge into the winner.
-            prior.update(violations, debug);
+            prior.update(violations, debug, extras);
             return;
         }
 
@@ -72,7 +74,8 @@ final class PlayerChatBuffer {
         Component alertMessage = AlertBuilder.build(
                 check,
                 chatBuffer.getViolations(),
-                chatBuffer.getDebug()
+                chatBuffer.getDebug(),
+                chatBuffer.getExtras()
         );
         broadcaster.broadcast(check.player.getUuid(), check.player.getName(), alertMessage);
     }

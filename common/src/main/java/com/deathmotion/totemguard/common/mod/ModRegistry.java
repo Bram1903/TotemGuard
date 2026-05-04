@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.mods;
+package com.deathmotion.totemguard.common.mod;
 
+import com.deathmotion.totemguard.api.mod.ModSeverity;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.ModConfig;
 import com.deathmotion.totemguard.common.config.view.ModsView;
@@ -48,7 +49,7 @@ public final class ModRegistry {
         Map<String, String> translationOwners = new HashMap<>();
 
         for (ModConfig cfg : view.all().values()) {
-            ModSeverity severity = ModSeverity.fromConfigValue(cfg.severity());
+            ModSeverity severity = parseSeverity(cfg.severity());
             if (severity == null) {
                 warn("Ignoring invalid severity '" + cfg.severity() + "' for mod '" + cfg.id()
                         + "'. Valid values: LOG, KICK, BAN, KICK_THEN_BAN. Defaulting to KICK.");
@@ -69,11 +70,22 @@ public final class ModRegistry {
         SNAPSHOT = new Snapshot(
                 Collections.unmodifiableMap(definitions),
                 buildPayloadEntries(definitions),
-                buildTranslationIndex(definitions),
                 PunishmentCommand.parse("[KICK] " + view.kickCommand()),
                 PunishmentCommand.parse("[BAN] " + view.banCommand()),
-                Duration.ofMinutes(view.kickThenBanWindowMinutes())
+                PunishmentCommand.parse("[KICK] " + view.unresponsiveKickCommand()),
+                Duration.ofMinutes(view.kickThenBanWindowMinutes()),
+                view.modListLimit(),
+                view.modListOverflowFormat()
         );
+    }
+
+    private static @Nullable ModSeverity parseSeverity(@Nullable String value) {
+        if (value == null || value.isBlank()) return ModSeverity.KICK;
+        try {
+            return ModSeverity.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private static Set<String> claimUnique(
@@ -113,16 +125,6 @@ public final class ModRegistry {
         return List.copyOf(entries);
     }
 
-    private static Map<String, ModDefinition> buildTranslationIndex(Map<String, ModDefinition> definitions) {
-        Map<String, ModDefinition> index = new HashMap<>();
-        for (ModDefinition def : definitions.values()) {
-            for (String translation : def.translations()) {
-                index.put(translation, def);
-            }
-        }
-        return Map.copyOf(index);
-    }
-
     private static void warn(String message) {
         TGPlatform.getInstance().getLogger().warning("[mods.yml] " + message);
     }
@@ -133,20 +135,24 @@ public final class ModRegistry {
     public record Snapshot(
             @NotNull Map<String, ModDefinition> definitions,
             @NotNull List<PayloadEntry> payloadEntries,
-            @NotNull Map<String, ModDefinition> translationIndex,
             @NotNull PunishmentCommand kickCommand,
             @NotNull PunishmentCommand banCommand,
-            @NotNull Duration kickThenBanWindow
+            @NotNull PunishmentCommand unresponsiveKickCommand,
+            @NotNull Duration kickThenBanWindow,
+            int modListLimit,
+            @NotNull String modListOverflowFormat
     ) {
 
         static Snapshot empty() {
             return new Snapshot(
                     Map.of(),
                     List.of(),
-                    Map.of(),
                     PunishmentCommand.parse("[KICK] kick %tg_player%"),
                     PunishmentCommand.parse("[BAN] ban %tg_player%"),
-                    Duration.ofMinutes(30)
+                    PunishmentCommand.parse("[KICK] kick %tg_player% Failed to verify client modifications."),
+                    Duration.ofMinutes(30),
+                    8,
+                    " (+%tg_mod_overflow_count% more)"
             );
         }
 
@@ -157,10 +163,6 @@ public final class ModRegistry {
                 }
             }
             return null;
-        }
-
-        public @Nullable ModDefinition byTranslation(@NotNull String key) {
-            return translationIndex.get(key);
         }
     }
 }

@@ -52,6 +52,10 @@ public class PacketLatencyHandler {
         findOrCreateTrackingTask(event).addCallback(callback);
     }
 
+    public void sendTransaction(LongConsumer callback) {
+        sendTransactionPacket(callback, null);
+    }
+
     private PendingPacketLatencyTask findOrCreateTrackingTask(PacketSendEvent event) {
         for (Runnable taskAfterSend : event.getTasksAfterSend()) {
             if (taskAfterSend instanceof PendingPacketLatencyTask pendingPacketLatencyTask) {
