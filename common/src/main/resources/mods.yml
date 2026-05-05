@@ -12,9 +12,6 @@ config_version: 1
 kick-command: "kick %tg_player% Unfair mods detected: %tg_mod_list%"
 ban-command: "ban %tg_player% Unfair mods detected: %tg_mod_list%"
 
-# Used when the client filtered our verification probes. Not part of kick-then-ban.
-unresponsive-kick-command: "kick %tg_player% Failed to verify client modifications."
-
 # KICK_THEN_BAN: re-join with a previously warned mod -> ban; with a brand-new mod -> kick.
 kick-then-ban-window-minutes: 30
 

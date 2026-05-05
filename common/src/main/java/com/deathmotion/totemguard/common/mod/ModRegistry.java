@@ -72,7 +72,6 @@ public final class ModRegistry {
                 buildPayloadEntries(definitions),
                 PunishmentCommand.parse("[KICK] " + view.kickCommand()),
                 PunishmentCommand.parse("[BAN] " + view.banCommand()),
-                PunishmentCommand.parse("[KICK] " + view.unresponsiveKickCommand()),
                 Duration.ofMinutes(view.kickThenBanWindowMinutes()),
                 view.modListLimit(),
                 view.modListOverflowFormat()
@@ -137,7 +136,6 @@ public final class ModRegistry {
             @NotNull List<PayloadEntry> payloadEntries,
             @NotNull PunishmentCommand kickCommand,
             @NotNull PunishmentCommand banCommand,
-            @NotNull PunishmentCommand unresponsiveKickCommand,
             @NotNull Duration kickThenBanWindow,
             int modListLimit,
             @NotNull String modListOverflowFormat
@@ -149,7 +147,6 @@ public final class ModRegistry {
                     List.of(),
                     PunishmentCommand.parse("[KICK] kick %tg_player%"),
                     PunishmentCommand.parse("[BAN] ban %tg_player%"),
-                    PunishmentCommand.parse("[KICK] kick %tg_player% Failed to verify client modifications."),
                     Duration.ofMinutes(30),
                     8,
                     " (+%tg_mod_overflow_count% more)"

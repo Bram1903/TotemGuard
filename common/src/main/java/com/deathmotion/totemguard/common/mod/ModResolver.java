@@ -73,40 +73,6 @@ public final class ModResolver {
         });
     }
 
-    public void resolveUnresponsive(@NotNull ModSession session) {
-        TGPlayer player = session.player();
-        ModRegistry.Snapshot snapshot = session.snapshot();
-        ModTranslationDetector detector = session.translationDetector();
-
-        Mod modCheck = player.getCheckManager().getManualCheck(Mod.class);
-        if (modCheck == null || !modCheck.isEnabled()) return;
-
-        Map<String, Object> extras = new HashMap<>();
-        extras.put("tg_mod_list", "");
-        extras.put("tg_mod_count", 0);
-        extras.put("tg_mod_overflow_count", 0);
-        extras.put("tg_mod_action", friendlyName(ModAction.KICK));
-        extras.put("tg_mod_action_short", ModAction.KICK.shortLabel());
-        extras.put("tg_mod_action_label", styledLabel(ModAction.KICK));
-        extras.put("tg_mod_probes_sent", detector.sentCount());
-        extras.put("tg_mod_probes_answered", detector.answeredCount());
-        extras.put("tg_mod_probes_missing", detector.sentCount() - detector.answeredCount());
-
-        DebugTemplate.Compiled compiled = DebugTemplate.precompiled(
-                "Unresponsive: {0}/{1} probes answered",
-                detector.answeredCount(), detector.sentCount());
-        if (!modCheck.reportFlag(extras, compiled)) return;
-        String debug = DebugTemplate.render(compiled.template(), compiled.args());
-
-        platform.getPunishmentRepository().punishWith(
-                modCheck,
-                List.of(snapshot.unresponsiveKickCommand()),
-                debug,
-                compiled,
-                extras
-        );
-    }
-
     private void runResolution(TGPlayer player,
                                ModRegistry.Snapshot snapshot,
                                Set<DetectedMod> mods,

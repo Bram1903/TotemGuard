@@ -33,8 +33,6 @@ public final class ModsView {
     private static final String DEFAULT_SEVERITY = "KICK";
     private static final String DEFAULT_KICK_COMMAND = "kick %tg_player% Unfair mods detected: %tg_mod_list%";
     private static final String DEFAULT_BAN_COMMAND = "ban %tg_player% Unfair mods detected: %tg_mod_list%";
-    private static final String DEFAULT_UNRESPONSIVE_KICK_COMMAND =
-            "kick %tg_player% Failed to verify client modifications (no response to verification probes).";
     private static final int DEFAULT_KICK_THEN_BAN_WINDOW_MINUTES = 30;
     private static final int DEFAULT_MOD_LIST_LIMIT = 8;
     private static final String DEFAULT_MOD_LIST_OVERFLOW = " (+%tg_mod_overflow_count% more)";
@@ -42,7 +40,6 @@ public final class ModsView {
     private final int version;
     private final String kickCommand;
     private final String banCommand;
-    private final String unresponsiveKickCommand;
     private final int kickThenBanWindowMinutes;
     private final int modListLimit;
     private final String modListOverflowFormat;
@@ -58,10 +55,6 @@ public final class ModsView {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .orElse(DEFAULT_BAN_COMMAND);
-        this.unresponsiveKickCommand = config.getString("unresponsive-kick-command")
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .orElse(DEFAULT_UNRESPONSIVE_KICK_COMMAND);
         this.kickThenBanWindowMinutes = config.getInt("kick-then-ban-window-minutes")
                 .filter(value -> value > 0)
                 .orElse(DEFAULT_KICK_THEN_BAN_WINDOW_MINUTES);
@@ -103,10 +96,6 @@ public final class ModsView {
 
     public @NotNull String banCommand() {
         return banCommand;
-    }
-
-    public @NotNull String unresponsiveKickCommand() {
-        return unresponsiveKickCommand;
     }
 
     public int kickThenBanWindowMinutes() {

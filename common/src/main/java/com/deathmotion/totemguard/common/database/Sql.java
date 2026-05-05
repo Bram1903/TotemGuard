@@ -79,42 +79,12 @@ public final class Sql {
             "INSERT INTO tg_alerts " +
                     "(profile_id, player_id, check_id, debug_id, debug_args, created_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String PLAYER_ID_BY_UUID = "(SELECT id FROM tg_players WHERE uuid = ?)";
-    private static final String CHECK_ID_BY_NAME  = "(SELECT id FROM tg_checks  WHERE name = ?)";
-    public static final String DELETE_ALERTS_BY_UUID =
-            "DELETE FROM tg_alerts WHERE player_id = " + PLAYER_ID_BY_UUID + " LIMIT ?";
-    public static final String COUNT_ALERTS_BY_UUID =
-            "SELECT COUNT(*) FROM tg_alerts WHERE player_id = " + PLAYER_ID_BY_UUID;
-    public static final String SELECT_ALERT_CHECK_SUMMARIES_BY_UUID =
-            "SELECT c.name AS check_name, COUNT(*) AS alert_count " +
-                    "FROM tg_alerts a " +
-                    "JOIN tg_checks c ON a.check_id = c.id " +
-                    "WHERE a.player_id = " + PLAYER_ID_BY_UUID + " " +
-                    "GROUP BY c.name ORDER BY c.name ASC";
-    public static final String COUNT_ALERTS_BY_UUID_CHECK =
-            "SELECT COUNT(*) FROM tg_alerts " +
-                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND check_id = " + CHECK_ID_BY_NAME;
-    public static final String COUNT_ALERTS_BY_UUID_SINCE =
-            "SELECT COUNT(*) FROM tg_alerts " +
-                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND created_at >= ?";
-    public static final String COUNT_ALERTS_BY_UUID_CHECK_SINCE =
-            "SELECT COUNT(*) FROM tg_alerts " +
-                    "WHERE player_id = " + PLAYER_ID_BY_UUID +
-                    "  AND check_id = " + CHECK_ID_BY_NAME +
-                    "  AND created_at >= ?";
     public static final String DELETE_OLD_ALERTS =
             "DELETE FROM tg_alerts WHERE created_at < ? LIMIT ?";
     public static final String INSERT_PUNISHMENT =
             "INSERT INTO tg_punishments " +
                     "(profile_id, player_id, check_id, type, command_id, command_args, debug_id, debug_args, created_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    public static final String DELETE_PUNISHMENTS_BY_UUID =
-            "DELETE FROM tg_punishments WHERE player_id = " + PLAYER_ID_BY_UUID + " LIMIT ?";
-    public static final String COUNT_PUNISHMENTS_BY_UUID =
-            "SELECT COUNT(*) FROM tg_punishments WHERE player_id = " + PLAYER_ID_BY_UUID;
-    public static final String COUNT_PUNISHMENTS_BY_UUID_SINCE =
-            "SELECT COUNT(*) FROM tg_punishments " +
-                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND created_at >= ?";
     public static final String UPSERT_STATS_DAILY_ALERTS =
             "INSERT INTO tg_stats_daily (day_epoch, alerts) VALUES (?, ?) " +
                     "ON DUPLICATE KEY UPDATE alerts = alerts + VALUES(alerts)";
@@ -136,6 +106,36 @@ public final class Sql {
             "SELECT table_name, table_rows, data_length, index_length " +
                     "FROM information_schema.tables " +
                     "WHERE table_schema = DATABASE() AND table_name LIKE 'tg\\_%'";
+    private static final String PLAYER_ID_BY_UUID = "(SELECT id FROM tg_players WHERE uuid = ?)";
+    public static final String DELETE_ALERTS_BY_UUID =
+            "DELETE FROM tg_alerts WHERE player_id = " + PLAYER_ID_BY_UUID + " LIMIT ?";
+    public static final String COUNT_ALERTS_BY_UUID =
+            "SELECT COUNT(*) FROM tg_alerts WHERE player_id = " + PLAYER_ID_BY_UUID;
+    public static final String SELECT_ALERT_CHECK_SUMMARIES_BY_UUID =
+            "SELECT c.name AS check_name, COUNT(*) AS alert_count " +
+                    "FROM tg_alerts a " +
+                    "JOIN tg_checks c ON a.check_id = c.id " +
+                    "WHERE a.player_id = " + PLAYER_ID_BY_UUID + " " +
+                    "GROUP BY c.name ORDER BY c.name ASC";
+    public static final String COUNT_ALERTS_BY_UUID_SINCE =
+            "SELECT COUNT(*) FROM tg_alerts " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND created_at >= ?";
+    public static final String DELETE_PUNISHMENTS_BY_UUID =
+            "DELETE FROM tg_punishments WHERE player_id = " + PLAYER_ID_BY_UUID + " LIMIT ?";
+    public static final String COUNT_PUNISHMENTS_BY_UUID =
+            "SELECT COUNT(*) FROM tg_punishments WHERE player_id = " + PLAYER_ID_BY_UUID;
+    public static final String COUNT_PUNISHMENTS_BY_UUID_SINCE =
+            "SELECT COUNT(*) FROM tg_punishments " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND created_at >= ?";
+    private static final String CHECK_ID_BY_NAME = "(SELECT id FROM tg_checks  WHERE name = ?)";
+    public static final String COUNT_ALERTS_BY_UUID_CHECK =
+            "SELECT COUNT(*) FROM tg_alerts " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND check_id = " + CHECK_ID_BY_NAME;
+    public static final String COUNT_ALERTS_BY_UUID_CHECK_SINCE =
+            "SELECT COUNT(*) FROM tg_alerts " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID +
+                    "  AND check_id = " + CHECK_ID_BY_NAME +
+                    "  AND created_at >= ?";
     private static final String ALERT_SELECT_COLUMNS =
             "a.id, c.name AS check_name, s.name AS server_name, " +
                     "d.template AS debug_template, a.debug_args, " +

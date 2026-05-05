@@ -56,6 +56,10 @@ public final class AlertWriter {
         this.flushIntervalNs = TimeUnit.MILLISECONDS.toNanos(DatabaseTuning.BATCH_FLUSH_INTERVAL_MS);
     }
 
+    private static int maxUnsigned(int a, int b) {
+        return Integer.compareUnsigned(a, b) >= 0 ? a : b;
+    }
+
     public void start() {
         if (!running.compareAndSet(false, true)) return;
         Thread t = new Thread(this::runLoop, "TotemGuard-DB-Writer");
@@ -149,10 +153,6 @@ public final class AlertWriter {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
                     "Alert batch persisted, but rollup updates failed for " + batch.size() + " row(s)", ex);
         }
-    }
-
-    private static int maxUnsigned(int a, int b) {
-        return Integer.compareUnsigned(a, b) >= 0 ? a : b;
     }
 
     private void warnDrop() {

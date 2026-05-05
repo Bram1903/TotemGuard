@@ -79,11 +79,7 @@ public final class ModDetectionService implements ModDetectionRepository {
     public void onTickBoundary(@NotNull ModSession session) {
         if (session.state() != ModSession.State.AWAITING_BOUNDARY) return;
         if (!session.tryResolve()) return;
-        if (session.translationDetector().allAnswered()) {
-            resolver.resolve(session);
-        } else {
-            resolver.resolveUnresponsive(session);
-        }
+        resolver.resolve(session);
     }
 
     @Override
