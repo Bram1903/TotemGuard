@@ -103,6 +103,23 @@ public final class AlertDao {
     }
 
     @Blocking
+    public long deleteOlderThan(long cutoffEpochMs, int chunkSize) throws SQLException {
+        long total = 0;
+        int cutoffSeconds = EpochSeconds.fromMillis(cutoffEpochMs);
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.DELETE_OLD_ALERTS)) {
+            stmt.setInt(1, cutoffSeconds);
+            stmt.setInt(2, chunkSize);
+            while (true) {
+                int removed = stmt.executeUpdate();
+                total += removed;
+                if (removed < chunkSize) break;
+            }
+        }
+        return total;
+    }
+
+    @Blocking
     public List<AlertRecord> findByPlayer(UUID uuid, int limit, int offset) throws SQLException {
         return findRows(Sql.SELECT_ALERTS_BY_UUID, stmt -> {
             stmt.setBytes(1, UuidBytes.toBytes(uuid));

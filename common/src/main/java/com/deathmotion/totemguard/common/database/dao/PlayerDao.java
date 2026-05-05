@@ -31,7 +31,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -78,26 +78,28 @@ public final class PlayerDao {
     }
 
     @Blocking
-    public void bumpLastFlaggedAt(@NotNull Set<Integer> playerIds, long flaggedAtEpochMs) throws SQLException {
-        if (playerIds.isEmpty()) return;
-        int flaggedAt = EpochSeconds.fromMillis(flaggedAtEpochMs);
+    public void bumpLastFlaggedAt(@NotNull Map<Integer, Integer> latestFlaggedAtSeconds) throws SQLException {
+        if (latestFlaggedAtSeconds.isEmpty()) return;
 
-        StringBuilder sql = new StringBuilder(Sql.UPDATE_PLAYERS_LAST_FLAGGED_AT_PREFIX);
-        for (int i = 0; i < playerIds.size(); i++) {
-            if (i > 0) sql.append(',');
-            sql.append('?');
-        }
-        sql.append(')');
-
-        try (Connection c = connection.borrow();
-             PreparedStatement stmt = c.prepareStatement(sql.toString())) {
-            stmt.setInt(1, flaggedAt);
-            stmt.setInt(2, flaggedAt);
-            int idx = 3;
-            for (int playerId : playerIds) {
-                stmt.setInt(idx++, playerId);
+        try (Connection c = connection.borrow()) {
+            boolean prevAutoCommit = c.getAutoCommit();
+            c.setAutoCommit(false);
+            try (PreparedStatement stmt = c.prepareStatement(Sql.UPDATE_PLAYER_LAST_FLAGGED_AT)) {
+                for (Map.Entry<Integer, Integer> entry : latestFlaggedAtSeconds.entrySet()) {
+                    int flaggedAt = entry.getValue();
+                    stmt.setInt(1, flaggedAt);
+                    stmt.setInt(2, entry.getKey());
+                    stmt.setInt(3, flaggedAt);
+                    stmt.addBatch();
+                }
+                stmt.executeBatch();
+                c.commit();
+            } catch (SQLException ex) {
+                c.rollback();
+                throw ex;
+            } finally {
+                c.setAutoCommit(prevAutoCommit);
             }
-            stmt.executeUpdate();
         }
     }
 

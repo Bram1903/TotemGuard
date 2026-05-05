@@ -116,7 +116,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             SchemaInfoDao schemaInfo = new SchemaInfoDao(connection);
             StatsRollupDao statsRollup = new StatsRollupDao(connection);
             AlertWriter writer = new AlertWriter(alerts, players, statsRollup);
-            RetentionSweeper sweeper = new RetentionSweeper(connection, vpnCache, opts);
+            RetentionSweeper sweeper = new RetentionSweeper(alerts, vpnCache, opts);
 
             int serverId = catalog.resolveAndCacheThisServerId(opts.serverName());
 
@@ -131,9 +131,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             this.statsRollupDao = statsRollup;
             this.alertWriter = writer;
             this.retentionSweeper = sweeper;
-            // Reorganize p_future into real monthly partitions before any inserts
-            // so the first alert lands in a pruning-friendly partition.
-            sweeper.bootstrap();
             writer.start();
             sweeper.start();
 

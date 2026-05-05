@@ -54,8 +54,8 @@ public final class Sql {
                     "ORDER BY last_seen DESC LIMIT 1";
     public static final String SELECT_PLAYER_BY_UUID =
             "SELECT id, uuid, last_name, first_seen, last_seen FROM tg_players WHERE uuid = ? LIMIT 1";
-    public static final String UPDATE_PLAYERS_LAST_FLAGGED_AT_PREFIX =
-            "UPDATE tg_players SET last_flagged_at = ? WHERE last_flagged_at < ? AND id IN (";
+    public static final String UPDATE_PLAYER_LAST_FLAGGED_AT =
+            "UPDATE tg_players SET last_flagged_at = ? WHERE id = ? AND last_flagged_at < ?";
     public static final String SELECT_PROFILE_ID =
             "SELECT id FROM tg_profiles " +
                     "WHERE player_id = ? AND server_id = ? AND brand_id = ? AND client_version = ? LIMIT 1";
@@ -79,46 +79,42 @@ public final class Sql {
             "INSERT INTO tg_alerts " +
                     "(profile_id, player_id, check_id, debug_id, debug_args, created_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?)";
+    private static final String PLAYER_ID_BY_UUID = "(SELECT id FROM tg_players WHERE uuid = ?)";
+    private static final String CHECK_ID_BY_NAME  = "(SELECT id FROM tg_checks  WHERE name = ?)";
     public static final String DELETE_ALERTS_BY_UUID =
-            "DELETE a FROM tg_alerts a JOIN tg_players p ON a.player_id = p.id WHERE p.uuid = ? LIMIT ?";
+            "DELETE FROM tg_alerts WHERE player_id = " + PLAYER_ID_BY_UUID + " LIMIT ?";
     public static final String COUNT_ALERTS_BY_UUID =
-            "SELECT COUNT(*) FROM tg_alerts a JOIN tg_players p ON a.player_id = p.id WHERE p.uuid = ?";
+            "SELECT COUNT(*) FROM tg_alerts WHERE player_id = " + PLAYER_ID_BY_UUID;
     public static final String SELECT_ALERT_CHECK_SUMMARIES_BY_UUID =
             "SELECT c.name AS check_name, COUNT(*) AS alert_count " +
                     "FROM tg_alerts a " +
-                    "JOIN tg_players p ON a.player_id = p.id " +
-                    "JOIN tg_checks  c ON a.check_id  = c.id " +
-                    "WHERE p.uuid = ? GROUP BY c.name ORDER BY c.name ASC";
+                    "JOIN tg_checks c ON a.check_id = c.id " +
+                    "WHERE a.player_id = " + PLAYER_ID_BY_UUID + " " +
+                    "GROUP BY c.name ORDER BY c.name ASC";
     public static final String COUNT_ALERTS_BY_UUID_CHECK =
-            "SELECT COUNT(*) FROM tg_alerts a " +
-                    "JOIN tg_players p ON a.player_id = p.id " +
-                    "JOIN tg_checks  c ON a.check_id  = c.id " +
-                    "WHERE p.uuid = ? AND c.name = ?";
+            "SELECT COUNT(*) FROM tg_alerts " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND check_id = " + CHECK_ID_BY_NAME;
     public static final String COUNT_ALERTS_BY_UUID_SINCE =
-            "SELECT COUNT(*) FROM tg_alerts a JOIN tg_players p ON a.player_id = p.id " +
-                    "WHERE p.uuid = ? AND a.created_at >= ?";
+            "SELECT COUNT(*) FROM tg_alerts " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND created_at >= ?";
     public static final String COUNT_ALERTS_BY_UUID_CHECK_SINCE =
-            "SELECT COUNT(*) FROM tg_alerts a " +
-                    "JOIN tg_players p ON a.player_id = p.id " +
-                    "JOIN tg_checks  c ON a.check_id  = c.id " +
-                    "WHERE p.uuid = ? AND c.name = ? AND a.created_at >= ?";
-    public static final String SELECT_ALERT_PARTITIONS =
-            "SELECT partition_name, partition_description FROM information_schema.partitions " +
-                    "WHERE table_schema = DATABASE() AND table_name = 'tg_alerts' " +
-                    "  AND partition_name IS NOT NULL " +
-                    "ORDER BY partition_ordinal_position";
+            "SELECT COUNT(*) FROM tg_alerts " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID +
+                    "  AND check_id = " + CHECK_ID_BY_NAME +
+                    "  AND created_at >= ?";
+    public static final String DELETE_OLD_ALERTS =
+            "DELETE FROM tg_alerts WHERE created_at < ? LIMIT ?";
     public static final String INSERT_PUNISHMENT =
             "INSERT INTO tg_punishments " +
                     "(profile_id, player_id, check_id, type, command_id, command_args, debug_id, debug_args, created_at) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     public static final String DELETE_PUNISHMENTS_BY_UUID =
-            "DELETE pu FROM tg_punishments pu JOIN tg_players p ON pu.player_id = p.id " +
-                    "WHERE p.uuid = ? LIMIT ?";
+            "DELETE FROM tg_punishments WHERE player_id = " + PLAYER_ID_BY_UUID + " LIMIT ?";
     public static final String COUNT_PUNISHMENTS_BY_UUID =
-            "SELECT COUNT(*) FROM tg_punishments pu JOIN tg_players p ON pu.player_id = p.id WHERE p.uuid = ?";
+            "SELECT COUNT(*) FROM tg_punishments WHERE player_id = " + PLAYER_ID_BY_UUID;
     public static final String COUNT_PUNISHMENTS_BY_UUID_SINCE =
-            "SELECT COUNT(*) FROM tg_punishments pu JOIN tg_players p ON pu.player_id = p.id " +
-                    "WHERE p.uuid = ? AND pu.created_at >= ?";
+            "SELECT COUNT(*) FROM tg_punishments " +
+                    "WHERE player_id = " + PLAYER_ID_BY_UUID + " AND created_at >= ?";
     public static final String UPSERT_STATS_DAILY_ALERTS =
             "INSERT INTO tg_stats_daily (day_epoch, alerts) VALUES (?, ?) " +
                     "ON DUPLICATE KEY UPDATE alerts = alerts + VALUES(alerts)";
@@ -144,44 +140,72 @@ public final class Sql {
             "a.id, c.name AS check_name, s.name AS server_name, " +
                     "d.template AS debug_template, a.debug_args, " +
                     "b.name AS client_brand, prof.client_version, a.created_at";
-    private static final String ALERT_FROM =
-            "FROM tg_alerts a " +
-                    "JOIN tg_players p          ON a.player_id  = p.id " +
-                    "JOIN tg_profiles prof      ON a.profile_id = prof.id " +
-                    "JOIN tg_servers s          ON prof.server_id = s.id " +
-                    "JOIN tg_client_brands b    ON prof.brand_id  = b.id " +
-                    "JOIN tg_checks c           ON a.check_id   = c.id " +
+    private static final String ALERT_OUTER_JOIN =
+            "JOIN tg_alerts a            ON a.id = page.id " +
+                    "JOIN tg_profiles prof       ON a.profile_id = prof.id " +
+                    "JOIN tg_servers s           ON prof.server_id = s.id " +
+                    "JOIN tg_client_brands b     ON prof.brand_id  = b.id " +
+                    "JOIN tg_checks c            ON a.check_id   = c.id " +
                     "LEFT JOIN tg_debug_messages d ON a.debug_id  = d.id ";
     public static final String SELECT_ALERTS_BY_UUID =
-            "SELECT " + ALERT_SELECT_COLUMNS + " " + ALERT_FROM +
-                    "WHERE p.uuid = ? ORDER BY a.created_at DESC LIMIT ? OFFSET ?";
+            "SELECT " + ALERT_SELECT_COLUMNS + " FROM (" +
+                    "  SELECT id FROM tg_alerts " +
+                    "  WHERE player_id = " + PLAYER_ID_BY_UUID + " " +
+                    "  ORDER BY created_at DESC LIMIT ? OFFSET ?" +
+                    ") page " + ALERT_OUTER_JOIN +
+                    "ORDER BY a.created_at DESC";
     public static final String SELECT_ALERTS_BY_UUID_CHECK =
-            "SELECT " + ALERT_SELECT_COLUMNS + " " + ALERT_FROM +
-                    "WHERE p.uuid = ? AND c.name = ? ORDER BY a.created_at DESC LIMIT ? OFFSET ?";
+            "SELECT " + ALERT_SELECT_COLUMNS + " FROM (" +
+                    "  SELECT id FROM tg_alerts " +
+                    "  WHERE player_id = " + PLAYER_ID_BY_UUID +
+                    "    AND check_id = " + CHECK_ID_BY_NAME + " " +
+                    "  ORDER BY created_at DESC LIMIT ? OFFSET ?" +
+                    ") page " + ALERT_OUTER_JOIN +
+                    "ORDER BY a.created_at DESC";
     public static final String SELECT_ALERTS_BY_UUID_SINCE =
-            "SELECT " + ALERT_SELECT_COLUMNS + " " + ALERT_FROM +
-                    "WHERE p.uuid = ? AND a.created_at >= ? ORDER BY a.created_at DESC LIMIT ? OFFSET ?";
+            "SELECT " + ALERT_SELECT_COLUMNS + " FROM (" +
+                    "  SELECT id FROM tg_alerts " +
+                    "  WHERE player_id = " + PLAYER_ID_BY_UUID +
+                    "    AND created_at >= ? " +
+                    "  ORDER BY created_at DESC LIMIT ? OFFSET ?" +
+                    ") page " + ALERT_OUTER_JOIN +
+                    "ORDER BY a.created_at DESC";
     public static final String SELECT_ALERTS_BY_UUID_CHECK_SINCE =
-            "SELECT " + ALERT_SELECT_COLUMNS + " " + ALERT_FROM +
-                    "WHERE p.uuid = ? AND c.name = ? AND a.created_at >= ? ORDER BY a.created_at DESC LIMIT ? OFFSET ?";
+            "SELECT " + ALERT_SELECT_COLUMNS + " FROM (" +
+                    "  SELECT id FROM tg_alerts " +
+                    "  WHERE player_id = " + PLAYER_ID_BY_UUID +
+                    "    AND check_id = " + CHECK_ID_BY_NAME +
+                    "    AND created_at >= ? " +
+                    "  ORDER BY created_at DESC LIMIT ? OFFSET ?" +
+                    ") page " + ALERT_OUTER_JOIN +
+                    "ORDER BY a.created_at DESC";
+
     private static final String PUNISHMENT_SELECT_COLUMNS =
             "pu.id, c.name AS check_name, s.name AS server_name, pu.type, " +
                     "cmd.command AS command_template, pu.command_args, " +
                     "d.template AS debug_template, pu.debug_args, pu.created_at";
-    private static final String PUNISHMENT_FROM =
-            "FROM tg_punishments pu " +
-                    "JOIN tg_players p              ON pu.player_id  = p.id " +
-                    "JOIN tg_profiles prof          ON pu.profile_id = prof.id " +
-                    "JOIN tg_servers s              ON prof.server_id = s.id " +
-                    "JOIN tg_checks c               ON pu.check_id   = c.id " +
+    private static final String PUNISHMENT_OUTER_JOIN =
+            "JOIN tg_punishments pu          ON pu.id = page.id " +
+                    "JOIN tg_profiles prof           ON pu.profile_id = prof.id " +
+                    "JOIN tg_servers s               ON prof.server_id = s.id " +
+                    "JOIN tg_checks c                ON pu.check_id   = c.id " +
                     "JOIN tg_punishment_commands cmd ON pu.command_id = cmd.id " +
-                    "LEFT JOIN tg_debug_messages d  ON pu.debug_id   = d.id ";
+                    "LEFT JOIN tg_debug_messages d   ON pu.debug_id   = d.id ";
     public static final String SELECT_PUNISHMENTS_BY_UUID =
-            "SELECT " + PUNISHMENT_SELECT_COLUMNS + " " + PUNISHMENT_FROM +
-                    "WHERE p.uuid = ? ORDER BY pu.created_at DESC LIMIT ? OFFSET ?";
+            "SELECT " + PUNISHMENT_SELECT_COLUMNS + " FROM (" +
+                    "  SELECT id FROM tg_punishments " +
+                    "  WHERE player_id = " + PLAYER_ID_BY_UUID + " " +
+                    "  ORDER BY created_at DESC LIMIT ? OFFSET ?" +
+                    ") page " + PUNISHMENT_OUTER_JOIN +
+                    "ORDER BY pu.created_at DESC";
     public static final String SELECT_PUNISHMENTS_BY_UUID_SINCE =
-            "SELECT " + PUNISHMENT_SELECT_COLUMNS + " " + PUNISHMENT_FROM +
-                    "WHERE p.uuid = ? AND pu.created_at >= ? ORDER BY pu.created_at DESC LIMIT ? OFFSET ?";
+            "SELECT " + PUNISHMENT_SELECT_COLUMNS + " FROM (" +
+                    "  SELECT id FROM tg_punishments " +
+                    "  WHERE player_id = " + PLAYER_ID_BY_UUID +
+                    "    AND created_at >= ? " +
+                    "  ORDER BY created_at DESC LIMIT ? OFFSET ?" +
+                    ") page " + PUNISHMENT_OUTER_JOIN +
+                    "ORDER BY pu.created_at DESC";
 
     private Sql() {
     }
