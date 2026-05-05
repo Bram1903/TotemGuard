@@ -27,32 +27,67 @@ import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPluginMessage;
 
-public class InboundClientBrandProcessor extends ProcessorInbound {
+import java.util.concurrent.ThreadLocalRandom;
 
-    private static final String CHANNEL = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
-    private boolean hasBrand = false;
+public class InboundClientProcessor extends ProcessorInbound {
 
-    public InboundClientBrandProcessor(TGPlayer player) {
+    private static final String BRAND_CHANNEL = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
+
+    private static final String MARLOW_VERSION_CHANNEL = "marlowcrystal:version";
+    private static final String MARLOW_CHALLENGE_CHANNEL = "marlowcrystal:challenge";
+    private static final String MARLOW_RESPONSE_CHANNEL = "marlowcrystal:challenge_response";
+
+    private boolean hasBrand;
+    private boolean awaitingMarlowResponse;
+    private int marlowChallengeId;
+
+    public InboundClientProcessor(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void handleInbound(PacketReceiveEvent event) {
-        if (hasBrand) return;
-
         if (event.getPacketType() == PacketType.Play.Client.PLUGIN_MESSAGE) {
             WrapperPlayClientPluginMessage packet = new WrapperPlayClientPluginMessage(event);
-            handle(packet.getChannelName(), packet.getData());
+            dispatch(packet.getChannelName(), packet.getData(), true);
         } else if (event.getPacketType() == PacketType.Configuration.Client.PLUGIN_MESSAGE) {
             WrapperConfigClientPluginMessage packet = new WrapperConfigClientPluginMessage(event);
-            handle(packet.getChannelName(), packet.getData());
+            dispatch(packet.getChannelName(), packet.getData(), false);
         }
     }
 
-    private void handle(String channel, byte[] data) {
-        if (!channel.equals(CHANNEL)) return;
+    private void dispatch(String channel, byte[] data, boolean play) {
+        if (channel == null) return;
 
+        if (!hasBrand && BRAND_CHANNEL.equals(channel)) {
+            handleBrand(data);
+            return;
+        }
+        if (!play || player.isMarlowOptimizer()) return;
+
+        if (MARLOW_VERSION_CHANNEL.equals(channel)) {
+            marlowChallengeId = ThreadLocalRandom.current().nextInt();
+            awaitingMarlowResponse = true;
+            byte[] payload = new byte[]{
+                    (byte) (marlowChallengeId >>> 24),
+                    (byte) (marlowChallengeId >>> 16),
+                    (byte) (marlowChallengeId >>> 8),
+                    (byte) marlowChallengeId
+            };
+            player.getUser().sendPacket(new WrapperPlayServerPluginMessage(MARLOW_CHALLENGE_CHANNEL, payload));
+        } else if (MARLOW_RESPONSE_CHANNEL.equals(channel)) {
+            if (!awaitingMarlowResponse) return;
+            awaitingMarlowResponse = false;
+            if (data == null || data.length != 4) return;
+            int received = ((data[0] & 0xFF) << 24) | ((data[1] & 0xFF) << 16) | ((data[2] & 0xFF) << 8) | (data[3] & 0xFF);
+            if (received != marlowChallengeId) return;
+            player.setMarlowOptimizer(true);
+        }
+    }
+
+    private void handleBrand(byte[] data) {
         String brand = "Vanilla";
 
         if (data.length > 64 || data.length == 0) {

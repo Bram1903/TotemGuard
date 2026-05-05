@@ -108,6 +108,9 @@ public class TGPlayer implements TGUser {
     private volatile Long databaseProfileId;
 
     @Setter
+    private boolean marlowOptimizer;
+
+    @Setter
     @Nullable
     private Long lastTotemUse;
 
@@ -150,7 +153,7 @@ public class TGPlayer implements TGUser {
         this.processorInbounds = new ArrayList<>() {{
             add(new InboundPingProcessor(TGPlayer.this));
             add(new InboundInventoryProcessor(TGPlayer.this));
-            add(new InboundClientBrandProcessor(TGPlayer.this));
+            add(new InboundClientProcessor(TGPlayer.this));
             add(new InboundActionProcessor(TGPlayer.this));
             add(new InboundTeleportProcessor(TGPlayer.this));
             add(new InboundMovementProcessor(TGPlayer.this));
