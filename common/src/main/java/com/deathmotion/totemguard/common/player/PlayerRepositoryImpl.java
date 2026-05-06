@@ -114,7 +114,8 @@ public final class PlayerRepositoryImpl implements UserRepository {
         boolean wantsAlerts = platformPlayer.hasPermission("TotemGuard.Alerts");
         boolean canFocus = platformPlayer.hasPermission("TotemGuard.Focus");
         boolean wantsTester = TGVersions.CURRENT.snapshot()
-                && platformPlayer.hasPermission("TotemGuard.Tester");
+                && platformPlayer.hasPermission("TotemGuard.Tester")
+                && !platformPlayer.hasPermission(BYPASS_PERMISSION);
         if (!wantsAlerts && !wantsTester && !canFocus) return;
 
         platform.getScheduler().runAsyncTask(() -> {

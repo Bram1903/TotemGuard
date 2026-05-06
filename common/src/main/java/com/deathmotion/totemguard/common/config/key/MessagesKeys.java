@@ -47,6 +47,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> ALERTS_LOCAL_ONLY_DISABLED = ConfigKey.string("alerts.local-only-disabled");
     public static final ConfigKey<String> TESTER_ENABLED = ConfigKey.string("alerts.tester.enabled");
     public static final ConfigKey<String> TESTER_DISABLED = ConfigKey.string("alerts.tester.disabled");
+    public static final ConfigKey<String> TESTER_BYPASS = ConfigKey.string("alerts.tester.bypass");
 
     public static final ConfigKey<String> FOCUS_ENABLED = ConfigKey.string("alerts.focus.enabled");
     public static final ConfigKey<String> FOCUS_DISABLED = ConfigKey.string("alerts.focus.disabled");

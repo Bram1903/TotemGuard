@@ -58,13 +58,13 @@ public class ProtocolE extends CheckImpl implements PacketCheck {
 
             final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
             if (alreadySent) {
-                fail();
+                fail("action={0}", packet.getAction());
             }
 
             this.sentSprint = sprint;
             this.sentSneak = sneak;
         } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
-            if (sentInput) fail();
+            if (sentInput) fail("input");
             sentInput = true;
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             sentSprint = false;

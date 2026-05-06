@@ -78,6 +78,10 @@ public final class TesterCommand extends AbstractCommand {
             sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TESTER_DISABLED));
             enabled = false;
         } else {
+            if (sender.hasPermission("TotemGuard.Bypass")) {
+                sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TESTER_BYPASS));
+                return;
+            }
             PlatformPlayer viewer = platform.getPlatformPlayerFactory().create(uuid);
             if (viewer == null) return;
             roster.put(uuid, viewer, new AlertFilter.Self(uuid), null);

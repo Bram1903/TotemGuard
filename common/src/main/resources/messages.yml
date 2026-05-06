@@ -21,6 +21,7 @@ alerts:
   tester:
     enabled: "%prefix% &#6FB04ATester alerts enabled &#B8AC8F(only your own flags)"
     disabled: "%prefix% &#D4452CTester alerts disabled"
+    bypass: "%prefix% &#D4452CTester alerts won't fire while you hold &#FEE067TotemGuard.Bypass&#D4452C."
 
   focus:
     enabled: "%prefix% &#6FB04AFocus enabled on &#FEE067%tg_player%"
