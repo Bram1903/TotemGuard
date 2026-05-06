@@ -38,9 +38,8 @@ public final class ConfigKeys {
     public static final ConfigKey<String> COMMANDS_BASE = ConfigKey.string("commands.base");
     public static final ConfigKey<List<String>> COMMAND_ALIASES = ConfigKey.stringList("commands.aliases");
 
-    public static final ConfigKey<Integer> NETWORK_OFFLINE_GRACE_MILLIS = ConfigKey.integer("network.offline-grace-millis");
-
     public static final ConfigKey<Boolean> REDIS_ENABLED = ConfigKey.bool("redis.enabled");
+    public static final ConfigKey<Integer> REDIS_OFFLINE_GRACE_MILLIS = ConfigKey.integer("redis.offline-grace-millis");
     public static final ConfigKey<String> REDIS_HOST = ConfigKey.string("redis.host");
     public static final ConfigKey<Integer> REDIS_PORT = ConfigKey.integer("redis.port");
     public static final ConfigKey<String> REDIS_USERNAME = ConfigKey.string("redis.username");

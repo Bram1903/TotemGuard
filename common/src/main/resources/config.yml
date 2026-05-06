@@ -37,12 +37,6 @@ database:
     alerts-days: 0
     vpn-cache-days: 30
 
-# When a player switches backends behind a proxy, the source server's quit
-# fires before the destination's join lands. This grace window swallows that
-# gap so transfers stay silent — no alert flicker, focus targets survive.
-network:
-  offline-grace-millis: 4000
-
 # In a multiserver setup, enabling Redis is highly recommended.
 # Redis will make TotemGuard much more powerful by syncing data, alerts and more across servers.
 redis:
@@ -53,6 +47,11 @@ redis:
   # Can be left empty if no auth is required.
   username: default
   password: yourPassword
+
+  # When a player switches backends, the source server's quit
+  # fires before the destination's join lands. This grace window swallows that
+  # gap so transfers stay silent: no alert flicker, focus targets survive.
+  offline-grace-millis: 4000
 
   # All channels are namespaced under "totemguard:". Override `alerts.channel`
   # to scope alerts to a cluster (e.g. "events" → "totemguard:events");

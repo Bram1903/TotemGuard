@@ -179,7 +179,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     private long offlineGraceMillis() {
         try {
             int millis = platform.getConfigRepository().config(ConfigFile.CONFIG)
-                    .getInt(ConfigKeys.NETWORK_OFFLINE_GRACE_MILLIS);
+                    .getInt(ConfigKeys.REDIS_OFFLINE_GRACE_MILLIS);
             return Math.max(0, millis);
         } catch (Exception ex) {
             return 4000L;
