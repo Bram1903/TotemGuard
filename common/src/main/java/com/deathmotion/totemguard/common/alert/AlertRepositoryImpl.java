@@ -26,10 +26,13 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.message.MessageService;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.PresenceListener;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
+import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncAlertMessagePacket;
@@ -44,7 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
+public class AlertRepositoryImpl implements AlertRepository, PresenceListener, ConnectionStateListener {
 
     private static final long CHAT_BUFFER_WINDOW_SECONDS = 1L;
 
@@ -260,5 +263,19 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener {
             ));
             platform.getCacheRepository().remove(CacheKeys.focusTarget(dropped.viewerUuid()));
         }
+    }
+
+    @Override
+    public void onConnected(RedisConnection connection) {
+        Set<UUID> targets = realtimeRoster.focusTargets();
+        if (targets.isEmpty()) return;
+        platform.getScheduler().runAsyncTask(() -> {
+            NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+            if (presence == null) return;
+            for (UUID target : targets) {
+                if (presence.findByUuid(target) != null) continue;
+                onPlayerOffline(target, new RemotePlayerEntry(target, "", new UUID(0L, 0L), ""));
+            }
+        });
     }
 }

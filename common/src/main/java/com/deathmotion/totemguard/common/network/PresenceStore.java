@@ -57,6 +57,17 @@ public final class PresenceStore {
     private static final byte[] FIELD_TEX_SIG = bytes("tex_sig");
     private static final byte DELIMITER = 0;
 
+    private static final byte[] CLAIM_OFFLINE_SCRIPT = bytes(
+            "local current = redis.call('HGET', KEYS[1], 'iid') "
+                    + "redis.call('SREM', KEYS[4], ARGV[4]) "
+                    + "if current and current == ARGV[1] then "
+                    + "  redis.call('DEL', KEYS[1]) "
+                    + "  redis.call('HDEL', KEYS[2], ARGV[2]) "
+                    + "  redis.call('ZREM', KEYS[3], ARGV[3]) "
+                    + "  return 1 "
+                    + "end "
+                    + "return 0");
+
     private final RedisRepositoryImpl redis;
     private final Logger logger;
 
@@ -186,19 +197,29 @@ public final class PresenceStore {
         }
     }
 
-    public void removePlayer(@NotNull UUID playerUuid, @NotNull String name, @NotNull UUID instanceId) {
-        RedisAsyncCommands<byte[], byte[]> c = async();
-        if (c == null) return;
+    public @Nullable Boolean claimOfflineIfOwned(@NotNull UUID playerUuid, @NotNull String name,
+                                                 @NotNull UUID instanceId) {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return null;
         try {
             String lowername = name.toLowerCase(Locale.ROOT);
-            List<RedisFuture<?>> futures = new ArrayList<>(4);
-            futures.add(c.del(playerKey(playerUuid)));
-            futures.add(c.hdel(KEY_PLAYERS, bytes(lowername)));
-            futures.add(c.zrem(KEY_NAMES, encodeNameMember(lowername, name)));
-            futures.add(c.srem(serverPlayersKey(instanceId), bytes(playerUuid.toString())));
-            awaitPipeline("removePlayer(" + name + ")", futures);
+            byte[][] keys = new byte[][]{
+                    playerKey(playerUuid),
+                    KEY_PLAYERS,
+                    KEY_NAMES,
+                    serverPlayersKey(instanceId)
+            };
+            byte[][] argv = new byte[][]{
+                    bytes(instanceId.toString()),
+                    bytes(lowername),
+                    encodeNameMember(lowername, name),
+                    bytes(playerUuid.toString())
+            };
+            Long result = c.eval(CLAIM_OFFLINE_SCRIPT, ScriptOutputType.INTEGER, keys, argv);
+            return result != null && result == 1L;
         } catch (Exception ex) {
-            logger.log(Level.WARNING, "Failed to clear presence for " + name, ex);
+            logger.log(Level.WARNING, "claimOfflineIfOwned(" + name + ") failed", ex);
+            return null;
         }
     }
 
@@ -239,11 +260,14 @@ public final class PresenceStore {
         }
     }
 
-    public void purgeServer(@NotNull UUID instanceId) {
+    public @NotNull List<RemotePlayerEntry> purgeServer(@NotNull UUID instanceId, @NotNull String serverName) {
         RedisCommands<byte[], byte[]> c = sync();
-        if (c == null) return;
+        if (c == null) return List.of();
         try {
+            List<RemotePlayerEntry> orphaned = new ArrayList<>();
             byte[] serverPlayersKey = serverPlayersKey(instanceId);
+            byte[] iidArg = bytes(instanceId.toString());
+
             for (byte[] uuidBytes : c.smembers(serverPlayersKey)) {
                 UUID playerUuid;
                 try {
@@ -253,28 +277,39 @@ public final class PresenceStore {
                 }
                 byte[] playerKey = playerKey(playerUuid);
                 String name = decodeString(c.hget(playerKey, FIELD_NAME));
-                if (name != null) {
-                    String lowername = name.toLowerCase(Locale.ROOT);
-                    c.hdel(KEY_PLAYERS, bytes(lowername));
-                    c.zrem(KEY_NAMES, encodeNameMember(lowername, name));
+                if (name == null) continue;
+
+                String lowername = name.toLowerCase(Locale.ROOT);
+                byte[][] keys = new byte[][]{playerKey, KEY_PLAYERS, KEY_NAMES, serverPlayersKey};
+                byte[][] argv = new byte[][]{
+                        iidArg,
+                        bytes(lowername),
+                        encodeNameMember(lowername, name),
+                        uuidBytes
+                };
+                Long result = c.eval(CLAIM_OFFLINE_SCRIPT, ScriptOutputType.INTEGER, keys, argv);
+                if (result != null && result == 1L) {
+                    orphaned.add(new RemotePlayerEntry(playerUuid, name, instanceId, serverName));
                 }
-                c.del(playerKey);
             }
             c.del(serverPlayersKey);
             c.hdel(KEY_SERVERS, bytes(instanceId.toString()));
+            return orphaned;
         } catch (Exception ex) {
             logger.log(Level.WARNING, "Failed to purge server " + instanceId, ex);
+            return List.of();
         }
     }
 
-    public void sweepStaleServers(@NotNull UUID ourInstanceId) {
+    public @NotNull Map<UUID, List<RemotePlayerEntry>> sweepStaleServers(@NotNull UUID ourInstanceId) {
         RedisCommands<byte[], byte[]> c = sync();
-        if (c == null) return;
+        if (c == null) return Map.of();
         try {
             Map<byte[], byte[]> servers = c.hgetall(KEY_SERVERS);
-            if (servers == null || servers.isEmpty()) return;
+            if (servers == null || servers.isEmpty()) return Map.of();
             long cutoff = System.currentTimeMillis() - SERVER_STALE_MS;
 
+            Map<UUID, List<RemotePlayerEntry>> purged = new LinkedHashMap<>();
             for (Map.Entry<byte[], byte[]> entry : servers.entrySet()) {
                 UUID iid;
                 try {
@@ -285,20 +320,31 @@ public final class PresenceStore {
                 if (iid.equals(ourInstanceId)) continue;
                 long lastHb = parseLastHeartbeat(entry.getValue());
                 if (lastHb >= cutoff) continue;
+                String serverName = parseServerName(entry.getValue());
 
                 byte[] lockKey = bytes(KEY_CLEANUP_LOCK_PREFIX + iid);
                 String acquired = c.set(lockKey, bytes(ourInstanceId.toString()),
                         io.lettuce.core.SetArgs.Builder.nx().px(CLEANUP_LOCK_TTL_MS));
                 if (acquired == null) continue;
                 try {
-                    purgeServer(iid);
+                    purged.put(iid, purgeServer(iid, serverName == null ? "" : serverName));
                 } finally {
                     c.del(lockKey);
                 }
             }
+            return purged;
         } catch (Exception ex) {
             logger.log(Level.WARNING, "Failed to sweep stale servers", ex);
+            return Map.of();
         }
+    }
+
+    private static @Nullable String parseServerName(byte @Nullable [] value) {
+        String str = decodeString(value);
+        if (str == null) return null;
+        int last = str.lastIndexOf('|');
+        if (last < 0) return str;
+        return str.substring(0, last);
     }
 
     public @Nullable RemotePlayerEntry findByUuid(@NotNull UUID playerUuid) {

@@ -58,7 +58,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
                 new SyncUpdateAvailableHandler(TGPlatform.getInstance(), this, registry),
                 new SyncServerOfflineHandler(TGPlatform.getInstance(), this, registry),
                 new SyncPlayerJoinHandler(TGPlatform.getInstance(), this, registry),
-                new SyncPlayerQuitHandler(TGPlatform.getInstance(), this, registry),
+                new SyncPlayerOfflineHandler(TGPlatform.getInstance(), this, registry),
                 new SyncTeleportRequestHandler(TGPlatform.getInstance(), this, registry),
                 new SyncMonitorSubscribeHandler(TGPlatform.getInstance(), this, registry),
                 new SyncMonitorUnsubscribeHandler(TGPlatform.getInstance(), this, registry),

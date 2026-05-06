@@ -36,17 +36,15 @@ public final class SyncMonitorSubscribePacket extends Packet<SyncMonitorSubscrib
     public Payload read(ByteArrayDataInput input) {
         UUID viewerInstanceId = PacketIO.readUUID(input);
         UUID targetUuid = PacketIO.readUUID(input);
-        long expiresAt = input.readLong();
-        return new Payload(viewerInstanceId, targetUuid, expiresAt);
+        return new Payload(viewerInstanceId, targetUuid);
     }
 
     @Override
     public void writeData(ByteArrayDataOutput output, Payload payload) {
         PacketIO.writeUUID(output, payload.viewerInstanceId);
         PacketIO.writeUUID(output, payload.targetUuid);
-        output.writeLong(payload.expiresAt);
     }
 
-    public record Payload(UUID viewerInstanceId, UUID targetUuid, long expiresAt) {
+    public record Payload(UUID viewerInstanceId, UUID targetUuid) {
     }
 }

@@ -27,27 +27,27 @@ import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketProcessor;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
-import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncPlayerQuitPacket;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncPlayerOfflinePacket;
 
-public final class SyncPlayerQuitHandler implements PacketProcessor<SyncPlayerQuitPacket.Payload>, Reloadable {
+public final class SyncPlayerOfflineHandler implements PacketProcessor<SyncPlayerOfflinePacket.Payload>, Reloadable {
 
     private final TGPlatform platform;
     private final RedisRepositoryImpl redisRepository;
     private final PacketRegistry registry;
-    private final Packet<SyncPlayerQuitPacket.Payload> packet;
+    private final Packet<SyncPlayerOfflinePacket.Payload> packet;
 
-    public SyncPlayerQuitHandler(TGPlatform platform, RedisRepositoryImpl redisRepository, PacketRegistry registry) {
+    public SyncPlayerOfflineHandler(TGPlatform platform, RedisRepositoryImpl redisRepository, PacketRegistry registry) {
         this.platform = platform;
         this.redisRepository = redisRepository;
         this.registry = registry;
-        this.packet = Packets.SYNC_PLAYER_QUIT.packet();
+        this.packet = Packets.SYNC_PLAYER_OFFLINE.packet();
     }
 
     @Override
-    public void handle(SyncPlayerQuitPacket.Payload payload) {
+    public void handle(SyncPlayerOfflinePacket.Payload payload) {
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
         if (presence == null) return;
-        presence.acceptPlayerQuit(payload);
+        presence.acceptPlayerOffline(payload);
     }
 
     @Override

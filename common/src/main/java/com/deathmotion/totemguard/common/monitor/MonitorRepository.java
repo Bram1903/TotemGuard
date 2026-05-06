@@ -23,9 +23,12 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.gui.GuiManager;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.PresenceListener;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
+import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncMonitorSubscribePacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncMonitorUnsubscribePacket;
@@ -40,17 +43,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
-public final class MonitorRepository implements PresenceListener {
+public final class MonitorRepository implements PresenceListener, ConnectionStateListener {
 
-    private static final long SUBSCRIBE_TTL_MILLIS = 30_000L;
-    private static final long RESUBSCRIBE_INTERVAL_MILLIS = 12_000L;
     private static final long PUBLISH_INTERVAL_MILLIS = 500L;
-    private static final long HOST_SWEEP_INTERVAL_MILLIS = 5_000L;
-    private static final long SNAPSHOT_STALE_AFTER_MILLIS = 10_000L;
 
     private final TGPlatform platform;
 
-    private final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, Long>> hostSubscribers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Set<UUID>> hostSubscribers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, AtomicInteger> viewerRefcount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, MonitorSnapshot> latestSnapshot = new ConcurrentHashMap<>();
     // Last snapshot we actually published per target. Lets the heartbeat tick skip the
@@ -59,8 +58,6 @@ public final class MonitorRepository implements PresenceListener {
 
     private final AtomicBoolean started = new AtomicBoolean();
     private @Nullable ScheduledTask publishTask;
-    private @Nullable ScheduledTask resubscribeTask;
-    private @Nullable ScheduledTask sweepTask;
     private @Nullable AutoCloseable inventoryEventSubscription;
 
     public MonitorRepository(TGPlatform platform) {
@@ -78,30 +75,20 @@ public final class MonitorRepository implements PresenceListener {
                 this::publishHostUpdates,
                 PUBLISH_INTERVAL_MILLIS, PUBLISH_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
 
-        sweepTask = platform.getScheduler().runAsyncTaskAtFixedRate(
-                this::sweepHostExpiry,
-                HOST_SWEEP_INTERVAL_MILLIS, HOST_SWEEP_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
-
-        resubscribeTask = platform.getScheduler().runAsyncTaskAtFixedRate(
-                this::republishSubscriptions,
-                RESUBSCRIBE_INTERVAL_MILLIS, RESUBSCRIBE_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
-
         inventoryEventSubscription = platform.getEventRepository().subscribeInternal(
                 InventoryChangedEvent.class,
                 event -> {
                     UUID uuid = event.getPlayer().getUuid();
                     platform.getScheduler().runAsyncTask(() -> publishForTargetIfSubscribed(uuid));
                 });
+
+        platform.getRedisRepository().addStateListener(this);
     }
 
     public void stop() {
         if (!started.compareAndSet(true, false)) return;
         cancel(publishTask);
-        cancel(sweepTask);
-        cancel(resubscribeTask);
         publishTask = null;
-        sweepTask = null;
-        resubscribeTask = null;
 
         if (inventoryEventSubscription != null) {
             try {
@@ -110,6 +97,8 @@ public final class MonitorRepository implements PresenceListener {
             }
             inventoryEventSubscription = null;
         }
+
+        platform.getRedisRepository().removeStateListener(this);
 
         UUID viewerInstance = platform.getNetworkPresenceRepository().identity().instanceId();
         for (UUID target : List.copyOf(viewerRefcount.keySet())) {
@@ -142,12 +131,7 @@ public final class MonitorRepository implements PresenceListener {
     }
 
     public @Nullable MonitorSnapshot lastSnapshot(@NotNull UUID targetUuid) {
-        MonitorSnapshot snapshot = latestSnapshot.get(targetUuid);
-        if (snapshot == null) return null;
-        if (System.currentTimeMillis() - snapshot.capturedAtMillis() > SNAPSHOT_STALE_AFTER_MILLIS) {
-            return null;
-        }
-        return snapshot;
+        return latestSnapshot.get(targetUuid);
     }
 
     public void acceptUpdate(@NotNull MonitorSnapshot snapshot) {
@@ -162,13 +146,13 @@ public final class MonitorRepository implements PresenceListener {
     public void acceptSubscribe(@NotNull SyncMonitorSubscribePacket.Payload payload) {
         if (platform.getPlayerRepository().getPlayer(payload.targetUuid()) == null) return;
 
-        ConcurrentHashMap<UUID, Long> subs = hostSubscribers.computeIfAbsent(
-                payload.targetUuid(), ignored -> new ConcurrentHashMap<>());
-        subs.put(payload.viewerInstanceId(), payload.expiresAt());
+        Set<UUID> subs = hostSubscribers.computeIfAbsent(
+                payload.targetUuid(), ignored -> ConcurrentHashMap.newKeySet());
+        subs.add(payload.viewerInstanceId());
     }
 
     public void acceptUnsubscribe(@NotNull SyncMonitorUnsubscribePacket.Payload payload) {
-        ConcurrentHashMap<UUID, Long> subs = hostSubscribers.get(payload.targetUuid());
+        Set<UUID> subs = hostSubscribers.get(payload.targetUuid());
         if (subs == null) return;
         subs.remove(payload.viewerInstanceId());
         if (subs.isEmpty()) {
@@ -186,7 +170,7 @@ public final class MonitorRepository implements PresenceListener {
     }
 
     private void publishForTargetIfSubscribed(UUID target) {
-        ConcurrentHashMap<UUID, Long> subs = hostSubscribers.get(target);
+        Set<UUID> subs = hostSubscribers.get(target);
         if (subs == null || subs.isEmpty()) return;
         TGPlayer local = platform.getPlayerRepository().getPlayer(target);
         if (local == null) {
@@ -203,7 +187,7 @@ public final class MonitorRepository implements PresenceListener {
             lastPublishedSnapshot.put(target, snapshot);
 
             // Unicast: send to each viewer's server only, not the whole fleet.
-            for (UUID viewerInstance : subs.keySet()) {
+            for (UUID viewerInstance : subs) {
                 platform.getRedisRepository().publishToInstance(
                         viewerInstance, Packets.SYNC_MONITOR_UPDATE.packet(), snapshot);
             }
@@ -212,26 +196,12 @@ public final class MonitorRepository implements PresenceListener {
         }
     }
 
-    private void sweepHostExpiry() {
-        long now = System.currentTimeMillis();
-        Iterator<Map.Entry<UUID, ConcurrentHashMap<UUID, Long>>> it = hostSubscribers.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<UUID, ConcurrentHashMap<UUID, Long>> entry = it.next();
-            entry.getValue().entrySet().removeIf(viewerEntry -> viewerEntry.getValue() <= now);
-            if (entry.getValue().isEmpty()) {
-                it.remove();
-                lastPublishedSnapshot.remove(entry.getKey());
-            }
-        }
-    }
-
     private void publishSubscribe(UUID target) {
         if (!platform.getRedisRepository().isEnabled()) return;
         UUID viewerInstance = platform.getNetworkPresenceRepository().identity().instanceId();
-        long expiresAt = System.currentTimeMillis() + SUBSCRIBE_TTL_MILLIS;
         platform.getRedisRepository().publish(
                 Packets.SYNC_MONITOR_SUBSCRIBE.packet(),
-                new SyncMonitorSubscribePacket.Payload(viewerInstance, target, expiresAt));
+                new SyncMonitorSubscribePacket.Payload(viewerInstance, target));
     }
 
     private void publishUnsubscribe(UUID viewerInstance, UUID target) {
@@ -239,13 +209,6 @@ public final class MonitorRepository implements PresenceListener {
         platform.getRedisRepository().publish(
                 Packets.SYNC_MONITOR_UNSUBSCRIBE.packet(),
                 new SyncMonitorUnsubscribePacket.Payload(viewerInstance, target));
-    }
-
-    private void republishSubscriptions() {
-        if (viewerRefcount.isEmpty()) return;
-        for (UUID target : viewerRefcount.keySet()) {
-            publishSubscribe(target);
-        }
     }
 
     @Override
@@ -256,6 +219,35 @@ public final class MonitorRepository implements PresenceListener {
         if (platform.getGuiManager() != null) {
             platform.getGuiManager().closeMonitor(playerUuid);
         }
+    }
+
+    @Override
+    public void onServerOffline(UUID instanceId) {
+        Iterator<Map.Entry<UUID, Set<UUID>>> it = hostSubscribers.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Set<UUID>> entry = it.next();
+            entry.getValue().remove(instanceId);
+            if (entry.getValue().isEmpty()) {
+                it.remove();
+                lastPublishedSnapshot.remove(entry.getKey());
+            }
+        }
+    }
+
+    @Override
+    public void onConnected(RedisConnection connection) {
+        if (viewerRefcount.isEmpty()) return;
+        platform.getScheduler().runAsyncTask(() -> {
+            NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+            for (UUID target : List.copyOf(viewerRefcount.keySet())) {
+                RemotePlayerEntry entry = presence == null ? null : presence.findByUuid(target);
+                if (entry == null) {
+                    onPlayerOffline(target, new RemotePlayerEntry(target, "", new UUID(0L, 0L), ""));
+                    continue;
+                }
+                publishSubscribe(target);
+            }
+        });
     }
 
     @Override

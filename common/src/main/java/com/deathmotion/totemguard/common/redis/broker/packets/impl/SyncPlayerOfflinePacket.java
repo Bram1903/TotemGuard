@@ -26,9 +26,9 @@ import com.google.common.io.ByteArrayDataOutput;
 
 import java.util.UUID;
 
-public final class SyncPlayerQuitPacket extends Packet<SyncPlayerQuitPacket.Payload> {
+public final class SyncPlayerOfflinePacket extends Packet<SyncPlayerOfflinePacket.Payload> {
 
-    public SyncPlayerQuitPacket(int id) {
+    public SyncPlayerOfflinePacket(int id) {
         super(id, MessagingTopic.PRESENCE);
     }
 

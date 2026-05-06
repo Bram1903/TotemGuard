@@ -26,4 +26,7 @@ public interface PresenceListener {
 
     default void onPlayerOnline(UUID playerUuid, RemotePlayerEntry entry) {
     }
+
+    default void onServerOffline(UUID instanceId) {
+    }
 }

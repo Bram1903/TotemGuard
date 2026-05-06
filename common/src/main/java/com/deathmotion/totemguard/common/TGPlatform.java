@@ -176,6 +176,7 @@ public abstract class TGPlatform {
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
         networkPresenceRepository = new NetworkPresenceRepository(this, serverIdentity);
         networkPresenceRepository.addListener(alertRepository);
+        redisRepository.addStateListener(alertRepository);
         networkPresenceRepository.start();
 
         monitorRepository = new MonitorRepository(this);
@@ -232,6 +233,7 @@ public abstract class TGPlatform {
         if (networkPresenceRepository != null) networkPresenceRepository.stop();
         if (playerRepository != null) playerRepository.shutdown();
         if (updateCheckerRepository != null) updateCheckerRepository.shutdown();
+        if (alertRepository != null) redisRepository.removeStateListener(alertRepository);
         if (redisRepository != null) redisRepository.stop();
         if (databaseRepository != null) databaseRepository.stop();
         if (guiManager != null) guiManager.shutdown();

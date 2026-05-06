@@ -24,7 +24,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -58,6 +60,16 @@ public final class RealtimeAlertRoster {
             if (!sub.filter().accept(violatorUuid)) continue;
             sub.viewer().sendMessage(message);
         }
+    }
+
+    public @NotNull Set<UUID> focusTargets() {
+        Set<UUID> targets = new HashSet<>();
+        for (AlertSubscription sub : subscriptions.values()) {
+            if (sub.filter() instanceof AlertFilter.Violator violator) {
+                targets.add(violator.target());
+            }
+        }
+        return targets;
     }
 
     public @NotNull List<AlertSubscription> removeAllTargeting(@NotNull UUID target) {

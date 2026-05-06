@@ -26,7 +26,7 @@ public enum Packets {
     SYNC_UPDATE_AVAILABLE(new SyncUpdateAvailablePacket(2)),
     SYNC_SERVER_OFFLINE(new SyncServerOfflinePacket(4)),
     SYNC_PLAYER_JOIN(new SyncPlayerJoinPacket(5)),
-    SYNC_PLAYER_QUIT(new SyncPlayerQuitPacket(6)),
+    SYNC_PLAYER_OFFLINE(new SyncPlayerOfflinePacket(6)),
     SYNC_TELEPORT_REQUEST(new SyncTeleportRequestPacket(7)),
     SYNC_MONITOR_SUBSCRIBE(new SyncMonitorSubscribePacket(8)),
     SYNC_MONITOR_UNSUBSCRIBE(new SyncMonitorUnsubscribePacket(9)),
