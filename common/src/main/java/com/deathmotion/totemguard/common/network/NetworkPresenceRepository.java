@@ -18,8 +18,10 @@
 
 package com.deathmotion.totemguard.common.network;
 
+import com.deathmotion.totemguard.api.config.ConfigFile;
 import com.deathmotion.totemguard.api.network.NetworkRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.ConfigKeys;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
 import com.deathmotion.totemguard.common.redis.RedisConnection;
@@ -35,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,6 +55,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     private final ServerIdentity identity;
     private final PresenceStore store;
     private final List<PresenceListener> listeners = new CopyOnWriteArrayList<>();
+    private final ConcurrentHashMap<UUID, ScheduledTask> pendingOffline = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean();
     private volatile String effectiveDisplayName;
     private @Nullable ScheduledTask heartbeatTask;
@@ -100,6 +104,11 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         heartbeatTask = null;
         sweepTask = null;
 
+        for (ScheduledTask task : pendingOffline.values()) {
+            task.cancel();
+        }
+        pendingOffline.clear();
+
         store.purgeServer(identity.instanceId(), effectiveDisplayName);
         publishServerOffline();
     }
@@ -109,6 +118,8 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     }
 
     public void onLocalPlayerJoin(@NotNull UUID playerUuid, @NotNull String playerName, @Nullable UserProfile profile) {
+        cancelPendingOffline(playerUuid);
+
         String name = effectiveDisplayName;
         notifyPlayerOnline(playerUuid, new RemotePlayerEntry(playerUuid, playerName, identity.instanceId(), name));
         platform.getScheduler().runAsyncTask(() -> {
@@ -133,16 +144,46 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
             return;
         }
 
-        platform.getScheduler().runAsyncTask(() -> {
-            Boolean stillOurs = store.claimOfflineIfOwned(playerUuid, playerName, identity.instanceId());
-            if (Boolean.FALSE.equals(stillOurs)) return;
+        long graceMillis = offlineGraceMillis();
+        if (graceMillis <= 0L) {
+            platform.getScheduler().runAsyncTask(() -> finalizeOffline(playerUuid, playerName, lastKnown));
+            return;
+        }
 
-            notifyPlayerOffline(playerUuid, lastKnown);
-            if (!platform.getRedisRepository().isConnected()) return;
-            Packet<SyncPlayerOfflinePacket.Payload> packet = Packets.SYNC_PLAYER_OFFLINE.packet();
-            platform.getRedisRepository().publish(packet, new SyncPlayerOfflinePacket.Payload(
-                    identity.instanceId(), playerUuid, playerName));
-        });
+        ScheduledTask task = platform.getScheduler().runAsyncTaskDelayed(
+                () -> {
+                    pendingOffline.remove(playerUuid);
+                    finalizeOffline(playerUuid, playerName, lastKnown);
+                },
+                graceMillis, TimeUnit.MILLISECONDS);
+        ScheduledTask previous = pendingOffline.put(playerUuid, task);
+        if (previous != null) previous.cancel();
+    }
+
+    private void finalizeOffline(UUID playerUuid, String playerName, RemotePlayerEntry lastKnown) {
+        Boolean stillOurs = store.claimOfflineIfOwned(playerUuid, playerName, identity.instanceId());
+        if (Boolean.FALSE.equals(stillOurs)) return;
+
+        notifyPlayerOffline(playerUuid, lastKnown);
+        if (!platform.getRedisRepository().isConnected()) return;
+        Packet<SyncPlayerOfflinePacket.Payload> packet = Packets.SYNC_PLAYER_OFFLINE.packet();
+        platform.getRedisRepository().publish(packet, new SyncPlayerOfflinePacket.Payload(
+                identity.instanceId(), playerUuid, playerName));
+    }
+
+    private void cancelPendingOffline(UUID playerUuid) {
+        ScheduledTask task = pendingOffline.remove(playerUuid);
+        if (task != null) task.cancel();
+    }
+
+    private long offlineGraceMillis() {
+        try {
+            int millis = platform.getConfigRepository().config(ConfigFile.CONFIG)
+                    .getInt(ConfigKeys.NETWORK_OFFLINE_GRACE_MILLIS);
+            return Math.max(0, millis);
+        } catch (Exception ex) {
+            return 4000L;
+        }
     }
 
     public @Nullable RemotePlayerEntry findByUuid(@NotNull UUID uuid) {
@@ -220,6 +261,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
 
     public void acceptPlayerJoin(@NotNull SyncPlayerJoinPacket.Payload payload) {
         if (isLocal(payload.instanceId())) return;
+        cancelPendingOffline(payload.playerUuid());
         notifyPlayerOnline(payload.playerUuid(), new RemotePlayerEntry(
                 payload.playerUuid(), payload.playerName(), payload.instanceId(), payload.serverName()));
     }
