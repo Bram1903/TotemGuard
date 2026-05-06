@@ -92,6 +92,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> MONITOR_SELF = ConfigKey.string("commands.monitor.self-monitor");
     public static final ConfigKey<String> MONITOR_BLOCKED = ConfigKey.string("commands.monitor.blocked");
     public static final ConfigKey<String> MONITOR_OPEN_FAILED = ConfigKey.string("commands.monitor.open-failed");
+    public static final ConfigKey<String> MONITOR_TARGET_OFFLINE = ConfigKey.string("commands.monitor.target-offline");
 
     public static final ConfigKey<String> HISTORY_OPEN_FAILED = ConfigKey.string("commands.history.open-failed");
 

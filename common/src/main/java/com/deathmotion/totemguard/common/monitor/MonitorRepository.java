@@ -21,11 +21,13 @@ package com.deathmotion.totemguard.common.monitor;
 import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.PresenceListener;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
 import com.deathmotion.totemguard.common.redis.RedisConnection;
@@ -216,9 +218,22 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
         hostSubscribers.remove(playerUuid);
         latestSnapshot.remove(playerUuid);
         lastPublishedSnapshot.remove(playerUuid);
-        if (platform.getGuiManager() != null) {
-            platform.getGuiManager().closeMonitor(playerUuid);
+        GuiManager guiManager = platform.getGuiManager();
+        if (guiManager == null) return;
+
+        Set<UUID> viewers = guiManager.monitorViewers(playerUuid);
+        if (!viewers.isEmpty()) {
+            String label = lastKnown.playerName().isEmpty() ? playerUuid.toString() : lastKnown.playerName();
+            for (UUID viewerId : viewers) {
+                PlatformPlayer viewer = platform.getPlatformPlayerFactory().create(viewerId);
+                if (viewer == null) continue;
+                viewer.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.MONITOR_TARGET_OFFLINE,
+                        Map.of("tg_player", label)
+                ));
+            }
         }
+        guiManager.closeMonitor(playerUuid);
     }
 
     @Override

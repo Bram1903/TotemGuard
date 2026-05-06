@@ -87,6 +87,7 @@ commands:
     self-monitor: "%prefix% &#D4452CYou cannot monitor your own inventory."
     blocked: "%prefix% &#D4452COpening the monitor was blocked."
     open-failed: "%prefix% &#D4452CFailed to open the monitor GUI."
+    target-offline: "%prefix% &#D4452CMonitor target &#FEE067%tg_player% &#D4452Cwent offline."
 
   teleport:
     no-redis: "%prefix% &#D4452CTeleport service unavailable."
