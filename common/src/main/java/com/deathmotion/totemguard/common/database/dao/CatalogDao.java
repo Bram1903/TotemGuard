@@ -104,22 +104,33 @@ public final class CatalogDao {
             if (cached != null) return cached;
 
             try (Connection c = connection.borrow()) {
+                Integer existing = selectId(c, selectSql, value);
+                if (existing != null) {
+                    cache.put(value, existing);
+                    return existing;
+                }
+
                 try (PreparedStatement upsert = c.prepareStatement(upsertSql)) {
                     upsert.setString(1, value);
                     upsert.executeUpdate();
                 }
-                try (PreparedStatement select = c.prepareStatement(selectSql)) {
-                    select.setString(1, value);
-                    try (ResultSet rs = select.executeQuery()) {
-                        if (rs.next()) {
-                            int id = rs.getInt(1);
-                            cache.put(value, id);
-                            return id;
-                        }
-                    }
+
+                Integer inserted = selectId(c, selectSql, value);
+                if (inserted != null) {
+                    cache.put(value, inserted);
+                    return inserted;
                 }
             }
             throw new SQLException("Failed to resolve id in " + tableLabel + " for value of length " + value.length());
+        }
+    }
+
+    private Integer selectId(Connection c, String selectSql, String value) throws SQLException {
+        try (PreparedStatement select = c.prepareStatement(selectSql)) {
+            select.setString(1, value);
+            try (ResultSet rs = select.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : null;
+            }
         }
     }
 }
