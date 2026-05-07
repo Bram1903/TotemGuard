@@ -80,8 +80,6 @@ public class CheckManagerImpl {
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(ProtocolE.class, new ProtocolE(player))
-                .put(ProtocolF.class, new ProtocolF(player))
-                .put(ProtocolG.class, new ProtocolG(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))

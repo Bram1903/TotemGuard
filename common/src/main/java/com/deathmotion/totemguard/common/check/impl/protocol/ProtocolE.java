@@ -24,53 +24,27 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
 
 @RequiresTickEnd
-@CheckData(description = "Duplicated entity action", type = CheckType.PROTOCOL)
+@CheckData(description = "Duplicate consecutive player input", type = CheckType.PROTOCOL)
 public class ProtocolE extends CheckImpl implements PacketCheck {
 
-    private boolean sentSprint;
-    private boolean sentSneak;
-    private boolean sentInput;
+    private final InputData inputData;
 
     public ProtocolE(TGPlayer player) {
         super(player);
+        this.inputData = player.getData().getInputData();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
+        if (event.getPacketType() != PacketType.Play.Client.PLAYER_INPUT) return;
 
-        if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
-            final WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
-
-            boolean sprint = false;
-            boolean sneak = false;
-
-            switch (packet.getAction()) {
-                case START_SNEAKING, STOP_SNEAKING -> sneak = true;
-                case START_SPRINTING, STOP_SPRINTING -> sprint = true;
-            }
-
-            final boolean alreadySent = (sprint && sentSprint) || (sneak && sentSneak);
-            if (alreadySent) {
-                fail("action={0}", packet.getAction());
-            }
-
-            this.sentSprint = sprint;
-            this.sentSneak = sneak;
-        } else if (packetType == PacketType.Play.Client.PLAYER_INPUT) {
-            if (sentInput) fail("input");
-            sentInput = true;
-        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
-            sentSprint = false;
-            sentSneak = false;
-            sentInput = false;
+        if (inputData.isDuplicate()) {
+            fail();
         }
     }
 }
-
