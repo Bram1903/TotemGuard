@@ -107,20 +107,16 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         }
 
         if (type == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            final InputData input = data.getInputData();
-            final InputData.State current = input.current();
-            final InputData.State previous = input.previous();
+            final InputData.State current = data.getInputData().current();
 
-            if (current != null && previous != null && !current.jumping() && previous.jumping()) {
+            if (current == null || !current.hasMovement()) {
+                movementFlagged = false;
                 return;
             }
-            if (movementFlagged) {
-                if (!input.hasMovement()) movementFlagged = false;
-                return;
-            }
+            if (movementFlagged) return;
 
             failInventory("move");
-            movementFlagged = input.hasMovement();
+            movementFlagged = true;
             return;
         }
 
