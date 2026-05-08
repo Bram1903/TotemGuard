@@ -85,9 +85,15 @@ public final class MessagesKeys {
     public static final ConfigKey<String> CHECK_WRONG_GAMEMODE = ConfigKey.string("commands.check.wrong-gamemode");
     public static final ConfigKey<String> CHECK_INVULNERABLE = ConfigKey.string("commands.check.invulnerable");
     public static final ConfigKey<String> CHECK_NO_TOTEM = ConfigKey.string("commands.check.no-totem");
+    public static final ConfigKey<String> CHECK_NO_BACKUP_TOTEM = ConfigKey.string("commands.check.no-backup-totem");
     public static final ConfigKey<String> CHECK_DAMAGE_FAILED = ConfigKey.string("commands.check.damage-failed");
     public static final ConfigKey<String> CHECK_FLAGGED = ConfigKey.string("commands.check.flagged");
     public static final ConfigKey<String> CHECK_PASSED = ConfigKey.string("commands.check.passed");
+    public static final ConfigKey<String> CHECK_NO_REDIS = ConfigKey.string("commands.check.no-redis");
+    public static final ConfigKey<String> CHECK_TIMEOUT = ConfigKey.string("commands.check.timeout");
+    public static final ConfigKey<String> CHECK_DISPATCHED = ConfigKey.string("commands.check.dispatched");
+    public static final ConfigKey<String> CHECK_STAFF_NOTICE = ConfigKey.string("commands.check.staff-notice");
+    public static final ConfigKey<String> CHECK_STAFF_NOTICE_LOCAL = ConfigKey.string("commands.check.staff-notice-local");
 
     public static final ConfigKey<String> MONITOR_SELF = ConfigKey.string("commands.monitor.self-monitor");
     public static final ConfigKey<String> MONITOR_BLOCKED = ConfigKey.string("commands.monitor.blocked");

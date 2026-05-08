@@ -188,6 +188,13 @@ public class PacketInventory {
         return getItem(slot).getType() == ItemTypes.TOTEM_OF_UNDYING;
     }
 
+    public boolean hasBackupTotem() {
+        for (int slot = InventoryConstants.ITEMS_START; slot <= InventoryConstants.HOTBAR_END; slot++) {
+            if (isTotemInSlot(slot)) return true;
+        }
+        return false;
+    }
+
     public boolean isCarryingTotem() {
         return carriedItem.getCurrentItem().getType() == ItemTypes.TOTEM_OF_UNDYING;
     }

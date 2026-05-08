@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.redis.broker.packets.impl;
 
-import com.deathmotion.totemguard.common.monitor.MonitorSnapshot;
+import com.deathmotion.totemguard.common.features.monitor.MonitorSnapshot;
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketIO;

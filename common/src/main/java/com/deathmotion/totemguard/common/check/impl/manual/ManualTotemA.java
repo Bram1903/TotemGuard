@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.ManualCheck;
-import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 
 @CheckData(description = "Staff-forced totem check", type = CheckType.AUTO_TOTEM)
@@ -32,7 +31,7 @@ public final class ManualTotemA extends CheckImpl implements ManualCheck {
         super(player);
     }
 
-    public boolean handle(Sender staff, long elapsedMs, long windowMs) {
-        return fail("staff={0},elapsed={1}ms,window={2}ms", staff.getName(), elapsedMs, windowMs);
+    public boolean handle(String staffName, long elapsedMs, long windowMs) {
+        return fail("staff={0},elapsed={1}ms,window={2}ms", staffName, elapsedMs, windowMs);
     }
 }

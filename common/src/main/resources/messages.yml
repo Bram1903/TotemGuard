@@ -79,9 +79,15 @@ commands:
     wrong-gamemode: "%prefix% &#F5A48F%tg_player% &#D4452Cmust be in survival or adventure mode."
     invulnerable: "%prefix% &#F5A48F%tg_player% &#D4452Cis invulnerable."
     no-totem: "%prefix% &#F5A48F%tg_player% &#D4452Cdoes not have a totem in their offhand."
+    no-backup-totem: "%prefix% &#F5A48F%tg_player% &#D4452Chas no backup totem in their inventory."
     damage-failed: "%prefix% &#F5A48F%tg_player% &#D4452Ccould not be damaged. Check aborted."
     flagged: "%prefix% &#FEE067%tg_player%&#B8AC8F re-totemed in &#FBAF00%tg_elapsed_ms%ms&#B8AC8F (window &#FBAF00%tg_window_ms%ms&#B8AC8F)."
     passed: "%prefix% &#FEE067%tg_player% &#6FB04Apassed the check."
+    no-redis: "%prefix% &#D4452CCheck service unavailable for cross-server targets."
+    timeout: "%prefix% &#D4452CCheck on &#F5A48F%tg_player%&#D4452C timed out."
+    dispatched: "%prefix% &#B8AC8FDispatching check on &#FEE067%tg_player%&#B8AC8F to &#FEE067%tg_server%&#B8AC8F."
+    staff-notice: "%prefix% &#B8AC8F%tg_sender% &#FEE067(%tg_sender_server%) &#B8AC8Fis running a totem check on &#FEE067%tg_player% &#FEE067(%tg_target_server%)&#B8AC8F."
+    staff-notice-local: "%prefix% &#B8AC8F%tg_sender% &#B8AC8Fis running a totem check on &#FEE067%tg_player%&#B8AC8F."
 
   monitor:
     self-monitor: "%prefix% &#D4452CYou cannot monitor your own inventory."

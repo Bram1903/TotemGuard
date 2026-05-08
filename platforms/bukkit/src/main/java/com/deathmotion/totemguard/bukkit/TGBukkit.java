@@ -50,6 +50,7 @@ public class TGBukkit extends JavaPlugin {
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             tg.getPlaceholderRepository().registerHolder(new PlaceholderAPIHolder());
+            tg.getNetworkPresenceRepository().reloadServerName();
         }
     }
 

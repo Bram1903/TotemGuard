@@ -20,13 +20,13 @@ package com.deathmotion.totemguard.common.redis.broker.handlers;
 
 import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketProcessor;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
-import com.deathmotion.totemguard.common.update.UpdateCheckerRepositoryImpl;
 
 /**
  * Receives "new release discovered" broadcasts from sibling servers and forwards

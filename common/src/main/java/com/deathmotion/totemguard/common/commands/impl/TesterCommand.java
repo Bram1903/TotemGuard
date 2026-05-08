@@ -19,15 +19,15 @@
 package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.alert.AlertFilter;
-import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
-import com.deathmotion.totemguard.common.alert.AlertSubscription;
-import com.deathmotion.totemguard.common.alert.RealtimeAlertRoster;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.features.alert.AlertFilter;
+import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.features.alert.AlertSubscription;
+import com.deathmotion.totemguard.common.features.alert.RealtimeAlertRoster;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import org.incendo.cloud.CommandManager;

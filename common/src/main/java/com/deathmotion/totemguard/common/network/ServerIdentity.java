@@ -22,9 +22,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public record ServerIdentity(@NotNull String displayName, @NotNull UUID instanceId) {
+public record ServerIdentity(@NotNull UUID instanceId) {
 
-    public static ServerIdentity create(@NotNull String displayName) {
-        return new ServerIdentity(displayName, UUID.randomUUID());
+    public static ServerIdentity create() {
+        return new ServerIdentity(UUID.randomUUID());
     }
 }

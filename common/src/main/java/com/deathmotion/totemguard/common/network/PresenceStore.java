@@ -142,6 +142,14 @@ public final class PresenceStore {
         return s.getBytes(StandardCharsets.UTF_8);
     }
 
+    private static @Nullable String parseServerName(byte @Nullable [] value) {
+        String str = decodeString(value);
+        if (str == null) return null;
+        int last = str.lastIndexOf('|');
+        if (last < 0) return str;
+        return str.substring(0, last);
+    }
+
     public void addPlayer(@NotNull UUID playerUuid, @NotNull String name,
                           @NotNull UUID instanceId, @NotNull String serverName,
                           @Nullable UserProfile profile) {
@@ -337,14 +345,6 @@ public final class PresenceStore {
             logger.log(Level.WARNING, "Failed to sweep stale servers", ex);
             return Map.of();
         }
-    }
-
-    private static @Nullable String parseServerName(byte @Nullable [] value) {
-        String str = decodeString(value);
-        if (str == null) return null;
-        int last = str.lastIndexOf('|');
-        if (last < 0) return str;
-        return str.substring(0, last);
     }
 
     public @Nullable RemotePlayerEntry findByUuid(@NotNull UUID playerUuid) {

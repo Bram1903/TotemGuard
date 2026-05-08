@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.CheckConfig;
-import com.deathmotion.totemguard.common.punishment.PunishmentCommand;
+import com.deathmotion.totemguard.common.features.punishment.PunishmentCommand;
 import lombok.Getter;
 
 import java.util.List;

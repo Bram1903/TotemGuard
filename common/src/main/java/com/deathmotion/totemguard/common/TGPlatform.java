@@ -20,13 +20,10 @@ package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.api.event.EventSubscription;
-import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
-import com.deathmotion.totemguard.common.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
-import com.deathmotion.totemguard.common.discord.DiscordWebhookService;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
 import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
@@ -34,13 +31,19 @@ import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckMana
 import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
+import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.features.antivpn.AntiVPNRepositoryImpl;
+import com.deathmotion.totemguard.common.features.discord.DiscordWebhookService;
+import com.deathmotion.totemguard.common.features.history.HistoryRepositoryImpl;
+import com.deathmotion.totemguard.common.features.integration.IntegrationRegistrar;
+import com.deathmotion.totemguard.common.features.mods.*;
+import com.deathmotion.totemguard.common.features.monitor.MonitorRepository;
+import com.deathmotion.totemguard.common.features.punishment.PunishmentRepositoryImpl;
+import com.deathmotion.totemguard.common.features.stats.StatsRepositoryImpl;
+import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.gui.GuiPacketListener;
-import com.deathmotion.totemguard.common.history.HistoryRepositoryImpl;
-import com.deathmotion.totemguard.common.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.message.MessageService;
-import com.deathmotion.totemguard.common.mod.*;
-import com.deathmotion.totemguard.common.monitor.MonitorRepository;
 import com.deathmotion.totemguard.common.network.BungeeChannelManager;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ServerIdentity;
@@ -49,12 +52,11 @@ import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
-import com.deathmotion.totemguard.common.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckRequestPacket;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckResultPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.reload.ReloadService;
-import com.deathmotion.totemguard.common.stats.StatsRepositoryImpl;
-import com.deathmotion.totemguard.common.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.util.*;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
@@ -104,6 +106,7 @@ public abstract class TGPlatform {
     private BungeeChannelManager bungeeChannelManager;
     private MonitorRepository monitorRepository;
     private ModDetectionService modDetectionService;
+    private com.deathmotion.totemguard.common.features.check.CheckService checkService;
     private TGPlatformAPI api;
 
     public TGPlatform(Platform platform) {
@@ -157,7 +160,7 @@ public abstract class TGPlatform {
         // channel suffix) and NetworkPresenceRepository (publisher of the same instance
         // id in subscribe packets). They MUST be the same UUID, otherwise per-instance
         // unicast channels don't line up.
-        ServerIdentity serverIdentity = ServerIdentity.create(configRepository.configView().server());
+        ServerIdentity serverIdentity = ServerIdentity.create();
         redisRepository = new RedisRepositoryImpl(serverIdentity.instanceId());
         databaseRepository = new DatabaseRepositoryImpl();
         cacheRepository = new CacheRepositoryImpl();
@@ -171,12 +174,19 @@ public abstract class TGPlatform {
         guiManager = new GuiManager();
         historyRepository = new HistoryRepositoryImpl();
         statsRepository = new StatsRepositoryImpl();
+        checkService = new com.deathmotion.totemguard.common.features.check.CheckService();
         commandManager = new CommandManagerImpl();
         antiVPNRepository = new AntiVPNRepositoryImpl();
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
         networkPresenceRepository = new NetworkPresenceRepository(this, serverIdentity);
         networkPresenceRepository.addListener(alertRepository);
         redisRepository.addStateListener(alertRepository);
+        // Forward resolved server names to the database so the tg_servers row is only
+        // written once we have a real name (never the tg-<hex> fallback).
+        networkPresenceRepository.addServerNameResolvedListener(name -> {
+            DatabaseRepositoryImpl db = this.databaseRepository;
+            if (db != null && db.isConnected()) db.assignThisServerName(name);
+        });
         networkPresenceRepository.start();
 
         monitorRepository = new MonitorRepository(this);
@@ -266,6 +276,16 @@ public abstract class TGPlatform {
     public abstract boolean checkPlatformCompatibility();
 
     public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
+    }
+
+    public void handleIncomingCheckRequest(SyncCheckRequestPacket.Payload payload) {
+        com.deathmotion.totemguard.common.features.check.CheckService service = this.checkService;
+        if (service != null) service.acceptRemoteCheckRequest(payload);
+    }
+
+    public void handleIncomingCheckResult(SyncCheckResultPacket.Payload payload) {
+        com.deathmotion.totemguard.common.features.check.CheckService service = this.checkService;
+        if (service != null) service.acceptRemoteCheckResult(payload);
     }
 
     public boolean canRouteToServer(String serverName) {

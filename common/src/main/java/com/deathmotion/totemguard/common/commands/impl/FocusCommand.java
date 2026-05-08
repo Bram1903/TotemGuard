@@ -20,10 +20,6 @@ package com.deathmotion.totemguard.common.commands.impl;
 
 import com.deathmotion.totemguard.api.event.impl.TGFocusEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.alert.AlertFilter;
-import com.deathmotion.totemguard.common.alert.AlertRepositoryImpl;
-import com.deathmotion.totemguard.common.alert.AlertSubscription;
-import com.deathmotion.totemguard.common.alert.RealtimeAlertRoster;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
@@ -32,6 +28,10 @@ import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.api.impl.TGFocusEventImpl;
+import com.deathmotion.totemguard.common.features.alert.AlertFilter;
+import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.features.alert.AlertSubscription;
+import com.deathmotion.totemguard.common.features.alert.RealtimeAlertRoster;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
@@ -113,7 +113,7 @@ public final class FocusCommand extends AbstractCommand {
             targetName = local.getName();
             localTarget = local;
             targetServerInstanceId = presence.identity().instanceId();
-            targetServerName = presence.identity().displayName();
+            targetServerName = presence.getLocalServerName();
         } else {
             RemotePlayerEntry remote = TGPlayerSuggestionProvider.findNetworkPlayer(rawTarget);
             if (remote == null) {

@@ -43,6 +43,15 @@ public final class TGPlayerSuggestionProvider {
                 suggestions(input.lastRemainingToken(), ctx.sender().getName()));
     }
 
+    public static SuggestionProvider<Sender> localSuggestionProvider() {
+        return SuggestionProvider.blockingStrings((ctx, input) -> localSuggestions(input.lastRemainingToken(), null));
+    }
+
+    public static SuggestionProvider<Sender> localSuggestionProviderExcludingSelf() {
+        return SuggestionProvider.blockingStrings((ctx, input) ->
+                localSuggestions(input.lastRemainingToken(), ctx.sender().getName()));
+    }
+
     public static Iterable<String> suggestions(String currentInput) {
         return suggestions(currentInput, null);
     }
@@ -59,16 +68,26 @@ public final class TGPlayerSuggestionProvider {
             }
         }
 
+        addLocalNames(prefix, excludeName, names);
+        return names;
+    }
+
+    public static Iterable<String> localSuggestions(String currentInput, @Nullable String excludeName) {
+        Set<String> names = new LinkedHashSet<>();
+        addLocalNames(currentInput == null ? "" : currentInput, excludeName, names);
+        return names;
+    }
+
+    private static void addLocalNames(String prefix, @Nullable String excludeName, Set<String> out) {
         String lower = prefix.toLowerCase(java.util.Locale.ROOT);
         for (TGPlayer player : TGPlatform.getInstance().getPlayerRepository().getPlayers()) {
             String name = player.getName();
             if (name == null) continue;
             if (excludeName != null && name.equalsIgnoreCase(excludeName)) continue;
             if (lower.isEmpty() || name.toLowerCase(java.util.Locale.ROOT).startsWith(lower)) {
-                names.add(name);
+                out.add(name);
             }
         }
-        return names;
     }
 
     public static @Nullable TGPlayer findPlayer(String name) {

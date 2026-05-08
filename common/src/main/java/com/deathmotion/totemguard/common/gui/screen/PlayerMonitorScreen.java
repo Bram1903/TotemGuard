@@ -20,10 +20,10 @@ package com.deathmotion.totemguard.common.gui.screen;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.features.monitor.MonitorRepository;
+import com.deathmotion.totemguard.common.features.monitor.MonitorSnapshot;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.message.MessageService;
-import com.deathmotion.totemguard.common.monitor.MonitorRepository;
-import com.deathmotion.totemguard.common.monitor.MonitorSnapshot;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.util.Palette;
@@ -96,7 +96,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
         MonitorRepository monitor = platform.getMonitorRepository();
         MonitorSnapshot snapshot = local != null
                 ? MonitorSnapshot.captureFrom(local,
-                platform.getNetworkPresenceRepository().identity().displayName())
+                platform.getNetworkPresenceRepository().getLocalServerName())
                 : (monitor != null ? monitor.lastSnapshot(targetId) : null);
 
         String targetName = snapshot != null ? snapshot.playerName() : fallbackName;

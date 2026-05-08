@@ -216,7 +216,7 @@ public final class PlayerProfileScreen extends GuiScreen {
             String serverName;
             if (freshLocal != null) {
                 serverInstanceId = plat.getNetworkPresenceRepository().identity().instanceId();
-                serverName = plat.getNetworkPresenceRepository().identity().displayName();
+                serverName = plat.getNetworkPresenceRepository().getLocalServerName();
             } else if (this.remoteEntry != null) {
                 serverInstanceId = this.remoteEntry.serverInstanceId();
                 serverName = this.remoteEntry.serverName();

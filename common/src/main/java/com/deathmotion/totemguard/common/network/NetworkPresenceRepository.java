@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,6 +49,8 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
 
     private static final long HEARTBEAT_PERIOD_SECONDS = 10L;
     private static final long SWEEP_PERIOD_SECONDS = 30L;
+    private static final long PLACEHOLDER_RETRY_PERIOD_SECONDS = 10L;
+    private static final int PLACEHOLDER_RETRY_MAX_ATTEMPTS = 30;
     private static final int SUGGEST_LIMIT = 50;
 
     private final TGPlatform platform;
@@ -55,18 +58,143 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     private final ServerIdentity identity;
     private final PresenceStore store;
     private final List<PresenceListener> listeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<String>> serverNameResolvedListeners = new CopyOnWriteArrayList<>();
     private final ConcurrentHashMap<UUID, ScheduledTask> pendingOffline = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean();
     private volatile String effectiveDisplayName;
+    private volatile boolean serverNameResolved;
     private @Nullable ScheduledTask heartbeatTask;
     private @Nullable ScheduledTask sweepTask;
+    private @Nullable ScheduledTask placeholderRetryTask;
 
     public NetworkPresenceRepository(TGPlatform platform, ServerIdentity identity) {
         this.platform = platform;
         this.logger = platform.getLogger();
         this.identity = identity;
         this.store = new PresenceStore(platform.getRedisRepository(), logger);
-        this.effectiveDisplayName = identity.displayName();
+
+        Optional<String> resolved = resolveServerName();
+        this.effectiveDisplayName = resolved.orElseGet(this::generatedFallback);
+        this.serverNameResolved = resolved.isPresent();
+    }
+
+    /**
+     * Whether the {@code server} value from {@code config.yml} has been resolved against
+     * the placeholder engine to a concrete value. While this returns {@code false} we are
+     * displaying a {@code tg-<hex>} fallback, and consumers that persist the server name
+     * (e.g. the database's {@code tg_servers} table) should hold off until the listener
+     * registered via {@link #addServerNameResolvedListener} fires.
+     */
+    public boolean isServerNameResolved() {
+        return serverNameResolved;
+    }
+
+    /**
+     * Registers a callback fired when the configured server name resolves to a concrete
+     * value (or changes after a reload). Fires immediately if a resolved value is already
+     * available. Used by the database layer to defer {@code tg_servers} registration so a
+     * fallback name is never persisted.
+     */
+    public void addServerNameResolvedListener(@NotNull Consumer<String> listener) {
+        serverNameResolvedListeners.add(listener);
+        if (serverNameResolved) {
+            try {
+                listener.accept(effectiveDisplayName);
+            } catch (Exception ex) {
+                logger.log(Level.WARNING, "Server-name listener threw on initial fire", ex);
+            }
+        }
+    }
+
+    public void reloadServerName() {
+        Optional<String> resolved = resolveServerName();
+        if (resolved.isPresent()) {
+            applyResolvedName(resolved.get());
+            cancelPlaceholderRetry();
+            return;
+        }
+
+        if (serverNameResolved) {
+            serverNameResolved = false;
+            updateEffectiveDisplayName(generatedFallback());
+        }
+        startPlaceholderRetryIfNeeded();
+    }
+
+    private void applyResolvedName(@NotNull String name) {
+        boolean wasResolved = serverNameResolved;
+        boolean nameChanged = !name.equals(effectiveDisplayName);
+        serverNameResolved = true;
+        if (nameChanged) updateEffectiveDisplayName(name);
+        if (!wasResolved || nameChanged) notifyServerNameResolved(name);
+    }
+
+    private void notifyServerNameResolved(@NotNull String name) {
+        for (Consumer<String> listener : serverNameResolvedListeners) {
+            try {
+                listener.accept(name);
+            } catch (Exception ex) {
+                logger.log(Level.WARNING, "Server-name listener failed", ex);
+            }
+        }
+    }
+
+    private void startPlaceholderRetryIfNeeded() {
+        if (serverNameResolved || placeholderRetryTask != null) return;
+        int[] attempts = {0};
+        placeholderRetryTask = platform.getScheduler().runAsyncTaskAtFixedRate(
+                () -> tickPlaceholderRetry(attempts),
+                PLACEHOLDER_RETRY_PERIOD_SECONDS, PLACEHOLDER_RETRY_PERIOD_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void tickPlaceholderRetry(int[] attempts) {
+        if (serverNameResolved) {
+            cancelPlaceholderRetry();
+            return;
+        }
+        Optional<String> resolved = resolveServerName();
+        if (resolved.isPresent()) {
+            applyResolvedName(resolved.get());
+            cancelPlaceholderRetry();
+            logger.info("Server name placeholder \""
+                    + platform.getConfigRepository().configView().server()
+                    + "\" resolved to \"" + resolved.get() + "\".");
+            return;
+        }
+        attempts[0]++;
+        if (attempts[0] >= PLACEHOLDER_RETRY_MAX_ATTEMPTS) {
+            cancelPlaceholderRetry();
+            logger.warning("Server name placeholder \""
+                    + platform.getConfigRepository().configView().server()
+                    + "\" did not resolve after " + PLACEHOLDER_RETRY_MAX_ATTEMPTS
+                    + " attempts; staying on fallback \"" + effectiveDisplayName
+                    + "\". Run /tg reload once the providing plugin is ready to retry.");
+        }
+    }
+
+    private void cancelPlaceholderRetry() {
+        ScheduledTask task = placeholderRetryTask;
+        placeholderRetryTask = null;
+        if (task != null) task.cancel();
+    }
+
+    private Optional<String> resolveServerName() {
+        String raw = platform.getConfigRepository().configView().server();
+        if (raw == null || raw.isBlank()) return Optional.empty();
+        if (raw.indexOf('%') < 0) return Optional.of(raw);
+        try {
+            String result = platform.getPlaceholderRepository().replace(raw, null, null, Map.of());
+            if (result == null || result.isBlank() || result.equals(raw)) return Optional.empty();
+            if (result.matches(".*%[A-Za-z0-9_]+%.*")) return Optional.empty();
+            return Optional.of(result);
+        } catch (Exception ex) {
+            logger.warning("Failed to resolve %tg_server% placeholder \"" + raw + "\": " + ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private String generatedFallback() {
+        return "tg-" + Long.toHexString(identity.instanceId().getLeastSignificantBits()).substring(0, 8);
     }
 
     public void updateEffectiveDisplayName(@NotNull String newName) {
@@ -94,10 +222,12 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         sweepTask = platform.getScheduler().runAsyncTaskAtFixedRate(
                 this::sweepStaleServers, SWEEP_PERIOD_SECONDS, SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
         platform.getRedisRepository().addStateListener(this);
+        if (!serverNameResolved) startPlaceholderRetryIfNeeded();
     }
 
     public void stop() {
         if (!started.compareAndSet(true, false)) return;
+        cancelPlaceholderRetry();
         platform.getRedisRepository().removeStateListener(this);
         if (heartbeatTask != null) heartbeatTask.cancel();
         if (sweepTask != null) sweepTask.cancel();

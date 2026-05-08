@@ -27,8 +27,10 @@ import com.deathmotion.totemguard.common.database.model.*;
 import com.deathmotion.totemguard.common.database.schema.SchemaInitializer;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.database.util.EpochSeconds;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.util.ScheduledTask;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
@@ -118,8 +120,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             AlertWriter writer = new AlertWriter(alerts, players, statsRollup);
             RetentionSweeper sweeper = new RetentionSweeper(alerts, vpnCache, opts);
 
-            int serverId = catalog.resolveAndCacheThisServerId(opts.serverName());
-
             this.catalogDao = catalog;
             this.playerDao = players;
             this.profileDao = profiles;
@@ -134,9 +134,18 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             writer.start();
             sweeper.start();
 
-            TGPlatform.getInstance().getLogger().info(
-                    "Database ready (MySQL, serverId=" + serverId + ")");
-            backfillOnlineProfiles();
+            // Always register a tg_servers row up front so alerts have somewhere to land
+            // even if the configured placeholder never resolves. If the placeholder is
+            // already resolved (static config, or db is restarting after the listener
+            // fired) we use the real name; otherwise we fall back to the raw config value
+            // (e.g. literal "%mcpvp_server_id%") — stable across restarts so it doesn't
+            // spam new rows. The listener wired in TGPlatform swaps to the real name once
+            // resolution succeeds.
+            NetworkPresenceRepository presence = TGPlatform.getInstance().getNetworkPresenceRepository();
+            String dbName = (presence != null && presence.isServerNameResolved())
+                    ? presence.getLocalServerName()
+                    : opts.serverName();
+            assignThisServerName(dbName);
             return true;
         } catch (Exception ex) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
@@ -145,6 +154,26 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
                             + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")");
             tearDown();
             return false;
+        }
+    }
+
+    /**
+     * Assigns (and persists) the server name to {@code tg_servers}, caching the resolved
+     * id for subsequent profile/alert writes. Safe to call multiple times — idempotent.
+     * Invoked by {@link NetworkPresenceRepository}'s server-name-resolved listener so the
+     * fallback {@code tg-<hex>} name is never written to the table.
+     */
+    public synchronized void assignThisServerName(@NotNull String serverName) {
+        CatalogDao catalog = this.catalogDao;
+        if (catalog == null) return;
+        try {
+            int serverId = catalog.resolveAndCacheThisServerId(serverName);
+            TGPlatform.getInstance().getLogger().info(
+                    "Database server registered (name=\"" + serverName + "\", serverId=" + serverId + ")");
+            backfillOnlineProfiles();
+        } catch (Exception ex) {
+            TGPlatform.getInstance().getLogger().log(Level.WARNING,
+                    "Failed to register database server name \"" + serverName + "\"", ex);
         }
     }
 

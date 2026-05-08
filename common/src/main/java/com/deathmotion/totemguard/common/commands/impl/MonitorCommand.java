@@ -84,7 +84,7 @@ public final class MonitorCommand extends AbstractCommand {
             screen = new PlayerMonitorScreen(local);
             localTarget = local;
             targetServerInstanceId = self != null ? self.instanceId() : new UUID(0L, 0L);
-            targetServerName = self != null ? self.displayName() : "";
+            targetServerName = presence != null ? presence.getLocalServerName() : "";
         } else {
             RemotePlayerEntry remote = TGPlayerSuggestionProvider.findNetworkPlayer(rawTarget);
             if (remote == null) {
