@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -298,6 +299,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         StatsRollupDao rollup = this.statsRollupDao;
         if (punishments == null || catalog == null || rollup == null) return;
 
+        PlayerDao players = this.playerDao;
         TGPlatform.getInstance().getScheduler().runAsyncTask(() -> {
             try {
                 int checkId = catalog.resolveCheckId(checkName);
@@ -308,6 +310,9 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
                 punishments.insert(profileId, playerId, checkId, type,
                         commandId, commandArgs, debugId, debugArgs, createdAt);
                 rollup.incrementPunishments(EpochSeconds.dayFromMillis(createdAt), 1);
+                if (players != null) {
+                    players.bumpLastPunishedAt(Map.of(playerId, EpochSeconds.fromMillis(createdAt)));
+                }
             } catch (Exception ex) {
                 TGPlatform.getInstance().getLogger().log(Level.WARNING,
                         "Failed to persist punishment for " + checkName, ex);
@@ -445,6 +450,22 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         PlayerDao players = this.playerDao;
         if (players == null) throw new SQLException("Database not ready");
         return players.countFlaggedSince(sinceEpochMs);
+    }
+
+    @Blocking
+    public int countPlayersPunishedTotal() throws SQLException {
+        requireEnabled();
+        PlayerDao players = this.playerDao;
+        if (players == null) throw new SQLException("Database not ready");
+        return players.countPunishedTotal();
+    }
+
+    @Blocking
+    public int countPlayersPunishedSince(long sinceEpochMs) throws SQLException {
+        requireEnabled();
+        PlayerDao players = this.playerDao;
+        if (players == null) throw new SQLException("Database not ready");
+        return players.countPunishedSince(sinceEpochMs);
     }
 
     @Blocking

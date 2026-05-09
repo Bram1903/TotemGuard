@@ -275,3 +275,6 @@ gui:
     db-unavailable-lore-1: "&#B8AC8FStatistics are unavailable. The database"
     pick-window-lore: "&#B8AC8FPick a different window below."
     current-window-title: "&#FBAF00Current window"
+    section-activity: "&#FBAF00Activity"
+    section-players: "&#FBAF00Players"
+    section-storage: "&#FBAF00Storage"

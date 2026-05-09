@@ -79,17 +79,26 @@ public final class PlayerDao {
 
     @Blocking
     public void bumpLastFlaggedAt(@NotNull Map<Integer, Integer> latestFlaggedAtSeconds) throws SQLException {
-        if (latestFlaggedAtSeconds.isEmpty()) return;
+        bumpPlayerTimestamp(Sql.UPDATE_PLAYER_LAST_FLAGGED_AT, latestFlaggedAtSeconds);
+    }
+
+    @Blocking
+    public void bumpLastPunishedAt(@NotNull Map<Integer, Integer> latestPunishedAtSeconds) throws SQLException {
+        bumpPlayerTimestamp(Sql.UPDATE_PLAYER_LAST_PUNISHED_AT, latestPunishedAtSeconds);
+    }
+
+    private void bumpPlayerTimestamp(String sql, @NotNull Map<Integer, Integer> latestSeconds) throws SQLException {
+        if (latestSeconds.isEmpty()) return;
 
         try (Connection c = connection.borrow()) {
             boolean prevAutoCommit = c.getAutoCommit();
             c.setAutoCommit(false);
-            try (PreparedStatement stmt = c.prepareStatement(Sql.UPDATE_PLAYER_LAST_FLAGGED_AT)) {
-                for (Map.Entry<Integer, Integer> entry : latestFlaggedAtSeconds.entrySet()) {
-                    int flaggedAt = entry.getValue();
-                    stmt.setInt(1, flaggedAt);
+            try (PreparedStatement stmt = c.prepareStatement(sql)) {
+                for (Map.Entry<Integer, Integer> entry : latestSeconds.entrySet()) {
+                    int seconds = entry.getValue();
+                    stmt.setInt(1, seconds);
                     stmt.setInt(2, entry.getKey());
-                    stmt.setInt(3, flaggedAt);
+                    stmt.setInt(3, seconds);
                     stmt.addBatch();
                 }
                 stmt.executeBatch();
@@ -154,6 +163,26 @@ public final class PlayerDao {
     public int countFlaggedSince(long sinceEpochMs) throws SQLException {
         try (Connection c = connection.borrow();
              PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_FLAGGED_SINCE)) {
+            stmt.setInt(1, EpochSeconds.fromMillis(sinceEpochMs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    @Blocking
+    public int countPunishedTotal() throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_PUNISHED_TOTAL);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    @Blocking
+    public int countPunishedSince(long sinceEpochMs) throws SQLException {
+        try (Connection c = connection.borrow();
+             PreparedStatement stmt = c.prepareStatement(Sql.COUNT_PLAYERS_PUNISHED_SINCE)) {
             stmt.setInt(1, EpochSeconds.fromMillis(sinceEpochMs));
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;

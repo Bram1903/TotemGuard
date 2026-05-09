@@ -52,12 +52,10 @@ public final class StatisticsScreen extends GuiScreen {
         this.window = window;
     }
 
-    private static Component flaggedPlayersLine(StatsSnapshot snapshot) {
-        long flagged = snapshot.flaggedPlayers();
-        long unique = snapshot.uniquePlayers();
-        Component line = GuiText.line("Flagged players", NumberFormatter.grouped(flagged));
+    private static Component playerShareLine(String label, long subset, long unique) {
+        Component line = GuiText.line(label, NumberFormatter.grouped(subset));
         if (unique <= 0) return line;
-        double pct = (flagged * 100.0) / unique;
+        double pct = (subset * 100.0) / unique;
         String formatted = String.format(java.util.Locale.ROOT, "%.1f%%", pct);
         return line.append(Component.text(" (" + formatted + ")", Palette.CAPTION));
     }
@@ -159,10 +157,18 @@ public final class StatisticsScreen extends GuiScreen {
         if (snapshot == null) {
             lore.add(messages.getComponent(MessagesKeys.GUI_LOADING_QUERYING_DATABASE));
         } else {
+            lore.add(messages.getComponent(MessagesKeys.GUI_STATISTICS_SECTION_ACTIVITY));
             lore.add(GuiText.line("Alerts", NumberFormatter.grouped(snapshot.alertCount())));
             lore.add(GuiText.line("Punishments", NumberFormatter.grouped(snapshot.punishmentCount())));
-            lore.add(GuiText.line("Unique players", NumberFormatter.grouped(snapshot.uniquePlayers())));
-            lore.add(flaggedPlayersLine(snapshot));
+
+            lore.add(Component.empty());
+            lore.add(messages.getComponent(MessagesKeys.GUI_STATISTICS_SECTION_PLAYERS));
+            lore.add(GuiText.line("Unique", NumberFormatter.grouped(snapshot.uniquePlayers())));
+            lore.add(playerShareLine("Flagged", snapshot.flaggedPlayers(), snapshot.uniquePlayers()));
+            lore.add(playerShareLine("Punished", snapshot.punishedPlayers(), snapshot.uniquePlayers()));
+
+            lore.add(Component.empty());
+            lore.add(messages.getComponent(MessagesKeys.GUI_STATISTICS_SECTION_STORAGE));
             lore.add(GuiText.line("DB size", formatBytes(snapshot.databaseBytes())));
         }
         lore.add(Component.empty());

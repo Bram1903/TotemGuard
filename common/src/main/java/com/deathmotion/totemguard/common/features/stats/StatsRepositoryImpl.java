@@ -95,8 +95,9 @@ public final class StatsRepositoryImpl implements StatsRepository {
         int punishments = clampToInt(totals.punishments());
         int uniquePlayers = db.countPlayersTotal();
         int flaggedPlayers = db.countPlayersFlaggedTotal();
+        int punishedPlayers = db.countPlayersPunishedTotal();
         long bytes = totalDiskBytes(db.tableSizes());
-        return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, bytes);
+        return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, punishedPlayers, bytes);
     }
 
     private StatsSnapshot loadWindowed(DatabaseRepositoryImpl db, StatsWindow window) throws SQLException {
@@ -109,8 +110,9 @@ public final class StatsRepositoryImpl implements StatsRepository {
         int punishments = clampToInt(totals.punishments());
         int uniquePlayers = db.countPlayersActiveSince(since);
         int flaggedPlayers = db.countPlayersFlaggedSince(since);
+        int punishedPlayers = db.countPlayersPunishedSince(since);
         long bytes = windowedEventBytes(db.tableSizes(), totals);
-        return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, bytes);
+        return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, punishedPlayers, bytes);
     }
 
     private long totalDiskBytes(Map<String, TableSize> sizes) {

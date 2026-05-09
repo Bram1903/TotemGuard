@@ -56,6 +56,8 @@ public final class Sql {
             "SELECT id, uuid, last_name, first_seen, last_seen FROM tg_players WHERE uuid = ? LIMIT 1";
     public static final String UPDATE_PLAYER_LAST_FLAGGED_AT =
             "UPDATE tg_players SET last_flagged_at = ? WHERE id = ? AND last_flagged_at < ?";
+    public static final String UPDATE_PLAYER_LAST_PUNISHED_AT =
+            "UPDATE tg_players SET last_punished_at = ? WHERE id = ? AND last_punished_at < ?";
     public static final String SELECT_PROFILE_ID =
             "SELECT id FROM tg_profiles " +
                     "WHERE player_id = ? AND server_id = ? AND brand_id = ? AND client_version = ? LIMIT 1";
@@ -95,6 +97,10 @@ public final class Sql {
             "SELECT COUNT(*) FROM tg_players WHERE last_flagged_at > 0";
     public static final String COUNT_PLAYERS_FLAGGED_SINCE =
             "SELECT COUNT(*) FROM tg_players WHERE last_flagged_at >= ?";
+    public static final String COUNT_PLAYERS_PUNISHED_TOTAL =
+            "SELECT COUNT(*) FROM tg_players WHERE last_punished_at > 0";
+    public static final String COUNT_PLAYERS_PUNISHED_SINCE =
+            "SELECT COUNT(*) FROM tg_players WHERE last_punished_at >= ?";
     public static final String SELECT_TG_TABLE_SIZES =
             "SELECT table_name, table_rows, data_length, index_length " +
                     "FROM information_schema.tables " +

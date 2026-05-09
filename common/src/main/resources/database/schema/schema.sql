@@ -41,11 +41,13 @@ CREATE TABLE IF NOT EXISTS tg_players (
     first_seen      INT UNSIGNED NOT NULL,
     last_seen       INT UNSIGNED NOT NULL,
     last_flagged_at INT UNSIGNED NOT NULL DEFAULT 0,
+    last_punished_at INT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     UNIQUE KEY uk_tg_players_uuid (uuid),
-    KEY idx_tg_players_last_name_lower (last_name_lower),
-    KEY idx_tg_players_last_seen       (last_seen),
-    KEY idx_tg_players_last_flagged_at (last_flagged_at)
+    KEY idx_tg_players_last_name_lower  (last_name_lower),
+    KEY idx_tg_players_last_seen        (last_seen),
+    KEY idx_tg_players_last_flagged_at  (last_flagged_at),
+    KEY idx_tg_players_last_punished_at (last_punished_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;
 
 CREATE TABLE IF NOT EXISTS tg_profiles (

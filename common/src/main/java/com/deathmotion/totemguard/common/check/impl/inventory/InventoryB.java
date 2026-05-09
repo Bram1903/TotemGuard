@@ -45,7 +45,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
 
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             if (data.isSprinting()) {
-                failInventory("click (sprinting");
+                failInventory("click (sprinting)");
             } else if (inputData.hasMovement(true)) {
                 failInventory("click (move)");
             }

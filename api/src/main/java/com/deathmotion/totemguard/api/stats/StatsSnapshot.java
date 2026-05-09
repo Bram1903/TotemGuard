@@ -36,6 +36,8 @@ package com.deathmotion.totemguard.api.stats;
  *                        or the row count of {@code tg_players} for all-time.
  * @param flaggedPlayers  distinct players who had at least one alert in the window
  *                        (driven by {@code tg_players.last_flagged_at}).
+ * @param punishedPlayers distinct players who had at least one punishment in the window
+ *                        (driven by {@code tg_players.last_punished_at}).
  * @param databaseBytes   storage attributable to the window (see class docs).
  */
 public record StatsSnapshot(
@@ -43,6 +45,7 @@ public record StatsSnapshot(
         int punishmentCount,
         int uniquePlayers,
         int flaggedPlayers,
+        int punishedPlayers,
         long databaseBytes
 ) {
 }

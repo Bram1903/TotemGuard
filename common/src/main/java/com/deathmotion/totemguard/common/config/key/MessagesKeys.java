@@ -244,6 +244,9 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_STATISTICS_DB_LORE_1 = ConfigKey.string("gui.statistics.db-unavailable-lore-1");
     public static final ConfigKey<String> GUI_STATISTICS_PICK_WINDOW_LORE = ConfigKey.string("gui.statistics.pick-window-lore");
     public static final ConfigKey<String> GUI_STATISTICS_CURRENT_WINDOW_TITLE = ConfigKey.string("gui.statistics.current-window-title");
+    public static final ConfigKey<String> GUI_STATISTICS_SECTION_ACTIVITY = ConfigKey.string("gui.statistics.section-activity");
+    public static final ConfigKey<String> GUI_STATISTICS_SECTION_PLAYERS = ConfigKey.string("gui.statistics.section-players");
+    public static final ConfigKey<String> GUI_STATISTICS_SECTION_STORAGE = ConfigKey.string("gui.statistics.section-storage");
 
     private MessagesKeys() {
     }

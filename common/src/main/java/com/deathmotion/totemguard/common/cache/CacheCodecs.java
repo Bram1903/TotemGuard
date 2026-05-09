@@ -165,12 +165,13 @@ public final class CacheCodecs {
     public static final Codec<StatsSnapshot> STATS_SNAPSHOT = new Codec<>() {
         @Override
         public byte[] encode(StatsSnapshot value) throws Exception {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(28);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(32);
             try (DataOutputStream out = new DataOutputStream(baos)) {
                 out.writeInt(value.alertCount());
                 out.writeInt(value.punishmentCount());
                 out.writeInt(value.uniquePlayers());
                 out.writeInt(value.flaggedPlayers());
+                out.writeInt(value.punishedPlayers());
                 out.writeLong(value.databaseBytes());
             }
             return baos.toByteArray();
@@ -183,8 +184,9 @@ public final class CacheCodecs {
                 int punishments = in.readInt();
                 int uniquePlayers = in.readInt();
                 int flaggedPlayers = in.readInt();
+                int punishedPlayers = in.readInt();
                 long databaseBytes = in.readLong();
-                return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, databaseBytes);
+                return new StatsSnapshot(alerts, punishments, uniquePlayers, flaggedPlayers, punishedPlayers, databaseBytes);
             }
         }
     };
