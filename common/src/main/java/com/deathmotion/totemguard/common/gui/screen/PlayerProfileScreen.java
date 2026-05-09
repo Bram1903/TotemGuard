@@ -269,9 +269,6 @@ public final class PlayerProfileScreen extends GuiScreen {
                 target.getClientVersion().getReleaseName()));
         lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_CLIENT_BRAND_LABEL),
                 target.getClientBrand()));
-        if (TGPlatform.getInstance().getAntiVPNRepository().isEnabled()) {
-            lore.add(GuiText.status(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_VPN_LABEL), target.isVpn()));
-        }
 
         lore.add(Component.empty());
         lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_KEEPALIVE_PING_LABEL),

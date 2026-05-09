@@ -31,10 +31,6 @@ public final class CacheKeys {
     private CacheKeys() {
     }
 
-    public static String vpn(String ip) {
-        return PREFIX + "vpn:" + ip;
-    }
-
     public static String checkSnapshots(UUID uuid) {
         return PREFIX + "checks:" + uuid;
     }

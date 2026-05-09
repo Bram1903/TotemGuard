@@ -119,10 +119,6 @@ public class TGPlayer implements TGUser {
     @Nullable
     private Long lastTotemPickup;
 
-    @Getter
-    @Setter
-    private boolean vpn;
-
     @Setter
     private volatile boolean manualCheckActive;
 
@@ -189,7 +185,6 @@ public class TGPlayer implements TGUser {
             applyCachedData();
             hasLoggedIn = true;
             platform.getModDetectionService().onPlayerLogin(this);
-            platform.getAntiVPNRepository().validateConnection(this);
             resolveDatabaseProfile();
         });
     }

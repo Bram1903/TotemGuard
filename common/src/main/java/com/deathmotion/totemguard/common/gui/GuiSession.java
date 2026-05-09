@@ -35,7 +35,7 @@ public final class GuiSession {
     private final User user;
     private final int windowId;
     private final Deque<GuiScreen> screenStack = new ArrayDeque<>();
-
+    private final AtomicBoolean refreshScheduled = new AtomicBoolean();
     private GuiRenderResult currentRender;
     private GuiRenderResult appliedRender;
     private Set<GuiSubscriptionKey> subscriptionKeys = Set.of();
@@ -44,7 +44,6 @@ public final class GuiSession {
     private int stateId = 1;
     private ItemStack pendingCursorFallback = ItemStack.EMPTY;
     private boolean hasPendingCursorFallback;
-    private final AtomicBoolean refreshScheduled = new AtomicBoolean();
 
     public GuiSession(UUID viewerId, User user, int windowId) {
         this.viewerId = viewerId;

@@ -21,7 +21,6 @@ package com.deathmotion.totemguard.common.database;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.DatabaseOptions;
 import com.deathmotion.totemguard.common.database.dao.AlertDao;
-import com.deathmotion.totemguard.common.database.dao.VpnCacheDao;
 import com.deathmotion.totemguard.common.util.ScheduledTask;
 
 import java.util.concurrent.TimeUnit;
@@ -34,17 +33,13 @@ public final class RetentionSweeper {
     private static final int DELETE_CHUNK_SIZE = 10_000;
 
     private final AlertDao alertDao;
-    private final VpnCacheDao vpnCacheDao;
     private final int alertRetentionDays;
-    private final int vpnRetentionDays;
 
     private ScheduledTask task;
 
-    public RetentionSweeper(AlertDao alertDao, VpnCacheDao vpnCacheDao, DatabaseOptions options) {
+    public RetentionSweeper(AlertDao alertDao, DatabaseOptions options) {
         this.alertDao = alertDao;
-        this.vpnCacheDao = vpnCacheDao;
         this.alertRetentionDays = Math.max(0, options.retentionAlertDays());
-        this.vpnRetentionDays = Math.max(0, options.retentionVpnDays());
     }
 
     public void start() {
@@ -61,7 +56,6 @@ public final class RetentionSweeper {
 
     private void sweep() {
         if (alertRetentionDays > 0) sweepAlerts();
-        if (vpnRetentionDays > 0) sweepVpnCache();
     }
 
     private void sweepAlerts() {
@@ -76,21 +70,6 @@ public final class RetentionSweeper {
         } catch (Exception ex) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
                     "Alert retention sweep failed, will retry on next interval", ex);
-        }
-    }
-
-    private void sweepVpnCache() {
-        long cutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(vpnRetentionDays);
-        try {
-            long removed = vpnCacheDao.deleteOlderThan(cutoff, DELETE_CHUNK_SIZE);
-            if (removed > 0) {
-                TGPlatform.getInstance().getLogger().info(
-                        "Retention sweep removed " + removed + " VPN cache row(s) older than "
-                                + vpnRetentionDays + " day(s)");
-            }
-        } catch (Exception ex) {
-            TGPlatform.getInstance().getLogger().log(Level.WARNING,
-                    "VPN cache retention sweep failed, will retry on next interval", ex);
         }
     }
 }

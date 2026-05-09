@@ -35,7 +35,6 @@ public class ReloadService {
         platform.getNetworkPresenceRepository().reloadServerName();
         platform.getDatabaseRepository().restart();
         platform.getPunishmentRepository().reload();
-        platform.getAntiVPNRepository().reload();
         platform.getUpdateCheckerRepository().reload();
         platform.getDiscordWebhookService().reload();
         platform.refreshProxyTopology();

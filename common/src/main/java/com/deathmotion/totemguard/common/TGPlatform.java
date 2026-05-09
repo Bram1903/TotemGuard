@@ -32,7 +32,6 @@ import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenish
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
-import com.deathmotion.totemguard.common.features.antivpn.AntiVPNRepositoryImpl;
 import com.deathmotion.totemguard.common.features.discord.DiscordWebhookService;
 import com.deathmotion.totemguard.common.features.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.features.integration.IntegrationRegistrar;
@@ -96,7 +95,6 @@ public abstract class TGPlatform {
     private DiscordWebhookService discordWebhookService;
     private PlayerRepositoryImpl playerRepository;
     private CommandManagerImpl commandManager;
-    private AntiVPNRepositoryImpl antiVPNRepository;
     private UpdateCheckerRepositoryImpl updateCheckerRepository;
     private HistoryRepositoryImpl historyRepository;
     private StatsRepositoryImpl statsRepository;
@@ -172,7 +170,6 @@ public abstract class TGPlatform {
         statsRepository = new StatsRepositoryImpl();
         checkService = new com.deathmotion.totemguard.common.features.check.CheckService();
         commandManager = new CommandManagerImpl();
-        antiVPNRepository = new AntiVPNRepositoryImpl();
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
         networkPresenceRepository = new NetworkPresenceRepository(this, serverIdentity);
         networkPresenceRepository.addListener(alertRepository);

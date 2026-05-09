@@ -54,14 +54,12 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         boolean dbEnabled = platform.getDatabaseRepository().isEnabled();
         boolean redisConnected = platform.getRedisRepository().isConnected();
         boolean redisEnabled = platform.getRedisRepository().isEnabled();
-        boolean antiVpnEnabled = platform.getAntiVPNRepository().isEnabled();
 
         List<Component> lore = new ArrayList<>();
         lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SERVICES_LORE_1));
         lore.add(Component.empty());
         lore.add(serviceLine(messages, "Database", dbEnabled, dbConnected));
         lore.add(serviceLine(messages, "Redis", redisEnabled, redisConnected));
-        lore.add(serviceLine(messages, "Anti-VPN", antiVpnEnabled, antiVpnEnabled));
 
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
         if (redisEnabled && redisConnected && presence != null) {

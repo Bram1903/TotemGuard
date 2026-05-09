@@ -56,10 +56,6 @@ reload: "%prefix% &#6FB04ATotemGuard reloaded successfully!"
 update-checker:
   available: "<click:open_url:'%tg_update_url%'><hover:show_text:'Click to download'>%prefix% &#6FB04AA new version is available: &#FBAF00%tg_update_latest%&#B8AC8F (running &#FBAF00%tg_update_current%&#B8AC8F).<newline>&#C68500&nDownload here</hover></click>"
 
-anti-vpn:
-  alert: "%prefix% &#FEE067%tg_player% &#B8AC8Ftried to join using a VPN"
-  kick: "%prefix% &#E7DEC4You are not allowed to join using a VPN."
-
 general:
   player-only: "%prefix% &#D4452CYou must be a player to use this command!"
   player-not-found: "%prefix% &#D4452CCould not find a tracked TotemGuard player named &#F5A48F%tg_input%&#D4452C."
@@ -211,7 +207,6 @@ gui:
       uuid-label: "UUID"
       client-version-label: "Client version"
       client-brand-label: "Client brand"
-      vpn-label: "VPN flagged"
       keepalive-ping-label: "KeepAlive ping"
       transaction-ping-label: "Transaction ping"
       first-joined-label: "First joined"

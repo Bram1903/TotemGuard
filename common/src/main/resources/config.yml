@@ -30,12 +30,10 @@ database:
   # Extra JDBC parameters, e.g. useSSL=false&serverTimezone=UTC
   parameters: ""
 
-  # Only alerts and VPN cache are swept. Players, sessions, and punishments
-  # are kept forever.
+  # Only alerts are swept. Players, sessions, and punishments are kept forever.
   retention:
     # 0 = keep forever.
     alerts-days: 0
-    vpn-cache-days: 30
 
 # In a multiserver setup, enabling Redis is highly recommended.
 # Redis will make TotemGuard much more powerful by syncing data, alerts and more across servers.
@@ -62,20 +60,6 @@ redis:
       channel: ""
       send: true
       receive: true
-
-# Enables the Anti-VPN Detection feature.
-anti-vpn:
-  # Enable VPN detection.
-  enabled: false
-
-  # The Anti VPN provider to use. (IPRisk is the only option currently)
-  provider: IPRisk
-
-  # The API key to use for the VPN provider (can leave blank or default if the provider doesn't require one)'.
-  api-key:
-
-  # Whether to block VPN users from joining the server.
-  block: true
 
 # Hides sensitive information about other players from clients so cheaters can't
 # exploit it. None of these affect the receiving player's own data.

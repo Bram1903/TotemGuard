@@ -29,7 +29,7 @@ import java.util.Set;
 
 /**
  * Internal typed view of {@code config.yml}. Owns the typed snapshots for each domain
- * subsection so consumers (database, redis, anti-vpn, commands) pull config values
+ * subsection so consumers (database, redis, commands) pull config values
  * through this view rather than constructing their own readers.
  */
 public final class ConfigView {
@@ -39,7 +39,6 @@ public final class ConfigView {
     private final CommandsOptions commands;
     private final RedisOptions redis;
     private final DatabaseOptions database;
-    private final AntiVpnOptions antiVpn;
     private final UpdateCheckerOptions updateChecker;
     private final EntitySpoofingOptions entitySpoofing;
     private final boolean banAnimationEnabled;
@@ -75,14 +74,7 @@ public final class ConfigView {
                 config.getString(ConfigKeys.DATABASE_USERNAME),
                 config.getString(ConfigKeys.DATABASE_PASSWORD),
                 config.getString(ConfigKeys.DATABASE_PARAMETERS),
-                config.getInt(ConfigKeys.DATABASE_RETENTION_ALERT_DAYS),
-                config.getInt(ConfigKeys.DATABASE_RETENTION_VPN_DAYS)
-        );
-        this.antiVpn = new AntiVpnOptions(
-                config.getBoolean(ConfigKeys.VPN_ENABLED),
-                config.getString(ConfigKeys.VPN_PROVIDER),
-                config.getString(ConfigKeys.VPN_API_KEY),
-                config.getBoolean(ConfigKeys.VPN_BLOCK)
+                config.getInt(ConfigKeys.DATABASE_RETENTION_ALERT_DAYS)
         );
         this.updateChecker = new UpdateCheckerOptions(
                 config.getBoolean(ConfigKeys.UPDATE_CHECKER_ENABLED),
@@ -115,10 +107,6 @@ public final class ConfigView {
 
     public @NotNull DatabaseOptions database() {
         return database;
-    }
-
-    public @NotNull AntiVpnOptions antiVpn() {
-        return antiVpn;
     }
 
     public @NotNull UpdateCheckerOptions updateChecker() {

@@ -67,9 +67,6 @@ public final class MessagesKeys {
 
     public static final ConfigKey<String> UPDATE_AVAILABLE = ConfigKey.string("update-checker.available");
 
-    public static final ConfigKey<String> ANTI_VPN_ALERT = ConfigKey.string("anti-vpn.alert");
-    public static final ConfigKey<String> ANTI_VPN_KICK = ConfigKey.string("anti-vpn.kick");
-
     public static final ConfigKey<String> GENERAL_PLAYER_ONLY = ConfigKey.string("general.player-only");
     public static final ConfigKey<String> GENERAL_PLAYER_NOT_FOUND = ConfigKey.string("general.player-not-found");
     public static final ConfigKey<String> GENERAL_PLAYER_DATA_MISSING = ConfigKey.string("general.player-data-missing");
@@ -187,7 +184,6 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_PROFILE_HEAD_UUID_LABEL = ConfigKey.string("gui.profile.head.uuid-label");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_CLIENT_VERSION_LABEL = ConfigKey.string("gui.profile.head.client-version-label");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_CLIENT_BRAND_LABEL = ConfigKey.string("gui.profile.head.client-brand-label");
-    public static final ConfigKey<String> GUI_PROFILE_HEAD_VPN_LABEL = ConfigKey.string("gui.profile.head.vpn-label");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_KEEPALIVE_PING_LABEL = ConfigKey.string("gui.profile.head.keepalive-ping-label");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_TRANSACTION_PING_LABEL = ConfigKey.string("gui.profile.head.transaction-ping-label");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_FIRST_JOINED_LABEL = ConfigKey.string("gui.profile.head.first-joined-label");

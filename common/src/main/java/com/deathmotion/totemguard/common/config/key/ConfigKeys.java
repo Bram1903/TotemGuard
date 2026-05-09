@@ -56,11 +56,6 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> BAN_ANIMATION_ENABLED = ConfigKey.bool("ban-animation.enabled");
 
-    public static final ConfigKey<Boolean> VPN_ENABLED = ConfigKey.bool("anti-vpn.enabled");
-    public static final ConfigKey<String> VPN_PROVIDER = ConfigKey.string("anti-vpn.provider");
-    public static final ConfigKey<String> VPN_API_KEY = ConfigKey.string("anti-vpn.api-key");
-    public static final ConfigKey<Boolean> VPN_BLOCK = ConfigKey.bool("anti-vpn.block");
-
     public static final ConfigKey<Boolean> DATABASE_ENABLED = ConfigKey.bool("database.enabled");
     public static final ConfigKey<String> DATABASE_HOST = ConfigKey.string("database.host");
     public static final ConfigKey<Integer> DATABASE_PORT = ConfigKey.integer("database.port");
@@ -69,7 +64,6 @@ public final class ConfigKeys {
     public static final ConfigKey<String> DATABASE_PASSWORD = ConfigKey.string("database.password");
     public static final ConfigKey<String> DATABASE_PARAMETERS = ConfigKey.string("database.parameters");
     public static final ConfigKey<Integer> DATABASE_RETENTION_ALERT_DAYS = ConfigKey.integer("database.retention.alerts-days");
-    public static final ConfigKey<Integer> DATABASE_RETENTION_VPN_DAYS = ConfigKey.integer("database.retention.vpn-cache-days");
 
     public static final ConfigKey<List<String>> DEVELOPER_OVERRIDES = ConfigKey.stringList("developer-overrides");
 

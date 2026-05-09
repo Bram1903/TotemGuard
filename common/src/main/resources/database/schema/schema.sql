@@ -113,11 +113,3 @@ CREATE TABLE IF NOT EXISTS tg_staff_alert_prefs (
     updated_at     INT UNSIGNED     NOT NULL,
     PRIMARY KEY (player_uuid)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;
-
-CREATE TABLE IF NOT EXISTS tg_vpn_cache (
-    ip_hash   BINARY(32)       NOT NULL,
-    is_vpn    TINYINT UNSIGNED NOT NULL,
-    cached_at INT UNSIGNED     NOT NULL,
-    PRIMARY KEY (ip_hash),
-    KEY idx_tg_vpn_cache_cached_at (cached_at)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin;

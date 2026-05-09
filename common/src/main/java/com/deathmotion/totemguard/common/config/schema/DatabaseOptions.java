@@ -36,7 +36,6 @@ public record DatabaseOptions(
         @NotNull String username,
         @NotNull String password,
         @NotNull String parameters,
-        int retentionAlertDays,
-        int retentionVpnDays
+        int retentionAlertDays
 ) {
 }

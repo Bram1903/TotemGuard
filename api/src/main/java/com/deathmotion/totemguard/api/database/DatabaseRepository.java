@@ -22,9 +22,8 @@ package com.deathmotion.totemguard.api.database;
  * Simple database status interface.
  *
  * <p>Allows consumers to check whether the database is enabled by configuration and
- * whether a connection is currently available. Useful for feature-gating: history,
- * statistics and the anti-VPN persistent cache all require a live database
- * connection.</p>
+ * whether a connection is currently available. Useful for feature-gating: history
+ * and statistics require a live database connection.</p>
  *
  * <p>This interface does not expose any JDBC connection or DAO objects. It is
  * intended only for availability checks.</p>
