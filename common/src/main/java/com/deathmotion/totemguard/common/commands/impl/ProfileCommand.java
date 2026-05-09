@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.gui.screen.PlayerProfileScreen;
+import com.deathmotion.totemguard.common.gui.screen.player.PlayerProfileScreen;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;

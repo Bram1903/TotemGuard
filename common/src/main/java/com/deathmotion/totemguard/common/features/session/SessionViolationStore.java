@@ -20,10 +20,7 @@ package com.deathmotion.totemguard.common.features.session;
 
 import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
-import io.lettuce.core.LettuceFutures;
-import io.lettuce.core.RedisFuture;
-import io.lettuce.core.ScoredValue;
-import io.lettuce.core.ScriptOutputType;
+import io.lettuce.core.*;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.jetbrains.annotations.NotNull;
@@ -209,6 +206,44 @@ public final class SessionViolationStore {
             logger.log(Level.WARNING, "getSession(" + playerUuid + ") failed", ex);
             return null;
         }
+    }
+
+    public int reconcileOrphanViolators() {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return 0;
+        int removed = 0;
+        try {
+            ScanArgs args = ScanArgs.Builder.limit(200);
+            ScoredValueScanCursor<byte[]> cursor = c.zscan(KEY_VIOLATORS, ScanCursor.INITIAL, args);
+            while (true) {
+                List<byte[]> stale = null;
+                for (ScoredValue<byte[]> sv : cursor.getValues()) {
+                    if (!sv.hasValue()) continue;
+                    byte[] uuidBytes = sv.getValue();
+                    UUID uuid;
+                    try {
+                        uuid = UUID.fromString(new String(uuidBytes, StandardCharsets.UTF_8));
+                    } catch (IllegalArgumentException ex) {
+                        if (stale == null) stale = new ArrayList<>();
+                        stale.add(uuidBytes);
+                        continue;
+                    }
+                    Long exists = c.exists(sessionKey(uuid));
+                    if (exists != null && exists > 0L) continue;
+                    if (stale == null) stale = new ArrayList<>();
+                    stale.add(uuidBytes);
+                }
+                if (stale != null && !stale.isEmpty()) {
+                    Long n = c.zrem(KEY_VIOLATORS, stale.toArray(new byte[0][]));
+                    if (n != null) removed += n.intValue();
+                }
+                if (cursor.isFinished()) break;
+                cursor = c.zscan(KEY_VIOLATORS, cursor, args);
+            }
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to reconcile orphan violators", ex);
+        }
+        return removed;
     }
 
     public @NotNull List<SessionSnapshot> topN(int limit) {

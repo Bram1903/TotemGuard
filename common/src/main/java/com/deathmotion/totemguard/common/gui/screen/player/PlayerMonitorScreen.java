@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.gui.screen;
+package com.deathmotion.totemguard.common.gui.screen.player;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
@@ -108,30 +108,30 @@ public final class PlayerMonitorScreen extends GuiScreen {
 
         if (session.viewerId().equals(targetId)) {
             builder.fillEmpty(GuiItems.filler());
+            builder.set(0, singleExitButton(session, messages), ctx -> {
+                if (session.hasParent()) {
+                    ctx.back();
+                    return;
+                }
+                ctx.close();
+            });
             builder.set(13, GuiItems.simple(
                     ItemTypes.BARRIER,
                     messages.getComponent(MessagesKeys.GUI_MONITOR_SELF_DISABLED_TITLE),
                     List.of(messages.getComponent(MessagesKeys.GUI_MONITOR_SELF_DISABLED_LORE))
             ));
-            builder.set(49, singleExitButton(session, messages), ctx -> {
-                if (session.hasParent()) {
-                    ctx.back();
-                    return;
-                }
-                ctx.close();
-            });
             return builder.build();
         }
 
         if (snapshot == null) {
-            builder.set(0, emptyPane("Player"));
-            builder.set(8, singleExitButton(session, messages), ctx -> {
+            builder.set(0, singleExitButton(session, messages), ctx -> {
                 if (session.hasParent()) {
                     ctx.back();
                     return;
                 }
                 ctx.close();
             });
+            builder.set(8, emptyPane("Player"));
             builder.set(13, GuiItems.simple(
                     ItemTypes.RED_CONCRETE,
                     messages.getComponent(MessagesKeys.GUI_MONITOR_UNTRACKED_TITLE, Map.of("tg_player", targetName)),
@@ -151,7 +151,15 @@ public final class PlayerMonitorScreen extends GuiScreen {
             profile = cached != null ? cached : new UserProfile(snapshot.targetUuid(), snapshot.playerName());
         }
 
-        builder.set(0, GuiItems.playerHead(
+        builder.set(0, singleExitButton(session, messages), ctx -> {
+            if (session.hasParent()) {
+                ctx.back();
+                return;
+            }
+            ctx.close();
+        });
+
+        builder.set(8, GuiItems.playerHead(
                 profile,
                 Component.text(snapshot.playerName(), Palette.SUCCESS),
                 List.of(
@@ -227,14 +235,6 @@ public final class PlayerMonitorScreen extends GuiScreen {
                 )
         ));
 
-        builder.set(8, singleExitButton(session, messages), ctx -> {
-            if (session.hasParent()) {
-                ctx.back();
-                return;
-            }
-            ctx.close();
-        });
-
         for (int slot = 9; slot <= 13; slot++) {
             builder.set(slot, separatorPane());
         }
@@ -309,11 +309,7 @@ public final class PlayerMonitorScreen extends GuiScreen {
     }
 
     private ItemStack separatorPane() {
-        return GuiItems.simple(
-                ItemTypes.WHITE_STAINED_GLASS_PANE,
-                Component.text(" ", Palette.PARCH_50),
-                List.of()
-        );
+        return GuiItems.filler(ItemTypes.WHITE_STAINED_GLASS_PANE);
     }
 
     private ItemStack singleExitButton(GuiSession session, MessageService messages) {

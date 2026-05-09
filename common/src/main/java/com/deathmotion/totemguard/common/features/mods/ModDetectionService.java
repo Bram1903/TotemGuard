@@ -36,15 +36,18 @@ public final class ModDetectionService implements ModDetectionRepository {
     private final TGPlatform platform;
     private final ModResolver resolver;
     private final ModKickThenBanTracker kickThenBanTracker;
+    private final ModSessionStore modSessionStore;
 
     private final ConcurrentHashMap<UUID, ModSession> sessions = new ConcurrentHashMap<>();
 
     public ModDetectionService(TGPlatform platform,
                                ModResolver resolver,
-                               ModKickThenBanTracker kickThenBanTracker) {
+                               ModKickThenBanTracker kickThenBanTracker,
+                               ModSessionStore modSessionStore) {
         this.platform = platform;
         this.resolver = resolver;
         this.kickThenBanTracker = kickThenBanTracker;
+        this.modSessionStore = modSessionStore;
     }
 
     public @Nullable ModSession sessionFor(@NotNull UUID uuid) {
@@ -64,6 +67,7 @@ public final class ModDetectionService implements ModDetectionRepository {
     public void onPlayerLogout(@NotNull UUID uuid) {
         ModSession removed = sessions.remove(uuid);
         if (removed != null) removed.cancel();
+        if (modSessionStore != null) modSessionStore.onPlayerQuit(uuid);
     }
 
     public void recordDetection(@NotNull ModSession session,
@@ -73,6 +77,7 @@ public final class ModDetectionService implements ModDetectionRepository {
         if (result == null) return;
         if (result.late()) {
             resolver.resolveLate(session, result.mod());
+            publishLate(session, result.mod());
         }
     }
 
@@ -80,18 +85,41 @@ public final class ModDetectionService implements ModDetectionRepository {
         if (session.state() != ModSession.State.AWAITING_BOUNDARY) return;
         if (!session.tryResolve()) return;
         resolver.resolve(session);
+        publishResolved(session);
+    }
+
+    private void publishResolved(@NotNull ModSession session) {
+        if (modSessionStore == null) return;
+        Set<DetectedMod> mods = session.snapshotDetected();
+        if (mods.isEmpty()) return;
+        UUID instanceId = platform.getNetworkPresenceRepository().identity().instanceId();
+        String serverName = platform.getNetworkPresenceRepository().getLocalServerName();
+        modSessionStore.recordResolved(session.player().getUuid(), instanceId, serverName, mods);
+    }
+
+    private void publishLate(@NotNull ModSession session, @NotNull DetectedMod mod) {
+        if (modSessionStore == null) return;
+        UUID instanceId = platform.getNetworkPresenceRepository().identity().instanceId();
+        String serverName = platform.getNetworkPresenceRepository().getLocalServerName();
+        modSessionStore.recordLate(session.player().getUuid(), instanceId, serverName, mod);
     }
 
     @Override
     public @NotNull Set<DetectedMod> getDetectedMods(@NotNull UUID uuid) {
         ModSession session = sessions.get(uuid);
-        return session == null ? Set.of() : session.snapshotDetected();
+        if (session != null) return session.snapshotDetected();
+        return modSessionStore != null ? modSessionStore.getMods(uuid) : Set.of();
     }
 
     @Override
     public boolean hasDetectedMod(@NotNull UUID uuid, @NotNull String modId) {
         ModSession session = sessions.get(uuid);
-        return session != null && session.hasDetected(modId);
+        if (session != null) return session.hasDetected(modId);
+        if (modSessionStore == null) return false;
+        for (DetectedMod mod : modSessionStore.getMods(uuid)) {
+            if (mod.id().equals(modId)) return true;
+        }
+        return false;
     }
 
     @Override

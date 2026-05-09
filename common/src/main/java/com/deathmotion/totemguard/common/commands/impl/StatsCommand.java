@@ -18,24 +18,25 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api.stats.StatsWindow;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.gui.screen.top.TopViolatorsScreen;
+import com.deathmotion.totemguard.common.gui.screen.StatisticsScreen;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import lombok.NonNull;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
-public final class TopCommand extends AbstractCommand {
+public final class StatsCommand extends AbstractCommand {
 
     @Override
     public void register(@NonNull CommandManager<Sender> manager) {
         manager.command(
                 base(manager)
-                        .literal("top")
-                        .permission(TopViolatorsScreen.PERMISSION)
+                        .literal("stats")
+                        .permission(StatisticsScreen.PERMISSION)
                         .handler(this::open)
         );
     }
@@ -45,8 +46,8 @@ public final class TopCommand extends AbstractCommand {
         if (!requirePlayer(sender)) return;
 
         TGPlatform platform = TGPlatform.getInstance();
-        if (!platform.getGuiManager().open(sender, new TopViolatorsScreen())) {
-            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.PROFILE_OPEN_FAILED));
+        if (!platform.getGuiManager().open(sender, new StatisticsScreen(StatsWindow.ALL_TIME))) {
+            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.STATS_OPEN_FAILED));
         }
     }
 }

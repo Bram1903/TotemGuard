@@ -16,10 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.gui.screen;
+package com.deathmotion.totemguard.common.gui.screen.player;
 
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
+import com.deathmotion.totemguard.api.mod.DetectedMod;
+import com.deathmotion.totemguard.api.mod.ModSeverity;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
@@ -34,6 +36,7 @@ import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.util.Palette;
+import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import net.kyori.adventure.text.Component;
@@ -47,11 +50,14 @@ import java.util.logging.Level;
 public final class PlayerProfileScreen extends GuiScreen {
 
     public static final String PERMISSION = "TotemGuard.Gui.Profile";
-    private static final int SLOT_MONITOR = 11;
-    private static final int SLOT_HEAD = 13;
-    private static final int SLOT_HISTORY = 15;
-    private static final int SLOT_BACK = 31;
+
+    private static final int SLOT_BACK = 0;
+    private static final int SLOT_HEAD = 4;
+    private static final int SLOT_MODS = 20;
+    private static final int SLOT_MONITOR = 22;
+    private static final int SLOT_HISTORY = 24;
     private static final int VIOLATION_LIST_LIMIT = 3;
+    private static final int MOD_LIST_LIMIT = 3;
     private final UUID targetId;
     private final String fallbackName;
     private volatile @Nullable PlayerRecord dbRecord;
@@ -60,6 +66,7 @@ public final class PlayerProfileScreen extends GuiScreen {
     private volatile @Nullable UserProfile remoteProfile;
     private volatile boolean presenceAttempted;
     private volatile @Nullable SessionSnapshot sessionSnapshot;
+    private volatile @Nullable Set<DetectedMod> detectedMods;
 
     public PlayerProfileScreen(TGPlayer player) {
         this(player.getUuid(), player.getName());
@@ -103,7 +110,6 @@ public final class PlayerProfileScreen extends GuiScreen {
 
         if (!dbReady) this.dbAttempted = true;
         if (!needsRemoteLookup) this.presenceAttempted = true;
-        if (!dbReady && !needsRemoteLookup && !needsSessionLookup) return;
 
         platform.getScheduler().runAsyncTask(() -> {
             try {
@@ -137,6 +143,13 @@ public final class PlayerProfileScreen extends GuiScreen {
                         platform.getLogger().log(Level.WARNING,
                                 "Failed to load session snapshot for " + targetId + ": " + ex.getMessage());
                     }
+                }
+                try {
+                    this.detectedMods = platform.getModDetectionService().getDetectedMods(targetId);
+                } catch (Exception ex) {
+                    platform.getLogger().log(Level.WARNING,
+                            "Failed to load detected mods for " + targetId + ": " + ex.getMessage());
+                    this.detectedMods = Set.of();
                 }
             } finally {
                 platform.getGuiManager().refresh(session.viewerId());
@@ -195,6 +208,7 @@ public final class PlayerProfileScreen extends GuiScreen {
             ));
         }
 
+        renderModsButton(builder, session, targetId, targetName, messages);
         renderMonitorButton(builder, session, targetId, targetName, messages);
         renderHistoryButton(builder, session, targetId, targetName, messages);
 
@@ -279,6 +293,82 @@ public final class PlayerProfileScreen extends GuiScreen {
                         messages.getComponent(MessagesKeys.GUI_PROFILE_HISTORY_LORE_2)
                 )
         ), ctx -> ctx.open(historyHub(targetUuid, targetName)));
+    }
+
+    private void renderModsButton(GuiRenderResult.Builder builder, GuiSession session, UUID targetUuid, String targetName, MessageService messages) {
+        Set<DetectedMod> mods = this.detectedMods;
+        if (mods == null || mods.isEmpty()) {
+            builder.set(SLOT_MODS, GuiItems.simple(
+                    ItemTypes.LIME_DYE,
+                    messages.getComponent(MessagesKeys.GUI_PROFILE_MODS_CLEAN_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_PROFILE_MODS_CLEAN_LORE))
+            ), ctx -> ctx.open(new PlayerSessionModsScreen(targetUuid, targetName)));
+            return;
+        }
+
+        ModSeverity peak = peakSeverity(mods);
+        ItemType icon = switch (peak) {
+            case LOG -> ItemTypes.GLOWSTONE_DUST;
+            case KICK, KICK_THEN_BAN -> ItemTypes.ORANGE_DYE;
+            case BAN -> ItemTypes.REDSTONE;
+        };
+
+        List<DetectedMod> sorted = new ArrayList<>(mods);
+        sorted.sort(Comparator.comparingInt((DetectedMod m) -> severityWeight(m.severity()))
+                .reversed()
+                .thenComparing(DetectedMod::id));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_MODS_DETECTED_SUMMARY,
+                Map.of("tg_count", mods.size())));
+
+        sorted.stream().limit(MOD_LIST_LIMIT).forEach(mod -> lore.add(
+                messages.getComponent(MessagesKeys.GUI_PROFILE_MODS_DETECTED_ENTRY, Map.of(
+                        "tg_mod_id", mod.id(),
+                        "tg_severity", severityLabel(messages, mod.severity())))));
+
+        int hidden = mods.size() - MOD_LIST_LIMIT;
+        if (hidden > 0) {
+            lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_MODS_DETECTED_OVERFLOW,
+                    Map.of("tg_hidden", hidden)));
+        }
+
+        lore.add(Component.empty());
+        lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_MODS_CLICK_HINT));
+
+        builder.set(SLOT_MODS, GuiItems.simple(
+                icon,
+                messages.getComponent(MessagesKeys.GUI_PROFILE_MODS_DETECTED_TITLE),
+                lore
+        ), ctx -> ctx.open(new PlayerSessionModsScreen(targetUuid, targetName)));
+    }
+
+    private ModSeverity peakSeverity(Set<DetectedMod> mods) {
+        ModSeverity peak = ModSeverity.LOG;
+        for (DetectedMod mod : mods) {
+            if (severityWeight(mod.severity()) > severityWeight(peak)) {
+                peak = mod.severity();
+            }
+        }
+        return peak;
+    }
+
+    private int severityWeight(ModSeverity severity) {
+        return switch (severity) {
+            case LOG -> 0;
+            case KICK -> 1;
+            case KICK_THEN_BAN -> 2;
+            case BAN -> 3;
+        };
+    }
+
+    private String severityLabel(MessageService messages, ModSeverity severity) {
+        return messages.getString(switch (severity) {
+            case LOG -> MessagesKeys.GUI_MOD_SEVERITY_LOG;
+            case KICK -> MessagesKeys.GUI_MOD_SEVERITY_KICK;
+            case KICK_THEN_BAN -> MessagesKeys.GUI_MOD_SEVERITY_KICK_THEN_BAN;
+            case BAN -> MessagesKeys.GUI_MOD_SEVERITY_BAN;
+        });
     }
 
     private List<Component> buildRemoteHeadLore(RemotePlayerEntry remote, MessageService messages) {

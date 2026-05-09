@@ -101,6 +101,8 @@ public final class MessagesKeys {
 
     public static final ConfigKey<String> PROFILE_OPEN_FAILED = ConfigKey.string("commands.profile.open-failed");
 
+    public static final ConfigKey<String> STATS_OPEN_FAILED = ConfigKey.string("commands.stats.open-failed");
+
     public static final ConfigKey<String> CLEARHISTORY_CLEARING = ConfigKey.string("commands.clearhistory.clearing");
     public static final ConfigKey<String> CLEARHISTORY_CLEARED = ConfigKey.string("commands.clearhistory.cleared");
     public static final ConfigKey<String> CLEARHISTORY_CLEAR_FAILED = ConfigKey.string("commands.clearhistory.clear-failed");
@@ -181,6 +183,13 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_PROFILE_HISTORY_TITLE = ConfigKey.string("gui.profile.history-title");
     public static final ConfigKey<String> GUI_PROFILE_HISTORY_LORE_1 = ConfigKey.string("gui.profile.history-lore-1");
     public static final ConfigKey<String> GUI_PROFILE_HISTORY_LORE_2 = ConfigKey.string("gui.profile.history-lore-2");
+    public static final ConfigKey<String> GUI_PROFILE_MODS_CLEAN_TITLE = ConfigKey.string("gui.profile.mods.clean-title");
+    public static final ConfigKey<String> GUI_PROFILE_MODS_CLEAN_LORE = ConfigKey.string("gui.profile.mods.clean-lore");
+    public static final ConfigKey<String> GUI_PROFILE_MODS_DETECTED_TITLE = ConfigKey.string("gui.profile.mods.detected-title");
+    public static final ConfigKey<String> GUI_PROFILE_MODS_DETECTED_SUMMARY = ConfigKey.string("gui.profile.mods.detected-summary");
+    public static final ConfigKey<String> GUI_PROFILE_MODS_DETECTED_ENTRY = ConfigKey.string("gui.profile.mods.detected-entry");
+    public static final ConfigKey<String> GUI_PROFILE_MODS_DETECTED_OVERFLOW = ConfigKey.string("gui.profile.mods.detected-overflow");
+    public static final ConfigKey<String> GUI_PROFILE_MODS_CLICK_HINT = ConfigKey.string("gui.profile.mods.click-hint");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_UUID_LABEL = ConfigKey.string("gui.profile.head.uuid-label");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_CLIENT_VERSION_LABEL = ConfigKey.string("gui.profile.head.client-version-label");
     public static final ConfigKey<String> GUI_PROFILE_HEAD_CLIENT_BRAND_LABEL = ConfigKey.string("gui.profile.head.client-brand-label");
@@ -232,6 +241,69 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_ALERT_CHECKS_EMPTY_LORE = ConfigKey.string("gui.alert-checks.empty-lore");
     public static final ConfigKey<String> GUI_ALERT_CHECKS_FILTER_UNAVAILABLE = ConfigKey.string("gui.alert-checks.filter-unavailable");
     public static final ConfigKey<String> GUI_ALERT_CHECKS_VIEW_FILTER_HINT = ConfigKey.string("gui.alert-checks.view-filter-hint");
+
+    public static final ConfigKey<String> GUI_MOD_SESSION_TITLE = ConfigKey.string("gui.mod-session.title");
+    public static final ConfigKey<String> GUI_MOD_SESSION_EMPTY_TITLE = ConfigKey.string("gui.mod-session.empty-title");
+    public static final ConfigKey<String> GUI_MOD_SESSION_EMPTY_LORE = ConfigKey.string("gui.mod-session.empty-lore");
+    public static final ConfigKey<String> GUI_MOD_SESSION_SEVERITY_LABEL = ConfigKey.string("gui.mod-session.severity-label");
+    public static final ConfigKey<String> GUI_MOD_SESSION_METHOD_LABEL = ConfigKey.string("gui.mod-session.method-label");
+    public static final ConfigKey<String> GUI_MOD_SESSION_FOOTER_TITLE = ConfigKey.string("gui.mod-session.footer-title");
+    public static final ConfigKey<String> GUI_MOD_SESSION_FOOTER_LABEL = ConfigKey.string("gui.mod-session.footer-label");
+
+    public static final ConfigKey<String> GUI_MOD_SEVERITY_LOG = ConfigKey.string("gui.mod.severity.log");
+    public static final ConfigKey<String> GUI_MOD_SEVERITY_KICK = ConfigKey.string("gui.mod.severity.kick");
+    public static final ConfigKey<String> GUI_MOD_SEVERITY_KICK_THEN_BAN = ConfigKey.string("gui.mod.severity.kick-then-ban");
+    public static final ConfigKey<String> GUI_MOD_SEVERITY_BAN = ConfigKey.string("gui.mod.severity.ban");
+
+    public static final ConfigKey<String> GUI_MOD_METHOD_PLUGIN_CHANNEL = ConfigKey.string("gui.mod.method.plugin-channel");
+    public static final ConfigKey<String> GUI_MOD_METHOD_PLUGIN_MESSAGE = ConfigKey.string("gui.mod.method.plugin-message");
+    public static final ConfigKey<String> GUI_MOD_METHOD_TRANSLATION = ConfigKey.string("gui.mod.method.translation");
+
+    public static final ConfigKey<String> GUI_TOP_TITLE = ConfigKey.string("gui.top.title");
+    public static final ConfigKey<String> GUI_TOP_TITLE_FILTERED = ConfigKey.string("gui.top.title-filtered");
+    public static final ConfigKey<String> GUI_TOP_LOCAL_ONLY_TITLE = ConfigKey.string("gui.top.local-only-title");
+    public static final ConfigKey<String> GUI_TOP_LOCAL_ONLY_LORE_1 = ConfigKey.string("gui.top.local-only-lore-1");
+    public static final ConfigKey<String> GUI_TOP_LOCAL_ONLY_LORE_2 = ConfigKey.string("gui.top.local-only-lore-2");
+    public static final ConfigKey<String> GUI_TOP_LOADING_LORE = ConfigKey.string("gui.top.loading-lore");
+    public static final ConfigKey<String> GUI_TOP_EMPTY_TITLE = ConfigKey.string("gui.top.empty-title");
+    public static final ConfigKey<String> GUI_TOP_EMPTY_FILTER_TITLE = ConfigKey.string("gui.top.empty-filter-title");
+    public static final ConfigKey<String> GUI_TOP_EMPTY_LORE = ConfigKey.string("gui.top.empty-lore");
+    public static final ConfigKey<String> GUI_TOP_EMPTY_FILTER_LORE = ConfigKey.string("gui.top.empty-filter-lore");
+    public static final ConfigKey<String> GUI_TOP_ERR_SELF_TELEPORT = ConfigKey.string("gui.top.err-self-teleport");
+    public static final ConfigKey<String> GUI_TOP_ERR_TELEPORT_UNAVAILABLE = ConfigKey.string("gui.top.err-teleport-unavailable");
+    public static final ConfigKey<String> GUI_TOP_PAGE_NUMBER = ConfigKey.string("gui.top.page-number");
+    public static final ConfigKey<String> GUI_TOP_PAGE_SUMMARY = ConfigKey.string("gui.top.page-summary");
+    public static final ConfigKey<String> GUI_TOP_FOOTER_TRACKED_LABEL = ConfigKey.string("gui.top.footer-tracked-label");
+    public static final ConfigKey<String> GUI_TOP_FOOTER_MATCHING_LABEL = ConfigKey.string("gui.top.footer-matching-label");
+    public static final ConfigKey<String> GUI_TOP_FOOTER_FILTER_LABEL = ConfigKey.string("gui.top.footer-filter-label");
+    public static final ConfigKey<String> GUI_TOP_FOOTER_HINT_LEFT_CLICK = ConfigKey.string("gui.top.footer-hint-left-click");
+    public static final ConfigKey<String> GUI_TOP_FOOTER_HINT_RIGHT_CLICK = ConfigKey.string("gui.top.footer-hint-right-click");
+    public static final ConfigKey<String> GUI_TOP_FILTER_PICK_TITLE = ConfigKey.string("gui.top.filter-pick-title");
+    public static final ConfigKey<String> GUI_TOP_FILTER_PICK_LORE_1 = ConfigKey.string("gui.top.filter-pick-lore-1");
+    public static final ConfigKey<String> GUI_TOP_FILTER_PICK_LORE_2 = ConfigKey.string("gui.top.filter-pick-lore-2");
+    public static final ConfigKey<String> GUI_TOP_FILTER_CHANGE_TITLE = ConfigKey.string("gui.top.filter-change-title");
+    public static final ConfigKey<String> GUI_TOP_FILTER_CHANGE_LORE = ConfigKey.string("gui.top.filter-change-lore");
+    public static final ConfigKey<String> GUI_TOP_FILTER_CLEAR_TITLE = ConfigKey.string("gui.top.filter-clear-title");
+    public static final ConfigKey<String> GUI_TOP_FILTER_CLEAR_LORE = ConfigKey.string("gui.top.filter-clear-lore");
+    public static final ConfigKey<String> GUI_TOP_HEAD_SERVER_LABEL = ConfigKey.string("gui.top.head.server-label");
+    public static final ConfigKey<String> GUI_TOP_HEAD_SESSION_LABEL = ConfigKey.string("gui.top.head.session-label");
+    public static final ConfigKey<String> GUI_TOP_HEAD_FILTER_VL_LABEL = ConfigKey.string("gui.top.head.filter-vl-label");
+    public static final ConfigKey<String> GUI_TOP_HEAD_TOTAL_VL_LABEL = ConfigKey.string("gui.top.head.total-vl-label");
+    public static final ConfigKey<String> GUI_TOP_HEAD_TOP_CHECKS_LABEL = ConfigKey.string("gui.top.head.top-checks-label");
+    public static final ConfigKey<String> GUI_TOP_HEAD_TOP_CHECKS_ENTRY = ConfigKey.string("gui.top.head.top-checks-entry");
+    public static final ConfigKey<String> GUI_TOP_HEAD_TOP_CHECKS_OVERFLOW = ConfigKey.string("gui.top.head.top-checks-overflow");
+    public static final ConfigKey<String> GUI_TOP_HEAD_LEFT_CLICK_ACTION = ConfigKey.string("gui.top.head.left-click-action");
+    public static final ConfigKey<String> GUI_TOP_HEAD_RIGHT_CLICK_ACTION = ConfigKey.string("gui.top.head.right-click-action");
+
+    public static final ConfigKey<String> GUI_TOP_CHECKS_TITLE = ConfigKey.string("gui.top-checks.title");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_LOCAL_ONLY_LORE = ConfigKey.string("gui.top-checks.local-only-lore");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_LOADING_LORE = ConfigKey.string("gui.top-checks.loading-lore");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_EMPTY_TITLE = ConfigKey.string("gui.top-checks.empty-title");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_EMPTY_LORE = ConfigKey.string("gui.top-checks.empty-lore");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_ENTRY_TOTAL_VL_LABEL = ConfigKey.string("gui.top-checks.entry-total-vl-label");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_ENTRY_VIOLATORS_LABEL = ConfigKey.string("gui.top-checks.entry-violators-label");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_ENTRY_ACTION = ConfigKey.string("gui.top-checks.entry-action");
+    public static final ConfigKey<String> GUI_TOP_CHECKS_FOOTER_DISTINCT_LABEL = ConfigKey.string("gui.top-checks.footer-distinct-label");
 
     public static final ConfigKey<String> GUI_PUNISHMENTS_TITLE = ConfigKey.string("gui.punishments.title");
     public static final ConfigKey<String> GUI_PUNISHMENTS_DB_LORE_1 = ConfigKey.string("gui.punishments.db-unavailable-lore-1");

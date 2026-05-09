@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.gui.screen;
+package com.deathmotion.totemguard.common.gui.screen.top;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
@@ -110,7 +110,7 @@ public final class TopCheckPickerScreen extends GuiScreen {
     public GuiRenderResult render(GuiSession session) {
         MessageService messages = TGPlatform.getInstance().getMessageService();
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
-                GuiTitle.of("TotemGuard · Pick check"));
+                GuiTitle.of(messages.getString(MessagesKeys.GUI_TOP_CHECKS_TITLE)));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(0, GuiItems.simple(
@@ -122,8 +122,8 @@ public final class TopCheckPickerScreen extends GuiScreen {
         if (localOnly) {
             builder.set(4, GuiItems.simple(
                     ItemTypes.AMETHYST_SHARD,
-                    Component.text("Local server only", Palette.WARN),
-                    List.of(Component.text("Redis isn't connected. Showing checks from this server only.", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_TOP_LOCAL_ONLY_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_CHECKS_LOCAL_ONLY_LORE))
             ));
         }
 
@@ -132,7 +132,7 @@ public final class TopCheckPickerScreen extends GuiScreen {
             builder.set(22, GuiItems.simple(
                     ItemTypes.CLOCK,
                     messages.getComponent(MessagesKeys.GUI_LOADING_GENERIC),
-                    List.of(Component.text("Aggregating checks from Redis…", Palette.CONNECTIVE))
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_CHECKS_LOADING_LORE))
             ));
             return builder.build();
         }
@@ -140,8 +140,8 @@ public final class TopCheckPickerScreen extends GuiScreen {
         if (all.isEmpty()) {
             builder.set(22, GuiItems.simple(
                     ItemTypes.LIME_CONCRETE,
-                    Component.text("Nothing to filter", Palette.SUCCESS),
-                    List.of(Component.text("No active session violations to filter by.", Palette.CONNECTIVE))
+                    messages.getComponent(MessagesKeys.GUI_TOP_CHECKS_EMPTY_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_CHECKS_EMPTY_LORE))
             ));
             return builder.build();
         }
@@ -157,40 +157,46 @@ public final class TopCheckPickerScreen extends GuiScreen {
                     ItemTypes.PAPER,
                     Component.text(summary.checkName, Palette.BRAND),
                     List.of(
-                            GuiText.line("Total VL", String.valueOf(summary.totalViolations)),
-                            GuiText.line("Violators", String.valueOf(summary.violatorCount)),
+                            GuiText.line(messages.getString(MessagesKeys.GUI_TOP_CHECKS_ENTRY_TOTAL_VL_LABEL),
+                                    String.valueOf(summary.totalViolations)),
+                            GuiText.line(messages.getString(MessagesKeys.GUI_TOP_CHECKS_ENTRY_VIOLATORS_LABEL),
+                                    String.valueOf(summary.violatorCount)),
                             Component.empty(),
-                            Component.text("Click ▶ filter top by " + summary.checkName, Palette.CAPTION)
+                            messages.getComponent(MessagesKeys.GUI_TOP_CHECKS_ENTRY_ACTION,
+                                    Map.of("tg_check", summary.checkName))
                     )
             ), ctx -> ctx.replace(new TopViolatorsScreen(0, summary.checkName)));
         }
 
-        renderFooter(builder, safePage, totalPages, all.size());
+        renderFooter(builder, safePage, totalPages, all.size(), messages);
         return builder.build();
     }
 
-    private void renderFooter(GuiRenderResult.Builder builder, int currentPage, int totalPages, int total) {
-        MessageService messages = TGPlatform.getInstance().getMessageService();
-
+    private void renderFooter(GuiRenderResult.Builder builder, int currentPage, int totalPages, int total, MessageService messages) {
         if (currentPage > 0) {
             builder.set(48, GuiItems.simple(
                     ItemTypes.ARROW,
                     messages.getComponent(MessagesKeys.GUI_BTN_PREVIOUS_PAGE_TITLE),
-                    List.of(Component.text("Page " + currentPage, Palette.CONNECTIVE))
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_PAGE_NUMBER,
+                            Map.of("tg_page", currentPage)))
             ), ctx -> ctx.replace(new TopCheckPickerScreen(currentPage - 1)));
         }
 
         builder.set(49, GuiItems.simple(
                 ItemTypes.PAPER,
-                Component.text("Page " + (currentPage + 1) + " of " + totalPages, Palette.BRAND),
-                List.of(GuiText.line("Distinct checks", String.valueOf(total)))
+                messages.getComponent(MessagesKeys.GUI_TOP_PAGE_SUMMARY, Map.of(
+                        "tg_current", currentPage + 1,
+                        "tg_total", totalPages)),
+                List.of(GuiText.line(messages.getString(MessagesKeys.GUI_TOP_CHECKS_FOOTER_DISTINCT_LABEL),
+                        String.valueOf(total)))
         ));
 
         if (currentPage < totalPages - 1) {
             builder.set(50, GuiItems.simple(
                     ItemTypes.ARROW,
                     messages.getComponent(MessagesKeys.GUI_BTN_NEXT_PAGE_TITLE),
-                    List.of(Component.text("Page " + (currentPage + 2), Palette.CONNECTIVE))
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_PAGE_NUMBER,
+                            Map.of("tg_page", currentPage + 2)))
             ), ctx -> ctx.replace(new TopCheckPickerScreen(currentPage + 1)));
         }
     }

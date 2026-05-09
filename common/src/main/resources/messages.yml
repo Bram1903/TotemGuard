@@ -94,7 +94,7 @@ commands:
 
   teleport:
     no-redis: "%prefix% &#D4452CTeleport service unavailable."
-    different-proxy: "%prefix% &#D4452CCannot teleport to &#FEE067%tg_player%&#D4452C from here."
+    different-proxy: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Cis behind a different proxy (server &#FEE067%tg_server%&#D4452C). TotemGuard can only teleport players within the same proxy."
     not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
     self-not-allowed: "%prefix% &#D4452CYou cannot teleport to yourself."
     same-server: "%prefix% &#6FB04ATeleporting you to &#FEE067%tg_player%&#6FB04A."
@@ -105,6 +105,9 @@ commands:
 
   profile:
     open-failed: "%prefix% &#D4452CFailed to open the profile GUI."
+
+  stats:
+    open-failed: "%prefix% &#D4452CFailed to open the statistics GUI."
 
   clearhistory:
     clearing: "%prefix% &#B8AC8FClearing history for &#FEE067%tg_player%&#B8AC8F…"
@@ -173,7 +176,7 @@ gui:
 
   # /tg → root info screen.
   info:
-    title: "TotemGuard"
+    title: "&#6E6651&lTotemGuard"
     services-title: "&#FBAF00Services"
     services-lore-1: "&#B8AC8FLive status of TotemGuard services"
     information-title: "&#FBAF00Information"
@@ -191,7 +194,7 @@ gui:
 
   # /tg profile <player>
   profile:
-    title: "Profile: %tg_player%"
+    title: "&#6E6651&lProfile: %tg_player%"
     untracked-title: "&#D4452C%tg_player% is no longer tracked"
     untracked-lore: "&#B8AC8FThe player left the repository."
     no-violations: "&#6FB04ANo active violations"
@@ -204,6 +207,14 @@ gui:
     history-title: "&#FBAF00History"
     history-lore-1: "&#B8AC8FBrowse this player's alert and"
     history-lore-2: "&#B8AC8Fpunishment history from the database."
+    mods:
+      clean-title: "&#6FB04ANo mods detected"
+      clean-lore: "&#B8AC8FNo tracked client mods flagged this session."
+      detected-title: "&#FBAF00Detected Mods"
+      detected-summary: "&#FEE067%tg_count% &#B8AC8Fmod(s) detected this session"
+      detected-entry: "&#B8AC8F  %tg_mod_id% &#6E6651(%tg_severity%)"
+      detected-overflow: "&#6E6651  + %tg_hidden% more"
+      click-hint: "&#6E6651Click to view all ▶"
     head:
       uuid-label: "UUID"
       client-version-label: "Client version"
@@ -218,7 +229,7 @@ gui:
 
   # /tg monitor <player>
   monitor:
-    title: "Monitor: %tg_player%"
+    title: "&#6E6651&lMonitor: %tg_player%"
     untracked-title: "&#D4452C%tg_player% is no longer tracked"
     untracked-lore: "&#B8AC8FAll monitor viewers are closed"
     self-disabled-title: "&#6E6651Self Monitor Disabled"
@@ -230,7 +241,7 @@ gui:
 
   # /tg history <player>: entry hub.
   history-hub:
-    title: "History: %tg_player%"
+    title: "&#6E6651&lHistory: %tg_player%"
     db-unavailable-lore-1: "&#B8AC8FHistory is unavailable - the database"
     alerts-title: "&#FBAF00Alerts"
     alerts-lore-1: "&#B8AC8FEvery violation TotemGuard has flagged"
@@ -240,7 +251,7 @@ gui:
     punishments-lore-2: "&#B8AC8FTotemGuard dispatched, newest first."
 
   alerts:
-    title: "Alerts: %tg_player%"
+    title: "&#6E6651&lAlerts: %tg_player%"
     db-unavailable-lore-1: "&#B8AC8FAlert history is unavailable. The database"
     debug-label: "&#E7DEC4Debug:"
     empty-clean-title: "&#6FB04AClean record"
@@ -257,14 +268,85 @@ gui:
     filter-clear-lore: "&#B8AC8FReturn to all alerts"
 
   alert-checks:
-    title: "Alerts by check: %tg_player%"
+    title: "&#6E6651&lAlerts by check: %tg_player%"
     empty-title: "&#6FB04AClean record"
     empty-lore: "&#B8AC8FNo alerts have been logged for this player."
     filter-unavailable: "&#B8AC8FFiltering is unavailable right now."
     view-filter-hint: "&#6E6651Click to view only this check ▶"
 
+  # /tg top
+  top:
+    title: "&#6E6651&lTotemGuard · Top Violators"
+    title-filtered: "&#6E6651&lTotemGuard · Top [%tg_check%]"
+    local-only-title: "&#E68A2ELocal server only"
+    local-only-lore-1: "&#B8AC8FRedis isn't connected. Showing violators"
+    local-only-lore-2: "&#B8AC8Ffrom this server only."
+    loading-lore: "&#B8AC8FAggregating violations from Redis…"
+    empty-title: "&#6FB04ANo violators"
+    empty-filter-title: "&#6FB04ANo violators for %tg_check%"
+    empty-lore: "&#B8AC8FNo online player has flagged this session."
+    empty-filter-lore: "&#B8AC8FNobody has flagged %tg_check% this session."
+    err-self-teleport: "&#D4452CYou can't teleport to yourself."
+    err-teleport-unavailable: "&#D4452CTeleport unavailable: you're no longer online here."
+    page-number: "&#B8AC8FPage %tg_page%"
+    page-summary: "&#FBAF00Page %tg_current% of %tg_total%"
+    footer-tracked-label: "Tracked violators"
+    footer-matching-label: "Matching violators"
+    footer-filter-label: "Check filter"
+    footer-hint-left-click: "&#B8AC8FLeft-click a head to open profile"
+    footer-hint-right-click: "&#B8AC8FRight-click to teleport"
+    filter-pick-title: "&#FBAF00Filter by check"
+    filter-pick-lore-1: "&#B8AC8FRestrict the ranking to one check."
+    filter-pick-lore-2: "&#6E6651Click ▶ pick a check"
+    filter-change-title: "&#FBAF00Change check"
+    filter-change-lore: "&#B8AC8FPick a different check to filter by."
+    filter-clear-title: "&#D4452CClear filter"
+    filter-clear-lore: "&#B8AC8FShow every active violator again."
+    head:
+      server-label: "Server"
+      session-label: "Session"
+      filter-vl-label: "%tg_check% VL"
+      total-vl-label: "Total VL across all checks"
+      top-checks-label: "&#E7DEC4Top checks"
+      top-checks-entry: "&#B8AC8F  %tg_check% · VL %tg_check_vl%"
+      top-checks-overflow: "&#6E6651  + %tg_hidden% more check(s)"
+      left-click-action: "&#6E6651Left-click ▶ open profile"
+      right-click-action: "&#6E6651Right-click ▶ teleport"
+
+  # /tg top → check picker
+  top-checks:
+    title: "&#6E6651&lTotemGuard · Pick check"
+    local-only-lore: "&#B8AC8FRedis isn't connected. Showing checks from this server only."
+    loading-lore: "&#B8AC8FAggregating checks from Redis…"
+    empty-title: "&#6FB04ANothing to filter"
+    empty-lore: "&#B8AC8FNo active session violations to filter by."
+    entry-total-vl-label: "Total VL"
+    entry-violators-label: "Violators"
+    entry-action: "&#6E6651Click ▶ filter top by %tg_check%"
+    footer-distinct-label: "Distinct checks"
+
+  mod-session:
+    title: "&#6E6651&lMods: %tg_player%"
+    empty-title: "&#6FB04ANo mods detected"
+    empty-lore: "&#B8AC8FNo tracked client mods flagged this session."
+    severity-label: "Severity"
+    method-label: "Detected via"
+    footer-title: "&#FBAF00Detected mods"
+    footer-label: "Total"
+
+  mod:
+    severity:
+      log: "Log"
+      kick: "Kick"
+      kick-then-ban: "Kick then ban"
+      ban: "Ban"
+    method:
+      plugin-channel: "Plugin channel"
+      plugin-message: "Plugin message"
+      translation: "Translation key"
+
   punishments:
-    title: "Punishments: %tg_player%"
+    title: "&#6E6651&lPunishments: %tg_player%"
     db-unavailable-lore-1: "&#B8AC8FPunishment history is unavailable. The database"
     command-label: "&#E7DEC4Command:"
     debug-label: "&#E7DEC4Debug:"
@@ -272,7 +354,7 @@ gui:
     empty-clean-lore: "&#B8AC8FNo punishments have been issued%tg_window_suffix%."
 
   statistics:
-    title: "TotemGuard Statistics"
+    title: "&#6E6651&lTotemGuard Statistics"
     db-unavailable-lore-1: "&#B8AC8FStatistics are unavailable. The database"
     pick-window-lore: "&#B8AC8FPick a different window below."
     current-window-title: "&#FBAF00Current window"

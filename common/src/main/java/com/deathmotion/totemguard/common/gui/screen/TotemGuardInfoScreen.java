@@ -25,7 +25,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
-import com.deathmotion.totemguard.common.gui.screen.stats.StatisticsScreen;
+import com.deathmotion.totemguard.common.gui.screen.top.TopViolatorsScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.util.Palette;

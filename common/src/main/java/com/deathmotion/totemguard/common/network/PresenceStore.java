@@ -412,6 +412,67 @@ public final class PresenceStore {
         }
     }
 
+    /**
+     * Scans {@link #KEY_PLAYERS} and removes any entry whose backing
+     * {@code totemguard:p:<uuid>} key no longer exists. The player hash and the
+     * name zset have no TTL of their own, so they only get pruned by
+     * {@link #claimOfflineIfOwned} (clean quit) or {@link #purgeServer} (sweep).
+     * If a server dies hard and stays offline past {@link #OWNED_SET_TTL_MS}, its
+     * {@code s:<iid>:p} ownership index expires and {@code purgeServer} can no
+     * longer find the players to delete, leaving orphans that would otherwise
+     * inflate {@link #trackedPlayerCount()} forever.
+     */
+    public int reconcileOrphanPlayers() {
+        RedisCommands<byte[], byte[]> c = sync();
+        if (c == null) return 0;
+        int removed = 0;
+        try {
+            ScanArgs args = ScanArgs.Builder.limit(200);
+            MapScanCursor<byte[], byte[]> cursor = c.hscan(KEY_PLAYERS, ScanCursor.INITIAL, args);
+            while (true) {
+                for (Map.Entry<byte[], byte[]> entry : cursor.getMap().entrySet()) {
+                    if (reconcileOnePlayer(c, entry.getKey(), entry.getValue())) removed++;
+                }
+                if (cursor.isFinished()) break;
+                cursor = c.hscan(KEY_PLAYERS, cursor, args);
+            }
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to reconcile orphan players", ex);
+        }
+        return removed;
+    }
+
+    private boolean reconcileOnePlayer(RedisCommands<byte[], byte[]> c, byte[] lowernameKey, byte[] uuidValue) {
+        String lowername = new String(lowernameKey, StandardCharsets.UTF_8);
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(new String(uuidValue, StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException ex) {
+            c.hdel(KEY_PLAYERS, lowernameKey);
+            removeNameZsetEntries(c, lowername);
+            return true;
+        }
+        Long exists = c.exists(playerKey(uuid));
+        if (exists != null && exists > 0L) return false;
+        c.hdel(KEY_PLAYERS, lowernameKey);
+        removeNameZsetEntries(c, lowername);
+        return true;
+    }
+
+    private void removeNameZsetEntries(RedisCommands<byte[], byte[]> c, String lowername) {
+        byte[] lowerBytes = bytes(lowername);
+        byte[] start = new byte[lowerBytes.length + 1];
+        System.arraycopy(lowerBytes, 0, start, 0, lowerBytes.length);
+        start[lowerBytes.length] = DELIMITER;
+        byte[] end = new byte[lowerBytes.length + 1];
+        System.arraycopy(lowerBytes, 0, end, 0, lowerBytes.length);
+        end[lowerBytes.length] = (byte) (DELIMITER + 1);
+        Range<byte[]> range = Range.from(Range.Boundary.including(start), Range.Boundary.excluding(end));
+        List<byte[]> members = c.zrangebylex(KEY_NAMES, range, Limit.unlimited());
+        if (members == null || members.isEmpty()) return;
+        c.zrem(KEY_NAMES, members.toArray(new byte[0][]));
+    }
+
     public int countServers() {
         RedisCommands<byte[], byte[]> c = sync();
         if (c == null) return 0;

@@ -246,6 +246,9 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (platform.getSessionViolationStore() != null && !owned.isEmpty()) {
             platform.getSessionViolationStore().purgeIfOwnedBy(identity.instanceId(), owned);
         }
+        if (platform.getModSessionStore() != null && !owned.isEmpty()) {
+            platform.getModSessionStore().purgeIfOwnedBy(identity.instanceId(), owned);
+        }
         store.purgeServer(identity.instanceId(), effectiveDisplayName);
         publishServerOffline();
     }
@@ -460,6 +463,9 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
             if (platform.getSessionViolationStore() != null) {
                 platform.getSessionViolationStore().heartbeat(ownedPlayers);
             }
+            if (platform.getModSessionStore() != null) {
+                platform.getModSessionStore().heartbeat(ownedPlayers);
+            }
         } catch (Exception ex) {
             logger.log(Level.WARNING, "TotemGuard heartbeat failed", ex);
         }
@@ -475,6 +481,10 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     private void sweepStaleServers() {
         if (!platform.getRedisRepository().isConnected()) return;
         Map<UUID, List<RemotePlayerEntry>> purged = store.sweepStaleServers(identity.instanceId());
+        store.reconcileOrphanPlayers();
+        if (platform.getSessionViolationStore() != null) {
+            platform.getSessionViolationStore().reconcileOrphanViolators();
+        }
         if (purged.isEmpty()) return;
 
         Packet<SyncPlayerOfflinePacket.Payload> playerOffline = Packets.SYNC_PLAYER_OFFLINE.packet();
@@ -493,6 +503,9 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
             }
             if (platform.getSessionViolationStore() != null && !sessionUuids.isEmpty()) {
                 platform.getSessionViolationStore().purgeIfOwnedBy(iid, sessionUuids);
+            }
+            if (platform.getModSessionStore() != null && !sessionUuids.isEmpty()) {
+                platform.getModSessionStore().purgeIfOwnedBy(iid, sessionUuids);
             }
             notifyServerOffline(iid);
             if (!redisEnabled) continue;

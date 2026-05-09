@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.gui.screen.stats;
+package com.deathmotion.totemguard.common.gui.screen;
 
 import com.deathmotion.totemguard.api.result.ResultError;
 import com.deathmotion.totemguard.api.stats.StatsSnapshot;
@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 public final class StatisticsScreen extends GuiScreen {
+
+    public static final String PERMISSION = "TotemGuard.Gui.Statistics";
 
     private static final int SLOT_BACK = 0;
     private static final int SLOT_CURRENT_WINDOW = 13;
@@ -73,7 +75,7 @@ public final class StatisticsScreen extends GuiScreen {
 
     @Override
     public String requiredPermission() {
-        return "TotemGuard.Gui.Statistics";
+        return PERMISSION;
     }
 
     @Override

@@ -109,6 +109,7 @@ public abstract class TGPlatform {
     private ModDetectionService modDetectionService;
     private CheckService checkService;
     private SessionViolationStore sessionViolationStore;
+    private ModSessionStore modSessionStore;
     private TeleportService teleportService;
     private TGPlatformAPI api;
 
@@ -175,6 +176,7 @@ public abstract class TGPlatform {
         statsRepository = new StatsRepositoryImpl();
         checkService = new com.deathmotion.totemguard.common.features.check.CheckService();
         sessionViolationStore = new SessionViolationStore(redisRepository, logger);
+        modSessionStore = new ModSessionStore(redisRepository, logger);
         teleportService = new TeleportService(this);
         commandManager = new CommandManagerImpl();
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
@@ -199,7 +201,7 @@ public abstract class TGPlatform {
         ModLogAlertTracker logAlertTracker = new ModLogAlertTracker(cacheRepository);
         networkPresenceRepository.addListener(logAlertTracker);
         ModResolver modResolver = new ModResolver(this, kickThenBanTracker, logAlertTracker);
-        modDetectionService = new ModDetectionService(this, modResolver, kickThenBanTracker);
+        modDetectionService = new ModDetectionService(this, modResolver, kickThenBanTracker, modSessionStore);
 
         registerPacketListener(new PacketPlayerJoinQuit());
         registerPacketListener(new PacketCheckManagerListener(playerRepository));

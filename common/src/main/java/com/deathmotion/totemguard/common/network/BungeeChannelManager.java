@@ -59,7 +59,7 @@ public final class BungeeChannelManager extends PacketListenerAbstract {
 
     public boolean isServerOnThisProxy(@NotNull String serverName) {
         Set<String> set = proxyServerSet.get();
-        if (set == null) return true;
+        if (set == null) return false;
         for (String name : set) {
             if (name.equalsIgnoreCase(serverName)) return true;
         }

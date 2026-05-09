@@ -18,9 +18,8 @@
 
 package com.deathmotion.totemguard.common.gui;
 
-import com.deathmotion.totemguard.common.util.Palette;
+import com.deathmotion.totemguard.common.util.MessageUtil;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
 
 public final class GuiTitle {
 
@@ -28,6 +27,6 @@ public final class GuiTitle {
     }
 
     public static Component of(String text) {
-        return Component.text(text, Palette.CAPTION).decoration(TextDecoration.BOLD, true);
+        return MessageUtil.formatMessage(text);
     }
 }

@@ -45,11 +45,11 @@ public final class GuiItems {
     }
 
     public static ItemStack filler() {
-        ItemStack item = simple(
-                ItemTypes.GRAY_STAINED_GLASS_PANE,
-                BLANK_NAME,
-                List.of()
-        );
+        return filler(ItemTypes.GRAY_STAINED_GLASS_PANE);
+    }
+
+    public static ItemStack filler(ItemType type) {
+        ItemStack item = simple(type, BLANK_NAME, List.of());
         hideTooltip(item);
         return item;
     }

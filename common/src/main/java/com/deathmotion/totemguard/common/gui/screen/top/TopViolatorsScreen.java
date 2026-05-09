@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.gui.screen;
+package com.deathmotion.totemguard.common.gui.screen.top;
 
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.common.TGPlatform;
@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.features.session.SessionSnapshot;
 import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
 import com.deathmotion.totemguard.common.gui.*;
+import com.deathmotion.totemguard.common.gui.screen.player.PlayerProfileScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -158,7 +159,7 @@ public final class TopViolatorsScreen extends GuiScreen {
         TGPlatform platform = TGPlatform.getInstance();
         MessageService messages = platform.getMessageService();
 
-        GuiRenderResult.Builder builder = GuiRenderResult.builder(6, GuiTitle.of(buildTitle()));
+        GuiRenderResult.Builder builder = GuiRenderResult.builder(6, GuiTitle.of(buildTitle(messages)));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(0, GuiItems.simple(
@@ -170,10 +171,10 @@ public final class TopViolatorsScreen extends GuiScreen {
         if (localOnly) {
             builder.set(4, GuiItems.simple(
                     ItemTypes.AMETHYST_SHARD,
-                    Component.text("Local server only", Palette.WARN),
+                    messages.getComponent(MessagesKeys.GUI_TOP_LOCAL_ONLY_TITLE),
                     List.of(
-                            Component.text("Redis isn't connected. Showing violators", Palette.CONNECTIVE),
-                            Component.text("from this server only.", Palette.CONNECTIVE)
+                            messages.getComponent(MessagesKeys.GUI_TOP_LOCAL_ONLY_LORE_1),
+                            messages.getComponent(MessagesKeys.GUI_TOP_LOCAL_ONLY_LORE_2)
                     )
             ));
         }
@@ -182,24 +183,29 @@ public final class TopViolatorsScreen extends GuiScreen {
             builder.set(22, GuiItems.simple(
                     ItemTypes.CLOCK,
                     messages.getComponent(MessagesKeys.GUI_LOADING_GENERIC),
-                    List.of(Component.text("Aggregating violations from Redis…", Palette.CONNECTIVE))
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_LOADING_LORE))
             ));
-            renderFilterButtons(builder);
+            renderFilterButtons(builder, messages);
             return builder.build();
         }
 
         List<SessionSnapshot> visible = applyFilter(this.snapshots);
 
         if (visible.isEmpty()) {
+            Component emptyTitle = checkFilter == null
+                    ? messages.getComponent(MessagesKeys.GUI_TOP_EMPTY_TITLE)
+                    : messages.getComponent(MessagesKeys.GUI_TOP_EMPTY_FILTER_TITLE,
+                    Map.of("tg_check", checkFilter));
+            Component emptyLore = checkFilter == null
+                    ? messages.getComponent(MessagesKeys.GUI_TOP_EMPTY_LORE)
+                    : messages.getComponent(MessagesKeys.GUI_TOP_EMPTY_FILTER_LORE,
+                    Map.of("tg_check", checkFilter));
             builder.set(22, GuiItems.simple(
                     ItemTypes.LIME_CONCRETE,
-                    Component.text(checkFilter == null ? "No violators" : "No violators for " + checkFilter,
-                            Palette.SUCCESS),
-                    List.of(Component.text(checkFilter == null
-                            ? "No online player has flagged this session."
-                            : "Nobody has flagged " + checkFilter + " this session.", Palette.CONNECTIVE))
+                    emptyTitle,
+                    List.of(emptyLore)
             ));
-            renderFilterButtons(builder);
+            renderFilterButtons(builder, messages);
             return builder.build();
         }
 
@@ -215,12 +221,12 @@ public final class TopViolatorsScreen extends GuiScreen {
             if (profile == null) profile = new UserProfile(snap.playerUuid(), snap.playerName());
 
             builder.set(CONTENT_SLOTS[i - from],
-                    GuiItems.playerHead(profile, buildHeadName(rank, snap), buildHeadLore(snap)),
+                    GuiItems.playerHead(profile, buildHeadName(rank, snap), buildHeadLore(snap, messages)),
                     ctx -> handleClick(ctx, snap));
         }
 
-        renderFooter(builder, safePage, totalPages, visible.size());
-        renderFilterButtons(builder);
+        renderFooter(builder, safePage, totalPages, visible.size(), messages);
+        renderFilterButtons(builder, messages);
 
         return builder.build();
     }
@@ -237,10 +243,10 @@ public final class TopViolatorsScreen extends GuiScreen {
         return filtered;
     }
 
-    private String buildTitle() {
-        if (checkFilter == null) return "TotemGuard · Top Violators";
+    private String buildTitle(MessageService messages) {
+        if (checkFilter == null) return messages.getString(MessagesKeys.GUI_TOP_TITLE);
         String shown = checkFilter.length() > 16 ? checkFilter.substring(0, 15) + "…" : checkFilter;
-        return "TotemGuard · Top [" + shown + "]";
+        return messages.getString(MessagesKeys.GUI_TOP_TITLE_FILTERED, Map.of("tg_check", shown));
     }
 
     private void handleClick(GuiClickContext ctx, SessionSnapshot snap) {
@@ -257,40 +263,46 @@ public final class TopViolatorsScreen extends GuiScreen {
 
     private void triggerTeleport(GuiClickContext ctx, SessionSnapshot snap) {
         TGPlatform platform = TGPlatform.getInstance();
+        MessageService messages = platform.getMessageService();
         if (snap.playerUuid().equals(ctx.session().viewerId())) {
-            ctx.message(Component.text("You can't teleport to yourself.", Palette.DANGER));
+            ctx.message(messages.getComponent(MessagesKeys.GUI_TOP_ERR_SELF_TELEPORT));
             return;
         }
         boolean dispatched = platform.getTeleportService().teleport(ctx.session().viewerId(), snap.playerName());
         if (!dispatched) {
-            ctx.message(Component.text("Teleport unavailable: you're no longer online here.", Palette.DANGER));
+            ctx.message(messages.getComponent(MessagesKeys.GUI_TOP_ERR_TELEPORT_UNAVAILABLE));
             return;
         }
         ctx.close();
     }
 
-    private void renderFooter(GuiRenderResult.Builder builder, int currentPage, int totalPages, int total) {
-        MessageService messages = TGPlatform.getInstance().getMessageService();
-
+    private void renderFooter(GuiRenderResult.Builder builder, int currentPage, int totalPages, int total, MessageService messages) {
         if (currentPage > 0) {
             builder.set(48, GuiItems.simple(
                     ItemTypes.ARROW,
                     messages.getComponent(MessagesKeys.GUI_BTN_PREVIOUS_PAGE_TITLE),
-                    List.of(Component.text("Page " + currentPage, Palette.CONNECTIVE))
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_PAGE_NUMBER,
+                            Map.of("tg_page", currentPage)))
             ), ctx -> ctx.replace(new TopViolatorsScreen(currentPage - 1, checkFilter)));
         }
 
         List<Component> footerLore = new ArrayList<>();
-        footerLore.add(GuiText.line(checkFilter == null ? "Tracked violators" : "Matching violators",
-                String.valueOf(total)));
-        if (checkFilter != null) footerLore.add(GuiText.line("Check filter", checkFilter));
+        String tracked = messages.getString(checkFilter == null
+                ? MessagesKeys.GUI_TOP_FOOTER_TRACKED_LABEL
+                : MessagesKeys.GUI_TOP_FOOTER_MATCHING_LABEL);
+        footerLore.add(GuiText.line(tracked, String.valueOf(total)));
+        if (checkFilter != null) {
+            footerLore.add(GuiText.line(messages.getString(MessagesKeys.GUI_TOP_FOOTER_FILTER_LABEL), checkFilter));
+        }
         footerLore.add(Component.empty());
-        footerLore.add(Component.text("Left-click a head to open profile", Palette.CONNECTIVE));
-        footerLore.add(Component.text("Right-click to teleport", Palette.CONNECTIVE));
+        footerLore.add(messages.getComponent(MessagesKeys.GUI_TOP_FOOTER_HINT_LEFT_CLICK));
+        footerLore.add(messages.getComponent(MessagesKeys.GUI_TOP_FOOTER_HINT_RIGHT_CLICK));
 
         builder.set(49, GuiItems.simple(
                 ItemTypes.PAPER,
-                Component.text("Page " + (currentPage + 1) + " of " + totalPages, Palette.BRAND),
+                messages.getComponent(MessagesKeys.GUI_TOP_PAGE_SUMMARY, Map.of(
+                        "tg_current", currentPage + 1,
+                        "tg_total", totalPages)),
                 footerLore
         ));
 
@@ -298,20 +310,21 @@ public final class TopViolatorsScreen extends GuiScreen {
             builder.set(50, GuiItems.simple(
                     ItemTypes.ARROW,
                     messages.getComponent(MessagesKeys.GUI_BTN_NEXT_PAGE_TITLE),
-                    List.of(Component.text("Page " + (currentPage + 2), Palette.CONNECTIVE))
+                    List.of(messages.getComponent(MessagesKeys.GUI_TOP_PAGE_NUMBER,
+                            Map.of("tg_page", currentPage + 2)))
             ), ctx -> ctx.replace(new TopViolatorsScreen(currentPage + 1, checkFilter)));
         }
     }
 
-    private void renderFilterButtons(GuiRenderResult.Builder builder) {
+    private void renderFilterButtons(GuiRenderResult.Builder builder, MessageService messages) {
         if (checkFilter == null) {
             builder.set(53, GuiItems.simple(
                     ItemTypes.HOPPER,
-                    Component.text("Filter by check", Palette.BRAND),
+                    messages.getComponent(MessagesKeys.GUI_TOP_FILTER_PICK_TITLE),
                     List.of(
-                            Component.text("Restrict the ranking to one check.", Palette.CONNECTIVE),
+                            messages.getComponent(MessagesKeys.GUI_TOP_FILTER_PICK_LORE_1),
                             Component.empty(),
-                            Component.text("Click ▶ pick a check", Palette.CAPTION)
+                            messages.getComponent(MessagesKeys.GUI_TOP_FILTER_PICK_LORE_2)
                     )
             ), ctx -> ctx.open(new TopCheckPickerScreen(0)));
             return;
@@ -319,14 +332,14 @@ public final class TopViolatorsScreen extends GuiScreen {
 
         builder.set(52, GuiItems.simple(
                 ItemTypes.HOPPER,
-                Component.text("Change check", Palette.BRAND),
-                List.of(Component.text("Pick a different check to filter by.", Palette.CONNECTIVE))
+                messages.getComponent(MessagesKeys.GUI_TOP_FILTER_CHANGE_TITLE),
+                List.of(messages.getComponent(MessagesKeys.GUI_TOP_FILTER_CHANGE_LORE))
         ), ctx -> ctx.replace(new TopCheckPickerScreen(0)));
 
         builder.set(53, GuiItems.simple(
                 ItemTypes.BARRIER,
-                Component.text("Clear filter", Palette.DANGER),
-                List.of(Component.text("Show every active violator again.", Palette.CONNECTIVE))
+                messages.getComponent(MessagesKeys.GUI_TOP_FILTER_CLEAR_TITLE),
+                List.of(messages.getComponent(MessagesKeys.GUI_TOP_FILTER_CLEAR_LORE))
         ), ctx -> ctx.replace(new TopViolatorsScreen(0, null)));
     }
 
@@ -340,35 +353,41 @@ public final class TopViolatorsScreen extends GuiScreen {
                 .append(Component.text(displayed + " VL", Palette.VALUE));
     }
 
-    private List<Component> buildHeadLore(SessionSnapshot snap) {
+    private List<Component> buildHeadLore(SessionSnapshot snap, MessageService messages) {
         List<Component> lore = new ArrayList<>();
-        lore.add(GuiText.line("Server", snap.serverName()));
-        lore.add(GuiText.line("Session", formatSessionLength(snap.sessionStart())));
+        lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_TOP_HEAD_SERVER_LABEL), snap.serverName()));
+        lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_TOP_HEAD_SESSION_LABEL),
+                formatSessionLength(snap.sessionStart())));
 
         if (checkFilter != null) {
             lore.add(Component.empty());
-            lore.add(GuiText.line(checkFilter + " VL",
+            lore.add(GuiText.line(
+                    messages.getString(MessagesKeys.GUI_TOP_HEAD_FILTER_VL_LABEL, Map.of("tg_check", checkFilter)),
                     String.valueOf(snap.violations().getOrDefault(checkFilter, 0))));
-            lore.add(GuiText.line("Total VL across all checks", String.valueOf(snap.totalViolations())));
+            lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_TOP_HEAD_TOTAL_VL_LABEL),
+                    String.valueOf(snap.totalViolations())));
         } else {
             List<Map.Entry<String, Integer>> sorted = snap.violations().entrySet().stream()
                     .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                     .toList();
             if (!sorted.isEmpty()) {
                 lore.add(Component.empty());
-                lore.add(Component.text("Top checks", Palette.LABEL));
+                lore.add(messages.getComponent(MessagesKeys.GUI_TOP_HEAD_TOP_CHECKS_LABEL));
                 sorted.stream().limit(VIOLATION_LINE_LIMIT).forEach(entry ->
-                        lore.add(Component.text("  " + entry.getKey() + " · VL " + entry.getValue(), Palette.CONNECTIVE)));
+                        lore.add(messages.getComponent(MessagesKeys.GUI_TOP_HEAD_TOP_CHECKS_ENTRY, Map.of(
+                                "tg_check", entry.getKey(),
+                                "tg_check_vl", entry.getValue()))));
                 int hidden = sorted.size() - VIOLATION_LINE_LIMIT;
                 if (hidden > 0) {
-                    lore.add(Component.text("  + " + hidden + " more check(s)", Palette.CAPTION));
+                    lore.add(messages.getComponent(MessagesKeys.GUI_TOP_HEAD_TOP_CHECKS_OVERFLOW,
+                            Map.of("tg_hidden", hidden)));
                 }
             }
         }
 
         lore.add(Component.empty());
-        lore.add(Component.text("Left-click ▶ open profile", Palette.CAPTION));
-        lore.add(Component.text("Right-click ▶ teleport", Palette.CAPTION));
+        lore.add(messages.getComponent(MessagesKeys.GUI_TOP_HEAD_LEFT_CLICK_ACTION));
+        lore.add(messages.getComponent(MessagesKeys.GUI_TOP_HEAD_RIGHT_CLICK_ACTION));
         return lore;
     }
 

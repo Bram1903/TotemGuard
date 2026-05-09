@@ -24,7 +24,7 @@ import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
-import com.deathmotion.totemguard.common.gui.screen.PlayerMonitorScreen;
+import com.deathmotion.totemguard.common.gui.screen.player.PlayerMonitorScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
