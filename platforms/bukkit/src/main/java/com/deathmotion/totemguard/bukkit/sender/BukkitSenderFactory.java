@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.platform.sender.SenderFactory;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.RemoteConsoleCommandSender;
@@ -76,7 +77,13 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> {
 
     @Override
     protected void performCommand(CommandSender sender, String command) {
-        throw new UnsupportedOperationException();
+        if (sender instanceof Player player) {
+            FoliaScheduler.getEntityScheduler().run(player, TGBukkit.getInstance(),
+                    o -> player.performCommand(command), null);
+            return;
+        }
+        FoliaScheduler.getGlobalRegionScheduler().run(TGBukkit.getInstance(),
+                o -> Bukkit.dispatchCommand(sender, command));
     }
 
     @Override

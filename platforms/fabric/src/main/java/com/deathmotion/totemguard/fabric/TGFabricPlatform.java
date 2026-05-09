@@ -32,11 +32,15 @@ import lombok.Getter;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.fabric.FabricServerCommandManager;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.util.UUID;
 
 @Getter
 public class TGFabricPlatform extends TGPlatform {
@@ -72,6 +76,15 @@ public class TGFabricPlatform extends TGPlatform {
         MinecraftServer server = FabricServerHolder.server();
         if (server == null) return;
         server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), command);
+    }
+
+    @Override
+    public @Nullable Sender createSender(@NotNull UUID playerUuid) {
+        MinecraftServer server = FabricServerHolder.server();
+        if (server == null) return null;
+        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        if (player == null) return null;
+        return senderFactory.get().wrap(player.createCommandSourceStack());
     }
 
     @Override

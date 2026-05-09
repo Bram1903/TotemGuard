@@ -56,6 +56,8 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> BAN_ANIMATION_ENABLED = ConfigKey.bool("ban-animation.enabled");
 
+    public static final ConfigKey<String> TELEPORT_COMMAND = ConfigKey.string("teleport.command");
+
     public static final ConfigKey<Boolean> DATABASE_ENABLED = ConfigKey.bool("database.enabled");
     public static final ConfigKey<String> DATABASE_HOST = ConfigKey.string("database.host");
     public static final ConfigKey<Integer> DATABASE_PORT = ConfigKey.integer("database.port");

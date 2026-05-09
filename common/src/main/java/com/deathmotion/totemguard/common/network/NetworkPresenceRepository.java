@@ -239,6 +239,13 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         }
         pendingOffline.clear();
 
+        Set<UUID> owned = new HashSet<>();
+        for (TGPlayer player : platform.getPlayerRepository().getPlayers()) {
+            owned.add(player.getUuid());
+        }
+        if (platform.getSessionViolationStore() != null && !owned.isEmpty()) {
+            platform.getSessionViolationStore().purgeIfOwnedBy(identity.instanceId(), owned);
+        }
         store.purgeServer(identity.instanceId(), effectiveDisplayName);
         publishServerOffline();
     }
@@ -254,6 +261,9 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         notifyPlayerOnline(playerUuid, new RemotePlayerEntry(playerUuid, playerName, identity.instanceId(), name));
         platform.getScheduler().runAsyncTask(() -> {
             store.addPlayer(playerUuid, playerName, identity.instanceId(), name, profile);
+            if (platform.getSessionViolationStore() != null) {
+                platform.getSessionViolationStore().onPlayerJoin(playerUuid, playerName, name, identity.instanceId());
+            }
             if (!platform.getRedisRepository().isEnabled()) return;
             Packet<SyncPlayerJoinPacket.Payload> packet = Packets.SYNC_PLAYER_JOIN.packet();
             platform.getRedisRepository().publish(packet, new SyncPlayerJoinPacket.Payload(
@@ -294,6 +304,9 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         Boolean stillOurs = store.claimOfflineIfOwned(playerUuid, playerName, identity.instanceId());
         if (Boolean.FALSE.equals(stillOurs)) return;
 
+        if (platform.getSessionViolationStore() != null) {
+            platform.getSessionViolationStore().onPlayerQuit(playerUuid);
+        }
         notifyPlayerOffline(playerUuid, lastKnown);
         if (!platform.getRedisRepository().isConnected()) return;
         Packet<SyncPlayerOfflinePacket.Payload> packet = Packets.SYNC_PLAYER_OFFLINE.packet();
@@ -444,6 +457,9 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
                 ownedPlayers.add(player.getUuid());
             }
             store.heartbeatHost(identity.instanceId(), effectiveDisplayName, ownedPlayers);
+            if (platform.getSessionViolationStore() != null) {
+                platform.getSessionViolationStore().heartbeat(ownedPlayers);
+            }
         } catch (Exception ex) {
             logger.log(Level.WARNING, "TotemGuard heartbeat failed", ex);
         }
@@ -467,11 +483,16 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
 
         for (Map.Entry<UUID, List<RemotePlayerEntry>> entry : purged.entrySet()) {
             UUID iid = entry.getKey();
+            List<UUID> sessionUuids = new ArrayList<>(entry.getValue().size());
             for (RemotePlayerEntry player : entry.getValue()) {
+                sessionUuids.add(player.playerUuid());
                 notifyPlayerOffline(player.playerUuid(), player);
                 if (!redisEnabled) continue;
                 platform.getRedisRepository().publish(playerOffline, new SyncPlayerOfflinePacket.Payload(
                         iid, player.playerUuid(), player.playerName()));
+            }
+            if (platform.getSessionViolationStore() != null && !sessionUuids.isEmpty()) {
+                platform.getSessionViolationStore().purgeIfOwnedBy(iid, sessionUuids);
             }
             notifyServerOffline(iid);
             if (!redisEnabled) continue;

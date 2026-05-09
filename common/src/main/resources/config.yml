@@ -73,6 +73,11 @@ entity-spoofing:
   # metadata to 0.
   absorption: true
 
+# Command run for any "teleport to flagged player" action (GUI right-click, alert
+# click). %tg_player% is the target. Examples: "essentials:tp %tg_player%", "tpa %tg_player%".
+teleport:
+  command: "/tg teleport %tg_player%"
+
 # Just before a player is kicked or banned, show them a fake totem-pop animation
 # using a player head with a hacker skin. The head is sent via packets only
 # the real inventory is never touched, so nothing is lost on re-join.

@@ -32,6 +32,7 @@ import com.deathmotion.totemguard.common.placeholder.holder.InternalPlaceholderH
 import com.deathmotion.totemguard.common.placeholder.holder.impl.CheckPlaceholders;
 import com.deathmotion.totemguard.common.placeholder.holder.impl.PlatformPlaceholders;
 import com.deathmotion.totemguard.common.placeholder.holder.impl.PlayerPlaceholders;
+import com.deathmotion.totemguard.common.placeholder.holder.impl.TeleportCommandPlaceholder;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +56,7 @@ public final class PlaceholderRepositoryImpl implements PlaceholderRepository {
         internalHolders.register(new PlatformPlaceholders());
         internalHolders.register(new PlayerPlaceholders());
         internalHolders.register(new CheckPlaceholders());
+        apiHolders.register(new TeleportCommandPlaceholder());
 
         rebuildEngine();
     }

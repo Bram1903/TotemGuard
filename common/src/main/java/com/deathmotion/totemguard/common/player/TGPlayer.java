@@ -60,6 +60,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -74,6 +75,7 @@ public class TGPlayer implements TGUser {
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
+    private final Instant sessionStart = Instant.now();
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
     private final Data data;

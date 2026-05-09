@@ -32,13 +32,16 @@ import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenish
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
+import com.deathmotion.totemguard.common.features.check.CheckService;
 import com.deathmotion.totemguard.common.features.discord.DiscordWebhookService;
 import com.deathmotion.totemguard.common.features.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.features.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.features.mods.*;
 import com.deathmotion.totemguard.common.features.monitor.MonitorRepository;
 import com.deathmotion.totemguard.common.features.punishment.PunishmentRepositoryImpl;
+import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
 import com.deathmotion.totemguard.common.features.stats.StatsRepositoryImpl;
+import com.deathmotion.totemguard.common.features.teleport.TeleportService;
 import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.gui.GuiPacketListener;
@@ -104,7 +107,9 @@ public abstract class TGPlatform {
     private BungeeChannelManager bungeeChannelManager;
     private MonitorRepository monitorRepository;
     private ModDetectionService modDetectionService;
-    private com.deathmotion.totemguard.common.features.check.CheckService checkService;
+    private CheckService checkService;
+    private SessionViolationStore sessionViolationStore;
+    private TeleportService teleportService;
     private TGPlatformAPI api;
 
     public TGPlatform(Platform platform) {
@@ -169,6 +174,8 @@ public abstract class TGPlatform {
         historyRepository = new HistoryRepositoryImpl();
         statsRepository = new StatsRepositoryImpl();
         checkService = new com.deathmotion.totemguard.common.features.check.CheckService();
+        sessionViolationStore = new SessionViolationStore(redisRepository, logger);
+        teleportService = new TeleportService(this);
         commandManager = new CommandManagerImpl();
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
         networkPresenceRepository = new NetworkPresenceRepository(this, serverIdentity);
@@ -249,6 +256,14 @@ public abstract class TGPlatform {
     public abstract Scheduler getScheduler();
 
     public abstract void dispatchCommand(String command);
+
+    /**
+     * Resolves the given player UUID to a {@link Sender} for command execution as that player.
+     * Returns {@code null} if no player with that UUID is currently online on this server.
+     * Used by features (e.g. GUI teleport buttons) that need to execute commands on behalf of
+     * the viewer rather than the console.
+     */
+    public abstract @Nullable Sender createSender(@org.jetbrains.annotations.NotNull java.util.UUID playerUuid);
 
     public abstract CommandManager<Sender> getCommandManager();
 

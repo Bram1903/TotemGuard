@@ -32,6 +32,7 @@ import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.brigadier.BrigadierSetting;
 import org.incendo.cloud.brigadier.CloudBrigadierManager;
@@ -39,6 +40,10 @@ import org.incendo.cloud.bukkit.CloudBukkitCapabilities;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import org.incendo.cloud.setting.Configurable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 
 @Getter
@@ -90,6 +95,13 @@ public class TGBukkitPlatform extends TGPlatform {
     @Override
     public void dispatchCommand(String command) {
         scheduler.runMainThreadTask(() -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command));
+    }
+
+    @Override
+    public @Nullable Sender createSender(@NotNull UUID playerUuid) {
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player == null) return null;
+        return senderFactory.get().wrap(player);
     }
 
     @Override

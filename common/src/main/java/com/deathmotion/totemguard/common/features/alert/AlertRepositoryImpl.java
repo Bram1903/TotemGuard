@@ -176,6 +176,9 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
         platform.getScheduler().runAsyncTask(() -> {
             platform.getDiscordWebhookService().sendAlert(check, violations, debug);
             punishmentRepository.punish(check, violations, debug, compiledDebug);
+            if (platform.getSessionViolationStore() != null) {
+                platform.getSessionViolationStore().recordViolation(violatorUuid, check.getName());
+            }
         });
     }
 

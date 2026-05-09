@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.stats.StatisticsScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.util.Palette;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -126,6 +127,34 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         );
     }
 
+    private static ItemStack buildTopViolatorsTile(TGPlatform platform) {
+        boolean redisOk = platform.getRedisRepository().isConnected();
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Currently online players ranked", Palette.CONNECTIVE));
+        lore.add(Component.text("by violations gathered this session,", Palette.CONNECTIVE));
+        lore.add(Component.text("aggregated across the fleet.", Palette.CONNECTIVE));
+        lore.add(Component.empty());
+        if (redisOk) {
+            lore.add(Component.text("Click to browse ▶", Palette.CAPTION));
+        } else {
+            lore.add(Component.text("Requires Redis to aggregate", Palette.WARN));
+            lore.add(Component.text("violators across servers.", Palette.WARN));
+        }
+        return GuiItems.simple(
+                redisOk ? ItemTypes.PLAYER_HEAD : ItemTypes.SKELETON_SKULL,
+                Component.text("Top Violators", Palette.BRAND),
+                lore
+        );
+    }
+
+    private static ItemStack buildTopViolatorsTileLocked(TGPlatform platform) {
+        return GuiItems.simple(
+                ItemTypes.SKELETON_SKULL,
+                Component.text("Top Violators", Palette.CAPTION),
+                List.of(Component.text("You lack permission to view this screen.", Palette.CONNECTIVE))
+        );
+    }
+
     private static ItemStack buildStatisticsTile(boolean dbReady) {
         MessageService messages = TGPlatform.getInstance().getMessageService();
         List<Component> lore = new ArrayList<>();
@@ -164,15 +193,22 @@ public final class TotemGuardInfoScreen extends GuiScreen {
                 GuiTitle.of(messages.getString(MessagesKeys.GUI_INFO_TITLE)));
         builder.fillEmpty(GuiItems.filler());
 
-        builder.set(11, buildServicesTile(platform));
-        builder.set(13, buildInformationTile(platform));
+        builder.set(10, buildServicesTile(platform));
+        builder.set(12, buildInformationTile(platform));
+
+        if (session.hasPermission(TopViolatorsScreen.PERMISSION)) {
+            builder.set(14, buildTopViolatorsTile(platform),
+                    ctx -> ctx.open(new TopViolatorsScreen()));
+        } else {
+            builder.set(14, buildTopViolatorsTileLocked(platform));
+        }
 
         boolean dbReady = platform.getDatabaseRepository().isConnected();
         if (dbReady) {
-            builder.set(15, buildStatisticsTile(true),
+            builder.set(16, buildStatisticsTile(true),
                     ctx -> ctx.open(new StatisticsScreen(StatsWindow.ALL_TIME)));
         } else {
-            builder.set(15, buildStatisticsTile(false));
+            builder.set(16, buildStatisticsTile(false));
         }
 
         builder.set(31, GuiItems.simple(

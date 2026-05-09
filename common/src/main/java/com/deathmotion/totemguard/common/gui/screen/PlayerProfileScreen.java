@@ -24,6 +24,8 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
 import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
+import com.deathmotion.totemguard.common.features.session.SessionSnapshot;
+import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.history.HistoryText;
 import com.deathmotion.totemguard.common.gui.screen.history.PlayerHistoryHubScreen;
@@ -37,6 +39,8 @@ import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -55,6 +59,7 @@ public final class PlayerProfileScreen extends GuiScreen {
     private volatile @Nullable RemotePlayerEntry remoteEntry;
     private volatile @Nullable UserProfile remoteProfile;
     private volatile boolean presenceAttempted;
+    private volatile @Nullable SessionSnapshot sessionSnapshot;
 
     public PlayerProfileScreen(TGPlayer player) {
         this(player.getUuid(), player.getName());
@@ -70,6 +75,17 @@ public final class PlayerProfileScreen extends GuiScreen {
         return local != null ? new PlayerHistoryHubScreen(local) : new PlayerHistoryHubScreen(targetUuid, targetName);
     }
 
+    private static String formatSessionLength(Instant start) {
+        Duration d = Duration.between(start, Instant.now());
+        if (d.isNegative() || d.isZero()) return "just started";
+        long hours = d.toHours();
+        long minutes = d.toMinutesPart();
+        long seconds = d.toSecondsPart();
+        if (hours > 0) return hours + "h " + minutes + "m";
+        if (minutes > 0) return minutes + "m " + seconds + "s";
+        return seconds + "s";
+    }
+
     @Override
     public String requiredPermission() {
         return PERMISSION;
@@ -82,10 +98,12 @@ public final class PlayerProfileScreen extends GuiScreen {
         boolean dbReady = platform.getDatabaseRepository().isConnected();
         boolean needsRemoteLookup = platform.getPlayerRepository().getPlayer(targetId) == null
                 && platform.getNetworkPresenceRepository() != null;
+        boolean needsSessionLookup = platform.getSessionViolationStore() != null
+                && platform.getRedisRepository().isConnected();
 
         if (!dbReady) this.dbAttempted = true;
         if (!needsRemoteLookup) this.presenceAttempted = true;
-        if (!dbReady && !needsRemoteLookup) return;
+        if (!dbReady && !needsRemoteLookup && !needsSessionLookup) return;
 
         platform.getScheduler().runAsyncTask(() -> {
             try {
@@ -109,6 +127,15 @@ public final class PlayerProfileScreen extends GuiScreen {
                                 "Failed to load remote presence for " + targetId + ": " + ex.getMessage());
                     } finally {
                         this.presenceAttempted = true;
+                    }
+                }
+                if (needsSessionLookup) {
+                    try {
+                        SessionViolationStore store = platform.getSessionViolationStore();
+                        if (store != null) this.sessionSnapshot = store.getSession(targetId);
+                    } catch (Exception ex) {
+                        platform.getLogger().log(Level.WARNING,
+                                "Failed to load session snapshot for " + targetId + ": " + ex.getMessage());
                     }
                 }
             } finally {
@@ -259,8 +286,40 @@ public final class PlayerProfileScreen extends GuiScreen {
         lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_UUID_LABEL),
                 remote.playerUuid().toString()));
         lore.add(GuiText.line("Server", remote.serverName()));
+        appendRemoteSessionSummary(lore, messages);
+        appendSessionDuration(lore);
         appendFirstJoined(lore, messages);
         return lore;
+    }
+
+    private void appendRemoteSessionSummary(List<Component> lore, MessageService messages) {
+        SessionSnapshot snap = this.sessionSnapshot;
+        lore.add(Component.empty());
+        if (snap == null || snap.totalViolations() <= 0 || snap.violations().isEmpty()) {
+            lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_NO_VIOLATIONS));
+            return;
+        }
+
+        List<Map.Entry<String, Integer>> sorted = snap.violations().entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .toList();
+
+        lore.add(GuiText.line(
+                messages.getString(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_LABEL),
+                messages.getString(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_SUMMARY, Map.of(
+                        "tg_total_vl", snap.totalViolations(),
+                        "tg_active_checks", sorted.size()))));
+
+        sorted.stream().limit(VIOLATION_LIST_LIMIT).forEach(entry -> lore.add(
+                messages.getComponent(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_ENTRY, Map.of(
+                        "tg_check_name", entry.getKey(),
+                        "tg_check_vl", entry.getValue()))));
+
+        int hidden = sorted.size() - VIOLATION_LIST_LIMIT;
+        if (hidden > 0) {
+            lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_OVERFLOW,
+                    Map.of("tg_hidden", hidden)));
+        }
     }
 
     private List<Component> buildHeadLore(TGPlayer target, MessageService messages) {
@@ -277,6 +336,7 @@ public final class PlayerProfileScreen extends GuiScreen {
                 target.getPingData().getTransactionPing() + " ms"));
 
         appendViolationSummary(lore, target, messages);
+        appendSessionDuration(lore);
         appendFirstJoined(lore, messages);
 
         return lore;
@@ -311,6 +371,13 @@ public final class PlayerProfileScreen extends GuiScreen {
             lore.add(messages.getComponent(MessagesKeys.GUI_PROFILE_HEAD_VIOLATIONS_OVERFLOW,
                     Map.of("tg_hidden", hidden)));
         }
+    }
+
+    private void appendSessionDuration(List<Component> lore) {
+        SessionSnapshot snap = this.sessionSnapshot;
+        if (snap == null) return;
+        lore.add(Component.empty());
+        lore.add(GuiText.line("Session", formatSessionLength(snap.sessionStart())));
     }
 
     private void appendFirstJoined(List<Component> lore, MessageService messages) {

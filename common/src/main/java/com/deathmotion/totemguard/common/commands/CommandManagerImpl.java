@@ -54,5 +54,6 @@ public class CommandManagerImpl {
 
         new CheckCommand().register(commandManager);
         new TeleportCommand().register(commandManager);
+        new TopCommand().register(commandManager);
     }
 }
