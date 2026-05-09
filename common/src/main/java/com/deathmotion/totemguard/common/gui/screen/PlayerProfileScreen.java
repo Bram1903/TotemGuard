@@ -385,7 +385,7 @@ public final class PlayerProfileScreen extends GuiScreen {
         if (rec != null) {
             lore.add(Component.empty());
             lore.add(GuiText.line(messages.getString(MessagesKeys.GUI_PROFILE_HEAD_FIRST_JOINED_LABEL),
-                    HistoryText.relative(rec.firstSeen()) + "  (" + HistoryText.absolute(rec.firstSeen()) + ")"));
+                    HistoryText.relative(rec.firstSeen()) + " (" + HistoryText.absolute(rec.firstSeen()) + ")"));
             return;
         }
 

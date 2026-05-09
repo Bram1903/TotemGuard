@@ -227,7 +227,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
         List<Component> lore = new ArrayList<>();
         lore.add(GuiText.line("Server", record.serverName()));
         lore.add(GuiText.line("When", HistoryText.relative(record.createdAt())
-                + "  (" + HistoryText.absolute(record.createdAt()) + ")"));
+                + " (" + HistoryText.absolute(record.createdAt()) + ")"));
 
         String version = formatClientVersion(record.clientVersion());
         String brand = record.clientBrand();

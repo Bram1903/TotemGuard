@@ -208,7 +208,7 @@ public final class PlayerPunishmentsScreen extends GuiScreen {
         lore.add(GuiText.line("Server", record.serverName()));
         lore.add(GuiText.line("Check", record.checkName()));
         lore.add(GuiText.line("When", HistoryText.relative(record.createdAt())
-                + "  (" + HistoryText.absolute(record.createdAt()) + ")"));
+                + " (" + HistoryText.absolute(record.createdAt()) + ")"));
         lore.add(Component.empty());
         lore.add(messages.getComponent(MessagesKeys.GUI_PUNISHMENTS_COMMAND_LABEL));
         lore.add(Component.text(record.command(), Palette.CONNECTIVE));

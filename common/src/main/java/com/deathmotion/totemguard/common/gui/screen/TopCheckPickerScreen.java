@@ -110,7 +110,7 @@ public final class TopCheckPickerScreen extends GuiScreen {
     public GuiRenderResult render(GuiSession session) {
         MessageService messages = TGPlatform.getInstance().getMessageService();
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6,
-                GuiTitle.of("TotemGuard · Pick check filter"));
+                GuiTitle.of("TotemGuard · Pick check"));
         builder.fillEmpty(GuiItems.filler());
 
         builder.set(0, GuiItems.simple(

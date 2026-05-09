@@ -196,9 +196,9 @@ public final class PlayerHistoryHubScreen extends GuiScreen {
         if (rec != null) {
             lore.add(Component.empty());
             lore.add(GuiText.line("First joined",
-                    HistoryText.relative(rec.firstSeen()) + "  (" + HistoryText.absolute(rec.firstSeen()) + ")"));
+                    HistoryText.relative(rec.firstSeen()) + " (" + HistoryText.absolute(rec.firstSeen()) + ")"));
             lore.add(GuiText.line("Last joined",
-                    HistoryText.relative(rec.lastSeen()) + "  (" + HistoryText.absolute(rec.lastSeen()) + ")"));
+                    HistoryText.relative(rec.lastSeen()) + " (" + HistoryText.absolute(rec.lastSeen()) + ")"));
         } else if (!dbAttempted) {
             lore.add(Component.empty());
             lore.add(messages.getComponent(MessagesKeys.GUI_LOADING_JOIN_TIMES));
