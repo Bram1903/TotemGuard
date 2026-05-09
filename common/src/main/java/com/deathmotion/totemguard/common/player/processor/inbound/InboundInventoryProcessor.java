@@ -30,10 +30,13 @@ import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class InboundInventoryProcessor extends ProcessorInbound {
@@ -109,6 +112,8 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     }
 
     private void handleCreativeAction(PacketReceiveEvent event) {
+        if (data.getGameMode() != GameMode.CREATIVE) return;
+
         WrapperPlayClientCreativeInventoryAction packet = new WrapperPlayClientCreativeInventoryAction(event);
         int slot = packet.getSlot();
         if (slot < 1 || slot > 45) return;
@@ -133,14 +138,62 @@ public class InboundInventoryProcessor extends ProcessorInbound {
                 ? containerSlot
                 : inventory.mapContainerSlotToPlayerSlot(windowId, containerSlot);
 
+        Map<ItemType, ItemStack> donors = buildComponentDonors(packet, windowId, inPlayerWindow);
+
         boolean predictedPickup = packet.getWindowClickType() == WrapperPlayClientClickWindow.WindowClickType.PICKUP
                 && inventory.applyPickupClick(windowId, containerSlot, packet.getButton(), Issuer.CLIENT, timestamp);
 
         if (!predictedPickup) {
-            inventory.setCarriedItem(copyItem(packet.getCarriedItemStack()), carriedSlot, Issuer.CLIENT, timestamp);
+            ItemStack predictedCursor = packet.getCarriedItemStack();
+            ItemStack existingCursor = inventory.getCarriedItem().getCurrentItem();
+            inventory.setCarriedItem(preserveComponents(existingCursor, predictedCursor, donors),
+                    carriedSlot, Issuer.CLIENT, timestamp);
         }
 
-        applyClientSlotPayload(packet, windowId, containerSlot, carriedSlot, predictedPickup, timestamp);
+        applyClientSlotPayload(packet, windowId, containerSlot, carriedSlot, predictedPickup, timestamp, donors);
+    }
+
+    private Map<ItemType, ItemStack> buildComponentDonors(WrapperPlayClientClickWindow packet,
+                                                          int windowId,
+                                                          boolean inPlayerWindow) {
+        Map<ItemType, ItemStack> donors = new HashMap<>();
+        packet.getSlots().ifPresent(slots -> {
+            for (Map.Entry<Integer, ItemStack> entry : slots.entrySet()) {
+                int mappedSlot = inPlayerWindow
+                        ? entry.getKey()
+                        : inventory.mapContainerSlotToPlayerSlot(windowId, entry.getKey());
+                if (mappedSlot < 0) continue;
+                ItemStack existing = inventory.getItem(mappedSlot);
+                if (existing.isEmpty()) continue;
+                ItemStack predicted = entry.getValue();
+                if (predicted.isEmpty() || predicted.getType() != existing.getType()) {
+                    donors.putIfAbsent(existing.getType(), existing.copy());
+                }
+            }
+        });
+        ItemStack existingCursor = inventory.getCarriedItem().getCurrentItem();
+        if (!existingCursor.isEmpty()) {
+            donors.putIfAbsent(existingCursor.getType(), existingCursor.copy());
+        }
+        return donors;
+    }
+
+    private ItemStack preserveComponents(ItemStack existing, ItemStack predicted, Map<ItemType, ItemStack> donors) {
+        if (predicted == null || predicted.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        if (!existing.isEmpty() && existing.getType() == predicted.getType()) {
+            ItemStack copy = existing.copy();
+            copy.setAmount(predicted.getAmount());
+            return copy;
+        }
+        ItemStack donor = donors.get(predicted.getType());
+        if (donor != null) {
+            ItemStack copy = donor.copy();
+            copy.setAmount(predicted.getAmount());
+            return copy;
+        }
+        return predicted.copy();
     }
 
     private void applyClientSlotPayload(WrapperPlayClientClickWindow packet,
@@ -148,7 +201,8 @@ public class InboundInventoryProcessor extends ProcessorInbound {
                                         int containerSlot,
                                         int carriedSlot,
                                         boolean predictedPickup,
-                                        long timestamp) {
+                                        long timestamp,
+                                        Map<ItemType, ItemStack> donors) {
         packet.getSlots().ifPresent(slots -> {
             boolean inPlayerWindow = windowId == InventoryConstants.PLAYER_WINDOW_ID;
             for (Map.Entry<Integer, ItemStack> entry : slots.entrySet()) {
@@ -161,7 +215,9 @@ public class InboundInventoryProcessor extends ProcessorInbound {
                 // Skip the slot we already predicted to avoid double-applying it.
                 if (predictedPickup && mappedSlot == carriedSlot && entrySlot == containerSlot) continue;
 
-                inventory.setItem(mappedSlot, copyItem(entry.getValue()), Issuer.CLIENT, SlotAction.CLICK, timestamp);
+                ItemStack existing = inventory.getItem(mappedSlot);
+                ItemStack toApply = preserveComponents(existing, entry.getValue(), donors);
+                inventory.setItem(mappedSlot, toApply, Issuer.CLIENT, SlotAction.CLICK, timestamp);
             }
         });
     }
@@ -170,6 +226,8 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
         data.setOpenInventory(false);
+        inventory.resetOpenWindow();
+        inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.CLIENT, event.getTimestamp());
         if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
             recipeTracker.armAfterClientClose();
         }

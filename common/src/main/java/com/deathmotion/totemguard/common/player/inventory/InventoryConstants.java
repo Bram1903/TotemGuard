@@ -59,6 +59,20 @@ public class InventoryConstants {
 
     public static final int SLOT_OFFHAND = 45;
 
+    public static int playerInventorySlotToContainerSlot(int playerInventorySlot) {
+        if (playerInventorySlot < 0) return -1;
+        if (playerInventorySlot <= 8) return HOTBAR_START + playerInventorySlot;
+        if (playerInventorySlot <= 35) return playerInventorySlot;
+        return switch (playerInventorySlot) {
+            case 36 -> SLOT_BOOTS;
+            case 37 -> SLOT_LEGGINGS;
+            case 38 -> SLOT_CHESTPLATE;
+            case 39 -> SLOT_HELMET;
+            case 40 -> SLOT_OFFHAND;
+            default -> -1;
+        };
+    }
+
     public static final ItemStack RECIPE_PROBE_INGREDIENT_STACK = ItemStack.builder()
             .type(ItemTypes.OAK_LOG)
             .amount(1)

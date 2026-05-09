@@ -28,6 +28,8 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRespawn;
 
@@ -54,6 +56,14 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.JOIN_GAME) {
             WrapperPlayServerJoinGame packet = new WrapperPlayServerJoinGame(event);
             data.setGameMode(packet.getGameMode());
+        } else if (packetType == PacketType.Play.Server.CHANGE_GAME_STATE) {
+            WrapperPlayServerChangeGameState packet = new WrapperPlayServerChangeGameState(event);
+            if (packet.getReason() == WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE) {
+                int ordinal = (int) packet.getValue();
+                if (ordinal >= 0 && ordinal < GameMode.values().length) {
+                    latencyHandler.compensate(event, () -> data.setGameMode(GameMode.values()[ordinal]));
+                }
+            }
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
 

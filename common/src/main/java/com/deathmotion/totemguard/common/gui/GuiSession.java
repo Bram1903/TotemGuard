@@ -27,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class GuiSession {
 
@@ -43,6 +44,7 @@ public final class GuiSession {
     private int stateId = 1;
     private ItemStack pendingCursorFallback = ItemStack.EMPTY;
     private boolean hasPendingCursorFallback;
+    private final AtomicBoolean refreshScheduled = new AtomicBoolean();
 
     public GuiSession(UUID viewerId, User user, int windowId) {
         this.viewerId = viewerId;
@@ -140,6 +142,14 @@ public final class GuiSession {
     public synchronized void clearPendingCursorFallback() {
         this.pendingCursorFallback = ItemStack.EMPTY;
         this.hasPendingCursorFallback = false;
+    }
+
+    public boolean tryMarkRefreshScheduled() {
+        return refreshScheduled.compareAndSet(false, true);
+    }
+
+    public void clearRefreshScheduled() {
+        refreshScheduled.set(false);
     }
 
     public synchronized ItemStack consumePendingCursorFallback() {

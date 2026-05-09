@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -43,7 +44,7 @@ import java.util.logging.Level;
 
 public final class GuiManager {
 
-    private static final int MAX_WINDOW_ID = 100;
+    private static final int MAX_WINDOW_ID = 127;
 
     private final TGPlatform platform;
     private final ConcurrentMap<UUID, GuiSession> sessions = new ConcurrentHashMap<>();
@@ -97,7 +98,7 @@ public final class GuiManager {
         UUID viewerId = user.getUUID();
         close(viewerId, false);
 
-        GuiSession session = new GuiSession(viewerId, user, allocateWindowId());
+        GuiSession session = new GuiSession(viewerId, user, allocateWindowId(viewerId));
         session.push(screen);
         screen.onOpen(session);
         sessions.put(viewerId, session);
@@ -176,7 +177,21 @@ public final class GuiManager {
             return;
         }
 
-        render(session, false);
+        if (!session.tryMarkRefreshScheduled()) {
+            return;
+        }
+
+        platform.getScheduler().runAsyncTask(() -> {
+            session.clearRefreshScheduled();
+            if (sessions.get(viewerId) != session || !isInteractive(session)) {
+                return;
+            }
+            try {
+                render(session, false);
+            } catch (Exception exception) {
+                platform.getLogger().log(Level.WARNING, "Failed to refresh GUI session", exception);
+            }
+        });
     }
 
     public void close(UUID viewerId, boolean sendClosePacket) {
@@ -313,7 +328,11 @@ public final class GuiManager {
         ItemStack previousSource = sourceKnown ? inventory.item(sourceSlot) : ItemStack.EMPTY;
         ItemStack previousTarget = targetKnown ? inventory.item(targetSlot) : ItemStack.EMPTY;
 
-        inventory.applyCursor(copyItem(packet.getCarriedItemStack()));
+        Map<ItemType, ItemStack> donors = buildClickDonors(user, inventory, packet);
+
+        ItemStack predictedCursor = packet.getCarriedItemStack();
+        ItemStack existingCursor = inventory.isCursorKnown() ? inventory.cursor() : ItemStack.EMPTY;
+        inventory.applyCursor(preserveClickComponents(existingCursor, predictedCursor, donors));
 
         Set<Integer> updatedSlots = new HashSet<>();
         packet.getSlots().ifPresent(slots -> {
@@ -323,7 +342,8 @@ public final class GuiManager {
                     continue;
                 }
 
-                inventory.applySlot(mappedSlot, entry.getValue());
+                ItemStack existing = inventory.isKnown(mappedSlot) ? inventory.item(mappedSlot) : ItemStack.EMPTY;
+                inventory.applySlot(mappedSlot, preserveClickComponents(existing, entry.getValue(), donors));
                 updatedSlots.add(mappedSlot);
             }
         });
@@ -342,6 +362,47 @@ public final class GuiManager {
         if (!updatedSlots.contains(targetSlot) && sourceKnown) {
             inventory.applySlot(targetSlot, previousSource);
         }
+    }
+
+    private Map<ItemType, ItemStack> buildClickDonors(User user, GuiViewerInventory inventory, WrapperPlayClientClickWindow packet) {
+        Map<ItemType, ItemStack> donors = new HashMap<>();
+        packet.getSlots().ifPresent(slots -> {
+            for (Map.Entry<Integer, ItemStack> entry : slots.entrySet()) {
+                int mappedSlot = mapViewerSlot(user, inventory, packet.getWindowId(), entry.getKey());
+                if (mappedSlot < 0 || !inventory.isKnown(mappedSlot)) continue;
+                ItemStack existing = inventory.item(mappedSlot);
+                if (existing.isEmpty()) continue;
+                ItemStack predicted = entry.getValue();
+                if (predicted == null || predicted.isEmpty() || predicted.getType() != existing.getType()) {
+                    donors.putIfAbsent(existing.getType(), existing);
+                }
+            }
+        });
+        if (inventory.isCursorKnown()) {
+            ItemStack existingCursor = inventory.cursor();
+            if (!existingCursor.isEmpty()) {
+                donors.putIfAbsent(existingCursor.getType(), existingCursor);
+            }
+        }
+        return donors;
+    }
+
+    private ItemStack preserveClickComponents(ItemStack existing, ItemStack predicted, Map<ItemType, ItemStack> donors) {
+        if (predicted == null || predicted.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        if (!existing.isEmpty() && existing.getType() == predicted.getType()) {
+            ItemStack copy = existing.copy();
+            copy.setAmount(predicted.getAmount());
+            return copy;
+        }
+        ItemStack donor = donors.get(predicted.getType());
+        if (donor != null) {
+            ItemStack copy = donor.copy();
+            copy.setAmount(predicted.getAmount());
+            return copy;
+        }
+        return predicted.copy();
     }
 
     public void trackCreativeInventoryAction(User user, int slot, ItemStack item) {
@@ -669,10 +730,11 @@ public final class GuiManager {
 
     private void sendWindowItems(GuiSession session, int stateId, GuiRenderResult render, ItemStack fallbackCursor) {
         GuiViewerInventory inventory = viewerInventories.get(session.viewerId());
+        List<ItemStack> items = buildWindowItems(render, inventory);
         session.user().sendPacket(new WrapperPlayServerWindowItems(
                 session.windowId(),
                 stateId,
-                buildWindowItems(render, inventory),
+                items,
                 currentCursor(session, fallbackCursor)
         ));
     }
@@ -758,7 +820,7 @@ public final class GuiManager {
 
             syncViewerRange(session, stateId, render.size(), inventory, InventoryConstants.ITEMS_START, 27);
             syncViewerRange(session, stateId, render.size() + 27, inventory, InventoryConstants.HOTBAR_START, 9);
-            syncHiddenViewerSlots(session, inventory);
+            syncHiddenViewerSlots(session, inventory, playerWindowStateId(session.viewerId()));
             session.user().sendPacket(new WrapperPlayServerSetCursorItem(currentCursor(session, fallbackCursor)));
         });
     }
@@ -807,29 +869,34 @@ public final class GuiManager {
         }
     }
 
-    private void syncHiddenViewerSlots(GuiSession session, GuiViewerInventory inventory) {
+    private void syncHiddenViewerSlots(GuiSession session, GuiViewerInventory inventory, int playerStateId) {
         if (inventory == null) {
             return;
         }
 
-        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_HELMET);
-        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_CHESTPLATE);
-        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_LEGGINGS);
-        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_BOOTS);
-        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_OFFHAND);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_HELMET, playerStateId);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_CHESTPLATE, playerStateId);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_LEGGINGS, playerStateId);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_BOOTS, playerStateId);
+        syncPlayerInventorySlot(session, inventory, InventoryConstants.SLOT_OFFHAND, playerStateId);
     }
 
-    private void syncPlayerInventorySlot(GuiSession session, GuiViewerInventory inventory, int slot) {
+    private void syncPlayerInventorySlot(GuiSession session, GuiViewerInventory inventory, int slot, int playerStateId) {
         if (!inventory.isKnown(slot)) {
             return;
         }
 
         session.user().sendPacket(new WrapperPlayServerSetSlot(
                 InventoryConstants.PLAYER_WINDOW_ID,
-                0,
+                playerStateId,
                 slot,
                 inventory.item(slot)
         ));
+    }
+
+    private int playerWindowStateId(UUID viewerId) {
+        TGPlayer player = platform.getPlayerRepository().getPlayer(viewerId);
+        return player == null ? 0 : player.getInventory().getPlayerWindowStateId();
     }
 
     private ItemStack currentCursor(GuiSession session, ItemStack fallbackCursor) {
@@ -984,8 +1051,23 @@ public final class GuiManager {
         return changed;
     }
 
-    private int allocateWindowId() {
-        int current = nextWindowId.getAndUpdate(previous -> previous >= MAX_WINDOW_ID ? 1 : previous + 1);
-        return Math.max(1, current);
+    private int allocateWindowId(UUID viewerId) {
+        int forbidden = activeExternalWindowId(viewerId);
+        for (int attempt = 0; attempt < MAX_WINDOW_ID; attempt++) {
+            int candidate = Math.max(1, nextWindowId.getAndUpdate(previous -> previous >= MAX_WINDOW_ID ? 1 : previous + 1));
+            if (candidate != forbidden) {
+                return candidate;
+            }
+        }
+        return Math.max(1, nextWindowId.getAndUpdate(previous -> previous >= MAX_WINDOW_ID ? 1 : previous + 1));
+    }
+
+    private int activeExternalWindowId(UUID viewerId) {
+        TGPlayer player = platform.getPlayerRepository().getPlayer(viewerId);
+        if (player == null) {
+            return -1;
+        }
+        int id = player.getInventory().getOpenWindowId();
+        return id == InventoryConstants.PLAYER_WINDOW_ID ? -1 : id;
     }
 }

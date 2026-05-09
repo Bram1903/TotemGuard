@@ -92,6 +92,7 @@ public class TGPlayer implements TGUser {
     private final int modDetectionWindowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
     private boolean hasLoggedIn;
     private @Nullable PlatformPlayer platformPlayer;
+
     @Setter()
     private String clientBrand = "Unknown";
     /**
@@ -122,12 +123,6 @@ public class TGPlayer implements TGUser {
     @Setter
     private boolean vpn;
 
-    /**
-     * True while a staff-initiated {@code /tg check} is running against this player.
-     * Server-originated inventory mutations performed by the command (clearing the
-     * offhand, restoring contents) must not feed the auto-totem detection pipeline,
-     * so processors consult this flag and skip their own bookkeeping while it's set.
-     */
     @Setter
     private volatile boolean manualCheckActive;
 

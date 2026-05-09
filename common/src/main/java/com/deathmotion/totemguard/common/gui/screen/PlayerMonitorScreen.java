@@ -75,7 +75,9 @@ public final class PlayerMonitorScreen extends GuiScreen {
                     this.cachedRemoteProfile = platform.getNetworkPresenceRepository().loadProfile(targetId);
                 } catch (Exception ignored) {
                 } finally {
-                    platform.getGuiManager().refresh(session.viewerId());
+                    if (session.currentScreen() == this) {
+                        platform.getGuiManager().refresh(session.viewerId());
+                    }
                 }
             });
         }

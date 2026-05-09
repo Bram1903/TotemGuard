@@ -70,6 +70,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         else if (type == PacketType.Play.Server.SET_PLAYER_INVENTORY) handleSetPlayerInventory(event);
         else if (type == PacketType.Play.Server.SET_SLOT) handleSetSlot(event);
         else if (type == PacketType.Play.Server.SET_CURSOR_ITEM) handleSetCursorItem(event);
+        else if (type == PacketType.Play.Server.HELD_ITEM_CHANGE) handleSetHeldItem(event);
     }
 
     private void handleWindowItems(PacketSendEvent event) {
@@ -127,8 +128,10 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     private void handleCloseWindow(PacketSendEvent event) {
         WrapperPlayServerCloseWindow packet = new WrapperPlayServerCloseWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
-        latencyHandler.compensate(event, () -> {
+        latencyHandler.compensate(event, timestamp -> {
             inventory.resetOpenWindow();
+            // Server-side close abandons any cursor stack (placed back in inventory or dropped).
+            inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.SERVER, timestamp);
             data.setOpenInventory(false);
 
             if (!data.isInventoryMitigated()) return;
@@ -137,7 +140,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             data.setInventoryMitigatedThisTick(true);
 
             // If we initiated the close (mitigation), relay a client close-window packet to the server
-            // so any server-side container (chest, anvil, etc.) also closes. Sent after the client has
+            // so any server-side container (chest, etc.) also closes. Sent after the client has
             // confirmed the close to avoid compatibility issues.
             event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
         });
@@ -145,11 +148,12 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private void handleSetPlayerInventory(PacketSendEvent event) {
         WrapperPlayServerSetPlayerInventory packet = new WrapperPlayServerSetPlayerInventory(event);
-        final int slot = packet.getSlot();
+        final int containerSlot = InventoryConstants.playerInventorySlotToContainerSlot(packet.getSlot());
+        if (containerSlot < 0) return;
         final ItemStack stack = copyItemStack(packet.getStack());
 
         latencyHandler.compensate(event, timestamp ->
-                inventory.setItem(slot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
+                inventory.setItem(containerSlot, stack, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp));
     }
 
     private void handleSetSlot(PacketSendEvent event) {
@@ -161,18 +165,37 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         final ItemStack item = copyItemStack(packet.getItem());
         final boolean isGui = guiManager.isGuiWindow(event.getUser(), windowId);
 
-        schedule(event, isGui, timestamp -> {
-            if (!isGui && windowId == InventoryConstants.PLAYER_WINDOW_ID) {
-                inventory.setPlayerWindowStateId(stateId);
-                inventory.setItem(slot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
-                return;
-            }
+        schedule(event, isGui, timestamp -> applyServerSetSlot(windowId, slot, stateId, item, isGui, timestamp));
+    }
 
-            int mappedSlot = inventory.mapContainerSlotToPlayerSlot(windowId, slot);
-            if (mappedSlot >= 0) {
-                inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+    private void applyServerSetSlot(int windowId, int slot, int stateId, ItemStack item, boolean isGui, long timestamp) {
+        // Legacy cursor (pre-1.21.2; replaced by SET_CURSOR_ITEM on 1.21.2+). Vanilla 1.20.4
+        // ClientPacketListener#handleContainerSetSlot keys on containerId == -1 and ignores slot.
+        if (windowId == -1) {
+            inventory.setCarriedItem(item, -1, Issuer.SERVER, timestamp);
+            return;
+        }
+
+        // Direct player-inventory write regardless of any open container, slot is in Mojang space.
+        // Pre-1.21.2; replaced by SET_PLAYER_INVENTORY on 1.21.2+.
+        if (windowId == -2) {
+            int target = InventoryConstants.playerInventorySlotToContainerSlot(slot);
+            if (target >= 0) {
+                inventory.setItem(target, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
             }
-        });
+            return;
+        }
+
+        if (!isGui && windowId == InventoryConstants.PLAYER_WINDOW_ID) {
+            inventory.setPlayerWindowStateId(stateId);
+            inventory.setItem(slot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+            return;
+        }
+
+        int mappedSlot = inventory.mapContainerSlotToPlayerSlot(windowId, slot);
+        if (mappedSlot >= 0) {
+            inventory.setItem(mappedSlot, item, Issuer.SERVER, SlotAction.IRRELEVANT, timestamp);
+        }
     }
 
     private void handleSetCursorItem(PacketSendEvent event) {
@@ -182,6 +205,18 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
         schedule(event, isGui, timestamp ->
                 inventory.setCarriedItem(stack, -1, Issuer.SERVER, timestamp));
+    }
+
+    private void handleSetHeldItem(PacketSendEvent event) {
+        WrapperPlayServerHeldItemChange packet = new WrapperPlayServerHeldItemChange(event);
+        final int slot = packet.getSlot();
+        if (slot < 0 || slot > 8) return;
+
+        latencyHandler.compensate(event, () -> {
+            if (inventory.getSelectedHotbarIndex() == slot) return;
+            inventory.setSelectedHotbarIndex(slot);
+            guiManager.refreshMonitor(player.getUuid());
+        });
     }
 
     /**

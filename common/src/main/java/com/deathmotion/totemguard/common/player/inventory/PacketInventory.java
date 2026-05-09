@@ -204,10 +204,6 @@ public class PacketInventory {
         this.openWindowTopSize = topSize;
     }
 
-    public void setOpenWindowTopSize(int topSize) {
-        this.openWindowTopSize = topSize;
-    }
-
     public void resetOpenWindow() {
         this.openWindowId = InventoryConstants.PLAYER_WINDOW_ID;
         this.openWindowTopSize = InventoryConstants.INVENTORY_SIZE;
@@ -263,7 +259,12 @@ public class PacketInventory {
                 return;
             }
 
-            int placeAmount = button == 0 ? currentCarried.getAmount() : 1;
+            int slotCap = getPlayerSlotMaxStack(slot, currentCarried);
+            int requested = button == 0 ? currentCarried.getAmount() : 1;
+            int placeAmount = Math.min(requested, slotCap);
+            if (placeAmount <= 0) {
+                return;
+            }
 
             ItemStack placedItem = currentCarried.copy();
             placedItem.setAmount(placeAmount);
@@ -367,10 +368,6 @@ public class PacketInventory {
 
     private ItemStack copyItem(ItemStack stack) {
         return stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
-    }
-
-    private InventorySlot slot(int slot) {
-        return this.slots.get(slot);
     }
 
     private InventorySlot slotOrNull(int slot) {
