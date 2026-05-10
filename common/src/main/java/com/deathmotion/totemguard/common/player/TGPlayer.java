@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.event.api.impl.TGUserJoinEventImpl;
 import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
+import com.deathmotion.totemguard.common.features.mods.ModSession;
 import com.deathmotion.totemguard.common.features.punishment.BanAnimationImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.data.ClickData;
@@ -87,8 +88,8 @@ public class TGPlayer implements TGUser {
     private final DebugOverlayManager debugOverlayManager;
     private final PacketLatencyHandler latencyHandler;
     private final BanAnimation banAnimation;
-    private final List<ProcessorInbound> processorInbounds;
-    private final List<ProcessorOutbound> processorOutbounds;
+    private final ProcessorInbound[] processorInbounds;
+    private final ProcessorOutbound[] processorOutbounds;
 
     private final AtomicBoolean hasDisconnected = new AtomicBoolean();
     private final int modDetectionWindowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
@@ -124,6 +125,12 @@ public class TGPlayer implements TGUser {
     @Setter
     private volatile boolean manualCheckActive;
 
+    private volatile Boolean supportsEndTickCache;
+
+    @Setter
+    @Nullable
+    private volatile ModSession modSession;
+
     public TGPlayer(@NotNull User user) {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
@@ -143,27 +150,27 @@ public class TGPlayer implements TGUser {
         this.banAnimation = new BanAnimationImpl(this);
         this.checkManager = new CheckManagerImpl(this);
 
-        this.processorInbounds = new ArrayList<>() {{
-            add(new InboundPingProcessor(TGPlayer.this));
-            add(new InboundInventoryProcessor(TGPlayer.this));
-            add(new InboundClientProcessor(TGPlayer.this));
-            add(new InboundActionProcessor(TGPlayer.this));
-            add(new InboundTeleportProcessor(TGPlayer.this));
-            add(new InboundMovementProcessor(TGPlayer.this));
-        }};
+        this.processorInbounds = new ProcessorInbound[]{
+                new InboundPingProcessor(this),
+                new InboundInventoryProcessor(this),
+                new InboundClientProcessor(this),
+                new InboundActionProcessor(this),
+                new InboundTeleportProcessor(this),
+                new InboundMovementProcessor(this),
+        };
 
-        this.processorOutbounds = new ArrayList<>() {{
-            add(new OutboundPingProcessor(TGPlayer.this));
-            add(new OutboundBundleProcessor(TGPlayer.this));
-            add(new OutboundSpawnProcessor(TGPlayer.this));
-            add(new OutboundTotemActivatedProcessor(TGPlayer.this));
-            add(new OutboundInventoryProcessor(TGPlayer.this));
-            add(new OutboundTeleportProcessor(TGPlayer.this));
-            add(new OutboundMovementProcessor(TGPlayer.this));
-            add(new OutboundEntityProcessor(TGPlayer.this));
-            add(new OutboundCameraProcessor(TGPlayer.this));
-            add(new OutboundMetadataProcessor(TGPlayer.this));
-        }};
+        this.processorOutbounds = new ProcessorOutbound[]{
+                new OutboundPingProcessor(this),
+                new OutboundBundleProcessor(this),
+                new OutboundSpawnProcessor(this),
+                new OutboundTotemActivatedProcessor(this),
+                new OutboundInventoryProcessor(this),
+                new OutboundTeleportProcessor(this),
+                new OutboundMovementProcessor(this),
+                new OutboundEntityProcessor(this),
+                new OutboundCameraProcessor(this),
+                new OutboundMetadataProcessor(this),
+        };
     }
 
     public void onLogin() {
@@ -180,6 +187,8 @@ public class TGPlayer implements TGUser {
             playerRepository.removeUser(user);
             return;
         }
+
+        supportsEndTickCache = computeSupportsEndTick();
 
         platform.getEventRepository().post(new TGUserJoinEventImpl(this));
 
@@ -294,6 +303,12 @@ public class TGPlayer implements TGUser {
     }
 
     public boolean supportsEndTick() {
+        Boolean cached = supportsEndTickCache;
+        if (cached != null) return cached;
+        return computeSupportsEndTick();
+    }
+
+    private boolean computeSupportsEndTick() {
         return getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2) && PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_21_2);
     }
 

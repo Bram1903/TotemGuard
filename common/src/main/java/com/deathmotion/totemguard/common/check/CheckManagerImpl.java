@@ -41,27 +41,36 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import lombok.Getter;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
 
 public class CheckManagerImpl {
 
     private static volatile int knownCheckCount;
 
     public final ClassToInstanceMap<Check> allChecks;
-    private final TGPlayer player;
 
-    private final PacketCheck[] packetCheckArray;
-    private final EventCheck[] eventCheckArray;
-    private final ExtendedCheck[] extendedCheckArray;
+    private final TGPlayer player;
 
     private final ClassToInstanceMap<PacketCheck> packetChecks;
     private final ClassToInstanceMap<ManualCheck> manualChecks;
-
     private final Map<String, CheckImpl> checksByName;
+
+    private final PacketCheck[] allPacketChecks;
+    private final EventCheck[] allEventChecks;
+    private final ExtendedCheck[] allExtendedChecks;
+
+    @Getter
+    private final InventoryA inventoryA;
+
+    private volatile CheckDispatch dispatch;
 
     public CheckManagerImpl(TGPlayer player) {
         this.player = player;
@@ -71,6 +80,7 @@ public class CheckManagerImpl {
                 .put(AutoTotemB.class, new AutoTotemB(player))
                 .build();
 
+        this.inventoryA = new InventoryA(player);
         this.packetChecks = ImmutableClassToInstanceMap.<PacketCheck>builder()
                 .put(TickA.class, new TickA(player))
                 .put(TickB.class, new TickB(player))
@@ -80,7 +90,7 @@ public class CheckManagerImpl {
                 .put(ProtocolC.class, new ProtocolC(player))
                 .put(ProtocolD.class, new ProtocolD(player))
                 .put(ProtocolE.class, new ProtocolE(player))
-                .put(InventoryA.class, new InventoryA(player))
+                .put(InventoryA.class, inventoryA)
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
                 .build();
@@ -99,14 +109,16 @@ public class CheckManagerImpl {
                 .putAll(manualChecks)
                 .build();
 
-        this.packetCheckArray = packetChecks.values().toArray(PacketCheck[]::new);
-        this.eventCheckArray = eventChecks.values().toArray(EventCheck[]::new);
-        this.extendedCheckArray = extendedChecks.values().toArray(ExtendedCheck[]::new);
+        this.allPacketChecks = packetChecks.values().toArray(PacketCheck[]::new);
+        this.allEventChecks = eventChecks.values().toArray(EventCheck[]::new);
+        this.allExtendedChecks = extendedChecks.values().toArray(ExtendedCheck[]::new);
 
         this.checksByName = new HashMap<>(allChecks.size());
         for (Check check : allChecks.values()) {
             checksByName.put(check.getName(), (CheckImpl) check);
         }
+
+        this.dispatch = buildDispatch();
 
         knownCheckCount = allChecks.size();
     }
@@ -115,41 +127,73 @@ public class CheckManagerImpl {
         return knownCheckCount;
     }
 
-    private boolean skip(Check check) {
-        if (!check.isEnabled()) return true;
-        return check.requiresTickEnd() && !player.supportsEndTick();
+    private static <T extends Check> CheckSlot<T> buildSlot(T[] all, IntFunction<T[]> ctor, Predicate<T> respondsToDirection) {
+        Predicate<T> base = c -> c.isEnabled() && respondsToDirection.test(c);
+        return new CheckSlot<>(
+                filter(all, ctor, base.and(c -> !c.requiresTickEnd())),
+                filter(all, ctor, base.and(Check::requiresTickEnd))
+        );
+    }
+
+    private static <T> T[] filter(T[] source, IntFunction<T[]> ctor, Predicate<T> include) {
+        int count = 0;
+        for (T item : source) {
+            if (include.test(item)) count++;
+        }
+        T[] out = ctor.apply(count);
+        int i = 0;
+        for (T item : source) {
+            if (include.test(item)) out[i++] = item;
+        }
+        return out;
+    }
+
+    private static boolean overrides(Check check, String methodName, Class<?>... paramTypes) {
+        try {
+            Method method = check.getClass().getMethod(methodName, paramTypes);
+            return !method.getDeclaringClass().isInterface();
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    public void rebuild() {
+        this.dispatch = buildDispatch();
     }
 
     public void onPacketReceive(final PacketReceiveEvent packet) {
-        for (PacketCheck check : packetCheckArray) {
-            if (skip(check)) continue;
-            check.onPacketReceive(packet);
-        }
-        for (ExtendedCheck check : extendedCheckArray) {
-            if (skip(check)) continue;
-            check.onPacketReceive(packet);
+        CheckDispatch d = this.dispatch;
+        CheckSlot<PacketCheck> pkt = d.packetReceive();
+        CheckSlot<ExtendedCheck> ext = d.extendedReceive();
+        for (PacketCheck c : pkt.always()) c.onPacketReceive(packet);
+        for (ExtendedCheck c : ext.always()) c.onPacketReceive(packet);
+        if (player.supportsEndTick()) {
+            for (PacketCheck c : pkt.tickEnd()) c.onPacketReceive(packet);
+            for (ExtendedCheck c : ext.tickEnd()) c.onPacketReceive(packet);
         }
     }
 
     public void onPacketSend(final PacketSendEvent packet) {
-        for (PacketCheck check : packetCheckArray) {
-            if (skip(check)) continue;
-            check.onPacketSend(packet);
-        }
-        for (ExtendedCheck check : extendedCheckArray) {
-            if (skip(check)) continue;
-            check.onPacketSend(packet);
+        CheckDispatch d = this.dispatch;
+        CheckSlot<PacketCheck> pkt = d.packetSend();
+        CheckSlot<ExtendedCheck> ext = d.extendedSend();
+        for (PacketCheck c : pkt.always()) c.onPacketSend(packet);
+        for (ExtendedCheck c : ext.always()) c.onPacketSend(packet);
+        if (player.supportsEndTick()) {
+            for (PacketCheck c : pkt.tickEnd()) c.onPacketSend(packet);
+            for (ExtendedCheck c : ext.tickEnd()) c.onPacketSend(packet);
         }
     }
 
     public <T extends Event> void onEvent(final T event) {
-        for (EventCheck check : eventCheckArray) {
-            if (skip(check)) continue;
-            check.handleEvent(event);
-        }
-        for (ExtendedCheck check : extendedCheckArray) {
-            if (skip(check)) continue;
-            check.handleEvent(event);
+        CheckDispatch d = this.dispatch;
+        CheckSlot<EventCheck> ev = d.event();
+        CheckSlot<ExtendedCheck> ext = d.extendedEvent();
+        for (EventCheck c : ev.always()) c.handleEvent(event);
+        for (ExtendedCheck c : ext.always()) c.handleEvent(event);
+        if (player.supportsEndTick()) {
+            for (EventCheck c : ev.tickEnd()) c.handleEvent(event);
+            for (ExtendedCheck c : ext.tickEnd()) c.handleEvent(event);
         }
     }
 
@@ -184,5 +228,16 @@ public class CheckManagerImpl {
     @SuppressWarnings("unchecked")
     public <T extends ManualCheck> T getManualCheck(Class<T> check) {
         return (T) manualChecks.get(check);
+    }
+
+    private CheckDispatch buildDispatch() {
+        return new CheckDispatch(
+                buildSlot(allPacketChecks, PacketCheck[]::new, c -> overrides(c, "onPacketReceive", PacketReceiveEvent.class)),
+                buildSlot(allPacketChecks, PacketCheck[]::new, c -> overrides(c, "onPacketSend", PacketSendEvent.class)),
+                buildSlot(allEventChecks, EventCheck[]::new, c -> true),
+                buildSlot(allExtendedChecks, ExtendedCheck[]::new, c -> overrides(c, "onPacketReceive", PacketReceiveEvent.class)),
+                buildSlot(allExtendedChecks, ExtendedCheck[]::new, c -> overrides(c, "onPacketSend", PacketSendEvent.class)),
+                buildSlot(allExtendedChecks, ExtendedCheck[]::new, c -> true)
+        );
     }
 }

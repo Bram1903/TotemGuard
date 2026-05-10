@@ -30,10 +30,7 @@ import java.util.Objects;
 
 public class WorldEntityData {
 
-    private static final float DEFAULT_MAX_HEALTH = 20.0F;
-
     private final Map<Integer, EntityType> trackedEntities = new HashMap<>();
-    private final Map<Integer, Float> maxHealth = new HashMap<>();
 
     private String worldName;
     private DimensionType dimensionType;
@@ -44,7 +41,6 @@ public class WorldEntityData {
 
     public void remove(int entityId) {
         trackedEntities.remove(entityId);
-        maxHealth.remove(entityId);
     }
 
     public boolean isLoaded(int entityId) {
@@ -53,14 +49,6 @@ public class WorldEntityData {
 
     public boolean isPlayer(int entityId) {
         return trackedEntities.get(entityId) == EntityTypes.PLAYER;
-    }
-
-    public void setMaxHealth(int entityId, float value) {
-        maxHealth.put(entityId, Math.min(DEFAULT_MAX_HEALTH, value));
-    }
-
-    public float getMaxHealth(int entityId) {
-        return maxHealth.getOrDefault(entityId, DEFAULT_MAX_HEALTH);
     }
 
     public void handleJoinGame(WrapperPlayServerJoinGame packet) {
@@ -85,7 +73,6 @@ public class WorldEntityData {
 
     private void clearAll() {
         trackedEntities.clear();
-        maxHealth.clear();
     }
 
     private boolean isWorldChange(WrapperPlayServerRespawn respawn) {

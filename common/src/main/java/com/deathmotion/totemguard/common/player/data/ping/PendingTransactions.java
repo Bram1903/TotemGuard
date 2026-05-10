@@ -104,27 +104,28 @@ final class PendingTransactions {
             return TeleportReplyResult.none();
         }
 
-        List<PendingTransaction> accepted = new ArrayList<>();
-        for (PendingTransaction transaction : pending) {
+        List<PendingTransaction> accepted = new ArrayList<>(2);
+        boolean found = false;
+        final int size = pending.size();
+        for (int i = 0; i < size; i++) {
+            PendingTransaction transaction = pending.pollFirst();
             accepted.add(transaction);
-
-            if (transaction != boundary) {
-                continue;
+            if (transaction == boundary) {
+                found = true;
+                break;
             }
-
-            for (int i = 0; i < accepted.size(); i++) {
-                pending.removeFirst();
-            }
-
-            recordAccepted(accepted);
-            runCallbacks(accepted, timestamp);
-            return new TeleportReplyResult(!accepted.isEmpty(), accepted.size());
         }
 
-        if (accepted.isEmpty()) {
+        if (!found) {
+            for (int i = accepted.size() - 1; i >= 0; i--) {
+                pending.addFirst(accepted.get(i));
+            }
             return TeleportReplyResult.none();
         }
-        return TeleportReplyResult.none();
+
+        recordAccepted(accepted);
+        runCallbacks(accepted, timestamp);
+        return new TeleportReplyResult(!accepted.isEmpty(), accepted.size());
     }
 
     int pendingCount() {
@@ -159,10 +160,15 @@ final class PendingTransactions {
     }
 
     private TransactionMatch match(int id) {
-        List<PendingTransaction> accepted = new ArrayList<>();
+        // Drain from the head of the deque until we find the matching id. Avoids the
+        // ArrayDeque iterator allocation that for-each would produce. If we never find a
+        // match (rare — transactions are normally acked in order), the drained entries
+        // are restored in their original order.
+        List<PendingTransaction> accepted = new ArrayList<>(2);
         PendingTransaction matched = null;
-
-        for (PendingTransaction transaction : pending) {
+        final int size = pending.size();
+        for (int i = 0; i < size; i++) {
+            PendingTransaction transaction = pending.pollFirst();
             accepted.add(transaction);
             if (transaction.id() == id) {
                 matched = transaction;
@@ -171,20 +177,21 @@ final class PendingTransactions {
         }
 
         if (matched == null) {
+            for (int i = accepted.size() - 1; i >= 0; i--) {
+                pending.addFirst(accepted.get(i));
+            }
             return null;
-        }
-
-        for (int i = 0; i < accepted.size(); i++) {
-            pending.removeFirst();
         }
 
         return new TransactionMatch(matched, accepted);
     }
 
     private void recordAccepted(List<PendingTransaction> accepted) {
-        pendingCount -= accepted.size();
+        final int size = accepted.size();
+        pendingCount -= size;
 
-        for (PendingTransaction transaction : accepted) {
+        for (int i = 0; i < size; i++) {
+            PendingTransaction transaction = accepted.get(i);
             this.acceptedTransactions++;
             if (transaction.synthetic()) {
                 pendingSyntheticCount--;
@@ -202,8 +209,9 @@ final class PendingTransactions {
     }
 
     private void runCallbacks(List<PendingTransaction> accepted, long timestamp) {
-        for (PendingTransaction transaction : accepted) {
-            transaction.runCallbacks(timestamp);
+        final int size = accepted.size();
+        for (int i = 0; i < size; i++) {
+            accepted.get(i).runCallbacks(timestamp);
         }
     }
 }

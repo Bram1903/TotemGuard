@@ -43,6 +43,9 @@ public class ReloadService {
 
         platform.getPlayerRepository().getPlayers()
                 .parallelStream()
-                .forEach(player -> player.getCheckManager().allChecks.values().forEach(Reloadable::reload));
+                .forEach(player -> {
+                    player.getCheckManager().allChecks.values().forEach(Reloadable::reload);
+                    player.getCheckManager().rebuild();
+                });
     }
 }

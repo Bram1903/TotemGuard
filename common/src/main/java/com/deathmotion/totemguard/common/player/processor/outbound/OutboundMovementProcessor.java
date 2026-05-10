@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerRotation;
 
@@ -38,9 +39,10 @@ public class OutboundMovementProcessor extends ProcessorOutbound {
     @Override
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
-        if (event.getPacketType() == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) {
+        final PacketTypeCommon type = event.getPacketType();
+        if (type == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) {
             movementData.handleServerSync(new WrapperPlayServerPlayerPositionAndLook(event));
-        } else if (event.getPacketType() == PacketType.Play.Server.PLAYER_ROTATION) {
+        } else if (type == PacketType.Play.Server.PLAYER_ROTATION) {
             movementData.handleServerSync(new WrapperPlayServerPlayerRotation(event));
         }
     }

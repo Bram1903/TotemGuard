@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.WorldEntityData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.attribute.Attributes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -53,15 +52,6 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
         } else if (type == PacketType.Play.Server.DESTROY_ENTITIES) {
             for (int entityId : new WrapperPlayServerDestroyEntities(event).getEntityIds()) {
                 worldEntityData.remove(entityId);
-            }
-        } else if (type == PacketType.Play.Server.UPDATE_ATTRIBUTES) {
-            WrapperPlayServerUpdateAttributes packet = new WrapperPlayServerUpdateAttributes(event);
-            int entityId = packet.getEntityId();
-            if (!worldEntityData.isLoaded(entityId)) return;
-            for (WrapperPlayServerUpdateAttributes.Property property : packet.getProperties()) {
-                if (property.getAttribute() != Attributes.MAX_HEALTH) continue;
-                worldEntityData.setMaxHealth(entityId, (float) property.calcValue());
-                break;
             }
         } else if (type == PacketType.Play.Server.JOIN_GAME) {
             worldEntityData.handleJoinGame(new WrapperPlayServerJoinGame(event));

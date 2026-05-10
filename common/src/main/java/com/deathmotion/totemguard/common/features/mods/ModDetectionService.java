@@ -60,13 +60,17 @@ public final class ModDetectionService implements ModDetectionRepository {
 
         ModSession session = new ModSession(player, snapshot, detector);
         sessions.put(player.getUuid(), session);
+        player.setModSession(session);
 
-        detector.start(() -> session.tryEnterAwaitingBoundary());
+        detector.start(session::tryEnterAwaitingBoundary);
     }
 
     public void onPlayerLogout(@NotNull UUID uuid) {
         ModSession removed = sessions.remove(uuid);
-        if (removed != null) removed.cancel();
+        if (removed != null) {
+            removed.player().setModSession(null);
+            removed.cancel();
+        }
         if (modSessionStore != null) modSessionStore.onPlayerQuit(uuid);
     }
 

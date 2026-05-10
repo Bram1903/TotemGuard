@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.features.mods;
 
 import com.deathmotion.totemguard.api.mod.ModDetectionMethod;
+import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -39,10 +40,12 @@ public final class ModPacketObserver extends PacketListenerAbstract {
     private static final String REGISTER_CHANNEL = "minecraft:register";
 
     private final ModDetectionService service;
+    private final PlayerRepositoryImpl playerRepository;
 
-    public ModPacketObserver(ModDetectionService service) {
+    public ModPacketObserver(ModDetectionService service, PlayerRepositoryImpl playerRepository) {
         super(PacketListenerPriority.LOW);
         this.service = service;
+        this.playerRepository = playerRepository;
     }
 
     private static String normalizeChannel(String value) {
@@ -53,9 +56,9 @@ public final class ModPacketObserver extends PacketListenerAbstract {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        java.util.UUID uuid = event.getUser().getUUID();
-        if (uuid == null) return;
-        ModSession session = service.sessionFor(uuid);
+        TGPlayer player = playerRepository.getPlayer(event.getUser());
+        if (player == null) return;
+        ModSession session = player.getModSession();
         if (session == null) return;
 
         ConnectionState state = event.getConnectionState();

@@ -35,6 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class OutboundMetadataProcessor extends ProcessorOutbound {
 
     private static final float MIN_SPOOFED_HEALTH = 0.5F;
+    private static final float MAX_SPOOFED_HEALTH = 20.0F;
 
     private static final String[] COMPETING_PLUGINS = {
             "AntiHealthIndicator", "antihealthindicator", "PolarLoader"
@@ -84,7 +85,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         boolean modified = false;
         for (EntityData<?> meta : packet.getEntityMetadata()) {
             int index = meta.getIndex();
-            if (options.health() && index == healthIndex && spoofHealth(meta, entityId)) {
+            if (options.health() && index == healthIndex && spoofHealth(meta)) {
                 modified = true;
             } else if (options.absorption() && index == absorptionIndex && spoofAbsorption(meta)) {
                 modified = true;
@@ -95,13 +96,11 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean spoofHealth(EntityData<?> meta, int entityId) {
+    private boolean spoofHealth(EntityData<?> meta) {
         Object value = meta.getValue();
         // Preserve <=0 so the death animation/red overlay still triggers client-side.
         if (!(value instanceof Float floatValue) || floatValue <= 0.0F) return false;
-        float maxHealth = worldEntityData.getMaxHealth(entityId);
-        float upperBound = Math.max(MIN_SPOOFED_HEALTH, maxHealth);
-        float spoofed = MIN_SPOOFED_HEALTH + ThreadLocalRandom.current().nextFloat() * (upperBound - MIN_SPOOFED_HEALTH);
+        float spoofed = MIN_SPOOFED_HEALTH + ThreadLocalRandom.current().nextFloat() * (MAX_SPOOFED_HEALTH - MIN_SPOOFED_HEALTH);
         ((EntityData<Float>) meta).setValue(spoofed);
         return true;
     }

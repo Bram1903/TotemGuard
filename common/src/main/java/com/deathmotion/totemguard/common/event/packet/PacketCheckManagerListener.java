@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.event.packet;
 
-import com.deathmotion.totemguard.common.check.impl.inventory.InventoryA;
+import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
@@ -46,26 +46,30 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         TGPlayer player = playerRepository.getPlayer(event.getUser());
         if (player == null) return;
 
-        if (event.getConnectionState() != ConnectionState.PLAY) {
-            if (event.getConnectionState() != ConnectionState.CONFIGURATION) return;
-            for (ProcessorInbound processor : player.getProcessorInbounds()) {
+        final ConnectionState state = event.getConnectionState();
+        final ProcessorInbound[] inbounds = player.getProcessorInbounds();
+
+        if (state != ConnectionState.PLAY) {
+            if (state != ConnectionState.CONFIGURATION) return;
+            for (ProcessorInbound processor : inbounds) {
                 processor.handleInbound(event);
             }
             return;
         }
 
-        for (ProcessorInbound processor : player.getProcessorInbounds()) {
+        for (ProcessorInbound processor : inbounds) {
             processor.handleInbound(event);
         }
 
+        final CheckManagerImpl checkManager = player.getCheckManager();
         final PacketTypeCommon packetType = event.getPacketType();
         if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
-            player.getCheckManager().getPacketCheck(InventoryA.class).validateMovement();
+            checkManager.getInventoryA().validateMovement();
         }
-        player.getCheckManager().onPacketReceive(event);
+        checkManager.onPacketReceive(event);
         player.triggerInventoryEvent();
 
-        for (ProcessorInbound processor : player.getProcessorInbounds()) {
+        for (ProcessorInbound processor : inbounds) {
             processor.handleInboundPost(event);
         }
     }
@@ -76,14 +80,16 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         TGPlayer player = playerRepository.getPlayer(event.getUser());
         if (player == null) return;
 
-        for (ProcessorOutbound processor : player.getProcessorOutbounds()) {
+        final ProcessorOutbound[] outbounds = player.getProcessorOutbounds();
+
+        for (ProcessorOutbound processor : outbounds) {
             processor.handleOutbound(event);
         }
 
         player.getCheckManager().onPacketSend(event);
         player.triggerInventoryEvent();
 
-        for (ProcessorOutbound processor : player.getProcessorOutbounds()) {
+        for (ProcessorOutbound processor : outbounds) {
             processor.handleOutboundPost(event);
         }
     }

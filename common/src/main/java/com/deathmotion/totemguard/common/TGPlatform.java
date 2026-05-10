@@ -206,7 +206,7 @@ public abstract class TGPlatform {
         registerPacketListener(new PacketPlayerJoinQuit());
         registerPacketListener(new PacketCheckManagerListener(playerRepository));
         registerPacketListener(new GuiPacketListener());
-        registerPacketListener(new ModPacketObserver(modDetectionService));
+        registerPacketListener(new ModPacketObserver(modDetectionService, playerRepository));
         registerPacketListener(bungeeChannelManager);
 
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
