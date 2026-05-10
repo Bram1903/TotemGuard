@@ -52,9 +52,16 @@ tasks.named<ProcessResources>("processResources").configure {
     val versionWithoutHash = provider {
         project.version.toString().withoutSnapshotHash()
     }
+    val description = provider { rootProject.description ?: "" }
     inputs.property("version", versionWithoutHash)
+    inputs.property("description", description)
     filesMatching("fabric.mod.json") {
-        expand("version" to versionWithoutHash.get())
+        expand(
+            mapOf(
+                "version" to versionWithoutHash.get(),
+                "description" to description.get()
+            )
+        )
     }
 }
 

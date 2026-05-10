@@ -8,6 +8,7 @@ extra["snapshot"] = snapshot
 extra["gitHash"] = gitHash
 
 version = baseVersion.withSnapshotMetadata(snapshot, gitHash)
+description = "TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem."
 
 subprojects {
     group = rootProject.group

@@ -3,7 +3,7 @@
   "id": "totemguard",
   "version": "${version}",
   "name": "TotemGuard",
-  "description": "TotemGuard anticheat",
+  "description": "${description}",
   "authors": [
     "Bram",
     "OutDev"

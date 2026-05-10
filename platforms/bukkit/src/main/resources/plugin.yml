@@ -1,4 +1,5 @@
 name: TotemGuard
+description: ${description}
 authors:
   - Bram
   - OutDev

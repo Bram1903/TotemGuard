@@ -3,6 +3,7 @@ plugins {
 }
 
 version = rootProject.version
+description = rootProject.description
 
 dependencies {
     compileOnly("org.jetbrains:annotations:26.0.2-1")
@@ -27,9 +28,15 @@ tasks.withType<Test>().configureEach {
 tasks.named<ProcessResources>("processResources").configure {
     val versionWithoutHash = provider { project.version.toString().withoutSnapshotHash() }
     inputs.property("version", versionWithoutHash)
+    inputs.property("description", project.description ?: "")
 
     filesMatching(listOf("plugin.yml", "fabric.mod.json")) {
-        expand("version" to versionWithoutHash.get())
+        expand(
+            mapOf(
+                "version" to versionWithoutHash.get(),
+                "description" to (project.description ?: "")
+            )
+        )
     }
 }
 
