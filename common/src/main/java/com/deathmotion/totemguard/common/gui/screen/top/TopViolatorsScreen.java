@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.gui.screen.top;
 
 import com.deathmotion.totemguard.api.check.Check;
+import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.features.session.SessionSnapshot;
@@ -89,6 +90,7 @@ public final class TopViolatorsScreen extends GuiScreen {
             Map<String, Integer> violations = new LinkedHashMap<>();
             int total = 0;
             for (Check check : player.getCheckManager().allChecks.values()) {
+                if (check.getType() == CheckType.MOD) continue;
                 int vl = check.getViolations();
                 if (vl <= 0) continue;
                 violations.put(check.getName(), vl);

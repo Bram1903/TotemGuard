@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.features.alert;
 
 import com.deathmotion.totemguard.api.alert.AlertRepository;
+import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.api.config.key.ConfigKey;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
@@ -176,7 +177,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
         platform.getScheduler().runAsyncTask(() -> {
             platform.getDiscordWebhookService().sendAlert(check, violations, debug);
             punishmentRepository.punish(check, violations, debug, compiledDebug);
-            if (platform.getSessionViolationStore() != null) {
+            if (platform.getSessionViolationStore() != null && check.getType() != CheckType.MOD) {
                 platform.getSessionViolationStore().recordViolation(violatorUuid, check.getName());
             }
         });
