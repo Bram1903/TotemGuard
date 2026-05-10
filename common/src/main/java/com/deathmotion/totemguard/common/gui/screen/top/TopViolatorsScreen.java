@@ -162,11 +162,19 @@ public final class TopViolatorsScreen extends GuiScreen {
         GuiRenderResult.Builder builder = GuiRenderResult.builder(6, GuiTitle.of(buildTitle(messages)));
         builder.fillEmpty(GuiItems.filler());
 
-        builder.set(0, GuiItems.simple(
-                ItemTypes.ARROW,
-                messages.getComponent(MessagesKeys.GUI_BTN_BACK_TITLE),
-                List.of(messages.getComponent(MessagesKeys.GUI_BTN_BACK_LORE))
-        ), session.hasParent() ? ctx -> ctx.back() : ctx -> ctx.close());
+        if (session.hasParent()) {
+            builder.set(0, GuiItems.simple(
+                    ItemTypes.ARROW,
+                    messages.getComponent(MessagesKeys.GUI_BTN_BACK_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_BACK_LORE))
+            ), ctx -> ctx.back());
+        } else {
+            builder.set(0, GuiItems.simple(
+                    ItemTypes.BARRIER,
+                    messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_TITLE),
+                    List.of(messages.getComponent(MessagesKeys.GUI_BTN_CLOSE_LORE))
+            ), ctx -> ctx.close());
+        }
 
         if (localOnly) {
             builder.set(4, GuiItems.simple(
