@@ -266,12 +266,11 @@ public final class PlayerProfileScreen extends GuiScreen {
                 return;
             }
             boolean crossServer = !plat.getNetworkPresenceRepository().identity().instanceId().equals(serverInstanceId);
-            String proxyServerId = plat.resolveProxyServerId(serverName);
 
             TGMonitorOpenEvent event = plat.getEventRepository().post(
                     new TGMonitorOpenEventImpl(
                             ctx.session().viewerId(), targetUuid, targetName, freshLocal,
-                            serverInstanceId, serverName, proxyServerId, crossServer, false)
+                            serverInstanceId, serverName, crossServer, false)
             );
             if (event.isCancelled()) {
                 ctx.message(messages.getComponent(MessagesKeys.GUI_ERR_MONITOR_BLOCKED));

@@ -64,7 +64,8 @@ public final class RedisRepositoryImpl implements RedisRepository {
                 new SyncMonitorUnsubscribeHandler(TGPlatform.getInstance(), this, registry),
                 new SyncMonitorUpdateHandler(TGPlatform.getInstance(), this, registry),
                 new SyncCheckRequestHandler(TGPlatform.getInstance(), this, registry),
-                new SyncCheckResultHandler(TGPlatform.getInstance(), this, registry)
+                new SyncCheckResultHandler(TGPlatform.getInstance(), this, registry),
+                new SyncFollowEventHandler(TGPlatform.getInstance(), this, registry)
         );
 
         // Initial start is blocking so the connection is up before any player can join.

@@ -80,13 +80,6 @@ public interface TGFocusEvent extends Event, Cancellable {
     @Nullable String getTargetServerName();
 
     /**
-     * The proxy-side route id for the server hosting the target.
-     * {@code null} on a disable call, or when no proxy is attached, or
-     * when the friendly server name has no entry in the proxy's config.
-     */
-    @Nullable String getTargetProxyServerId();
-
-    /**
      * {@code true} when the call sets a focus, {@code false} when it clears
      * an existing focus.
      */

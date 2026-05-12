@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.gui.screen.top.TopViolatorsScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -61,6 +62,7 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         lore.add(Component.empty());
         lore.add(serviceLine(messages, "Database", dbEnabled, dbConnected));
         lore.add(serviceLine(messages, "Redis", redisEnabled, redisConnected));
+        lore.add(bridgeServiceLine(messages, platform.getProxyTopologyService()));
 
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
         if (redisEnabled && redisConnected && presence != null) {
@@ -94,6 +96,18 @@ public final class TotemGuardInfoScreen extends GuiScreen {
             status = messages.getComponent(MessagesKeys.GUI_STATUS_DISCONNECTED);
         }
         return GuiText.line(label, "").append(status);
+    }
+
+    private static Component bridgeServiceLine(MessageService messages, ProxyTopologyService topology) {
+        Component status;
+        if (topology == null || !topology.bridgeAvailable()) {
+            status = messages.getComponent(MessagesKeys.GUI_STATUS_NOT_INSTALLED);
+        } else if (topology.localProxyId() != null) {
+            status = messages.getComponent(MessagesKeys.GUI_STATUS_CONNECTED);
+        } else {
+            status = messages.getComponent(MessagesKeys.GUI_STATUS_DISCONNECTED);
+        }
+        return GuiText.line("Bridge", "").append(status);
     }
 
     private static ItemStack buildInformationTile(TGPlatform platform) {

@@ -37,7 +37,6 @@ public final class TGFocusEventImpl extends EventImpl implements TGFocusEvent {
     private final @Nullable TGUser targetUser;
     private final @Nullable UUID targetServerInstanceId;
     private final @Nullable String targetServerName;
-    private final @Nullable String targetProxyServerId;
     private final boolean enabling;
     private final boolean restore;
 
@@ -47,14 +46,13 @@ public final class TGFocusEventImpl extends EventImpl implements TGFocusEvent {
     private TGFocusEventImpl(@NotNull UUID callerUuid, @Nullable UUID targetUuid,
                              @Nullable String targetName, @Nullable TGUser targetUser,
                              @Nullable UUID targetServerInstanceId, @Nullable String targetServerName,
-                             @Nullable String targetProxyServerId, boolean enabling, boolean restore) {
+                             boolean enabling, boolean restore) {
         this.callerUuid = callerUuid;
         this.targetUuid = targetUuid;
         this.targetName = targetName;
         this.targetUser = targetUser;
         this.targetServerInstanceId = targetServerInstanceId;
         this.targetServerName = targetServerName;
-        this.targetProxyServerId = targetProxyServerId;
         this.enabling = enabling;
         this.restore = restore;
     }
@@ -63,12 +61,12 @@ public final class TGFocusEventImpl extends EventImpl implements TGFocusEvent {
                                             @NotNull String targetName, @Nullable TGUser targetUser,
                                             @NotNull UUID targetServerInstanceId,
                                             @NotNull String targetServerName,
-                                            @Nullable String targetProxyServerId, boolean restore) {
+                                            boolean restore) {
         return new TGFocusEventImpl(callerUuid, targetUuid, targetName, targetUser,
-                targetServerInstanceId, targetServerName, targetProxyServerId, true, restore);
+                targetServerInstanceId, targetServerName, true, restore);
     }
 
     public static TGFocusEventImpl disabling(@NotNull UUID callerUuid) {
-        return new TGFocusEventImpl(callerUuid, null, null, null, null, null, null, false, false);
+        return new TGFocusEventImpl(callerUuid, null, null, null, null, null, false, false);
     }
 }

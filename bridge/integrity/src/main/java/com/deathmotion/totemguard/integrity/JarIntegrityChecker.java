@@ -16,10 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.util;
+package com.deathmotion.totemguard.integrity;
 
-import com.deathmotion.totemguard.common.TGPlatform;
-import lombok.experimental.UtilityClass;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,13 +38,30 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-@UtilityClass
+/**
+ * Verifies that the jar this class is loaded from matches the SHA-256 fingerprint stamped
+ * at build time under {@code META-INF/totemguard/integrity.sha256}. Re-used by both the
+ * TotemGuard backend and the TotemGuard-Bridge plugin via the {@code :bridge:integrity}
+ * module.
+ *
+ * <p>Stateless except for the {@link Logger} and a {@code productName} (used purely for the
+ * tamper-alert banner). Returns {@code true} when the jar matches or when running from a
+ * development classpath (no jar to verify).</p>
+ */
 public final class JarIntegrityChecker {
 
-    private final String HASH_ALGORITHM = "SHA-256";
-    private final String INTEGRITY_ENTRY = "META-INF/totemguard/integrity.sha256";
-    private final String SEPARATOR =
+    private static final String HASH_ALGORITHM = "SHA-256";
+    private static final String INTEGRITY_ENTRY = "META-INF/totemguard/integrity.sha256";
+    private static final String SEPARATOR =
             "======================================================================";
+
+    private final Logger logger;
+    private final String productName;
+
+    public JarIntegrityChecker(@NotNull Logger logger, @NotNull String productName) {
+        this.logger = logger;
+        this.productName = productName;
+    }
 
     public boolean verifyCurrentJar() {
         Path jarPath = resolveCurrentJarPath();
@@ -56,8 +72,8 @@ public final class JarIntegrityChecker {
         String expectedFingerprint = readExpectedFingerprint();
         if (expectedFingerprint == null || expectedFingerprint.isBlank()) {
             logSuspiciousJar(
-                    "TotemGuard could not verify its embedded jar metadata.",
-                    "This jar does not look like an original TotemGuard build.",
+                    productName + " could not verify its embedded jar metadata.",
+                    "This jar does not look like an original " + productName + " build.",
                     "The jar is missing its embedded integrity metadata.",
                     "This usually means the jar was rebuilt, unpacked, or modified."
             );
@@ -71,13 +87,13 @@ public final class JarIntegrityChecker {
             }
 
             logSuspiciousJar(
-                    "TotemGuard detected that the jar was modified since build.",
+                    productName + " detected that the jar was modified since build.",
                     "This is most likely malware or direct jar tampering."
             );
             return false;
         } catch (IOException | NoSuchAlgorithmException exception) {
             logSuspiciousJar(
-                    "TotemGuard could not complete its jar integrity check.",
+                    productName + " could not complete its jar integrity check.",
                     "This usually means the jar is damaged, modified, or being interfered with.",
                     "Verification error: " + exception.getClass().getSimpleName()
             );
@@ -94,7 +110,7 @@ public final class JarIntegrityChecker {
         try {
             Path path = Path.of(codeSource.getLocation().toURI()).toAbsolutePath().normalize();
             if (!Files.isRegularFile(path) || !path.getFileName().toString().endsWith(".jar")) {
-                // Skip development environments that load classes from directories instead of a plugin jar.
+                // Development classpath (classes on disk, not a jar) — nothing to verify.
                 return null;
             }
             return path;
@@ -108,7 +124,6 @@ public final class JarIntegrityChecker {
             if (inputStream == null) {
                 return null;
             }
-
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).trim();
         } catch (IOException exception) {
             return null;
@@ -145,10 +160,8 @@ public final class JarIntegrityChecker {
     }
 
     private void logSuspiciousJar(String headline, String assessment, String... details) {
-        Logger logger = TGPlatform.getInstance().getLogger();
-
         logger.severe(SEPARATOR);
-        logger.severe(" TOTEMGUARD SECURITY ALERT ");
+        logger.severe(" " + productName.toUpperCase() + " SECURITY ALERT ");
         logger.severe(SEPARATOR);
         logger.severe("");
         logger.severe(" " + headline);
@@ -160,15 +173,15 @@ public final class JarIntegrityChecker {
 
         logger.severe("");
         logger.severe(" Required action:");
-        logger.severe(" 1. Delete this TotemGuard jar.");
-        logger.severe(" 2. Reinstall TotemGuard from a trusted source.");
+        logger.severe(" 1. Delete this " + productName + " jar.");
+        logger.severe(" 2. Reinstall " + productName + " from a trusted source.");
         logger.severe(" 3. If this warning appears again after reinstalling");
-        logger.severe("    TotemGuard, malware is most likely modifying");
+        logger.severe("    " + productName + ", malware is most likely modifying");
         logger.severe("    plugin jars or the server jar during startup.");
         logger.severe(" 4. Reinstall your server jar and every plugin");
         logger.severe("    from trusted sources.");
         logger.severe("");
-        logger.severe(" TotemGuard has disabled itself.");
+        logger.severe(" " + productName + " has disabled itself.");
         logger.severe(SEPARATOR);
     }
 }

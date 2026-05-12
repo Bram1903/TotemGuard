@@ -99,6 +99,8 @@ tasks.named<ShadowJar>("shadowJar") {
     dependencies {
         include(project(":api"))
         include(project(":common"))
+        include(project(":bridge:integrity"))
+        include(project(":bridge:protocol"))
         include(dependency("io.lettuce:.*"))
         include(dependency("io.netty:.*"))
         include(dependency("io.projectreactor:.*"))

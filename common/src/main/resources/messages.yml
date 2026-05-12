@@ -92,8 +92,21 @@ commands:
     open-failed: "%prefix% &#D4452CFailed to open the monitor GUI."
     target-offline: "%prefix% &#D4452CMonitor target &#FEE067%tg_player% &#D4452Cwent offline."
 
+  follow:
+    enabled: "%prefix% &#6FB04ANow following &#FEE067%tg_player%&#6FB04A."
+    disabled: "%prefix% &#D4452CFollow disabled."
+    none-active: "%prefix% &#D4452CYou have no follow active."
+    not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
+    self-not-allowed: "%prefix% &#D4452CYou cannot follow yourself."
+    target-offline: "%prefix% &#D4452CFollow target &#FEE067%tg_player% &#D4452Cwent offline."
+    different-proxy: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Cmoved to a different proxy (server &#FEE067%tg_server%&#D4452C). Follow stopped."
+    no-bridge: "%prefix% &#D4452CCross-server follow requires the TotemGuard-Bridge plugin on your proxy."
+    no-redis: "%prefix% &#D4452CFollow service unavailable."
+    action-bar: "&#FBAF00Following &#FEE067%tg_player% &#B8AC8F(&#FEE067%tg_server%&#B8AC8F)"
+
   teleport:
     no-redis: "%prefix% &#D4452CTeleport service unavailable."
+    no-bridge: "%prefix% &#D4452CCross-server teleport requires the TotemGuard-Bridge plugin on your proxy."
     different-proxy: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Cis behind a different proxy (server &#FEE067%tg_server%&#D4452C). TotemGuard can only teleport players within the same proxy."
     not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
     self-not-allowed: "%prefix% &#D4452CYou cannot teleport to yourself."
@@ -153,6 +166,7 @@ gui:
     disabled: "&#6E6651Disabled"
     connected: "&#6FB04AConnected"
     disconnected: "&#D4452CDisconnected"
+    not-installed: "&#6E6651Not installed"
     currently-selected: "&#6FB04ACurrently selected"
     click-to-switch: "&#6E6651Click to switch ▶"
     click-to-browse: "&#6E6651Click to browse ▶"

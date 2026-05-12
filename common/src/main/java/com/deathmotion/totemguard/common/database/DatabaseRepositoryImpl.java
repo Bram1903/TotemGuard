@@ -59,6 +59,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     private volatile @Nullable StatsRollupDao statsRollupDao;
     private volatile @Nullable AlertWriter alertWriter;
     private volatile @Nullable RetentionSweeper retentionSweeper;
+    private volatile @Nullable String lastAssignedServerName;
 
     public DatabaseRepositoryImpl() {
         start();
@@ -164,8 +165,10 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
     public synchronized void assignThisServerName(@NotNull String serverName) {
         CatalogDao catalog = this.catalogDao;
         if (catalog == null) return;
+        if (serverName.equals(lastAssignedServerName)) return;
         try {
             int serverId = catalog.resolveAndCacheThisServerId(serverName);
+            lastAssignedServerName = serverName;
             TGPlatform.getInstance().getLogger().info(
                     "Database server registered (name=\"" + serverName + "\", serverId=" + serverId + ")");
             backfillOnlineProfiles();
@@ -553,6 +556,7 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         this.profileDao = null;
         this.playerDao = null;
         this.catalogDao = null;
+        this.lastAssignedServerName = null;
 
         connection.stop();
     }

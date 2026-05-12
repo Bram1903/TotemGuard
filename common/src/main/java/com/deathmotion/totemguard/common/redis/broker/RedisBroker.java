@@ -81,6 +81,13 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
         return (UNICAST_CHANNEL_PREFIX + targetInstance).getBytes(StandardCharsets.UTF_8);
     }
 
+    private boolean isSubscribedChannel(byte[] channel) {
+        for (byte[] mine : subscribedChannels) {
+            if (java.util.Arrays.equals(mine, channel)) return true;
+        }
+        return false;
+    }
+
     @Override
     public void onConnected(RedisConnection conn) {
         StatefulRedisPubSubConnection<byte[], byte[]> pubSub = conn.pubSub();
@@ -180,6 +187,7 @@ public final class RedisBroker extends RedisPubSubAdapter<byte[], byte[]> implem
     public void message(byte[] channel, byte[] message) {
         if (channel == null || message == null) return;
         if (channel.length == 0 || message.length == 0) return;
+        if (!isSubscribedChannel(channel)) return;
 
         try {
             PacketCodec.Frame frame = PacketCodec.decode(message);

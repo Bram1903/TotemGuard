@@ -37,7 +37,6 @@ public final class TGMonitorOpenEventImpl extends EventImpl implements TGMonitor
     private final @Nullable TGUser targetUser;
     private final @NotNull UUID targetServerInstanceId;
     private final @NotNull String targetServerName;
-    private final @Nullable String targetProxyServerId;
     private final boolean crossServer;
     private final boolean serverSwitch;
 
@@ -47,7 +46,6 @@ public final class TGMonitorOpenEventImpl extends EventImpl implements TGMonitor
     public TGMonitorOpenEventImpl(@NotNull UUID viewerUuid, @NotNull UUID targetUuid,
                                   @NotNull String targetName, @Nullable TGUser targetUser,
                                   @NotNull UUID targetServerInstanceId, @NotNull String targetServerName,
-                                  @Nullable String targetProxyServerId,
                                   boolean crossServer, boolean serverSwitch) {
         this.viewerUuid = viewerUuid;
         this.targetUuid = targetUuid;
@@ -55,7 +53,6 @@ public final class TGMonitorOpenEventImpl extends EventImpl implements TGMonitor
         this.targetUser = targetUser;
         this.targetServerInstanceId = targetServerInstanceId;
         this.targetServerName = targetServerName;
-        this.targetProxyServerId = targetProxyServerId;
         this.crossServer = crossServer;
         this.serverSwitch = serverSwitch;
     }

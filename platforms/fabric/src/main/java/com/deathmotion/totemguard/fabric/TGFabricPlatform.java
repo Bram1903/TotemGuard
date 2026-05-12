@@ -126,4 +126,10 @@ public class TGFabricPlatform extends TGPlatform {
     public boolean checkPlatformCompatibility() {
         return FabricCompatibility.check(getLogger(), getPlatformVersion());
     }
+
+    @Override
+    public int getServerPort() {
+        MinecraftServer server = FabricServerHolder.server();
+        return server == null ? 0 : server.getPort();
+    }
 }

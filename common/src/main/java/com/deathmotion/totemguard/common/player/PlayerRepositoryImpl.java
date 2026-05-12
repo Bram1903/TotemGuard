@@ -152,10 +152,9 @@ public final class PlayerRepositoryImpl implements UserRepository {
         }
 
         TGPlayer localTarget = platform.getPlayerRepository().getPlayer(target.playerUuid());
-        String proxyServerId = platform.resolveProxyServerId(target.serverName());
         TGFocusEvent event = platform.getEventRepository().post(TGFocusEventImpl.enabling(
                 viewerUuid, target.playerUuid(), target.playerName(), localTarget,
-                target.serverInstanceId(), target.serverName(), proxyServerId, true));
+                target.serverInstanceId(), target.serverName(), true));
         if (event.isCancelled()) {
             cacheRepository.remove(CacheKeys.focusTarget(viewerUuid));
             return false;

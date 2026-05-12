@@ -1,1 +1,1 @@
-# TotemGuard (WIP)
+# TotemGuard

@@ -31,8 +31,6 @@ import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -118,16 +116,19 @@ public final class TeleportCommand extends AbstractCommand {
             return;
         }
 
-        if (!local && !platform.canRouteToServer(target.serverName())) {
-            sender.sendMessage(platform.getMessageService().getComponent(
-                    MessagesKeys.TELEPORT_DIFFERENT_PROXY,
-                    Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
-            ));
-            return;
+        if (!local) {
+            if (!platform.getProxyTopologyService().bridgeAvailable()) {
+                sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TELEPORT_NO_BRIDGE));
+                return;
+            }
+            if (!platform.canRouteToInstance(target.serverInstanceId())) {
+                sender.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.TELEPORT_DIFFERENT_PROXY,
+                        Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
+                ));
+                return;
+            }
         }
-
-        String resolvedServer = platform.resolveServerName(target.serverName());
-        String proxyServerId = platform.resolveProxyServerId(target.serverName());
 
         TGTeleportEvent event = platform.getEventRepository().post(new TGTeleportEventImpl(
                 sender.getUniqueId(),
@@ -136,7 +137,6 @@ public final class TeleportCommand extends AbstractCommand {
                 localTarget,
                 target.serverInstanceId(),
                 target.serverName(),
-                proxyServerId,
                 !local
         ));
         if (event.isCancelled()) return;
@@ -150,26 +150,20 @@ public final class TeleportCommand extends AbstractCommand {
             return;
         }
 
-        User senderUser = PacketEvents.getAPI().getPlayerManager().getUser(sender.getNativeSender());
-        if (senderUser == null) {
-            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
-            return;
-        }
-
         long expiresAt = System.currentTimeMillis() + REQUEST_TTL_MILLIS;
         SyncTeleportRequestPacket.Payload payload = new SyncTeleportRequestPacket.Payload(
                 UUID.randomUUID(),
                 sender.getUniqueId(),
                 target.playerUuid(),
-                resolvedServer,
+                target.serverName(),
                 target.serverInstanceId(),
                 expiresAt
         );
         presence.publishTeleportRequest(payload);
-        platform.getBungeeChannelManager().routeToProxyServer(senderUser, resolvedServer);
+        platform.getProxyTopologyService().connectToInstance(sender.getUniqueId(), target.serverInstanceId());
         sender.sendMessage(platform.getMessageService().getComponent(
                 MessagesKeys.TELEPORT_CROSS_SERVER,
-                Map.of("tg_player", target.playerName(), "tg_server", resolvedServer)
+                Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
         ));
     }
 }

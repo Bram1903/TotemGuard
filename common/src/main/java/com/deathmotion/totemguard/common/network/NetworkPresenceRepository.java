@@ -322,6 +322,23 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (task != null) task.cancel();
     }
 
+    public void onProxyPlayerJoin(@NotNull UUID playerUuid) {
+        cancelPendingOffline(playerUuid);
+    }
+
+    public void onProxyPlayerSwitch(@NotNull UUID playerUuid) {
+        cancelPendingOffline(playerUuid);
+    }
+
+    public void onProxyPlayerQuit(@NotNull UUID playerUuid) {
+        cancelPendingOffline(playerUuid);
+        TGPlayer cached = platform.getPlayerRepository().getPlayer(playerUuid);
+        String name = cached != null ? cached.getName() : playerUuid.toString();
+        RemotePlayerEntry lastKnown = new RemotePlayerEntry(
+                playerUuid, name, identity.instanceId(), effectiveDisplayName);
+        platform.getScheduler().runAsyncTask(() -> finalizeOffline(playerUuid, name, lastKnown));
+    }
+
     private long offlineGraceMillis() {
         try {
             int millis = platform.getConfigRepository().config(ConfigFile.CONFIG)

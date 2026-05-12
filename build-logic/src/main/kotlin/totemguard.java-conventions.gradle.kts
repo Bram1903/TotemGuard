@@ -30,7 +30,7 @@ tasks.named<ProcessResources>("processResources").configure {
     inputs.property("version", versionWithoutHash)
     inputs.property("description", project.description ?: "")
 
-    filesMatching(listOf("plugin.yml", "fabric.mod.json")) {
+    filesMatching(listOf("plugin.yml", "fabric.mod.json", "bungee.yml", "velocity-plugin.json")) {
         expand(
             mapOf(
                 "version" to versionWithoutHash.get(),

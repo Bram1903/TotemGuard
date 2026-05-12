@@ -108,11 +108,10 @@ public final class MonitorCommand extends AbstractCommand {
         }
 
         boolean crossServer = self == null || !self.instanceId().equals(targetServerInstanceId);
-        String proxyServerId = platform.resolveProxyServerId(targetServerName);
         TGMonitorOpenEvent event = platform.getEventRepository().post(
                 new TGMonitorOpenEventImpl(
                         sender.getUniqueId(), targetUuid, targetName, localTarget,
-                        targetServerInstanceId, targetServerName, proxyServerId, crossServer, false)
+                        targetServerInstanceId, targetServerName, crossServer, false)
         );
         if (event.isCancelled()) {
             sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_BLOCKED));

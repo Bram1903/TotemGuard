@@ -37,7 +37,6 @@ public class ReloadService {
         platform.getPunishmentRepository().reload();
         platform.getUpdateCheckerRepository().reload();
         platform.getDiscordWebhookService().reload();
-        platform.refreshProxyTopology();
 
         ModRegistry.load();
 

@@ -37,7 +37,6 @@ public final class TGTeleportEventImpl extends EventImpl implements TGTeleportEv
     private final @Nullable TGUser targetUser;
     private final @NotNull UUID targetServerInstanceId;
     private final @NotNull String targetServerName;
-    private final @Nullable String targetProxyServerId;
     private final boolean crossServer;
 
     @Setter
@@ -46,14 +45,13 @@ public final class TGTeleportEventImpl extends EventImpl implements TGTeleportEv
     public TGTeleportEventImpl(@NotNull UUID callerUuid, @NotNull UUID targetUuid,
                                @NotNull String targetName, @Nullable TGUser targetUser,
                                @NotNull UUID targetServerInstanceId, @NotNull String targetServerName,
-                               @Nullable String targetProxyServerId, boolean crossServer) {
+                               boolean crossServer) {
         this.callerUuid = callerUuid;
         this.targetUuid = targetUuid;
         this.targetName = targetName;
         this.targetUser = targetUser;
         this.targetServerInstanceId = targetServerInstanceId;
         this.targetServerName = targetServerName;
-        this.targetProxyServerId = targetProxyServerId;
         this.crossServer = crossServer;
     }
 }

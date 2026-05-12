@@ -46,9 +46,12 @@ import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepository
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.gui.GuiPacketListener;
 import com.deathmotion.totemguard.common.message.MessageService;
-import com.deathmotion.totemguard.common.network.BungeeChannelManager;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.network.ServerIdentity;
+import com.deathmotion.totemguard.common.network.bridge.BackendAnnouncer;
+import com.deathmotion.totemguard.common.network.bridge.ProxyBridgeSubscriber;
+import com.deathmotion.totemguard.common.network.follow.FollowRepository;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
@@ -59,17 +62,23 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckRequ
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckResultPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.reload.ReloadService;
-import com.deathmotion.totemguard.common.util.*;
+import com.deathmotion.totemguard.common.util.CompatibilityUtil;
+import com.deathmotion.totemguard.common.util.ConsoleBanner;
+import com.deathmotion.totemguard.common.util.LoggerSuppressor;
+import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.google.common.base.Stopwatch;
 import lombok.Getter;
 import lombok.Setter;
 import org.incendo.cloud.CommandManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @Getter
@@ -104,7 +113,10 @@ public abstract class TGPlatform {
     private GuiManager guiManager;
     private IntegrationRegistrar integrationRegistrar;
     private NetworkPresenceRepository networkPresenceRepository;
-    private BungeeChannelManager bungeeChannelManager;
+    private FollowRepository followRepository;
+    private ProxyTopologyService proxyTopologyService;
+    private ProxyBridgeSubscriber proxyBridgeSubscriber;
+    private BackendAnnouncer backendAnnouncer;
     private MonitorRepository monitorRepository;
     private ModDetectionService modDetectionService;
     private CheckService checkService;
@@ -120,7 +132,7 @@ public abstract class TGPlatform {
     }
 
     public void commonOnInitialize() {
-        if (!JarIntegrityChecker.verifyCurrentJar()) {
+        if (!new JarIntegrityChecker(logger, "TotemGuard").verifyCurrentJar()) {
             setEnabled(false);
         }
     }
@@ -193,9 +205,19 @@ public abstract class TGPlatform {
         networkPresenceRepository.addListener(monitorRepository);
         monitorRepository.start();
 
+        followRepository = new FollowRepository(this);
+        networkPresenceRepository.addListener(followRepository);
+        followRepository.start();
+
         integrationRegistrar.enableAll();
 
-        bungeeChannelManager = new BungeeChannelManager(this);
+        proxyTopologyService = new ProxyTopologyService(this);
+        proxyBridgeSubscriber = new ProxyBridgeSubscriber(this);
+        redisRepository.addStateListener(proxyBridgeSubscriber);
+
+        backendAnnouncer = new BackendAnnouncer(this, serverIdentity.instanceId(),
+                networkPresenceRepository.getLocalServerName());
+        redisRepository.addStateListener(backendAnnouncer);
 
         ModKickThenBanTracker kickThenBanTracker = new ModKickThenBanTracker(cacheRepository);
         ModLogAlertTracker logAlertTracker = new ModLogAlertTracker(cacheRepository);
@@ -207,7 +229,6 @@ public abstract class TGPlatform {
         registerPacketListener(new PacketCheckManagerListener(playerRepository));
         registerPacketListener(new GuiPacketListener());
         registerPacketListener(new ModPacketObserver(modDetectionService, playerRepository));
-        registerPacketListener(bungeeChannelManager);
 
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
         internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
@@ -240,10 +261,16 @@ public abstract class TGPlatform {
 
         if (integrationRegistrar != null) integrationRegistrar.disableAll();
         if (monitorRepository != null) monitorRepository.stop();
+        if (followRepository != null) followRepository.stop();
         if (networkPresenceRepository != null) networkPresenceRepository.stop();
         if (playerRepository != null) playerRepository.shutdown();
         if (updateCheckerRepository != null) updateCheckerRepository.shutdown();
         if (alertRepository != null) redisRepository.removeStateListener(alertRepository);
+        if (proxyBridgeSubscriber != null) redisRepository.removeStateListener(proxyBridgeSubscriber);
+        if (backendAnnouncer != null) {
+            redisRepository.removeStateListener(backendAnnouncer);
+            backendAnnouncer.stop();
+        }
         if (redisRepository != null) redisRepository.stop();
         if (databaseRepository != null) databaseRepository.stop();
         if (guiManager != null) guiManager.shutdown();
@@ -265,7 +292,7 @@ public abstract class TGPlatform {
      * Used by features (e.g. GUI teleport buttons) that need to execute commands on behalf of
      * the viewer rather than the console.
      */
-    public abstract @Nullable Sender createSender(@org.jetbrains.annotations.NotNull java.util.UUID playerUuid);
+    public abstract @Nullable Sender createSender(@NotNull UUID playerUuid);
 
     public abstract CommandManager<Sender> getCommandManager();
 
@@ -283,6 +310,12 @@ public abstract class TGPlatform {
 
     public abstract boolean checkPlatformCompatibility();
 
+    public abstract int getServerPort();
+
+    public @org.jetbrains.annotations.NotNull String getProxyFacingHost() {
+        return "";
+    }
+
     public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
     }
 
@@ -296,19 +329,7 @@ public abstract class TGPlatform {
         if (service != null) service.acceptRemoteCheckResult(payload);
     }
 
-    public boolean canRouteToServer(String serverName) {
-        return bungeeChannelManager.isServerOnThisProxy(serverName);
-    }
-
-    public String resolveServerName(String serverName) {
-        return bungeeChannelManager.resolveServerName(serverName);
-    }
-
-    public @Nullable String resolveProxyServerId(String serverName) {
-        return bungeeChannelManager.resolveProxyServerId(serverName);
-    }
-
-    public void refreshProxyTopology() {
-        bungeeChannelManager.refresh();
+    public boolean canRouteToInstance(UUID targetInstanceId) {
+        return proxyTopologyService.canRouteToInstance(targetInstanceId);
     }
 }

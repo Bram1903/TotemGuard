@@ -275,13 +275,12 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
             UUID localInstance = platform.getNetworkPresenceRepository().identity().instanceId();
             boolean crossServer = !localInstance.equals(entry.serverInstanceId());
             TGPlayer localTarget = crossServer ? null : platform.getPlayerRepository().getPlayer(playerUuid);
-            String proxyServerId = platform.resolveProxyServerId(entry.serverName());
             for (UUID viewerId : viewers) {
                 TGMonitorOpenEvent event = platform.getEventRepository().post(
                         new TGMonitorOpenEventImpl(
                                 viewerId, playerUuid, entry.playerName(), localTarget,
                                 entry.serverInstanceId(), entry.serverName(),
-                                proxyServerId, crossServer, true)
+                                crossServer, true)
                 );
                 if (event.isCancelled()) gui.close(viewerId, true);
             }

@@ -73,14 +73,6 @@ public interface TGMonitorOpenEvent extends Event, Cancellable {
     @NotNull String getTargetServerName();
 
     /**
-     * The proxy-side route id for the server hosting the target — the
-     * value the proxy uses to send a player to that backend. {@code null}
-     * when no proxy is attached, or when the friendly server name has no
-     * entry in the proxy's config.
-     */
-    @Nullable String getTargetProxyServerId();
-
-    /**
      * {@code true} when the target is on a different backend than the viewer.
      */
     boolean isCrossServer();

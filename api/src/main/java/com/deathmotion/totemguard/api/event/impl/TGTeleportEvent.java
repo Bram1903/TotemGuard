@@ -80,19 +80,6 @@ public interface TGTeleportEvent extends Event, Cancellable {
     @NotNull String getTargetServerName();
 
     /**
-     * The proxy-side route id for the server hosting the target — the
-     * value the proxy uses to send a player to that backend (e.g. the
-     * key in {@code velocity.toml}'s {@code servers} block).
-     * <p>
-     * {@code null} when the local backend is not behind a proxy, or when
-     * the proxy hasn't yet replied with its server list, or when the
-     * friendly server name has no entry in the proxy's config. Consumers
-     * relying on this for routing should treat {@code null} as "I cannot
-     * forward this player".
-     */
-    @Nullable String getTargetProxyServerId();
-
-    /**
      * {@code true} when the target is on a different backend than the caller
      * and the teleport requires a server hop.
      */

@@ -20,22 +20,16 @@ package com.deathmotion.totemguard.common.player.debug;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.ActionBars;
 import com.deathmotion.totemguard.common.util.Palette;
-import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.chat.ChatTypes;
-import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage;
-import com.github.retrooper.packetevents.protocol.chat.message.ChatMessageLegacy;
-import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage_v1_16;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DebugOverlayManager {
@@ -146,31 +140,9 @@ public class DebugOverlayManager {
     }
 
     private void dispatchNow() {
-        User user = player.getUser();
-        if (user.getEncoderState() != ConnectionState.PLAY) {
-            return;
-        }
-
         DebugOverlayProvider provider = getActiveProvider();
         Component message = provider == null ? Component.empty() : render(provider.buildFrame(player));
-        user.sendPacket(createOverlayPacket(user, message));
-    }
-
-    private PacketWrapper<?> createOverlayPacket(User user, Component message) {
-        ClientVersion version = user.getPacketVersion();
-
-        if (version.isNewerThanOrEquals(ClientVersion.V_1_19)) {
-            return new WrapperPlayServerSystemChatMessage(true, message);
-        }
-
-        ChatMessage chatMessage;
-        if (version.isNewerThanOrEquals(ClientVersion.V_1_16)) {
-            chatMessage = new ChatMessage_v1_16(message, ChatTypes.GAME_INFO, new UUID(0L, 0L));
-        } else {
-            chatMessage = new ChatMessageLegacy(message, ChatTypes.GAME_INFO);
-        }
-
-        return new WrapperPlayServerChatMessage(chatMessage);
+        ActionBars.send(player.getUser(), message);
     }
 
     private String normalize(String key) {

@@ -56,12 +56,24 @@ public final class MessagesKeys {
     public static final ConfigKey<String> FOCUS_NOT_FOUND = ConfigKey.string("alerts.focus.not-found");
     public static final ConfigKey<String> FOCUS_SELF = ConfigKey.string("alerts.focus.self-not-allowed");
 
+    public static final ConfigKey<String> FOLLOW_ENABLED = ConfigKey.string("commands.follow.enabled");
+    public static final ConfigKey<String> FOLLOW_DISABLED = ConfigKey.string("commands.follow.disabled");
+    public static final ConfigKey<String> FOLLOW_NONE_ACTIVE = ConfigKey.string("commands.follow.none-active");
+    public static final ConfigKey<String> FOLLOW_NOT_FOUND = ConfigKey.string("commands.follow.not-found");
+    public static final ConfigKey<String> FOLLOW_SELF = ConfigKey.string("commands.follow.self-not-allowed");
+    public static final ConfigKey<String> FOLLOW_TARGET_OFFLINE = ConfigKey.string("commands.follow.target-offline");
+    public static final ConfigKey<String> FOLLOW_DIFFERENT_PROXY = ConfigKey.string("commands.follow.different-proxy");
+    public static final ConfigKey<String> FOLLOW_NO_BRIDGE = ConfigKey.string("commands.follow.no-bridge");
+    public static final ConfigKey<String> FOLLOW_NO_REDIS = ConfigKey.string("commands.follow.no-redis");
+    public static final ConfigKey<String> FOLLOW_ACTION_BAR = ConfigKey.string("commands.follow.action-bar");
+
     public static final ConfigKey<String> TELEPORT_NOT_FOUND = ConfigKey.string("commands.teleport.not-found");
     public static final ConfigKey<String> TELEPORT_SELF = ConfigKey.string("commands.teleport.self-not-allowed");
     public static final ConfigKey<String> TELEPORT_SAME_SERVER = ConfigKey.string("commands.teleport.same-server");
     public static final ConfigKey<String> TELEPORT_CROSS_SERVER = ConfigKey.string("commands.teleport.cross-server");
     public static final ConfigKey<String> TELEPORT_NO_REDIS = ConfigKey.string("commands.teleport.no-redis");
     public static final ConfigKey<String> TELEPORT_DIFFERENT_PROXY = ConfigKey.string("commands.teleport.different-proxy");
+    public static final ConfigKey<String> TELEPORT_NO_BRIDGE = ConfigKey.string("commands.teleport.no-bridge");
 
     public static final ConfigKey<String> RELOAD = ConfigKey.string("reload");
 
@@ -135,6 +147,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_STATUS_DISABLED = ConfigKey.string("gui.status.disabled");
     public static final ConfigKey<String> GUI_STATUS_CONNECTED = ConfigKey.string("gui.status.connected");
     public static final ConfigKey<String> GUI_STATUS_DISCONNECTED = ConfigKey.string("gui.status.disconnected");
+    public static final ConfigKey<String> GUI_STATUS_NOT_INSTALLED = ConfigKey.string("gui.status.not-installed");
     public static final ConfigKey<String> GUI_STATUS_CURRENTLY_SELECTED = ConfigKey.string("gui.status.currently-selected");
     public static final ConfigKey<String> GUI_STATUS_CLICK_TO_SWITCH = ConfigKey.string("gui.status.click-to-switch");
     public static final ConfigKey<String> GUI_STATUS_CLICK_TO_BROWSE = ConfigKey.string("gui.status.click-to-browse");

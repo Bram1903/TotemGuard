@@ -42,6 +42,9 @@ public class CommandManagerImpl {
         new ReloadCommand().register(commandManager);
         new AlertCommand().register(commandManager);
         new FocusCommand().register(commandManager);
+        new UnfocusCommand().register(commandManager);
+        new FollowCommand().register(commandManager);
+        new UnfollowCommand().register(commandManager);
 
         // Only register on development builds
         if (TGVersions.CURRENT.snapshot()) {

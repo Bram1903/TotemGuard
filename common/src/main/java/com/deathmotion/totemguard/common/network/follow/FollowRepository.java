@@ -1,0 +1,321 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.common.network.follow;
+
+import com.deathmotion.totemguard.api.config.key.ConfigKey;
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.key.MessagesKeys;
+import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.PresenceListener;
+import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
+import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.MovementData;
+import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
+import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncFollowEventPacket;
+import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
+import com.deathmotion.totemguard.common.util.ActionBars;
+import com.deathmotion.totemguard.common.util.ScheduledTask;
+import com.github.retrooper.packetevents.protocol.world.Location;
+import net.kyori.adventure.text.Component;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public final class FollowRepository implements PresenceListener {
+
+    private static final long TICK_PERIOD_MILLIS = 100L;
+    private static final long REQUEST_TTL_MILLIS = 30_000L;
+    private static final double TELEPORT_DELTA_THRESHOLD_SQ = 8.0 * 8.0;
+
+    private final TGPlatform platform;
+    private final Logger logger;
+
+    private final ConcurrentHashMap<UUID, FollowState> myFollowers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, double[]> lastBroadcastPos = new ConcurrentHashMap<>();
+    private final AtomicBoolean started = new AtomicBoolean();
+    private @Nullable ScheduledTask tickTask;
+
+    public FollowRepository(@NotNull TGPlatform platform) {
+        this.platform = platform;
+        this.logger = platform.getLogger();
+    }
+
+    public void start() {
+        if (!started.compareAndSet(false, true)) return;
+        tickTask = platform.getScheduler().runAsyncTaskAtFixedRate(
+                this::tick, TICK_PERIOD_MILLIS, TICK_PERIOD_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    public void stop() {
+        if (!started.compareAndSet(true, false)) return;
+        if (tickTask != null) tickTask.cancel();
+        tickTask = null;
+        myFollowers.clear();
+        lastBroadcastPos.clear();
+    }
+
+    public @Nullable FollowState get(@NotNull UUID followerUuid) {
+        return myFollowers.get(followerUuid);
+    }
+
+    public boolean isFollowing(@NotNull UUID followerUuid) {
+        return myFollowers.containsKey(followerUuid);
+    }
+
+    public void beginFollow(@NotNull FollowState state) {
+        myFollowers.put(state.followerUuid(), state);
+    }
+
+    public boolean endFollow(@NotNull UUID followerUuid) {
+        return myFollowers.remove(followerUuid) != null;
+    }
+
+    public void acceptRemote(@NotNull SyncFollowEventPacket.Payload payload) {
+        if (payload.kind() != SyncFollowEventPacket.KIND_MOVE) return;
+        for (FollowState state : myFollowers.values()) {
+            if (!state.targetUuid().equals(payload.targetUuid())) continue;
+            boolean serverSwitch = !state.targetServerInstance().equals(payload.targetServerInstance());
+            if (serverSwitch && !fireServerSwitchEvent(state, payload.targetServerInstance(), payload.targetServerName())) {
+                continue;
+            }
+            state.rebindTarget(payload.targetServerInstance(), payload.targetServerName());
+            applyTeleport(state, payload);
+        }
+    }
+
+    private boolean fireServerSwitchEvent(@NotNull FollowState state,
+                                          @NotNull UUID newTargetInstance,
+                                          @NotNull String newTargetServerName) {
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        boolean crossServer = presence == null || !presence.isLocal(newTargetInstance);
+        TGPlayer targetUser = crossServer ? null : platform.getPlayerRepository().getPlayer(state.targetUuid());
+        com.deathmotion.totemguard.api.event.impl.TGFollowEvent event = platform.getEventRepository().post(
+                new com.deathmotion.totemguard.common.event.api.impl.TGFollowEventImpl(
+                        state.followerUuid(), state.targetUuid(), state.targetName(),
+                        targetUser, newTargetInstance, newTargetServerName,
+                        crossServer, true)
+        );
+        if (event.isCancelled()) {
+            if (myFollowers.remove(state.followerUuid(), state)) {
+                sendFollowerMessage(state, MessagesKeys.FOLLOW_DISABLED, Map.of());
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private void applyTeleport(@NotNull FollowState state, @NotNull SyncFollowEventPacket.Payload payload) {
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        if (presence == null) return;
+
+        if (presence.isLocal(payload.targetServerInstance())) {
+            PlatformPlayer follower = platform.getPlatformPlayerFactory().create(state.followerUuid());
+            if (follower == null) return;
+            follower.teleport(payload.world(), payload.x(), payload.y(), payload.z(), payload.yaw(), payload.pitch());
+            return;
+        }
+
+        routeCrossServer(state, payload.targetServerInstance(), payload.targetServerName());
+    }
+
+    private void routeCrossServer(@NotNull FollowState state, @NotNull UUID targetServerInstance,
+                                  @NotNull String targetServerName) {
+        if (!platform.getRedisRepository().isConnected()) return;
+        if (!platform.getProxyTopologyService().bridgeAvailable()
+                || !platform.canRouteToInstance(targetServerInstance)) {
+            dropForUnreachableTarget(state);
+            return;
+        }
+
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        if (presence == null) return;
+        SyncTeleportRequestPacket.Payload request = new SyncTeleportRequestPacket.Payload(
+                UUID.randomUUID(),
+                state.followerUuid(),
+                state.targetUuid(),
+                targetServerName,
+                targetServerInstance,
+                System.currentTimeMillis() + REQUEST_TTL_MILLIS
+        );
+        presence.publishTeleportRequest(request);
+        platform.getProxyTopologyService().connectToInstance(state.followerUuid(), targetServerInstance);
+    }
+
+    private void dropForUnreachableTarget(@NotNull FollowState state) {
+        if (myFollowers.remove(state.followerUuid(), state)) {
+            sendFollowerMessage(state, MessagesKeys.FOLLOW_DIFFERENT_PROXY,
+                    Map.of("tg_player", state.targetName(), "tg_server", state.targetServerName()));
+        }
+    }
+
+    private void tick() {
+        try {
+            tickFollowerHud();
+            tickLocalTargets();
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "FollowRepository tick failed", ex);
+        }
+    }
+
+    private void tickFollowerHud() {
+        if (myFollowers.isEmpty()) return;
+        for (FollowState state : myFollowers.values()) {
+            TGPlayer follower = platform.getPlayerRepository().getPlayer(state.followerUuid());
+            if (follower == null) continue;
+            Component bar = platform.getMessageService().getComponent(
+                    MessagesKeys.FOLLOW_ACTION_BAR,
+                    Map.<String, Object>of("tg_player", state.targetName(),
+                            "tg_server", state.targetServerName()));
+            ActionBars.send(follower.getUser(), bar);
+        }
+    }
+
+    private void tickLocalTargets() {
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        if (presence == null) return;
+        UUID localInstance = presence.identity().instanceId();
+        String localServerName = presence.getLocalServerName();
+
+        for (TGPlayer target : platform.getPlayerRepository().getPlayers()) {
+            UUID targetUuid = target.getUuid();
+            PlatformPlayer targetPlatform = target.getPlatformPlayer();
+            if (targetPlatform == null) continue;
+            MovementData movement = target.getData().getMovementData();
+            Location loc = movement.getCurrent();
+            String world = targetPlatform.getWorldName();
+            if (world == null) world = "";
+
+            double[] previous = lastBroadcastPos.get(targetUuid);
+            if (previous != null && !exceedsThreshold(previous, loc)) continue;
+
+            lastBroadcastPos.put(targetUuid, new double[]{loc.getX(), loc.getY(), loc.getZ()});
+            if (previous == null) continue;
+            publishMove(targetUuid, localInstance, localServerName, world, loc);
+        }
+    }
+
+    private boolean exceedsThreshold(@NotNull double[] previous, @NotNull Location current) {
+        double dx = current.getX() - previous[0];
+        double dy = current.getY() - previous[1];
+        double dz = current.getZ() - previous[2];
+        return (dx * dx + dy * dy + dz * dz) >= TELEPORT_DELTA_THRESHOLD_SQ;
+    }
+
+    private void publishMove(@NotNull UUID targetUuid, @NotNull UUID localInstance,
+                             @NotNull String localServerName, @NotNull String world, @NotNull Location loc) {
+        if (!platform.getRedisRepository().isEnabled()) {
+            applyLocalMove(targetUuid, world, loc);
+            return;
+        }
+        Packet<SyncFollowEventPacket.Payload> packet = Packets.SYNC_FOLLOW_EVENT.packet();
+        platform.getRedisRepository().publish(packet, new SyncFollowEventPacket.Payload(
+                SyncFollowEventPacket.KIND_MOVE,
+                new UUID(0L, 0L),
+                targetUuid,
+                new UUID(0L, 0L),
+                localInstance,
+                localServerName,
+                world,
+                loc.getX(), loc.getY(), loc.getZ(),
+                loc.getYaw(), loc.getPitch()
+        ));
+        applyLocalMove(targetUuid, world, loc);
+    }
+
+    private void applyLocalMove(@NotNull UUID targetUuid, @NotNull String world, @NotNull Location loc) {
+        for (FollowState state : myFollowers.values()) {
+            if (!state.targetUuid().equals(targetUuid)) continue;
+            PlatformPlayer follower = platform.getPlatformPlayerFactory().create(state.followerUuid());
+            if (follower == null) continue;
+            follower.teleport(world, loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+        }
+    }
+
+    @Override
+    public void onPlayerOnline(UUID playerUuid, RemotePlayerEntry entry) {
+        for (FollowState state : myFollowers.values()) {
+            if (!state.targetUuid().equals(playerUuid)) continue;
+            if (state.targetServerInstance().equals(entry.serverInstanceId())) continue;
+            state.rebindTarget(entry.serverInstanceId(), entry.serverName());
+            rerouteAfterServerSwitch(state, entry);
+        }
+    }
+
+    private void rerouteAfterServerSwitch(@NotNull FollowState state, @NotNull RemotePlayerEntry entry) {
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        if (presence == null) return;
+
+        if (presence.isLocal(entry.serverInstanceId())) {
+            TGPlayer target = platform.getPlayerRepository().getPlayer(entry.playerUuid());
+            if (target == null) return;
+            PlatformPlayer targetPlatform = target.getPlatformPlayer();
+            PlatformPlayer follower = platform.getPlatformPlayerFactory().create(state.followerUuid());
+            if (targetPlatform == null || follower == null) return;
+            Location loc = target.getData().getMovementData().getCurrent();
+            String world = targetPlatform.getWorldName();
+            follower.teleport(world == null ? "" : world,
+                    loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+            return;
+        }
+
+        routeCrossServer(state, entry.serverInstanceId(), entry.serverName());
+    }
+
+    @Override
+    public void onPlayerOffline(UUID playerUuid, RemotePlayerEntry lastKnown) {
+        myFollowers.remove(playerUuid);
+        lastBroadcastPos.remove(playerUuid);
+
+        for (FollowState state : myFollowers.values()) {
+            if (!state.targetUuid().equals(playerUuid)) continue;
+            if (myFollowers.remove(state.followerUuid(), state)) {
+                sendFollowerMessage(state, MessagesKeys.FOLLOW_TARGET_OFFLINE,
+                        Map.of("tg_player", state.targetName()));
+            }
+        }
+    }
+
+    @Override
+    public void onServerOffline(UUID instanceId) {
+        for (FollowState state : myFollowers.values()) {
+            if (!state.targetServerInstance().equals(instanceId)) continue;
+            if (myFollowers.remove(state.followerUuid(), state)) {
+                sendFollowerMessage(state, MessagesKeys.FOLLOW_TARGET_OFFLINE,
+                        Map.of("tg_player", state.targetName()));
+            }
+        }
+    }
+
+    private void sendFollowerMessage(@NotNull FollowState state,
+                                     @NotNull ConfigKey<String> key,
+                                     @NotNull Map<String, Object> placeholders) {
+        PlatformPlayer follower = platform.getPlatformPlayerFactory().create(state.followerUuid());
+        if (follower == null) return;
+        follower.sendMessage(platform.getMessageService().getComponent(key, placeholders));
+    }
+}

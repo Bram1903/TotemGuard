@@ -150,10 +150,9 @@ public final class FocusCommand extends AbstractCommand {
         PlatformPlayer viewer = platform.getPlatformPlayerFactory().create(viewerUuid);
         if (viewer == null) return;
 
-        String proxyServerId = platform.resolveProxyServerId(targetServerName);
         TGFocusEvent enable = platform.getEventRepository().post(TGFocusEventImpl.enabling(
                 viewerUuid, targetUuid, targetName, localTarget,
-                targetServerInstanceId, targetServerName, proxyServerId, false));
+                targetServerInstanceId, targetServerName, false));
         if (enable.isCancelled()) return;
 
         roster.put(viewerUuid, viewer, new AlertFilter.Violator(targetUuid), targetName);
