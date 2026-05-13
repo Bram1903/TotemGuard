@@ -103,6 +103,15 @@ public final class TeleportCommand extends AbstractCommand {
 
         boolean local = presence.isLocal(target.serverInstanceId());
         TGPlayer localTarget = local ? platform.getPlayerRepository().getPlayer(target.playerUuid()) : null;
+
+        if (local && localTarget == null && target.bypassed()) {
+            sender.sendMessage(platform.getMessageService().getComponent(
+                    MessagesKeys.TELEPORT_TARGET_BYPASSED,
+                    Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
+            ));
+            return;
+        }
+
         if (local && localTarget == null) {
             sender.sendMessage(platform.getMessageService().getComponent(
                     MessagesKeys.TELEPORT_NOT_FOUND,

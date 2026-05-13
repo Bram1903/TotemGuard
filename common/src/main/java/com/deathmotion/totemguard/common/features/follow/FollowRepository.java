@@ -293,6 +293,10 @@ public final class FollowRepository implements PresenceListener {
         for (FollowState state : myFollowers.values()) {
             if (!state.targetUuid().equals(playerUuid)) continue;
             if (state.targetServerInstance().equals(entry.serverInstanceId())) continue;
+            if (entry.bypassed()) {
+                dropForBypassedTarget(state, entry.serverName());
+                continue;
+            }
             state.rebindTarget(entry.serverInstanceId(), entry.serverName());
             store.save(state);
             rerouteAfterServerSwitch(state, entry);
@@ -304,11 +308,24 @@ public final class FollowRepository implements PresenceListener {
         for (FollowState state : myFollowers.values()) {
             if (!state.targetUuid().equals(playerUuid)) continue;
             if (state.targetServerInstance().equals(destinationInstance)) continue;
+            NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+            RemotePlayerEntry knownEntry = presence == null ? null : presence.findByUuid(playerUuid);
+            if (knownEntry != null && knownEntry.serverInstanceId().equals(destinationInstance) && knownEntry.bypassed()) {
+                dropForBypassedTarget(state, knownEntry.serverName());
+                continue;
+            }
             state.rebindTarget(destinationInstance, state.targetServerName());
             store.save(state);
-            NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
             if (presence != null && presence.isLocal(destinationInstance)) continue;
             routeCrossServer(state, destinationInstance, state.targetServerName());
+        }
+    }
+
+    private void dropForBypassedTarget(@NotNull FollowState state, @NotNull String serverName) {
+        if (myFollowers.remove(state.followerUuid(), state)) {
+            store.remove(state.followerUuid());
+            sendFollowerMessage(state, MessagesKeys.FOLLOW_TARGET_BYPASSED,
+                    Map.of("tg_player", state.targetName(), "tg_server", serverName));
         }
     }
 

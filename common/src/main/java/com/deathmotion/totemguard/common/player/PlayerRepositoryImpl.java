@@ -41,6 +41,7 @@ import com.deathmotion.totemguard.common.player.latency.TransactionTimeoutWatchd
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +60,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
     private final CacheRepositoryImpl cacheRepository;
     private final ConcurrentMap<User, TGPlayer> players = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, TGPlayer> playersByUuid = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, ExemptPresence> exemptOnline = new ConcurrentHashMap<>();
     private final Collection<UUID> exemptUsers = ConcurrentHashMap.newKeySet();
     private final TransactionTimeoutWatchdog transactionTimeoutWatchdog;
 
@@ -103,9 +105,13 @@ public final class PlayerRepositoryImpl implements UserRepository {
         if (platformPlayer == null) return;
 
         restoreSubscriptions(uuid, platformPlayer);
+        boolean bypassed = isExempt(uuid);
+        if (bypassed) {
+            exemptOnline.put(uuid, new ExemptPresence(user.getName(), user.getProfile()));
+        }
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
         if (presence != null) {
-            presence.onLocalPlayerJoin(uuid, user.getName(), user.getProfile());
+            presence.onLocalPlayerJoin(uuid, user.getName(), user.getProfile(), bypassed);
         }
         platform.getUpdateCheckerRepository().notifyIfOutdated(platformPlayer);
     }
@@ -218,6 +224,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         if (uuid == null) return;
 
         clearExempt(uuid);
+        exemptOnline.remove(uuid);
         platform.getAlertRepository().removeUser(uuid);
 
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
@@ -292,11 +299,18 @@ public final class PlayerRepositoryImpl implements UserRepository {
         return players.values();
     }
 
+    public @NotNull Map<UUID, ExemptPresence> exemptOnlinePresence() {
+        return java.util.Collections.unmodifiableMap(exemptOnline);
+    }
+
     public void backfillDatabaseProfiles() {
         for (TGPlayer player : getPlayers()) {
             if (player.getDatabasePlayerId() > 0) continue;
             if (!player.isHasLoggedIn()) continue;
             player.resolveDatabaseProfile();
         }
+    }
+
+    public record ExemptPresence(@NotNull String name, @Nullable UserProfile profile) {
     }
 }

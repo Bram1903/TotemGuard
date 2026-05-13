@@ -52,9 +52,12 @@ public final class PresenceStore {
     private static final byte[] FIELD_NAME = bytes("name");
     private static final byte[] FIELD_IID = bytes("iid");
     private static final byte[] FIELD_SRV = bytes("srv");
+    private static final byte[] FIELD_BYP = bytes("byp");
     private static final byte[] FIELD_TEX_NAME = bytes("tex_name");
     private static final byte[] FIELD_TEX_VALUE = bytes("tex_value");
     private static final byte[] FIELD_TEX_SIG = bytes("tex_sig");
+    private static final byte[] BYTE_TRUE = bytes("1");
+    private static final byte[] BYTE_FALSE = bytes("0");
     private static final byte DELIMITER = 0;
 
     private static final byte[] CLAIM_OFFLINE_SCRIPT = bytes(
@@ -152,7 +155,7 @@ public final class PresenceStore {
 
     public void addPlayer(@NotNull UUID playerUuid, @NotNull String name,
                           @NotNull UUID instanceId, @NotNull String serverName,
-                          @Nullable UserProfile profile) {
+                          @Nullable UserProfile profile, boolean bypassed) {
         RedisAsyncCommands<byte[], byte[]> c = async();
         if (c == null) return;
         try {
@@ -165,6 +168,7 @@ public final class PresenceStore {
             playerFields.put(FIELD_NAME, bytes(name));
             playerFields.put(FIELD_IID, bytes(instanceId.toString()));
             playerFields.put(FIELD_SRV, bytes(serverName));
+            playerFields.put(FIELD_BYP, bypassed ? BYTE_TRUE : BYTE_FALSE);
             addTextureFields(playerFields, profile);
 
             List<RedisFuture<?>> futures = new ArrayList<>(6);
@@ -297,7 +301,7 @@ public final class PresenceStore {
                 };
                 Long result = c.eval(CLAIM_OFFLINE_SCRIPT, ScriptOutputType.INTEGER, keys, argv);
                 if (result != null && result == 1L) {
-                    orphaned.add(new RemotePlayerEntry(playerUuid, name, instanceId, serverName));
+                    orphaned.add(new RemotePlayerEntry(playerUuid, name, instanceId, serverName, false));
                 }
             }
             c.del(serverPlayersKey);
@@ -491,7 +495,7 @@ public final class PresenceStore {
     }
 
     private @Nullable RemotePlayerEntry readPlayer(RedisCommands<byte[], byte[]> c, UUID uuid) {
-        List<KeyValue<byte[], byte[]>> values = c.hmget(playerKey(uuid), FIELD_NAME, FIELD_IID, FIELD_SRV);
+        List<KeyValue<byte[], byte[]>> values = c.hmget(playerKey(uuid), FIELD_NAME, FIELD_IID, FIELD_SRV, FIELD_BYP);
         if (values == null || values.size() < 3) return null;
         String name = decodeKv(values.get(0));
         String iidStr = decodeKv(values.get(1));
@@ -503,7 +507,9 @@ public final class PresenceStore {
         } catch (IllegalArgumentException ex) {
             return null;
         }
-        return new RemotePlayerEntry(uuid, name, iid, srv);
+        String bypStr = values.size() >= 4 ? decodeKv(values.get(3)) : null;
+        boolean bypassed = "1".equals(bypStr);
+        return new RemotePlayerEntry(uuid, name, iid, srv, bypassed);
     }
 
     private @Nullable RedisCommands<byte[], byte[]> sync() {

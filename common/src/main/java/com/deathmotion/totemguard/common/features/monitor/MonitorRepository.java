@@ -269,6 +269,11 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
     public void onPlayerOnline(UUID playerUuid, RemotePlayerEntry entry) {
         if (!viewerRefcount.containsKey(playerUuid)) return;
 
+        if (entry.bypassed()) {
+            closeMonitorAsBypassed(playerUuid, entry);
+            return;
+        }
+
         GuiManager gui = platform.getGuiManager();
         Set<UUID> viewers = gui != null ? gui.monitorViewers(playerUuid) : Set.of();
         if (!viewers.isEmpty()) {
@@ -287,5 +292,31 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
         }
 
         publishSubscribe(playerUuid);
+    }
+
+    private void closeMonitorAsBypassed(UUID playerUuid, RemotePlayerEntry entry) {
+        hostSubscribers.remove(playerUuid);
+        latestSnapshot.remove(playerUuid);
+        lastPublishedSnapshot.remove(playerUuid);
+        GuiManager guiManager = platform.getGuiManager();
+        if (guiManager != null) {
+            Set<UUID> viewers = guiManager.monitorViewers(playerUuid);
+            String label = entry.playerName().isEmpty() ? playerUuid.toString() : entry.playerName();
+            String serverLabel = entry.serverName().isEmpty() ? playerUuid.toString() : entry.serverName();
+            for (UUID viewerId : viewers) {
+                PlatformPlayer viewer = platform.getPlatformPlayerFactory().create(viewerId);
+                if (viewer == null) continue;
+                viewer.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.MONITOR_TARGET_BYPASSED,
+                        Map.of("tg_player", label, "tg_server", serverLabel)
+                ));
+            }
+            guiManager.closeMonitor(playerUuid);
+        }
+        AtomicInteger count = viewerRefcount.remove(playerUuid);
+        if (count != null) {
+            UUID viewerInstance = platform.getNetworkPresenceRepository().identity().instanceId();
+            publishUnsubscribe(viewerInstance, playerUuid);
+        }
     }
 }

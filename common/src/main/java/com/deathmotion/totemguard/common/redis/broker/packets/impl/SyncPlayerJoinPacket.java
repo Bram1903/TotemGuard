@@ -38,7 +38,8 @@ public final class SyncPlayerJoinPacket extends Packet<SyncPlayerJoinPacket.Payl
         String serverName = input.readUTF();
         UUID playerUuid = PacketIO.readUUID(input);
         String playerName = input.readUTF();
-        return new Payload(instanceId, serverName, playerUuid, playerName);
+        boolean bypassed = input.readBoolean();
+        return new Payload(instanceId, serverName, playerUuid, playerName, bypassed);
     }
 
     @Override
@@ -47,13 +48,15 @@ public final class SyncPlayerJoinPacket extends Packet<SyncPlayerJoinPacket.Payl
         output.writeUTF(payload.serverName);
         PacketIO.writeUUID(output, payload.playerUuid);
         output.writeUTF(payload.playerName);
+        output.writeBoolean(payload.bypassed);
     }
 
     public record Payload(
             UUID instanceId,
             String serverName,
             UUID playerUuid,
-            String playerName
+            String playerName,
+            boolean bypassed
     ) {
     }
 }

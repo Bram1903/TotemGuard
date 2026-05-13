@@ -16,21 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.network;
+package totemguard.build
 
-import org.jetbrains.annotations.NotNull;
+import java.util.Locale
 
-import java.util.UUID;
+fun String.withoutSnapshotHash(): String =
+    replace(Regex("\\+[0-9a-f]+-SNAPSHOT$"), "-SNAPSHOT")
 
-public record RemotePlayerEntry(
-        @NotNull UUID playerUuid,
-        @NotNull String playerName,
-        @NotNull UUID serverInstanceId,
-        @NotNull String serverName,
-        boolean bypassed
-) {
-    public RemotePlayerEntry(@NotNull UUID playerUuid, @NotNull String playerName,
-                             @NotNull UUID serverInstanceId, @NotNull String serverName) {
-        this(playerUuid, playerName, serverInstanceId, serverName, false);
-    }
-}
+fun String.capitalizedName(): String =
+    replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }

@@ -117,6 +117,14 @@ public final class FollowCommand extends AbstractCommand {
             return;
         }
 
+        if (target.bypassed()) {
+            sender.sendMessage(platform.getMessageService().getComponent(
+                    MessagesKeys.FOLLOW_TARGET_BYPASSED,
+                    Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
+            ));
+            return;
+        }
+
         boolean local = presence.isLocal(target.serverInstanceId());
         TGPlayer localTarget = local ? platform.getPlayerRepository().getPlayer(target.playerUuid()) : null;
         if (local && localTarget == null) {

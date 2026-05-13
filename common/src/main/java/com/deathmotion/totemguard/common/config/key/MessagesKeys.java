@@ -65,6 +65,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> FOLLOW_DIFFERENT_PROXY = ConfigKey.string("commands.follow.different-proxy");
     public static final ConfigKey<String> FOLLOW_NO_BRIDGE = ConfigKey.string("commands.follow.no-bridge");
     public static final ConfigKey<String> FOLLOW_NO_REDIS = ConfigKey.string("commands.follow.no-redis");
+    public static final ConfigKey<String> FOLLOW_TARGET_BYPASSED = ConfigKey.string("commands.follow.target-bypassed");
     public static final ConfigKey<String> FOLLOW_ACTION_BAR = ConfigKey.string("commands.follow.action-bar");
 
     public static final ConfigKey<String> TELEPORT_NOT_FOUND = ConfigKey.string("commands.teleport.not-found");
@@ -74,6 +75,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> TELEPORT_NO_REDIS = ConfigKey.string("commands.teleport.no-redis");
     public static final ConfigKey<String> TELEPORT_DIFFERENT_PROXY = ConfigKey.string("commands.teleport.different-proxy");
     public static final ConfigKey<String> TELEPORT_NO_BRIDGE = ConfigKey.string("commands.teleport.no-bridge");
+    public static final ConfigKey<String> TELEPORT_TARGET_BYPASSED = ConfigKey.string("commands.teleport.target-bypassed");
 
     public static final ConfigKey<String> RELOAD = ConfigKey.string("reload");
 
@@ -108,6 +110,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> MONITOR_BLOCKED = ConfigKey.string("commands.monitor.blocked");
     public static final ConfigKey<String> MONITOR_OPEN_FAILED = ConfigKey.string("commands.monitor.open-failed");
     public static final ConfigKey<String> MONITOR_TARGET_OFFLINE = ConfigKey.string("commands.monitor.target-offline");
+    public static final ConfigKey<String> MONITOR_TARGET_BYPASSED = ConfigKey.string("commands.monitor.target-bypassed");
 
     public static final ConfigKey<String> HISTORY_OPEN_FAILED = ConfigKey.string("commands.history.open-failed");
 

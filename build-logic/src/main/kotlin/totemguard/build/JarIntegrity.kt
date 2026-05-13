@@ -1,3 +1,21 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package totemguard.build
 
 import java.io.BufferedOutputStream
@@ -7,23 +25,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
-import java.util.*
+import java.util.HexFormat
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
-private const val JAR_INTEGRITY_ENTRY = "META-INF/totemguard/integrity.sha256"
-private val JAR_INTEGRITY_HEX: HexFormat = HexFormat.of()
-
-fun String.withoutSnapshotHash(): String {
-    return replace(Regex("\\+[0-9a-f]+-SNAPSHOT$"), "-SNAPSHOT")
-}
-
-fun String.capitalizedName(): String {
-    return replaceFirstChar {
-        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-    }
-}
+private const val INTEGRITY_ENTRY = "META-INF/totemguard/integrity.sha256"
+private val HEX: HexFormat = HexFormat.of()
 
 fun writeJarIntegrity(jarPath: Path) {
     val fingerprint = computeJarIntegrityFingerprint(jarPath)
@@ -35,9 +43,7 @@ fun writeJarIntegrity(jarPath: Path) {
                 val entries = input.entries()
                 while (entries.hasMoreElements()) {
                     val entry = entries.nextElement()
-                    if (entry.name == JAR_INTEGRITY_ENTRY) {
-                        continue
-                    }
+                    if (entry.name == INTEGRITY_ENTRY) continue
 
                     output.putNextEntry(entry.copyForOutput())
                     if (!entry.isDirectory) {
@@ -46,7 +52,7 @@ fun writeJarIntegrity(jarPath: Path) {
                     output.closeEntry()
                 }
 
-                output.putNextEntry(ZipEntry(JAR_INTEGRITY_ENTRY))
+                output.putNextEntry(ZipEntry(INTEGRITY_ENTRY))
                 output.write((fingerprint + "\n").toByteArray(StandardCharsets.UTF_8))
                 output.closeEntry()
             }
@@ -65,7 +71,7 @@ private fun computeJarIntegrityFingerprint(jarPath: Path): String {
     ZipFile(jarPath.toFile()).use { zipFile ->
         zipFile.stream()
             .filter { !it.isDirectory }
-            .filter { it.name != JAR_INTEGRITY_ENTRY }
+            .filter { it.name != INTEGRITY_ENTRY }
             .sorted(compareBy(ZipEntry::getName))
             .forEach { entry ->
                 val nameBytes = entry.name.toByteArray(StandardCharsets.UTF_8)
@@ -76,16 +82,14 @@ private fun computeJarIntegrityFingerprint(jarPath: Path): String {
                 zipFile.getInputStream(entry).use { input ->
                     while (true) {
                         val read = input.read(buffer)
-                        if (read == -1) {
-                            break
-                        }
+                        if (read == -1) break
                         digest.update(buffer, 0, read)
                     }
                 }
             }
     }
 
-    return JAR_INTEGRITY_HEX.formatHex(digest.digest())
+    return HEX.formatHex(digest.digest())
 }
 
 private fun ZipEntry.copyForOutput(): ZipEntry {

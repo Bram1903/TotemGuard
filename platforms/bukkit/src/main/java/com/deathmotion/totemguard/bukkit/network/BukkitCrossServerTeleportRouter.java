@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -86,15 +87,23 @@ public final class BukkitCrossServerTeleportRouter implements Listener {
         if (subjectPlatform == null) return;
 
         TGPlayer target = platform.getPlayerRepository().getPlayer(targetUuid);
-        if (target == null) return;
-        PlatformPlayer targetPlatform = target.getPlatformPlayer();
-        if (targetPlatform == null) return;
+        if (target != null) {
+            PlatformPlayer targetPlatform = target.getPlatformPlayer();
+            if (targetPlatform == null) return;
+            MovementData movement = target.getData().getMovementData();
+            Location loc = movement.getCurrent();
+            String world = targetPlatform.getWorldName();
+            subjectPlatform.teleport(
+                    world == null ? "" : world,
+                    loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+            return;
+        }
 
-        MovementData movement = target.getData().getMovementData();
-        Location loc = movement.getCurrent();
-        String world = targetPlatform.getWorldName();
-        subjectPlatform.teleport(
-                world == null ? "" : world,
+        Player bukkitTarget = Bukkit.getPlayer(targetUuid);
+        if (bukkitTarget == null || !bukkitTarget.isOnline()) return;
+        org.bukkit.Location loc = bukkitTarget.getLocation();
+        String world = loc.getWorld() == null ? "" : loc.getWorld().getName();
+        subjectPlatform.teleport(world,
                 loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
     }
 

@@ -189,14 +189,20 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (newName.equals(effectiveDisplayName)) return;
         effectiveDisplayName = newName;
 
-        Set<UUID> owned = new HashSet<>();
-        for (TGPlayer player : platform.getPlayerRepository().getPlayers()) {
-            owned.add(player.getUuid());
-        }
+        Set<UUID> owned = collectOwnedPlayers();
         platform.getScheduler().runAsyncTask(() -> {
             store.updateHostServerName(identity.instanceId(), newName, owned);
             publishHeartbeat();
         });
+    }
+
+    private @NotNull Set<UUID> collectOwnedPlayers() {
+        Set<UUID> owned = new HashSet<>();
+        for (TGPlayer player : platform.getPlayerRepository().getPlayers()) {
+            owned.add(player.getUuid());
+        }
+        owned.addAll(platform.getPlayerRepository().exemptOnlinePresence().keySet());
+        return owned;
     }
 
     public ServerIdentity identity() {
@@ -228,10 +234,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         pendingOffline.clear();
         disconnectHints.clear();
 
-        Set<UUID> owned = new HashSet<>();
-        for (TGPlayer player : platform.getPlayerRepository().getPlayers()) {
-            owned.add(player.getUuid());
-        }
+        Set<UUID> owned = collectOwnedPlayers();
         if (platform.getSessionViolationStore() != null && !owned.isEmpty()) {
             platform.getSessionViolationStore().purgeIfOwnedBy(identity.instanceId(), owned);
         }
@@ -246,22 +249,23 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         listeners.add(listener);
     }
 
-    public void onLocalPlayerJoin(@NotNull UUID playerUuid, @NotNull String playerName, @Nullable UserProfile profile) {
+    public void onLocalPlayerJoin(@NotNull UUID playerUuid, @NotNull String playerName,
+                                  @Nullable UserProfile profile, boolean bypassed) {
         cancelPendingOffline(playerUuid);
         disconnectHints.remove(playerUuid);
 
         String name = effectiveDisplayName;
         notifyLocalPlayerJoin(playerUuid);
-        notifyPlayerOnline(playerUuid, new RemotePlayerEntry(playerUuid, playerName, identity.instanceId(), name));
+        notifyPlayerOnline(playerUuid, new RemotePlayerEntry(playerUuid, playerName, identity.instanceId(), name, bypassed));
         platform.getScheduler().runAsyncTask(() -> {
-            store.addPlayer(playerUuid, playerName, identity.instanceId(), name, profile);
-            if (platform.getSessionViolationStore() != null) {
+            store.addPlayer(playerUuid, playerName, identity.instanceId(), name, profile, bypassed);
+            if (platform.getSessionViolationStore() != null && !bypassed) {
                 platform.getSessionViolationStore().onPlayerJoin(playerUuid, playerName, name, identity.instanceId());
             }
             if (!platform.getRedisRepository().isEnabled()) return;
             Packet<SyncPlayerJoinPacket.Payload> packet = Packets.SYNC_PLAYER_JOIN.packet();
             platform.getRedisRepository().publish(packet, new SyncPlayerJoinPacket.Payload(
-                    identity.instanceId(), name, playerUuid, playerName));
+                    identity.instanceId(), name, playerUuid, playerName, bypassed));
         });
     }
 
@@ -272,8 +276,9 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     public void onLocalPlayerQuit(@NotNull UUID playerUuid, @NotNull String playerName) {
         notifyLocalPlayerQuit(playerUuid);
 
+        boolean bypassed = platform.getPlayerRepository().isExempt(playerUuid);
         RemotePlayerEntry lastKnown = new RemotePlayerEntry(
-                playerUuid, playerName, identity.instanceId(), effectiveDisplayName);
+                playerUuid, playerName, identity.instanceId(), effectiveDisplayName, bypassed);
 
         if (!platform.getRedisRepository().isConnected()) {
             notifyPlayerOffline(playerUuid, lastKnown);
@@ -358,7 +363,17 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (cached != null && cached.getName() != null) {
             String name = cached.getName();
             RemotePlayerEntry lastKnown = new RemotePlayerEntry(
-                    playerUuid, name, identity.instanceId(), effectiveDisplayName);
+                    playerUuid, name, identity.instanceId(), effectiveDisplayName, false);
+            disconnectHints.put(playerUuid, System.currentTimeMillis());
+            platform.getScheduler().runAsyncTask(() -> finalizeOffline(playerUuid, name, lastKnown));
+            return;
+        }
+        com.deathmotion.totemguard.common.player.PlayerRepositoryImpl.ExemptPresence exempt =
+                platform.getPlayerRepository().exemptOnlinePresence().get(playerUuid);
+        if (exempt != null) {
+            String name = exempt.name();
+            RemotePlayerEntry lastKnown = new RemotePlayerEntry(
+                    playerUuid, name, identity.instanceId(), effectiveDisplayName, true);
             disconnectHints.put(playerUuid, System.currentTimeMillis());
             platform.getScheduler().runAsyncTask(() -> finalizeOffline(playerUuid, name, lastKnown));
             return;
@@ -394,8 +409,13 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (local != null) {
             String name = local.getName();
             if (name != null) {
-                return new RemotePlayerEntry(uuid, name, identity.instanceId(), effectiveDisplayName);
+                return new RemotePlayerEntry(uuid, name, identity.instanceId(), effectiveDisplayName, false);
             }
+        }
+        com.deathmotion.totemguard.common.player.PlayerRepositoryImpl.ExemptPresence exempt =
+                platform.getPlayerRepository().exemptOnlinePresence().get(uuid);
+        if (exempt != null) {
+            return new RemotePlayerEntry(uuid, exempt.name(), identity.instanceId(), effectiveDisplayName, true);
         }
         return store.findByUuid(uuid);
     }
@@ -404,7 +424,14 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         for (TGPlayer local : platform.getPlayerRepository().getPlayers()) {
             if (name.equalsIgnoreCase(local.getName())) {
                 return new RemotePlayerEntry(local.getUuid(), local.getName(),
-                        identity.instanceId(), effectiveDisplayName);
+                        identity.instanceId(), effectiveDisplayName, false);
+            }
+        }
+        for (Map.Entry<UUID, com.deathmotion.totemguard.common.player.PlayerRepositoryImpl.ExemptPresence> entry
+                : platform.getPlayerRepository().exemptOnlinePresence().entrySet()) {
+            if (name.equalsIgnoreCase(entry.getValue().name())) {
+                return new RemotePlayerEntry(entry.getKey(), entry.getValue().name(),
+                        identity.instanceId(), effectiveDisplayName, true);
             }
         }
         return store.findByName(name);
@@ -466,7 +493,8 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (isLocal(payload.instanceId())) return;
         cancelPendingOffline(payload.playerUuid());
         notifyPlayerOnline(payload.playerUuid(), new RemotePlayerEntry(
-                payload.playerUuid(), payload.playerName(), payload.instanceId(), payload.serverName()));
+                payload.playerUuid(), payload.playerName(), payload.instanceId(),
+                payload.serverName(), payload.bypassed()));
     }
 
     public void acceptPlayerOffline(@NotNull SyncPlayerOfflinePacket.Payload payload) {
@@ -475,7 +503,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         platform.getScheduler().runAsyncTask(() -> {
             if (store.findByUuid(payload.playerUuid()) != null) return;
             notifyPlayerOffline(payload.playerUuid(), new RemotePlayerEntry(
-                    payload.playerUuid(), payload.playerName(), payload.instanceId(), ""));
+                    payload.playerUuid(), payload.playerName(), payload.instanceId(), "", false));
         });
     }
 
@@ -495,9 +523,18 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
                 if (playerName == null) continue;
                 UUID playerUuid = player.getUuid();
                 store.addPlayer(playerUuid, playerName, instanceId, displayName,
-                        player.getUser().getProfile());
+                        player.getUser().getProfile(), false);
                 platform.getRedisRepository().publish(joinPacket, new SyncPlayerJoinPacket.Payload(
-                        instanceId, displayName, playerUuid, playerName));
+                        instanceId, displayName, playerUuid, playerName, false));
+            }
+            for (Map.Entry<UUID, com.deathmotion.totemguard.common.player.PlayerRepositoryImpl.ExemptPresence> entry
+                    : platform.getPlayerRepository().exemptOnlinePresence().entrySet()) {
+                UUID playerUuid = entry.getKey();
+                String playerName = entry.getValue().name();
+                store.addPlayer(playerUuid, playerName, instanceId, displayName,
+                        entry.getValue().profile(), true);
+                platform.getRedisRepository().publish(joinPacket, new SyncPlayerJoinPacket.Payload(
+                        instanceId, displayName, playerUuid, playerName, true));
             }
             publishHeartbeat();
         });
@@ -512,16 +549,19 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     private void publishHeartbeat() {
         try {
             Set<UUID> ownedPlayers = new HashSet<>();
+            Set<UUID> trackedPlayers = new HashSet<>();
             for (TGPlayer player : platform.getPlayerRepository().getPlayers()) {
                 if (player.getName() == null) continue;
                 ownedPlayers.add(player.getUuid());
+                trackedPlayers.add(player.getUuid());
             }
+            ownedPlayers.addAll(platform.getPlayerRepository().exemptOnlinePresence().keySet());
             store.heartbeatHost(identity.instanceId(), effectiveDisplayName, ownedPlayers);
             if (platform.getSessionViolationStore() != null) {
-                platform.getSessionViolationStore().heartbeat(ownedPlayers);
+                platform.getSessionViolationStore().heartbeat(trackedPlayers);
             }
             if (platform.getModSessionStore() != null) {
-                platform.getModSessionStore().heartbeat(ownedPlayers);
+                platform.getModSessionStore().heartbeat(trackedPlayers);
             }
         } catch (Exception ex) {
             logger.log(Level.WARNING, "TotemGuard heartbeat failed", ex);
@@ -568,6 +608,10 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
             if (!redisEnabled) continue;
             platform.getRedisRepository().publish(serverOffline, new SyncServerOfflinePacket.Payload(iid, ""));
         }
+    }
+
+    public @NotNull Map<UUID, com.deathmotion.totemguard.common.player.PlayerRepositoryImpl.ExemptPresence> exemptOnlinePresence() {
+        return platform.getPlayerRepository().exemptOnlinePresence();
     }
 
     private void notifyPlayerOnline(UUID playerUuid, RemotePlayerEntry entry) {

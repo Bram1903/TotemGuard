@@ -107,6 +107,17 @@ public final class MonitorCommand extends AbstractCommand {
             return;
         }
 
+        if (local == null) {
+            RemotePlayerEntry presenceEntry = presence == null ? null : presence.findByUuid(targetUuid);
+            if (presenceEntry != null && presenceEntry.bypassed()) {
+                sender.sendMessage(messages.getComponent(
+                        MessagesKeys.MONITOR_TARGET_BYPASSED,
+                        Map.of("tg_player", targetName, "tg_server", presenceEntry.serverName())
+                ));
+                return;
+            }
+        }
+
         boolean crossServer = self == null || !self.instanceId().equals(targetServerInstanceId);
         TGMonitorOpenEvent event = platform.getEventRepository().post(
                 new TGMonitorOpenEventImpl(
