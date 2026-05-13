@@ -23,14 +23,15 @@ import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
 import com.deathmotion.totemguard.common.redis.RedisConnection;
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.deathmotion.totemguard.proxybridge.protocol.v1.BridgeProtocol;
 import io.lettuce.core.pubsub.RedisPubSubAdapter;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,9 +39,11 @@ public final class ProxyBridgeSubscriber extends RedisPubSubAdapter<byte[], byte
         implements ConnectionStateListener {
 
     private static final byte[] EVENTS_CHANNEL = BridgeProtocol.CHANNEL_EVENTS.getBytes(StandardCharsets.UTF_8);
+    private static final long LIVENESS_SWEEP_PERIOD_SECONDS = 45L;
 
     private final TGPlatform platform;
     private final Logger logger;
+    private volatile @Nullable ScheduledTask livenessTask;
 
     public ProxyBridgeSubscriber(TGPlatform platform) {
         this.platform = platform;
@@ -78,13 +81,42 @@ public final class ProxyBridgeSubscriber extends RedisPubSubAdapter<byte[], byte
                 logger.log(Level.WARNING, "Failed to subscribe to proxy events: " + error.getMessage());
             }
         });
-        bootstrapTopology(conn);
+        resolveLocalBinding(conn);
+        startLivenessSweep();
     }
 
     @Override
     public void onDisconnected() {
+        stopLivenessSweep();
         ProxyTopologyService topology = platform.getProxyTopologyService();
         if (topology != null) topology.clear();
+    }
+
+    private void startLivenessSweep() {
+        stopLivenessSweep();
+        this.livenessTask = platform.getScheduler().runAsyncTaskAtFixedRate(
+                this::sweepLocalBinding,
+                LIVENESS_SWEEP_PERIOD_SECONDS, LIVENESS_SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void stopLivenessSweep() {
+        ScheduledTask task = this.livenessTask;
+        this.livenessTask = null;
+        if (task != null) task.cancel();
+    }
+
+    private void sweepLocalBinding() {
+        ProxyTopologyService topology = platform.getProxyTopologyService();
+        if (topology == null) return;
+        UUID bound = topology.localProxyId();
+        if (bound == null) return;
+        RedisConnection conn = platform.getRedisRepository().connection();
+        if (conn == null || !conn.isOpen()) return;
+        byte[] key = BridgeProtocol.keyProxy(bound).getBytes(StandardCharsets.UTF_8);
+        conn.commands().async().exists(key).whenComplete((count, error) -> {
+            if (error != null || count == null) return;
+            if (count == 0L) topology.unbindIf(bound);
+        });
     }
 
     @Override
@@ -107,42 +139,20 @@ public final class ProxyBridgeSubscriber extends RedisPubSubAdapter<byte[], byte
         if (topology == null) return;
 
         switch (parts[0]) {
-            case BridgeProtocol.EV_PROXY_ONLINE -> {
-                if (parts.length < 4) return;
-                UUID proxyId = parseUuid(parts[1]);
-                if (proxyId == null) return;
-                topology.acceptProxy(proxyId, parts[2], parts[3], Set.of());
-            }
             case BridgeProtocol.EV_PROXY_OFFLINE -> {
                 if (parts.length < 2) return;
                 UUID proxyId = parseUuid(parts[1]);
                 if (proxyId == null) return;
-                topology.forgetProxy(proxyId);
-            }
-            case BridgeProtocol.EV_BACKEND_ADDED -> {
-                if (parts.length < 3) return;
-                UUID proxyId = parseUuid(parts[1]);
-                if (proxyId == null) return;
-                topology.addBackend(proxyId, parts[2]);
+                topology.unbindIf(proxyId);
             }
             case BridgeProtocol.EV_BACKEND_BOUND -> {
                 if (parts.length < 4) return;
                 UUID proxyId = parseUuid(parts[1]);
-                String slot = parts[2];
                 UUID instanceId = parseUuid(parts[3]);
                 if (proxyId == null || instanceId == null) return;
-                topology.recordSlotInstance(proxyId, slot, instanceId);
                 if (presence == null) return;
                 if (!instanceId.equals(presence.identity().instanceId())) return;
-                if (topology.localProxyId() == null) {
-                    topology.bindLocalProxy(proxyId);
-                }
-            }
-            case BridgeProtocol.EV_BACKEND_REMOVED -> {
-                if (parts.length < 3) return;
-                UUID proxyId = parseUuid(parts[1]);
-                if (proxyId == null) return;
-                topology.removeBackend(proxyId, parts[2]);
+                resolveProxyDisplayNameThenBind(proxyId);
             }
             case BridgeProtocol.EV_PLAYER_JOIN -> {
                 if (presence == null || parts.length < 3) return;
@@ -154,82 +164,53 @@ public final class ProxyBridgeSubscriber extends RedisPubSubAdapter<byte[], byte
                 if (presence == null || parts.length < 3) return;
                 UUID playerUuid = parseUuid(parts[2]);
                 if (playerUuid == null) return;
-                presence.onProxyPlayerSwitch(playerUuid);
+                UUID destination = parts.length >= 4 ? parseUuid(parts[3]) : null;
+                presence.onProxyPlayerSwitch(playerUuid, destination);
             }
-            case BridgeProtocol.EV_PLAYER_QUIT -> {
+            case BridgeProtocol.EV_PLAYER_DISCONNECT -> {
                 if (presence == null || parts.length < 3) return;
                 UUID playerUuid = parseUuid(parts[2]);
                 if (playerUuid == null) return;
-                presence.onProxyPlayerQuit(playerUuid);
+                presence.onProxyPlayerDisconnect(playerUuid);
+            }
+            case BridgeProtocol.EV_PLAYER_TRANSFER -> {
+                if (presence == null || parts.length < 3) return;
+                UUID playerUuid = parseUuid(parts[2]);
+                if (playerUuid == null) return;
+                presence.onProxyPlayerTransfer(playerUuid);
             }
             default -> {
             }
         }
     }
 
-    private void bootstrapTopology(RedisConnection conn) {
-        byte[] registryKey = BridgeProtocol.KEY_REGISTRY.getBytes(StandardCharsets.UTF_8);
-        conn.commands().async().smembers(registryKey).whenComplete((ids, error) -> {
-            if (error != null || ids == null) return;
-            for (byte[] raw : ids) {
-                String idStr = new String(raw, StandardCharsets.UTF_8);
-                UUID proxyId = parseUuid(idStr);
-                if (proxyId != null) loadProxy(conn, proxyId);
-            }
-        });
-    }
-
-    private void loadProxy(RedisConnection conn, UUID proxyId) {
-        byte[] proxyKey = BridgeProtocol.keyProxy(proxyId).getBytes(StandardCharsets.UTF_8);
-        byte[] backendsKey = BridgeProtocol.keyProxyBackends(proxyId).getBytes(StandardCharsets.UTF_8);
-        byte[] instancesKey = BridgeProtocol.keyProxyInstances(proxyId).getBytes(StandardCharsets.UTF_8);
-        byte[] registryKey = BridgeProtocol.KEY_REGISTRY.getBytes(StandardCharsets.UTF_8);
-        conn.commands().async().hgetall(proxyKey).whenComplete((hash, hashErr) -> {
-            if (hashErr != null) return;
-            if (hash == null || hash.isEmpty()) {
-                conn.commands().async().srem(registryKey, proxyId.toString().getBytes(StandardCharsets.UTF_8));
-                return;
-            }
-            String displayName = readString(hash, BridgeProtocol.HASH_DISPLAY_NAME);
-            String platformName = readString(hash, BridgeProtocol.HASH_PLATFORM);
-            conn.commands().async().smembers(backendsKey).whenComplete((backends, beErr) -> {
-                if (beErr != null) return;
-                Set<String> names = new LinkedHashSet<>();
-                if (backends != null) {
-                    for (byte[] b : backends) names.add(new String(b, StandardCharsets.UTF_8));
-                }
-                ProxyTopologyService topology = platform.getProxyTopologyService();
-                if (topology == null) return;
-                topology.acceptProxy(proxyId,
-                        displayName == null ? "" : displayName,
-                        platformName == null ? "" : platformName,
-                        "",
-                        names);
-                conn.commands().async().hgetall(instancesKey).whenComplete((instances, inErr) -> {
-                    if (inErr != null) return;
-                    checkLocalBindingByInstance(topology, proxyId, instances);
-                });
-            });
-        });
-    }
-
-    private void checkLocalBindingByInstance(ProxyTopologyService topology, UUID proxyId,
-                                             java.util.Map<byte[], byte[]> instances) {
-        if (instances == null || instances.isEmpty()) return;
+    private void resolveLocalBinding(RedisConnection conn) {
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
-        UUID self = presence == null ? null : presence.identity().instanceId();
-        for (java.util.Map.Entry<byte[], byte[]> entry : instances.entrySet()) {
-            String slot = new String(entry.getKey(), StandardCharsets.UTF_8);
-            UUID candidate;
-            try {
-                candidate = UUID.fromString(new String(entry.getValue(), StandardCharsets.UTF_8));
-            } catch (IllegalArgumentException ignored) {
-                continue;
-            }
-            topology.recordSlotInstance(proxyId, slot, candidate);
-            if (self != null && candidate.equals(self) && topology.localProxyId() == null) {
-                topology.bindLocalProxy(proxyId);
-            }
+        ProxyTopologyService topology = platform.getProxyTopologyService();
+        if (presence == null || topology == null) return;
+        UUID self = presence.identity().instanceId();
+        byte[] key = BridgeProtocol.keyInstanceProxy(self).getBytes(StandardCharsets.UTF_8);
+        conn.commands().async().get(key).whenComplete((value, error) -> {
+            if (error != null || value == null) return;
+            UUID proxyId = parseUuid(new String(value, StandardCharsets.UTF_8));
+            if (proxyId != null) resolveProxyDisplayNameThenBind(proxyId);
+        });
+    }
+
+    private void resolveProxyDisplayNameThenBind(UUID proxyId) {
+        ProxyTopologyService topology = platform.getProxyTopologyService();
+        if (topology == null) return;
+        RedisConnection conn = platform.getRedisRepository().connection();
+        if (conn == null || !conn.isOpen()) {
+            topology.bindLocalProxy(proxyId, null);
+            return;
         }
+        byte[] proxyKey = BridgeProtocol.keyProxy(proxyId).getBytes(StandardCharsets.UTF_8);
+        conn.commands().async().hgetall(proxyKey).whenComplete((hash, error) -> {
+            String displayName = (error == null && hash != null && !hash.isEmpty())
+                    ? readString(hash, BridgeProtocol.HASH_DISPLAY_NAME)
+                    : null;
+            topology.bindLocalProxy(proxyId, displayName);
+        });
     }
 }

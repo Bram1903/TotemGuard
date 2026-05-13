@@ -33,6 +33,7 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncServerOff
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,6 +53,8 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     private static final long PLACEHOLDER_RETRY_PERIOD_SECONDS = 10L;
     private static final int PLACEHOLDER_RETRY_MAX_ATTEMPTS = 30;
     private static final int SUGGEST_LIMIT = 50;
+    private static final long DISCONNECT_HINT_TTL_MILLIS = 5_000L;
+    private static final long TRANSFER_GRACE_MILLIS = 30_000L;
 
     private final TGPlatform platform;
     private final Logger logger;
@@ -59,9 +62,11 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     private final PresenceStore store;
     private final List<PresenceListener> listeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<String>> serverNameResolvedListeners = new CopyOnWriteArrayList<>();
-    private final ConcurrentHashMap<UUID, ScheduledTask> pendingOffline = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, PendingOffline> pendingOffline = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Long> disconnectHints = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean();
     private volatile String effectiveDisplayName;
+    @Getter
     private volatile boolean serverNameResolved;
     private @Nullable ScheduledTask heartbeatTask;
     private @Nullable ScheduledTask sweepTask;
@@ -78,23 +83,6 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         this.serverNameResolved = resolved.isPresent();
     }
 
-    /**
-     * Whether the {@code server} value from {@code config.yml} has been resolved against
-     * the placeholder engine to a concrete value. While this returns {@code false} we are
-     * displaying a {@code tg-<hex>} fallback, and consumers that persist the server name
-     * (e.g. the database's {@code tg_servers} table) should hold off until the listener
-     * registered via {@link #addServerNameResolvedListener} fires.
-     */
-    public boolean isServerNameResolved() {
-        return serverNameResolved;
-    }
-
-    /**
-     * Registers a callback fired when the configured server name resolves to a concrete
-     * value (or changes after a reload). Fires immediately if a resolved value is already
-     * available. Used by the database layer to defer {@code tg_servers} registration so a
-     * fallback name is never persisted.
-     */
     public void addServerNameResolvedListener(@NotNull Consumer<String> listener) {
         serverNameResolvedListeners.add(listener);
         if (serverNameResolved) {
@@ -234,10 +222,11 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         heartbeatTask = null;
         sweepTask = null;
 
-        for (ScheduledTask task : pendingOffline.values()) {
-            task.cancel();
+        for (PendingOffline pending : pendingOffline.values()) {
+            pending.task().cancel();
         }
         pendingOffline.clear();
+        disconnectHints.clear();
 
         Set<UUID> owned = new HashSet<>();
         for (TGPlayer player : platform.getPlayerRepository().getPlayers()) {
@@ -259,8 +248,10 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
 
     public void onLocalPlayerJoin(@NotNull UUID playerUuid, @NotNull String playerName, @Nullable UserProfile profile) {
         cancelPendingOffline(playerUuid);
+        disconnectHints.remove(playerUuid);
 
         String name = effectiveDisplayName;
+        notifyLocalPlayerJoin(playerUuid);
         notifyPlayerOnline(playerUuid, new RemotePlayerEntry(playerUuid, playerName, identity.instanceId(), name));
         platform.getScheduler().runAsyncTask(() -> {
             store.addPlayer(playerUuid, playerName, identity.instanceId(), name, profile);
@@ -279,11 +270,18 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     }
 
     public void onLocalPlayerQuit(@NotNull UUID playerUuid, @NotNull String playerName) {
+        notifyLocalPlayerQuit(playerUuid);
+
         RemotePlayerEntry lastKnown = new RemotePlayerEntry(
                 playerUuid, playerName, identity.instanceId(), effectiveDisplayName);
 
         if (!platform.getRedisRepository().isConnected()) {
             notifyPlayerOffline(playerUuid, lastKnown);
+            return;
+        }
+
+        if (consumeFreshDisconnectHint(playerUuid)) {
+            platform.getScheduler().runAsyncTask(() -> finalizeOffline(playerUuid, playerName, lastKnown));
             return;
         }
 
@@ -293,14 +291,25 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
             return;
         }
 
+        schedulePendingOffline(playerUuid, playerName, lastKnown, graceMillis);
+    }
+
+    private void schedulePendingOffline(UUID playerUuid, String playerName,
+                                        RemotePlayerEntry lastKnown, long graceMillis) {
         ScheduledTask task = platform.getScheduler().runAsyncTaskDelayed(
                 () -> {
                     pendingOffline.remove(playerUuid);
                     finalizeOffline(playerUuid, playerName, lastKnown);
                 },
                 graceMillis, TimeUnit.MILLISECONDS);
-        ScheduledTask previous = pendingOffline.put(playerUuid, task);
-        if (previous != null) previous.cancel();
+        PendingOffline previous = pendingOffline.put(playerUuid,
+                new PendingOffline(task, playerName, lastKnown));
+        if (previous != null) previous.task().cancel();
+    }
+
+    private boolean consumeFreshDisconnectHint(UUID playerUuid) {
+        Long hintAt = disconnectHints.remove(playerUuid);
+        return hintAt != null && (System.currentTimeMillis() - hintAt) <= DISCONNECT_HINT_TTL_MILLIS;
     }
 
     private void finalizeOffline(UUID playerUuid, String playerName, RemotePlayerEntry lastKnown) {
@@ -318,25 +327,56 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     }
 
     private void cancelPendingOffline(UUID playerUuid) {
-        ScheduledTask task = pendingOffline.remove(playerUuid);
-        if (task != null) task.cancel();
+        PendingOffline pending = pendingOffline.remove(playerUuid);
+        if (pending != null) pending.task().cancel();
+    }
+
+    private @Nullable PendingOffline takePendingOffline(UUID playerUuid) {
+        PendingOffline pending = pendingOffline.remove(playerUuid);
+        if (pending != null) pending.task().cancel();
+        return pending;
     }
 
     public void onProxyPlayerJoin(@NotNull UUID playerUuid) {
         cancelPendingOffline(playerUuid);
+        disconnectHints.remove(playerUuid);
     }
 
-    public void onProxyPlayerSwitch(@NotNull UUID playerUuid) {
-        cancelPendingOffline(playerUuid);
+    public void onProxyPlayerSwitch(@NotNull UUID playerUuid, @Nullable UUID destinationInstance) {
+        extendPendingForTransfer(playerUuid);
+        if (destinationInstance != null) notifyPlayerServerSwitch(playerUuid, destinationInstance);
     }
 
-    public void onProxyPlayerQuit(@NotNull UUID playerUuid) {
-        cancelPendingOffline(playerUuid);
+    public void onProxyPlayerDisconnect(@NotNull UUID playerUuid) {
+        PendingOffline pending = takePendingOffline(playerUuid);
+        if (pending != null) {
+            platform.getScheduler().runAsyncTask(() ->
+                    finalizeOffline(playerUuid, pending.playerName(), pending.lastKnown()));
+            return;
+        }
         TGPlayer cached = platform.getPlayerRepository().getPlayer(playerUuid);
-        String name = cached != null ? cached.getName() : playerUuid.toString();
-        RemotePlayerEntry lastKnown = new RemotePlayerEntry(
-                playerUuid, name, identity.instanceId(), effectiveDisplayName);
-        platform.getScheduler().runAsyncTask(() -> finalizeOffline(playerUuid, name, lastKnown));
+        if (cached != null && cached.getName() != null) {
+            String name = cached.getName();
+            RemotePlayerEntry lastKnown = new RemotePlayerEntry(
+                    playerUuid, name, identity.instanceId(), effectiveDisplayName);
+            disconnectHints.put(playerUuid, System.currentTimeMillis());
+            platform.getScheduler().runAsyncTask(() -> finalizeOffline(playerUuid, name, lastKnown));
+            return;
+        }
+        disconnectHints.put(playerUuid, System.currentTimeMillis());
+    }
+
+    public void onProxyPlayerTransfer(@NotNull UUID playerUuid) {
+        disconnectHints.remove(playerUuid);
+        extendPendingForTransfer(playerUuid);
+    }
+
+    private void extendPendingForTransfer(UUID playerUuid) {
+        PendingOffline existing = pendingOffline.remove(playerUuid);
+        if (existing == null) return;
+        existing.task().cancel();
+        schedulePendingOffline(playerUuid, existing.playerName(), existing.lastKnown(),
+                TRANSFER_GRACE_MILLIS);
     }
 
     private long offlineGraceMillis() {
@@ -550,6 +590,36 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         }
     }
 
+    private void notifyLocalPlayerJoin(UUID playerUuid) {
+        for (PresenceListener listener : listeners) {
+            try {
+                listener.onLocalPlayerJoin(playerUuid);
+            } catch (Exception ex) {
+                logger.log(Level.WARNING, "Presence listener threw on local join", ex);
+            }
+        }
+    }
+
+    private void notifyLocalPlayerQuit(UUID playerUuid) {
+        for (PresenceListener listener : listeners) {
+            try {
+                listener.onLocalPlayerQuit(playerUuid);
+            } catch (Exception ex) {
+                logger.log(Level.WARNING, "Presence listener threw on local quit", ex);
+            }
+        }
+    }
+
+    private void notifyPlayerServerSwitch(UUID playerUuid, UUID destinationInstance) {
+        for (PresenceListener listener : listeners) {
+            try {
+                listener.onPlayerServerSwitch(playerUuid, destinationInstance);
+            } catch (Exception ex) {
+                logger.log(Level.WARNING, "Presence listener threw on server switch", ex);
+            }
+        }
+    }
+
     private void notifyServerOffline(UUID instanceId) {
         for (PresenceListener listener : listeners) {
             try {
@@ -571,5 +641,8 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
             }
         }
         return out;
+    }
+
+    private record PendingOffline(ScheduledTask task, String playerName, RemotePlayerEntry lastKnown) {
     }
 }

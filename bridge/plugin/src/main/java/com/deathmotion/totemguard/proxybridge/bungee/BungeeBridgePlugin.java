@@ -142,13 +142,16 @@ public final class BungeeBridgePlugin extends Plugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSwitch(ServerSwitchEvent event) {
         if (core == null) return;
-        core.onPlayerSwitch(event.getPlayer().getUniqueId());
+        String destinationSlot = event.getPlayer().getServer() == null
+                ? null
+                : event.getPlayer().getServer().getInfo().getName();
+        core.onPlayerSwitch(event.getPlayer().getUniqueId(), destinationSlot);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onQuit(PlayerDisconnectEvent event) {
         if (core == null) return;
-        core.onPlayerQuit(event.getPlayer().getUniqueId());
+        core.onPlayerDisconnect(event.getPlayer().getUniqueId());
     }
 
     private final class BungeeBridgePlatformImpl implements BridgePlatform {

@@ -26,6 +26,7 @@ import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
+import com.velocitypowered.api.event.connection.PreTransferEvent;
 import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyReloadEvent;
@@ -39,6 +40,7 @@ import org.jspecify.annotations.NonNull;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -48,6 +50,8 @@ public final class VelocityBridgePlugin {
     private final ProxyServer server;
     private final Logger logger;
     private final Path dataFolder;
+
+    private final Set<UUID> transferringPlayers = ConcurrentHashMap.newKeySet();
 
     private volatile ProxyBridgeCore core;
     private volatile boolean integrityVerified;
@@ -155,20 +159,36 @@ public final class VelocityBridgePlugin {
 
     @Subscribe
     public void onLogin(PostLoginEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        transferringPlayers.remove(uuid);
         if (core == null) return;
-        core.onPlayerJoin(event.getPlayer().getUniqueId());
+        core.onPlayerJoin(uuid);
     }
 
     @Subscribe
     public void onSwitch(ServerPostConnectEvent event) {
         if (core == null) return;
-        core.onPlayerSwitch(event.getPlayer().getUniqueId());
+        String destinationSlot = event.getPlayer().getCurrentServer()
+                .map(c -> c.getServerInfo().getName())
+                .orElse(null);
+        core.onPlayerSwitch(event.getPlayer().getUniqueId(), destinationSlot);
     }
 
     @Subscribe
-    public void onQuit(DisconnectEvent event) {
+    public void onTransfer(PreTransferEvent event) {
+        transferringPlayers.add(event.player().getUniqueId());
+    }
+
+    @Subscribe
+    public void onDisconnect(DisconnectEvent event) {
         if (core == null) return;
-        core.onPlayerQuit(event.getPlayer().getUniqueId());
+        UUID uuid = event.getPlayer().getUniqueId();
+        boolean transferred = transferringPlayers.remove(uuid);
+        if (transferred) {
+            core.onPlayerTransfer(uuid);
+        } else {
+            core.onPlayerDisconnect(uuid);
+        }
     }
 
     private final class VelocityBridgePlatformImpl implements BridgePlatform {

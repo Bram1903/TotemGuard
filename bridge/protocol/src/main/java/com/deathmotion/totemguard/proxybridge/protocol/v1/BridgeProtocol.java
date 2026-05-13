@@ -31,8 +31,11 @@ public final class BridgeProtocol {
 
     public static final String KEY_REGISTRY = "totemguard:proxy:registry";
     public static final String KEY_PROXY_PREFIX = "totemguard:proxy:";
+    public static final String KEY_INSTANCE_PREFIX = "totemguard:instance:";
     public static final String SUFFIX_BACKENDS = ":backends";
     public static final String SUFFIX_INSTANCES = ":instances";
+    public static final String SUFFIX_INSTANCE_SET = ":instance-set";
+    public static final String SUFFIX_INSTANCE_PROXY = ":proxy";
 
     public static final String CHANNEL_EVENTS = "totemguard:proxy:events";
     public static final String CHANNEL_RPC = "totemguard:proxy:rpc";
@@ -44,7 +47,8 @@ public final class BridgeProtocol {
     public static final String EV_BACKEND_REMOVED = "backend_removed";
     public static final String EV_PLAYER_JOIN = "player_join";
     public static final String EV_PLAYER_SWITCH = "player_switch";
-    public static final String EV_PLAYER_QUIT = "player_quit";
+    public static final String EV_PLAYER_DISCONNECT = "player_disconnect";
+    public static final String EV_PLAYER_TRANSFER = "player_transfer";
     public static final String EV_BACKEND_HELLO = "backend_hello";
     public static final String EV_BACKEND_GOODBYE = "backend_goodbye";
     public static final String EV_BACKEND_BOUND = "backend_bound";
@@ -85,5 +89,13 @@ public final class BridgeProtocol {
 
     public static @NotNull String keyProxyInstances(@NotNull UUID proxyId) {
         return KEY_PROXY_PREFIX + proxyId + SUFFIX_INSTANCES;
+    }
+
+    public static @NotNull String keyProxyInstanceSet(@NotNull UUID proxyId) {
+        return KEY_PROXY_PREFIX + proxyId + SUFFIX_INSTANCE_SET;
+    }
+
+    public static @NotNull String keyInstanceProxy(@NotNull UUID instanceId) {
+        return KEY_INSTANCE_PREFIX + instanceId + SUFFIX_INSTANCE_PROXY;
     }
 }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.network.follow;
+package com.deathmotion.totemguard.common.features.follow;
 
 import com.deathmotion.totemguard.api.config.key.ConfigKey;
 import com.deathmotion.totemguard.common.TGPlatform;
@@ -50,33 +50,57 @@ public final class FollowRepository implements PresenceListener {
 
     private static final long TICK_PERIOD_MILLIS = 100L;
     private static final long REQUEST_TTL_MILLIS = 30_000L;
+    private static final long STALE_SWEEP_PERIOD_SECONDS = 120L;
     private static final double TELEPORT_DELTA_THRESHOLD_SQ = 8.0 * 8.0;
 
     private final TGPlatform platform;
     private final Logger logger;
+    private final FollowStore store;
 
     private final ConcurrentHashMap<UUID, FollowState> myFollowers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, double[]> lastBroadcastPos = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean();
     private @Nullable ScheduledTask tickTask;
+    private @Nullable ScheduledTask staleSweepTask;
 
     public FollowRepository(@NotNull TGPlatform platform) {
         this.platform = platform;
         this.logger = platform.getLogger();
+        this.store = new FollowStore(platform.getRedisRepository(), this.logger);
     }
 
     public void start() {
         if (!started.compareAndSet(false, true)) return;
         tickTask = platform.getScheduler().runAsyncTaskAtFixedRate(
                 this::tick, TICK_PERIOD_MILLIS, TICK_PERIOD_MILLIS, TimeUnit.MILLISECONDS);
+        staleSweepTask = platform.getScheduler().runAsyncTaskAtFixedRate(
+                this::sweepStaleFollows,
+                STALE_SWEEP_PERIOD_SECONDS, STALE_SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
     public void stop() {
         if (!started.compareAndSet(true, false)) return;
         if (tickTask != null) tickTask.cancel();
         tickTask = null;
+        if (staleSweepTask != null) staleSweepTask.cancel();
+        staleSweepTask = null;
         myFollowers.clear();
         lastBroadcastPos.clear();
+    }
+
+    private void sweepStaleFollows() {
+        if (!platform.getRedisRepository().isConnected()) return;
+        NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+        if (presence == null) return;
+        try {
+            Map<UUID, FollowState> all = store.loadAll();
+            for (UUID follower : all.keySet()) {
+                if (presence.findByUuid(follower) != null) continue;
+                store.remove(follower);
+            }
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Stale follow sweep failed", ex);
+        }
     }
 
     public @Nullable FollowState get(@NotNull UUID followerUuid) {
@@ -89,10 +113,13 @@ public final class FollowRepository implements PresenceListener {
 
     public void beginFollow(@NotNull FollowState state) {
         myFollowers.put(state.followerUuid(), state);
+        store.save(state);
     }
 
     public boolean endFollow(@NotNull UUID followerUuid) {
-        return myFollowers.remove(followerUuid) != null;
+        boolean hadLocal = myFollowers.remove(followerUuid) != null;
+        store.remove(followerUuid);
+        return hadLocal;
     }
 
     public void acceptRemote(@NotNull SyncFollowEventPacket.Payload payload) {
@@ -103,7 +130,10 @@ public final class FollowRepository implements PresenceListener {
             if (serverSwitch && !fireServerSwitchEvent(state, payload.targetServerInstance(), payload.targetServerName())) {
                 continue;
             }
-            state.rebindTarget(payload.targetServerInstance(), payload.targetServerName());
+            if (serverSwitch) {
+                state.rebindTarget(payload.targetServerInstance(), payload.targetServerName());
+                store.save(state);
+            }
             applyTeleport(state, payload);
         }
     }
@@ -122,6 +152,7 @@ public final class FollowRepository implements PresenceListener {
         );
         if (event.isCancelled()) {
             if (myFollowers.remove(state.followerUuid(), state)) {
+                store.remove(state.followerUuid());
                 sendFollowerMessage(state, MessagesKeys.FOLLOW_DISABLED, Map.of());
             }
             return false;
@@ -168,6 +199,7 @@ public final class FollowRepository implements PresenceListener {
 
     private void dropForUnreachableTarget(@NotNull FollowState state) {
         if (myFollowers.remove(state.followerUuid(), state)) {
+            store.remove(state.followerUuid());
             sendFollowerMessage(state, MessagesKeys.FOLLOW_DIFFERENT_PROXY,
                     Map.of("tg_player", state.targetName(), "tg_server", state.targetServerName()));
         }
@@ -262,7 +294,21 @@ public final class FollowRepository implements PresenceListener {
             if (!state.targetUuid().equals(playerUuid)) continue;
             if (state.targetServerInstance().equals(entry.serverInstanceId())) continue;
             state.rebindTarget(entry.serverInstanceId(), entry.serverName());
+            store.save(state);
             rerouteAfterServerSwitch(state, entry);
+        }
+    }
+
+    @Override
+    public void onPlayerServerSwitch(UUID playerUuid, UUID destinationInstance) {
+        for (FollowState state : myFollowers.values()) {
+            if (!state.targetUuid().equals(playerUuid)) continue;
+            if (state.targetServerInstance().equals(destinationInstance)) continue;
+            state.rebindTarget(destinationInstance, state.targetServerName());
+            store.save(state);
+            NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
+            if (presence != null && presence.isLocal(destinationInstance)) continue;
+            routeCrossServer(state, destinationInstance, state.targetServerName());
         }
     }
 
@@ -290,10 +336,12 @@ public final class FollowRepository implements PresenceListener {
     public void onPlayerOffline(UUID playerUuid, RemotePlayerEntry lastKnown) {
         myFollowers.remove(playerUuid);
         lastBroadcastPos.remove(playerUuid);
+        store.remove(playerUuid);
 
         for (FollowState state : myFollowers.values()) {
             if (!state.targetUuid().equals(playerUuid)) continue;
             if (myFollowers.remove(state.followerUuid(), state)) {
+                store.remove(state.followerUuid());
                 sendFollowerMessage(state, MessagesKeys.FOLLOW_TARGET_OFFLINE,
                         Map.of("tg_player", state.targetName()));
             }
@@ -305,10 +353,28 @@ public final class FollowRepository implements PresenceListener {
         for (FollowState state : myFollowers.values()) {
             if (!state.targetServerInstance().equals(instanceId)) continue;
             if (myFollowers.remove(state.followerUuid(), state)) {
+                store.remove(state.followerUuid());
                 sendFollowerMessage(state, MessagesKeys.FOLLOW_TARGET_OFFLINE,
                         Map.of("tg_player", state.targetName()));
             }
         }
+    }
+
+    @Override
+    public void onLocalPlayerJoin(UUID playerUuid) {
+        if (myFollowers.containsKey(playerUuid)) return;
+        platform.getScheduler().runAsyncTask(() -> {
+            if (myFollowers.containsKey(playerUuid)) return;
+            FollowState state = store.load(playerUuid);
+            if (state == null) return;
+            myFollowers.putIfAbsent(playerUuid, state);
+        });
+    }
+
+    @Override
+    public void onLocalPlayerQuit(UUID playerUuid) {
+        myFollowers.remove(playerUuid);
+        lastBroadcastPos.remove(playerUuid);
     }
 
     private void sendFollowerMessage(@NotNull FollowState state,

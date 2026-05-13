@@ -46,12 +46,25 @@ public final class PresencePublisher {
         publish(BridgeProtocol.EV_PLAYER_JOIN, playerUuid);
     }
 
-    public void onSwitch(@NotNull UUID playerUuid) {
-        publish(BridgeProtocol.EV_PLAYER_SWITCH, playerUuid);
+    public void onSwitch(@NotNull UUID playerUuid, @org.jetbrains.annotations.Nullable UUID destinationInstance) {
+        StatefulRedisConnection<String, String> conn = redis.connection();
+        if (conn == null) return;
+        try {
+            String destination = destinationInstance == null ? "" : destinationInstance.toString();
+            conn.async().publish(BridgeProtocol.CHANNEL_EVENTS,
+                    BridgeProtocol.encode(BridgeProtocol.EV_PLAYER_SWITCH,
+                            identity.id().toString(), playerUuid.toString(), destination));
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, BridgeProtocol.EV_PLAYER_SWITCH + " publish failed: " + ex.getMessage());
+        }
     }
 
-    public void onQuit(@NotNull UUID playerUuid) {
-        publish(BridgeProtocol.EV_PLAYER_QUIT, playerUuid);
+    public void onDisconnect(@NotNull UUID playerUuid) {
+        publish(BridgeProtocol.EV_PLAYER_DISCONNECT, playerUuid);
+    }
+
+    public void onTransfer(@NotNull UUID playerUuid) {
+        publish(BridgeProtocol.EV_PLAYER_TRANSFER, playerUuid);
     }
 
     private void publish(@NotNull String type, @NotNull UUID playerUuid) {

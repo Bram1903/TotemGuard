@@ -119,11 +119,16 @@ public final class ProxyBridgeCore {
         presence.onJoin(playerUuid);
     }
 
-    public void onPlayerSwitch(@NotNull UUID playerUuid) {
-        presence.onSwitch(playerUuid);
+    public void onPlayerSwitch(@NotNull UUID playerUuid, @org.jetbrains.annotations.Nullable String destinationSlot) {
+        UUID destinationInstance = destinationSlot == null ? null : backendDirectory.instanceForSlot(destinationSlot);
+        presence.onSwitch(playerUuid, destinationInstance);
     }
 
-    public void onPlayerQuit(@NotNull UUID playerUuid) {
-        presence.onQuit(playerUuid);
+    public void onPlayerDisconnect(@NotNull UUID playerUuid) {
+        presence.onDisconnect(playerUuid);
+    }
+
+    public void onPlayerTransfer(@NotNull UUID playerUuid) {
+        presence.onTransfer(playerUuid);
     }
 }

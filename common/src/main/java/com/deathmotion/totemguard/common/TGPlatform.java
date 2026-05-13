@@ -34,6 +34,7 @@ import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.features.check.CheckService;
 import com.deathmotion.totemguard.common.features.discord.DiscordWebhookService;
+import com.deathmotion.totemguard.common.features.follow.FollowRepository;
 import com.deathmotion.totemguard.common.features.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.features.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.features.mods.*;
@@ -51,7 +52,6 @@ import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.network.ServerIdentity;
 import com.deathmotion.totemguard.common.network.bridge.BackendAnnouncer;
 import com.deathmotion.totemguard.common.network.bridge.ProxyBridgeSubscriber;
-import com.deathmotion.totemguard.common.network.follow.FollowRepository;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
@@ -186,7 +186,7 @@ public abstract class TGPlatform {
         guiManager = new GuiManager();
         historyRepository = new HistoryRepositoryImpl();
         statsRepository = new StatsRepositoryImpl();
-        checkService = new com.deathmotion.totemguard.common.features.check.CheckService();
+        checkService = new CheckService();
         sessionViolationStore = new SessionViolationStore(redisRepository, logger);
         modSessionStore = new ModSessionStore(redisRepository, logger);
         teleportService = new TeleportService(this);
@@ -286,12 +286,6 @@ public abstract class TGPlatform {
 
     public abstract void dispatchCommand(String command);
 
-    /**
-     * Resolves the given player UUID to a {@link Sender} for command execution as that player.
-     * Returns {@code null} if no player with that UUID is currently online on this server.
-     * Used by features (e.g. GUI teleport buttons) that need to execute commands on behalf of
-     * the viewer rather than the console.
-     */
     public abstract @Nullable Sender createSender(@NotNull UUID playerUuid);
 
     public abstract CommandManager<Sender> getCommandManager();

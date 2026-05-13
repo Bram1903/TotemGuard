@@ -38,6 +38,8 @@ import java.util.logging.Logger;
 public final class BackendDirectory {
 
     private static final long BACKEND_TTL_MILLIS = 90_000L;
+    private static final long DNS_CACHE_TTL_MILLIS = 60_000L;
+    private static final long DNS_NEGATIVE_CACHE_TTL_MILLIS = 10_000L;
 
     private final BridgeRedis redis;
     private final BridgePlatform platform;
@@ -46,6 +48,7 @@ public final class BackendDirectory {
     private final Listener listener = new Listener();
     private final ConcurrentHashMap<UUID, KnownBackend> knownBackends = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, UUID> slotToInstance = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, DnsEntry> dnsCache = new ConcurrentHashMap<>();
 
     public BackendDirectory(@NotNull BridgeRedis redis,
                             @NotNull BridgePlatform platform,
@@ -54,18 +57,6 @@ public final class BackendDirectory {
         this.platform = platform;
         this.identity = identity;
         this.logger = platform.logger();
-    }
-
-    private static Set<InetAddress> resolve(String host) {
-        if (host == null || host.isEmpty()) return Collections.emptySet();
-        try {
-            InetAddress[] addrs = InetAddress.getAllByName(host);
-            Set<InetAddress> out = new LinkedHashSet<>(addrs.length);
-            Collections.addAll(out, addrs);
-            return out;
-        } catch (UnknownHostException ex) {
-            return Collections.emptySet();
-        }
     }
 
     private static Set<String> parseAddresses(String packed) {
@@ -77,6 +68,24 @@ public final class BackendDirectory {
             if (!trimmed.isEmpty()) out.add(trimmed);
         }
         return out;
+    }
+
+    private Set<InetAddress> resolve(String host) {
+        if (host == null || host.isEmpty()) return Collections.emptySet();
+        long now = System.currentTimeMillis();
+        DnsEntry cached = dnsCache.get(host);
+        if (cached != null && cached.expiresAtMillis > now) return cached.addresses;
+        Set<InetAddress> resolved;
+        try {
+            InetAddress[] addrs = InetAddress.getAllByName(host);
+            resolved = new LinkedHashSet<>(addrs.length);
+            Collections.addAll(resolved, addrs);
+        } catch (UnknownHostException ex) {
+            dnsCache.put(host, new DnsEntry(Collections.emptySet(), now + DNS_NEGATIVE_CACHE_TTL_MILLIS));
+            return Collections.emptySet();
+        }
+        dnsCache.put(host, new DnsEntry(resolved, now + DNS_CACHE_TTL_MILLIS));
+        return resolved;
     }
 
     public void start() {
@@ -120,7 +129,9 @@ public final class BackendDirectory {
 
         for (String slot : Set.copyOf(slotToInstance.keySet())) {
             if (!slots.containsKey(slot)) {
-                if (slotToInstance.remove(slot) != null) {
+                UUID removed = slotToInstance.remove(slot);
+                if (removed != null) {
+                    publishUnbound(removed);
                     logger.info("Disconnected slot \"" + slot + "\" (removed from proxy config).");
                 }
             }
@@ -128,6 +139,7 @@ public final class BackendDirectory {
         for (Map.Entry<String, UUID> entry : Map.copyOf(slotToInstance).entrySet()) {
             if (!knownBackends.containsKey(entry.getValue())) {
                 slotToInstance.remove(entry.getKey());
+                publishUnbound(entry.getValue());
                 logger.info("Disconnected slot \"" + entry.getKey() + "\" (backend offline).");
             }
         }
@@ -140,6 +152,10 @@ public final class BackendDirectory {
             logger.info("Connected slot \"" + slot.getKey() + "\".");
             publishBound(slot.getKey(), matched);
         }
+    }
+
+    public @org.jetbrains.annotations.Nullable UUID instanceForSlot(@NotNull String slot) {
+        return slotToInstance.get(slot);
     }
 
     private @org.jetbrains.annotations.Nullable UUID findMatchingBackend(InetSocketAddress slot) {
@@ -163,11 +179,28 @@ public final class BackendDirectory {
         try {
             StatefulRedisConnection<String, String> conn = redis.connection();
             if (conn == null) return;
+            String proxyIdStr = identity.id().toString();
+            conn.async().sadd(BridgeProtocol.keyProxyInstanceSet(identity.id()), instanceId.toString());
+            conn.async().expire(BridgeProtocol.keyProxyInstanceSet(identity.id()),
+                    ProxyStatePublisher.STATE_TTL_SECONDS);
+            conn.async().set(BridgeProtocol.keyInstanceProxy(instanceId), proxyIdStr,
+                    io.lettuce.core.SetArgs.Builder.ex(ProxyStatePublisher.STATE_TTL_SECONDS));
             conn.async().publish(BridgeProtocol.CHANNEL_EVENTS,
                     BridgeProtocol.encode(BridgeProtocol.EV_BACKEND_BOUND,
-                            identity.id().toString(), slot, instanceId.toString()));
+                            proxyIdStr, slot, instanceId.toString()));
         } catch (Exception ex) {
             logger.log(Level.WARNING, "Failed to publish backend_bound: " + ex.getMessage());
+        }
+    }
+
+    private void publishUnbound(UUID instanceId) {
+        try {
+            StatefulRedisConnection<String, String> conn = redis.connection();
+            if (conn == null) return;
+            conn.async().srem(BridgeProtocol.keyProxyInstanceSet(identity.id()), instanceId.toString());
+            conn.async().del(BridgeProtocol.keyInstanceProxy(instanceId));
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to publish backend unbind: " + ex.getMessage());
         }
     }
 
@@ -182,6 +215,9 @@ public final class BackendDirectory {
     }
 
     private record KnownBackend(String displayName, int port, Set<String> addresses, long lastSeenMillis) {
+    }
+
+    private record DnsEntry(Set<InetAddress> addresses, long expiresAtMillis) {
     }
 
     private final class Listener extends RedisPubSubAdapter<String, String> {

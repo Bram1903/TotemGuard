@@ -29,4 +29,13 @@ public interface PresenceListener {
 
     default void onServerOffline(UUID instanceId) {
     }
+
+    default void onLocalPlayerJoin(UUID playerUuid) {
+    }
+
+    default void onLocalPlayerQuit(UUID playerUuid) {
+    }
+
+    default void onPlayerServerSwitch(UUID playerUuid, UUID destinationInstance) {
+    }
 }

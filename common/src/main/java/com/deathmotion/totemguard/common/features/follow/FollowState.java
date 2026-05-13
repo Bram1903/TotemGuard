@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.network.follow;
+package com.deathmotion.totemguard.common.features.follow;
 
 import org.jetbrains.annotations.NotNull;
 

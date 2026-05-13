@@ -5,7 +5,8 @@ plugins {
 }
 
 version = "1.0.0" + if (rootProject.extra["snapshot"] as Boolean) "-SNAPSHOT" else ""
-description = "Optional proxy-side bridge that improves TotemGuard's player-presence accuracy and powers same-proxy /tg teleport."
+description =
+    "Optional proxy-side bridge that improves TotemGuard's player-presence accuracy and powers same-proxy /tg teleport."
 
 tasks.shadowJar {
     archiveFileName.set("TotemGuard-Bridge-${project.version}.jar")
