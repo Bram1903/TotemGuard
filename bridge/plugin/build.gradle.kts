@@ -1,6 +1,7 @@
 plugins {
     id("totemguard.java-conventions")
     id("totemguard.proxy-shadow-conventions")
+    alias(libs.plugins.run.velocity)
 }
 
 version = "1.0.0" + if (rootProject.extra["snapshot"] as Boolean) "-SNAPSHOT" else ""
@@ -19,4 +20,11 @@ dependencies {
 
     compileOnly(libs.velocity)
     compileOnly(libs.bungeecord)
+}
+
+tasks {
+    runVelocity {
+        velocityVersion("3.5.0-SNAPSHOT")
+        runDirectory = rootDir.resolve("run/velocity/")
+    }
 }
