@@ -27,7 +27,6 @@ tasks.withType<ShadowJar>().configureEach {
     relocate("reactor", "$libsPrefix.reactor")
 
     mergeServiceFiles()
-
     minimize()
 
     doLast {
