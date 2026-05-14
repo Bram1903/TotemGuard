@@ -66,7 +66,7 @@ public final class PlayerSessionModsScreen extends GuiScreen {
 
     private static TextColor severityColor(ModSeverity severity) {
         return switch (severity) {
-            case LOG -> Palette.LABEL;
+            case LOG -> Palette.VALUE;
             case KICK, KICK_THEN_BAN -> Palette.WARN;
             case BAN -> Palette.DANGER;
         };
@@ -174,7 +174,7 @@ public final class PlayerSessionModsScreen extends GuiScreen {
 
         return GuiItems.simple(
                 severityItem(mod.severity()),
-                Component.text(mod.id(), severityColor(mod.severity())),
+                Component.text(mod.id(), Palette.SUCCESS),
                 lore
         );
     }

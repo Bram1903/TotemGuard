@@ -294,7 +294,7 @@ gui:
   # /tg top
   top:
     title: "&#6E6651&lTotemGuard · Top Violators"
-    title-filtered: "&#6E6651&lTotemGuard · Top [%tg_check%]"
+    title-filtered: "&#6E6651&lTop Violators · %tg_check%"
     local-only-title: "&#E68A2ELocal server only"
     local-only-lore-1: "&#B8AC8FRedis isn't connected. Showing violators"
     local-only-lore-2: "&#B8AC8Ffrom this server only."
@@ -323,7 +323,7 @@ gui:
       server-label: "Server"
       session-label: "Session"
       filter-vl-label: "%tg_check% VL"
-      total-vl-label: "Total VL across all checks"
+      total-vl-label: "Total VL"
       top-checks-label: "&#E7DEC4Top checks"
       top-checks-entry: "&#B8AC8F  %tg_check% · VL %tg_check_vl%"
       top-checks-overflow: "&#6E6651  + %tg_hidden% more check(s)"
