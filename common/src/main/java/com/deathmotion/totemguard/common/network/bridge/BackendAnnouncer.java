@@ -87,8 +87,7 @@ public final class BackendAnnouncer implements ConnectionStateListener {
     }
 
     public void stop() {
-        cancelHeartbeat();
-        publishGoodbyeBlocking();
+        announceClusterLeaving();
     }
 
     public void announceClusterLeaving() {
