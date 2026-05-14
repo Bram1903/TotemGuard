@@ -33,7 +33,6 @@ public final class ProxyTopologyService {
     private final TGPlatform platform;
     private volatile @Nullable UUID localProxyId;
     private volatile @Nullable String localProxyDisplayName;
-
     public ProxyTopologyService(@NotNull TGPlatform platform) {
         this.platform = platform;
     }
@@ -50,19 +49,26 @@ public final class ProxyTopologyService {
         return localProxyId != null;
     }
 
-    public boolean canRouteToInstance(@NotNull UUID targetInstanceId) {
+    public @NotNull RouteStatus checkRoute(@NotNull UUID targetInstanceId) {
         UUID proxy = localProxyId;
-        if (proxy == null) return false;
+        if (proxy == null) return RouteStatus.UNKNOWN;
         RedisConnection conn = platform.getRedisRepository().connection();
-        if (conn == null || !conn.isOpen()) return false;
+        if (conn == null || !conn.isOpen()) return RouteStatus.UNKNOWN;
         try {
             RedisCommands<byte[], byte[]> sync = conn.commands().sync();
+            byte[] proxyValue = sync.get(
+                    BridgeProtocol.keyInstanceProxy(targetInstanceId).getBytes(StandardCharsets.UTF_8));
+            if (proxyValue != null) {
+                UUID targetProxy = UUID.fromString(new String(proxyValue, StandardCharsets.UTF_8));
+                return targetProxy.equals(proxy) ? RouteStatus.ROUTABLE : RouteStatus.NOT_ROUTABLE;
+            }
             Boolean member = sync.sismember(
                     BridgeProtocol.keyProxyInstanceSet(proxy).getBytes(StandardCharsets.UTF_8),
                     targetInstanceId.toString().getBytes(StandardCharsets.UTF_8));
-            return Boolean.TRUE.equals(member);
+            if (Boolean.TRUE.equals(member)) return RouteStatus.ROUTABLE;
+            return RouteStatus.UNKNOWN;
         } catch (Exception ex) {
-            return false;
+            return RouteStatus.UNKNOWN;
         }
     }
 
@@ -104,5 +110,21 @@ public final class ProxyTopologyService {
         if (wasBound) {
             platform.getLogger().info("Disconnected from TotemGuard-Bridge.");
         }
+    }
+
+    public enum RouteStatus {
+        /**
+         * Target is bound to our local proxy — safe to route.
+         */
+        ROUTABLE,
+        /**
+         * Target is explicitly bound to a different proxy — routing will not succeed.
+         */
+        NOT_ROUTABLE,
+        /**
+         * Target binding is unknown (topology hasn't converged yet, or Redis is unavailable).
+         * Callers should treat this as "best effort routable" rather than fail-closed.
+         */
+        UNKNOWN
     }
 }

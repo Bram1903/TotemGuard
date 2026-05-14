@@ -27,13 +27,10 @@ import com.deathmotion.totemguard.common.event.api.impl.TGFollowEventImpl;
 import com.deathmotion.totemguard.common.features.follow.FollowRepository;
 import com.deathmotion.totemguard.common.features.follow.FollowState;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
-import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.MovementData;
-import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
-import com.github.retrooper.packetevents.protocol.world.Location;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.StringParser;
@@ -45,21 +42,10 @@ import java.util.UUID;
 
 public final class FollowCommand extends AbstractCommand {
 
-    private static final long REQUEST_TTL_MILLIS = 30_000L;
-
     private final TGPlatform platform;
 
     public FollowCommand() {
         this.platform = TGPlatform.getInstance();
-    }
-
-    private static void applyLocalTeleport(@NotNull PlatformPlayer follower, @NotNull TGPlayer target) {
-        MovementData movement = target.getData().getMovementData();
-        Location loc = movement.getCurrent();
-        PlatformPlayer targetPlatform = target.getPlatformPlayer();
-        String world = targetPlatform != null ? targetPlatform.getWorldName() : null;
-        follower.teleport(world == null ? "" : world,
-                loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
     }
 
     @Override
@@ -93,12 +79,6 @@ public final class FollowCommand extends AbstractCommand {
             } else {
                 sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.FOLLOW_NONE_ACTIVE));
             }
-            return;
-        }
-
-        PlatformPlayer followerPlatform = platform.getPlatformPlayerFactory().create(followerUuid);
-        if (followerPlatform == null) {
-            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
             return;
         }
 
@@ -145,7 +125,7 @@ public final class FollowCommand extends AbstractCommand {
                 sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.FOLLOW_NO_BRIDGE));
                 return;
             }
-            if (!platform.canRouteToInstance(target.serverInstanceId())) {
+            if (platform.checkRoute(target.serverInstanceId()) == ProxyTopologyService.RouteStatus.NOT_ROUTABLE) {
                 sender.sendMessage(platform.getMessageService().getComponent(
                         MessagesKeys.FOLLOW_DIFFERENT_PROXY,
                         Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
@@ -170,20 +150,7 @@ public final class FollowCommand extends AbstractCommand {
                 target.serverInstanceId(), target.serverName());
         follow.beginFollow(state);
 
-        if (local) {
-            applyLocalTeleport(followerPlatform, localTarget);
-        } else {
-            SyncTeleportRequestPacket.Payload payload = new SyncTeleportRequestPacket.Payload(
-                    UUID.randomUUID(),
-                    followerUuid,
-                    target.playerUuid(),
-                    target.serverName(),
-                    target.serverInstanceId(),
-                    System.currentTimeMillis() + REQUEST_TTL_MILLIS
-            );
-            presence.publishTeleportRequest(payload);
-            platform.getProxyTopologyService().connectToInstance(followerUuid, target.serverInstanceId());
-        }
+        platform.getTeleportService().teleport(sender, target.playerName(), true);
 
         sender.sendMessage(platform.getMessageService().getComponent(
                 MessagesKeys.FOLLOW_ENABLED,

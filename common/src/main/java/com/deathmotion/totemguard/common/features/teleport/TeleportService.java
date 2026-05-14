@@ -28,7 +28,9 @@ import java.util.UUID;
 
 public final class TeleportService {
 
+    public static final String SILENT_FLAG = "--silent";
     private static final String PLACEHOLDER = "%" + TeleportCommandPlaceholder.KEY + "%";
+    private static final ThreadLocal<Boolean> SILENT_BYPASS = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     private final TGPlatform platform;
 
@@ -36,16 +38,40 @@ public final class TeleportService {
         this.platform = platform;
     }
 
+    public static boolean isSilentDispatch() {
+        return SILENT_BYPASS.get();
+    }
+
     public void teleport(@NotNull Sender sender, @NotNull String targetName) {
-        String command = platform.getPlaceholderRepository().replace(PLACEHOLDER, null, null, Map.of("tg_player", targetName));
-        if (command.startsWith("/")) command = command.substring(1);
-        sender.performCommand(command);
+        teleport(sender, targetName, false);
     }
 
     public boolean teleport(@NotNull UUID viewerUuid, @NotNull String targetName) {
+        return teleport(viewerUuid, targetName, false);
+    }
+
+    public void teleport(@NotNull Sender sender, @NotNull String targetName, boolean silent) {
+        String command = platform.getPlaceholderRepository().replace(
+                PLACEHOLDER, null, null,
+                Map.of("tg_player", targetName, "tg_silent", silent ? SILENT_FLAG : ""));
+        if (command.startsWith("/")) command = command.substring(1);
+
+        if (silent) {
+            SILENT_BYPASS.set(Boolean.TRUE);
+            try {
+                sender.performCommand(command);
+            } finally {
+                SILENT_BYPASS.set(Boolean.FALSE);
+            }
+        } else {
+            sender.performCommand(command);
+        }
+    }
+
+    public boolean teleport(@NotNull UUID viewerUuid, @NotNull String targetName, boolean silent) {
         Sender sender = platform.createSender(viewerUuid);
         if (sender == null) return false;
-        teleport(sender, targetName);
+        teleport(sender, targetName, silent);
         return true;
     }
 }

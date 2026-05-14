@@ -35,6 +35,7 @@ import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.features.check.CheckService;
 import com.deathmotion.totemguard.common.features.discord.DiscordWebhookService;
 import com.deathmotion.totemguard.common.features.follow.FollowRepository;
+import com.deathmotion.totemguard.common.features.follow.FollowerPacketListener;
 import com.deathmotion.totemguard.common.features.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.features.integration.IntegrationRegistrar;
 import com.deathmotion.totemguard.common.features.mods.*;
@@ -209,6 +210,7 @@ public abstract class TGPlatform {
         registerPacketListener(new GuiPacketListener());
         registerPacketListener(new ModPacketObserver(modDetectionService, playerRepository));
         registerPacketListener(new BridgePacketListener());
+        registerPacketListener(new FollowerPacketListener(followRepository));
 
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
         internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
@@ -293,7 +295,7 @@ public abstract class TGPlatform {
         if (service != null) service.acceptRemoteCheckResult(payload);
     }
 
-    public boolean canRouteToInstance(UUID targetInstanceId) {
-        return proxyTopologyService.canRouteToInstance(targetInstanceId);
+    public ProxyTopologyService.RouteStatus checkRoute(UUID targetInstanceId) {
+        return proxyTopologyService.checkRoute(targetInstanceId);
     }
 }

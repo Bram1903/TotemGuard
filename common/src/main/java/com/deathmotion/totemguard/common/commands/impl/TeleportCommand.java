@@ -24,7 +24,9 @@ import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.event.api.impl.TGTeleportEventImpl;
+import com.deathmotion.totemguard.common.features.teleport.TeleportService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
+import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -34,7 +36,9 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportR
 import com.github.retrooper.packetevents.protocol.world.Location;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.parser.flag.CommandFlag;
 import org.incendo.cloud.parser.standard.StringParser;
+import org.incendo.cloud.permission.PredicatePermission;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
@@ -44,6 +48,7 @@ import java.util.UUID;
 public final class TeleportCommand extends AbstractCommand {
 
     private static final long REQUEST_TTL_MILLIS = 30_000L;
+    private static final String SILENT_FLAG = "silent";
 
     private final TGPlatform platform;
 
@@ -62,6 +67,10 @@ public final class TeleportCommand extends AbstractCommand {
 
     @Override
     public void register(@NonNull CommandManager<Sender> manager) {
+        String teleportPerm = perm("teleport");
+        PredicatePermission<Sender> permission = PredicatePermission.of(sender ->
+                TeleportService.isSilentDispatch() || sender.hasPermission(teleportPerm));
+
         manager.command(
                 base(manager)
                         .literal("teleport")
@@ -70,7 +79,8 @@ public final class TeleportCommand extends AbstractCommand {
                                 StringParser.stringParser(),
                                 TGPlayerSuggestionProvider.suggestionProviderExcludingSelf()
                         )
-                        .permission(perm("teleport"))
+                        .flag(CommandFlag.builder(SILENT_FLAG))
+                        .permission(permission)
                         .handler(this::handle)
         );
     }
@@ -78,10 +88,13 @@ public final class TeleportCommand extends AbstractCommand {
     private void handle(@NotNull CommandContext<Sender> context) {
         Sender sender = context.sender();
         if (!requirePlayer(sender)) return;
+        boolean silent = TeleportService.isSilentDispatch();
 
         PlatformPlayer senderPlatform = platform.getPlatformPlayerFactory().create(sender.getUniqueId());
         if (senderPlatform == null) {
-            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
+            if (!silent) {
+                sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GENERAL_PLAYER_DATA_MISSING));
+            }
             return;
         }
 
@@ -89,15 +102,19 @@ public final class TeleportCommand extends AbstractCommand {
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
         RemotePlayerEntry target = presence == null ? null : presence.findByName(rawTarget);
         if (target == null) {
-            sender.sendMessage(platform.getMessageService().getComponent(
-                    MessagesKeys.TELEPORT_NOT_FOUND,
-                    Map.of("tg_input", rawTarget)
-            ));
+            if (!silent) {
+                sender.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.TELEPORT_NOT_FOUND,
+                        Map.of("tg_input", rawTarget)
+                ));
+            }
             return;
         }
 
         if (target.playerUuid().equals(sender.getUniqueId())) {
-            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TELEPORT_SELF));
+            if (!silent) {
+                sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TELEPORT_SELF));
+            }
             return;
         }
 
@@ -105,57 +122,71 @@ public final class TeleportCommand extends AbstractCommand {
         TGPlayer localTarget = local ? platform.getPlayerRepository().getPlayer(target.playerUuid()) : null;
 
         if (local && localTarget == null && target.bypassed()) {
-            sender.sendMessage(platform.getMessageService().getComponent(
-                    MessagesKeys.TELEPORT_TARGET_BYPASSED,
-                    Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
-            ));
+            if (!silent) {
+                sender.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.TELEPORT_TARGET_BYPASSED,
+                        Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
+                ));
+            }
             return;
         }
 
         if (local && localTarget == null) {
-            sender.sendMessage(platform.getMessageService().getComponent(
-                    MessagesKeys.TELEPORT_NOT_FOUND,
-                    Map.of("tg_input", rawTarget)
-            ));
+            if (!silent) {
+                sender.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.TELEPORT_NOT_FOUND,
+                        Map.of("tg_input", rawTarget)
+                ));
+            }
             return;
         }
 
         if (!local && !platform.getRedisRepository().isConnected()) {
-            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TELEPORT_NO_REDIS));
+            if (!silent) {
+                sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TELEPORT_NO_REDIS));
+            }
             return;
         }
 
         if (!local) {
             if (!platform.getProxyTopologyService().bridgeAvailable()) {
-                sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TELEPORT_NO_BRIDGE));
+                if (!silent) {
+                    sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.TELEPORT_NO_BRIDGE));
+                }
                 return;
             }
-            if (!platform.canRouteToInstance(target.serverInstanceId())) {
-                sender.sendMessage(platform.getMessageService().getComponent(
-                        MessagesKeys.TELEPORT_DIFFERENT_PROXY,
-                        Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
-                ));
+            if (platform.checkRoute(target.serverInstanceId()) == ProxyTopologyService.RouteStatus.NOT_ROUTABLE) {
+                if (!silent) {
+                    sender.sendMessage(platform.getMessageService().getComponent(
+                            MessagesKeys.TELEPORT_DIFFERENT_PROXY,
+                            Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
+                    ));
+                }
                 return;
             }
         }
 
-        TGTeleportEvent event = platform.getEventRepository().post(new TGTeleportEventImpl(
-                sender.getUniqueId(),
-                target.playerUuid(),
-                target.playerName(),
-                localTarget,
-                target.serverInstanceId(),
-                target.serverName(),
-                !local
-        ));
-        if (event.isCancelled()) return;
+        if (!silent) {
+            TGTeleportEvent event = platform.getEventRepository().post(new TGTeleportEventImpl(
+                    sender.getUniqueId(),
+                    target.playerUuid(),
+                    target.playerName(),
+                    localTarget,
+                    target.serverInstanceId(),
+                    target.serverName(),
+                    !local
+            ));
+            if (event.isCancelled()) return;
+        }
 
         if (local) {
             applyLocalTeleport(senderPlatform, localTarget);
-            sender.sendMessage(platform.getMessageService().getComponent(
-                    MessagesKeys.TELEPORT_SAME_SERVER,
-                    Map.of("tg_player", target.playerName())
-            ));
+            if (!silent) {
+                sender.sendMessage(platform.getMessageService().getComponent(
+                        MessagesKeys.TELEPORT_SAME_SERVER,
+                        Map.of("tg_player", target.playerName())
+                ));
+            }
             return;
         }
 
@@ -170,9 +201,11 @@ public final class TeleportCommand extends AbstractCommand {
         );
         presence.publishTeleportRequest(payload);
         platform.getProxyTopologyService().connectToInstance(sender.getUniqueId(), target.serverInstanceId());
-        sender.sendMessage(platform.getMessageService().getComponent(
-                MessagesKeys.TELEPORT_CROSS_SERVER,
-                Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
-        ));
+        if (!silent) {
+            sender.sendMessage(platform.getMessageService().getComponent(
+                    MessagesKeys.TELEPORT_CROSS_SERVER,
+                    Map.of("tg_player", target.playerName(), "tg_server", target.serverName())
+            ));
+        }
     }
 }
