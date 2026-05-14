@@ -33,6 +33,7 @@ public final class ProxyTopologyService {
     private final TGPlatform platform;
     private volatile @Nullable UUID localProxyId;
     private volatile @Nullable String localProxyDisplayName;
+
     public ProxyTopologyService(@NotNull TGPlatform platform) {
         this.platform = platform;
     }

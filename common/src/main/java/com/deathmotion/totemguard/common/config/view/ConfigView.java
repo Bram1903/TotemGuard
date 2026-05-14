@@ -42,6 +42,7 @@ public final class ConfigView {
     private final UpdateCheckerOptions updateChecker;
     private final EntitySpoofingOptions entitySpoofing;
     private final boolean banAnimationEnabled;
+    private final boolean tickSkipKeepAliveValidation;
     private final Set<String> developerOverrides;
 
     public ConfigView(Config config) {
@@ -86,6 +87,7 @@ public final class ConfigView {
                 config.getBoolean(ConfigKeys.ENTITY_SPOOFING_ABSORPTION)
         );
         this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
+        this.tickSkipKeepAliveValidation = config.getBoolean(ConfigKeys.TICK_SKIP_KEEP_ALIVE_VALIDATION);
         List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
         this.developerOverrides = overrides.isEmpty() ? Set.of() : Set.copyOf(new HashSet<>(overrides));
     }
@@ -120,6 +122,10 @@ public final class ConfigView {
 
     public boolean banAnimationEnabled() {
         return banAnimationEnabled;
+    }
+
+    public boolean tickSkipKeepAliveValidation() {
+        return tickSkipKeepAliveValidation;
     }
 
     public boolean hasDeveloperOverride(@NotNull String flag) {

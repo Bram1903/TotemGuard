@@ -57,6 +57,8 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> BAN_ANIMATION_ENABLED = ConfigKey.bool("ban-animation.enabled");
 
+    public static final ConfigKey<Boolean> TICK_SKIP_KEEP_ALIVE_VALIDATION = ConfigKey.bool("tick.skip-keep-alive-validation");
+
     public static final ConfigKey<String> TELEPORT_COMMAND = ConfigKey.string("teleport.command");
 
     public static final ConfigKey<Boolean> DATABASE_ENABLED = ConfigKey.bool("database.enabled");

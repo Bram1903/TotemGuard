@@ -87,6 +87,14 @@ entity-spoofing:
 teleport:
   command: "/tg teleport %tg_player%"
 
+tick:
+  # Skip the keep-alive ordering/validation branch of TickB. Transaction and
+  # teleport-confirm ordering remain checked.
+  # Enable this if your server (or a plugin/proxy) modifies vanilla keep-alive
+  # handling, or if TickB is flagging legitimate players on the "keepalive"
+  # branch. Leave false on a stock setup.
+  skip-keep-alive-validation: false
+
 # Just before a player is kicked or banned, show them a fake totem-pop animation
 # using a player head with a hacker skin. The head is sent via packets only
 # the real inventory is never touched, so nothing is lost on re-join.

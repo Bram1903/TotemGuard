@@ -50,6 +50,10 @@ public class TickB extends CheckImpl implements PacketCheck {
                 fail("type=transaction,skipped={0}", pingData.getLastSkippedTransactionReplyCount());
             }
         } else if (packetType == PacketType.Play.Client.KEEP_ALIVE) {
+            if (platform.getConfigRepository().configView().tickSkipKeepAliveValidation()) {
+                return;
+            }
+
             if (!pingData.isLastKeepAliveReplyValid()) {
                 fail("type=keepalive,invalid");
                 return;
