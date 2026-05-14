@@ -83,9 +83,14 @@ public final class RedisRepositoryImpl implements RedisRepository {
         return isEnabled() && manager.isConnected();
     }
 
+    public boolean isClusterMode() {
+        RedisOptions current = this.options;
+        return current != null && current.enabled() && current.cluster();
+    }
+
     public boolean shouldSend(MessagingTopic topic) {
         RedisOptions current = this.options;
-        if (current == null || !current.enabled()) return false;
+        if (current == null || !current.enabled() || !current.cluster()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().send();
             case FOCUS, UPDATES, PRESENCE -> true;
@@ -94,14 +99,13 @@ public final class RedisRepositoryImpl implements RedisRepository {
 
     public boolean shouldReceive(MessagingTopic topic) {
         RedisOptions current = this.options;
-        if (current == null || !current.enabled()) return false;
+        if (current == null || !current.enabled() || !current.cluster()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().receive();
             case FOCUS, UPDATES, PRESENCE -> true;
         };
     }
 
-    // Ephemeral — re-fetch per operation, do not cache.
     public @Nullable RedisConnection connection() {
         return isEnabled() ? manager.connection() : null;
     }
@@ -146,6 +150,13 @@ public final class RedisRepositoryImpl implements RedisRepository {
     }
 
     private void applyOptions(RedisOptions newOptions, boolean restart, boolean blocking) {
+        RedisOptions previous = this.options;
+        boolean wasCluster = previous != null && previous.enabled() && previous.cluster();
+        boolean willBeCluster = newOptions.enabled() && newOptions.cluster();
+        if (wasCluster && !willBeCluster) {
+            announceClusterLeaving();
+        }
+
         this.options = newOptions;
 
         reloadHandlers();
@@ -160,15 +171,44 @@ public final class RedisRepositoryImpl implements RedisRepository {
             return;
         }
 
-        RedisBroker newBroker = new RedisBroker(registry, identifier, newOptions.messaging());
-        manager.addListener(newBroker);
-        this.broker = newBroker;
+        if (newOptions.cluster()) {
+            RedisBroker newBroker = new RedisBroker(registry, identifier, newOptions.messaging());
+            manager.addListener(newBroker);
+            this.broker = newBroker;
+        }
 
         manager.start(newOptions, blocking);
     }
 
     private void reloadHandlers() {
         handlers.forEach(Reloadable::reload);
+    }
+
+    private void announceClusterLeaving() {
+        try {
+            TGPlatform tg = TGPlatform.getInstance();
+            if (tg == null) return;
+            com.deathmotion.totemguard.common.network.NetworkPresenceRepository presence = tg.getNetworkPresenceRepository();
+            if (presence != null) {
+                try {
+                    presence.purgeClusterFootprint();
+                } catch (Exception ex) {
+                    TGPlatform.getInstance().getLogger().warning(
+                            "Failed to purge presence footprint while leaving cluster: " + ex.getMessage());
+                }
+            }
+            com.deathmotion.totemguard.common.network.bridge.BackendAnnouncer announcer = tg.getBackendAnnouncer();
+            if (announcer != null) {
+                try {
+                    announcer.announceClusterLeaving();
+                } catch (Exception ex) {
+                    TGPlatform.getInstance().getLogger().warning(
+                            "Failed to publish bridge goodbye while leaving cluster: " + ex.getMessage());
+                }
+            }
+        } catch (Exception ex) {
+            // TGPlatform may not be fully initialized yet (e.g. first applyOptions during construction).
+        }
     }
 
     private void teardownBroker() {

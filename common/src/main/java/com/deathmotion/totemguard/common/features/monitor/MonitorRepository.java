@@ -165,7 +165,7 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
 
     private void publishHostUpdates() {
         if (hostSubscribers.isEmpty()) return;
-        if (!platform.getRedisRepository().isEnabled()) return;
+        if (!platform.getRedisRepository().isClusterMode()) return;
         for (UUID target : hostSubscribers.keySet()) {
             publishForTargetIfSubscribed(target);
         }
@@ -199,7 +199,7 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
     }
 
     private void publishSubscribe(UUID target) {
-        if (!platform.getRedisRepository().isEnabled()) return;
+        if (!platform.getRedisRepository().isClusterMode()) return;
         UUID viewerInstance = platform.getNetworkPresenceRepository().identity().instanceId();
         platform.getRedisRepository().publish(
                 Packets.SYNC_MONITOR_SUBSCRIBE.packet(),
@@ -207,7 +207,7 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
     }
 
     private void publishUnsubscribe(UUID viewerInstance, UUID target) {
-        if (!platform.getRedisRepository().isEnabled()) return;
+        if (!platform.getRedisRepository().isClusterMode()) return;
         platform.getRedisRepository().publish(
                 Packets.SYNC_MONITOR_UNSUBSCRIBE.packet(),
                 new SyncMonitorUnsubscribePacket.Payload(viewerInstance, target));

@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 
 public record RedisOptions(
         boolean enabled,
+        boolean cluster,
         @NotNull String host,
         int port,
         @NotNull String username,

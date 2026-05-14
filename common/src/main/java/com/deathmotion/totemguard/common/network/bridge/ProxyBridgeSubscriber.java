@@ -70,6 +70,7 @@ public final class ProxyBridgeSubscriber extends RedisPubSubAdapter<byte[], byte
 
     @Override
     public void onConnected(RedisConnection conn) {
+        if (!platform.getRedisRepository().isClusterMode()) return;
         StatefulRedisPubSubConnection<byte[], byte[]> pubSub = conn.pubSub();
         try {
             pubSub.removeListener(this);

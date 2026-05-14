@@ -67,6 +67,7 @@ public final class ProxyTopologyService {
     }
 
     public void connectToInstance(@NotNull UUID playerUuid, @NotNull UUID targetInstanceId) {
+        if (!platform.getRedisRepository().isClusterMode()) return;
         RedisConnection conn = platform.getRedisRepository().connection();
         if (conn == null || !conn.isOpen()) return;
         String message = BridgeProtocol.encode(BridgeProtocol.RPC_CONNECT,

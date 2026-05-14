@@ -46,9 +46,16 @@ redis:
   username: default
   password: yourPassword
 
+  # Turn off when this server runs alone, but you still want Redis for caching
+  # (violation buffers, db query results, etc.). Disabling this skips presence
+  # heartbeats, cross-server alerts/monitor/follow/focus, proxy bridge wiring,
+  # and the offline-grace window. Leave true on multi-server setups.
+  cluster: true
+
   # When a player switches backends, the source server's quit
   # fires before the destination's join lands. This grace window swallows that
   # gap so transfers stay silent: no alert flicker, focus targets survive.
+  # Ignored when cluster is false.
   offline-grace-millis: 4000
 
   # All channels are namespaced under "totemguard:". Override `alerts.channel`

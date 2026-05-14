@@ -53,6 +53,7 @@ public final class ConfigView {
         );
         this.redis = new RedisOptions(
                 config.getBoolean(ConfigKeys.REDIS_ENABLED),
+                config.getBoolean(ConfigKeys.REDIS_CLUSTER),
                 config.getString(ConfigKeys.REDIS_HOST),
                 config.getInt(ConfigKeys.REDIS_PORT),
                 config.getString(ConfigKeys.REDIS_USERNAME),

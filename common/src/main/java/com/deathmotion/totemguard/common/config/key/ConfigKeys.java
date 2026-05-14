@@ -39,6 +39,7 @@ public final class ConfigKeys {
     public static final ConfigKey<List<String>> COMMAND_ALIASES = ConfigKey.stringList("commands.aliases");
 
     public static final ConfigKey<Boolean> REDIS_ENABLED = ConfigKey.bool("redis.enabled");
+    public static final ConfigKey<Boolean> REDIS_CLUSTER = ConfigKey.bool("redis.cluster");
     public static final ConfigKey<Integer> REDIS_OFFLINE_GRACE_MILLIS = ConfigKey.integer("redis.offline-grace-millis");
     public static final ConfigKey<String> REDIS_HOST = ConfigKey.string("redis.host");
     public static final ConfigKey<Integer> REDIS_PORT = ConfigKey.integer("redis.port");

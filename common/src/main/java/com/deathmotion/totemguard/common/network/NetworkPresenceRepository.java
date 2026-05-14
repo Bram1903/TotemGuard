@@ -189,11 +189,16 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (newName.equals(effectiveDisplayName)) return;
         effectiveDisplayName = newName;
 
+        if (!clusterMode()) return;
         Set<UUID> owned = collectOwnedPlayers();
         platform.getScheduler().runAsyncTask(() -> {
             store.updateHostServerName(identity.instanceId(), newName, owned);
             publishHeartbeat();
         });
+    }
+
+    private boolean clusterMode() {
+        return platform.getRedisRepository().isClusterMode();
     }
 
     private @NotNull Set<UUID> collectOwnedPlayers() {
@@ -234,6 +239,11 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         pendingOffline.clear();
         disconnectHints.clear();
 
+        if (!clusterMode()) return;
+        purgeClusterFootprint();
+    }
+
+    public void purgeClusterFootprint() {
         Set<UUID> owned = collectOwnedPlayers();
         if (platform.getSessionViolationStore() != null && !owned.isEmpty()) {
             platform.getSessionViolationStore().purgeIfOwnedBy(identity.instanceId(), owned);
@@ -257,6 +267,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         String name = effectiveDisplayName;
         notifyLocalPlayerJoin(playerUuid);
         notifyPlayerOnline(playerUuid, new RemotePlayerEntry(playerUuid, playerName, identity.instanceId(), name, bypassed));
+        if (!clusterMode()) return;
         platform.getScheduler().runAsyncTask(() -> {
             store.addPlayer(playerUuid, playerName, identity.instanceId(), name, profile, bypassed);
             if (platform.getSessionViolationStore() != null && !bypassed) {
@@ -280,7 +291,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         RemotePlayerEntry lastKnown = new RemotePlayerEntry(
                 playerUuid, playerName, identity.instanceId(), effectiveDisplayName, bypassed);
 
-        if (!platform.getRedisRepository().isConnected()) {
+        if (!clusterMode() || !platform.getRedisRepository().isConnected()) {
             notifyPlayerOffline(playerUuid, lastKnown);
             return;
         }
@@ -417,6 +428,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
         if (exempt != null) {
             return new RemotePlayerEntry(uuid, exempt.name(), identity.instanceId(), effectiveDisplayName, true);
         }
+        if (!clusterMode()) return null;
         return store.findByUuid(uuid);
     }
 
@@ -434,11 +446,12 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
                         identity.instanceId(), effectiveDisplayName, true);
             }
         }
+        if (!clusterMode()) return null;
         return store.findByName(name);
     }
 
     public @NotNull List<String> suggestNames(@NotNull String prefix) {
-        if (!platform.getRedisRepository().isConnected()) {
+        if (!clusterMode() || !platform.getRedisRepository().isConnected()) {
             return localNamesMatching(prefix);
         }
         List<String> network = store.suggestNames(prefix, SUGGEST_LIMIT);
@@ -462,13 +475,13 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
 
     @Override
     public int getConnectedServerCount() {
-        if (!platform.getRedisRepository().isConnected()) return 1;
+        if (!clusterMode() || !platform.getRedisRepository().isConnected()) return 1;
         return Math.max(1, store.countServers());
     }
 
     @Override
     public int getTrackedPlayerCount() {
-        if (!platform.getRedisRepository().isConnected()) {
+        if (!clusterMode() || !platform.getRedisRepository().isConnected()) {
             return platform.getPlayerRepository().getPlayers().size();
         }
         return store.trackedPlayerCount();
@@ -481,7 +494,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
 
     @Override
     public boolean isConnected() {
-        return platform.getRedisRepository().isConnected();
+        return clusterMode() && platform.getRedisRepository().isConnected();
     }
 
     public void acceptServerOffline(@NotNull SyncServerOfflinePacket.Payload payload) {
@@ -513,6 +526,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
 
     @Override
     public void onConnected(RedisConnection connection) {
+        if (!clusterMode()) return;
         platform.getScheduler().runAsyncTask(() -> {
             UUID instanceId = identity.instanceId();
             String displayName = effectiveDisplayName;
@@ -541,12 +555,13 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     }
 
     public void publishTeleportRequest(@NotNull SyncTeleportRequestPacket.Payload payload) {
-        if (!platform.getRedisRepository().isEnabled()) return;
+        if (!clusterMode()) return;
         Packet<SyncTeleportRequestPacket.Payload> packet = Packets.SYNC_TELEPORT_REQUEST.packet();
         platform.getRedisRepository().publish(packet, payload);
     }
 
     private void publishHeartbeat() {
+        if (!clusterMode()) return;
         try {
             Set<UUID> ownedPlayers = new HashSet<>();
             Set<UUID> trackedPlayers = new HashSet<>();
@@ -576,6 +591,7 @@ public final class NetworkPresenceRepository implements NetworkRepository, Conne
     }
 
     private void sweepStaleServers() {
+        if (!clusterMode()) return;
         if (!platform.getRedisRepository().isConnected()) return;
         Map<UUID, List<RemotePlayerEntry>> purged = store.sweepStaleServers(identity.instanceId());
         store.reconcileOrphanPlayers();

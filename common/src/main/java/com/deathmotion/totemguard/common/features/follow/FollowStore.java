@@ -146,12 +146,14 @@ public final class FollowStore {
     }
 
     private @Nullable RedisCommands<byte[], byte[]> sync() {
+        if (!redis.isClusterMode()) return null;
         RedisConnection conn = redis.connection();
         if (conn == null || !conn.isOpen()) return null;
         return conn.commands().sync();
     }
 
     private @Nullable RedisAsyncCommands<byte[], byte[]> async() {
+        if (!redis.isClusterMode()) return null;
         RedisConnection conn = redis.connection();
         if (conn == null || !conn.isOpen()) return null;
         return conn.commands().async();

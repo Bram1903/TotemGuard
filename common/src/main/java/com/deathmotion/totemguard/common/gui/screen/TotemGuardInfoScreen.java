@@ -56,16 +56,19 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         boolean dbEnabled = platform.getDatabaseRepository().isEnabled();
         boolean redisConnected = platform.getRedisRepository().isConnected();
         boolean redisEnabled = platform.getRedisRepository().isEnabled();
+        boolean redisCluster = platform.getRedisRepository().isClusterMode();
 
         List<Component> lore = new ArrayList<>();
         lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SERVICES_LORE_1));
         lore.add(Component.empty());
         lore.add(serviceLine(messages, "Database", dbEnabled, dbConnected));
         lore.add(serviceLine(messages, "Redis", redisEnabled, redisConnected));
-        lore.add(bridgeServiceLine(messages, platform.getProxyTopologyService()));
+        if (redisCluster) {
+            lore.add(bridgeServiceLine(messages, platform.getProxyTopologyService()));
+        }
 
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
-        if (redisEnabled && redisConnected && presence != null) {
+        if (redisCluster && redisConnected && presence != null) {
             int fleetSize = presence.fleetSize();
             int trackedPlayers = presence.trackedPlayerCount();
             lore.add(Component.empty());

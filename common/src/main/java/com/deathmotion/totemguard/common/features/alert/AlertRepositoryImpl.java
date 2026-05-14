@@ -157,7 +157,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
         Component realtimeMessage = AlertBuilder.build(check, violations, debug, extras);
         realtimeRoster.deliver(violatorUuid, realtimeMessage);
 
-        if (platform.getRedisRepository().isEnabled() && violatorName != null) {
+        if (platform.getRedisRepository().isClusterMode() && violatorName != null) {
             platform.getScheduler().runAsyncTask(() -> platform.getRedisRepository().publish(
                     Packets.SYNC_FOCUS_ALERT.packet(),
                     new SyncFocusAlertPacket.Payload(violatorUuid, violatorName, realtimeMessage)

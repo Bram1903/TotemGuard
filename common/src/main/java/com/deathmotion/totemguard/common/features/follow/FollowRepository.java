@@ -89,6 +89,7 @@ public final class FollowRepository implements PresenceListener {
     }
 
     private void sweepStaleFollows() {
+        if (!platform.getRedisRepository().isClusterMode()) return;
         if (!platform.getRedisRepository().isConnected()) return;
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
         if (presence == null) return;
@@ -176,6 +177,7 @@ public final class FollowRepository implements PresenceListener {
 
     private void routeCrossServer(@NotNull FollowState state, @NotNull UUID targetServerInstance,
                                   @NotNull String targetServerName) {
+        if (!platform.getRedisRepository().isClusterMode()) return;
         if (!platform.getRedisRepository().isConnected()) return;
         if (!platform.getProxyTopologyService().bridgeAvailable()
                 || !platform.canRouteToInstance(targetServerInstance)) {
@@ -260,7 +262,7 @@ public final class FollowRepository implements PresenceListener {
 
     private void publishMove(@NotNull UUID targetUuid, @NotNull UUID localInstance,
                              @NotNull String localServerName, @NotNull String world, @NotNull Location loc) {
-        if (!platform.getRedisRepository().isEnabled()) {
+        if (!platform.getRedisRepository().isClusterMode()) {
             applyLocalMove(targetUuid, world, loc);
             return;
         }

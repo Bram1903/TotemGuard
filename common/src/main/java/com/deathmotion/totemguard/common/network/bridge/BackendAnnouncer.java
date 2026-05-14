@@ -75,6 +75,7 @@ public final class BackendAnnouncer implements ConnectionStateListener {
 
     @Override
     public void onConnected(RedisConnection conn) {
+        if (!platform.getRedisRepository().isClusterMode()) return;
         refreshCandidates();
         publishHello();
         scheduleHeartbeat();
@@ -86,6 +87,11 @@ public final class BackendAnnouncer implements ConnectionStateListener {
     }
 
     public void stop() {
+        cancelHeartbeat();
+        publishGoodbyeBlocking();
+    }
+
+    public void announceClusterLeaving() {
         cancelHeartbeat();
         publishGoodbyeBlocking();
     }
