@@ -20,11 +20,13 @@ package com.deathmotion.totemguard.proxybridge.velocity;
 
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.deathmotion.totemguard.proxybridge.common.*;
+import com.deathmotion.totemguard.proxybridge.protocol.v1.BridgeProtocol;
 import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.connection.PreTransferEvent;
 import com.velocitypowered.api.event.player.ServerPostConnectEvent;
@@ -34,18 +36,24 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.ServerConnection;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import org.jspecify.annotations.NonNull;
 
-import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public final class VelocityBridgePlugin {
+
+    private static final MinecraftChannelIdentifier BRIDGE_CHANNEL =
+            MinecraftChannelIdentifier.from(BridgeProtocol.PLUGIN_CHANNEL_BRIDGE);
 
     private final ProxyServer server;
     private final Logger logger;
@@ -69,6 +77,7 @@ public final class VelocityBridgePlugin {
             return;
         }
         this.integrityVerified = true;
+        server.getChannelRegistrar().register(BRIDGE_CHANNEL);
         registerCommands();
         bootstrap();
     }
@@ -168,10 +177,20 @@ public final class VelocityBridgePlugin {
     @Subscribe
     public void onSwitch(ServerPostConnectEvent event) {
         if (core == null) return;
+        UUID uuid = event.getPlayer().getUniqueId();
         String destinationSlot = event.getPlayer().getCurrentServer()
                 .map(c -> c.getServerInfo().getName())
                 .orElse(null);
-        core.onPlayerSwitch(event.getPlayer().getUniqueId(), destinationSlot);
+        core.onPlayerSwitch(uuid, destinationSlot);
+        if (destinationSlot != null) {
+            core.sendProxyHello(uuid, destinationSlot);
+        }
+    }
+
+    @Subscribe
+    public void onIncomingBridgeMessage(PluginMessageEvent event) {
+        if (!BRIDGE_CHANNEL.equals(event.getIdentifier())) return;
+        event.setResult(PluginMessageEvent.ForwardResult.handled());
     }
 
     @Subscribe
@@ -211,20 +230,20 @@ public final class VelocityBridgePlugin {
         }
 
         @Override
-        public @NonNull Map<String, InetSocketAddress> registeredBackends() {
-            Map<String, InetSocketAddress> out = new LinkedHashMap<>();
-            for (RegisteredServer s : server.getAllServers()) {
-                out.put(s.getServerInfo().getName(), s.getServerInfo().getAddress());
-            }
-            return out;
-        }
-
-        @Override
         public void connect(@NonNull UUID playerUuid, @NonNull String targetBackend) {
             Optional<Player> player = server.getPlayer(playerUuid);
             Optional<RegisteredServer> target = server.getServer(targetBackend);
             if (player.isEmpty() || target.isEmpty()) return;
             player.get().createConnectionRequest(target.get()).fireAndForget();
+        }
+
+        @Override
+        public void sendPluginMessage(@NonNull UUID playerUuid, @NonNull String channel, byte @NonNull [] payload) {
+            Optional<Player> player = server.getPlayer(playerUuid);
+            if (player.isEmpty()) return;
+            Optional<ServerConnection> connection = player.get().getCurrentServer();
+            if (connection.isEmpty()) return;
+            connection.get().sendPluginMessage(MinecraftChannelIdentifier.from(channel), payload);
         }
 
         @Override

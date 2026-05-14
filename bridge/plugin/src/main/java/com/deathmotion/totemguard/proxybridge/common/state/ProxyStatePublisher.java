@@ -41,20 +41,17 @@ public final class ProxyStatePublisher {
     private final ProxyConfigHolder config;
     private final BridgePlatform platform;
     private final BackendTracker tracker;
-    private final BackendDirectory backendDirectory;
 
     public ProxyStatePublisher(@NotNull BridgeRedis redis,
                                @NotNull ProxyIdentity identity,
                                @NotNull ProxyConfigHolder config,
                                @NotNull BridgePlatform platform,
-                               @NotNull BackendTracker tracker,
-                               @NotNull BackendDirectory backendDirectory) {
+                               @NotNull BackendTracker tracker) {
         this.redis = redis;
         this.identity = identity;
         this.config = config;
         this.platform = platform;
         this.tracker = tracker;
-        this.backendDirectory = backendDirectory;
     }
 
     public void republish(boolean announce) {
@@ -84,28 +81,6 @@ public final class ProxyStatePublisher {
             if (!backends.isEmpty()) {
                 async.sadd(backendsKey, backends.toArray(String[]::new));
                 async.expire(backendsKey, STATE_TTL_SECONDS);
-            }
-
-            String instancesKey = BridgeProtocol.keyProxyInstances(id);
-            String instanceSetKey = BridgeProtocol.keyProxyInstanceSet(id);
-            async.del(instancesKey);
-            async.del(instanceSetKey);
-            java.util.Map<String, UUID> mappings = backendDirectory.currentMappings();
-            if (!mappings.isEmpty()) {
-                java.util.Map<String, String> serialized = new java.util.LinkedHashMap<>(mappings.size());
-                String[] instanceIds = new String[mappings.size()];
-                int i = 0;
-                for (java.util.Map.Entry<String, UUID> entry : mappings.entrySet()) {
-                    String iid = entry.getValue().toString();
-                    serialized.put(entry.getKey(), iid);
-                    instanceIds[i++] = iid;
-                    async.set(BridgeProtocol.keyInstanceProxy(entry.getValue()), idStr,
-                            io.lettuce.core.SetArgs.Builder.ex(STATE_TTL_SECONDS));
-                }
-                async.hset(instancesKey, serialized);
-                async.expire(instancesKey, STATE_TTL_SECONDS);
-                async.sadd(instanceSetKey, instanceIds);
-                async.expire(instanceSetKey, STATE_TTL_SECONDS);
             }
 
             if (announce) {
@@ -177,19 +152,8 @@ public final class ProxyStatePublisher {
             cmd.publish(BridgeProtocol.CHANNEL_EVENTS,
                     BridgeProtocol.encode(BridgeProtocol.EV_PROXY_OFFLINE, id.toString()));
             cmd.srem(BridgeProtocol.KEY_REGISTRY, id.toString());
-            java.util.Map<String, UUID> mappings = backendDirectory.currentMappings();
-            if (!mappings.isEmpty()) {
-                String[] keys = new String[mappings.size()];
-                int i = 0;
-                for (UUID iid : mappings.values()) {
-                    keys[i++] = BridgeProtocol.keyInstanceProxy(iid);
-                }
-                cmd.del(keys);
-            }
             cmd.del(BridgeProtocol.keyProxy(id),
-                    BridgeProtocol.keyProxyBackends(id),
-                    BridgeProtocol.keyProxyInstances(id),
-                    BridgeProtocol.keyProxyInstanceSet(id));
+                    BridgeProtocol.keyProxyBackends(id));
         } catch (Exception ex) {
             platform.logger().log(Level.WARNING, "publishOffline failed: " + ex.getMessage());
         }

@@ -145,11 +145,6 @@ public class TGBukkitPlatform extends TGPlatform {
     }
 
     @Override
-    public int getServerPort() {
-        return plugin.getServer().getPort();
-    }
-
-    @Override
     public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
         teleportRouter.get().accept(payload);
     }

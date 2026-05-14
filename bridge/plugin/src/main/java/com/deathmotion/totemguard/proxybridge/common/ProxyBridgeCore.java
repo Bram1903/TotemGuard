@@ -26,8 +26,11 @@ import com.deathmotion.totemguard.proxybridge.common.state.BackendDirectory;
 import com.deathmotion.totemguard.proxybridge.common.state.BackendTracker;
 import com.deathmotion.totemguard.proxybridge.common.state.ProxyStatePublisher;
 import com.deathmotion.totemguard.proxybridge.common.state.StaleProxySweeper;
+import com.deathmotion.totemguard.proxybridge.protocol.v1.BridgeProtocol;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +41,7 @@ public final class ProxyBridgeCore {
 
     private final BridgePlatform platform;
     private final ProxyConfigHolder config;
+    private final ProxyIdentity identity;
     private final BridgeRedis redis;
     private final BackendTracker tracker;
     private final StaleProxySweeper sweeper;
@@ -53,11 +57,12 @@ public final class ProxyBridgeCore {
                            @NotNull ProxyIdentity identity) {
         this.platform = platform;
         this.config = new ProxyConfigHolder(initialConfig);
+        this.identity = identity;
         this.redis = new BridgeRedis(initialConfig.redis(), platform.logger());
         this.tracker = new BackendTracker();
         this.sweeper = new StaleProxySweeper(redis, platform.logger());
         this.backendDirectory = new BackendDirectory(redis, platform, identity);
-        this.state = new ProxyStatePublisher(redis, identity, config, platform, tracker, backendDirectory);
+        this.state = new ProxyStatePublisher(redis, identity, config, platform, tracker);
         this.presence = new PresencePublisher(redis, identity, platform.logger());
         this.rpc = new RpcDispatcher(redis, platform, backendDirectory);
     }
@@ -119,9 +124,20 @@ public final class ProxyBridgeCore {
         presence.onJoin(playerUuid);
     }
 
-    public void onPlayerSwitch(@NotNull UUID playerUuid, @org.jetbrains.annotations.Nullable String destinationSlot) {
+    public void onPlayerSwitch(@NotNull UUID playerUuid, @Nullable String destinationSlot) {
         UUID destinationInstance = destinationSlot == null ? null : backendDirectory.instanceForSlot(destinationSlot);
         presence.onSwitch(playerUuid, destinationInstance);
+    }
+
+    public void sendProxyHello(@NotNull UUID playerUuid, @NotNull String destinationSlot) {
+        if (!started.get()) return;
+        String payload = BridgeProtocol.encode(
+                BridgeProtocol.EV_PROXY_HELLO,
+                identity.id().toString(),
+                destinationSlot,
+                config.current().displayName());
+        platform.sendPluginMessage(playerUuid, BridgeProtocol.PLUGIN_CHANNEL_BRIDGE,
+                payload.getBytes(StandardCharsets.UTF_8));
     }
 
     public void onPlayerDisconnect(@NotNull UUID playerUuid) {

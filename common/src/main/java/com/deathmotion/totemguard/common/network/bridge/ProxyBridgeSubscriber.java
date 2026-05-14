@@ -145,6 +145,8 @@ public final class ProxyBridgeSubscriber extends RedisPubSubAdapter<byte[], byte
                 UUID proxyId = parseUuid(parts[1]);
                 if (proxyId == null) return;
                 topology.unbindIf(proxyId);
+                BridgeManager bm = platform.getBridgeManager();
+                if (bm != null) bm.getHeartbeat().onProxyOffline(proxyId);
             }
             case BridgeProtocol.EV_BACKEND_BOUND -> {
                 if (parts.length < 4) return;

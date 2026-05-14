@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.schema.RedisOptions;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
-import com.deathmotion.totemguard.common.network.bridge.BackendAnnouncer;
+import com.deathmotion.totemguard.common.network.bridge.BridgeManager;
 import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.RedisBroker;
 import com.deathmotion.totemguard.common.redis.broker.handlers.*;
@@ -199,10 +199,10 @@ public final class RedisRepositoryImpl implements RedisRepository {
                             "Failed to purge presence footprint while leaving cluster: " + ex.getMessage());
                 }
             }
-            BackendAnnouncer announcer = tg.getBackendAnnouncer();
-            if (announcer != null) {
+            BridgeManager bridge = tg.getBridgeManager();
+            if (bridge != null) {
                 try {
-                    announcer.announceClusterLeaving();
+                    bridge.getHeartbeat().stop();
                 } catch (Exception ex) {
                     TGPlatform.getInstance().getLogger().warning(
                             "Failed to publish bridge goodbye while leaving cluster: " + ex.getMessage());

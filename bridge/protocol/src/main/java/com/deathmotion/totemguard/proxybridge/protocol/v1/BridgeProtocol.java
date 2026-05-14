@@ -33,13 +33,14 @@ public final class BridgeProtocol {
     public static final String KEY_PROXY_PREFIX = "totemguard:proxy:";
     public static final String KEY_INSTANCE_PREFIX = "totemguard:instance:";
     public static final String SUFFIX_BACKENDS = ":backends";
-    public static final String SUFFIX_INSTANCES = ":instances";
     public static final String SUFFIX_INSTANCE_SET = ":instance-set";
     public static final String SUFFIX_INSTANCE_PROXY = ":proxy";
+    public static final String SUFFIX_SLOT = ":slot:";
 
     public static final String CHANNEL_EVENTS = "totemguard:proxy:events";
     public static final String CHANNEL_RPC = "totemguard:proxy:rpc";
-    public static final String CHANNEL_BACKEND_EVENTS = "totemguard:backend:events";
+
+    public static final String PLUGIN_CHANNEL_BRIDGE = "totemguard:bridge";
 
     public static final String EV_PROXY_ONLINE = "proxy_online";
     public static final String EV_PROXY_OFFLINE = "proxy_offline";
@@ -49,9 +50,9 @@ public final class BridgeProtocol {
     public static final String EV_PLAYER_SWITCH = "player_switch";
     public static final String EV_PLAYER_DISCONNECT = "player_disconnect";
     public static final String EV_PLAYER_TRANSFER = "player_transfer";
-    public static final String EV_BACKEND_HELLO = "backend_hello";
-    public static final String EV_BACKEND_GOODBYE = "backend_goodbye";
+    public static final String EV_PROXY_HELLO = "proxy_hello";
     public static final String EV_BACKEND_BOUND = "backend_bound";
+    public static final String EV_BACKEND_UNBOUND = "backend_unbound";
 
     public static final String RPC_CONNECT = "connect";
 
@@ -59,8 +60,6 @@ public final class BridgeProtocol {
     public static final String HASH_PLATFORM = "platform";
     public static final String HASH_STARTED_AT = "started_at";
     public static final String HASH_UPDATED_AT = "updated_at";
-
-    public static final char LIST = ',';
 
     private BridgeProtocol() {
     }
@@ -87,15 +86,15 @@ public final class BridgeProtocol {
         return KEY_PROXY_PREFIX + proxyId + SUFFIX_BACKENDS;
     }
 
-    public static @NotNull String keyProxyInstances(@NotNull UUID proxyId) {
-        return KEY_PROXY_PREFIX + proxyId + SUFFIX_INSTANCES;
-    }
-
     public static @NotNull String keyProxyInstanceSet(@NotNull UUID proxyId) {
         return KEY_PROXY_PREFIX + proxyId + SUFFIX_INSTANCE_SET;
     }
 
     public static @NotNull String keyInstanceProxy(@NotNull UUID instanceId) {
         return KEY_INSTANCE_PREFIX + instanceId + SUFFIX_INSTANCE_PROXY;
+    }
+
+    public static @NotNull String keyProxySlot(@NotNull UUID proxyId, @NotNull String slot) {
+        return KEY_PROXY_PREFIX + proxyId + SUFFIX_SLOT + slot;
     }
 }

@@ -50,8 +50,8 @@ import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.network.ServerIdentity;
-import com.deathmotion.totemguard.common.network.bridge.BackendAnnouncer;
-import com.deathmotion.totemguard.common.network.bridge.ProxyBridgeSubscriber;
+import com.deathmotion.totemguard.common.network.bridge.BridgeManager;
+import com.deathmotion.totemguard.common.network.bridge.BridgePacketListener;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
@@ -115,8 +115,7 @@ public abstract class TGPlatform {
     private NetworkPresenceRepository networkPresenceRepository;
     private FollowRepository followRepository;
     private ProxyTopologyService proxyTopologyService;
-    private ProxyBridgeSubscriber proxyBridgeSubscriber;
-    private BackendAnnouncer backendAnnouncer;
+    private BridgeManager bridgeManager;
     private MonitorRepository monitorRepository;
     private ModDetectionService modDetectionService;
     private CheckService checkService;
@@ -132,17 +131,9 @@ public abstract class TGPlatform {
     }
 
     public void commonOnInitialize() {
-        if (!new JarIntegrityChecker(logger, "TotemGuard").verifyCurrentJar()) {
-            setEnabled(false);
-        }
     }
 
     public void commonOnEnable() {
-        if (!enabled) {
-            disablePlugin();
-            return;
-        }
-
         LoggerSuppressor.suppressDefaultNoise();
 
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -152,21 +143,13 @@ public abstract class TGPlatform {
             return;
         }
 
-        // Fail fast on incomplete subclass wiring rather than NPE'ing on first login.
-        if (getPlatformPlayerFactory() == null) {
-            logger.severe("Platform " + platform + " did not provide a PlatformPlayerFactory — disabling.");
-            setEnabled(false);
-            disablePlugin();
-            return;
-        }
-        if (getScheduler() == null) {
-            logger.severe("Platform " + platform + " did not provide a Scheduler — disabling.");
-            setEnabled(false);
-            disablePlugin();
-            return;
-        }
-
         ConsoleBanner.print();
+
+        if (!new JarIntegrityChecker(logger, "TotemGuard").verifyCurrentJar()) {
+            setEnabled(false);
+            disablePlugin();
+            return;
+        }
 
         reloadService = new ReloadService();
         configRepository = new ConfigRepositoryImpl();
@@ -212,12 +195,8 @@ public abstract class TGPlatform {
         integrationRegistrar.enableAll();
 
         proxyTopologyService = new ProxyTopologyService(this);
-        proxyBridgeSubscriber = new ProxyBridgeSubscriber(this);
-        redisRepository.addStateListener(proxyBridgeSubscriber);
-
-        backendAnnouncer = new BackendAnnouncer(this, serverIdentity.instanceId(),
-                networkPresenceRepository.getLocalServerName());
-        redisRepository.addStateListener(backendAnnouncer);
+        bridgeManager = new BridgeManager(this, serverIdentity.instanceId());
+        bridgeManager.start();
 
         ModKickThenBanTracker kickThenBanTracker = new ModKickThenBanTracker(cacheRepository);
         ModLogAlertTracker logAlertTracker = new ModLogAlertTracker(cacheRepository);
@@ -229,6 +208,7 @@ public abstract class TGPlatform {
         registerPacketListener(new PacketCheckManagerListener(playerRepository));
         registerPacketListener(new GuiPacketListener());
         registerPacketListener(new ModPacketObserver(modDetectionService, playerRepository));
+        registerPacketListener(new BridgePacketListener());
 
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
         internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
@@ -266,11 +246,7 @@ public abstract class TGPlatform {
         if (playerRepository != null) playerRepository.shutdown();
         if (updateCheckerRepository != null) updateCheckerRepository.shutdown();
         if (alertRepository != null) redisRepository.removeStateListener(alertRepository);
-        if (proxyBridgeSubscriber != null) redisRepository.removeStateListener(proxyBridgeSubscriber);
-        if (backendAnnouncer != null) {
-            redisRepository.removeStateListener(backendAnnouncer);
-            backendAnnouncer.stop();
-        }
+        if (bridgeManager != null) bridgeManager.shutdown();
         if (redisRepository != null) redisRepository.stop();
         if (databaseRepository != null) databaseRepository.stop();
         if (guiManager != null) guiManager.shutdown();
@@ -304,22 +280,16 @@ public abstract class TGPlatform {
 
     public abstract boolean checkPlatformCompatibility();
 
-    public abstract int getServerPort();
-
-    public @org.jetbrains.annotations.NotNull String getProxyFacingHost() {
-        return "";
-    }
-
     public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
     }
 
     public void handleIncomingCheckRequest(SyncCheckRequestPacket.Payload payload) {
-        com.deathmotion.totemguard.common.features.check.CheckService service = this.checkService;
+        CheckService service = this.checkService;
         if (service != null) service.acceptRemoteCheckRequest(payload);
     }
 
     public void handleIncomingCheckResult(SyncCheckResultPacket.Payload payload) {
-        com.deathmotion.totemguard.common.features.check.CheckService service = this.checkService;
+        CheckService service = this.checkService;
         if (service != null) service.acceptRemoteCheckResult(payload);
     }
 

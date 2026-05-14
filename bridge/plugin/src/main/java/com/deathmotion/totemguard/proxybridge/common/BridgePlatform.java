@@ -20,8 +20,6 @@ package com.deathmotion.totemguard.proxybridge.common;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -38,10 +36,9 @@ public interface BridgePlatform {
     @NotNull
     Set<String> registeredBackendNames();
 
-    @NotNull
-    Map<String, InetSocketAddress> registeredBackends();
-
     void connect(@NotNull UUID playerUuid, @NotNull String targetBackend);
+
+    void sendPluginMessage(@NotNull UUID playerUuid, @NotNull String channel, byte @NotNull [] payload);
 
     void scheduleRepeating(@NotNull Runnable task, long delay, long period, @NotNull TimeUnit unit);
 

@@ -20,10 +20,13 @@ package com.deathmotion.totemguard.proxybridge.bungee;
 
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.deathmotion.totemguard.proxybridge.common.*;
+import com.deathmotion.totemguard.proxybridge.protocol.v1.BridgeProtocol;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
+import net.md_5.bungee.api.event.PluginMessageEvent;
 import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.event.ServerSwitchEvent;
 import net.md_5.bungee.api.plugin.Listener;
@@ -32,11 +35,7 @@ import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.event.EventPriority;
 import org.jspecify.annotations.NonNull;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +54,7 @@ public final class BungeeBridgePlugin extends Plugin implements Listener {
             return;
         }
         this.integrityVerified = true;
+        getProxy().registerChannel(BridgeProtocol.PLUGIN_CHANNEL_BRIDGE);
         getProxy().getPluginManager().registerListener(this, this);
         getProxy().getPluginManager().registerCommand(this,
                 new BungeeBridgeCommand(this::bootstrap, logger));
@@ -142,10 +142,20 @@ public final class BungeeBridgePlugin extends Plugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSwitch(ServerSwitchEvent event) {
         if (core == null) return;
+        UUID uuid = event.getPlayer().getUniqueId();
         String destinationSlot = event.getPlayer().getServer() == null
                 ? null
                 : event.getPlayer().getServer().getInfo().getName();
-        core.onPlayerSwitch(event.getPlayer().getUniqueId(), destinationSlot);
+        core.onPlayerSwitch(uuid, destinationSlot);
+        if (destinationSlot != null) {
+            core.sendProxyHello(uuid, destinationSlot);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onIncomingBridgeMessage(PluginMessageEvent event) {
+        if (!BridgeProtocol.PLUGIN_CHANNEL_BRIDGE.equals(event.getTag())) return;
+        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -179,22 +189,21 @@ public final class BungeeBridgePlugin extends Plugin implements Listener {
         }
 
         @Override
-        public @NonNull Map<String, InetSocketAddress> registeredBackends() {
-            Map<String, InetSocketAddress> out = new LinkedHashMap<>();
-            for (Map.Entry<String, ServerInfo> entry : ProxyServer.getInstance().getServers().entrySet()) {
-                SocketAddress addr = entry.getValue().getSocketAddress();
-                if (addr instanceof InetSocketAddress inet) out.put(entry.getKey(), inet);
-            }
-            return out;
-        }
-
-        @Override
         public void connect(@NonNull UUID playerUuid, @NonNull String targetBackend) {
             ProxiedPlayer player = ProxyServer.getInstance().getPlayer(playerUuid);
             if (player == null) return;
             ServerInfo target = ProxyServer.getInstance().getServerInfo(targetBackend);
             if (target == null) return;
             player.connect(target);
+        }
+
+        @Override
+        public void sendPluginMessage(@NonNull UUID playerUuid, @NonNull String channel, byte @NonNull [] payload) {
+            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(playerUuid);
+            if (player == null) return;
+            Server server = player.getServer();
+            if (server == null) return;
+            server.sendData(channel, payload);
         }
 
         @Override

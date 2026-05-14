@@ -84,8 +84,7 @@ public final class ProxyTopologyService {
             this.localProxyDisplayName = displayName;
         }
         if (!proxyId.equals(previous)) {
-            String name = (displayName != null && !displayName.isBlank()) ? displayName : proxyId.toString();
-            platform.getLogger().info("Hooked into TotemGuard-Bridge: " + name + ".");
+            platform.getLogger().info("Hooked into TotemGuard-Bridge.");
         }
     }
 

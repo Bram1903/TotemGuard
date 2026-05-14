@@ -64,6 +64,8 @@ public final class JarIntegrityChecker {
     }
 
     public boolean verifyCurrentJar() {
+        logger.info("Checking jar integrity...");
+
         Path jarPath = resolveCurrentJarPath();
         if (jarPath == null) {
             return true;
@@ -83,6 +85,7 @@ public final class JarIntegrityChecker {
         try {
             String actualFingerprint = computeFingerprint(jarPath);
             if (actualFingerprint.equalsIgnoreCase(expectedFingerprint)) {
+                logger.info("Successfully validated jar integrity.");
                 return true;
             }
 
