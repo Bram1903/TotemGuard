@@ -47,25 +47,41 @@ public final class GuiClickContext {
     }
 
     public void open(GuiScreen screen) {
+        open(screen, GuiSounds.ENTER);
+    }
+
+    public void open(GuiScreen screen, GuiSounds.Effect successSound) {
         if (manager.pushScreen(session.viewerId(), screen)) {
             this.rendered = true;
+            GuiSounds.play(session, successSound);
+        } else {
+            GuiSounds.play(session, GuiSounds.DENIED);
         }
     }
 
     public void replace(GuiScreen screen) {
+        replace(screen, GuiSounds.FILTER);
+    }
+
+    public void replace(GuiScreen screen, GuiSounds.Effect successSound) {
         if (manager.replaceScreen(session.viewerId(), screen)) {
             this.rendered = true;
+            GuiSounds.play(session, successSound);
+        } else {
+            GuiSounds.play(session, GuiSounds.DENIED);
         }
     }
 
     public void back() {
         manager.back(session.viewerId());
         this.rendered = true;
+        GuiSounds.play(session, GuiSounds.BACK);
     }
 
     public void close() {
         manager.close(session.viewerId(), true);
         this.rendered = true;
+        GuiSounds.play(session, GuiSounds.CLOSE);
     }
 
     public void refresh() {
@@ -75,6 +91,11 @@ public final class GuiClickContext {
 
     public void message(Component message) {
         session.user().sendMessage(message);
+        GuiSounds.play(session, GuiSounds.DENIED);
+    }
+
+    public void playSound(GuiSounds.Effect effect) {
+        GuiSounds.play(session, effect);
     }
 
     boolean rendered() {

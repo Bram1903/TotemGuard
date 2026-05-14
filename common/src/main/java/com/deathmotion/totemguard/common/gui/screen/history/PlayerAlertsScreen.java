@@ -317,7 +317,7 @@ public final class PlayerAlertsScreen extends GuiScreen {
                             Component.empty(),
                             messages.getComponent(MessagesKeys.GUI_ALERTS_FILTER_PICK_LORE_2)
                     )
-            ), ctx -> ctx.open(new PlayerAlertChecksScreen(targetId, targetName, 0)));
+            ), ctx -> ctx.open(new PlayerAlertChecksScreen(targetId, targetName, 0), GuiSounds.FILTER));
         } else {
             builder.set(52, GuiItems.simple(
                     ItemTypes.HOPPER,

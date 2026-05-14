@@ -336,7 +336,7 @@ public final class TopViolatorsScreen extends GuiScreen {
                             Component.empty(),
                             messages.getComponent(MessagesKeys.GUI_TOP_FILTER_PICK_LORE_2)
                     )
-            ), ctx -> ctx.open(new TopCheckPickerScreen(0)));
+            ), ctx -> ctx.open(new TopCheckPickerScreen(0), GuiSounds.FILTER));
             return;
         }
 
