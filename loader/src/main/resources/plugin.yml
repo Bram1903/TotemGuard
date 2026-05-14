@@ -1,0 +1,24 @@
+name: TotemGuard
+description: ${description}
+authors:
+  - Bram
+  - OutDev
+main: com.deathmotion.totemguard.loader.bukkit.TGLoaderBukkit
+version: ${version}
+api-version: '1.13'
+folia-supported: true
+load: POSTWORLD
+depend:
+  - packetevents
+softdepend:
+  - PlaceholderAPI
+  - GrimAC
+commands:
+  tgloader:
+    description: TotemGuard loader administration.
+    usage: /tgloader <restart|status|info>
+    permission: totemguard.loader.admin
+permissions:
+  totemguard.loader.admin:
+    description: Allows use of /tgloader.
+    default: op

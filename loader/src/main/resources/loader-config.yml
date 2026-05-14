@@ -1,0 +1,13 @@
+# TotemGuard Loader configuration.
+#
+# version:
+#   - "3.0.0": pin to a specific version
+#   - "LATEST": newest stable release on the configured source
+#   - "EXPERIMENTAL": newest pre-release (GitHub pre-release / Modrinth alpha+beta)
+#   - "GIT": artifact from a latest commit
+#
+# source:
+#   - "GITHUB": GitHub releases. SHA-256 verified via each asset's digest field.
+#   - "MODRINTH": Modrinth releases. SHA-512 verified via the v2 API hashes field.
+version: "LATEST"
+source: "GITHUB"

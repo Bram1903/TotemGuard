@@ -45,7 +45,6 @@ import java.util.UUID;
 @Getter
 public class TGFabricPlatform extends TGPlatform {
 
-    private final TGFabric mod;
     private final Path configDirectory;
     private final Scheduler scheduler;
 
@@ -53,9 +52,8 @@ public class TGFabricPlatform extends TGPlatform {
     private final Lazy<FabricSenderFactory> senderFactory;
     private final Lazy<CommandManager<Sender>> commandManager;
 
-    public TGFabricPlatform(TGFabric mod, Path configDirectory) {
+    public TGFabricPlatform(Path configDirectory) {
         super(Platform.FABRIC);
-        this.mod = mod;
         this.configDirectory = configDirectory;
         this.scheduler = new FabricScheduler();
         this.platformPlayerFactory = Lazy.of(FabricPlatformPlayerFactory::new);

@@ -18,22 +18,22 @@
 
 package com.deathmotion.totemguard.fabric;
 
-import lombok.Getter;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
+/**
+ * Standalone Fabric entry point. When the inner mod is installed directly (no loader),
+ * Fabric Loader instantiates this class as the registered mod. The loader path uses
+ * {@link TGFabricEntry} instead and bypasses this class entirely.
+ */
 public final class TGFabric implements DedicatedServerModInitializer {
-
-    @Getter
-    private static TGFabric instance;
 
     private TGFabricPlatform tg;
 
     @Override
     public void onInitializeServer() {
-        instance = this;
-        tg = new TGFabricPlatform(this, FabricLoader.getInstance().getConfigDir().resolve("totemguard"));
+        tg = new TGFabricPlatform(FabricLoader.getInstance().getConfigDir().resolve("totemguard"));
         tg.commonOnInitialize();
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> tg.commonOnEnable());

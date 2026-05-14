@@ -38,16 +38,6 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * Verifies that the jar this class is loaded from matches the SHA-256 fingerprint stamped
- * at build time under {@code META-INF/totemguard/integrity.sha256}. Re-used by both the
- * TotemGuard backend and the TotemGuard-Bridge plugin via the {@code :bridge:integrity}
- * module.
- *
- * <p>Stateless except for the {@link Logger} and a {@code productName} (used purely for the
- * tamper-alert banner). Returns {@code true} when the jar matches or when running from a
- * development classpath (no jar to verify).</p>
- */
 public final class JarIntegrityChecker {
 
     private static final String HASH_ALGORITHM = "SHA-256";
@@ -64,14 +54,17 @@ public final class JarIntegrityChecker {
     }
 
     public boolean verifyCurrentJar() {
-        logger.info("Checking jar integrity...");
-
         Path jarPath = resolveCurrentJarPath();
         if (jarPath == null) {
             return true;
         }
+        return verifyJar(jarPath);
+    }
 
-        String expectedFingerprint = readExpectedFingerprint();
+    public boolean verifyJar(@NotNull Path jarPath) {
+        logger.info("Checking " + productName + " jar integrity...");
+
+        String expectedFingerprint = readExpectedFingerprint(jarPath);
         if (expectedFingerprint == null || expectedFingerprint.isBlank()) {
             logSuspiciousJar(
                     productName + " could not verify its embedded jar metadata.",
@@ -85,7 +78,7 @@ public final class JarIntegrityChecker {
         try {
             String actualFingerprint = computeFingerprint(jarPath);
             if (actualFingerprint.equalsIgnoreCase(expectedFingerprint)) {
-                logger.info("Successfully validated jar integrity.");
+                logger.info(productName + " jar integrity verified.");
                 return true;
             }
 
@@ -122,12 +115,15 @@ public final class JarIntegrityChecker {
         }
     }
 
-    private String readExpectedFingerprint() {
-        try (InputStream inputStream = JarIntegrityChecker.class.getClassLoader().getResourceAsStream(INTEGRITY_ENTRY)) {
-            if (inputStream == null) {
+    private String readExpectedFingerprint(Path jarPath) {
+        try (ZipFile zipFile = new ZipFile(jarPath.toFile())) {
+            ZipEntry entry = zipFile.getEntry(INTEGRITY_ENTRY);
+            if (entry == null) {
                 return null;
             }
-            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).trim();
+            try (InputStream inputStream = zipFile.getInputStream(entry)) {
+                return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).trim();
+            }
         } catch (IOException exception) {
             return null;
         }

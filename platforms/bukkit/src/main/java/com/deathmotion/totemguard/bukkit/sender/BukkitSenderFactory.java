@@ -20,7 +20,6 @@
 
 package com.deathmotion.totemguard.bukkit.sender;
 
-import com.deathmotion.totemguard.bukkit.TGBukkit;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.platform.sender.SenderFactory;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -32,10 +31,17 @@ import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
+import org.bukkit.plugin.Plugin;
 
 import java.util.UUID;
 
 public class BukkitSenderFactory extends SenderFactory<CommandSender> {
+
+    private final Plugin plugin;
+
+    public BukkitSenderFactory(Plugin plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     protected String getName(CommandSender sender) {
@@ -61,7 +67,7 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> {
         if (sender instanceof Player || sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender) {
             sender.sendMessage(message);
         } else {
-            FoliaScheduler.getGlobalRegionScheduler().run(TGBukkit.getInstance(), (o) -> sender.sendMessage(message));
+            FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> sender.sendMessage(message));
         }
     }
 
@@ -78,11 +84,11 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> {
     @Override
     protected void performCommand(CommandSender sender, String command) {
         if (sender instanceof Player player) {
-            FoliaScheduler.getEntityScheduler().run(player, TGBukkit.getInstance(),
+            FoliaScheduler.getEntityScheduler().run(player, plugin,
                     o -> player.performCommand(command), null);
             return;
         }
-        FoliaScheduler.getGlobalRegionScheduler().run(TGBukkit.getInstance(),
+        FoliaScheduler.getGlobalRegionScheduler().run(plugin,
                 o -> Bukkit.dispatchCommand(sender, command));
     }
 

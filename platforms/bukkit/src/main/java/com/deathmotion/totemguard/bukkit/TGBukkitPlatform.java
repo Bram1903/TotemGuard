@@ -30,9 +30,14 @@ import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import lombok.Getter;
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.brigadier.BrigadierSetting;
 import org.incendo.cloud.brigadier.CloudBrigadierManager;
@@ -40,6 +45,7 @@ import org.incendo.cloud.bukkit.CloudBukkitCapabilities;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import org.incendo.cloud.setting.Configurable;
+import org.incendo.cloud.setting.ManagerSetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +55,7 @@ import java.util.UUID;
 @Getter
 public class TGBukkitPlatform extends TGPlatform {
 
-    private final TGBukkit plugin;
+    private final JavaPlugin plugin;
     private final Scheduler scheduler;
 
     private final Lazy<BukkitSenderFactory> senderFactory;
@@ -57,12 +63,15 @@ public class TGBukkitPlatform extends TGPlatform {
     private final Lazy<CommandManager<Sender>> commandManager;
     private final Lazy<BukkitCrossServerTeleportRouter> teleportRouter;
 
-    public TGBukkitPlatform(TGBukkit plugin) {
+    private boolean brigadierNeedsLifecyclePublish;
+    private Metrics metrics;
+
+    public TGBukkitPlatform(JavaPlugin plugin) {
         super(Platform.PAPER);
         this.plugin = plugin;
         this.scheduler = new BukkitScheduler(plugin);
 
-        this.senderFactory = Lazy.of(BukkitSenderFactory::new);
+        this.senderFactory = Lazy.of(() -> new BukkitSenderFactory(plugin));
         this.platformPlayerFactory = Lazy.of(() -> new BukkitPlatformPlayerFactory(plugin));
 
         this.teleportRouter = Lazy.of(() -> new BukkitCrossServerTeleportRouter(this));
@@ -74,8 +83,36 @@ public class TGBukkitPlatform extends TGPlatform {
                     senderFactory.get()
             );
 
+            if (isManagedByLoader()) {
+                // Hot-reload runs after Cloud's normal registration window has closed and
+                // after Paper's command map already holds the previous restart's /tg entries.
+                // Opt into unsafe registration + override so we can rebuild the command tree.
+                Configurable<ManagerSetting> managerSettings = manager.settings();
+                managerSettings.set(ManagerSetting.ALLOW_UNSAFE_REGISTRATION, true);
+                managerSettings.set(ManagerSetting.OVERRIDE_EXISTING_COMMANDS, true);
+            }
+
+            boolean brigadierRegistered = false;
             if (manager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
-                manager.registerBrigadier();
+                // Paper closes the lifecycle event registration window once the server has
+                // finished booting. On cold-start (loader or standalone) we are still inside
+                // it, so registerBrigadier() works directly. On a loader-driven hot reload we
+                // are past the window; force re-registration via Paper internals.
+                if (!PaperLifecycleHack.isLifecycleRegistrationClosed(plugin)) {
+                    manager.registerBrigadier();
+                    brigadierRegistered = true;
+                } else if (PaperLifecycleHack.forceRegisterBrigadier(plugin, manager, getLogger())) {
+                    brigadierRegistered = true;
+                    // The lifecycle event won't fire naturally now. Defer the publish until
+                    // CommandManagerImpl has populated Cloud's command tree, otherwise the
+                    // handler would run against an empty tree and only the root literals
+                    // would land in brigadier.
+                    brigadierNeedsLifecyclePublish = true;
+                } else {
+                    getLogger().warning("Brigadier registration unavailable (lifecycle window is closed and the force-register path failed). Falling back to asynchronous tab completion.");
+                }
+            }
+            if (brigadierRegistered) {
                 CloudBrigadierManager<Sender, ?> cbm = manager.brigadierManager();
                 Configurable<BrigadierSetting> settings = cbm.settings();
                 settings.set(BrigadierSetting.FORCE_EXECUTABLE, true);
@@ -111,7 +148,13 @@ public class TGBukkitPlatform extends TGPlatform {
 
     @Override
     public void enableBStats() {
-        plugin.enableBStats();
+        try {
+            metrics = new Metrics(plugin, TGPlatform.getBStatsId());
+            metrics.addCustomChart(new SimplePie("tg_version", TGVersions.CURRENT::toStringWithoutSnapshot));
+            metrics.addCustomChart(new SimplePie("tg_platform", () -> "Bukkit"));
+        } catch (Exception e) {
+            getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
+        }
     }
 
     @Override
@@ -136,7 +179,42 @@ public class TGBukkitPlatform extends TGPlatform {
 
     @Override
     public void disablePlugin() {
+        if (isManagedByLoader()) {
+            setEnabled(false);
+            return;
+        }
         Bukkit.getPluginManager().disablePlugin(plugin);
+    }
+
+    @Override
+    protected void afterCommandsRegistered() {
+        if (brigadierNeedsLifecyclePublish) {
+            brigadierNeedsLifecyclePublish = false;
+            PaperLifecycleHack.publishCommandsToBrigadier(plugin, getLogger());
+        }
+    }
+
+    @Override
+    public void commonOnDisable() {
+        super.commonOnDisable();
+        if (metrics != null) {
+            try {
+                metrics.shutdown();
+            } catch (Exception ex) {
+                getLogger().warning("Failed to shut down bStats: " + ex.getMessage());
+            }
+            metrics = null;
+        }
+        try {
+            HandlerList.unregisterAll(plugin);
+        } catch (Exception ex) {
+            getLogger().warning("Failed to unregister Bukkit listeners: " + ex.getMessage());
+        }
+        try {
+            Bukkit.getScheduler().cancelTasks(plugin);
+        } catch (Exception ex) {
+            getLogger().warning("Failed to cancel Bukkit scheduled tasks: " + ex.getMessage());
+        }
     }
 
     @Override

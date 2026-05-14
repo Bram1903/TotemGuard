@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.bukkit.network;
 
-import com.deathmotion.totemguard.bukkit.TGBukkit;
+import com.deathmotion.totemguard.bukkit.TGBukkitPlatform;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
@@ -48,7 +48,7 @@ public final class BukkitCrossServerTeleportRouter implements Listener {
 
     public BukkitCrossServerTeleportRouter(TGPlatform platform) {
         this.platform = platform;
-        Bukkit.getPluginManager().registerEvents(this, TGBukkit.getInstance());
+        Bukkit.getPluginManager().registerEvents(this, ((TGBukkitPlatform) platform).getPlugin());
         platform.getScheduler().runAsyncTaskAtFixedRate(
                 this::sweep, SWEEP_PERIOD_SECONDS, SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
     }

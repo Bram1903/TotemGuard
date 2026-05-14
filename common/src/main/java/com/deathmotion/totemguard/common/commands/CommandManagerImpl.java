@@ -22,10 +22,15 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.impl.*;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.util.TGVersions;
+import org.incendo.cloud.Command;
 import org.incendo.cloud.CommandManager;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class CommandManagerImpl {
 
+    private final Set<String> registeredRoots = new HashSet<>();
     CommandManager<Sender> commandManager;
 
     public CommandManagerImpl() {
@@ -59,5 +64,23 @@ public class CommandManagerImpl {
         new TeleportCommand().register(commandManager);
         new TopCommand().register(commandManager);
         new StatsCommand().register(commandManager);
+
+        // Capture root names after registration so unregisterAll() can roll them back
+        // cleanly on shutdown. The loader path depends on this to leave Bukkit's
+        // CommandMap clean between hot-reloads.
+        for (Command<Sender> command : commandManager.commands()) {
+            registeredRoots.add(command.rootComponent().name());
+        }
+    }
+
+    public void unregisterAll() {
+        for (String root : registeredRoots) {
+            try {
+                commandManager.deleteRootCommand(root);
+            } catch (Exception ignored) {
+                // Cloud throws if the root is missing; ignore so partial teardown still proceeds.
+            }
+        }
+        registeredRoots.clear();
     }
 }

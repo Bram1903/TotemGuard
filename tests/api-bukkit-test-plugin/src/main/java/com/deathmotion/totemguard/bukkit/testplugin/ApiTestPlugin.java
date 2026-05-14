@@ -19,6 +19,9 @@
 package com.deathmotion.totemguard.bukkit.testplugin;
 
 import com.deathmotion.totemguard.api.TotemGuard;
+import com.deathmotion.totemguard.api.TotemGuardAPI;
+import com.deathmotion.totemguard.api.event.EventSubscription;
+import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.api.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
 import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
@@ -36,29 +39,58 @@ public final class ApiTestPlugin extends JavaPlugin {
 
     @Getter
     private static ApiTestPlugin instance;
-    private final List<AutoCloseable> listeners = new ArrayList<>();
+    private final List<EventSubscription> subscriptions = new ArrayList<>();
+    private volatile boolean disabled;
 
     public ApiTestPlugin() {
         instance = this;
     }
 
+    @Override
     public void onEnable() {
-        TotemGuard.getAsync().thenAccept(api -> {
-            getLogger().info("Hooked into TotemGuard version " + api.getVersion() + ".");
+        hook();
+    }
 
-            listeners.add(api.getEventRepository().subscribe(TGUserJoinEvent.class, new TGUserJoinEventListener()));
-            listeners.add(api.getEventRepository().subscribe(TGUserQuitEvent.class, new TGUserQuitEventListener()));
-            listeners.add(api.getEventRepository().subscribe(TGUserFlagEvent.class, new TGFlagEventListener()));
+    @Override
+    public void onDisable() {
+        disabled = true;
+        closeSubscriptions();
+    }
+
+    private void hook() {
+        TotemGuard.getAsync().thenAccept(api -> {
+            if (disabled) return;
+            getLogger().info("Hooked into TotemGuard version " + api.getVersion() + ".");
+            subscribeAll(api);
         });
     }
 
-    public void onDisable() {
-        for (AutoCloseable l : listeners) {
+    private void subscribeAll(TotemGuardAPI api) {
+        subscriptions.add(api.getEventRepository().subscribe(TGUserJoinEvent.class, new TGUserJoinEventListener()));
+        subscriptions.add(api.getEventRepository().subscribe(TGUserQuitEvent.class, new TGUserQuitEventListener()));
+        subscriptions.add(api.getEventRepository().subscribe(TGUserFlagEvent.class, new TGFlagEventListener()));
+        subscriptions.add(api.getEventRepository().subscribe(TGPluginShutdownEvent.class, this::onTotemGuardShutdown));
+    }
+
+    private void onTotemGuardShutdown(TGPluginShutdownEvent event) {
+        TGPluginShutdownEvent.Reason reason = event.getReason();
+        getLogger().info("TotemGuard is shutting down (reason: " + reason + "). Dropping cached subscriptions.");
+        subscriptions.clear();
+
+        if (reason == TGPluginShutdownEvent.Reason.LOADER_RESTART || reason == TGPluginShutdownEvent.Reason.UPDATE_TRIGGERED) {
+            // getAsync() returns a fresh future after TotemGuard.shutdown() arms it,
+            // and completes once the loader publishes the new instance.
+            hook();
+        }
+    }
+
+    private void closeSubscriptions() {
+        for (EventSubscription subscription : subscriptions) {
             try {
-                l.close();
+                subscription.close();
             } catch (Exception ignored) {
             }
         }
-        listeners.clear();
+        subscriptions.clear();
     }
 }

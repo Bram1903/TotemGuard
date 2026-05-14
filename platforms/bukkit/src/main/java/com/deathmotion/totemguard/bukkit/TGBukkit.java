@@ -19,26 +19,23 @@
 package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.bukkit.placeholder.PlaceholderAPIHolder;
-import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.util.TGVersions;
 import lombok.Getter;
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Standalone entry point for the TotemGuard plugin. When the inner jar is installed
+ * directly (no loader), Bukkit loads this class as the registered plugin and drives
+ * the lifecycle. The loader path bypasses this class entirely and instantiates
+ * {@link TGBukkitPlatform} against its own JavaPlugin via {@link TGBukkitEntry}.
+ */
 @Getter
 public class TGBukkit extends JavaPlugin {
-
-    @Getter
-    private static TGBukkit instance;
 
     private TGBukkitPlatform tg;
 
     @Override
     public void onLoad() {
-        instance = this;
-
         tg = new TGBukkitPlatform(this);
         tg.commonOnInitialize();
     }
@@ -58,20 +55,6 @@ public class TGBukkit extends JavaPlugin {
     public void onDisable() {
         if (tg != null) {
             tg.commonOnDisable();
-        }
-    }
-
-    void enableBStats() {
-        try {
-            Metrics metrics = new Metrics(this, TGPlatform.getBStatsId());
-            metrics.addCustomChart(new SimplePie("tg_version", TGVersions.CURRENT::toStringWithoutSnapshot));
-            metrics.addCustomChart(new SimplePie("tg_platform", () -> "Bukkit"));
-        } catch (Exception e) {
-            if (tg != null) {
-                tg.getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
-            } else {
-                getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
-            }
         }
     }
 }

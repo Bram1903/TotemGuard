@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.bukkit.player;
 
-import com.deathmotion.totemguard.bukkit.TGBukkit;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
@@ -68,7 +67,7 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
 
     @Override
     public void kick(@NotNull Component reason) {
-        FoliaScheduler.getEntityScheduler().run(bukkitPlayer, TGBukkit.getInstance(), (o) -> {
+        FoliaScheduler.getEntityScheduler().run(bukkitPlayer, plugin, (o) -> {
             if (bukkitPlayer.isOnline()) bukkitPlayer.kick(reason);
         }, null);
     }

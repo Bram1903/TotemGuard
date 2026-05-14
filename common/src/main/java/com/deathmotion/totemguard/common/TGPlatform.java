@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.api.event.EventSubscription;
+import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
@@ -63,10 +64,7 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckRequ
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckResultPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.reload.ReloadService;
-import com.deathmotion.totemguard.common.util.CompatibilityUtil;
-import com.deathmotion.totemguard.common.util.ConsoleBanner;
-import com.deathmotion.totemguard.common.util.LoggerSuppressor;
-import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.common.util.*;
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
@@ -95,6 +93,10 @@ public abstract class TGPlatform {
     private final List<EventSubscription> internalSubscriptions = new ArrayList<>();
     @Setter
     private boolean enabled = true;
+    @Setter
+    private TGPluginShutdownEvent.Reason shutdownReason = TGPluginShutdownEvent.Reason.SERVER_STOP;
+    @Setter
+    private boolean managedByLoader = false;
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
@@ -134,6 +136,15 @@ public abstract class TGPlatform {
     public void commonOnInitialize() {
     }
 
+    /**
+     * Hook for platforms that need to act once Cloud's command tree has been populated.
+     * Paper uses this to publish the freshly-built tree to brigadier when running under
+     * the loader on a hot-reload (the COMMANDS lifecycle event no longer fires naturally
+     * at that point).
+     */
+    protected void afterCommandsRegistered() {
+    }
+
     public void commonOnEnable() {
         LoggerSuppressor.suppressDefaultNoise();
 
@@ -146,7 +157,9 @@ public abstract class TGPlatform {
 
         ConsoleBanner.print();
 
-        if (!new JarIntegrityChecker(logger, "TotemGuard").verifyCurrentJar()) {
+        // The loader already runs this exact check against the same jar before injecting
+        // the api classes, so skip it here to avoid double-logging when loader-driven.
+        if (!managedByLoader && !new JarIntegrityChecker(logger, "TotemGuard").verifyCurrentJar()) {
             setEnabled(false);
             disablePlugin();
             return;
@@ -175,6 +188,7 @@ public abstract class TGPlatform {
         modSessionStore = new ModSessionStore(redisRepository, logger);
         teleportService = new TeleportService(this);
         commandManager = new CommandManagerImpl();
+        afterCommandsRegistered();
         updateCheckerRepository = new UpdateCheckerRepositoryImpl();
         networkPresenceRepository = new NetworkPresenceRepository(this, serverIdentity);
         networkPresenceRepository.addListener(alertRepository);
@@ -216,13 +230,25 @@ public abstract class TGPlatform {
         internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
 
         api = new TGPlatformAPI();
-        TotemGuard.init(api);
+        TotemGuard.replace(api);
 
         enableBStats();
         logger.info("Enabled TotemGuard in " + stopwatch.stop().elapsed().toMillis() + "ms");
     }
 
     public void commonOnDisable() {
+        TotemGuard.shutdown();
+
+        if (eventRepository != null) {
+            try {
+                eventRepository.post(new TGPluginShutdownEvent(
+                        shutdownReason != null ? shutdownReason : TGPluginShutdownEvent.Reason.SERVER_STOP,
+                        TGVersions.CURRENT.toString()));
+            } catch (Throwable t) {
+                logger.warning("TGPluginShutdownEvent dispatch threw: " + t.getMessage());
+            }
+        }
+
         for (PacketListenerAbstract listener : packetListeners) {
             try {
                 PacketEvents.getAPI().getEventManager().unregisterListener(listener);
@@ -241,18 +267,29 @@ public abstract class TGPlatform {
         }
         internalSubscriptions.clear();
 
+        if (commandManager != null) {
+            try {
+                commandManager.unregisterAll();
+            } catch (Exception ex) {
+                logger.warning("Failed to unregister commands: " + ex.getMessage());
+            }
+        }
         if (integrationRegistrar != null) integrationRegistrar.disableAll();
         if (monitorRepository != null) monitorRepository.stop();
         if (followRepository != null) followRepository.stop();
         if (networkPresenceRepository != null) networkPresenceRepository.stop();
         if (playerRepository != null) playerRepository.shutdown();
         if (updateCheckerRepository != null) updateCheckerRepository.shutdown();
-        if (alertRepository != null) redisRepository.removeStateListener(alertRepository);
+        if (alertRepository != null && redisRepository != null) redisRepository.removeStateListener(alertRepository);
         if (bridgeManager != null) bridgeManager.shutdown();
         if (redisRepository != null) redisRepository.stop();
         if (databaseRepository != null) databaseRepository.stop();
         if (guiManager != null) guiManager.shutdown();
         if (discordWebhookService != null) discordWebhookService.shutdown();
+
+        if (instance == this) {
+            instance = null;
+        }
     }
 
     private void registerPacketListener(PacketListenerAbstract listener) {

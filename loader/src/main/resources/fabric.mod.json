@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "totemguard",
+  "version": "${version}",
+  "name": "TotemGuard",
+  "description": "${description}",
+  "authors": [
+    "Bram",
+    "OutDev"
+  ],
+  "license": "GPL-3.0",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "com.deathmotion.totemguard.loader.fabric.TGLoaderFabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "java": ">=25",
+    "packetevents": "*"
+  }
+}

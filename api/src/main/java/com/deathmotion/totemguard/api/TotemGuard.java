@@ -33,18 +33,20 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class TotemGuard {
 
     private static final AtomicReference<TotemGuardAPI> INSTANCE = new AtomicReference<>();
-    private static final CompletableFuture<TotemGuardAPI> FUTURE = new CompletableFuture<>();
+    private static final AtomicReference<CompletableFuture<TotemGuardAPI>> FUTURE =
+            new AtomicReference<>(new CompletableFuture<>());
 
     private TotemGuard() {
         // utility class
     }
 
     /**
-     * Initializes the global API instance exactly once.
+     * Initializes the global API instance for the first time.
      *
      * @param api the API instance
      * @throws NullPointerException  if {@code api} is null
-     * @throws IllegalStateException if already initialized
+     * @throws IllegalStateException if already initialized; use {@link #replace(TotemGuardAPI)}
+     *                               when the loader is swapping the running plugin
      */
     public static void init(@NotNull TotemGuardAPI api) {
         Objects.requireNonNull(api, "api");
@@ -53,8 +55,34 @@ public final class TotemGuard {
             throw new IllegalStateException("TotemGuard API is already initialized.");
         }
 
-        // Safe to call once; later calls are prevented by compareAndSet above.
-        FUTURE.complete(api);
+        FUTURE.get().complete(api);
+    }
+
+    /**
+     * Loader-internal: replace the current API instance with a freshly started one.
+     * <p>
+     * Used during {@code /tgloader restart} when the inner plugin is rebooted. The
+     * pending future returned by {@link #getAsync()} for any consumer that called it
+     * after the previous {@link #shutdown()} completes with the new instance.
+     */
+    public static void replace(@NotNull TotemGuardAPI api) {
+        Objects.requireNonNull(api, "api");
+        INSTANCE.set(api);
+        FUTURE.get().complete(api);
+    }
+
+    /**
+     * Loader-internal: clear the API instance and arm a fresh future. Called
+     * immediately before {@link com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent}
+     * is dispatched, so handlers that re-hook via {@link #getAsync()} receive the
+     * fresh (pending) future rather than a completed future pointing at the API
+     * that is about to be torn down. {@link #get()} throws inside a shutdown
+     * handler. Consumers needing to use the API one last time during shutdown
+     * must cache their reference at startup.
+     */
+    public static void shutdown() {
+        INSTANCE.set(null);
+        FUTURE.set(new CompletableFuture<>());
     }
 
     /**
@@ -76,13 +104,15 @@ public final class TotemGuard {
     /**
      * Returns a future that completes when the API is initialized.
      * <p>
-     * If the API is already initialized, a completed future is returned.
+     * If the API is already initialized, a completed future is returned. After a
+     * {@link #shutdown()} the future is reset, so consumers can re-acquire by calling
+     * this method again from their shutdown event handler.
      *
      * @return a future supplying the API instance
      */
     public static @NotNull CompletableFuture<TotemGuardAPI> getAsync() {
         TotemGuardAPI api = INSTANCE.get();
-        return (api != null) ? CompletableFuture.completedFuture(api) : FUTURE;
+        return (api != null) ? CompletableFuture.completedFuture(api) : FUTURE.get();
     }
 
     /**
