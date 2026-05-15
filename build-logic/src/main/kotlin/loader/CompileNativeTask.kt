@@ -17,8 +17,10 @@ import javax.inject.Inject
  * Builds the JNI defineClass bridge for every supported platform
  * (linux x86_64 / aarch64, windows x86_64 / aarch64, macos aarch64).
  *
- * Cross-compilation uses `zig cc` when available. If zig is not on PATH the task falls
- * back to the host's `cc` and skips foreign targets.
+ * Cross-compilation always goes through `zig cc` so the build is reproducible regardless
+ * of host OS. The host JDK is used only for the platform-independent `jni.h`. The
+ * platform-specific `jni_md.h` is vendored under `src/main/c/jni_md/<linux|win32|darwin>/`
+ * so a Windows host produces the same macOS binary a Linux host would.
  *
  * Output binaries are written under `outputDir/<os>-<arch>/` and are intended to be
  * checked into the repository so day-to-day builds do not need to re-run this task.
@@ -34,6 +36,9 @@ abstract class CompileNativeTask : DefaultTask() {
     @get:InputFile
     abstract val windowsJniMd: RegularFileProperty
 
+    @get:InputFile
+    abstract val darwinJniMd: RegularFileProperty
+
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
@@ -48,17 +53,15 @@ abstract class CompileNativeTask : DefaultTask() {
         val archTag: String,
         val libName: String,
         val zigTriple: String,
-        /** When non-null, names a vendored jni_md.h directory (linux|win32) used in place
-         *  of the host JDK's platform-specific include dir. */
-        val vendoredJniMd: String?,
+        val vendoredJniMd: String,
     )
 
     private val targets = listOf(
-        Target("linux", "x86_64", "libtotemguard_loader_native.so", "x86_64-linux-gnu", "linux"),
-        Target("linux", "aarch64", "libtotemguard_loader_native.so", "aarch64-linux-gnu", "linux"),
+        Target("linux", "x86_64", "libtotemguard_loader_native.so", "x86_64-linux-gnu.2.31", "linux"),
+        Target("linux", "aarch64", "libtotemguard_loader_native.so", "aarch64-linux-gnu.2.31", "linux"),
         Target("windows", "x86_64", "totemguard_loader_native.dll", "x86_64-windows-gnu", "win32"),
         Target("windows", "aarch64", "totemguard_loader_native.dll", "aarch64-windows-gnu", "win32"),
-        Target("macos", "aarch64", "libtotemguard_loader_native.dylib", "aarch64-macos", null),
+        Target("macos", "aarch64", "libtotemguard_loader_native.dylib", "aarch64-macos", "darwin"),
     )
 
     @TaskAction
@@ -71,12 +74,10 @@ abstract class CompileNativeTask : DefaultTask() {
             throw GradleException("Cannot find jni.h under $jniRoot; point JAVA_HOME at a JDK installation.")
         }
 
-        val hasZig = locateExecutable("zig") != null
-        if (!hasZig) {
-            logger.warn(
-                "compileNative: 'zig' is not on PATH; cross-compilation is unavailable. " +
-                    "Install zig (https://ziglang.org/download/) to produce binaries for every supported platform. " +
-                    "Falling back to host-only build with 'cc'."
+        if (locateExecutable("zig") == null) {
+            throw GradleException(
+                "compileNative requires 'zig' on PATH. Install zig (https://ziglang.org/download/) " +
+                    "so the build produces identical binaries on every host OS."
             )
         }
 
@@ -85,15 +86,9 @@ abstract class CompileNativeTask : DefaultTask() {
             targetDir.mkdirs()
             val outFile = targetDir.resolve(target.libName)
 
-            if (hasZig) {
-                buildWithZig(srcFile, outFile, target, jniRoot)
-            } else if (isHostTarget(target)) {
-                buildWithHostCc(srcFile, outFile, target, jniRoot)
-            } else {
-                logger.lifecycle("compileNative: skipping ${target.osTag}-${target.archTag} (requires zig for cross-compile)")
-            }
+            buildWithZig(srcFile, outFile, target, jniRoot)
 
-            // zig cc produces import-libs / pdbs for windows targets; drop them so only
+            // zig cc produces import-libs / pdbs for windows targets. Drop them so only
             // the .dll lands under outputDir.
             File(targetDir, "native.lib").delete()
             File(targetDir, "totemguard_loader_native.pdb").delete()
@@ -108,25 +103,11 @@ abstract class CompileNativeTask : DefaultTask() {
         return root
     }
 
-    private fun jniIncludes(target: Target, jniRoot: File): List<String> {
-        val list = mutableListOf("-I${jniRoot.absolutePath}")
-        when (target.vendoredJniMd) {
-            "linux" -> list.add(0, "-I${linuxJniMd.get().asFile.parentFile.absolutePath}")
-            "win32" -> list.add(0, "-I${windowsJniMd.get().asFile.parentFile.absolutePath}")
-            null -> {
-                // Same-OS build: use the host JDK's platform-specific include dir.
-                val osInclude = when (target.osTag) {
-                    "linux" -> "linux"
-                    "windows" -> "win32"
-                    "macos" -> "darwin"
-                    else -> ""
-                }
-                if (osInclude.isNotEmpty()) {
-                    list.add("-I${File(jniRoot, osInclude).absolutePath}")
-                }
-            }
-        }
-        return list
+    private fun vendoredJniMdDir(target: Target): File = when (target.vendoredJniMd) {
+        "linux" -> linuxJniMd.get().asFile.parentFile
+        "win32" -> windowsJniMd.get().asFile.parentFile
+        "darwin" -> darwinJniMd.get().asFile.parentFile
+        else -> error("unknown vendored jni_md directory: ${target.vendoredJniMd}")
     }
 
     private fun buildWithZig(src: File, out: File, target: Target, jniRoot: File) {
@@ -135,51 +116,13 @@ abstract class CompileNativeTask : DefaultTask() {
             add("-shared")
             if (target.osTag != "windows") add("-fPIC")
             add("-O2")
-            addAll(jniIncludes(target, jniRoot))
+            add("-I${vendoredJniMdDir(target).absolutePath}")
+            add("-I${jniRoot.absolutePath}")
             add("-o"); add(out.absolutePath)
             add(src.absolutePath)
         }
-        try {
-            execOps.exec { commandLine(args) }
-            logger.lifecycle("compileNative: built ${out.relativeTo(project.rootDir)} via zig")
-        } catch (ex: Exception) {
-            logger.warn("compileNative: zig build for ${target.osTag}-${target.archTag} failed: $ex")
-        }
-    }
-
-    private fun buildWithHostCc(src: File, out: File, target: Target, jniRoot: File) {
-        val cc = if (target.osTag == "windows") "gcc" else "cc"
-        val args = buildList {
-            add(cc); add("-shared")
-            if (target.osTag != "windows") add("-fPIC")
-            add("-O2")
-            addAll(jniIncludes(target, jniRoot))
-            add("-o"); add(out.absolutePath)
-            add(src.absolutePath)
-        }
-        try {
-            execOps.exec { commandLine(args) }
-            logger.lifecycle("compileNative: built ${out.relativeTo(project.rootDir)} via $cc (host only)")
-        } catch (ex: Exception) {
-            logger.warn("compileNative: host build for ${target.osTag}-${target.archTag} failed: $ex")
-        }
-    }
-
-    private fun isHostTarget(target: Target): Boolean {
-        val os = System.getProperty("os.name").lowercase()
-        val arch = System.getProperty("os.arch").lowercase()
-        val hostOs = when {
-            os.contains("linux") -> "linux"
-            os.contains("windows") -> "windows"
-            os.contains("mac") || os.contains("darwin") -> "macos"
-            else -> ""
-        }
-        val hostArch = when {
-            arch.contains("aarch64") || arch.contains("arm64") -> "aarch64"
-            arch.contains("amd64") || arch.contains("x86_64") || arch.contains("x64") -> "x86_64"
-            else -> ""
-        }
-        return target.osTag == hostOs && target.archTag == hostArch
+        execOps.exec { commandLine(args) }
+        logger.lifecycle("compileNative: built ${out.relativeTo(project.rootDir)} via zig")
     }
 
     private fun locateExecutable(name: String): File? {

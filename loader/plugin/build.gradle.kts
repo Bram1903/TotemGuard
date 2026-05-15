@@ -23,13 +23,14 @@ dependencies {
 }
 
 tasks.register<CompileNativeTask>("compileNative") {
-    description = "Builds the JNI defineClass bridge for every supported platform. " +
-        "Requires zig for cross-compilation; falls back to host-only with cc."
+    description = "Builds the JNI defineClass bridge for every supported platform via zig cc. " +
+        "Requires zig on PATH; the same toolchain is used on every host OS for reproducible binaries."
     group = "build"
 
     sourceFile.set(file("src/main/c/native.c"))
     linuxJniMd.set(file("src/main/c/jni_md/linux/jni_md.h"))
     windowsJniMd.set(file("src/main/c/jni_md/win32/jni_md.h"))
+    darwinJniMd.set(file("src/main/c/jni_md/darwin/jni_md.h"))
     outputDir.set(file("src/main/resources/natives"))
     javaHome.set(System.getProperty("java.home"))
 }
