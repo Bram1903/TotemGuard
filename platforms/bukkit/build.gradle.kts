@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(libs.bstats.bukkit)
+    implementation(libs.bstats.base)
     implementation(libs.cloud.paper)
     compileOnly(libs.paper)
     compileOnly(libs.packetevents.spigot)

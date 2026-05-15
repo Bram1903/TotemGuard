@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.bukkit.compatibility.BukkitCompatibility;
+import com.deathmotion.totemguard.bukkit.metrics.TGMetrics;
 import com.deathmotion.totemguard.bukkit.network.BukkitCrossServerTeleportRouter;
 import com.deathmotion.totemguard.bukkit.player.BukkitPlatformPlayerFactory;
 import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
@@ -32,8 +33,6 @@ import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import lombok.Getter;
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -64,7 +63,7 @@ public class TGBukkitPlatform extends TGPlatform {
     private final Lazy<BukkitCrossServerTeleportRouter> teleportRouter;
 
     private boolean brigadierNeedsLifecyclePublish;
-    private Metrics metrics;
+    private TGMetrics metrics;
 
     public TGBukkitPlatform(JavaPlugin plugin) {
         super(Platform.PAPER);
@@ -149,9 +148,7 @@ public class TGBukkitPlatform extends TGPlatform {
     @Override
     public void enableBStats() {
         try {
-            metrics = new Metrics(plugin, TGPlatform.getBStatsId());
-            metrics.addCustomChart(new SimplePie("tg_version", TGVersions.CURRENT::toStringWithoutSnapshot));
-            metrics.addCustomChart(new SimplePie("tg_platform", () -> "Bukkit"));
+            metrics = new TGMetrics(plugin, TGPlatform.getBStatsId(), TGVersions.CURRENT::toDisplayString);
         } catch (Exception e) {
             getLogger().warning("Something went wrong while enabling bStats.\n" + e.getMessage());
         }

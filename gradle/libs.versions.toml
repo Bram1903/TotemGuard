@@ -50,7 +50,7 @@ cloud-velocity = { group = "org.incendo", name = "cloud-velocity", version.ref =
 cloud-bungee = { group = "org.incendo", name = "cloud-bungee", version.ref = "cloud-platform" }
 cloud-fabric = { group = "org.incendo", name = "cloud-fabric", version.ref = "cloud-fabric" }
 
-bstats-bukkit = { group = "org.bstats", name = "bstats-bukkit", version.ref = "bstats" }
+bstats-base = { group = "org.bstats", name = "bstats-base", version.ref = "bstats" }
 bstats-bungeecord = { group = "org.bstats", name = "bstats-bungeecord", version.ref = "bstats" }
 bstats-velocity = { group = "org.bstats", name = "bstats-velocity", version.ref = "bstats" }
 lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
