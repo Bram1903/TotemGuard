@@ -25,14 +25,17 @@ import java.nio.file.Path;
 public record LoaderPaths(Path loaderDir, Path innerDataFolder, Path versionsDir, Path localDir) {
 
     public static LoaderPaths forBukkit(Path bukkitDataFolder) throws IOException {
-        Path pluginsDir = bukkitDataFolder.toAbsolutePath().getParent();
-        Path loaderDir = pluginsDir.resolve("TotemGuardLoader");
-        Path inner = bukkitDataFolder.toAbsolutePath();
+        // Loader state lives in the loader plugin's own data folder, which Bukkit derives
+        // from plugin.yml (TotemGuard-Loader). The inner plugin's data folder is pinned to
+        // plugins/TotemGuard so configs land where standalone installs put them.
+        Path loaderDir = bukkitDataFolder.toAbsolutePath();
+        Path pluginsDir = loaderDir.getParent();
+        Path inner = pluginsDir.resolve("TotemGuard");
         return create(loaderDir, inner);
     }
 
     public static LoaderPaths forFabric(Path fabricConfigDir) throws IOException {
-        Path loaderDir = fabricConfigDir.resolve("totemguardloader");
+        Path loaderDir = fabricConfigDir.resolve("totemguard-loader");
         Path inner = fabricConfigDir.resolve("totemguard");
         return create(loaderDir, inner);
     }

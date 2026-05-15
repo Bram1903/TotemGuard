@@ -18,12 +18,11 @@
 
 package com.deathmotion.totemguard.bukkit.player;
 
+import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 final class BukkitManualCheckHandle implements ManualCheckHandle {
 
-    private final Plugin plugin;
+    private final BukkitScheduler scheduler;
     private final Player player;
     private final ItemStack[] contents;
     private final ItemStack cursor;
@@ -42,10 +41,10 @@ final class BukkitManualCheckHandle implements ManualCheckHandle {
     private final Collection<PotionEffect> effects;
     private final AtomicBoolean restored = new AtomicBoolean();
 
-    BukkitManualCheckHandle(Plugin plugin, Player player, ItemStack[] contents, ItemStack cursor,
+    BukkitManualCheckHandle(BukkitScheduler scheduler, Player player, ItemStack[] contents, ItemStack cursor,
                             double health, int foodLevel, float saturation,
                             Collection<PotionEffect> effects) {
-        this.plugin = plugin;
+        this.scheduler = scheduler;
         this.player = player;
         this.contents = contents;
         this.cursor = cursor;
@@ -61,7 +60,7 @@ final class BukkitManualCheckHandle implements ManualCheckHandle {
             return;
         }
 
-        FoliaScheduler.getEntityScheduler().run(player, plugin, (o) -> {
+        scheduler.runForEntity(player, () -> {
             if (!player.isOnline()) {
                 return;
             }

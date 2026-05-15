@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.bukkit.player;
 
+import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import org.bukkit.Bukkit;
@@ -31,15 +32,17 @@ import java.util.UUID;
 public final class BukkitPlatformPlayerFactory implements PlatformPlayerFactory {
 
     private final Plugin plugin;
+    private final BukkitScheduler scheduler;
 
-    public BukkitPlatformPlayerFactory(Plugin plugin) {
+    public BukkitPlatformPlayerFactory(Plugin plugin, BukkitScheduler scheduler) {
         this.plugin = plugin;
+        this.scheduler = scheduler;
     }
 
     @Override
     public @Nullable PlatformPlayer create(@NotNull UUID uuid) {
         Player nativePlayer = Bukkit.getPlayer(uuid);
         if (nativePlayer == null) return null;
-        return new BukkitPlatformPlayer(nativePlayer, plugin);
+        return new BukkitPlatformPlayer(nativePlayer, plugin, scheduler);
     }
 }

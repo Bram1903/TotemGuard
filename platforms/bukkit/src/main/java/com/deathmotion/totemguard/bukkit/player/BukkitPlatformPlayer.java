@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.bukkit.player;
 
+import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
@@ -49,10 +49,12 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
     @Getter
     private final Player bukkitPlayer;
     private final Plugin plugin;
+    private final BukkitScheduler scheduler;
 
-    public BukkitPlatformPlayer(Player bukkitPlayer, Plugin plugin) {
+    public BukkitPlatformPlayer(Player bukkitPlayer, Plugin plugin, BukkitScheduler scheduler) {
         this.bukkitPlayer = bukkitPlayer;
         this.plugin = plugin;
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -67,7 +69,7 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
 
     @Override
     public void kick(@NotNull Component reason) {
-        FoliaScheduler.getEntityScheduler().run(bukkitPlayer, plugin, (o) -> {
+        scheduler.runForEntity(bukkitPlayer, () -> {
             if (bukkitPlayer.isOnline()) bukkitPlayer.kick(reason);
         }, null);
     }
@@ -91,7 +93,7 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
 
     @Override
     public void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch) {
-        FoliaScheduler.getEntityScheduler().run(bukkitPlayer, plugin, (o) -> {
+        scheduler.runForEntity(bukkitPlayer, () -> {
             if (!bukkitPlayer.isOnline()) return;
             World world = Bukkit.getWorld(worldName);
             World destWorld = world != null ? world : bukkitPlayer.getWorld();
@@ -103,7 +105,7 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
     @Override
     public void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted,
                                  @NotNull Runnable onDamageRefused) {
-        FoliaScheduler.getEntityScheduler().run(bukkitPlayer, plugin, (o) -> {
+        scheduler.runForEntity(bukkitPlayer, () -> {
             if (!bukkitPlayer.isOnline()) {
                 onDamageRefused.run();
                 return;
@@ -128,7 +130,7 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
             Collection<PotionEffect> effects = new ArrayList<>(bukkitPlayer.getActivePotionEffects());
 
             BukkitManualCheckHandle handle = new BukkitManualCheckHandle(
-                    plugin, bukkitPlayer, contents, cursorSnapshot,
+                    scheduler, bukkitPlayer, contents, cursorSnapshot,
                     health, foodLevel, saturation, effects
             );
 

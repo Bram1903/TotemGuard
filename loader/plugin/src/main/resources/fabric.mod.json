@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "totemguard",
+  "id": "totemguard-loader",
   "version": "${version}",
-  "name": "TotemGuard",
+  "name": "TotemGuard-Loader",
+  "provides": ["totemguard"],
   "description": "${description}",
   "authors": [
     "Bram",

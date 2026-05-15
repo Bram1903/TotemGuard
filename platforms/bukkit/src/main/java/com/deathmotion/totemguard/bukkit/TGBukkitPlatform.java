@@ -30,7 +30,6 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.util.Lazy;
-import com.deathmotion.totemguard.common.util.Scheduler;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -55,7 +54,7 @@ import java.util.UUID;
 public class TGBukkitPlatform extends TGPlatform {
 
     private final JavaPlugin plugin;
-    private final Scheduler scheduler;
+    private final BukkitScheduler scheduler;
 
     private final Lazy<BukkitSenderFactory> senderFactory;
     private final Lazy<BukkitPlatformPlayerFactory> platformPlayerFactory;
@@ -68,10 +67,10 @@ public class TGBukkitPlatform extends TGPlatform {
     public TGBukkitPlatform(JavaPlugin plugin) {
         super(Platform.PAPER);
         this.plugin = plugin;
-        this.scheduler = new BukkitScheduler(plugin);
+        this.scheduler = BukkitScheduler.create(plugin);
 
-        this.senderFactory = Lazy.of(() -> new BukkitSenderFactory(plugin));
-        this.platformPlayerFactory = Lazy.of(() -> new BukkitPlatformPlayerFactory(plugin));
+        this.senderFactory = Lazy.of(() -> new BukkitSenderFactory(scheduler));
+        this.platformPlayerFactory = Lazy.of(() -> new BukkitPlatformPlayerFactory(plugin, scheduler));
 
         this.teleportRouter = Lazy.of(() -> new BukkitCrossServerTeleportRouter(this));
 
@@ -124,7 +123,7 @@ public class TGBukkitPlatform extends TGPlatform {
     }
 
     @Override
-    public Scheduler getScheduler() {
+    public BukkitScheduler getScheduler() {
         return scheduler;
     }
 
@@ -161,6 +160,14 @@ public class TGBukkitPlatform extends TGPlatform {
 
     @Override
     public String getPluginDirectory() {
+        // Under the loader the inner plugin's data folder is pinned to plugins/TotemGuard/
+        // (see LoaderPaths.forBukkit) and lives independently of the loader plugin's own
+        // data folder, which Bukkit derives from the loader's plugin.yml name. Reading
+        // plugin.getDataFolder() here would point at the loader's folder and miss the
+        // user's configs.
+        if (isManagedByLoader() && getPluginHost() != null) {
+            return getPluginHost().dataFolder().toAbsolutePath().toString();
+        }
         return plugin.getDataFolder().getAbsolutePath();
     }
 

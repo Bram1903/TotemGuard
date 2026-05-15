@@ -20,9 +20,9 @@
 
 package com.deathmotion.totemguard.bukkit.sender;
 
+import com.deathmotion.totemguard.bukkit.scheduler.BukkitScheduler;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.platform.sender.SenderFactory;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -31,16 +31,15 @@ import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
-import org.bukkit.plugin.Plugin;
 
 import java.util.UUID;
 
 public class BukkitSenderFactory extends SenderFactory<CommandSender> {
 
-    private final Plugin plugin;
+    private final BukkitScheduler scheduler;
 
-    public BukkitSenderFactory(Plugin plugin) {
-        this.plugin = plugin;
+    public BukkitSenderFactory(BukkitScheduler scheduler) {
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -67,7 +66,7 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> {
         if (sender instanceof Player || sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender) {
             sender.sendMessage(message);
         } else {
-            FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> sender.sendMessage(message));
+            scheduler.runGlobal(() -> sender.sendMessage(message));
         }
     }
 
@@ -84,12 +83,10 @@ public class BukkitSenderFactory extends SenderFactory<CommandSender> {
     @Override
     protected void performCommand(CommandSender sender, String command) {
         if (sender instanceof Player player) {
-            FoliaScheduler.getEntityScheduler().run(player, plugin,
-                    o -> player.performCommand(command), null);
+            scheduler.runForEntity(player, () -> player.performCommand(command), null);
             return;
         }
-        FoliaScheduler.getGlobalRegionScheduler().run(plugin,
-                o -> Bukkit.dispatchCommand(sender, command));
+        scheduler.runGlobal(() -> Bukkit.dispatchCommand(sender, command));
     }
 
     @Override

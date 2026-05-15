@@ -76,7 +76,7 @@ tasks {
         val bukkitShadow = project(":platforms:bukkit").tasks.named("shadowJar")
         dependsOn(bukkitShadow)
         doFirst {
-            val localDir = runDirectory.get().asFile.toPath().resolve("plugins/TotemGuardLoader/local")
+            val localDir = runDirectory.get().asFile.toPath().resolve("plugins/TotemGuard-Loader/local")
             Files.createDirectories(localDir)
             Files.newDirectoryStream(localDir, "*.jar").use { entries ->
                 entries.forEach { Files.delete(it) }

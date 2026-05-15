@@ -18,48 +18,50 @@
 
 package com.deathmotion.totemguard.bukkit.scheduler;
 
-import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.deathmotion.totemguard.common.util.Scheduler;
-import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
-import io.github.retrooper.packetevents.util.folia.TaskWrapper;
+import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.TimeUnit;
+/**
+ * Bukkit-flavoured scheduler. Extends the platform-agnostic {@link Scheduler} with the
+ * region-aware operations Folia requires (global region, entity-owned tasks).
+ * <p>
+ * One concrete impl is picked at platform construction time via {@link #create(Plugin)};
+ * after that, calls dispatch through a single virtual lookup with no per-task Folia check.
+ */
+public interface BukkitScheduler extends Scheduler {
 
-public class BukkitScheduler implements Scheduler {
-
-    private final Plugin plugin;
-
-    public BukkitScheduler(Plugin plugin) {
-        this.plugin = plugin;
+    /**
+     * Detects Folia once and returns the matching implementation. Folia removes Bukkit's
+     * legacy scheduler, so this selection has to happen up front.
+     */
+    static @NotNull BukkitScheduler create(@NotNull Plugin plugin) {
+        if (isFolia()) {
+            return new FoliaBukkitScheduler(plugin);
+        }
+        return new PaperBukkitScheduler(plugin);
     }
 
-    @Override
-    public void runMainThreadTask(Runnable task) {
-        FoliaScheduler.getGlobalRegionScheduler().run(plugin, (o) -> {
-            task.run();
-        });
+    private static boolean isFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        }
     }
 
-    @Override
-    public void runAsyncTask(Runnable task) {
-        FoliaScheduler.getAsyncScheduler().runNow(plugin, (o) -> {
-            task.run();
-        });
-    }
+    /**
+     * Runs {@code task} on the global region (Folia) or the main server thread (Paper).
+     */
+    void runGlobal(@NotNull Runnable task);
 
-    @Override
-    public ScheduledTask runAsyncTaskDelayed(Runnable task, long delay, TimeUnit timeUnit) {
-        TaskWrapper wrapper = FoliaScheduler.getAsyncScheduler().runDelayed(plugin, (o) -> {
-            task.run();
-        }, delay, timeUnit);
-        return wrapper::cancel;
-    }
-
-    @Override
-    public ScheduledTask runAsyncTaskAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit timeUnit) {
-        TaskWrapper wrapper = FoliaScheduler.getAsyncScheduler().runAtFixedRate(
-                plugin, (o) -> task.run(), initialDelay, period, timeUnit);
-        return wrapper::cancel;
-    }
+    /**
+     * Runs {@code task} on the region owning {@code entity} (Folia) or the main server thread
+     * (Paper). {@code retired} is invoked instead if the entity has been removed before the
+     * task fires; ignored on Paper.
+     */
+    void runForEntity(@NotNull Entity entity, @NotNull Runnable task, @Nullable Runnable retired);
 }

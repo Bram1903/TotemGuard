@@ -1,4 +1,4 @@
-name: TotemGuard
+name: TotemGuard-Loader
 description: ${description}
 authors:
   - Bram
@@ -8,6 +8,8 @@ version: ${version}
 api-version: '1.13'
 folia-supported: true
 load: POSTWORLD
+provides:
+  - TotemGuard
 depend:
   - packetevents
 softdepend:
