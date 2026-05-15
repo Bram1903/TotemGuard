@@ -19,11 +19,11 @@
 package com.deathmotion.totemguard.fabric;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.host.Platform;
 import com.deathmotion.totemguard.host.TGPluginEntry;
 import com.deathmotion.totemguard.host.TGPluginHandle;
 import com.deathmotion.totemguard.host.TGPluginHost;
-import com.deathmotion.totemguard.common.util.TGVersions;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -47,7 +47,6 @@ public final class TGFabricEntry implements TGPluginEntry {
         TGFabricPlatform platform = new TGFabricPlatform(host.dataFolder());
         platform.setManagedByLoader(true);
         platform.setPluginHost(host);
-        platform.commonOnInitialize();
         platform.commonOnEnable();
         if (!platform.isEnabled()) {
             throw new IllegalStateException("TotemGuard failed to enable; see preceding log entries.");

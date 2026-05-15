@@ -34,8 +34,9 @@ import com.deathmotion.totemguard.api.update.UpdateCheckerRepository;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
-import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.common.util.TGVersions;
+import com.deathmotion.totemguard.host.LoaderController;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
@@ -122,6 +123,6 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     public @NotNull Optional<LoaderInfo> getLoaderInfo() {
         TGPluginHost host = platform.getPluginHost();
         if (host == null || !host.managedByLoader()) return Optional.empty();
-        return host.loaderController().map(c -> c.info());
+        return host.loaderController().map(LoaderController::info);
     }
 }

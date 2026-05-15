@@ -37,7 +37,6 @@ public class TGBukkit extends JavaPlugin {
     @Override
     public void onLoad() {
         tg = new TGBukkitPlatform(this);
-        tg.commonOnInitialize();
     }
 
     @Override

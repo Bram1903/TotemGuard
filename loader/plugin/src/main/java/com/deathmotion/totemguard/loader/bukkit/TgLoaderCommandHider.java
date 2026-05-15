@@ -27,15 +27,21 @@ import java.util.Iterator;
 
 /**
  * Strips {@code /tgloader} (and aliases / namespaced forms) from the command list
- * the server sends to a connecting client. Removes the command from tab-completion
- * and from the brigadier tree the client uses for auto-suggest, so a player never
- * sees the command exists. The executor itself also rejects non-console callers as
- * a second line of defense.
+ * the server sends to a connecting client when that client lacks
+ * {@code totemguard.loader.admin}. Defense-in-depth on top of the permission gate
+ * declared in plugin.yml: if a plugin re-injects the entry into the brigadier tree
+ * after Bukkit's own permission filter ran, this listener removes it again.
+ * <p>
+ * Players who have been granted the permission still see the command normally.
  */
 public final class TgLoaderCommandHider implements Listener {
 
+    private static final String PERMISSION = "totemguard.loader.admin";
+
     @EventHandler
     public void onCommandSend(PlayerCommandSendEvent event) {
+        if (event.getPlayer().hasPermission(PERMISSION)) return;
+
         Collection<String> commands = event.getCommands();
         Iterator<String> it = commands.iterator();
         while (it.hasNext()) {

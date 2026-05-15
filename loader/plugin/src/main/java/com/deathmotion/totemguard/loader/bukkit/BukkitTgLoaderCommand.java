@@ -18,10 +18,13 @@
 
 package com.deathmotion.totemguard.loader.bukkit;
 
+import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.loader.core.LoaderManifest;
 import com.deathmotion.totemguard.loader.runtime.PluginRuntime;
 import org.bukkit.Bukkit;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
@@ -32,7 +35,7 @@ import java.util.logging.Level;
 
 public final class BukkitTgLoaderCommand implements TabExecutor {
 
-    private static final List<String> SUBCOMMANDS = List.of("restart", "status");
+    private static final List<String> SUBCOMMANDS = List.of("restart", "start", "stop", "status");
 
     private final JavaPlugin plugin;
     private final PluginRuntime runtime;
@@ -42,23 +45,19 @@ public final class BukkitTgLoaderCommand implements TabExecutor {
         this.runtime = runtime;
     }
 
-    private static boolean isConsole(CommandSender sender) {
-        return sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender;
-    }
-
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NonNull [] args) {
-        if (!isConsole(sender)) return false;
-
         String sub = args.length == 0 ? "status" : args[0].toLowerCase();
         switch (sub) {
             case "restart" -> handleRestart(sender);
+            case "start" -> handleStart(sender);
+            case "stop" -> handleStop(sender);
             case "status" -> {
                 String inner = runtime.loadedVersion();
                 sender.sendMessage("Loader: " + LoaderManifest.loaderVersion());
                 sender.sendMessage("Inner: " + (inner == null ? "NOT LOADED" : inner));
             }
-            default -> sender.sendMessage("Usage: /tgloader <restart|status>");
+            default -> sender.sendMessage("Usage: /tgloader <restart|start|stop|status>");
         }
         return true;
     }
@@ -79,10 +78,48 @@ public final class BukkitTgLoaderCommand implements TabExecutor {
         });
     }
 
+    private void handleStart(CommandSender sender) {
+        if (runtime.isLoaded()) {
+            sender.sendMessage("TotemGuard is already running (version " + runtime.loadedVersion() + "). Use /tgloader restart instead.");
+            return;
+        }
+        sender.sendMessage("Starting TotemGuard. Resolving from configured source...");
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                runtime.startFromConfigured();
+                String version = runtime.loadedVersion();
+                Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(
+                        "TotemGuard started. Running version " + (version == null ? "unknown" : version) + "."));
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.SEVERE, "TotemGuard start failed", t);
+                Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(
+                        "Start failed: " + t.getMessage() + ". Check console for details."));
+            }
+        });
+    }
+
+    private void handleStop(CommandSender sender) {
+        if (!runtime.isLoaded()) {
+            sender.sendMessage("TotemGuard is not currently loaded.");
+            return;
+        }
+        sender.sendMessage("Stopping TotemGuard...");
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                runtime.stop(TGPluginShutdownEvent.Reason.LOADER_STOP);
+                Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(
+                        "TotemGuard stopped. Run /tgloader start to bring it back."));
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.SEVERE, "TotemGuard stop failed", t);
+                Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(
+                        "Stop failed: " + t.getMessage() + ". Check console for details."));
+            }
+        });
+    }
+
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                       @NotNull String label, @NotNull String[] args) {
-        if (!isConsole(sender)) return Collections.emptyList();
         if (args.length == 1) {
             return SUBCOMMANDS.stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))

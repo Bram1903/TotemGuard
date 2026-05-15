@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
+import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -41,13 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
-/**
- * Restarts the inner TotemGuard plugin through the loader. Two-step confirmation
- * because operators muscle-memory {@code /tg reload} when they mean a config refresh,
- * and a full restart is a much heavier operation (closes the inner classloader,
- * drops all Redis/DB connections, and rebuilds checks/commands).
- */
-public final class RestartCommand extends AbstractCommand {
+public final class ShutdownCommand extends AbstractCommand {
 
     private static final Duration CONFIRMATION_WINDOW = Duration.ofSeconds(30);
 
@@ -57,8 +52,8 @@ public final class RestartCommand extends AbstractCommand {
     public void register(@NonNull CommandManager<Sender> manager) {
         manager.command(
                 base(manager)
-                        .literal("restart")
-                        .permission(perm("restart"))
+                        .literal("shutdown")
+                        .permission(perm("shutdown"))
                         .optional(
                                 "confirm",
                                 StringParser.stringParser(),
@@ -74,35 +69,31 @@ public final class RestartCommand extends AbstractCommand {
         boolean confirming = argOpt.map(s -> s.equalsIgnoreCase("confirm")).orElse(false);
 
         TGPlatform platform = TGPlatform.getInstance();
-        TGPluginHost host = platform.getPluginHost();
-        Optional<LoaderController> controllerOpt = host == null ? Optional.empty() : host.loaderController();
-        if (controllerOpt.isEmpty()) {
-            sender.sendMessage(Component.text(
-                    "Restart unavailable: this server is not managed by the loader.",
-                    Palette.DANGER));
-            return;
-        }
-        LoaderController controller = controllerOpt.get();
+        boolean loaderManaged = platform.isManagedByLoader();
 
         UUID senderId = sender.getUniqueId();
 
         if (!confirming) {
             pendingConfirmations.put(senderId, Instant.now().plus(CONFIRMATION_WINDOW));
             sender.sendMessage(Component.text(
-                    "/totemguard restart is NOT the same as /totemguard reload.",
-                    Palette.BRAND, TextDecoration.BOLD));
+                    "/totemguard shutdown will STOP the anticheat. This server will be unprotected.",
+                    Palette.WARN, TextDecoration.BOLD));
+            if (loaderManaged) {
+                sender.sendMessage(Component.empty()
+                        .append(Component.text("  Loader detected. Bring TotemGuard back with ", Palette.CONNECTIVE))
+                        .append(Component.text("/tgloader start", Palette.VALUE))
+                        .append(Component.text(".", Palette.CONNECTIVE)));
+            } else {
+                sender.sendMessage(Component.text(
+                        "  No loader is in play. TotemGuard CANNOT be restarted until the",
+                        Palette.DANGER));
+                sender.sendMessage(Component.text(
+                        "  entire server process restarts.",
+                        Palette.DANGER));
+            }
             sender.sendMessage(Component.empty()
-                    .append(Component.text("  reload", Palette.VALUE))
-                    .append(Component.text("  -> refreshes config files in place (cheap, ~50ms)", Palette.CONNECTIVE)));
-            sender.sendMessage(Component.empty()
-                    .append(Component.text("  restart", Palette.VALUE))
-                    .append(Component.text(" -> tears down TotemGuard and reloads it from the loader cache", Palette.CONNECTIVE)));
-            sender.sendMessage(Component.text(
-                    "             (drops Redis/DB connections, rebuilds checks, alerts may pause briefly)",
-                    Palette.CAPTION));
-            sender.sendMessage(Component.empty()
-                    .append(Component.text("If you meant to restart, run ", Palette.LABEL))
-                    .append(Component.text("/totemguard restart confirm", Palette.VALUE))
+                    .append(Component.text("If you really want to stop TotemGuard, run ", Palette.LABEL))
+                    .append(Component.text("/totemguard shutdown confirm", Palette.VALUE))
                     .append(Component.text(" within " + CONFIRMATION_WINDOW.toSeconds() + " seconds.", Palette.LABEL)));
             return;
         }
@@ -110,24 +101,47 @@ public final class RestartCommand extends AbstractCommand {
         Instant expiry = pendingConfirmations.remove(senderId);
         if (expiry == null || expiry.isBefore(Instant.now())) {
             sender.sendMessage(Component.text(
-                    "No pending restart request to confirm. Run /totemguard restart first.",
+                    "No pending shutdown request to confirm. Run /totemguard shutdown first.",
                     Palette.DANGER));
             return;
         }
 
-        sender.sendMessage(Component.text("Restarting TotemGuard...", Palette.WARN));
-        controller.restart().whenComplete((ok, err) -> {
+        if (loaderManaged) {
+            shutdownViaLoader(sender, platform);
+        } else {
+            shutdownStandalone(sender, platform);
+        }
+    }
+
+    private void shutdownViaLoader(Sender sender, TGPlatform platform) {
+        TGPluginHost host = platform.getPluginHost();
+        Optional<LoaderController> controllerOpt = host == null ? Optional.empty() : host.loaderController();
+        if (controllerOpt.isEmpty()) {
+            sender.sendMessage(Component.text(
+                    "Loader-managed flag set but no loader controller present. Aborting.",
+                    Palette.DANGER));
+            return;
+        }
+        sender.sendMessage(Component.text("Stopping TotemGuard...", Palette.WARN));
+        controllerOpt.get().stop(TGPluginShutdownEvent.Reason.LOADER_STOP).whenComplete((ok, err) -> {
             if (err != null) {
-                platform.getLogger().log(Level.WARNING, "/totemguard restart failed", err);
-                sender.sendMessage(Component.empty()
-                        .append(Component.text("Restart failed: ", Palette.DANGER))
-                        .append(Component.text(String.valueOf(err.getMessage()), Palette.VALUE_ON_DANGER)));
-            } else {
-                sender.sendMessage(Component.empty()
-                        .append(Component.text("TotemGuard restarted on ", Palette.SUCCESS))
-                        .append(Component.text(controller.info().loadedVersion(), Palette.VALUE))
-                        .append(Component.text(".", Palette.SUCCESS)));
+                platform.getLogger().log(Level.WARNING, "/totemguard shutdown (loader path) failed", err);
+                // Sender may already be gone if commands torn down before this fires.
+                try {
+                    sender.sendMessage(Component.empty()
+                            .append(Component.text("Shutdown failed: ", Palette.DANGER))
+                            .append(Component.text(String.valueOf(err.getMessage()), Palette.VALUE_ON_DANGER)));
+                } catch (Throwable ignored) {
+                }
             }
         });
+    }
+
+    private void shutdownStandalone(Sender sender, TGPlatform platform) {
+        sender.sendMessage(Component.text(
+                "Stopping TotemGuard. The server must be restarted to bring it back online.",
+                Palette.WARN));
+        platform.setShutdownReason(TGPluginShutdownEvent.Reason.OPERATOR_SHUTDOWN);
+        platform.getScheduler().runMainThreadTask(platform::disablePlugin);
     }
 }

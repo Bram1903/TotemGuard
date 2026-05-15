@@ -1,4 +1,6 @@
 import loader.CompileNativeTask
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 plugins {
     id("totemguard.java-conventions")
@@ -24,7 +26,7 @@ dependencies {
 
 tasks.register<CompileNativeTask>("compileNative") {
     description = "Builds the JNI defineClass bridge for every supported platform via zig cc. " +
-        "Requires zig on PATH; the same toolchain is used on every host OS for reproducible binaries."
+            "Requires zig on PATH; the same toolchain is used on every host OS for reproducible binaries."
     group = "build"
 
     sourceFile.set(file("src/main/c/native.c"))
@@ -70,5 +72,19 @@ tasks {
         }
 
         jvmArgs = jvmArgsExternal
+
+        val bukkitShadow = project(":platforms:bukkit").tasks.named("shadowJar")
+        dependsOn(bukkitShadow)
+        doFirst {
+            val localDir = runDirectory.get().asFile.toPath().resolve("plugins/TotemGuardLoader/local")
+            Files.createDirectories(localDir)
+            Files.newDirectoryStream(localDir, "*.jar").use { entries ->
+                entries.forEach { Files.delete(it) }
+            }
+            val source = bukkitShadow.get().outputs.files.singleFile.toPath()
+            val destination = localDir.resolve(source.fileName.toString())
+            Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING)
+            logger.lifecycle("Copied ${source.fileName} -> $destination for /tgloader LOCAL source.")
+        }
     }
 }

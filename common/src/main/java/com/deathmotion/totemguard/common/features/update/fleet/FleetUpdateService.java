@@ -19,9 +19,6 @@
 package com.deathmotion.totemguard.common.features.update.fleet;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
-import com.deathmotion.totemguard.host.LoaderController;
-import com.deathmotion.totemguard.host.TGPluginHost;
-import com.deathmotion.totemguard.host.UpdateTarget;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.network.ServerIdentity;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -32,6 +29,9 @@ import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncFleetJarReadyPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncFleetUpdateAckPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncFleetUpdateRequestPacket;
+import com.deathmotion.totemguard.host.LoaderController;
+import com.deathmotion.totemguard.host.TGPluginHost;
+import com.deathmotion.totemguard.host.UpdateTarget;
 import io.lettuce.core.SetArgs;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 import net.kyori.adventure.text.Component;
@@ -50,11 +50,6 @@ import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Coordinates fleet-wide loader updates. Each instance independently resolves its
- * configured target; instances resolving to the same target share a single download
- * via a Redis blob.
- */
 public final class FleetUpdateService {
 
     private static final String KEY_PREFIX = "totemguard:fleet";

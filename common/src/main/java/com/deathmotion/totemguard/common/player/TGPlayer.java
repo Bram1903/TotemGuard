@@ -205,6 +205,11 @@ public class TGPlayer implements TGUser {
         platform.getScheduler().runAsyncTask(this::cacheData);
     }
 
+    @Blocking
+    public void persistCacheOnShutdown() {
+        cacheData();
+    }
+
     public void timedOut() {
         disconnect("[TotemGuard] Timed out");
     }

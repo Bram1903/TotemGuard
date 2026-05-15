@@ -54,6 +54,16 @@ public final class LoaderCore {
         this.platform = platform;
     }
 
+    private static String parseVersionFromCacheName(String fileName) {
+        int firstDash = fileName.indexOf('-');
+        if (firstDash < 0) return fileName;
+        int secondDash = fileName.indexOf('-', firstDash + 1);
+        if (secondDash < 0) return fileName;
+        int lastDash = fileName.lastIndexOf('-');
+        if (lastDash <= secondDash) return fileName;
+        return fileName.substring(secondDash + 1, lastDash);
+    }
+
     public LoaderResult run(ClassLoader injectTarget) throws Exception {
         LoaderConfig config = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger);
         this.lastConfig = config;
@@ -112,16 +122,6 @@ public final class LoaderCore {
         LoaderResult result = new LoaderResult(jar, resolvedVersion, sourceLabel);
         this.lastResult = result;
         return result;
-    }
-
-    private static String parseVersionFromCacheName(String fileName) {
-        int firstDash = fileName.indexOf('-');
-        if (firstDash < 0) return fileName;
-        int secondDash = fileName.indexOf('-', firstDash + 1);
-        if (secondDash < 0) return fileName;
-        int lastDash = fileName.lastIndexOf('-');
-        if (lastDash <= secondDash) return fileName;
-        return fileName.substring(secondDash + 1, lastDash);
     }
 
     public LoaderConfig lastConfig() {

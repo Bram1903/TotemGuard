@@ -88,4 +88,23 @@ public interface LoaderController {
     default @NotNull CompletableFuture<Void> restart() {
         return restart(TGPluginShutdownEvent.Reason.LOADER_RESTART);
     }
+
+    /**
+     * Asynchronously stops the inner plugin without restarting it. The loader stays
+     * online and accepts {@code /tgloader start} to bring TotemGuard back up.
+     * <p>
+     * The returned future completes once the inner plugin has fully shut down, or
+     * exceptionally if the teardown threw.
+     *
+     * @param reason fired as the shutdown {@code Reason} so consumers can distinguish
+     *               an operator-driven stop from a server stop
+     */
+    @NotNull CompletableFuture<Void> stop(@NotNull TGPluginShutdownEvent.Reason reason);
+
+    /**
+     * Convenience that stops with {@link TGPluginShutdownEvent.Reason#LOADER_STOP}.
+     */
+    default @NotNull CompletableFuture<Void> stop() {
+        return stop(TGPluginShutdownEvent.Reason.LOADER_STOP);
+    }
 }

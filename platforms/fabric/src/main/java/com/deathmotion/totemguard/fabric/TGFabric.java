@@ -34,10 +34,9 @@ public final class TGFabric implements DedicatedServerModInitializer {
     @Override
     public void onInitializeServer() {
         tg = new TGFabricPlatform(FabricLoader.getInstance().getConfigDir().resolve("totemguard"));
-        tg.commonOnInitialize();
 
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> tg.commonOnEnable());
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> tg.commonOnDisable());
+        ServerLifecycleEvents.SERVER_STARTED.register(_ -> tg.commonOnEnable());
+        ServerLifecycleEvents.SERVER_STOPPING.register(_ -> tg.commonOnDisable());
     }
 
     public TGFabricPlatform getTg() {

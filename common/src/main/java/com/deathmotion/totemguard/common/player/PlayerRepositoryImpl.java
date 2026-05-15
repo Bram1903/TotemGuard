@@ -75,6 +75,25 @@ public final class PlayerRepositoryImpl implements UserRepository {
         transactionTimeoutWatchdog.stop();
     }
 
+    public void persistAllOnShutdown() {
+        if (!platform.getCacheRepository().isDistributed()) return;
+
+        int persisted = 0;
+        for (TGPlayer player : players.values()) {
+            try {
+                player.persistCacheOnShutdown();
+                persisted++;
+            } catch (Throwable t) {
+                platform.getLogger().warning("Failed to persist shutdown cache for "
+                        + player.getUser().getName() + ": " + t.getMessage());
+            }
+        }
+        if (persisted > 0) {
+            platform.getLogger().info("Persisted shutdown cache for " + persisted
+                    + " player" + (persisted == 1 ? "" : "s") + ".");
+        }
+    }
+
     public void onLoginPacket(final @NotNull User user) {
         if (!shouldCheck(user, null)) return;
         TGPlayer player = new TGPlayer(user);

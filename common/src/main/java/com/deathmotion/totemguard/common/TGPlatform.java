@@ -18,30 +18,21 @@
 
 package com.deathmotion.totemguard.common;
 
-import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
-import com.deathmotion.totemguard.common.event.api.impl.TGPluginShutdownEventImpl;
-import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
 import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
-import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
-import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckManagerListener;
-import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
-import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
-import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.features.check.CheckService;
 import com.deathmotion.totemguard.common.features.discord.DiscordWebhookService;
 import com.deathmotion.totemguard.common.features.follow.FollowRepository;
-import com.deathmotion.totemguard.common.features.follow.FollowerPacketListener;
 import com.deathmotion.totemguard.common.features.history.HistoryRepositoryImpl;
 import com.deathmotion.totemguard.common.features.integration.IntegrationRegistrar;
-import com.deathmotion.totemguard.common.features.mods.*;
+import com.deathmotion.totemguard.common.features.mods.ModDetectionService;
+import com.deathmotion.totemguard.common.features.mods.ModSessionStore;
 import com.deathmotion.totemguard.common.features.monitor.MonitorRepository;
 import com.deathmotion.totemguard.common.features.punishment.PunishmentRepositoryImpl;
 import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
@@ -50,13 +41,10 @@ import com.deathmotion.totemguard.common.features.teleport.TeleportService;
 import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.features.update.fleet.FleetUpdateService;
 import com.deathmotion.totemguard.common.gui.GuiManager;
-import com.deathmotion.totemguard.common.gui.GuiPacketListener;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ProxyTopologyService;
-import com.deathmotion.totemguard.common.network.ServerIdentity;
 import com.deathmotion.totemguard.common.network.bridge.BridgeManager;
-import com.deathmotion.totemguard.common.network.bridge.BridgePacketListener;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
@@ -67,11 +55,10 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckRequ
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckResultPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.reload.ReloadService;
-import com.deathmotion.totemguard.common.util.*;
-import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
+import com.deathmotion.totemguard.common.util.Scheduler;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
-import com.google.common.base.Stopwatch;
 import lombok.Getter;
 import lombok.Setter;
 import org.incendo.cloud.CommandManager;
@@ -88,50 +75,58 @@ public abstract class TGPlatform {
 
     @Getter
     private static final int bStatsId = 23179;
+
     @Getter
     private static TGPlatform instance;
+
+    final List<PacketListenerAbstract> packetListeners = new ArrayList<>();
+    final List<EventSubscription> internalSubscriptions = new ArrayList<>();
+
     private final Platform platform;
     private final Logger logger;
-    private final List<PacketListenerAbstract> packetListeners = new ArrayList<>();
-    private final List<EventSubscription> internalSubscriptions = new ArrayList<>();
+
+    ReloadService reloadService;
+    ConfigRepositoryImpl configRepository;
+    PlaceholderRepositoryImpl placeholderRepository;
+    RedisRepositoryImpl redisRepository;
+    DatabaseRepositoryImpl databaseRepository;
+    CacheRepositoryImpl cacheRepository;
+    MessageService messageService;
+    EventRepositoryImpl eventRepository;
+    PunishmentRepositoryImpl punishmentRepository;
+    AlertRepositoryImpl alertRepository;
+    DiscordWebhookService discordWebhookService;
+    PlayerRepositoryImpl playerRepository;
+    CommandManagerImpl commandManager;
+    UpdateCheckerRepositoryImpl updateCheckerRepository;
+    HistoryRepositoryImpl historyRepository;
+    StatsRepositoryImpl statsRepository;
+    GuiManager guiManager;
+    IntegrationRegistrar integrationRegistrar;
+    NetworkPresenceRepository networkPresenceRepository;
+    FollowRepository followRepository;
+    ProxyTopologyService proxyTopologyService;
+    BridgeManager bridgeManager;
+    MonitorRepository monitorRepository;
+    ModDetectionService modDetectionService;
+    CheckService checkService;
+    SessionViolationStore sessionViolationStore;
+    ModSessionStore modSessionStore;
+    TeleportService teleportService;
+    FleetUpdateService fleetUpdateService;
+    TGPlatformAPI api;
+
     @Setter
     private boolean enabled = true;
+
     @Setter
     private TGPluginShutdownEvent.Reason shutdownReason = TGPluginShutdownEvent.Reason.SERVER_STOP;
+
     @Setter
     private boolean managedByLoader = false;
+
     @Setter
     private TGPluginHost pluginHost;
-    private ReloadService reloadService;
-    private ConfigRepositoryImpl configRepository;
-    private PlaceholderRepositoryImpl placeholderRepository;
-    private RedisRepositoryImpl redisRepository;
-    private DatabaseRepositoryImpl databaseRepository;
-    private CacheRepositoryImpl cacheRepository;
-    private MessageService messageService;
-    private EventRepositoryImpl eventRepository;
-    private PunishmentRepositoryImpl punishmentRepository;
-    private AlertRepositoryImpl alertRepository;
-    private DiscordWebhookService discordWebhookService;
-    private PlayerRepositoryImpl playerRepository;
-    private CommandManagerImpl commandManager;
-    private UpdateCheckerRepositoryImpl updateCheckerRepository;
-    private HistoryRepositoryImpl historyRepository;
-    private StatsRepositoryImpl statsRepository;
-    private GuiManager guiManager;
-    private IntegrationRegistrar integrationRegistrar;
-    private NetworkPresenceRepository networkPresenceRepository;
-    private FollowRepository followRepository;
-    private ProxyTopologyService proxyTopologyService;
-    private BridgeManager bridgeManager;
-    private MonitorRepository monitorRepository;
-    private ModDetectionService modDetectionService;
-    private CheckService checkService;
-    private SessionViolationStore sessionViolationStore;
-    private ModSessionStore modSessionStore;
-    private TeleportService teleportService;
-    private FleetUpdateService fleetUpdateService;
-    private TGPlatformAPI api;
 
     public TGPlatform(Platform platform) {
         instance = this;
@@ -139,177 +134,22 @@ public abstract class TGPlatform {
         logger = Logger.getLogger("TotemGuard");
     }
 
-    public void commonOnInitialize() {
+    static void clearInstance() {
+        instance = null;
     }
 
-    /**
-     * Hook for platforms that need to act once Cloud's command tree has been populated.
-     * Paper uses this to publish the freshly-built tree to brigadier when running under
-     * the loader on a hot-reload (the COMMANDS lifecycle event no longer fires naturally
-     * at that point).
-     */
     protected void afterCommandsRegistered() {
     }
 
     public void commonOnEnable() {
-        LoggerSuppressor.suppressDefaultNoise();
-
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        if (!CompatibilityUtil.isCompatible()) {
-            setEnabled(false);
-            disablePlugin();
-            return;
-        }
-
-        ConsoleBanner.print();
-
-        // The loader already runs this exact check against the same jar before injecting
-        // the api classes, so skip it here to avoid double-logging when loader-driven.
-        if (!managedByLoader && !new JarIntegrityChecker(logger, "TotemGuard").verifyCurrentJar()) {
-            setEnabled(false);
-            disablePlugin();
-            return;
-        }
-
-        reloadService = new ReloadService();
-        configRepository = new ConfigRepositoryImpl();
-        ModRegistry.load();
-        placeholderRepository = new PlaceholderRepositoryImpl();
-        ServerIdentity serverIdentity = ServerIdentity.create();
-        redisRepository = new RedisRepositoryImpl(serverIdentity.instanceId());
-        databaseRepository = new DatabaseRepositoryImpl();
-        cacheRepository = new CacheRepositoryImpl();
-        messageService = new MessageService();
-        eventRepository = new EventRepositoryImpl();
-        punishmentRepository = new PunishmentRepositoryImpl();
-        alertRepository = new AlertRepositoryImpl();
-        discordWebhookService = new DiscordWebhookService();
-        playerRepository = new PlayerRepositoryImpl();
-        integrationRegistrar = new IntegrationRegistrar();
-        guiManager = new GuiManager();
-        historyRepository = new HistoryRepositoryImpl();
-        statsRepository = new StatsRepositoryImpl();
-        checkService = new CheckService();
-        sessionViolationStore = new SessionViolationStore(redisRepository, logger);
-        modSessionStore = new ModSessionStore(redisRepository, logger);
-        teleportService = new TeleportService(this);
-        commandManager = new CommandManagerImpl();
-        afterCommandsRegistered();
-        updateCheckerRepository = new UpdateCheckerRepositoryImpl();
-        networkPresenceRepository = new NetworkPresenceRepository(this, serverIdentity);
-        networkPresenceRepository.addListener(alertRepository);
-        redisRepository.addStateListener(alertRepository);
-        networkPresenceRepository.addServerNameResolvedListener(name -> {
-            DatabaseRepositoryImpl db = this.databaseRepository;
-            if (db != null && db.isConnected()) db.assignThisServerName(name);
-        });
-        networkPresenceRepository.start();
-
-        monitorRepository = new MonitorRepository(this);
-        networkPresenceRepository.addListener(monitorRepository);
-        monitorRepository.start();
-
-        followRepository = new FollowRepository(this);
-        networkPresenceRepository.addListener(followRepository);
-        followRepository.start();
-
-        integrationRegistrar.enableAll();
-
-        proxyTopologyService = new ProxyTopologyService(this);
-        bridgeManager = new BridgeManager(this, serverIdentity.instanceId());
-        bridgeManager.start();
-
-        ModKickThenBanTracker kickThenBanTracker = new ModKickThenBanTracker(cacheRepository);
-        ModLogAlertTracker logAlertTracker = new ModLogAlertTracker(cacheRepository);
-        networkPresenceRepository.addListener(logAlertTracker);
-        ModResolver modResolver = new ModResolver(this, kickThenBanTracker, logAlertTracker);
-        modDetectionService = new ModDetectionService(this, modResolver, kickThenBanTracker, modSessionStore);
-
-        registerPacketListener(new PacketPlayerJoinQuit());
-        registerPacketListener(new PacketCheckManagerListener(playerRepository));
-        registerPacketListener(new GuiPacketListener());
-        registerPacketListener(new ModPacketObserver(modDetectionService, playerRepository));
-        registerPacketListener(new BridgePacketListener());
-        registerPacketListener(new FollowerPacketListener(followRepository));
-
-        internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
-        internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
-
-        fleetUpdateService = new FleetUpdateService(this, redisRepository.registry());
-        fleetUpdateService.register();
-
-        api = new TGPlatformAPI();
-        TotemGuard.replace(api);
-
-        enableBStats();
-        logger.info("Enabled TotemGuard in " + stopwatch.stop().elapsed().toMillis() + "ms");
+        TotemGuardLifecycle.enable(this);
     }
 
     public void commonOnDisable() {
-        TotemGuard.shutdown();
-
-        if (eventRepository != null) {
-            try {
-                eventRepository.post(new TGPluginShutdownEventImpl(
-                        shutdownReason != null ? shutdownReason : TGPluginShutdownEvent.Reason.SERVER_STOP,
-                        TGVersions.CURRENT.toString()));
-            } catch (Throwable t) {
-                logger.warning("TGPluginShutdownEvent dispatch threw: " + t.getMessage());
-            }
-        }
-
-        for (PacketListenerAbstract listener : packetListeners) {
-            try {
-                PacketEvents.getAPI().getEventManager().unregisterListener(listener);
-            } catch (Exception ex) {
-                logger.warning("Failed to unregister packet listener " + listener.getClass().getName() + ": " + ex.getMessage());
-            }
-        }
-        packetListeners.clear();
-
-        for (EventSubscription subscription : internalSubscriptions) {
-            try {
-                subscription.close();
-            } catch (Exception ex) {
-                logger.warning("Failed to close internal event subscription: " + ex.getMessage());
-            }
-        }
-        internalSubscriptions.clear();
-
-        if (fleetUpdateService != null) {
-            try {
-                fleetUpdateService.shutdown();
-            } catch (Exception ex) {
-                logger.warning("Failed to shutdown fleet update service: " + ex.getMessage());
-            }
-            fleetUpdateService = null;
-        }
-        if (commandManager != null) {
-            try {
-                commandManager.unregisterAll();
-            } catch (Exception ex) {
-                logger.warning("Failed to unregister commands: " + ex.getMessage());
-            }
-        }
-        if (integrationRegistrar != null) integrationRegistrar.disableAll();
-        if (monitorRepository != null) monitorRepository.stop();
-        if (followRepository != null) followRepository.stop();
-        if (networkPresenceRepository != null) networkPresenceRepository.stop();
-        if (playerRepository != null) playerRepository.shutdown();
-        if (updateCheckerRepository != null) updateCheckerRepository.shutdown();
-        if (alertRepository != null && redisRepository != null) redisRepository.removeStateListener(alertRepository);
-        if (bridgeManager != null) bridgeManager.shutdown();
-        if (redisRepository != null) redisRepository.stop();
-        if (databaseRepository != null) databaseRepository.stop();
-        if (guiManager != null) guiManager.shutdown();
-        if (discordWebhookService != null) discordWebhookService.shutdown();
-
-        if (instance == this) {
-            instance = null;
-        }
+        TotemGuardLifecycle.disable(this);
     }
 
-    private void registerPacketListener(PacketListenerAbstract listener) {
+    void registerPacketListenerInternal(PacketListenerAbstract listener) {
         PacketEvents.getAPI().getEventManager().registerListener(listener);
         packetListeners.add(listener);
     }

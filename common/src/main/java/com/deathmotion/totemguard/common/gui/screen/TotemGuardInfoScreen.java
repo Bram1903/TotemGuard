@@ -18,9 +18,7 @@
 
 package com.deathmotion.totemguard.common.gui.screen;
 
-import com.deathmotion.totemguard.host.LoaderController;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
-import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.api.stats.StatsWindow;
 import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
@@ -34,6 +32,8 @@ import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.deathmotion.totemguard.common.util.TGVersions;
+import com.deathmotion.totemguard.host.LoaderController;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import net.kyori.adventure.text.Component;

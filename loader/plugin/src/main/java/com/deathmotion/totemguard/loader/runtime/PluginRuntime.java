@@ -72,6 +72,28 @@ public final class PluginRuntime {
         loadOnce(innerJar, null);
     }
 
+    public synchronized void startFromConfigured() throws Exception {
+        if (handle != null) {
+            logger.warning("PluginRuntime.startFromConfigured() called while a plugin is already loaded. Skipping.");
+            return;
+        }
+        Path innerJar = core.run(hostClassLoader).innerJar();
+        loadOnce(innerJar, null);
+    }
+
+    public synchronized boolean isLoaded() {
+        return handle != null;
+    }
+
+    public synchronized void stop(TGPluginShutdownEvent.Reason reason) {
+        if (handle == null) return;
+        try {
+            stopCurrent(reason);
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "PluginRuntime stop failed", t);
+        }
+    }
+
     public synchronized void restart() throws Exception {
         restart(TGPluginShutdownEvent.Reason.LOADER_RESTART);
     }

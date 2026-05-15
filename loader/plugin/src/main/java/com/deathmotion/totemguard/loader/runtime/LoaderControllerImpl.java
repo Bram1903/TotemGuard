@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.loader.runtime;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
-import com.deathmotion.totemguard.host.LoaderController;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
+import com.deathmotion.totemguard.host.LoaderController;
 import com.deathmotion.totemguard.host.UpdateTarget;
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.deathmotion.totemguard.loader.config.LoaderConfig;
@@ -183,6 +183,22 @@ final class LoaderControllerImpl implements LoaderController {
                 future.completeExceptionally(t);
             }
         }, "TotemGuard-Loader-Restart");
+        worker.setDaemon(true);
+        worker.start();
+        return future;
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> stop(@NotNull TGPluginShutdownEvent.Reason reason) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        Thread worker = new Thread(() -> {
+            try {
+                runtime.stop(reason);
+                future.complete(null);
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
+            }
+        }, "TotemGuard-Loader-Stop");
         worker.setDaemon(true);
         worker.start();
         return future;

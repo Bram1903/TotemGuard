@@ -19,12 +19,12 @@
 package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.bukkit.placeholder.PlaceholderAPIHolder;
+import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.host.Platform;
 import com.deathmotion.totemguard.host.TGPluginEntry;
 import com.deathmotion.totemguard.host.TGPluginHandle;
 import com.deathmotion.totemguard.host.TGPluginHost;
-import com.deathmotion.totemguard.bukkit.placeholder.PlaceholderAPIHolder;
-import com.deathmotion.totemguard.common.util.TGVersions;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -52,7 +52,6 @@ public final class TGBukkitEntry implements TGPluginEntry {
         TGBukkitPlatform platform = new TGBukkitPlatform(javaPlugin);
         platform.setManagedByLoader(true);
         platform.setPluginHost(host);
-        platform.commonOnInitialize();
         platform.commonOnEnable();
         if (!platform.isEnabled()) {
             throw new IllegalStateException("TotemGuard failed to enable; see preceding log entries.");

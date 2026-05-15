@@ -65,7 +65,9 @@ public class CommandManagerImpl {
         new TopCommand().register(commandManager);
         new StatsCommand().register(commandManager);
 
-        // Update and restart only make sense when the loader is in play. With no loader
+        new ShutdownCommand().register(commandManager);
+
+        // Update and restart only make sense when the loader is in play. With any loader,
         // there is no second jar to stage and no PluginRuntime to drive a restart.
         if (TGPlatform.getInstance().isManagedByLoader()) {
             new UpdateCommand().register(commandManager);
