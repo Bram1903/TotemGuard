@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.loader.download;
 
+import com.deathmotion.totemguard.loader.config.LoaderConfig;
 import com.deathmotion.totemguard.loader.core.HostPlatform;
 import com.deathmotion.totemguard.loader.source.Artifact;
 
@@ -30,21 +31,27 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public final class CachedJarStore {
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
+    private static final String CHANNELS_DIR_NAME = ".channels";
 
     private final Path versionsDir;
     private final Logger logger;
@@ -168,6 +175,68 @@ public final class CachedJarStore {
             throw new IOException("Download interrupted", ex);
         } finally {
             Files.deleteIfExists(partial);
+        }
+    }
+
+    /**
+     * Records that {@code jar} is the most recently fetched build for {@code channel}
+     * (one of {@code LATEST}, {@code EXPERIMENTAL}, {@code GIT}). The pointer is used
+     * by {@link #locateFallback} when a later resolve or download fails.
+     */
+    public void recordChannel(String channel, Path jar) throws IOException {
+        Path channelsDir = versionsDir.resolve(CHANNELS_DIR_NAME);
+        Files.createDirectories(channelsDir);
+        Path pointer = channelsDir.resolve(channel.toUpperCase(Locale.ROOT) + ".txt");
+        Path tmp = pointer.resolveSibling(pointer.getFileName() + ".tmp");
+        Files.writeString(tmp, jar.getFileName().toString(), StandardCharsets.UTF_8);
+        Files.move(tmp, pointer, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    /**
+     * Strict fallback lookup: returns a previously cached jar for the exact target
+     * the user asked for. For channel requests this is the jar pinned by the channel
+     * pointer. For pinned versions this is the newest cached jar carrying that
+     * version string in its filename. Channel requests never fall through to a
+     * different channel, pinned requests never fall through to a different version.
+     */
+    public Optional<Path> locateFallback(LoaderConfig config, HostPlatform platform) {
+        String channel = config.channel();
+        if (channel != null) {
+            return findChannelJar(channel);
+        }
+        return findPinnedJar(config.version(), platform);
+    }
+
+    private Optional<Path> findChannelJar(String channel) {
+        Path pointer = versionsDir.resolve(CHANNELS_DIR_NAME).resolve(channel.toUpperCase(Locale.ROOT) + ".txt");
+        if (!Files.isRegularFile(pointer)) return Optional.empty();
+        try {
+            String name = Files.readString(pointer, StandardCharsets.UTF_8).trim();
+            if (name.isEmpty()) return Optional.empty();
+            Path candidate = versionsDir.resolve(name);
+            return Files.isRegularFile(candidate) ? Optional.of(candidate) : Optional.empty();
+        } catch (IOException ex) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<Path> findPinnedJar(String version, HostPlatform platform) {
+        String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT)
+                + "-" + sanitize(version) + "-";
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(versionsDir, prefix + "*.jar")) {
+            Path newest = null;
+            FileTime newestTime = null;
+            for (Path p : stream) {
+                if (!Files.isRegularFile(p)) continue;
+                FileTime t = Files.getLastModifiedTime(p);
+                if (newestTime == null || t.compareTo(newestTime) > 0) {
+                    newest = p;
+                    newestTime = t;
+                }
+            }
+            return Optional.ofNullable(newest);
+        } catch (IOException ex) {
+            return Optional.empty();
         }
     }
 }

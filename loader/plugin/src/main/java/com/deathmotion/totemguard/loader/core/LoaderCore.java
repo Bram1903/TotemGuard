@@ -27,6 +27,8 @@ import com.deathmotion.totemguard.loader.source.VersionResolver;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -66,14 +68,39 @@ public final class LoaderCore {
             resolvedVersion = staged.version();
             sourceLabel = staged.source();
         } else {
+            CachedJarStore store = new CachedJarStore(paths.versionsDir(), logger);
             VersionResolver resolver = VersionResolver.forConfig(config);
             logger.info("Resolving TotemGuard (version: " + config.version() + ", source: " + resolver.sourceName() + ")");
 
-            Artifact artifact = resolver.resolve(config, platform, paths);
-            CachedJarStore store = new CachedJarStore(paths.versionsDir(), logger);
-            jar = store.getOrFetch(artifact, platform);
-            resolvedVersion = artifact.version();
-            sourceLabel = artifact.sourceLabel();
+            try {
+                Artifact artifact = resolver.resolve(config, platform, paths);
+                jar = store.getOrFetch(artifact, platform);
+                resolvedVersion = artifact.version();
+                sourceLabel = artifact.sourceLabel();
+                if (config.channel() != null) {
+                    try {
+                        store.recordChannel(config.channel(), jar);
+                    } catch (IOException ex) {
+                        logger.log(Level.WARNING, "Failed to record channel pointer for " + config.channel(), ex);
+                    }
+                }
+            } catch (Exception ex) {
+                Optional<Path> fallback = store.locateFallback(config, platform);
+                if (fallback.isEmpty()) {
+                    throw ex;
+                }
+                Path cached = fallback.get();
+                if (!new JarIntegrityChecker(logger, "TotemGuard").verifyJar(cached)) {
+                    logger.warning("Cached fallback " + cached.getFileName() + " failed integrity verification; refusing to use it.");
+                    throw ex;
+                }
+                logger.log(Level.WARNING, "Failed to resolve TotemGuard from "
+                        + resolver.sourceName() + " (" + ex.getMessage() + "). "
+                        + "Booting from cached " + cached.getFileName() + " instead.", ex);
+                jar = cached;
+                resolvedVersion = parseVersionFromCacheName(cached.getFileName().toString());
+                sourceLabel = "Cached fallback (" + resolver.sourceName() + " unreachable)";
+            }
         }
 
         if (!new JarIntegrityChecker(logger, "TotemGuard").verifyJar(jar)) {
@@ -85,6 +112,16 @@ public final class LoaderCore {
         LoaderResult result = new LoaderResult(jar, resolvedVersion, sourceLabel);
         this.lastResult = result;
         return result;
+    }
+
+    private static String parseVersionFromCacheName(String fileName) {
+        int firstDash = fileName.indexOf('-');
+        if (firstDash < 0) return fileName;
+        int secondDash = fileName.indexOf('-', firstDash + 1);
+        if (secondDash < 0) return fileName;
+        int lastDash = fileName.lastIndexOf('-');
+        if (lastDash <= secondDash) return fileName;
+        return fileName.substring(secondDash + 1, lastDash);
     }
 
     public LoaderConfig lastConfig() {
