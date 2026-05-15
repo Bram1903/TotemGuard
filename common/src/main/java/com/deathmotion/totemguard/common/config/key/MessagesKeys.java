@@ -177,6 +177,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_INFO_SECTION_VERSION = ConfigKey.string("gui.info.section-version");
     public static final ConfigKey<String> GUI_INFO_SECTION_PLATFORM = ConfigKey.string("gui.info.section-platform");
     public static final ConfigKey<String> GUI_INFO_SECTION_DEV_BUILD = ConfigKey.string("gui.info.section-dev-build");
+    public static final ConfigKey<String> GUI_INFO_SECTION_LOADER = ConfigKey.string("gui.info.section-loader");
     public static final ConfigKey<String> GUI_INFO_STATISTICS_TITLE = ConfigKey.string("gui.info.statistics-title");
     public static final ConfigKey<String> GUI_INFO_STATISTICS_DISABLED = ConfigKey.string("gui.info.statistics-disabled");
     public static final ConfigKey<String> GUI_INFO_STATISTICS_LORE_1 = ConfigKey.string("gui.info.statistics-lore-1");

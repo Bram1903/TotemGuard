@@ -6,7 +6,8 @@ plugins {
 
 dependencies {
     api(project(":api"))
-    implementation(project(":bridge:integrity"))
+    api(project(":loader:host"))
+    implementation(project(":integrity"))
     implementation(project(":bridge:protocol"))
     implementation(libs.lettuce) {
         exclude(group = "org.slf4j")

@@ -13,7 +13,7 @@ tasks.shadowJar {
 }
 
 dependencies {
-    implementation(project(":bridge:integrity"))
+    implementation(project(":integrity"))
     implementation(project(":bridge:protocol"))
     implementation(libs.lettuce) {
         exclude(group = "org.slf4j", module = "slf4j-api")

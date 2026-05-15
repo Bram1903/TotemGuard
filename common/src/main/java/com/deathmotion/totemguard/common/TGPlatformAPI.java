@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.history.HistoryRepository;
+import com.deathmotion.totemguard.api.host.LoaderInfo;
 import com.deathmotion.totemguard.api.mod.ModDetectionRepository;
 import com.deathmotion.totemguard.api.network.NetworkRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
@@ -33,8 +34,11 @@ import com.deathmotion.totemguard.api.update.UpdateCheckerRepository;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 public final class TGPlatformAPI implements TotemGuardAPI {
 
@@ -112,5 +116,12 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     @Override
     public @NotNull ModDetectionRepository getModDetectionRepository() {
         return platform.getModDetectionService();
+    }
+
+    @Override
+    public @NotNull Optional<LoaderInfo> getLoaderInfo() {
+        TGPluginHost host = platform.getPluginHost();
+        if (host == null || !host.managedByLoader()) return Optional.empty();
+        return host.loaderController().map(c -> c.info());
     }
 }

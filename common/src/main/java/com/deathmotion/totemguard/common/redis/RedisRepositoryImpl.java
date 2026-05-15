@@ -90,6 +90,10 @@ public final class RedisRepositoryImpl implements RedisRepository {
         return current != null && current.enabled() && current.cluster();
     }
 
+    public PacketRegistry registry() {
+        return registry;
+    }
+
     public boolean shouldSend(MessagingTopic topic) {
         RedisOptions current = this.options;
         if (current == null || !current.enabled() || !current.cluster()) return false;

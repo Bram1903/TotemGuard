@@ -200,6 +200,7 @@ gui:
     section-version: "&#F4ECD8&lVersion"
     section-platform: "&#F4ECD8&lPlatform"
     section-dev-build: "&#F4ECD8&lDevelopment build"
+    section-loader: "&#F4ECD8&lLoader"
     statistics-title: "&#FBAF00Statistics"
     statistics-disabled: "&#6E6651Statistics"
     statistics-lore-1: "&#B8AC8FAggregated alert and punishment"

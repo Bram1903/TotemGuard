@@ -29,10 +29,11 @@ rootProject.name = "TotemGuard"
 
 include(":api")
 include(":common")
-include(":bridge:integrity")
+include(":integrity")
 include(":bridge:protocol")
 include(":bridge:plugin")
+include(":loader:host")
+include(":loader:plugin")
 include(":platforms:bukkit")
 include(":platforms:fabric")
-include(":loader")
 include(":tests:api-bukkit-test-plugin")

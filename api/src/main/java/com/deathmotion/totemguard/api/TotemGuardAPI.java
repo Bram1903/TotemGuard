@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventRepository;
 import com.deathmotion.totemguard.api.history.HistoryRepository;
+import com.deathmotion.totemguard.api.host.LoaderInfo;
 import com.deathmotion.totemguard.api.mod.ModDetectionRepository;
 import com.deathmotion.totemguard.api.network.NetworkRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
@@ -32,6 +33,8 @@ import com.deathmotion.totemguard.api.update.UpdateCheckerRepository;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 /**
  * Primary entry point for accessing the TotemGuard API.
@@ -161,4 +164,17 @@ public interface TotemGuardAPI {
      * @return the mod detection repository, never {@code null}
      */
     @NotNull ModDetectionRepository getModDetectionRepository();
+
+    /**
+     * Returns information about the TotemGuard loader if this instance is being driven
+     * by one. {@link Optional#empty()} when TotemGuard is installed as a standalone
+     * plugin without the loader in front of it.
+     * <p>
+     * Useful for diagnostics ("we're running under loader vX.Y.Z") and for plugins that
+     * want to behave differently across {@code LOADER_RESTART} and {@code UPDATE_TRIGGERED}
+     * shutdown reasons.
+     *
+     * @return loader info if loader-managed, otherwise empty
+     */
+    @NotNull Optional<LoaderInfo> getLoaderInfo();
 }

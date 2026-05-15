@@ -21,48 +21,33 @@ package com.deathmotion.totemguard.api.event.impl;
 import com.deathmotion.totemguard.api.event.Event;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
-
 /**
  * Fired at the start of a TotemGuard shutdown, before any internal teardown begins.
- * Consumers receive this synchronously and should drop any cached API references;
- * the singleton returned by {@link com.deathmotion.totemguard.api.TotemGuard#get()}
+ * Consumers receive this synchronously and should drop any cached API references.
+ * The singleton returned by {@link com.deathmotion.totemguard.api.TotemGuard#get()}
  * becomes unavailable shortly after this event resolves.
  * <p>
- * When the {@code Reason} is {@link Reason#LOADER_RESTART} or
- * {@link Reason#UPDATE_TRIGGERED}, TotemGuard intends to come back online shortly;
- * consumers can wait for the API to become available again via
+ * When the {@link Reason} is {@link Reason#LOADER_RESTART} or
+ * {@link Reason#UPDATE_TRIGGERED}, TotemGuard intends to come back online shortly.
+ * Consumers can wait for the API to become available again via
  * {@link com.deathmotion.totemguard.api.TotemGuard#getAsync()}.
  */
-public final class TGPluginShutdownEvent implements Event {
-
-    private final long timestamp;
-    private final Reason reason;
-    private final String version;
-
-    public TGPluginShutdownEvent(@NotNull Reason reason, @NotNull String version) {
-        this.reason = Objects.requireNonNull(reason, "reason");
-        this.version = Objects.requireNonNull(version, "version");
-        this.timestamp = System.currentTimeMillis();
-    }
-
-    public @NotNull Reason getReason() {
-        return reason;
-    }
-
-    public @NotNull String getVersion() {
-        return version;
-    }
-
-    @Override
-    public long getTimestamp() {
-        return timestamp;
-    }
+public interface TGPluginShutdownEvent extends Event {
 
     /**
      * Why TotemGuard is shutting down.
      */
-    public enum Reason {
+    @NotNull Reason getReason();
+
+    /**
+     * The version of TotemGuard that is shutting down.
+     */
+    @NotNull String getVersion();
+
+    /**
+     * Why TotemGuard is shutting down.
+     */
+    enum Reason {
         /**
          * The host platform (Bukkit/Fabric) is stopping or unloading the plugin.
          */

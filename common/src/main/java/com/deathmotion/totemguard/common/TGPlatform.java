@@ -21,6 +21,8 @@ package com.deathmotion.totemguard.common;
 import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.common.event.api.impl.TGPluginShutdownEventImpl;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
@@ -46,6 +48,7 @@ import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
 import com.deathmotion.totemguard.common.features.stats.StatsRepositoryImpl;
 import com.deathmotion.totemguard.common.features.teleport.TeleportService;
 import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
+import com.deathmotion.totemguard.common.features.update.fleet.FleetUpdateService;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.gui.GuiPacketListener;
 import com.deathmotion.totemguard.common.message.MessageService;
@@ -97,6 +100,8 @@ public abstract class TGPlatform {
     private TGPluginShutdownEvent.Reason shutdownReason = TGPluginShutdownEvent.Reason.SERVER_STOP;
     @Setter
     private boolean managedByLoader = false;
+    @Setter
+    private TGPluginHost pluginHost;
     private ReloadService reloadService;
     private ConfigRepositoryImpl configRepository;
     private PlaceholderRepositoryImpl placeholderRepository;
@@ -125,6 +130,7 @@ public abstract class TGPlatform {
     private SessionViolationStore sessionViolationStore;
     private ModSessionStore modSessionStore;
     private TeleportService teleportService;
+    private FleetUpdateService fleetUpdateService;
     private TGPlatformAPI api;
 
     public TGPlatform(Platform platform) {
@@ -229,6 +235,9 @@ public abstract class TGPlatform {
         internalSubscriptions.add(eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
         internalSubscriptions.add(eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
 
+        fleetUpdateService = new FleetUpdateService(this, redisRepository.registry());
+        fleetUpdateService.register();
+
         api = new TGPlatformAPI();
         TotemGuard.replace(api);
 
@@ -241,7 +250,7 @@ public abstract class TGPlatform {
 
         if (eventRepository != null) {
             try {
-                eventRepository.post(new TGPluginShutdownEvent(
+                eventRepository.post(new TGPluginShutdownEventImpl(
                         shutdownReason != null ? shutdownReason : TGPluginShutdownEvent.Reason.SERVER_STOP,
                         TGVersions.CURRENT.toString()));
             } catch (Throwable t) {
@@ -267,6 +276,14 @@ public abstract class TGPlatform {
         }
         internalSubscriptions.clear();
 
+        if (fleetUpdateService != null) {
+            try {
+                fleetUpdateService.shutdown();
+            } catch (Exception ex) {
+                logger.warning("Failed to shutdown fleet update service: " + ex.getMessage());
+            }
+            fleetUpdateService = null;
+        }
         if (commandManager != null) {
             try {
                 commandManager.unregisterAll();

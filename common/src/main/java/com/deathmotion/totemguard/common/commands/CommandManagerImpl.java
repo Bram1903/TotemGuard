@@ -65,6 +65,13 @@ public class CommandManagerImpl {
         new TopCommand().register(commandManager);
         new StatsCommand().register(commandManager);
 
+        // Update and restart only make sense when the loader is in play. With no loader
+        // there is no second jar to stage and no PluginRuntime to drive a restart.
+        if (TGPlatform.getInstance().isManagedByLoader()) {
+            new UpdateCommand().register(commandManager);
+            new RestartCommand().register(commandManager);
+        }
+
         // Capture root names after registration so unregisterAll() can roll them back
         // cleanly on shutdown. The loader path depends on this to leave Bukkit's
         // CommandMap clean between hot-reloads.

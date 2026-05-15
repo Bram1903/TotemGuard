@@ -18,6 +18,9 @@
 
 package com.deathmotion.totemguard.common.gui.screen;
 
+import com.deathmotion.totemguard.host.LoaderController;
+import com.deathmotion.totemguard.api.host.LoaderInfo;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.api.stats.StatsWindow;
 import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
@@ -131,6 +134,8 @@ public final class TotemGuardInfoScreen extends GuiScreen {
         lore.add(GuiText.line("Build", platform.getPlatformVersion()));
         lore.add(GuiText.line("Checks registered", checkCount > 0 ? String.valueOf(checkCount) : "Pending first join"));
 
+        appendLoaderSection(lore, platform);
+
         if (pluginVersion.snapshot() && pluginVersion.snapshotCommit() != null) {
             lore.add(Component.empty());
             lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SECTION_DEV_BUILD));
@@ -142,6 +147,23 @@ public final class TotemGuardInfoScreen extends GuiScreen {
                 messages.getComponent(MessagesKeys.GUI_INFO_INFORMATION_TITLE),
                 lore
         );
+    }
+
+    private static void appendLoaderSection(List<Component> lore, TGPlatform platform) {
+        TGPluginHost host = platform.getPluginHost();
+        if (host == null || !host.managedByLoader()) return;
+        LoaderInfo info = host.loaderController().map(LoaderController::info).orElse(null);
+        if (info == null) return;
+
+        MessageService messages = platform.getMessageService();
+        lore.add(Component.empty());
+        lore.add(messages.getComponent(MessagesKeys.GUI_INFO_SECTION_LOADER));
+        lore.add(GuiText.line("Version", info.loaderVersion()));
+        lore.add(GuiText.line("Source", info.configuredSource()));
+        lore.add(GuiText.line("Configured", info.configuredVersion()));
+        if (info.stagedVersion() != null) {
+            lore.add(GuiText.line("Staged", info.stagedVersion() + " (pending restart)"));
+        }
     }
 
     private static ItemStack buildTopViolatorsTile(TGPlatform platform) {

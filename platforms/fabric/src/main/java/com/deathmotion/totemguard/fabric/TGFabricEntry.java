@@ -19,16 +19,16 @@
 package com.deathmotion.totemguard.fabric;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
-import com.deathmotion.totemguard.api.host.Platform;
-import com.deathmotion.totemguard.api.host.TGPluginEntry;
-import com.deathmotion.totemguard.api.host.TGPluginHandle;
-import com.deathmotion.totemguard.api.host.TGPluginHost;
+import com.deathmotion.totemguard.host.Platform;
+import com.deathmotion.totemguard.host.TGPluginEntry;
+import com.deathmotion.totemguard.host.TGPluginHandle;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Loader entry point for Fabric. Started by the TotemGuard loader via the
- * {@code META-INF/services/com.deathmotion.totemguard.api.host.TGPluginEntry}
+ * {@code META-INF/services/com.deathmotion.totemguard.host.TGPluginEntry}
  * service file when this jar is selected as the inner plugin.
  * <p>
  * Note: Fabric does not deliver a {@code SERVER_STARTED} callback after the loader
@@ -46,6 +46,7 @@ public final class TGFabricEntry implements TGPluginEntry {
     public @NotNull TGPluginHandle start(@NotNull TGPluginHost host) {
         TGFabricPlatform platform = new TGFabricPlatform(host.dataFolder());
         platform.setManagedByLoader(true);
+        platform.setPluginHost(host);
         platform.commonOnInitialize();
         platform.commonOnEnable();
         if (!platform.isEnabled()) {

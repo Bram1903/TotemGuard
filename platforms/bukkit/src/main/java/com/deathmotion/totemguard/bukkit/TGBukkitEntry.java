@@ -19,10 +19,10 @@
 package com.deathmotion.totemguard.bukkit;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
-import com.deathmotion.totemguard.api.host.Platform;
-import com.deathmotion.totemguard.api.host.TGPluginEntry;
-import com.deathmotion.totemguard.api.host.TGPluginHandle;
-import com.deathmotion.totemguard.api.host.TGPluginHost;
+import com.deathmotion.totemguard.host.Platform;
+import com.deathmotion.totemguard.host.TGPluginEntry;
+import com.deathmotion.totemguard.host.TGPluginHandle;
+import com.deathmotion.totemguard.host.TGPluginHost;
 import com.deathmotion.totemguard.bukkit.placeholder.PlaceholderAPIHolder;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import org.bukkit.Bukkit;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Loader entry point. Started by the TotemGuard loader via the
- * {@code META-INF/services/com.deathmotion.totemguard.api.host.TGPluginEntry}
+ * {@code META-INF/services/com.deathmotion.totemguard.host.TGPluginEntry}
  * service file when this jar is selected as the inner plugin.
  */
 public final class TGBukkitEntry implements TGPluginEntry {
@@ -51,6 +51,7 @@ public final class TGBukkitEntry implements TGPluginEntry {
 
         TGBukkitPlatform platform = new TGBukkitPlatform(javaPlugin);
         platform.setManagedByLoader(true);
+        platform.setPluginHost(host);
         platform.commonOnInitialize();
         platform.commonOnEnable();
         if (!platform.isEnabled()) {
