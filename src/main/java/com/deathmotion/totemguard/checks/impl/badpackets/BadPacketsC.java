@@ -29,7 +29,10 @@ import net.kyori.adventure.text.Component;
 
 @CheckData(name = "BadPacketsC", description = "Impossible same slot packet")
 public class BadPacketsC extends Check implements PacketCheck {
-    int lastSlot = -69;
+    private static final int UNSET_SLOT = Integer.MIN_VALUE;
+
+    private int lastSlot = UNSET_SLOT;
+    private int lastFlaggedSlot = UNSET_SLOT;
 
     public BadPacketsC(final TotemPlayer player) {
         super(player);
@@ -41,7 +44,14 @@ public class BadPacketsC extends Check implements PacketCheck {
 
         final int slot = new WrapperPlayClientHeldItemChange(event).getSlot();
         if (slot == lastSlot) {
+            if (slot == lastFlaggedSlot) {
+                return;
+            }
+
+            lastFlaggedSlot = slot;
             fail(createDetails(slot, lastSlot));
+        } else if (lastFlaggedSlot == slot) {
+            lastFlaggedSlot = UNSET_SLOT;
         }
 
         lastSlot = slot;
