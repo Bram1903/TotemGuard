@@ -16,21 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.loader.source;
+package com.deathmotion.totemguard.api.versioning;
 
-import com.deathmotion.totemguard.loader.config.LoaderConfig;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public interface VersionResolver {
-
-    static VersionResolver forConfig(LoaderConfig config) {
-        return switch (config.effectiveSource()) {
-            case GITHUB -> new GithubSource();
-            case MODRINTH -> new ModrinthSource();
-            case LOCAL -> new LocalSource();
-        };
+/**
+ * Default {@link TGVersion} implementation. Most callers should construct versions
+ * via {@link TGVersion#of} or {@link TGVersion#fromString}; this record is exposed
+ * only so third-party tooling can reach the concrete type when needed.
+ */
+public record BasicTGVersion(int major, int minor, int patch, boolean snapshot,
+                             @Nullable String snapshotCommit) implements TGVersion {
+    @Override
+    public @NotNull String toString() {
+        return major + "." + minor + "." + patch + (snapshot && snapshotCommit != null ? ("+" + snapshotCommit + "-SNAPSHOT") : "");
     }
-
-    String sourceName();
-
-    Artifact resolve(ResolverContext context) throws Exception;
 }

@@ -18,34 +18,63 @@
 
 package com.deathmotion.totemguard.loader.source;
 
-import com.deathmotion.totemguard.loader.config.LoaderConfig;
-import com.deathmotion.totemguard.loader.core.HostPlatform;
-import com.deathmotion.totemguard.loader.core.LoaderPaths;
 import com.deathmotion.totemguard.loader.download.Checksums;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Picks an inner jar from a local directory. Intended for development; not documented
- * in the bundled loader-config.yml.
+ * Picks a TotemGuard plugin jar from the version cache that the {@code LocalImporter}
+ * populated. The cache is the canonical store for both remote-downloaded and locally-
+ * imported builds, so this source just performs version matching against it.
  */
 public final class LocalSource implements VersionResolver {
 
-    private static final Pattern VERSION_FROM_FILENAME =
-            Pattern.compile("(\\d+\\.\\d+\\.\\d+(?:\\+[0-9a-f]+)?(?:-SNAPSHOT)?)");
+    private static boolean isChannel(String requested) {
+        String upper = requested.toUpperCase(Locale.ROOT);
+        return upper.equals("LATEST") || upper.equals("EXPERIMENTAL") || upper.equals("GIT");
+    }
 
-    private static String parseVersion(String fileName) {
-        Matcher m = VERSION_FROM_FILENAME.matcher(fileName);
-        return m.find() ? m.group(1) : fileName;
+    private static Path pickPinned(List<Path> candidates, String requested, Pattern pattern) throws IOException {
+        Path best = null;
+        FileTime bestTime = null;
+        for (Path candidate : candidates) {
+            Matcher matcher = pattern.matcher(candidate.getFileName().toString());
+            if (!matcher.matches()) continue;
+            String version = matcher.group(1);
+            if (!version.equals(requested)) continue;
+            FileTime t = Files.getLastModifiedTime(candidate);
+            if (bestTime == null || t.compareTo(bestTime) > 0) {
+                best = candidate;
+                bestTime = t;
+            }
+        }
+        if (best == null) {
+            throw new IOException("No cached jar matches version '" + requested + "'. "
+                    + "Run /tgloader versions to see what's available.");
+        }
+        return best;
+    }
+
+    private static Path newestByModified(List<Path> candidates) throws IOException {
+        Path best = null;
+        FileTime bestTime = null;
+        for (Path candidate : candidates) {
+            FileTime t = Files.getLastModifiedTime(candidate);
+            if (bestTime == null || t.compareTo(bestTime) > 0) {
+                best = candidate;
+                bestTime = t;
+            }
+        }
+        return best;
     }
 
     @Override
@@ -54,43 +83,32 @@ public final class LocalSource implements VersionResolver {
     }
 
     @Override
-    public Artifact resolve(LoaderConfig config, HostPlatform platform, LoaderPaths paths) throws Exception {
-        Path dir = paths.localDir();
-        Files.createDirectories(dir);
-        String pattern = "TotemGuard-" + platform.assetSuffix() + "-*.jar";
-        PathMatcher matcher = dir.getFileSystem().getPathMatcher("glob:" + pattern);
+    public Artifact resolve(ResolverContext context) throws Exception {
+        String prefix = "TotemGuard-" + context.platform().name().toLowerCase(Locale.ROOT) + "-";
+        Pattern pattern = Pattern.compile("^" + Pattern.quote(prefix) + "(.+)-([0-9a-f]+)\\.jar$");
 
         List<Path> candidates = new ArrayList<>();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(context.paths().versionsDir(), prefix + "*.jar")) {
             for (Path p : stream) {
-                if (!Files.isRegularFile(p)) continue;
-                if (matcher.matches(p.getFileName())) candidates.add(p);
+                if (Files.isRegularFile(p)) candidates.add(p);
             }
         }
+
         if (candidates.isEmpty()) {
-            throw new IOException("No jars matching '" + pattern + "' in " + dir);
+            throw new IOException("No TotemGuard jars in the version cache. Drop one in "
+                    + context.paths().localDir() + " and restart the server.");
         }
 
-        String requested = config.version();
-        Path chosen;
-        if (requested.equalsIgnoreCase("LATEST")
-                || requested.equalsIgnoreCase("EXPERIMENTAL")
-                || requested.equalsIgnoreCase("GIT")) {
-            chosen = candidates.stream()
-                    .max(Comparator.comparing(p -> parseVersion(p.getFileName().toString())))
-                    .orElseThrow();
-        } else {
-            chosen = candidates.stream()
-                    .filter(p -> p.getFileName().toString().contains(requested))
-                    .findFirst()
-                    .orElseThrow(() -> new IOException(
-                            "No local jar contains version string '" + requested + "' in " + dir));
-        }
+        String requested = context.config().version();
+        Path chosen = isChannel(requested)
+                ? newestByModified(candidates)
+                : pickPinned(candidates, requested, pattern);
 
-        String version = parseVersion(chosen.getFileName().toString());
+        Matcher matcher = pattern.matcher(chosen.getFileName().toString());
+        String resolvedVersion = matcher.matches() ? matcher.group(1) : requested;
         String hash = Checksums.hashFile(chosen, Artifact.HashAlgorithm.SHA_256);
 
-        return new Artifact(version, chosen.toUri(), Artifact.HashAlgorithm.SHA_256,
-                hash, chosen.getFileName().toString(), "Local " + dir);
+        return new Artifact(resolvedVersion, chosen.toUri(), Artifact.HashAlgorithm.SHA_256,
+                hash, chosen.getFileName().toString(), "Local " + context.paths().versionsDir());
     }
 }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.loader.config;
 
+import com.deathmotion.totemguard.loader.core.PluginVersionGate;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -75,11 +76,16 @@ public final class LoaderConfig {
                     + "'. Expected GITHUB or MODRINTH.");
         }
 
+        PluginVersionGate.rejectIfPinnedTooOld(version, "loader-config.yml");
         return new LoaderConfig(version, source);
     }
 
     private static String asString(Object value, String fallback) {
         return value == null ? fallback : value.toString();
+    }
+
+    public LoaderConfig withVersion(String overrideVersion) {
+        return new LoaderConfig(overrideVersion, source);
     }
 
     public String version() {

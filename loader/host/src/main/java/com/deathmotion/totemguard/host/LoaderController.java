@@ -19,14 +19,16 @@
 package com.deathmotion.totemguard.host;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.fleet.FleetCache;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Loader-side control surface exposed to the inner plugin when running under the
+ * Loader-side control surface exposed to the TotemGuard plugin when running under the
  * TotemGuard loader. Obtained via {@link TGPluginHost#loaderController()} which is
  * {@link java.util.Optional#empty()} in standalone mode.
  * <p>
@@ -40,7 +42,7 @@ public interface LoaderController {
     @NotNull LoaderInfo info();
 
     /**
-     * Resolves the inner-jar artifact that this instance's local loader config
+     * Resolves the TotemGuard plugin jar artifact that this instance's local loader config
      * currently points at. Performs whatever network calls the source requires
      * (GitHub or Modrinth API).
      * <p>
@@ -60,7 +62,7 @@ public interface LoaderController {
     byte @NotNull [] download(@NotNull UpdateTarget target) throws IOException;
 
     /**
-     * Stages the given bytes as the next inner jar. Validates that the SHA-256 of the
+     * Stages the given bytes as the next plugin jar. Validates that the SHA-256 of the
      * bytes matches {@link UpdateTarget#sha256()} and that the bytes carry an embedded
      * integrity stamp, then atomically writes them to the loader cache. The next
      * loader-driven restart will pick up this staged jar instead of re-resolving.
@@ -70,11 +72,11 @@ public interface LoaderController {
     void stageJar(byte @NotNull [] bytes, @NotNull UpdateTarget target) throws IOException;
 
     /**
-     * Asynchronously restarts the inner plugin via the same path used by
+     * Asynchronously restarts the TotemGuard plugin via the same path used by
      * {@code /tgloader restart}. If a jar has been staged via
      * {@link #stageJar(byte[], UpdateTarget)} it is picked up by the restart.
      * <p>
-     * The returned future completes once the new inner plugin has fully enabled, or
+     * The returned future completes once the new TotemGuard plugin has fully enabled, or
      * exceptionally if startup failed.
      *
      * @param reason fired as the shutdown {@code Reason} so consumers can distinguish
@@ -90,10 +92,10 @@ public interface LoaderController {
     }
 
     /**
-     * Asynchronously stops the inner plugin without restarting it. The loader stays
+     * Asynchronously stops the TotemGuard plugin without restarting it. The loader stays
      * online and accepts {@code /tgloader start} to bring TotemGuard back up.
      * <p>
-     * The returned future completes once the inner plugin has fully shut down, or
+     * The returned future completes once the TotemGuard plugin has fully shut down, or
      * exceptionally if the teardown threw.
      *
      * @param reason fired as the shutdown {@code Reason} so consumers can distinguish
@@ -107,4 +109,24 @@ public interface LoaderController {
     default @NotNull CompletableFuture<Void> stop() {
         return stop(TGPluginShutdownEvent.Reason.LOADER_STOP);
     }
+
+    /**
+     * Hand the loader a Redis-backed cache so it can dedup HTTP calls, broadcast freshly
+     * downloaded jars to other peers, and coordinate fleet rollouts. TotemGuard calls
+     * this once Redis is connected, and {@code attachFleetCache(null)} on disconnect or
+     * shutdown.
+     *
+     * <p>The loader holds the reference under a {@code volatile} and gates every fleet
+     * operation on {@link FleetCache#isHealthy()}, so passing a healthy cache here is
+     * sufficient to enable the L2 layer. Detachment is symmetric: the loader stops
+     * publishing/subscribing and falls back to its file-only cache path.</p>
+     */
+    void attachFleetCache(@Nullable FleetCache cache);
+
+    /**
+     * Current attached cache, or {@code null} if no TotemGuard instance is providing
+     * one. Exposed mainly for diagnostics; loader code typically just uses
+     * {@link #attachFleetCache} via TotemGuard's lifecycle.
+     */
+    @Nullable FleetCache fleetCache();
 }

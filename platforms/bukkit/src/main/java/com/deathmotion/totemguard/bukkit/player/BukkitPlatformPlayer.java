@@ -35,6 +35,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -151,6 +152,23 @@ public class BukkitPlatformPlayer implements PlatformPlayer {
                 handle.restore();
                 onDamageRefused.run();
             }
+        }, null);
+    }
+
+    @Override
+    public @Nullable String clientBrandName() {
+        try {
+            return bukkitPlayer.getClientBrandName();
+        } catch (NoSuchMethodError | UnsupportedOperationException ignored) {
+            return null;
+        }
+    }
+
+    @Override
+    public void resyncInventoryToClient() {
+        scheduler.runForEntity(bukkitPlayer, () -> {
+            if (!bukkitPlayer.isOnline()) return;
+            bukkitPlayer.updateInventory();
         }, null);
     }
 

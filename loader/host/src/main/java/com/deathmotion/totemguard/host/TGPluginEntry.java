@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.host;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Service-loader entry point exposed by an inner TotemGuard plugin jar.
+ * Service-loader entry point exposed by the TotemGuard plugin jar.
  * <p>
  * The TotemGuard loader discovers implementations via
  * {@link java.util.ServiceLoader#load(Class, ClassLoader)} and picks the one whose
@@ -36,7 +36,7 @@ public interface TGPluginEntry {
     @NotNull Platform platform();
 
     /**
-     * Starts the inner plugin against the given host. Runs the entire enable
+     * Starts the TotemGuard plugin against the given host. Runs the entire enable
      * lifecycle synchronously on the calling thread and returns only once the
      * plugin is fully initialized or has irrecoverably failed.
      *

@@ -22,8 +22,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Describes a specific inner-jar artifact the loader could fetch and stage. Returned
- * by {@link LoaderController#resolveTarget()}.
+ * Describes a specific TotemGuard plugin jar artifact the loader could fetch and stage.
+ * Returned by {@link LoaderController#resolveTarget()}.
  * <p>
  * The {@link #sha256()} field is {@code null} until after the bytes have actually
  * been downloaded (some sources do not advertise a SHA-256 ahead of time). It is
@@ -33,8 +33,8 @@ import org.jetbrains.annotations.Nullable;
  *                  Free-form so the api survives future source additions
  * @param version   the resolved version string (e.g. {@code 3.0.5}). Stable identifier
  *                  suitable for use as a fleet dedup key
- * @param sha256    the SHA-256 fingerprint of the inner jar bytes, hex-encoded.
- *                  {@code null} when not yet known
+ * @param sha256    the SHA-256 fingerprint of the TotemGuard plugin jar bytes,
+ *                  hex-encoded. {@code null} when not yet known
  * @param sizeBytes the jar size in bytes, or {@code -1} when not known
  * @param fileName  the suggested filename for the staged jar
  */
@@ -45,10 +45,6 @@ public record UpdateTarget(
         long sizeBytes,
         @NotNull String fileName
 ) {
-
-    public @NotNull String resolutionKey() {
-        return source + ":" + version;
-    }
 
     public @NotNull UpdateTarget withSha256(@NotNull String sha256) {
         return new UpdateTarget(source, version, sha256, sizeBytes, fileName);

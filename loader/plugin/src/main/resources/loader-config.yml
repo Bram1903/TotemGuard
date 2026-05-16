@@ -9,5 +9,13 @@
 # source:
 #   - "GITHUB": GitHub releases. SHA-256 verified via each asset's digest field.
 #   - "MODRINTH": Modrinth releases. SHA-512 verified via the v2 API hashes field.
+#   - "LOCAL": pick the jar from the loader's own local/ drop directory.
+#     Useful for fully air-gapped servers that want to update by hand while
+#     keeping the loader's recovery features (jar integrity, hot reload, etc).
+#
+# Even with GITHUB/MODRINTH selected, any jar dropped into the local/ directory
+# is auto-imported into the version cache on every loader start, so /tgloader
+# load <version> can use it. local/ files are moved into local/.imported/
+# after import to avoid double-processing.
 version: "LATEST"
 source: "GITHUB"

@@ -16,21 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.loader.source;
+package com.deathmotion.totemguard.loader.classloader;
 
-import com.deathmotion.totemguard.loader.config.LoaderConfig;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 
-public interface VersionResolver {
+/**
+ * Child classloader for the TotemGuard plugin jar. Parent-first delegation routes API
+ * class lookups to the loader's plugin classloader (where {@link ApiClassInjector}
+ * defined them) so {@code Class<TGUserFlagEvent>} stays stable across hot-reloads.
+ */
+public final class TGPluginClassLoader extends URLClassLoader {
 
-    static VersionResolver forConfig(LoaderConfig config) {
-        return switch (config.effectiveSource()) {
-            case GITHUB -> new GithubSource();
-            case MODRINTH -> new ModrinthSource();
-            case LOCAL -> new LocalSource();
-        };
+    static {
+        registerAsParallelCapable();
     }
 
-    String sourceName();
-
-    Artifact resolve(ResolverContext context) throws Exception;
+    public TGPluginClassLoader(Path jarPath, ClassLoader parent) throws IOException {
+        super("totemguard", new URL[]{jarPath.toUri().toURL()}, parent);
+    }
 }

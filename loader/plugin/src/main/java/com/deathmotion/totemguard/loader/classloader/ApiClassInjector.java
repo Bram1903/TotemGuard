@@ -29,11 +29,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Reads {@code com/deathmotion/totemguard/api/**.class} entries from the inner jar and
- * defines them on the target classloader via the JNI bridge. Classes already present on
- * the target are skipped (the JVM forbids redefining a loaded class), so a future inner
- * version can add new api types without trouble; modifying an existing api class's
- * shape across hot-reloads requires a full server restart.
+ * Reads {@code com/deathmotion/totemguard/api/**.class} entries from the TotemGuard plugin
+ * jar and defines them on the target classloader via the JNI bridge. Classes already
+ * present on the target are skipped (the JVM forbids redefining a loaded class), so a
+ * future plugin version can add new api types without trouble; modifying an existing api
+ * class's shape across hot-reloads requires a full server restart.
  */
 public final class ApiClassInjector {
 
@@ -65,12 +65,12 @@ public final class ApiClassInjector {
         return buf.toByteArray();
     }
 
-    public void inject(Path innerJarPath, ClassLoader target) throws IOException {
+    public void inject(Path pluginJarPath, ClassLoader target) throws IOException {
         NativeClassLoader.load();
 
         Map<String, byte[]> pending = new LinkedHashMap<>();
         int alreadyPresent = 0;
-        try (JarFile jar = new JarFile(innerJarPath.toFile())) {
+        try (JarFile jar = new JarFile(pluginJarPath.toFile())) {
             Enumeration<JarEntry> entries = jar.entries();
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
@@ -101,12 +101,11 @@ public final class ApiClassInjector {
 
         if (pending.isEmpty()) {
             if (alreadyPresent > 0) {
-                logger.info("API classes already injected. Skipping.");
+                logger.fine("API classes already injected. Skipping.");
             }
             return;
         }
 
-        logger.info("Injecting API classes...");
         long startNanos = System.nanoTime();
 
         // defineClass resolves the supertype at class-creation time, so a class whose
@@ -151,10 +150,10 @@ public final class ApiClassInjector {
                 if (t != null) logger.log(Level.WARNING, "Failed to inject " + name, t);
             }
             throw new IOException(failures.size() + " API class(es) could not be defined: "
-                    + String.join("; ", failures));
+                    + String.join(", ", failures));
         }
 
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        logger.info("Successfully injected API classes in " + elapsedMs + "ms.");
+        logger.info("Injected " + defined + " API classes in " + elapsedMs + "ms.");
     }
 }

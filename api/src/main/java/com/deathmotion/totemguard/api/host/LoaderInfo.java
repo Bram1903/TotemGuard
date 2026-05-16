@@ -24,16 +24,16 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Immutable snapshot of the loader's configuration and current state. Consumers obtain
  * one via {@link com.deathmotion.totemguard.api.TotemGuardAPI#getLoaderInfo()} when the
- * inner plugin is being driven by the TotemGuard loader.
+ * TotemGuard plugin is being driven by the TotemGuard loader.
  *
  * @param loaderVersion     the loader plugin's own version
- * @param configuredSource  the configured source for resolving inner jars
+ * @param configuredSource  the configured source for resolving TotemGuard plugin jars
  *                          (e.g. {@code GITHUB}, {@code MODRINTH}, {@code LOCAL}).
  *                          A free-form label so the api can survive future source additions
  * @param configuredVersion the configured version pin
  *                          (e.g. {@code LATEST}, {@code GIT}, or a concrete version like {@code 3.0.5}).
  *                          A free-form label for the same reason
- * @param loadedVersion     the version of the inner plugin currently running
+ * @param loadedVersion     the version of the TotemGuard plugin currently running
  * @param stagedVersion     a version that has been staged for the next loader restart,
  *                          or {@code null} when no jar is staged
  */

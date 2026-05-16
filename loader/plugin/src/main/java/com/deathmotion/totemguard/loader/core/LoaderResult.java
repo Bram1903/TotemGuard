@@ -20,5 +20,5 @@ package com.deathmotion.totemguard.loader.core;
 
 import java.nio.file.Path;
 
-public record LoaderResult(Path innerJar, String innerVersion, String sourceLabel) {
+public record LoaderResult(Path pluginJar, String pluginVersion, String sourceLabel, String sha256) {
 }

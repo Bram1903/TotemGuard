@@ -53,8 +53,8 @@ abstract class TGVersionTask : DefaultTask() {
 
                 public static final String RAW = "$version";
                 public static final Instant BUILD_TIMESTAMP = Instant.ofEpochMilli(${System.currentTimeMillis()}L);
-                public static final TGVersion CURRENT = new TGVersion(${parsedVersion.major}, ${parsedVersion.minor}, ${parsedVersion.patch}, ${parsedVersion.snapshot}, ${parsedVersion.quotedSnapshotCommit()});
-                public static final TGVersion UNKNOWN = new TGVersion(0, 0, 0);
+                public static final TGVersion CURRENT = TGVersion.of(${parsedVersion.major}, ${parsedVersion.minor}, ${parsedVersion.patch}, ${parsedVersion.snapshot}, ${parsedVersion.quotedSnapshotCommit()});
+                public static final TGVersion UNKNOWN = TGVersion.of(0, 0, 0);
 
                 private $cls() {
                     throw new IllegalStateException();

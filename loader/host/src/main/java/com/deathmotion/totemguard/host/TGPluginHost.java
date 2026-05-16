@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 
 /**
  * Hosting environment passed by the TotemGuard loader (or a standalone bootstrap)
- * into a {@link TGPluginEntry} when starting the inner plugin.
+ * into a {@link TGPluginEntry} when starting the TotemGuard plugin.
  */
 public interface TGPluginHost {
 
@@ -45,13 +45,13 @@ public interface TGPluginHost {
     @NotNull Object nativePlugin();
 
     /**
-     * The logger the inner plugin should log against. Tagged with {@code TotemGuard}
+     * The logger the TotemGuard plugin should log against. Tagged with {@code TotemGuard}
      * so output is consistent across loader and standalone modes.
      */
     @NotNull Logger logger();
 
     /**
-     * The data directory the inner plugin should use for configs, caches, and
+     * The data directory the TotemGuard plugin should use for configs, caches, and
      * versioned jars. Guaranteed to exist before
      * {@link TGPluginEntry#start(TGPluginHost)} is invoked.
      */
@@ -64,22 +64,22 @@ public interface TGPluginHost {
     @NotNull ClassLoader hostClassLoader();
 
     /**
-     * {@code true} when the inner plugin is being driven by the TotemGuard loader.
-     * {@code false} when the inner plugin is its own registered plugin (standalone
-     * install). The inner uses this to decide whether shutdown should propagate to
+     * {@code true} when the TotemGuard plugin is being driven by the TotemGuard loader.
+     * {@code false} when the TotemGuard plugin is its own registered plugin (standalone
+     * install). The plugin uses this to decide whether shutdown should propagate to
      * disabling the registered plugin.
      */
     boolean managedByLoader();
 
     /**
-     * Version of the host driving this inner plugin. {@code null} when the host
+     * Version of the host driving this TotemGuard plugin. {@code null} when the host
      * does not advertise a version (e.g. a standalone plugin acting as its own host).
      */
     @Nullable String hostVersion();
 
     /**
      * Loader-side control surface, present only when {@link #managedByLoader()} is
-     * {@code true}. The inner plugin uses this to inspect loader state and coordinate
+     * {@code true}. The TotemGuard plugin uses this to inspect loader state and coordinate
      * fleet-wide updates.
      */
     default @NotNull Optional<LoaderController> loaderController() {

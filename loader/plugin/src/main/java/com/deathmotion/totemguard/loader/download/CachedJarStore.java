@@ -37,11 +37,10 @@ import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.HexFormat;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class CachedJarStore {
 
@@ -216,9 +215,57 @@ public final class CachedJarStore {
         }
     }
 
-    private Optional<Path> findPinnedJar(String version, HostPlatform platform) {
+    public List<String> listCachedVersions(HostPlatform platform) {
+        String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT) + "-";
+        Pattern pattern = Pattern.compile("^" + Pattern.quote(prefix)
+                + "(.+)-[0-9a-f]{1,16}\\.jar$");
+        TreeSet<String> versions = new TreeSet<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(versionsDir, prefix + "*.jar")) {
+            for (Path p : stream) {
+                if (!Files.isRegularFile(p)) continue;
+                Matcher m = pattern.matcher(p.getFileName().toString());
+                if (m.matches()) {
+                    versions.add(m.group(1));
+                }
+            }
+        } catch (IOException ignored) {
+        }
+        return new ArrayList<>(versions);
+    }
+
+    /**
+     * Returns the newest jar in the catalog matching the exact pinned version string.
+     * Used both as a fallback for unreachable sources and as a fast path for pinned
+     * loads so the loader can skip the network when the build is already on disk.
+     */
+    public Optional<Path> findPinnedJar(String version, HostPlatform platform) {
         String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT)
                 + "-" + sanitize(version) + "-";
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(versionsDir, prefix + "*.jar")) {
+            Path newest = null;
+            FileTime newestTime = null;
+            for (Path p : stream) {
+                if (!Files.isRegularFile(p)) continue;
+                FileTime t = Files.getLastModifiedTime(p);
+                if (newestTime == null || t.compareTo(newestTime) > 0) {
+                    newest = p;
+                    newestTime = t;
+                }
+            }
+            return Optional.ofNullable(newest);
+        } catch (IOException ex) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Last-resort lookup: returns the newest jar in the version catalog for this
+     * platform, ignoring channel pointers and the requested version. Used by the
+     * loader's resilience path when the configured source is unreachable and no
+     * better-matching fallback exists.
+     */
+    public Optional<Path> findNewestCachedJar(HostPlatform platform) {
+        String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT) + "-";
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(versionsDir, prefix + "*.jar")) {
             Path newest = null;
             FileTime newestTime = null;

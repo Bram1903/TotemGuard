@@ -79,7 +79,7 @@ public record StagedJar(Path jar, String version, String source, String sha256) 
 
             return new StagedJar(active, version, source, actualSha);
         } catch (IOException ex) {
-            logger.log(Level.WARNING, "Failed to consume staged jar; falling back to resolver", ex);
+            logger.log(Level.WARNING, "Failed to consume staged jar. Falling back to resolver.", ex);
             discard(paths);
             return null;
         }

@@ -39,7 +39,7 @@ import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
 import com.deathmotion.totemguard.common.features.stats.StatsRepositoryImpl;
 import com.deathmotion.totemguard.common.features.teleport.TeleportService;
 import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
-import com.deathmotion.totemguard.common.features.update.fleet.FleetUpdateService;
+import com.deathmotion.totemguard.common.fleet.FleetCacheLifecycle;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
@@ -113,7 +113,7 @@ public abstract class TGPlatform {
     SessionViolationStore sessionViolationStore;
     ModSessionStore modSessionStore;
     TeleportService teleportService;
-    FleetUpdateService fleetUpdateService;
+    FleetCacheLifecycle fleetCacheLifecycle;
     TGPlatformAPI api;
 
     @Setter

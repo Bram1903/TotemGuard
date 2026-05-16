@@ -34,10 +34,7 @@ public enum Packets {
     SYNC_FOCUS_ALERT(new SyncFocusAlertPacket(11)),
     SYNC_CHECK_REQUEST(new SyncCheckRequestPacket(12)),
     SYNC_CHECK_RESULT(new SyncCheckResultPacket(13)),
-    SYNC_FOLLOW_EVENT(new SyncFollowEventPacket(14)),
-    SYNC_FLEET_UPDATE_REQUEST(new SyncFleetUpdateRequestPacket(15)),
-    SYNC_FLEET_JAR_READY(new SyncFleetJarReadyPacket(16)),
-    SYNC_FLEET_UPDATE_ACK(new SyncFleetUpdateAckPacket(17));
+    SYNC_FOLLOW_EVENT(new SyncFollowEventPacket(14));
 
     private final Packet<?> packet;
 

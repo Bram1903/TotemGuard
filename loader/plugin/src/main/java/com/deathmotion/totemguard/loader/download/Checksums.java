@@ -46,4 +46,14 @@ public final class Checksums {
             throw new IOException("JVM does not support " + algorithm.jdkName(), ex);
         }
     }
+
+    public static String hashBytes(byte[] bytes, Artifact.HashAlgorithm algorithm) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(algorithm.jdkName());
+            digest.update(bytes);
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IOException("JVM does not support " + algorithm.jdkName(), ex);
+        }
+    }
 }

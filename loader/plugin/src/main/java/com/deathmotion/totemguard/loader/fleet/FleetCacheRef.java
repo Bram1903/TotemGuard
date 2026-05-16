@@ -1,0 +1,107 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.loader.fleet;
+
+import com.deathmotion.totemguard.api.fleet.FleetCache;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Shared, mutable holder for the loader's view of {@link FleetCache}. Components that
+ * want to use L2 (HTTP cache, jar broadcaster, rollout coordinator) read through this
+ * reference instead of holding their own. When TotemGuard attaches/detaches, every
+ * registered listener is invoked exactly once so subscribers can register/cancel pub
+ * handlers and heartbeat tasks.
+ *
+ * <p>Thread-safe: writes go through {@link #set} under a synchronized block; reads use
+ * {@link #current()} which is a volatile read.</p>
+ */
+public final class FleetCacheRef {
+
+    private final Logger logger;
+    private final CopyOnWriteArrayList<Consumer<FleetCache>> attachListeners = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<Consumer<FleetCache>> detachListeners = new CopyOnWriteArrayList<>();
+
+    private volatile @Nullable FleetCache current;
+
+    public FleetCacheRef(Logger logger) {
+        this.logger = logger;
+    }
+
+    public @Nullable FleetCache current() {
+        return current;
+    }
+
+    /**
+     * Returns the cache only if it's both present and healthy. Use this from hot paths
+     * so unhealthy caches don't add latency to operations that have a perfectly good
+     * file-local fallback.
+     */
+    public Optional<FleetCache> available() {
+        FleetCache c = current;
+        return (c != null && c.isHealthy()) ? Optional.of(c) : Optional.empty();
+    }
+
+    public synchronized void set(@Nullable FleetCache next) {
+        FleetCache previous = this.current;
+        if (previous == next) return;
+        this.current = next;
+
+        if (previous != null) {
+            fire(detachListeners, previous, "detach");
+        }
+        if (next != null) {
+            fire(attachListeners, next, "attach");
+        }
+    }
+
+    /**
+     * Register a listener invoked once on every fresh attach (after the cache has been
+     * stored). If a cache is already attached when {@code listener} is added, the
+     * listener fires synchronously to keep the contract simple.
+     */
+    public synchronized void onAttach(Consumer<FleetCache> listener) {
+        attachListeners.add(listener);
+        FleetCache c = this.current;
+        if (c != null) safe(() -> listener.accept(c), "attach listener replay");
+    }
+
+    public void onDetach(Consumer<FleetCache> listener) {
+        detachListeners.add(listener);
+    }
+
+    private void fire(Iterable<Consumer<FleetCache>> listeners, FleetCache cache, String label) {
+        for (Consumer<FleetCache> listener : listeners) {
+            safe(() -> listener.accept(cache), label + " listener");
+        }
+    }
+
+    private void safe(Runnable action, String label) {
+        try {
+            action.run();
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "FleetCacheRef " + label + " threw", t);
+        }
+    }
+}

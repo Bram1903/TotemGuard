@@ -18,30 +18,22 @@
 
 package com.deathmotion.totemguard.loader.source;
 
-import com.deathmotion.totemguard.loader.config.LoaderConfig;
-import com.deathmotion.totemguard.loader.core.HostPlatform;
-import com.deathmotion.totemguard.loader.core.LoaderPaths;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
 
 public final class GithubSource implements VersionResolver {
 
     static final String REPOSITORY = "Bram1903/TotemGuard";
-    private static final String API_BASE = "https://api.github.com";
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
 
-    private static JsonObject pickRelease(JsonArray releases, String requested) {
-        String upper = requested.toUpperCase(java.util.Locale.ROOT);
+    private static JsonObject pickByChannelOrTag(JsonArray releases, String requested, String assetSuffix) {
+        String upper = requested.toUpperCase(Locale.ROOT);
+        boolean isChannel = upper.equals("LATEST") || upper.equals("EXPERIMENTAL") || upper.equals("GIT");
         for (JsonElement element : releases) {
             JsonObject release = element.getAsJsonObject();
             if (release.has("draft") && release.get("draft").getAsBoolean()) continue;
@@ -54,9 +46,51 @@ public final class GithubSource implements VersionResolver {
                 case "GIT" -> true;
                 default -> tag.equals(requested) || tag.equals("v" + requested);
             };
-            if (match) return release;
+            if (!match) continue;
+
+            // Skip releases that don't carry an asset for this platform (e.g. ancient
+            // 2.x releases that predate the Bukkit/Fabric split). For explicit tags we
+            // let the asset check fail downstream so the user sees the exact reason.
+            if (isChannel && !hasPlatformAsset(release, assetSuffix)) continue;
+            return release;
         }
         return null;
+    }
+
+    private static boolean hasPlatformAsset(JsonObject release, String assetSuffix) {
+        if (!release.has("assets")) return false;
+        for (JsonElement assetEl : release.getAsJsonArray("assets")) {
+            JsonObject asset = assetEl.getAsJsonObject();
+            String name = asset.get("name").getAsString();
+            if (name.contains(assetSuffix) && name.endsWith(".jar")) return true;
+        }
+        return false;
+    }
+
+    private static Artifact artifactFromRelease(JsonObject release, String assetSuffix) throws IOException {
+        String tag = release.get("tag_name").getAsString();
+        String version = tag.startsWith("v") ? tag.substring(1) : tag;
+
+        JsonArray assets = release.has("assets") ? release.getAsJsonArray("assets") : new JsonArray();
+        for (JsonElement assetEl : assets) {
+            JsonObject asset = assetEl.getAsJsonObject();
+            String name = asset.get("name").getAsString();
+            if (!name.contains(assetSuffix) || !name.endsWith(".jar")) continue;
+
+            String digest = asset.has("digest") && !asset.get("digest").isJsonNull()
+                    ? asset.get("digest").getAsString() : null;
+            if (digest == null || !digest.startsWith("sha256:")) {
+                throw new IOException("GitHub asset " + name
+                        + " is missing a SHA-256 digest. Refusing to load without checksum verification.");
+            }
+            String hashHex = digest.substring("sha256:".length());
+
+            String url = asset.get("browser_download_url").getAsString();
+            return new Artifact(version, URI.create(url), Artifact.HashAlgorithm.SHA_256,
+                    hashHex, name, "GitHub " + REPOSITORY + " @ " + tag);
+        }
+
+        throw new IOException("No asset matching '*" + assetSuffix + "*.jar' on GitHub release " + tag);
     }
 
     @Override
@@ -65,55 +99,24 @@ public final class GithubSource implements VersionResolver {
     }
 
     @Override
-    public Artifact resolve(LoaderConfig config, HostPlatform platform, LoaderPaths paths) throws Exception {
-        HttpClient client = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_BASE + "/repos/" + REPOSITORY + "/releases?per_page=30"))
-                .timeout(READ_TIMEOUT)
-                .header("Accept", "application/vnd.github+json")
-                .header("X-GitHub-Api-Version", "2022-11-28")
-                .GET().build();
+    public Artifact resolve(ResolverContext context) throws Exception {
+        JsonArray releases = GithubReleases.fetchAll(context.fleetCacheRef());
+        String requested = context.config().version();
+        String assetSuffix = context.platform().assetSuffix();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) {
-            throw new IOException("GitHub returned " + response.statusCode()
-                    + " for " + REPOSITORY + " releases");
+        JsonObject viaChannel = pickByChannelOrTag(releases, requested, assetSuffix);
+        if (viaChannel != null) {
+            return artifactFromRelease(viaChannel, assetSuffix);
         }
 
-        JsonElement parsed = JsonParser.parseString(response.body());
-        if (!parsed.isJsonArray()) {
-            throw new IOException("GitHub releases response was not a JSON array");
-        }
-
-        String requested = config.version();
-        JsonObject picked = pickRelease(parsed.getAsJsonArray(), requested);
-        if (picked == null) {
+        List<SearchMatch> matches = GithubSearch.searchMatches(releases, requested, context.platform());
+        if (matches.isEmpty()) {
             throw new IOException("No GitHub release matched '" + requested + "' for " + REPOSITORY);
         }
-
-        String tag = picked.get("tag_name").getAsString();
-        String version = tag.startsWith("v") ? tag.substring(1) : tag;
-        String assetSuffix = platform.assetSuffix();
-
-        JsonArray assets = picked.has("assets") ? picked.getAsJsonArray("assets") : new JsonArray();
-        for (JsonElement assetEl : assets) {
-            JsonObject asset = assetEl.getAsJsonObject();
-            String name = asset.get("name").getAsString();
-            if (!name.contains(assetSuffix) || !name.endsWith(".jar")) continue;
-
-            String url = asset.get("browser_download_url").getAsString();
-            String digest = asset.has("digest") && !asset.get("digest").isJsonNull()
-                    ? asset.get("digest").getAsString() : null;
-            if (digest == null || !digest.startsWith("sha256:")) {
-                throw new IOException("GitHub asset " + name
-                        + " is missing a SHA-256 digest; refusing to load without checksum verification");
-            }
-            String hashHex = digest.substring("sha256:".length());
-
-            return new Artifact(version, URI.create(url), Artifact.HashAlgorithm.SHA_256,
-                    hashHex, name, "GitHub " + REPOSITORY + " @ " + tag);
+        if (matches.size() > 1) {
+            throw new IOException("'" + requested + "' matched " + matches.size()
+                    + " releases. Run /tgloader search " + requested + " and pin one.");
         }
-
-        throw new IOException("No asset matching '*" + assetSuffix + "*.jar' on GitHub release " + tag);
+        return matches.get(0).artifact();
     }
 }

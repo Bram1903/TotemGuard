@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.host.Platform;
 import com.deathmotion.totemguard.host.TGPluginEntry;
 import com.deathmotion.totemguard.host.TGPluginHandle;
 import com.deathmotion.totemguard.host.TGPluginHost;
-import com.deathmotion.totemguard.loader.classloader.InnerJarClassLoader;
+import com.deathmotion.totemguard.loader.classloader.TGPluginClassLoader;
 import com.deathmotion.totemguard.loader.core.HostPlatform;
 import com.deathmotion.totemguard.loader.core.LoaderCore;
 import com.deathmotion.totemguard.loader.core.LoaderPaths;
@@ -34,7 +34,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Owns the live inner plugin: holds its {@link InnerJarClassLoader}, the api
+ * Owns the live TotemGuard plugin: holds its {@link TGPluginClassLoader}, the api
  * {@link TGPluginHandle}, and drives start / restart / stop.
  * <p>
  * The api classes ({@link TGPluginHost}, {@link TGPluginEntry}, etc.) are injected
@@ -50,7 +50,7 @@ public final class PluginRuntime {
     private final Logger logger;
     private final LoaderControllerImpl loaderController;
 
-    private InnerJarClassLoader innerClassLoader;
+    private TGPluginClassLoader pluginClassLoader;
     private TGPluginHandle handle;
     private String loadedVersion;
 
@@ -64,21 +64,32 @@ public final class PluginRuntime {
         this.loaderController = new LoaderControllerImpl(core, this);
     }
 
-    public synchronized void start(Path innerJar) throws Exception {
+    public synchronized void start(Path pluginJar) throws Exception {
         if (handle != null) {
             logger.warning("PluginRuntime.start() called while a plugin is already loaded. Skipping.");
             return;
         }
-        loadOnce(innerJar, null);
+        loadOnce(pluginJar, null);
     }
 
-    public synchronized void startFromConfigured() throws Exception {
+    public synchronized void loadVersion(String versionOverride, TGPluginShutdownEvent.Reason reason) throws Exception {
         if (handle != null) {
-            logger.warning("PluginRuntime.startFromConfigured() called while a plugin is already loaded. Skipping.");
-            return;
+            stopCurrent(reason);
         }
-        Path innerJar = core.run(hostClassLoader).innerJar();
-        loadOnce(innerJar, null);
+        Path pluginJar = core.run(hostClassLoader, versionOverride).pluginJar();
+        loadOnce(pluginJar, reason);
+    }
+
+    /**
+     * Api-type-free entry point so callers (e.g. the command class) don't need to
+     * reference {@code TGPluginShutdownEvent.Reason} in their method descriptors.
+     */
+    public void loadVersionForCommand(String versionOverride) throws Exception {
+        loadVersion(versionOverride, TGPluginShutdownEvent.Reason.LOADER_RESTART);
+    }
+
+    public void stopForCommand() {
+        stop(TGPluginShutdownEvent.Reason.LOADER_STOP);
     }
 
     public synchronized boolean isLoaded() {
@@ -100,8 +111,8 @@ public final class PluginRuntime {
 
     public synchronized void restart(TGPluginShutdownEvent.Reason reason) throws Exception {
         stopCurrent(reason);
-        Path innerJar = core.run(hostClassLoader).innerJar();
-        loadOnce(innerJar, reason);
+        Path pluginJar = core.run(hostClassLoader).pluginJar();
+        loadOnce(pluginJar, reason);
     }
 
     public synchronized void shutdown() {
@@ -130,23 +141,23 @@ public final class PluginRuntime {
             try {
                 handle.stop(reason);
             } catch (Throwable t) {
-                logger.log(Level.WARNING, "Inner plugin stop() threw", t);
+                logger.log(Level.WARNING, "TotemGuard plugin stop() threw", t);
             }
         }
-        if (innerClassLoader != null) {
+        if (pluginClassLoader != null) {
             try {
-                innerClassLoader.close();
+                pluginClassLoader.close();
             } catch (Throwable t) {
-                logger.log(Level.WARNING, "Failed to close inner classloader", t);
+                logger.log(Level.WARNING, "Failed to close TotemGuard plugin classloader", t);
             }
         }
         handle = null;
-        innerClassLoader = null;
+        pluginClassLoader = null;
         loadedVersion = null;
     }
 
-    private void loadOnce(Path innerJar, TGPluginShutdownEvent.Reason reasonHint) throws Exception {
-        InnerJarClassLoader child = new InnerJarClassLoader(innerJar, hostClassLoader);
+    private void loadOnce(Path pluginJar, TGPluginShutdownEvent.Reason reasonHint) throws Exception {
+        TGPluginClassLoader child = new TGPluginClassLoader(pluginJar, hostClassLoader);
 
         TGPluginEntry entry = pickEntry(child);
         if (entry == null) {
@@ -154,13 +165,13 @@ public final class PluginRuntime {
                 child.close();
             } catch (Exception ignored) {
             }
-            throw new IllegalStateException("Inner jar exposes no TGPluginEntry for " + core.platform());
+            throw new IllegalStateException("TotemGuard plugin jar exposes no TGPluginEntry for " + core.platform());
         }
 
         HostPlatform hostPlatform = core.platform();
         Platform platform = Platform.valueOf(hostPlatform.name());
         PluginHost host = new PluginHost(platform, nativePlugin, logger,
-                paths.innerDataFolder(), hostClassLoader, loaderController);
+                paths.pluginDataFolder(), hostClassLoader, loaderController);
 
         long startNanos = System.nanoTime();
         TGPluginHandle started;
@@ -172,7 +183,7 @@ public final class PluginRuntime {
             } catch (Exception ignored) {
             }
             Throwable cause = t.getCause() != null ? t.getCause() : t;
-            throw new IllegalStateException("Inner plugin failed to start: " + cause.getMessage(), cause);
+            throw new IllegalStateException("TotemGuard plugin failed to start: " + cause.getMessage(), cause);
         }
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
 
@@ -183,7 +194,7 @@ public final class PluginRuntime {
             version = "unknown";
         }
 
-        this.innerClassLoader = child;
+        this.pluginClassLoader = child;
         this.handle = started;
         this.loadedVersion = version;
 

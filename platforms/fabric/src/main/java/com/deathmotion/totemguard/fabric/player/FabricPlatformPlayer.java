@@ -32,6 +32,7 @@ import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.GameType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -101,6 +102,21 @@ public class FabricPlatformPlayer implements PlatformPlayer {
     @Override
     public void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted, @NotNull Runnable onDamageRefused) {
         onDamageRefused.run();
+    }
+
+    @Override
+    public void resyncInventoryToClient() {
+        MinecraftServer server = resolveServer();
+        if (server == null) return;
+        server.execute(() -> {
+            if (fabricPlayer.hasDisconnected()) return;
+            fabricPlayer.containerMenu.sendAllDataToRemote();
+        });
+    }
+
+    @Override
+    public @Nullable String clientBrandName() {
+        return null;
     }
 
     private MinecraftServer resolveServer() {

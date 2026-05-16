@@ -21,88 +21,33 @@ package com.deathmotion.totemguard.api.versioning;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
 /**
- * Represents the TotemGuard version using Semantic Versioning.
- * Supports version comparison, cloning, and provides a string representation.
- * Snapshot versioning is also supported.
- * Generally a snapshot version is published before the release version,
- * and thus, is considered "older" than the release version.
+ * Represents a TotemGuard version using Semantic Versioning, optionally with a
+ * {@code -SNAPSHOT} suffix and an attached commit hash. Snapshot versions are
+ * considered <em>older</em> than the matching release version.
+ *
+ * <p>Use {@link #of(int, int, int)} / {@link #fromString(String)} to construct instances.</p>
  */
-public class TGVersion implements Comparable<TGVersion> {
+public interface TGVersion extends Comparable<TGVersion> {
 
-    private final int major;
-    private final int minor;
-    private final int patch;
-    private final boolean snapshot;
-    private final @Nullable String snapshotCommit;
+    static @NotNull TGVersion of(int major, int minor, int patch) {
+        return new BasicTGVersion(major, minor, patch, false, null);
+    }
 
-    /**
-     * Constructs a {@link TGVersion} instance.
-     *
-     * @param major          the major version number.
-     * @param minor          the minor version number.
-     * @param patch          the patch version number.
-     * @param snapshot       whether the version is a snapshot.
-     * @param snapshotCommit the snapshot commit hash, if available.
-     */
-    public TGVersion(
-            final int major, final int minor, final int patch,
-            final boolean snapshot, final @Nullable String snapshotCommit
-    ) {
-        this.major = major;
-        this.minor = minor;
-        this.patch = patch;
-        this.snapshot = snapshot;
-        this.snapshotCommit = snapshotCommit;
+    static @NotNull TGVersion of(int major, int minor, int patch, boolean snapshot) {
+        return new BasicTGVersion(major, minor, patch, snapshot, null);
+    }
+
+    static @NotNull TGVersion of(int major, int minor, int patch, boolean snapshot, @Nullable String snapshotCommit) {
+        return new BasicTGVersion(major, minor, patch, snapshot, snapshotCommit);
     }
 
     /**
-     * Constructs a {@link TGVersion} instance.
+     * Parses a version string in the form {@code major.minor[.patch][+commit][-SNAPSHOT]}.
      *
-     * @param major          the major version number.
-     * @param minor          the minor version number.
-     * @param patch          the patch version number.
-     * @param snapshotCommit the snapshot commit hash, if available.
+     * @throws IllegalArgumentException if the input does not match the expected format.
      */
-    public TGVersion(
-            final int major, final int minor, final int patch,
-            final @Nullable String snapshotCommit
-    ) {
-        this(major, minor, patch, snapshotCommit != null, snapshotCommit);
-    }
-
-    /**
-     * Constructs a {@link TGVersion} instance.
-     *
-     * @param major    the major version number.
-     * @param minor    the minor version number.
-     * @param patch    the patch version number.
-     * @param snapshot whether the version is a snapshot.
-     */
-    public TGVersion(final int major, final int minor, final int patch, final boolean snapshot) {
-        this(major, minor, patch, snapshot, null);
-    }
-
-    /**
-     * Constructs a {@link TGVersion} instance with snapshot defaulted to false.
-     *
-     * @param major the major version number.
-     * @param minor the minor version number.
-     * @param patch the patch version number.
-     */
-    public TGVersion(final int major, final int minor, final int patch) {
-        this(major, minor, patch, false);
-    }
-
-    /**
-     * Constructs a {@link TGVersion} instance from a version string.
-     *
-     * @param version the version string (e.g., "1.8.9-SNAPSHOT").
-     * @throws IllegalArgumentException if the version string format is incorrect.
-     */
-    public static TGVersion fromString(@NotNull final String version) {
+    static @NotNull TGVersion fromString(@NotNull String version) {
         String versionWithoutSnapshot = version.replace("-SNAPSHOT", "");
         String[] largeParts = versionWithoutSnapshot.split("\\+");
         String[] parts = largeParts.length > 0 ? largeParts[0].split("\\.") : null;
@@ -118,166 +63,49 @@ public class TGVersion implements Comparable<TGVersion> {
         boolean snapshot = version.contains("-SNAPSHOT");
         String snapshotCommit = largeParts.length > 1 ? largeParts[1] : null;
 
-        return new TGVersion(major, minor, patch, snapshot, snapshotCommit);
+        return new BasicTGVersion(major, minor, patch, snapshot, snapshotCommit);
     }
 
-    /**
-     * Gets the major version number.
-     *
-     * @return the major version number.
-     */
-    public int major() {
-        return major;
-    }
+    int major();
 
-    /**
-     * Gets the minor version number.
-     *
-     * @return the minor version number.
-     */
-    public int minor() {
-        return minor;
-    }
+    int minor();
 
-    /**
-     * Gets the patch version number.
-     *
-     * @return the patch version number.
-     */
-    public int patch() {
-        return patch;
-    }
+    int patch();
 
-    /**
-     * Checks if the version is a snapshot.
-     *
-     * @return true if snapshot, false otherwise.
-     */
-    public boolean snapshot() {
-        return snapshot;
-    }
+    boolean snapshot();
 
-    /**
-     * Gets the snapshot commit hash of the TotemGuard snapshot version. May be of any length.
-     * Availability is not guaranteed since it is contingent on how the program was built.
-     * Generally speaking, the commit hash can only be available if the TotemGuard version is a snapshot version.
-     *
-     * @return the snapshot commit hash, if available.
-     */
-    public @Nullable String snapshotCommit() {
-        return snapshotCommit;
-    }
+    @Nullable String snapshotCommit();
 
-    /**
-     * Compares this {@link TGVersion} with another {@link TGVersion}.
-     *
-     * @param other the other {@link TGVersion}.
-     * @return a negative integer, zero, or a positive integer as this version can be less than,
-     * equal to, or greater than the specified version.
-     */
     @Override
-    public int compareTo(@NotNull final TGVersion other) {
-        int majorCompare = Integer.compare(this.major, other.major);
-        if (majorCompare != 0) return majorCompare;
+    default int compareTo(@NotNull TGVersion other) {
+        int c = Integer.compare(this.major(), other.major());
+        if (c != 0) return c;
+        c = Integer.compare(this.minor(), other.minor());
+        if (c != 0) return c;
+        c = Integer.compare(this.patch(), other.patch());
+        if (c != 0) return c;
+        return Boolean.compare(other.snapshot(), this.snapshot());
+    }
 
-        int minorCompare = Integer.compare(this.minor, other.minor);
-        if (minorCompare != 0) return minorCompare;
+    default boolean isNewerThan(@NotNull TGVersion other) {
+        return compareTo(other) > 0;
+    }
 
-        int patchCompare = Integer.compare(this.patch, other.patch);
-        if (patchCompare != 0) return patchCompare;
-
-        return Boolean.compare(other.snapshot, this.snapshot);
+    default boolean isOlderThan(@NotNull TGVersion other) {
+        return compareTo(other) < 0;
     }
 
     /**
-     * Checks if the provided object is equal to this {@link TGVersion}.
-     *
-     * @param obj the object to compare.
-     * @return true if the provided object is equal to this {@link TGVersion}, false otherwise.
+     * String form without commit or snapshot suffix, e.g. {@code "3.0.0"}.
      */
-    @Override
-    public boolean equals(@NotNull final Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof TGVersion)) return false;
-        TGVersion other = (TGVersion) obj;
-
-        return this.major == other.major &&
-                this.minor == other.minor &&
-                this.patch == other.patch &&
-                this.snapshot == other.snapshot &&
-                Objects.equals(this.snapshotCommit, other.snapshotCommit);
+    default String toStringWithoutSnapshot() {
+        return major() + "." + minor() + "." + patch();
     }
 
     /**
-     * Checks if this version is newer than the provided version.
-     *
-     * @param otherVersion the other {@link TGVersion}.
-     * @return true if this version is newer, false otherwise.
+     * User-facing form that preserves {@code -SNAPSHOT} but drops the commit hash.
      */
-    public boolean isNewerThan(@NotNull final TGVersion otherVersion) {
-        return this.compareTo(otherVersion) > 0;
-    }
-
-    /**
-     * Checks if this version is older than the provided version.
-     *
-     * @param otherVersion the other {@link TGVersion}.
-     * @return true if this version is older, false otherwise.
-     */
-    public boolean isOlderThan(@NotNull final TGVersion otherVersion) {
-        return this.compareTo(otherVersion) < 0;
-    }
-
-    /**
-     * Returns a hash code value for this {@link TGVersion}.
-     *
-     * @return a hash code value.
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(major, minor, patch, snapshot, snapshotCommit);
-    }
-
-    /**
-     * Creates and returns a copy of this {@link TGVersion}.
-     *
-     * @return a clone of this instance.
-     */
-    @Override
-    public TGVersion clone() {
-        return new TGVersion(major, minor, patch, snapshot, snapshotCommit);
-    }
-
-    /**
-     * Converts the {@link TGVersion} to a string representation.
-     * If this is a stable release, the snapshot and the commit will not be included in the representation.
-     *
-     * @return string representation of the version.
-     */
-    @Override
-    public String toString() {
-        return major + "." + minor + "." + patch + (snapshot && snapshotCommit != null ? ("+" + snapshotCommit + "-SNAPSHOT") : "");
-    }
-
-    /**
-     * Converts the {@link TGVersion} to a string representation with a guarantee
-     * that it will not have the commit attached to it.
-     * Useful for accessing the string representation for metrics
-     * as detailed information, such as the commit, is not required.
-     *
-     * @return guaranteed string representation without commit.
-     */
-    public String toStringWithoutSnapshot() {
-        return major + "." + minor + "." + patch;
-    }
-
-    /**
-     * Returns the version with the {@code -SNAPSHOT} suffix preserved but the commit
-     * hash stripped, suitable for user-facing display where the hash adds noise.
-     *
-     * @return e.g. {@code "3.0.0"} for releases, {@code "3.0.0-SNAPSHOT"} for snapshots.
-     */
-    public String toDisplayString() {
-        return snapshot ? major + "." + minor + "." + patch + "-SNAPSHOT" : toStringWithoutSnapshot();
+    default String toDisplayString() {
+        return snapshot() ? major() + "." + minor() + "." + patch() + "-SNAPSHOT" : toStringWithoutSnapshot();
     }
 }

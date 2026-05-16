@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.loader.runtime;
 
 import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.fleet.FleetCache;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
 import com.deathmotion.totemguard.host.LoaderController;
 import com.deathmotion.totemguard.host.UpdateTarget;
@@ -27,6 +28,7 @@ import com.deathmotion.totemguard.loader.config.LoaderConfig;
 import com.deathmotion.totemguard.loader.core.*;
 import com.deathmotion.totemguard.loader.source.Artifact;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -69,7 +71,7 @@ final class LoaderControllerImpl implements LoaderController {
         String configuredVersion = config != null ? config.version() : "UNKNOWN";
         String loadedVersion = runtime.loadedVersion();
         if (loadedVersion == null && result != null) {
-            loadedVersion = result.innerVersion();
+            loadedVersion = result.pluginVersion();
         }
         if (loadedVersion == null) {
             loadedVersion = "UNKNOWN";
@@ -148,6 +150,7 @@ final class LoaderControllerImpl implements LoaderController {
         if (target.sha256() == null) {
             throw new IOException("Cannot stage a target with no sha256");
         }
+        PluginVersionGate.require(target.version(), target.source());
         String actual = sha256(bytes);
         if (!actual.equalsIgnoreCase(target.sha256())) {
             throw new IOException("Bytes hash " + actual + " did not match target sha256 " + target.sha256());
@@ -166,7 +169,7 @@ final class LoaderControllerImpl implements LoaderController {
                 Files.deleteIfExists(paths.stagedMeta());
             } catch (IOException ignored) {
             }
-            throw new IOException("Staged jar failed integrity verification; refusing to stage.");
+            throw new IOException("Staged jar failed integrity verification. Refusing to stage.");
         }
 
         logger.info("Staged TotemGuard " + target.version() + " for the next loader restart.");
@@ -202,5 +205,15 @@ final class LoaderControllerImpl implements LoaderController {
         worker.setDaemon(true);
         worker.start();
         return future;
+    }
+
+    @Override
+    public void attachFleetCache(@Nullable FleetCache cache) {
+        core.fleetCacheRef().set(cache);
+    }
+
+    @Override
+    public @Nullable FleetCache fleetCache() {
+        return core.fleetCacheRef().current();
     }
 }

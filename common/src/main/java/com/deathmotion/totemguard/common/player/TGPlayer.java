@@ -205,6 +205,23 @@ public class TGPlayer implements TGUser {
         platform.getScheduler().runAsyncTask(this::cacheData);
     }
 
+    /**
+     * Re-seeds state we'd normally pick up from the join flow (inventory, client brand)
+     * for a player that was already online when the plugin enabled. The inventory part
+     * is driven by triggering a platform-side resync to the client; our existing
+     * outbound packet listener catches the resulting WindowItems and applies it to
+     * {@link #inventory} with lag compensation.
+     */
+    public void resyncFromPlatform() {
+        PlatformPlayer current = this.platformPlayer;
+        if (current == null) return;
+        String brand = current.clientBrandName();
+        if (brand != null && !brand.isBlank()) {
+            this.clientBrand = brand;
+        }
+        current.resyncInventoryToClient();
+    }
+
     @Blocking
     public void persistCacheOnShutdown() {
         cacheData();

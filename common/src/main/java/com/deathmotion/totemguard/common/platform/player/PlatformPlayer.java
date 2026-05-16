@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.platform.player;
 
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
@@ -58,4 +59,19 @@ public interface PlatformPlayer {
      */
     void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted,
                           @NotNull Runnable onDamageRefused);
+
+    /**
+     * Asks the platform to re-send the player's full inventory (slots + cursor) to the
+     * client. Our outbound packet listener catches the resulting WindowItems and seeds
+     * {@code PacketInventory} with lag compensation, so packet-driven tracking takes
+     * over without any conversion or manual snapshot.
+     */
+    void resyncInventoryToClient();
+
+    /**
+     * Returns the client brand reported by the player (e.g. {@code "vanilla"},
+     * {@code "fabric"}, {@code "lunarclient"}), or {@code null} if the platform does
+     * not surface it or it has not been received yet.
+     */
+    @Nullable String clientBrandName();
 }

@@ -61,7 +61,7 @@ public final class TotemGuard {
     /**
      * Loader-internal: replace the current API instance with a freshly started one.
      * <p>
-     * Used during {@code /tgloader restart} when the inner plugin is rebooted. The
+     * Used during {@code /tgloader restart} when the TotemGuard plugin is rebooted. The
      * pending future returned by {@link #getAsync()} for any consumer that called it
      * after the previous {@link #shutdown()} completes with the new instance.
      */

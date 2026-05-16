@@ -18,9 +18,9 @@ softdepend:
 commands:
   tgloader:
     description: TotemGuard loader administration.
-    usage: /tgloader <restart|start|stop|status>
+    usage: /tgloader <status|peers|versions|search|import|plugin|load|stage|apply|rollout>
     permission: totemguard.loader.admin
 permissions:
   totemguard.loader.admin:
-    description: Permits use of /tgloader. Not granted to operators or anyone else by default; grant explicitly.
+    description: Permits use of /tgloader. Not granted to operators or anyone else by default. Grant explicitly.
     default: false

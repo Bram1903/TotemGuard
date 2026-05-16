@@ -62,8 +62,6 @@ public final class JarIntegrityChecker {
     }
 
     public boolean verifyJar(@NotNull Path jarPath) {
-        logger.info("Checking " + productName + " jar integrity...");
-
         String expectedFingerprint = readExpectedFingerprint(jarPath);
         if (expectedFingerprint == null || expectedFingerprint.isBlank()) {
             logSuspiciousJar(
@@ -78,7 +76,7 @@ public final class JarIntegrityChecker {
         try {
             String actualFingerprint = computeFingerprint(jarPath);
             if (actualFingerprint.equalsIgnoreCase(expectedFingerprint)) {
-                logger.info(productName + " jar integrity verified.");
+                logger.info(productName + " integrity verified (" + jarPath.getFileName() + ").");
                 return true;
             }
 

@@ -53,11 +53,11 @@ public interface TGPluginShutdownEvent extends Event {
          */
         SERVER_STOP,
         /**
-         * The loader's {@code /tgloader restart} command is restarting the inner plugin.
+         * The loader's {@code /tgloader restart} command is restarting the TotemGuard plugin.
          */
         LOADER_RESTART,
         /**
-         * The loader is stopping the inner plugin without bringing it back online
+         * The loader is stopping the TotemGuard plugin without bringing it back online
          * (e.g. {@code /tgloader stop} or {@code /totemguard shutdown} on a loader-managed
          * install). Operators can re-enable with {@code /tgloader start}.
          */
@@ -69,7 +69,7 @@ public interface TGPluginShutdownEvent extends Event {
          */
         OPERATOR_SHUTDOWN,
         /**
-         * An update was downloaded and the loader is swapping the inner plugin.
+         * An update was downloaded and the loader is swapping the TotemGuard plugin.
          */
         UPDATE_TRIGGERED,
         /**

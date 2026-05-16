@@ -20,7 +20,6 @@ package com.deathmotion.totemguard.loader.source;
 
 import com.deathmotion.totemguard.loader.config.LoaderConfig;
 import com.deathmotion.totemguard.loader.core.HostPlatform;
-import com.deathmotion.totemguard.loader.core.LoaderPaths;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -66,7 +65,9 @@ public final class ModrinthSource implements VersionResolver {
     }
 
     @Override
-    public Artifact resolve(LoaderConfig config, HostPlatform platform, LoaderPaths paths) throws Exception {
+    public Artifact resolve(ResolverContext context) throws Exception {
+        LoaderConfig config = context.config();
+        HostPlatform platform = context.platform();
         String loaderFilter = URLEncoder.encode("[\"" + platform.modrinthLoader() + "\"]", StandardCharsets.UTF_8);
         HttpClient client = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
         HttpRequest request = HttpRequest.newBuilder()
@@ -111,7 +112,7 @@ public final class ModrinthSource implements VersionResolver {
         String sha512 = hashes.has("sha512") ? hashes.get("sha512").getAsString() : null;
         if (sha512 == null) {
             throw new IOException("Modrinth file " + fileName
-                    + " is missing a SHA-512 hash; refusing to load without checksum verification");
+                    + " is missing a SHA-512 hash. Refusing to load without checksum verification.");
         }
 
         return new Artifact(number, URI.create(url), Artifact.HashAlgorithm.SHA_512,

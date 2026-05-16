@@ -19,34 +19,46 @@
 package com.deathmotion.totemguard.loader.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public record LoaderPaths(Path loaderDir, Path innerDataFolder, Path versionsDir, Path localDir) {
+public record LoaderPaths(Path loaderDir, Path pluginDataFolder, Path versionsDir, Path localDir) {
 
     public static LoaderPaths forBukkit(Path bukkitDataFolder) throws IOException {
         // Loader state lives in the loader plugin's own data folder, which Bukkit derives
-        // from plugin.yml (TotemGuard-Loader). The inner plugin's data folder is pinned to
-        // plugins/TotemGuard so configs land where standalone installs put them.
+        // from plugin.yml (TotemGuard-Loader). The TotemGuard plugin's data folder is pinned
+        // to plugins/TotemGuard so configs land where standalone installs put them.
         Path loaderDir = bukkitDataFolder.toAbsolutePath();
         Path pluginsDir = loaderDir.getParent();
-        Path inner = pluginsDir.resolve("TotemGuard");
-        return create(loaderDir, inner);
+        Path pluginDataFolder = pluginsDir.resolve("TotemGuard");
+        return create(loaderDir, pluginDataFolder);
     }
 
     public static LoaderPaths forFabric(Path fabricConfigDir) throws IOException {
         Path loaderDir = fabricConfigDir.resolve("totemguard-loader");
-        Path inner = fabricConfigDir.resolve("totemguard");
-        return create(loaderDir, inner);
+        Path pluginDataFolder = fabricConfigDir.resolve("totemguard");
+        return create(loaderDir, pluginDataFolder);
     }
 
-    private static LoaderPaths create(Path loaderDir, Path innerDataFolder) throws IOException {
+    private static LoaderPaths create(Path loaderDir, Path pluginDataFolder) throws IOException {
         Path versionsDir = loaderDir.resolve("versions");
         Path localDir = loaderDir.resolve("local");
         Files.createDirectories(loaderDir);
         Files.createDirectories(versionsDir);
-        Files.createDirectories(innerDataFolder);
-        return new LoaderPaths(loaderDir, innerDataFolder, versionsDir, localDir);
+        Files.createDirectories(localDir);
+        Files.createDirectories(pluginDataFolder);
+        writeLocalReadme(localDir);
+        return new LoaderPaths(loaderDir, pluginDataFolder, versionsDir, localDir);
+    }
+
+    private static void writeLocalReadme(Path localDir) throws IOException {
+        Path readme = localDir.resolve("README.txt");
+        if (Files.exists(readme)) return;
+        try (InputStream in = LoaderPaths.class.getResourceAsStream("/local-readme.txt")) {
+            if (in == null) return;
+            Files.copy(in, readme);
+        }
     }
 
     public Path stagedJar() {

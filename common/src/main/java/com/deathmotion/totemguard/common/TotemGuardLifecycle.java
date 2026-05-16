@@ -46,7 +46,7 @@ import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
 import com.deathmotion.totemguard.common.features.stats.StatsRepositoryImpl;
 import com.deathmotion.totemguard.common.features.teleport.TeleportService;
 import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
-import com.deathmotion.totemguard.common.features.update.fleet.FleetUpdateService;
+import com.deathmotion.totemguard.common.fleet.FleetCacheLifecycle;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.gui.GuiPacketListener;
 import com.deathmotion.totemguard.common.message.MessageService;
@@ -57,6 +57,7 @@ import com.deathmotion.totemguard.common.network.bridge.BridgeManager;
 import com.deathmotion.totemguard.common.network.bridge.BridgePacketListener;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
@@ -162,8 +163,8 @@ final class TotemGuardLifecycle {
         p.internalSubscriptions.add(p.eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
         p.internalSubscriptions.add(p.eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
 
-        p.fleetUpdateService = new FleetUpdateService(p, p.redisRepository.registry());
-        p.fleetUpdateService.register();
+        p.fleetCacheLifecycle = new FleetCacheLifecycle(p, p.redisRepository, serverIdentity.instanceId(), p.getLogger());
+        p.fleetCacheLifecycle.register();
 
         p.api = new TGPlatformAPI();
         TotemGuard.replace(p.api);
@@ -186,6 +187,10 @@ final class TotemGuardLifecycle {
                     if (uuid == null) continue;
                     p.playerRepository.onLoginPacket(user);
                     p.playerRepository.onLogin(user);
+                    TGPlayer player = p.playerRepository.getPlayer(user);
+                    if (player != null) {
+                        player.resyncFromPlatform();
+                    }
                     replayed++;
                 } catch (Throwable t) {
                     p.getLogger().warning("Failed to replay online player " + user.getName() + ": " + t.getMessage());
@@ -206,6 +211,14 @@ final class TotemGuardLifecycle {
                 : TGPluginShutdownEvent.Reason.SERVER_STOP;
 
         TotemGuard.shutdown();
+
+        if (p.fleetCacheLifecycle != null) {
+            try {
+                p.fleetCacheLifecycle.unregister();
+            } catch (Throwable t) {
+                p.getLogger().warning("FleetCacheLifecycle.unregister threw: " + t.getMessage());
+            }
+        }
 
         if (p.eventRepository != null) {
             try {
@@ -241,14 +254,6 @@ final class TotemGuardLifecycle {
         });
         p.internalSubscriptions.clear();
 
-        if (p.fleetUpdateService != null) {
-            try {
-                p.fleetUpdateService.shutdown();
-            } catch (Exception ex) {
-                p.getLogger().warning("Failed to shutdown fleet update service: " + ex.getMessage());
-            }
-            p.fleetUpdateService = null;
-        }
         if (p.commandManager != null) {
             try {
                 p.commandManager.unregisterAll();

@@ -31,32 +31,40 @@ public final class TGLoaderFabric implements DedicatedServerModInitializer {
 
     private final Logger logger = Logger.getLogger("TotemGuardLoader");
     private volatile PluginRuntime runtime;
+    private volatile LoaderCore core;
 
     @Override
     public void onInitializeServer() {
         if (!new JarIntegrityChecker(logger, "TotemGuard-Loader").verifyCurrentJar()) {
-            logger.severe("TotemGuard Loader will NOT load the inner plugin because the loader jar failed integrity verification.");
+            logger.severe("TotemGuard Loader will NOT load the TotemGuard plugin because the loader jar failed integrity verification.");
             return;
         }
         logger.info("TotemGuard Loader " + LoaderManifest.loaderVersion() + " on Fabric");
 
         try {
             LoaderPaths paths = LoaderPaths.forFabric(FabricLoader.getInstance().getConfigDir());
-            LoaderCore core = new LoaderCore(logger, paths, HostPlatform.FABRIC);
+            this.core = new LoaderCore(logger, paths, HostPlatform.FABRIC);
             LoaderResult result = core.run(getClass().getClassLoader());
 
             this.runtime = new PluginRuntime(core, this, paths, getClass().getClassLoader(), logger);
-            this.runtime.start(result.innerJar());
+            this.runtime.start(result.pluginJar());
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                if (runtime == null) return;
-                try {
-                    runtime.shutdown();
-                } catch (Throwable ignored) {
+                if (runtime != null) {
+                    try {
+                        runtime.shutdown();
+                    } catch (Throwable ignored) {
+                    }
+                }
+                if (core != null) {
+                    try {
+                        core.shutdown();
+                    } catch (Throwable ignored) {
+                    }
                 }
             }, "TotemGuard-Loader-Shutdown"));
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, "TotemGuard Loader failed to start the inner plugin", t);
+            logger.log(Level.SEVERE, "TotemGuard Loader failed to start the TotemGuard plugin", t);
         }
     }
 }

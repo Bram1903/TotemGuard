@@ -16,25 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.loader.classloader;
-
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
+package com.deathmotion.totemguard.loader.source;
 
 /**
- * Child classloader for the inner TotemGuard jar. Parent-first delegation routes API
- * class lookups to the loader's plugin classloader (where {@link ApiClassInjector}
- * defined them) so {@code Class<TGUserFlagEvent>} stays stable across hot-reloads.
+ * One result row from {@link GithubSearch}. {@link #version} is what an operator would
+ * pass to {@code /tgloader load <version>}; {@link #matchReason} is the human-readable
+ * "why did this match" hint shown to the player.
  */
-public final class InnerJarClassLoader extends URLClassLoader {
-
-    static {
-        registerAsParallelCapable();
-    }
-
-    public InnerJarClassLoader(Path jarPath, ClassLoader parent) throws IOException {
-        super("totemguard-inner", new URL[]{jarPath.toUri().toURL()}, parent);
-    }
+public record SearchMatch(String version, String matchReason, Artifact artifact) {
 }
