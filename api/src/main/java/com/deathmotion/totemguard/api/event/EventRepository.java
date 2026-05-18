@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  * will block dispatch for every later listener of the same event. Offload heavy or
  * blocking work to your own executor.
  * <p>
- * Some events fire on the Bukkit/Folia main thread, others on PacketEvents' netty
+ * Some events fire on the Paper/Folia main thread, others on PacketEvents' netty
  * threads, and others on TotemGuard's async scheduler. Treat the dispatching thread as
  * unspecified and avoid main-thread-only API calls (e.g. world mutations) from a
  * listener unless the specific event documents that it fires on the main thread.

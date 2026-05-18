@@ -10,10 +10,11 @@ semicolons are obviously fine.)
 
 ## Project
 
-TotemGuard is a Minecraft anticheat plugin (v3.0 branch, a WIP rewrite). It targets Paper or Folia servers via
-a Bukkit plugin, Fabric servers via a Fabric mod, and proxies (Velocity, BungeeCord) via an optional bridge
-plugin. Packet interception is done through PacketEvents. Commands use the Incendo Cloud framework. The public
-API artifact is published to `https://maven.pvphub.me/bram` as `totemguard-api`.
+TotemGuard is a Minecraft anticheat plugin (v3.0 branch, a WIP rewrite). It targets Paper or Folia servers
+(and Paper-based forks) via a JavaPlugin, Fabric servers via a Fabric mod, and proxies (Velocity, BungeeCord)
+via an optional bridge plugin. Spigot and CraftBukkit are not supported (the plugin refuses to enable on
+non-Paper). Packet interception is done through PacketEvents. Commands use the Incendo Cloud framework. The
+public API artifact is published to `https://maven.pvphub.me/bram` as `totemguard-api`.
 
 ## Build & run
 
@@ -21,16 +22,17 @@ Gradle wrapper, Java 21 toolchain for most modules. The Fabric platform requires
 `cloud-fabric 2.0.0-beta.16` ships Java 25 bytecode. Use the wrapper (`./gradlew`) for everything.
 
 - Build all shaded jars: `./gradlew build`. Outputs land in the root `build/` directory (not per-module
-  `build/libs`) as `TotemGuard-<Platform>-<version>.jar`, `TotemGuard-Loader-<version>.jar`, and
-  `TotemGuard-Bridge-<version>.jar`. The plain `jar` task is disabled on shaded modules.
-- Build a single artifact: `./gradlew :platforms:bukkit:shadowJar`, `:platforms:fabric:shadowJar`,
+  `build/libs`) as `TotemGuard-Paper-<version>.jar`, `TotemGuard-Fabric-<version>.jar`,
+  `TotemGuard-Loader-<version>.jar`, and `TotemGuard-Bridge-<version>.jar`. The plain `jar` task is disabled
+  on shaded modules.
+- Build a single artifact: `./gradlew :platforms:paper:shadowJar`, `:platforms:fabric:shadowJar`,
   `:loader:plugin:shadowJar`, or `:bridge:plugin:shadowJar`.
 - Clean: `./gradlew clean`. The root `clean` deletes the top-level `build/` where shaded jars live.
-- Run a Paper dev server (plain plugin): `./gradlew :platforms:bukkit:runServer`. Downloads Paper 1.21.11 plus
+- Run a Paper dev server (plain plugin): `./gradlew :platforms:paper:runServer`. Downloads Paper 1.21.11 plus
   PacketEvents, ViaVersion, ViaBackwards, PlaceholderAPI, EssentialsX, and LuckPerms into `run/paper/1.21.11/`.
-- Run Folia: `./gradlew :platforms:bukkit:runFolia`.
+- Run Folia: `./gradlew :platforms:paper:runFolia`.
 - Run a Paper dev server through the loader: `./gradlew :loader:plugin:runServer`. Drops into
-  `loader/plugin/run/paper/<mc>/` and seeds `plugins/TotemGuard-Loader/local/` with the freshly shaded Bukkit
+  `loader/plugin/run/paper/<mc>/` and seeds `plugins/TotemGuard-Loader/local/` with the freshly shaded Paper
   jar so `/tgloader load LOCAL` works.
 - Run a Velocity dev proxy (bridge plugin): `./gradlew :bridge:plugin:runVelocity`.
 - Publish the API: `./gradlew :api:publish`. Needs `PVPHUB_MAVEN_USERNAME` and `PVPHUB_MAVEN_SECRET`.
@@ -41,7 +43,7 @@ Gradle wrapper, Java 21 toolchain for most modules. The Fabric platform requires
   runs on every host OS so the produced binaries are reproducible regardless of who runs the build.
 
 No unit test suite exists. JUnit tasks are configured with `failOnNoDiscoveredTests = false`. The `tests/`
-subprojects (currently `api-bukkit-test-plugin`) are sample plugins demonstrating the public API, not test
+subprojects (currently `api-paper-test-plugin`) are sample plugins demonstrating the public API, not test
 harnesses.
 
 ## Module layout
@@ -68,12 +70,14 @@ harnesses.
 - `bridge/plugin/`. Optional proxy bridge plugin (Velocity and BungeeCord in one shaded jar) that improves
   player-presence accuracy and powers same-proxy `/tg teleport`. Lettuce plus the bridge protocol plus the
   integrity checker. Velocity and Bungee are compileOnly.
-- `platforms/bukkit/`. Paper or Folia plugin (`TGBukkit extends JavaPlugin`,
-  `TGBukkitPlatform extends TGPlatform`). `folia-supported: true`, `load: POSTWORLD`, hard-depends on
-  `packetevents`. The Bukkit shadow jar also embeds bstats and cloud-paper.
+- `platforms/paper/`. Paper or Folia plugin (`TGPaper extends JavaPlugin`,
+  `TGPaperPlatform extends TGPlatform`). `folia-supported: true`, `load: POSTWORLD`, hard-depends on
+  `packetevents`. The Paper shadow jar also embeds bstats and cloud-paper. `PaperCompatibility` refuses to
+  enable on non-Paper servers (checks for `com.destroystokyo.paper.PaperConfig` or
+  `io.papermc.paper.configuration.Configuration`).
 - `platforms/fabric/`. Fabric mod (`TGFabric`, entrypoint declared in `fabric.mod.json`). Uses fabric-loom,
   JDK 25 toolchain, embeds adventure-platform-fabric, cloud-fabric, fabric-permissions-api, and mysql-jdbc.
-- `tests/api-bukkit-test-plugin/`. Sample plugin demonstrating the public API. Not a test harness.
+- `tests/api-paper-test-plugin/`. Sample plugin demonstrating the public API. Not a test harness.
 - `build-logic/`. `includeBuild` with four Gradle convention plugins under `build-logic/src/main/kotlin/`
   (note, at the kotlin root, not inside a `totemguard/` subpackage).
     - `totemguard.java-conventions`. Lombok plus JetBrains annotations, JDK 21 toolchain, Java 17 release,
@@ -98,7 +102,7 @@ harnesses.
 
 **Platform abstraction.** `TGPlatform` (in `common/`) is an abstract singleton owning every subsystem
 (`ConfigRepository`, `PlayerRepository`, `CheckManager`, `CommandManager`, `RedisRepository`, `GuiManager`,
-`EventRepository`, `BridgeManager`, `FleetCacheLifecycle`, and more). Concrete platforms (`TGBukkitPlatform`,
+`EventRepository`, `BridgeManager`, `FleetCacheLifecycle`, and more). Concrete platforms (`TGPaperPlatform`,
 the Fabric equivalent) wire platform-specific implementations of `Scheduler`, `PlatformPlayerFactory`, and
 `Sender`, and return the Incendo Cloud `CommandManager<Sender>`. Bootstrap order: `onLoad` runs the integrity
 check then constructs `new TGXxxPlatform(host)` then `commonOnInitialize()`. `onEnable` runs

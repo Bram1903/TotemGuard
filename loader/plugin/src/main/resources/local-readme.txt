@@ -11,7 +11,7 @@ different commits side-by-side is fine.
 
 Requirements for imported jars:
   - Must carry the TotemGuard jar integrity stamp (3.0.0-SNAPSHOT or newer).
-  - Version is read from plugin.yml (Bukkit) or fabric.mod.json (Fabric).
+  - Version is read from plugin.yml (Paper) or fabric.mod.json (Fabric).
   - Anything older than 3.0.0-SNAPSHOT is refused.
 
 After a successful import, the original file is moved into local/.imported/

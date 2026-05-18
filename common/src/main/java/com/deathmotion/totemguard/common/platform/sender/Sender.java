@@ -124,7 +124,7 @@ public interface Sender {
      *
      * @return The platform's native command sender type:
      * <ul>
-     * <li>Bukkit/Spigot/Paper/Folia/Pufferfish/etc... {@code org.bukkit.command.CommandSender}</li>
+     * <li>Paper/Folia/Pufferfish/etc... {@code org.bukkit.command.CommandSender}</li>
      * <li>Fabric:
      *     <ul>
      *     <li>Yarn: {@code net.minecraft.server.command.ServerCommandSource}</li>

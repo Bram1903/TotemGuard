@@ -3,7 +3,7 @@ description: ${description}
 authors:
   - Bram
   - OutDev
-main: com.deathmotion.totemguard.loader.bukkit.TGLoaderBukkit
+main: com.deathmotion.totemguard.loader.paper.TGLoaderPaper
 version: ${version}
 api-version: '1.13'
 folia-supported: true

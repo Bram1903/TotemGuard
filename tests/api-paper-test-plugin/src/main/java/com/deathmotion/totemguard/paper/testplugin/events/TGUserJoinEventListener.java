@@ -16,22 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.loader.core;
+package com.deathmotion.totemguard.paper.testplugin.events;
 
-public enum HostPlatform {
-    PAPER, FABRIC;
+import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
+import com.deathmotion.totemguard.paper.testplugin.ApiTestPlugin;
 
-    public String assetSuffix() {
-        return switch (this) {
-            case PAPER -> "Paper";
-            case FABRIC -> "Fabric";
-        };
+import java.util.function.Consumer;
+
+public final class TGUserJoinEventListener implements Consumer<TGUserJoinEvent> {
+
+    @Override
+    public void accept(TGUserJoinEvent event) {
+        ApiTestPlugin.getInstance().getLogger().info("User " + event.getUser().getName() + " joined the server.");
     }
 
-    public String modrinthLoader() {
-        return switch (this) {
-            case PAPER -> "paper";
-            case FABRIC -> "fabric";
-        };
-    }
 }

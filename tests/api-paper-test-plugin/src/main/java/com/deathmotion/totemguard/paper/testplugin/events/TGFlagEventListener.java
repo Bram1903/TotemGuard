@@ -16,22 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.loader.core;
+package com.deathmotion.totemguard.paper.testplugin.events;
 
-public enum HostPlatform {
-    PAPER, FABRIC;
+import com.deathmotion.totemguard.api.event.impl.TGUserFlagEvent;
+import com.deathmotion.totemguard.paper.testplugin.ApiTestPlugin;
 
-    public String assetSuffix() {
-        return switch (this) {
-            case PAPER -> "Paper";
-            case FABRIC -> "Fabric";
-        };
-    }
+import java.util.function.Consumer;
 
-    public String modrinthLoader() {
-        return switch (this) {
-            case PAPER -> "paper";
-            case FABRIC -> "fabric";
-        };
+public final class TGFlagEventListener implements Consumer<TGUserFlagEvent> {
+
+    @Override
+    public void accept(TGUserFlagEvent tgUserFlagEvent) {
+        ApiTestPlugin.getInstance().getLogger().info("User " + tgUserFlagEvent.getUser().getName() + " was flagged for " + tgUserFlagEvent.getCheck().getName() + ".");
     }
 }

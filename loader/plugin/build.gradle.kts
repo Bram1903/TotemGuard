@@ -73,15 +73,15 @@ tasks {
 
         jvmArgs = jvmArgsExternal
 
-        val bukkitShadow = project(":platforms:bukkit").tasks.named("shadowJar")
-        dependsOn(bukkitShadow)
+        val paperShadow = project(":platforms:paper").tasks.named("shadowJar")
+        dependsOn(paperShadow)
         doFirst {
             val localDir = runDirectory.get().asFile.toPath().resolve("plugins/TotemGuard-Loader/local")
             Files.createDirectories(localDir)
             Files.newDirectoryStream(localDir, "*.jar").use { entries ->
                 entries.forEach { Files.delete(it) }
             }
-            val source = bukkitShadow.get().outputs.files.singleFile.toPath()
+            val source = paperShadow.get().outputs.files.singleFile.toPath()
             val destination = localDir.resolve(source.fileName.toString())
             Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING)
             logger.lifecycle("Copied ${source.fileName} -> $destination for /tgloader LOCAL source.")

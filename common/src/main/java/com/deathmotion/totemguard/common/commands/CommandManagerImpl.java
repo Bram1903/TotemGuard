@@ -75,7 +75,7 @@ public class CommandManagerImpl {
         }
 
         // Capture root names after registration so unregisterAll() can roll them back
-        // cleanly on shutdown. The loader path depends on this to leave Bukkit's
+        // cleanly on shutdown. The loader path depends on this to leave Paper's
         // CommandMap clean between hot-reloads.
         for (Command<Sender> command : commandManager.commands()) {
             registeredRoots.add(command.rootComponent().name());

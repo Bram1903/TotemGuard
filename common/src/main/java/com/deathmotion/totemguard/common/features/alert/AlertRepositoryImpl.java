@@ -42,6 +42,7 @@ import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 import java.util.Set;
@@ -73,7 +74,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
     }
 
     @Override
-    public boolean hasAlertsEnabled(UUID uuid) {
+    public boolean hasAlertsEnabled(@NonNull UUID uuid) {
         return enabledAlerts.containsKey(uuid);
     }
 
@@ -82,7 +83,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
     }
 
     @Override
-    public boolean toggleAlerts(UUID uuid) {
+    public boolean toggleAlerts(@NonNull UUID uuid) {
         if (enabledAlerts.containsKey(uuid)) {
             PlatformPlayer user = enabledAlerts.remove(uuid);
             localOnlyAlerts.remove(uuid);

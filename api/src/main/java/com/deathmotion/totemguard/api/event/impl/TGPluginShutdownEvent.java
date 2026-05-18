@@ -49,7 +49,7 @@ public interface TGPluginShutdownEvent extends Event {
      */
     enum Reason {
         /**
-         * The host platform (Bukkit/Fabric) is stopping or unloading the plugin.
+         * The host platform (Paper/Fabric) is stopping or unloading the plugin.
          */
         SERVER_STOP,
         /**

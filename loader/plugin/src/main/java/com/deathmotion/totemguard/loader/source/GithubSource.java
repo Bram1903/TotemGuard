@@ -49,7 +49,7 @@ public final class GithubSource implements VersionResolver {
             if (!match) continue;
 
             // Skip releases that don't carry an asset for this platform (e.g. ancient
-            // 2.x releases that predate the Bukkit/Fabric split). For explicit tags we
+            // 2.x releases that predate the Paper/Fabric split). For explicit tags we
             // let the asset check fail downstream so the user sees the exact reason.
             if (isChannel && !hasPlatformAsset(release, assetSuffix)) continue;
             return release;

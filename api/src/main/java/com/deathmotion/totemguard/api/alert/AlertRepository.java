@@ -27,7 +27,7 @@ import java.util.UUID;
  * In-memory toggle of staff alert subscriptions, keyed by UUID. Offers the same toggle
  * surface as {@link TGUser#hasAlertsEnabled()} / {@link TGUser#toggleAlerts()} but
  * without first requiring a {@code TGUser} handle, which is useful when all you have is
- * a UUID from a Bukkit event.
+ * a UUID from a paper event.
  * <p>
  * Both methods only consider <em>online</em> staff: a UUID that is not currently in
  * memory is treated as "alerts disabled". Toggling for an offline UUID does nothing
