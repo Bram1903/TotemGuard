@@ -18,13 +18,10 @@
 
 package com.deathmotion.totemguard.common.features.check;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
-import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
-import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
+import com.deathmotion.totemguard.common.event.internal.InternalEventBus;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
@@ -35,6 +32,9 @@ import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckRequestPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckResultPacket;
@@ -62,10 +62,11 @@ public final class CheckService {
     public CheckService() {
         this.platform = TGPlatform.getInstance();
 
-        EventRepositoryImpl events = platform.getEventRepository();
-        events.subscribeInternal(TotemActivatedEvent.class, this::onTotemActivated);
-        events.subscribeInternal(TotemReplenishedEvent.class, this::onTotemReplenished);
-        events.subscribe(TGUserQuitEvent.class, this::onUserQuit);
+        InternalEventBus internal = platform.getInternalEventBus();
+        internal.getTotemActivated().register(platform, this::onTotemActivated);
+        internal.getTotemReplenished().register(platform, this::onTotemReplenished);
+        internal.getInventoryChanged().register(platform, this::onInventoryChanged);
+        platform.getEventBus().getUserQuit().subscribe(platform, event -> onUserQuit(event.getUser().getUuid()));
     }
 
     public void execute(@NotNull Sender sender, @NotNull String rawTarget, int duration) {
@@ -300,7 +301,7 @@ public final class CheckService {
             case SyncCheckResultPacket.STATUS_PASSED -> sender.sendMessage(messages.getComponent(
                     MessagesKeys.CHECK_PASSED,
                     Map.of("tg_player", name)));
-            default -> { /* unknown status — drop silently */ }
+            default -> { /* unknown status, drop silently */ }
         }
     }
 
@@ -385,20 +386,32 @@ public final class CheckService {
         return presence.getLocalServerName();
     }
 
-    private void onTotemActivated(TotemActivatedEvent event) {
-        ActiveCheck check = active.get(event.getPlayer().getUuid());
+    private void onTotemActivated(@NotNull TGPlayer player, long timestamp) {
+        player.getCheckManager().onTotemActivated(timestamp);
+        ActiveCheck check = active.get(player.getUuid());
         if (check == null) return;
         check.armDeadline();
     }
 
-    private void onTotemReplenished(TotemReplenishedEvent event) {
-        ActiveCheck check = active.get(event.getPlayer().getUuid());
+    private void onTotemReplenished(@NotNull TGPlayer player,
+                                    long totemActivatedTimestamp,
+                                    long totemReplenishedTimestamp,
+                                    @Nullable Long totemPickupTimestamp) {
+        player.getCheckManager().onTotemReplenished(totemActivatedTimestamp, totemReplenishedTimestamp, totemPickupTimestamp);
+        ActiveCheck check = active.get(player.getUuid());
         if (check == null) return;
-        check.observeReplenish(event.getDelayMillis());
+        check.observeReplenish(totemReplenishedTimestamp - totemActivatedTimestamp);
     }
 
-    private void onUserQuit(TGUserQuitEvent event) {
-        ActiveCheck check = active.remove(event.getUser().getUuid());
+    private void onInventoryChanged(@NotNull TGPlayer player,
+                                    @Nullable CarriedItem updatedCarriedItem,
+                                    @NotNull java.util.List<InventorySlot> changedSlots,
+                                    @NotNull Issuer lastIssuer) {
+        player.getCheckManager().onInventoryChanged(updatedCarriedItem, changedSlots, lastIssuer);
+    }
+
+    private void onUserQuit(@NotNull UUID playerUuid) {
+        ActiveCheck check = active.remove(playerUuid);
         if (check == null) return;
         check.abort();
     }

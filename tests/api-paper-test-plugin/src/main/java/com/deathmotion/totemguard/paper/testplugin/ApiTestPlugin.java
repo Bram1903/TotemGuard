@@ -20,31 +20,24 @@ package com.deathmotion.totemguard.paper.testplugin;
 
 import com.deathmotion.totemguard.api.TotemGuard;
 import com.deathmotion.totemguard.api.TotemGuardAPI;
-import com.deathmotion.totemguard.api.event.EventSubscription;
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
-import com.deathmotion.totemguard.api.event.impl.TGUserFlagEvent;
-import com.deathmotion.totemguard.api.event.impl.TGUserJoinEvent;
-import com.deathmotion.totemguard.api.event.impl.TGUserQuitEvent;
-import com.deathmotion.totemguard.paper.testplugin.events.TGFlagEventListener;
-import com.deathmotion.totemguard.paper.testplugin.events.TGUserJoinEventListener;
-import com.deathmotion.totemguard.paper.testplugin.events.TGUserQuitEventListener;
-import lombok.Getter;
+import com.deathmotion.totemguard.api.event.EventBus;
+import com.deathmotion.totemguard.api.event.EventPriority;
+import com.deathmotion.totemguard.api.event.events.*;
+import com.deathmotion.totemguard.api.user.InventoryStatus;
+import com.deathmotion.totemguard.api.user.TGUser;
+import com.deathmotion.totemguard.paper.testplugin.listeners.InventoryActivityListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@Getter
+/**
+ * Sample plugin against the TotemGuard event bus. Logs a short message for
+ * a handful of representative events so it's easy to see them firing in
+ * the console. Hot-reload safe: re-hooks against the new API instance
+ * when a loader-driven restart fires {@link TGPluginShutdownEvent}.
+ */
 public final class ApiTestPlugin extends JavaPlugin {
 
-    @Getter
-    private static ApiTestPlugin instance;
-    private final List<EventSubscription> subscriptions = new ArrayList<>();
+    private final InventoryActivityListener inventoryListener = new InventoryActivityListener(getLogger());
     private volatile boolean disabled;
-
-    public ApiTestPlugin() {
-        instance = this;
-    }
 
     @Override
     public void onEnable() {
@@ -54,43 +47,58 @@ public final class ApiTestPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         disabled = true;
-        closeSubscriptions();
+        TotemGuardAPI api = TotemGuard.get();
+        if (api != null) api.getEventBus().unregisterAll(this);
     }
 
     private void hook() {
         TotemGuard.getAsync().thenAccept(api -> {
             if (disabled) return;
-            getLogger().info("Hooked into TotemGuard version " + api.getVersion() + ".");
-            subscribeAll(api);
+            getLogger().info("Hooked into TotemGuard " + api.getVersion());
+            subscribe(api.getEventBus());
         });
     }
 
-    private void subscribeAll(TotemGuardAPI api) {
-        subscriptions.add(api.getEventRepository().subscribe(TGUserJoinEvent.class, new TGUserJoinEventListener()));
-        subscriptions.add(api.getEventRepository().subscribe(TGUserQuitEvent.class, new TGUserQuitEventListener()));
-        subscriptions.add(api.getEventRepository().subscribe(TGUserFlagEvent.class, new TGFlagEventListener()));
-        subscriptions.add(api.getEventRepository().subscribe(TGPluginShutdownEvent.class, this::onTotemGuardShutdown));
+    private void subscribe(EventBus bus) {
+        bus.get(TGUserJoinEvent.class).subscribe(this, event -> {
+            TGUser user = event.getUser();
+            InventoryStatus inv = user.getInventoryStatus();
+            getLogger().info(user.getName() + " joined (inventory "
+                    + (inv.open() ? "open" : "closed") + ")");
+        });
+
+        bus.get(TGUserInventoryOpenEvent.class).subscribe(this, inventoryListener::onOpen);
+        bus.get(TGUserInventoryCloseEvent.class).subscribe(this, inventoryListener::onClose);
+        bus.get(TGUserQuitEvent.class).subscribe(this, inventoryListener::onQuit);
+
+        bus.get(TGModDetectionResolvedEvent.class).subscribe(this, event ->
+                getLogger().warning("[mods] " + event.getUser().getName() + " -> "
+                        + event.getAction() + " with " + event.getDetectedMods().size() + " mod(s)"
+                        + (event.isLate() ? " (late)" : "")));
+
+        bus.get(TGUserPunishEvent.class).subscribe(this, event ->
+                getLogger().warning("[punish] " + event.getUser().getName()
+                        + " punished for " + event.getCheck().getName()));
+
+        bus.get(TGTeleportEvent.class).subscribe(this, event ->
+                getLogger().info("[teleport] " + event.getCallerUuid() + " -> "
+                        + event.getTargetName() + (event.isCrossServer() ? " (cross-server)" : "")));
+
+        bus.get(TGCheckEvent.class).subscribe(this, event ->
+                        getLogger().info("[check] " + event.getName() + " on " + event.getUser().getName()
+                                + (event.isCancelled() ? " (cancelled)" : "")),
+                EventPriority.MONITOR, true);
+
+        bus.subscribe(TGPluginShutdownEvent.class, this, this::onTotemGuardShutdown);
     }
 
     private void onTotemGuardShutdown(TGPluginShutdownEvent event) {
         TGPluginShutdownEvent.Reason reason = event.getReason();
-        getLogger().info("TotemGuard is shutting down (reason: " + reason + "). Dropping cached subscriptions.");
-        subscriptions.clear();
+        getLogger().info("TotemGuard " + event.getVersion() + " shutting down (" + reason + ")");
 
-        if (reason == TGPluginShutdownEvent.Reason.LOADER_RESTART || reason == TGPluginShutdownEvent.Reason.UPDATE_TRIGGERED) {
-            // getAsync() returns a fresh future after TotemGuard.shutdown() arms it,
-            // and completes once the loader publishes the new instance.
+        if (reason == TGPluginShutdownEvent.Reason.LOADER_RESTART
+                || reason == TGPluginShutdownEvent.Reason.UPDATE_TRIGGERED) {
             hook();
         }
-    }
-
-    private void closeSubscriptions() {
-        for (EventSubscription subscription : subscriptions) {
-            try {
-                subscription.close();
-            } catch (Exception ignored) {
-            }
-        }
-        subscriptions.clear();
     }
 }

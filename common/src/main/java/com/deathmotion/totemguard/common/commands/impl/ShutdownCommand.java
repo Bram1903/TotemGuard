@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.platform.sender.Sender;

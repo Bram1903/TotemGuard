@@ -18,11 +18,9 @@
 
 package com.deathmotion.totemguard.common.features.monitor;
 
-import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
+import com.deathmotion.totemguard.common.event.internal.InventoryChangedChannel;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.PresenceListener;
@@ -60,7 +58,7 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
 
     private final AtomicBoolean started = new AtomicBoolean();
     private @Nullable ScheduledTask publishTask;
-    private @Nullable AutoCloseable inventoryEventSubscription;
+    private @Nullable InventoryChangedChannel.Handler inventoryChangedHandler;
 
     public MonitorRepository(TGPlatform platform) {
         this.platform = platform;
@@ -77,12 +75,12 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
                 this::publishHostUpdates,
                 PUBLISH_INTERVAL_MILLIS, PUBLISH_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
 
-        inventoryEventSubscription = platform.getEventRepository().subscribeInternal(
-                InventoryChangedEvent.class,
-                event -> {
-                    UUID uuid = event.getPlayer().getUuid();
-                    platform.getScheduler().runAsyncTask(() -> publishForTargetIfSubscribed(uuid));
-                });
+        InventoryChangedChannel.Handler handler = (player, carried, slots, issuer) -> {
+            UUID uuid = player.getUuid();
+            platform.getScheduler().runAsyncTask(() -> publishForTargetIfSubscribed(uuid));
+        };
+        inventoryChangedHandler = handler;
+        platform.getInternalEventBus().getInventoryChanged().register(platform, handler);
 
         platform.getRedisRepository().addStateListener(this);
     }
@@ -92,12 +90,9 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
         cancel(publishTask);
         publishTask = null;
 
-        if (inventoryEventSubscription != null) {
-            try {
-                inventoryEventSubscription.close();
-            } catch (Exception ignored) {
-            }
-            inventoryEventSubscription = null;
+        if (inventoryChangedHandler != null) {
+            platform.getInternalEventBus().getInventoryChanged().unsubscribe(inventoryChangedHandler);
+            inventoryChangedHandler = null;
         }
 
         platform.getRedisRepository().removeStateListener(this);
@@ -281,13 +276,11 @@ public final class MonitorRepository implements PresenceListener, ConnectionStat
             boolean crossServer = !localInstance.equals(entry.serverInstanceId());
             TGPlayer localTarget = crossServer ? null : platform.getPlayerRepository().getPlayer(playerUuid);
             for (UUID viewerId : viewers) {
-                TGMonitorOpenEvent event = platform.getEventRepository().post(
-                        new TGMonitorOpenEventImpl(
-                                viewerId, playerUuid, entry.playerName(), localTarget,
-                                entry.serverInstanceId(), entry.serverName(),
-                                crossServer, true)
-                );
-                if (event.isCancelled()) gui.close(viewerId, true);
+                boolean cancelled = platform.getEventBus().getMonitorOpen().fire(
+                        viewerId, playerUuid, entry.playerName(), localTarget,
+                        entry.serverInstanceId(), entry.serverName(),
+                        crossServer, true);
+                if (cancelled) gui.close(viewerId, true);
             }
         }
 

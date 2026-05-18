@@ -126,7 +126,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         if (player.isModDetectionWindow(packet.getWindowId())) return;
 
         boolean wasOpen = data.isOpenInventory();
-        data.setOpenInventory(true);
+        data.setOpenInventory(true, Issuer.CLIENT);
         if (!wasOpen) data.setClientOpenedInventoryThisTick(true);
 
         final int windowId = packet.getWindowId();
@@ -225,7 +225,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     private void handleCloseWindow(PacketReceiveEvent event) {
         WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
-        data.setOpenInventory(false);
+        data.setOpenInventory(false, Issuer.CLIENT);
         inventory.resetOpenWindow();
         inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.CLIENT, event.getTimestamp());
         if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {

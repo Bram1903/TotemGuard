@@ -19,10 +19,8 @@
 package com.deathmotion.totemguard.common.features.follow;
 
 import com.deathmotion.totemguard.api.config.key.ConfigKey;
-import com.deathmotion.totemguard.api.event.impl.TGFollowEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.api.impl.TGFollowEventImpl;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.PresenceListener;
 import com.deathmotion.totemguard.common.network.ProxyTopologyService;
@@ -169,13 +167,11 @@ public final class FollowRepository implements PresenceListener {
         NetworkPresenceRepository presence = platform.getNetworkPresenceRepository();
         boolean crossServer = presence == null || !presence.isLocal(newTargetInstance);
         TGPlayer targetUser = crossServer ? null : platform.getPlayerRepository().getPlayer(state.targetUuid());
-        TGFollowEvent event = platform.getEventRepository().post(
-                new TGFollowEventImpl(
-                        state.followerUuid(), state.targetUuid(), state.targetName(),
-                        targetUser, newTargetInstance, newTargetServerName,
-                        crossServer, true)
-        );
-        if (event.isCancelled()) {
+        boolean cancelled = platform.getEventBus().getFollow().fire(
+                state.followerUuid(), state.targetUuid(), state.targetName(),
+                targetUser, newTargetInstance, newTargetServerName,
+                crossServer, true);
+        if (cancelled) {
             if (myFollowers.remove(state.followerUuid(), state)) {
                 store.remove(state.followerUuid());
                 sendFollowerMessage(state, MessagesKeys.FOLLOW_DISABLED, Map.of());

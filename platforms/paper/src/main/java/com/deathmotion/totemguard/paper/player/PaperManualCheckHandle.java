@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.paper.player;
 
-import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
+import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -42,8 +42,8 @@ final class PaperManualCheckHandle implements ManualCheckHandle {
     private final AtomicBoolean restored = new AtomicBoolean();
 
     PaperManualCheckHandle(PaperScheduler scheduler, Player player, ItemStack[] contents, ItemStack cursor,
-                            double health, int foodLevel, float saturation,
-                            Collection<PotionEffect> effects) {
+                           double health, int foodLevel, float saturation,
+                           Collection<PotionEffect> effects) {
         this.scheduler = scheduler;
         this.player = player;
         this.contents = contents;

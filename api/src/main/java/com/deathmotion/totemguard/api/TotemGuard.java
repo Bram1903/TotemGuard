@@ -45,7 +45,7 @@ public final class TotemGuard {
      *
      * @param api the API instance
      * @throws NullPointerException  if {@code api} is null
-     * @throws IllegalStateException if already initialized; use {@link #replace(TotemGuardAPI)}
+     * @throws IllegalStateException if already initialized. Use {@link #replace(TotemGuardAPI)}
      *                               when the loader is swapping the running plugin
      */
     public static void init(@NotNull TotemGuardAPI api) {
@@ -73,7 +73,7 @@ public final class TotemGuard {
 
     /**
      * Loader-internal: clear the API instance and arm a fresh future. Called
-     * immediately before {@link com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent}
+     * immediately before {@link com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent}
      * is dispatched, so handlers that re-hook via {@link #getAsync()} receive the
      * fresh (pending) future rather than a completed future pointing at the API
      * that is about to be torn down. {@link #get()} throws inside a shutdown

@@ -18,13 +18,13 @@
 
 package com.deathmotion.totemguard.common;
 
-import com.deathmotion.totemguard.api.event.EventSubscription;
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
-import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
+import com.deathmotion.totemguard.common.event.EventBusImpl;
+import com.deathmotion.totemguard.common.event.internal.InternalEventBus;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.features.check.CheckService;
 import com.deathmotion.totemguard.common.features.discord.DiscordWebhookService;
@@ -80,7 +80,6 @@ public abstract class TGPlatform {
     private static TGPlatform instance;
 
     final List<PacketListenerAbstract> packetListeners = new ArrayList<>();
-    final List<EventSubscription> internalSubscriptions = new ArrayList<>();
 
     private final Platform platform;
     private final Logger logger;
@@ -92,7 +91,8 @@ public abstract class TGPlatform {
     DatabaseRepositoryImpl databaseRepository;
     CacheRepositoryImpl cacheRepository;
     MessageService messageService;
-    EventRepositoryImpl eventRepository;
+    EventBusImpl eventBus;
+    InternalEventBus internalEventBus;
     PunishmentRepositoryImpl punishmentRepository;
     AlertRepositoryImpl alertRepository;
     DiscordWebhookService discordWebhookService;

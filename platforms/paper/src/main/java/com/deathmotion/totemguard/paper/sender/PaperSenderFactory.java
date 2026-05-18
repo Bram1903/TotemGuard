@@ -20,9 +20,9 @@
 
 package com.deathmotion.totemguard.paper.sender;
 
-import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.platform.sender.SenderFactory;
+import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;

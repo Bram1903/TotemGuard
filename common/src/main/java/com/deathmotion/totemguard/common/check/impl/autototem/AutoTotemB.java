@@ -19,13 +19,12 @@
 package com.deathmotion.totemguard.common.check.impl.autototem;
 
 import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.check.HeuristicCheck;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
-import com.deathmotion.totemguard.common.event.internal.impl.TotemReplenishedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.util.MathUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -49,9 +48,9 @@ public class AutoTotemB extends HeuristicCheck implements EventCheck {
     }
 
     @Override
-    public <T extends Event> void handleEvent(T event) {
-        if (!(event instanceof TotemReplenishedEvent)) return;
-
+    public void onTotemReplenished(long totemActivatedTimestamp,
+                                   long totemReplenishedTimestamp,
+                                   @Nullable Long totemPickupTimestamp) {
         List<Long> recent = player.getTotemData().getIntervals().getLast(SAMPLE_SIZE);
         if (recent.size() < SAMPLE_SIZE) return;
 

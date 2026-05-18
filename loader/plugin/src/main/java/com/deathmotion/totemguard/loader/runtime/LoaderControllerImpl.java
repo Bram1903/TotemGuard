@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.loader.runtime;
 
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.api.fleet.FleetCache;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
 import com.deathmotion.totemguard.host.LoaderController;

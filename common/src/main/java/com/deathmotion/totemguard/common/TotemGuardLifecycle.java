@@ -19,17 +19,14 @@
 package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuard;
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
-import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
-import com.deathmotion.totemguard.common.event.api.impl.TGPluginShutdownEventImpl;
-import com.deathmotion.totemguard.common.event.internal.InternalPlayerEvent;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
-import com.deathmotion.totemguard.common.event.internal.listeners.EventCheckManagerListener;
-import com.deathmotion.totemguard.common.event.internal.listeners.TotemReplenishedListener;
+import com.deathmotion.totemguard.common.event.EventBusImpl;
+import com.deathmotion.totemguard.common.event.internal.InternalEventBus;
+import com.deathmotion.totemguard.common.event.internal.TotemReplenishedDetector;
 import com.deathmotion.totemguard.common.event.packet.PacketCheckManagerListener;
 import com.deathmotion.totemguard.common.event.packet.PacketPlayerJoinQuit;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
@@ -108,7 +105,8 @@ final class TotemGuardLifecycle {
         p.databaseRepository = new DatabaseRepositoryImpl();
         p.cacheRepository = new CacheRepositoryImpl();
         p.messageService = new MessageService();
-        p.eventRepository = new EventRepositoryImpl();
+        p.eventBus = new EventBusImpl();
+        p.internalEventBus = new InternalEventBus();
         p.punishmentRepository = new PunishmentRepositoryImpl();
         p.alertRepository = new AlertRepositoryImpl();
         p.discordWebhookService = new DiscordWebhookService();
@@ -160,8 +158,7 @@ final class TotemGuardLifecycle {
         p.registerPacketListenerInternal(new BridgePacketListener());
         p.registerPacketListenerInternal(new FollowerPacketListener(p.followRepository));
 
-        p.internalSubscriptions.add(p.eventRepository.subscribeInternal(InventoryChangedEvent.class, new TotemReplenishedListener()));
-        p.internalSubscriptions.add(p.eventRepository.subscribeInternal(InternalPlayerEvent.class, new EventCheckManagerListener()));
+        p.internalEventBus.getInventoryChanged().register(p, new TotemReplenishedDetector(p.internalEventBus.getTotemReplenished()));
 
         p.fleetCacheLifecycle = new FleetCacheLifecycle(p, p.redisRepository, serverIdentity.instanceId(), p.getLogger());
         p.fleetCacheLifecycle.register();
@@ -220,9 +217,9 @@ final class TotemGuardLifecycle {
             }
         }
 
-        if (p.eventRepository != null) {
+        if (p.eventBus != null) {
             try {
-                p.eventRepository.post(new TGPluginShutdownEventImpl(reason, TGVersions.CURRENT.toString()));
+                p.eventBus.getPluginShutdown().fire(reason, TGVersions.CURRENT.toString());
             } catch (Throwable t) {
                 p.getLogger().warning("TGPluginShutdownEvent dispatch threw: " + t.getMessage());
             }
@@ -245,14 +242,25 @@ final class TotemGuardLifecycle {
         }
         p.packetListeners.clear();
 
-        p.internalSubscriptions.forEach(sub -> {
+        // Every internal subscription was bound to the platform context, so one
+        // sweep per bus reaches CheckService, MonitorRepository, GuiManager, and
+        // the totem-replenish detector in a single shot. Plugins that subscribed
+        // with their own context are not touched here. They get the public
+        // TGPluginShutdownEvent fired above and clean up via the bus they hold.
+        if (p.eventBus != null) {
             try {
-                sub.close();
+                p.eventBus.unregisterAll(p);
             } catch (Exception ex) {
-                p.getLogger().warning("Failed to close internal event subscription: " + ex.getMessage());
+                p.getLogger().warning("Failed to unregister public event subscriptions: " + ex.getMessage());
             }
-        });
-        p.internalSubscriptions.clear();
+        }
+        if (p.internalEventBus != null) {
+            try {
+                p.internalEventBus.unregisterAll(p);
+            } catch (Exception ex) {
+                p.getLogger().warning("Failed to unregister internal event subscriptions: " + ex.getMessage());
+            }
+        }
 
         if (p.commandManager != null) {
             try {

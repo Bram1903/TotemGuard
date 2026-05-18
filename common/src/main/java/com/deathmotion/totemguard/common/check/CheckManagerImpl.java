@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.common.check;
 
 import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
@@ -37,11 +36,16 @@ import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
 import com.deathmotion.totemguard.common.check.type.ManualCheck;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -185,15 +189,47 @@ public class CheckManagerImpl {
         }
     }
 
-    public <T extends Event> void onEvent(final T event) {
+    public void onTotemActivated(long timestamp) {
         CheckDispatch d = this.dispatch;
         CheckSlot<EventCheck> ev = d.event();
         CheckSlot<ExtendedCheck> ext = d.extendedEvent();
-        for (EventCheck c : ev.always()) c.handleEvent(event);
-        for (ExtendedCheck c : ext.always()) c.handleEvent(event);
+        for (EventCheck c : ev.always()) c.onTotemActivated(timestamp);
+        for (ExtendedCheck c : ext.always()) c.onTotemActivated(timestamp);
         if (player.supportsEndTick()) {
-            for (EventCheck c : ev.tickEnd()) c.handleEvent(event);
-            for (ExtendedCheck c : ext.tickEnd()) c.handleEvent(event);
+            for (EventCheck c : ev.tickEnd()) c.onTotemActivated(timestamp);
+            for (ExtendedCheck c : ext.tickEnd()) c.onTotemActivated(timestamp);
+        }
+    }
+
+    public void onTotemReplenished(long totemActivatedTimestamp,
+                                   long totemReplenishedTimestamp,
+                                   @Nullable Long totemPickupTimestamp) {
+        CheckDispatch d = this.dispatch;
+        CheckSlot<EventCheck> ev = d.event();
+        CheckSlot<ExtendedCheck> ext = d.extendedEvent();
+        for (EventCheck c : ev.always())
+            c.onTotemReplenished(totemActivatedTimestamp, totemReplenishedTimestamp, totemPickupTimestamp);
+        for (ExtendedCheck c : ext.always())
+            c.onTotemReplenished(totemActivatedTimestamp, totemReplenishedTimestamp, totemPickupTimestamp);
+        if (player.supportsEndTick()) {
+            for (EventCheck c : ev.tickEnd())
+                c.onTotemReplenished(totemActivatedTimestamp, totemReplenishedTimestamp, totemPickupTimestamp);
+            for (ExtendedCheck c : ext.tickEnd())
+                c.onTotemReplenished(totemActivatedTimestamp, totemReplenishedTimestamp, totemPickupTimestamp);
+        }
+    }
+
+    public void onInventoryChanged(@Nullable CarriedItem updatedCarriedItem,
+                                   @NotNull List<InventorySlot> changedSlots,
+                                   @NotNull Issuer lastIssuer) {
+        CheckDispatch d = this.dispatch;
+        CheckSlot<EventCheck> ev = d.event();
+        CheckSlot<ExtendedCheck> ext = d.extendedEvent();
+        for (EventCheck c : ev.always()) c.onInventoryChanged(updatedCarriedItem, changedSlots, lastIssuer);
+        for (ExtendedCheck c : ext.always()) c.onInventoryChanged(updatedCarriedItem, changedSlots, lastIssuer);
+        if (player.supportsEndTick()) {
+            for (EventCheck c : ev.tickEnd()) c.onInventoryChanged(updatedCarriedItem, changedSlots, lastIssuer);
+            for (ExtendedCheck c : ext.tickEnd()) c.onInventoryChanged(updatedCarriedItem, changedSlots, lastIssuer);
         }
     }
 

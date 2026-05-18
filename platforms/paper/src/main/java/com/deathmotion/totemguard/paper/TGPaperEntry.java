@@ -18,13 +18,13 @@
 
 package com.deathmotion.totemguard.paper;
 
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
-import com.deathmotion.totemguard.paper.placeholder.PlaceholderAPIHolder;
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.host.Platform;
 import com.deathmotion.totemguard.host.TGPluginEntry;
 import com.deathmotion.totemguard.host.TGPluginHandle;
 import com.deathmotion.totemguard.host.TGPluginHost;
+import com.deathmotion.totemguard.paper.placeholder.PlaceholderAPIHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;

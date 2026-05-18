@@ -19,11 +19,26 @@
 package com.deathmotion.totemguard.common.check.type;
 
 import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.event.Event;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public interface EventCheck extends Check {
 
-    <T extends Event> void handleEvent(T event);
+    default void onTotemActivated(long timestamp) {
+    }
+
+    default void onTotemReplenished(long totemActivatedTimestamp,
+                                    long totemReplenishedTimestamp,
+                                    @Nullable Long totemPickupTimestamp) {
+    }
+
+    default void onInventoryChanged(@Nullable CarriedItem updatedCarriedItem,
+                                    @NotNull List<InventorySlot> changedSlots,
+                                    @NotNull Issuer lastIssuer) {
+    }
 }
-
-

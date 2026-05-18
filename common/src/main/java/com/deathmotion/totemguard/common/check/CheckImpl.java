@@ -21,19 +21,18 @@ package com.deathmotion.totemguard.common.check;
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.api.config.key.ConfigKey;
-import com.deathmotion.totemguard.api.event.impl.TGUserFlagEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
-import com.deathmotion.totemguard.common.event.api.impl.TGUserFlagEventImpl;
 import com.deathmotion.totemguard.common.features.punishment.PunishmentCommand;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -161,13 +160,12 @@ public abstract class CheckImpl implements Check {
             data.setInventoryMitigated(true);
             player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
         } else {
-            data.setOpenInventory(false);
+            data.setOpenInventory(false, Issuer.SERVER);
         }
     }
 
     protected boolean shouldFail(@Nullable String debug) {
-        TGUserFlagEvent event = TGPlatform.getInstance().getEventRepository().post(new TGUserFlagEventImpl(player, this, debug));
-        return !event.isCancelled();
+        return !TGPlatform.getInstance().getEventBus().getUserFlag().fire(player, this, debug);
     }
 
     public void clearViolations() {

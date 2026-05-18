@@ -19,13 +19,11 @@
 package com.deathmotion.totemguard.common.gui.screen.player;
 
 import com.deathmotion.totemguard.api.check.Check;
-import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.api.mod.DetectedMod;
 import com.deathmotion.totemguard.api.mod.ModSeverity;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.PlayerRecord;
-import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.features.session.SessionSnapshot;
 import com.deathmotion.totemguard.common.features.session.SessionViolationStore;
 import com.deathmotion.totemguard.common.gui.*;
@@ -267,12 +265,9 @@ public final class PlayerProfileScreen extends GuiScreen {
             }
             boolean crossServer = !plat.getNetworkPresenceRepository().identity().instanceId().equals(serverInstanceId);
 
-            TGMonitorOpenEvent event = plat.getEventRepository().post(
-                    new TGMonitorOpenEventImpl(
-                            ctx.session().viewerId(), targetUuid, targetName, freshLocal,
-                            serverInstanceId, serverName, crossServer, false)
-            );
-            if (event.isCancelled()) {
+            if (plat.getEventBus().getMonitorOpen().fire(
+                    ctx.session().viewerId(), targetUuid, targetName, freshLocal,
+                    serverInstanceId, serverName, crossServer, false)) {
                 ctx.message(messages.getComponent(MessagesKeys.GUI_ERR_MONITOR_BLOCKED));
                 return;
             }

@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api.event.impl.TGFocusEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
@@ -27,7 +26,6 @@ import com.deathmotion.totemguard.common.cache.data.FocusTarget;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.api.impl.TGFocusEventImpl;
 import com.deathmotion.totemguard.common.features.alert.AlertFilter;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.features.alert.AlertSubscription;
@@ -89,8 +87,7 @@ public final class FocusCommand extends AbstractCommand {
         if (rawTarget == null) {
             AlertSubscription current = roster.get(viewerUuid);
             if (current != null && current.filter() instanceof AlertFilter.Violator) {
-                TGFocusEvent disable = platform.getEventRepository().post(TGFocusEventImpl.disabling(viewerUuid));
-                if (disable.isCancelled()) return;
+                if (platform.getEventBus().getFocus().fireDisabling(viewerUuid)) return;
                 roster.remove(viewerUuid);
                 sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.FOCUS_DISABLED));
                 platform.getScheduler().runAsyncTask(() -> cacheRepository.remove(CacheKeys.focusTarget(viewerUuid)));
@@ -139,8 +136,7 @@ public final class FocusCommand extends AbstractCommand {
         if (current != null
                 && current.filter() instanceof AlertFilter.Violator violator
                 && violator.target().equals(targetUuid)) {
-            TGFocusEvent disable = platform.getEventRepository().post(TGFocusEventImpl.disabling(viewerUuid));
-            if (disable.isCancelled()) return;
+            if (platform.getEventBus().getFocus().fireDisabling(viewerUuid)) return;
             roster.remove(viewerUuid);
             sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.FOCUS_DISABLED));
             platform.getScheduler().runAsyncTask(() -> cacheRepository.remove(CacheKeys.focusTarget(viewerUuid)));
@@ -150,10 +146,9 @@ public final class FocusCommand extends AbstractCommand {
         PlatformPlayer viewer = platform.getPlatformPlayerFactory().create(viewerUuid);
         if (viewer == null) return;
 
-        TGFocusEvent enable = platform.getEventRepository().post(TGFocusEventImpl.enabling(
+        if (platform.getEventBus().getFocus().fireEnabling(
                 viewerUuid, targetUuid, targetName, localTarget,
-                targetServerInstanceId, targetServerName, false));
-        if (enable.isCancelled()) return;
+                targetServerInstanceId, targetServerName, false)) return;
 
         roster.put(viewerUuid, viewer, new AlertFilter.Violator(targetUuid), targetName);
         sender.sendMessage(platform.getMessageService().getComponent(

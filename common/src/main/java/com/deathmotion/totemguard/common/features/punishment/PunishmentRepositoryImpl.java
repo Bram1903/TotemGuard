@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.features.punishment;
 
-import com.deathmotion.totemguard.api.event.impl.TGUserPunishEvent;
 import com.deathmotion.totemguard.api.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import com.deathmotion.totemguard.api.reload.Reloadable;
@@ -30,8 +29,7 @@ import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
-import com.deathmotion.totemguard.common.event.EventRepositoryImpl;
-import com.deathmotion.totemguard.common.event.api.impl.TGUserPunishEventImpl;
+import com.deathmotion.totemguard.common.event.EventBusImpl;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.placeholder.engine.PlaceholderEngine;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -53,7 +51,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
     private final TGPlatform platform;
     private final CacheRepositoryImpl cacheRepository;
-    private final EventRepositoryImpl eventRepository;
+    private final EventBusImpl eventBus;
     private final ConfigRepositoryImpl configRepository;
     private final PlaceholderRepositoryImpl placeholderRepository;
 
@@ -64,7 +62,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     public PunishmentRepositoryImpl() {
         this.platform = TGPlatform.getInstance();
         this.cacheRepository = platform.getCacheRepository();
-        this.eventRepository = platform.getEventRepository();
+        this.eventBus = platform.getEventBus();
         this.configRepository = platform.getConfigRepository();
         this.placeholderRepository = platform.getPlaceholderRepository();
         reload();
@@ -121,12 +119,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
 
         boolean handedOff = false;
         try {
-            TGUserPunishEvent event = eventRepository.post(new TGUserPunishEventImpl(
-                    player,
-                    check,
-                    debug
-            ));
-            if (event.isCancelled()) return;
+            if (eventBus.getUserPunish().fire(player, check, debug)) return;
 
             Runnable executeAndCleanup = () -> {
                 boolean keepDistributedLock = false;

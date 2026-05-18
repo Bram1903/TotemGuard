@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.player;
 
 import com.deathmotion.totemguard.api.history.HistoryView;
 import com.deathmotion.totemguard.api.user.BanAnimation;
+import com.deathmotion.totemguard.api.user.InventoryStatus;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheCodecs;
@@ -27,8 +28,6 @@ import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
-import com.deathmotion.totemguard.common.event.api.impl.TGUserJoinEventImpl;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.features.mods.ModSession;
 import com.deathmotion.totemguard.common.features.punishment.BanAnimationImpl;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
@@ -42,6 +41,7 @@ import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvide
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
 import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
@@ -190,7 +190,7 @@ public class TGPlayer implements TGUser {
 
         supportsEndTickCache = computeSupportsEndTick();
 
-        platform.getEventRepository().post(new TGUserJoinEventImpl(this));
+        platform.getEventBus().getUserJoin().fire(this);
 
         platform.getScheduler().runAsyncTask(() -> {
             applyCachedData();
@@ -284,14 +284,7 @@ public class TGPlayer implements TGUser {
         }
         inventory.getUpdatedSlots().clear();
 
-        InventoryChangedEvent event = new InventoryChangedEvent(
-                this,
-                carriedSnapshot,
-                updatedSlotsSnapshot,
-                issuer
-        );
-
-        platform.getEventRepository().post(event);
+        platform.getInternalEventBus().getInventoryChanged().fire(this, carriedSnapshot, updatedSlotsSnapshot, issuer);
         debugOverlayManager.refresh();
     }
 
@@ -318,6 +311,11 @@ public class TGPlayer implements TGUser {
     @Override
     public @NotNull BanAnimation getBanAnimation() {
         return banAnimation;
+    }
+
+    @Override
+    public @NotNull InventoryStatus getInventoryStatus() {
+        return new InventoryStatus(data.isOpenInventory(), data.getLastInventoryIssuer() == Issuer.SERVER);
     }
 
     public ClientVersion getClientVersion() {

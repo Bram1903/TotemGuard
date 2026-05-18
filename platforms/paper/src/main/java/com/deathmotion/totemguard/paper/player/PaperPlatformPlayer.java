@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.paper.player;
 
-import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
+import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;

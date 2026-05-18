@@ -18,12 +18,10 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api.event.impl.TGTeleportEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.api.impl.TGTeleportEventImpl;
 import com.deathmotion.totemguard.common.features.teleport.TeleportService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ProxyTopologyService;
@@ -167,7 +165,7 @@ public final class TeleportCommand extends AbstractCommand {
         }
 
         if (!silent) {
-            TGTeleportEvent event = platform.getEventRepository().post(new TGTeleportEventImpl(
+            if (platform.getEventBus().getTeleport().fire(
                     sender.getUniqueId(),
                     target.playerUuid(),
                     target.playerName(),
@@ -175,8 +173,7 @@ public final class TeleportCommand extends AbstractCommand {
                     target.serverInstanceId(),
                     target.serverName(),
                     !local
-            ));
-            if (event.isCancelled()) return;
+            )) return;
         }
 
         if (local) {

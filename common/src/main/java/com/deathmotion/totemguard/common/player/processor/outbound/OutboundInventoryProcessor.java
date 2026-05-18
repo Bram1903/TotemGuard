@@ -109,7 +109,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         if (player.isModDetectionWindow(containerId)) return;
         latencyHandler.compensate(event, () -> {
             inventory.setOpenWindow(containerId, -1);
-            data.setOpenInventory(true);
+            data.setOpenInventory(true, Issuer.SERVER);
             data.setServerOpenedInventoryThisTick(true);
         });
     }
@@ -120,7 +120,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         final int slotCount = packet.getSlotCount();
         latencyHandler.compensate(event, () -> {
             inventory.setOpenWindow(windowId, slotCount);
-            data.setOpenInventory(true);
+            data.setOpenInventory(true, Issuer.SERVER);
             data.setServerOpenedInventoryThisTick(true);
         });
     }
@@ -132,7 +132,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             inventory.resetOpenWindow();
             // Server-side close abandons any cursor stack (placed back in inventory or dropped).
             inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.SERVER, timestamp);
-            data.setOpenInventory(false);
+            data.setOpenInventory(false, Issuer.SERVER);
 
             if (!data.isInventoryMitigated()) return;
 

@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -73,7 +74,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 }
 
                 data.setGameMode(packet.getGameMode());
-                data.setOpenInventory(false);
+                data.setOpenInventory(false, Issuer.SERVER);
                 data.setSprinting(false);
                 recipeTracker.reset();
                 inputData.reset();

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.fabric;
 
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.host.Platform;
 import com.deathmotion.totemguard.host.TGPluginEntry;

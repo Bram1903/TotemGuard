@@ -18,12 +18,10 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api.event.impl.TGMonitorOpenEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.api.impl.TGMonitorOpenEventImpl;
 import com.deathmotion.totemguard.common.gui.screen.player.PlayerMonitorScreen;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
@@ -119,12 +117,9 @@ public final class MonitorCommand extends AbstractCommand {
         }
 
         boolean crossServer = self == null || !self.instanceId().equals(targetServerInstanceId);
-        TGMonitorOpenEvent event = platform.getEventRepository().post(
-                new TGMonitorOpenEventImpl(
-                        sender.getUniqueId(), targetUuid, targetName, localTarget,
-                        targetServerInstanceId, targetServerName, crossServer, false)
-        );
-        if (event.isCancelled()) {
+        if (platform.getEventBus().getMonitorOpen().fire(
+                sender.getUniqueId(), targetUuid, targetName, localTarget,
+                targetServerInstanceId, targetServerName, crossServer, false)) {
             sender.sendMessage(messages.getComponent(MessagesKeys.MONITOR_BLOCKED));
             return;
         }

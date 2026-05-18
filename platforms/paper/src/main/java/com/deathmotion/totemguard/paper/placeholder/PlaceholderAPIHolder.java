@@ -20,9 +20,9 @@ package com.deathmotion.totemguard.paper.placeholder;
 
 import com.deathmotion.totemguard.api.placeholder.PlaceholderContext;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderHolder;
-import com.deathmotion.totemguard.paper.player.PaperPlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.paper.player.PaperPlatformPlayer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;

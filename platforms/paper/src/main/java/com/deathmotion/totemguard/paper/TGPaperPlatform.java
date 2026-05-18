@@ -18,12 +18,6 @@
 
 package com.deathmotion.totemguard.paper;
 
-import com.deathmotion.totemguard.paper.compatibility.PaperCompatibility;
-import com.deathmotion.totemguard.paper.metrics.TGMetrics;
-import com.deathmotion.totemguard.paper.network.PaperCrossServerTeleportRouter;
-import com.deathmotion.totemguard.paper.player.PaperPlatformPlayerFactory;
-import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
-import com.deathmotion.totemguard.paper.sender.PaperSenderFactory;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
@@ -31,6 +25,13 @@ import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.TGVersions;
+import com.deathmotion.totemguard.paper.compatibility.PaperCompatibility;
+import com.deathmotion.totemguard.paper.event.PluginUnregisterHook;
+import com.deathmotion.totemguard.paper.metrics.TGMetrics;
+import com.deathmotion.totemguard.paper.network.PaperCrossServerTeleportRouter;
+import com.deathmotion.totemguard.paper.player.PaperPlatformPlayerFactory;
+import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
+import com.deathmotion.totemguard.paper.sender.PaperSenderFactory;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -82,9 +83,6 @@ public class TGPaperPlatform extends TGPlatform {
             );
 
             if (isManagedByLoader()) {
-                // Hot-reload runs after Cloud's normal registration window has closed and
-                // after Paper's command map already holds the previous restart's /tg entries.
-                // Opt into unsafe registration + override so we can rebuild the command tree.
                 Configurable<ManagerSetting> managerSettings = manager.settings();
                 managerSettings.set(ManagerSetting.ALLOW_UNSAFE_REGISTRATION, true);
                 managerSettings.set(ManagerSetting.OVERRIDE_EXISTING_COMMANDS, true);
@@ -92,19 +90,11 @@ public class TGPaperPlatform extends TGPlatform {
 
             boolean brigadierRegistered = false;
             if (manager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
-                // Paper closes the lifecycle event registration window once the server has
-                // finished booting. On cold-start (loader or standalone) we are still inside
-                // it, so registerBrigadier() works directly. On a loader-driven hot reload we
-                // are past the window; force re-registration via Paper internals.
                 if (!PaperLifecycleHack.isLifecycleRegistrationClosed(plugin)) {
                     manager.registerBrigadier();
                     brigadierRegistered = true;
                 } else if (PaperLifecycleHack.forceRegisterBrigadier(plugin, manager, getLogger())) {
                     brigadierRegistered = true;
-                    // The lifecycle event won't fire naturally now. Defer the publish until
-                    // CommandManagerImpl has populated Cloud's command tree, otherwise the
-                    // handler would run against an empty tree and only the root literals
-                    // would land in brigadier.
                     brigadierNeedsLifecyclePublish = true;
                 } else {
                     getLogger().warning("Brigadier registration unavailable (lifecycle window is closed and the force-register path failed). Falling back to asynchronous tab completion.");
@@ -160,11 +150,6 @@ public class TGPaperPlatform extends TGPlatform {
 
     @Override
     public String getPluginDirectory() {
-        // Under the loader the inner plugin's data folder is pinned to plugins/TotemGuard/
-        // (see LoaderPaths.forPaper) and lives independently of the loader plugin's own
-        // data folder, which Paper derives from the loader's plugin.yml name. Reading
-        // plugin.getDataFolder() here would point at the loader's folder and miss the
-        // user's configs.
         if (isManagedByLoader() && getPluginHost() != null) {
             return getPluginHost().dataFolder().toAbsolutePath().toString();
         }
@@ -196,6 +181,13 @@ public class TGPaperPlatform extends TGPlatform {
             brigadierNeedsLifecyclePublish = false;
             PaperLifecycleHack.publishCommandsToBrigadier(plugin, getLogger());
         }
+    }
+
+    @Override
+    public void commonOnEnable() {
+        super.commonOnEnable();
+        if (!isEnabled()) return;
+        Bukkit.getPluginManager().registerEvents(new PluginUnregisterHook(getEventBus(), plugin), plugin);
     }
 
     @Override

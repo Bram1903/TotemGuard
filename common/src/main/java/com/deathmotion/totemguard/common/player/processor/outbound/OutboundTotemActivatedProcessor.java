@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
@@ -83,7 +82,7 @@ public final class OutboundTotemActivatedProcessor extends ProcessorOutbound {
             player.setLastTotemUse(timestamp);
             player.setLastTotemPickup(null);
             player.getDebugOverlayManager().refresh();
-            TGPlatform.getInstance().getEventRepository().post(new TotemActivatedEvent(player, timestamp));
+            TGPlatform.getInstance().getInternalEventBus().getTotemActivated().fire(player, timestamp);
         });
     }
 }

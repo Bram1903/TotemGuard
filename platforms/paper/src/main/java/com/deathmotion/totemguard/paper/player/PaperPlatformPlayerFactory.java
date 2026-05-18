@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.paper.player;
 
-import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
+import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;

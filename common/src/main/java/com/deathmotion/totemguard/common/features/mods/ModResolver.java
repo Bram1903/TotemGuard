@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.api.mod.ModSeverity;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
-import com.deathmotion.totemguard.common.event.api.impl.TGModDetectionResolvedEventImpl;
 import com.deathmotion.totemguard.common.features.punishment.PunishmentCommand;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import org.jetbrains.annotations.NotNull;
@@ -102,9 +101,7 @@ public final class ModResolver {
             }
         }
 
-        TGModDetectionResolvedEventImpl event = new TGModDetectionResolvedEventImpl(player, alertMods, action, late);
-        platform.getEventRepository().post(event);
-        if (event.isCancelled()) return;
+        if (platform.getEventBus().getModDetectionResolved().fire(player, alertMods, action, late)) return;
 
         ModListRendering rendering = ModListRendering.build(alertMods, snapshot);
         Map<String, Object> extras = buildExtras(alertMods, action, rendering);

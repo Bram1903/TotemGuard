@@ -18,13 +18,13 @@
 
 package com.deathmotion.totemguard.paper.network;
 
-import com.deathmotion.totemguard.paper.TGPaperPlatform;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
+import com.deathmotion.totemguard.paper.TGPaperPlatform;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

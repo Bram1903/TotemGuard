@@ -20,7 +20,9 @@ package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,7 +42,12 @@ public class Data {
     private boolean sneaking;
     private boolean canFly;
     private boolean isFlying;
+
+    @Setter(AccessLevel.NONE)
     private boolean openInventory;
+    @Setter(AccessLevel.NONE)
+    private Issuer lastInventoryIssuer = Issuer.CLIENT;
+
     private boolean verifiedOpenInventory;
     private boolean pendingOpenInventory;
     private long inventoryOpenedAt;
@@ -62,27 +69,28 @@ public class Data {
         this.worldEntityData = new WorldEntityData();
     }
 
-    public void setOpenInventory(boolean openInventory) {
+    public void setOpenInventory(boolean openInventory, Issuer issuer) {
         boolean changed = this.openInventory != openInventory;
         this.openInventory = openInventory;
+        this.lastInventoryIssuer = issuer;
 
         if (!openInventory) {
             this.verifiedOpenInventory = false;
             this.pendingOpenInventory = false;
         }
 
-        if (changed) {
-            if (openInventory) {
-                this.inventoryOpenedAt = System.currentTimeMillis();
-            }
+        if (!changed) return;
 
-            String message = "&a[Inventory] &7" + player.getName() + " has "
-                    + (openInventory ? "&aopened" : "&cclosed")
-                    + " &7their inventory.";
+        if (openInventory) {
+            this.inventoryOpenedAt = System.currentTimeMillis();
+        }
+        platform.getGuiManager().refreshMonitor(player.getUuid());
 
-            //Component inventoryMessage = MessageUtil.formatMessage(message);
-            //player.getUser().sendMessage(inventoryMessage);
-            platform.getGuiManager().refreshMonitor(player.getUuid());
+        boolean serverInitiated = issuer == Issuer.SERVER;
+        if (openInventory) {
+            platform.getEventBus().getUserInventoryOpen().fire(player, serverInitiated);
+        } else {
+            platform.getEventBus().getUserInventoryClose().fire(player, serverInitiated);
         }
     }
 
@@ -107,6 +115,6 @@ public class Data {
 
         pendingOpenInventory = false;
         if (!openInventory) clientOpenedInventoryThisTick = true;
-        setOpenInventory(true);
+        setOpenInventory(true, Issuer.CLIENT);
     }
 }

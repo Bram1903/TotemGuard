@@ -31,7 +31,7 @@ import java.util.UUID;
  * online player has at most one active session that accumulates detections from
  * plugin-channel registrations, plugin-messages, and translation probes, then
  * resolves on the next tick boundary into a single
- * {@link com.deathmotion.totemguard.api.event.impl.TGModDetectionResolvedEvent}.
+ * {@link com.deathmotion.totemguard.api.event.events.TGModDetectionResolvedEvent}.
  * <p>
  * Detections are not persisted: every accessor on this repository is a synchronous,
  * in-memory lookup against the currently online player set. UUIDs that are offline

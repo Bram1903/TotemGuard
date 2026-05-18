@@ -71,4 +71,14 @@ public interface TGUser {
      * @return the ban-animation handle bound to this user. Never {@code null}.
      */
     @NotNull BanAnimation getBanAnimation();
+
+    /**
+     * Returns a snapshot of this user's current inventory open or closed
+     * state, together with the source (server or client) of the most recent
+     * transition. The state is latency compensated and mirrors what the
+     * client sees, not what the server-side view currently is.
+     *
+     * @return the inventory-status snapshot. Never {@code null}.
+     */
+    @NotNull InventoryStatus getInventoryStatus();
 }

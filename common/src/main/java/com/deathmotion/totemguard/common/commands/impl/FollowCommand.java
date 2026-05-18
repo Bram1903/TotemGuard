@@ -18,12 +18,10 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api.event.impl.TGFollowEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.commands.suggestion.TGPlayerSuggestionProvider;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.api.impl.TGFollowEventImpl;
 import com.deathmotion.totemguard.common.features.follow.FollowRepository;
 import com.deathmotion.totemguard.common.features.follow.FollowState;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
@@ -134,7 +132,7 @@ public final class FollowCommand extends AbstractCommand {
             }
         }
 
-        TGFollowEvent event = platform.getEventRepository().post(new TGFollowEventImpl(
+        if (platform.getEventBus().getFollow().fire(
                 followerUuid,
                 target.playerUuid(),
                 target.playerName(),
@@ -143,8 +141,7 @@ public final class FollowCommand extends AbstractCommand {
                 target.serverName(),
                 !local,
                 false
-        ));
-        if (event.isCancelled()) return;
+        )) return;
 
         FollowState state = new FollowState(followerUuid, target.playerUuid(), target.playerName(),
                 target.serverInstanceId(), target.serverName());

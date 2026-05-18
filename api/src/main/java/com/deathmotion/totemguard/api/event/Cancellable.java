@@ -19,22 +19,19 @@
 package com.deathmotion.totemguard.api.event;
 
 /**
- * Represents an event that listeners can cancel in the event bus system.
+ * Implemented by events that handlers can cancel.
  */
 public interface Cancellable {
 
     /**
-     * Checks whether this event has been canceled.
-     *
-     * @return {@code true} if the event is canceled and should not be processed further,
-     * {@code false} otherwise
+     * Returns the current cancelled state. A higher-priority handler may have
+     * cancelled the event before this one ran.
      */
     boolean isCancelled();
 
     /**
-     * Sets the cancellation state of this event.
-     *
-     * @param cancelled {@code true} to mark the event as canceled, {@code false} to unmark it
+     * Sets the cancelled state. Handlers that already cancelled an event can
+     * be un-cancelled by a later handler if it deems the cancellation incorrect.
      */
     void setCancelled(boolean cancelled);
 }

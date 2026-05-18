@@ -19,18 +19,19 @@
 package com.deathmotion.totemguard.common.check.impl.autototem;
 
 import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.api.event.Event;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
-import com.deathmotion.totemguard.common.event.internal.impl.TotemActivatedEvent;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 @CheckData(description = "Impossible click time difference", type = CheckType.AUTO_TOTEM)
 public class AutoTotemA extends CheckImpl implements EventCheck {
@@ -46,24 +47,22 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
     }
 
     @Override
-    public <T extends Event> void handleEvent(T event) {
-        if (event instanceof TotemActivatedEvent pop) {
-            popTimestamp = pop.getTimestamp();
-            pickupTimestamp = null;
-        } else if (event instanceof InventoryChangedEvent inventoryChanged) {
-            onInventoryChanged(inventoryChanged);
-        }
+    public void onTotemActivated(long timestamp) {
+        popTimestamp = timestamp;
+        pickupTimestamp = null;
     }
 
-    private void onInventoryChanged(InventoryChangedEvent event) {
-        if (event.getLastIssuer() != Issuer.CLIENT) return;
+    @Override
+    public void onInventoryChanged(@Nullable CarriedItem updatedCarriedItem,
+                                   @NotNull List<InventorySlot> changedSlots,
+                                   @NotNull Issuer lastIssuer) {
+        if (lastIssuer != Issuer.CLIENT) return;
 
-        detectTotemPickedUp(event);
-        detectTotemPlacedInHand(event);
+        detectTotemPickedUp(updatedCarriedItem);
+        detectTotemPlacedInHand(changedSlots);
     }
 
-    private void detectTotemPickedUp(InventoryChangedEvent event) {
-        CarriedItem carried = event.getUpdatedCarriedItem();
+    private void detectTotemPickedUp(@Nullable CarriedItem carried) {
         if (carried == null) return;
         if (carried.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING) return;
         if (!inventory.isCarryingTotem()) return;
@@ -71,10 +70,10 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
         pickupTimestamp = carried.getTimestamp();
     }
 
-    private void detectTotemPlacedInHand(InventoryChangedEvent event) {
+    private void detectTotemPlacedInHand(@NotNull List<InventorySlot> changedSlots) {
         if (popTimestamp == null || pickupTimestamp == null) return;
 
-        for (InventorySlot changedSlot : event.getChangedSlots()) {
+        for (InventorySlot changedSlot : changedSlots) {
             if (!inventory.isHandSlot(changedSlot.getSlot())) continue;
             if (changedSlot.getSlotAction() != SlotAction.CLICK) continue;
             if (changedSlot.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING) continue;

@@ -18,13 +18,11 @@
 
 package com.deathmotion.totemguard.common.commands.impl;
 
-import com.deathmotion.totemguard.api.event.impl.TGFocusEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.commands.AbstractCommand;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.api.impl.TGFocusEventImpl;
 import com.deathmotion.totemguard.common.features.alert.AlertFilter;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
 import com.deathmotion.totemguard.common.features.alert.AlertSubscription;
@@ -71,8 +69,7 @@ public final class UnfocusCommand extends AbstractCommand {
             return;
         }
 
-        TGFocusEvent disable = platform.getEventRepository().post(TGFocusEventImpl.disabling(viewerUuid));
-        if (disable.isCancelled()) return;
+        if (platform.getEventBus().getFocus().fireDisabling(viewerUuid)) return;
         roster.remove(viewerUuid);
         sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.FOCUS_DISABLED));
         platform.getScheduler().runAsyncTask(() -> cacheRepository.remove(CacheKeys.focusTarget(viewerUuid)));

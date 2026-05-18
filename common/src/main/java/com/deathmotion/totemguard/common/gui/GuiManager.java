@@ -18,14 +18,15 @@
 
 package com.deathmotion.totemguard.common.gui;
 
-import com.deathmotion.totemguard.api.event.EventSubscription;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.event.internal.impl.InventoryChangedEvent;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -35,6 +36,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCl
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,12 +53,10 @@ public final class GuiManager {
     private final ConcurrentMap<UUID, GuiViewerInventory> viewerInventories = new ConcurrentHashMap<>();
     private final ConcurrentMap<GuiSubscriptionKey, Set<UUID>> subscriptions = new ConcurrentHashMap<>();
     private final AtomicInteger nextWindowId = new AtomicInteger(1);
-    private final EventSubscription inventoryChangedSubscription;
 
     public GuiManager() {
         this.platform = TGPlatform.getInstance();
-        this.inventoryChangedSubscription = this.platform.getEventRepository()
-                .subscribeInternal(InventoryChangedEvent.class, this::handleInventoryChanged);
+        this.platform.getInternalEventBus().getInventoryChanged().register(platform, this::handleInventoryChanged);
     }
 
     private static Component deniedMessage(String permission) {
@@ -211,11 +211,6 @@ public final class GuiManager {
     public void shutdown() {
         for (UUID viewerId : List.copyOf(sessions.keySet())) {
             close(viewerId, false);
-        }
-        try {
-            inventoryChangedSubscription.close();
-        } catch (Exception ex) {
-            platform.getLogger().log(Level.WARNING, "Failed to close GUI inventory subscription", ex);
         }
         viewerInventories.clear();
         subscriptions.clear();
@@ -582,8 +577,11 @@ public final class GuiManager {
         return Set.copyOf(viewers);
     }
 
-    private void handleInventoryChanged(InventoryChangedEvent event) {
-        refreshMonitor(event.getPlayer().getUuid());
+    private void handleInventoryChanged(@NotNull TGPlayer player,
+                                        @Nullable CarriedItem updatedCarriedItem,
+                                        @NotNull List<InventorySlot> changedSlots,
+                                        @NotNull Issuer lastIssuer) {
+        refreshMonitor(player.getUuid());
     }
 
     private void refreshSubscribers(GuiSubscriptionKey key) {

@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.player;
 
-import com.deathmotion.totemguard.api.event.impl.TGFocusEvent;
 import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
@@ -30,8 +29,6 @@ import com.deathmotion.totemguard.common.commands.impl.FocusCommand;
 import com.deathmotion.totemguard.common.commands.impl.TesterCommand;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.StaffAlertPref;
-import com.deathmotion.totemguard.common.event.api.impl.TGFocusEventImpl;
-import com.deathmotion.totemguard.common.event.api.impl.TGUserQuitEventImpl;
 import com.deathmotion.totemguard.common.features.alert.AlertFilter;
 import com.deathmotion.totemguard.common.features.alert.RealtimeAlertRoster;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
@@ -177,10 +174,9 @@ public final class PlayerRepositoryImpl implements UserRepository {
         }
 
         TGPlayer localTarget = platform.getPlayerRepository().getPlayer(target.playerUuid());
-        TGFocusEvent event = platform.getEventRepository().post(TGFocusEventImpl.enabling(
+        if (platform.getEventBus().getFocus().fireEnabling(
                 viewerUuid, target.playerUuid(), target.playerName(), localTarget,
-                target.serverInstanceId(), target.serverName(), true));
-        if (event.isCancelled()) {
+                target.serverInstanceId(), target.serverName(), true)) {
             cacheRepository.remove(CacheKeys.focusTarget(viewerUuid));
             return false;
         }
@@ -255,7 +251,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         final TGPlayer player = players.remove(user);
         playersByUuid.remove(uuid);
         if (player == null) return;
-        platform.getEventRepository().post(new TGUserQuitEventImpl(player));
+        platform.getEventBus().getUserQuit().fire(player);
         player.onLogout();
     }
 

@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.host;
 
-import com.deathmotion.totemguard.api.event.impl.TGPluginShutdownEvent;
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.api.fleet.FleetCache;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
 import org.jetbrains.annotations.NotNull;

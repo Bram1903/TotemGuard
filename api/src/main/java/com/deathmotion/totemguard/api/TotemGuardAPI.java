@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.api;
 
 import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
-import com.deathmotion.totemguard.api.event.EventRepository;
+import com.deathmotion.totemguard.api.event.EventBus;
 import com.deathmotion.totemguard.api.history.HistoryRepository;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
 import com.deathmotion.totemguard.api.mod.ModDetectionRepository;
@@ -44,7 +44,7 @@ public interface TotemGuardAPI {
     /**
      * Returns the version of the running TotemGuard plugin (e.g. {@code 3.1.0}).
      * <p>
-     * This advances every plugin release; consumers should not depend on its exact value
+     * This advances every plugin release. Consumers should not depend on its exact value
      * for compatibility checks. Use {@link #getApiVersion()} for that.
      *
      * @return the plugin version, never {@code null}
@@ -62,11 +62,15 @@ public interface TotemGuardAPI {
     @NotNull TGVersion getApiVersion();
 
     /**
-     * Returns the repository for event subscription and dispatch.
+     * Returns the event bus.
+     * <p>
+     * Subscribe through channels obtained via {@link EventBus#get(Class)} and
+     * fired internally by TotemGuard. The bus is the only entry point for
+     * public event subscriptions.
      *
-     * @return the event repository, never {@code null}
+     * @return the event bus, never {@code null}
      */
-    @NotNull EventRepository getEventRepository();
+    @NotNull EventBus getEventBus();
 
     /**
      * Returns the repository for configuration management.
@@ -121,7 +125,7 @@ public interface TotemGuardAPI {
 
     /**
      * Returns the repository for aggregate alert and punishment statistics. Counts cover
-     * every player on every server sharing the database; results are cached for a short
+     * every player on every server sharing the database. Results are cached for a short
      * window so repeated calls are cheap.
      *
      * @return the statistics repository, never {@code null}
@@ -146,7 +150,7 @@ public interface TotemGuardAPI {
      * Reads of {@link UpdateCheckerRepository#latestKnownVersion()} are cheap
      * and reflect data shared across the fleet via Redis. Use
      * {@link UpdateCheckerRepository#checkNow()} to trigger a fresh HTTP fetch
-     * when needed; the result is propagated to other servers automatically.
+     * when needed. The result is propagated to other servers automatically.
      *
      * @return the update checker repository, never {@code null}
      */
@@ -159,7 +163,7 @@ public interface TotemGuardAPI {
      * pipeline. Each player's session accumulates detections from plugin-channel
      * registrations, plugin-messages, and translation probes, then resolves on
      * the next tick boundary into a single
-     * {@link com.deathmotion.totemguard.api.event.impl.TGModDetectionResolvedEvent}.
+     * {@link com.deathmotion.totemguard.api.event.events.TGModDetectionResolvedEvent}.
      *
      * @return the mod detection repository, never {@code null}
      */
