@@ -46,14 +46,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Orchestrates the api-free part of the loader: read config, resolve the TotemGuard
- * plugin jar from the configured source, download or use the cached copy, then inject
- * the api classes into the host plugin classloader. The reflective api-aware runtime
- * is spun up afterward by the platform entrypoint.
- * <p>
- * Nothing in this class touches {@code com.deathmotion.totemguard.api.*} directly.
- */
 public final class LoaderCore {
 
     private final Logger logger;
@@ -97,12 +89,6 @@ public final class LoaderCore {
         return CatalogSidecar.SOURCE_PINNED;
     }
 
-    /**
-     * Sorts a resolve failure into a small set of buckets so the fallback log line can say
-     * something true. The "unreachable" message used to fire for every failure including
-     * "upstream returned 200 but the version it offered is too old" or "the channel was
-     * filtered out by the asset suffix", which read like a network problem.
-     */
     private static ResolveFailureKind classifyResolveFailure(Throwable t) {
         Throwable root = t;
         for (int hops = 0; hops < 32; hops++) {

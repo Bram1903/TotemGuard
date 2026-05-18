@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.api.stats;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
@@ -47,14 +48,14 @@ public enum StatsWindow {
     /**
      * Stable identifier for this window, suitable for cache keys and configuration values.
      */
-    public String id() {
+    public @NotNull String id() {
         return id;
     }
 
     /**
      * Human-readable label for display in UIs.
      */
-    public String label() {
+    public @NotNull String label() {
         return label;
     }
 

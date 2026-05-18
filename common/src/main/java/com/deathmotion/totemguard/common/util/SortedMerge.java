@@ -21,11 +21,6 @@ package com.deathmotion.totemguard.common.util;
 import java.util.List;
 import java.util.function.ToLongFunction;
 
-/**
- * Linear merge of two individually sorted lists by a monotonic long key.
- * Stable: when keys are equal, elements from {@code a} win.
- * {@code null} lists are treated as empty.
- */
 public final class SortedMerge {
 
     private SortedMerge() {

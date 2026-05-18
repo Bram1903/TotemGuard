@@ -2,11 +2,6 @@ package com.deathmotion.totemguard.common.util;
 
 import net.kyori.adventure.text.format.TextColor;
 
-/**
- * TotemGuard · Forged Gold palette · v1.
- * Use TextColor constants for Adventure components,
- * HEX strings for MiniMessage / config-driven text.
- */
 public final class Palette {
     public static final TextColor GOLD_50 = TextColor.fromHexString("#FFF6D6");
     public static final TextColor GOLD_100 = TextColor.fromHexString("#FEE067");

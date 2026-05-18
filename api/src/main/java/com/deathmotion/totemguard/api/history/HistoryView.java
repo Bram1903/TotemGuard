@@ -27,13 +27,13 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * History queries scoped to a single player UUID. All methods are paginated —
+ * History queries scoped to a single player UUID. All methods are paginated,
  * there is no bulk "fetch everything" path, so a single API call can never return
  * more than {@link HistoryRepository#pageSize()} rows. Reads consult the in-memory
  * and Redis caches before falling through to the database.
  * <p>
  * Every method completes asynchronously on TotemGuard's worker pool with a
- * {@link Result} — the future itself never completes exceptionally for
+ * {@link Result}, the future itself never completes exceptionally for
  * expected failures (database offline, query error). Inspect {@link Result#ok()}
  * to branch.
  * <p>
@@ -44,7 +44,7 @@ import java.util.concurrent.CompletableFuture;
 public interface HistoryView {
 
     /**
-     * The UUID this view targets — the same one passed to {@link HistoryRepository#of(UUID)}.
+     * The UUID this view targets, the same one passed to {@link HistoryRepository#of(UUID)}.
      */
     @NotNull UUID uuid();
 
@@ -64,7 +64,7 @@ public interface HistoryView {
     /**
      * Same as {@link #alerts(int)} but restricted to a specific check name.
      *
-     * @param checkName exact check name (e.g. {@code AutoTotemA}) — case-sensitive,
+     * @param checkName exact check name (e.g. {@code AutoTotemA}), case-sensitive,
      *                  matched against the stored value. {@code null} returns all checks.
      */
     @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName);

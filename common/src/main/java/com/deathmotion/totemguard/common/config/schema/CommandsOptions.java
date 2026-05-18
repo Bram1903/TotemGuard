@@ -22,9 +22,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/**
- * Snapshot of the {@code commands.*} section of {@code config.yml}.
- */
 public record CommandsOptions(@NotNull String base, @NotNull List<String> aliases) {
     public CommandsOptions {
         aliases = List.copyOf(aliases);

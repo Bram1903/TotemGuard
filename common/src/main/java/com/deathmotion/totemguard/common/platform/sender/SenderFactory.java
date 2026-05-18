@@ -27,15 +27,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Factory class to make a thread-safe sender instance.
- *
- * <p>Implements {@link SenderMapper} directly so subclasses don't need to repeat
- * trivial {@code map}/{@code reverse} glue — they only define the abstract
- * platform-specific accessors.</p>
- *
- * @param <T> the command sender type
- */
 public abstract class SenderFactory<T> implements SenderMapper<T, Sender> {
     protected abstract UUID getUniqueId(T sender);
 

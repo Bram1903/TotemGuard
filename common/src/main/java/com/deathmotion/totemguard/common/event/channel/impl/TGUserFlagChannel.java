@@ -31,11 +31,6 @@ public final class TGUserFlagChannel extends EventChannelImpl<TGUserFlagEvent> {
         super(TGUserFlagEvent.class);
     }
 
-    /**
-     * Fires the event. Returns {@code true} when a handler cancelled it.
-     * Returns {@code false} without allocating an event instance when there
-     * are no subscribers.
-     */
     public boolean fire(@NotNull TGUser user, @NotNull Check check, @Nullable String debug) {
         if (isEmpty()) return false;
         Holder event = new Holder(user, check, debug);

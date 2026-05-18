@@ -28,14 +28,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
-/**
- * Concrete-event channel implementation that backs the public
- * {@link EventChannel} interface. Per-event subclasses sit on top of this and
- * add a typed {@code fire(...)} method that TotemGuard's internals call to
- * trigger the event.
- *
- * @param <E> the event interface this channel routes
- */
 public abstract class EventChannelImpl<E> extends ChannelBase<Consumer<? super E>> implements EventChannel<E> {
 
     private final Class<E> eventType;
@@ -68,13 +60,6 @@ public abstract class EventChannelImpl<E> extends ChannelBase<Consumer<? super E
         return () -> unsubscribe(handler);
     }
 
-    /**
-     * Invokes every subscriber in registration order against the supplied
-     * event. For cancellable events, the canceled flag is read off the event
-     * itself between handlers via {@link Cancellable#isCancelled()}. The
-     * caller is expected to skip allocating an event when {@link #isEmpty()}
-     * already returns {@code true}.
-     */
     protected final void dispatch(@NotNull E event) {
         Entry<Consumer<? super E>>[] arr = entries();
         if (arr.length == 0) return;

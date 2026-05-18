@@ -18,9 +18,6 @@
 
 package com.deathmotion.totemguard.common.config.schema;
 
-/**
- * Snapshot of the {@code update-checker.*} section of {@code config.yml}.
- */
 public record UpdateCheckerOptions(
         boolean enabled,
         boolean notifyOnJoin

@@ -32,16 +32,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Per-jar provenance metadata written next to each entry in {@code versions/}. The
- * sidecar lets retention group catalog entries into buckets ({@code channel:LATEST},
- * {@code local}, {@code pinned}, {@code fleet}) and pick top-N per bucket without
- * relying on filename parsing or wall-clock heuristics.
- *
- * <p>Sources is a multi-set; if the same SHA arrives via multiple acquire paths
- * (e.g. local import then auto-resolved as LATEST), every label is added and the
- * jar is kept as long as any bucket retention rule wants it.</p>
- */
 public final class CatalogSidecar {
 
     public static final int SCHEMA_VERSION = 1;

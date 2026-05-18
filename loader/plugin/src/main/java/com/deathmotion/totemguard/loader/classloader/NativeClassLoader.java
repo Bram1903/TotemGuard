@@ -25,15 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 
-/**
- * Loads the bundled JNI bridge that exposes {@code ClassLoader#defineClass}. JNI method
- * invocation skips Java's module access checks, so the loader does not need
- * {@code --add-opens java.base/java.lang=ALL-UNNAMED}.
- * <p>
- * Native binaries for every supported platform are pre-built and checked into
- * {@code loader/src/main/resources/natives/<os>-<arch>/}. The {@code compileNative}
- * gradle task only needs to be re-run when the C source changes.
- */
 public final class NativeClassLoader {
 
     private static volatile boolean loaded;

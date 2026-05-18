@@ -36,10 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Snapshot-only debug command. Output is hardcoded against {@link Palette} on purpose —
- * this is a developer-facing tool, not user-configurable surface.
- */
 public final class DebugOverlayCommand extends AbstractCommand {
 
     @Override

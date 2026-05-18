@@ -31,7 +31,7 @@ import java.util.Objects;
  * bundled default at lookup time.
  * <p>
  * The type parameter {@code T} is a compile-time hint that lets {@code Config.get*}
- * overloads dispatch to the correct accessor — there is no runtime type tag.
+ * overloads dispatch to the correct accessor, there is no runtime type tag.
  *
  * @param <T> compile-time hint for the value type (e.g. {@link String}, {@link Integer})
  */

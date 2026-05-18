@@ -20,13 +20,6 @@ package com.deathmotion.totemguard.common.config.schema;
 
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Snapshot of the {@code database.*} section of {@code config.yml}.
- * <p>
- * Pool/batch tuning constants are intentionally not in this record — they are
- * implementation details of the database subsystem (see
- * {@link com.deathmotion.totemguard.common.database.DatabaseTuning}).
- */
 public record DatabaseOptions(
         boolean enabled,
         @NotNull String serverName,

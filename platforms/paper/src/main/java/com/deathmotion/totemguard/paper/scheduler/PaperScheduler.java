@@ -24,19 +24,8 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Paper-flavoured scheduler. Extends the platform-agnostic {@link Scheduler} with the
- * region-aware operations Folia requires (global region, entity-owned tasks).
- * <p>
- * One concrete impl is picked at platform construction time via {@link #create(Plugin)};
- * after that, calls dispatch through a single virtual lookup with no per-task Folia check.
- */
 public interface PaperScheduler extends Scheduler {
 
-    /**
-     * Detects Folia once and returns the matching implementation. Folia removes the legacy
-     * Paper scheduler, so this selection has to happen up front.
-     */
     static @NotNull PaperScheduler create(@NotNull Plugin plugin) {
         if (isFolia()) {
             return new FoliaScheduler(plugin);
@@ -53,15 +42,7 @@ public interface PaperScheduler extends Scheduler {
         }
     }
 
-    /**
-     * Runs {@code task} on the global region (Folia) or the main server thread (Paper).
-     */
     void runGlobal(@NotNull Runnable task);
 
-    /**
-     * Runs {@code task} on the region owning {@code entity} (Folia) or the main server thread
-     * (Paper). {@code retired} is invoked instead if the entity has been removed before the
-     * task fires; ignored on Paper.
-     */
     void runForEntity(@NotNull Entity entity, @NotNull Runnable task, @Nullable Runnable retired);
 }

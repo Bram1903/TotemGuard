@@ -26,15 +26,6 @@ import com.deathmotion.totemguard.host.TGPluginHandle;
 import com.deathmotion.totemguard.host.TGPluginHost;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Loader entry point for Fabric. Started by the TotemGuard loader via the
- * {@code META-INF/services/com.deathmotion.totemguard.host.TGPluginEntry}
- * service file when this jar is selected as the inner plugin.
- * <p>
- * Note: Fabric does not deliver a {@code SERVER_STARTED} callback after the loader
- * has hot-loaded this entry, since registration happens after game launch. Startup
- * runs synchronously in {@link #start(TGPluginHost)} instead.
- */
 public final class TGFabricEntry implements TGPluginEntry {
 
     @Override

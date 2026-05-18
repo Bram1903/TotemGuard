@@ -25,9 +25,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-/**
- * Internal typed view of {@code mods.yml}.
- */
 public final class ModsView {
 
     private static final String DEFAULT_SEVERITY = "KICK";

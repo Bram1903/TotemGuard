@@ -24,12 +24,6 @@ import com.deathmotion.totemguard.loader.core.LoaderPaths;
 import com.deathmotion.totemguard.loader.fleet.FleetCacheRef;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Bundles the inputs every {@link VersionResolver} needs: configured target, host
- * platform, on-disk paths, and the optional fleet cache reference. Adding a new
- * resolver dependency (a logger, a metrics collector, ...) just adds a field here
- * without changing every resolver method signature.
- */
 public record ResolverContext(
         LoaderConfig config,
         HostPlatform platform,

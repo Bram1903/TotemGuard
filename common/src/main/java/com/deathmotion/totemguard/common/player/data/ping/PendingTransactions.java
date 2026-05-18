@@ -162,7 +162,7 @@ final class PendingTransactions {
     private TransactionMatch match(int id) {
         // Drain from the head of the deque until we find the matching id. Avoids the
         // ArrayDeque iterator allocation that for-each would produce. If we never find a
-        // match (rare — transactions are normally acked in order), the drained entries
+        // match (rare, transactions are normally acked in order), the drained entries
         // are restored in their original order.
         List<PendingTransaction> accepted = new ArrayList<>(2);
         PendingTransaction matched = null;

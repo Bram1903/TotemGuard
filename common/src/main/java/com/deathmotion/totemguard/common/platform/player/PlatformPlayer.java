@@ -41,37 +41,10 @@ public interface PlatformPlayer {
 
     void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch);
 
-    /**
-     * Starts a manual-check window on the target's region thread:
-     * <ol>
-     *   <li>snapshots inventory, cursor, held-slot, health, food, saturation, and active potion effects,</li>
-     *   <li>forces enough damage to pop the offhand totem — this is what drives the natural totem animation,
-     *       sound, and regen/absorption buffs, so the target experiences it as real combat damage.</li>
-     * </ol>
-     *
-     * <p>If the damage is actually applied, invokes {@code onStarted} with a handle whose
-     * {@link ManualCheckHandle#restore()} method reverts the full snapshot — including stripping
-     * the regen/fire-resist/absorption buffs the totem granted, so the check leaves no visible trace.</p>
-     *
-     * <p>If the damage was refused (e.g. a damage-cap plugin or anticheat cancels the
-     * {@code EntityDamageEvent}), {@code onDamageRefused} is invoked instead, the snapshot is
-     * discarded untouched, and no handle is produced.</p>
-     */
     void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted,
                           @NotNull Runnable onDamageRefused);
 
-    /**
-     * Asks the platform to re-send the player's full inventory (slots + cursor) to the
-     * client. Our outbound packet listener catches the resulting WindowItems and seeds
-     * {@code PacketInventory} with lag compensation, so packet-driven tracking takes
-     * over without any conversion or manual snapshot.
-     */
     void resyncInventoryToClient();
 
-    /**
-     * Returns the client brand reported by the player (e.g. {@code "vanilla"},
-     * {@code "fabric"}, {@code "lunarclient"}), or {@code null} if the platform does
-     * not surface it or it has not been received yet.
-     */
     @Nullable String clientBrandName();
 }

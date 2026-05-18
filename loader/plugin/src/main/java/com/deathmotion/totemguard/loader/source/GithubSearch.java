@@ -30,11 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Searches GitHub releases for builds matching a free-form query (tag, version,
- * commit hash, asset filename). Lets operators install a specific commit's build via
- * {@code /tgloader load <commit>} or browse with {@code /tgloader search}.
- */
 public final class GithubSearch {
 
     private GithubSearch() {
@@ -46,10 +41,6 @@ public final class GithubSearch {
         return matchAgainst(releases, query, platform);
     }
 
-    /**
-     * Same matching logic, exposed so {@code GithubSource} can reuse an already-fetched
-     * releases array when falling back to commit/asset matching.
-     */
     static List<SearchMatch> searchMatches(JsonArray releases, String query, HostPlatform platform) {
         return matchAgainst(releases, query, platform);
     }

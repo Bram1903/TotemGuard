@@ -38,10 +38,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Opens the History GUI for a player. Unlike /tg profile, the target does not need to be online —
- * we fall back to a database name lookup.
- */
 public final class HistoryCommand extends AbstractCommand {
 
     private static @Nullable UUID tryParseUuid(String input) {

@@ -25,12 +25,6 @@ import lombok.experimental.UtilityClass;
 
 import java.util.logging.Logger;
 
-/**
- * Common-side compatibility validation. Only checks dependencies that are
- * shared across every platform (currently PacketEvents). Platform-specific
- * checks are owned by each {@link TGPlatform} subclass via
- * {@link TGPlatform#checkPlatformCompatibility()}.
- */
 @UtilityClass
 public final class CompatibilityUtil {
 

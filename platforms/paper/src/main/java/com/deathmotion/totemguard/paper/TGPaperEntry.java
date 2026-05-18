@@ -29,11 +29,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Loader entry point. Started by the TotemGuard loader via the
- * {@code META-INF/services/com.deathmotion.totemguard.host.TGPluginEntry}
- * service file when this jar is selected as the inner plugin.
- */
 public final class TGPaperEntry implements TGPluginEntry {
 
     @Override

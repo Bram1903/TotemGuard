@@ -159,6 +159,6 @@ public final class CacheRepositoryImpl {
         if (!lastFailureLogNanos.compareAndSet(last, now)) return;
         TGPlatform.getInstance().getLogger().log(Level.WARNING,
                 "Redis cache " + op + " for key " + key
-                        + " failed — falling back to local cache: " + ex.getMessage());
+                        + " failed, falling back to local cache: " + ex.getMessage());
     }
 }

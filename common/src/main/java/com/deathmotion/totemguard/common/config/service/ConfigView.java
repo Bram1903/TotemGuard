@@ -151,16 +151,6 @@ final class ConfigView implements Config {
         return v == null ? List.of() : asStringList(v);
     }
 
-    /**
-     * Resolves the value for a typed key, in priority order:
-     * <ol>
-     *     <li>Non-null value present in the user file → return it.</li>
-     *     <li>Non-null value present in the bundled defaults → return it.</li>
-     *     <li>Key declared in the bundled defaults (possibly with a YAML-null value, e.g.
-     *     {@code api-key:}) → return null, which callers map to a type-appropriate empty.</li>
-     *     <li>Otherwise → throw, indicating a programming error.</li>
-     * </ol>
-     */
     private Object resolve(ConfigKey<?> key) {
         Object v = YamlMaps.walk(root, key.path()).orElse(null);
         if (v != null) return v;
@@ -173,11 +163,6 @@ final class ConfigView implements Config {
                 "Missing config value with no bundled default: " + key.path() + " in " + file.fileName());
     }
 
-    /**
-     * Section views work on relative paths. They do not consult bundled defaults — sections
-     * are typically used for dynamic content (mods, checks) where keys are not known ahead
-     * of time and there is no per-key default.
-     */
     private record SectionView(Map<String, Object> sectionRoot) implements ConfigSection {
 
         @Override

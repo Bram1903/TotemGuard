@@ -21,9 +21,6 @@ package com.deathmotion.totemguard.common.database.model;
 import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Read projection of a single tg_punishments row joined to its check/server names.
- */
 public record PunishmentRecord(
         long id,
         String checkName,

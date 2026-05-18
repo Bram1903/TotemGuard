@@ -23,12 +23,6 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * Standalone entry point for the TotemGuard plugin. When the inner jar is installed
- * directly (no loader), Paper loads this class as the registered plugin and drives
- * the lifecycle. The loader path bypasses this class entirely and instantiates
- * {@link TGPaperPlatform} against its own JavaPlugin via {@link TGPaperEntry}.
- */
 @Getter
 public class TGPaper extends JavaPlugin {
 

@@ -21,9 +21,6 @@ package com.deathmotion.totemguard.common.util;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-/**
- * Thread-safe lazy initialization with memoization.
- */
 public final class Lazy<T> {
 
     private volatile T value;

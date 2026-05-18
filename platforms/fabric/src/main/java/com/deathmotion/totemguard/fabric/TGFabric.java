@@ -22,11 +22,6 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
-/**
- * Standalone Fabric entry point. When the inner mod is installed directly (no loader),
- * Fabric Loader instantiates this class as the registered mod. The loader path uses
- * {@link TGFabricEntry} instead and bypasses this class entirely.
- */
 public final class TGFabric implements DedicatedServerModInitializer {
 
     private TGFabricPlatform tg;

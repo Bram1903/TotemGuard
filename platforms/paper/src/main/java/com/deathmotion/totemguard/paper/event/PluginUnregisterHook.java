@@ -24,13 +24,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.plugin.Plugin;
 
-/**
- * Catches {@link PluginDisableEvent} so any third-party plugin that subscribed
- * to TotemGuard's event bus with itself as the plugin context has its handlers
- * cleared automatically when Bukkit disables it. Mirrors how
- * {@code HandlerList} drops listeners on plugin disable, so consumers that
- * forget to call {@code unregisterAll} do not leak lambdas across reloads.
- */
 public final class PluginUnregisterHook implements Listener {
 
     private final EventBusImpl eventBus;

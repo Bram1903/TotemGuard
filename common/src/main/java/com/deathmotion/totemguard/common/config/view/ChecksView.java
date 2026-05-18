@@ -25,13 +25,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-/**
- * Internal typed view of {@code checks.yml}. Built on top of {@link Config} sections.
- * <p>
- * Reserved top-level keys ({@code config_version}, {@code default-punishment}) are skipped;
- * every other top-level map entry is treated as a check definition. Missing fields fall
- * back to documented defaults rather than throwing.
- */
 public final class ChecksView {
 
     private static final String DEFAULT_PUNISHMENT_PATH = "default-punishment";

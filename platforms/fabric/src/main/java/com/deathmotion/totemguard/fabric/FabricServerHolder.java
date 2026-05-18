@@ -22,12 +22,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Captures the live {@link MinecraftServer} reference Fabric exposes through
- * {@link ServerLifecycleEvents#SERVER_STARTED}, so the platform layer can reach
- * it without going through static singletons that aren't available at this
- * mod's bootstrap time.
- */
 public final class FabricServerHolder {
 
     private static volatile @Nullable MinecraftServer instance;

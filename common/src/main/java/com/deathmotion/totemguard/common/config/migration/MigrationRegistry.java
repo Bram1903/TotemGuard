@@ -24,11 +24,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Registry of configured migrations, keyed by ({@link ConfigFile}, fromVersion).
- * <p>
- * Add new migrations in {@link #buildDefault()}.
- */
 public final class MigrationRegistry {
 
     private MigrationRegistry() {

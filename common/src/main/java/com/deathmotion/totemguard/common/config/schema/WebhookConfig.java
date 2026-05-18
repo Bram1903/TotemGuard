@@ -22,10 +22,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/**
- * Typed view of one Discord webhook channel. Internal type — fields may evolve across
- * plugin versions.
- */
 public record WebhookConfig(
         boolean enabled,
         @NotNull String url,

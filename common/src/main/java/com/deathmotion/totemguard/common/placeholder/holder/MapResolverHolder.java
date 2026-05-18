@@ -27,11 +27,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Base for internal placeholder holders whose resolution is a static map
- * of {@code key -> T -> String} lookups against a single subject derived
- * from the {@link InternalContext}.
- */
 public abstract class MapResolverHolder<T> implements InternalPlaceholderHolder, PlaceholderProvider {
 
     private final Map<String, Function<T, String>> resolvers;

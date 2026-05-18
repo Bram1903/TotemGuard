@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// Lettuce's auto-reconnect only covers drops on established channels — initial-connect retry is on us.
+// Lettuce's auto-reconnect only covers drops on established channels, initial-connect retry is on us.
 final class RedisConnectionManager {
 
     private static final ByteArrayCodec CODEC = new ByteArrayCodec();
@@ -272,7 +272,7 @@ final class RedisConnectionManager {
 
             logger.warning(
                     "Failed to connect to Redis (" + ex.getClass().getSimpleName() + ": "
-                            + ex.getMessage() + ") — retrying in " + RETRY_INTERVAL.toSeconds() + "s");
+                            + ex.getMessage() + "), retrying in " + RETRY_INTERVAL.toSeconds() + "s");
             scheduleConnect(RETRY_INTERVAL.toSeconds());
         }
     }

@@ -8,6 +8,19 @@ Do not use em dashes or semicolons in prose, comments, commit messages, or docum
 periods, commas, or parentheses instead. (This rule is about written prose. Java and Kotlin statement-terminator
 semicolons are obviously fine.)
 
+## Code documentation
+
+Default to no comments or javadoc on internal code. Well-named identifiers and types already say what the
+code does. Add a comment or javadoc only when the WHY is non-obvious, a hidden constraint, a subtle invariant,
+a workaround for a specific bug, an architectural decision a reader cannot infer from the code itself. Do
+not write javadoc that just restates the method name or parameter list.
+
+The `api/` module is the exception. It is published to Maven as `totemguard-api` and consumed by third-party
+plugins, so every public type, method, and parameter gets a full javadoc with nullability annotations
+(`@NotNull` / `@Nullable` from JetBrains), `@param` / `@return` tags where they add information, and notes on
+thread-safety and side effects where relevant. Treat `api/` javadocs as part of the API surface itself, since
+changing them is changing the contract.
+
 ## Project
 
 TotemGuard is a Minecraft anticheat plugin (v3.0 branch, a WIP rewrite). It targets Paper or Folia servers

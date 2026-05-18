@@ -18,9 +18,5 @@
 
 package com.deathmotion.totemguard.common.cache.data;
 
-/**
- * Snapshot of a single check's live state, carried between sessions via the
- * cache so a cheater can't dodge violations by quickly reconnecting.
- */
 public record CheckSnapshot(String checkName, double buffer, int violations) {
 }

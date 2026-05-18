@@ -48,15 +48,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
-/**
- * Polls GitHub for new TotemGuard releases.
- * <p>
- * The latest release tag is cached in Redis (when configured) so a fleet of
- * servers booting together share a single HTTP fetch. Once a server discovers
- * a new release it also publishes a {@link Packets#SYNC_UPDATE_AVAILABLE}
- * broadcast so siblings flip their local "update available" flag immediately
- * instead of waiting for their own polling cycle.
- */
 public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepository, Reloadable {
 
     private static final String GITHUB_API_URL =
@@ -161,10 +152,6 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
         return future;
     }
 
-    /**
-     * Send the "update available" message to the given user when an update has
-     * been confirmed and the user is allowed to receive these notifications.
-     */
     public void notifyIfOutdated(PlatformPlayer user) {
         UpdateCheckerOptions opts = this.options;
         if (!opts.enabled() || !opts.notifyOnJoin()) return;
@@ -178,10 +165,6 @@ public final class UpdateCheckerRepositoryImpl implements UpdateCheckerRepositor
         user.sendMessage(buildMessage(latest));
     }
 
-    /**
-     * Apply a version tag broadcast by a sibling server. New (or different)
-     * versions update the local state and announce once; repeats are a no-op.
-     */
     public void acceptSyncedVersion(String tag) {
         TGVersion parsed = parseVersion(tag);
         if (parsed == null) return;

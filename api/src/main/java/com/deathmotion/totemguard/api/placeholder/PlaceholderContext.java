@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.api.placeholder;
 
 import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.api.user.TGUser;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -30,7 +31,7 @@ import java.util.Map;
  * Context provided to {@link PlaceholderHolder}s during placeholder resolution.
  *
  * <p>
- * All fields are optional and depend on the call site.
+ * {@code user} and {@code check} are optional and depend on the call site.
  * Implementations must handle {@code null} values gracefully.
  *
  * <p>
@@ -41,19 +42,17 @@ import java.util.Map;
 public record PlaceholderContext(
         @Nullable TGUser user,
         @Nullable Check check,
-        Map<String, Object> extras
+        @NotNull Map<String, Object> extras
 ) {
 
     private static final PlaceholderContext EMPTY = new PlaceholderContext(null, null, Map.of());
 
     public PlaceholderContext {
-        if (extras == null) {
+        if (extras.isEmpty()) {
             extras = Map.of();
-        } else if (!extras.isEmpty()) {
+        } else {
             // Defensively copy only when the caller actually passed content.
             extras = Collections.unmodifiableMap(new LinkedHashMap<>(extras));
-        } else {
-            extras = Map.of();
         }
     }
 
@@ -67,7 +66,7 @@ public record PlaceholderContext(
         this(user, check, Map.of());
     }
 
-    public static PlaceholderContext empty() {
+    public static @NotNull PlaceholderContext empty() {
         return EMPTY;
     }
 
@@ -79,7 +78,7 @@ public record PlaceholderContext(
      * @return the value if present and of the requested type, otherwise {@code null}
      */
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T extra(String key, Class<T> type) {
+    public <T> @Nullable T extra(@NotNull String key, @NotNull Class<T> type) {
         Object value = extras.get(key);
         return type.isInstance(value) ? (T) value : null;
     }

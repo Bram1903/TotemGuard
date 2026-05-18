@@ -49,12 +49,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Wires the loader into the fleet pub/sub. On attach: subscribes to jar-available and
- * catalog-changed topics, schedules a 5-minute heartbeat that refreshes catalog hashes.
- * On detach: tears everything down so the loader transparently goes back to file-only
- * behavior. Used as a fire-and-forget singleton inside {@link com.deathmotion.totemguard.loader.core.LoaderCore}.
- */
 public final class FleetBroker {
 
     public static final String TOPIC_JAR_AVAILABLE = "totemguard:loader:pub:jar-available";
@@ -99,11 +93,6 @@ public final class FleetBroker {
         return value.replaceAll("[^A-Za-z0-9._+-]", "_");
     }
 
-    /**
-     * Wire up subscriptions on the fleet-cache reference. Must be called after the api
-     * classes are injected onto the parent classloader, otherwise the method references
-     * below will fail to resolve.
-     */
     public void connect() {
         cacheRef.onAttach(this::onAttach);
         cacheRef.onDetach(this::onDetach);
@@ -153,11 +142,6 @@ public final class FleetBroker {
         }
     }
 
-    /**
-     * Producer side: publish a freshly-acquired jar to the fleet. Stores the bytes in
-     * Redis with a short TTL (peers pull within ~10m), then announces on the topic.
-     * Safe to call when no fleet cache is attached (no-op).
-     */
     public void announceJar(Path jar, String version, String sha256, String sourceLabel) {
         Optional<FleetCache> cacheOpt = cacheRef.available();
         if (cacheOpt.isEmpty()) return;
@@ -207,10 +191,6 @@ public final class FleetBroker {
         }
     }
 
-    /**
-     * Refresh the catalog heartbeat for every locally-cached jar. Called on attach and
-     * every {@link #CATALOG_HEARTBEAT_PERIOD}. Best-effort, swallows individual failures.
-     */
     private void pushHeartbeat() {
         Optional<FleetCache> cacheOpt = cacheRef.available();
         if (cacheOpt.isEmpty()) return;

@@ -34,11 +34,6 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Scans the versions directory and returns every catalog entry with its sidecar (or a
- * synthetic "unknown source" sidecar for legacy jars without one). Also exposes helpers
- * for upserting / removing entries used by importers, downloaders, and retention.
- */
 public final class CatalogIndex {
 
     private final Path versionsDir;
@@ -111,9 +106,6 @@ public final class CatalogIndex {
         return new Entry(jar, meta, sidecar);
     }
 
-    /**
-     * Locate an existing catalog entry by SHA-256, returning empty when none matches.
-     */
     public Optional<Entry> findBySha(String sha256) {
         for (Entry e : readAll()) {
             if (sha256.equalsIgnoreCase(e.sidecar().sha256())) return Optional.of(e);

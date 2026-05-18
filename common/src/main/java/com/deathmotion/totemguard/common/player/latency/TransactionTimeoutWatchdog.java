@@ -26,13 +26,6 @@ import com.deathmotion.totemguard.common.util.ScheduledTask;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-/**
- * Periodically scans every tracked player and disconnects anyone whose oldest
- * outstanding transaction packet hasn't been answered within the timeout window.
- * If a newer transaction id is later acknowledged, the older entries are drained
- * from the pending queue automatically (see {@code PendingTransactions}), so this
- * watchdog only fires when the channel is genuinely silent.
- */
 public final class TransactionTimeoutWatchdog {
 
     private static final long TIMEOUT_MILLIS = 30_000L;

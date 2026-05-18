@@ -49,10 +49,6 @@ public final class PaperTgLoaderCommand implements TabExecutor {
     private static final List<String> ROLLOUT_SUBS = List.of("stage", "apply", "deploy", "cancel", "status");
     private static final List<String> CHANNELS = List.of("LATEST", "EXPERIMENTAL", "GIT");
 
-    /**
-     * Window peers get to pull a freshly-staged jar before the leader's deploy fires
-     * the synchronized APPLY. Five seconds covers a typical local-network Redis GET.
-     */
     private static final Duration DEPLOY_SETTLE = Duration.ofSeconds(5);
 
     private final TGLoaderPaper plugin;
@@ -65,10 +61,6 @@ public final class PaperTgLoaderCommand implements TabExecutor {
         return LoaderPalette.PREFIX;
     }
 
-    /**
-     * Builds {@code prefix + alternating(color, text)} into a single component. Even
-     * indexes are {@link TextColor}, odd indexes are the strings to color.
-     */
     private static Component line(Object... colorText) {
         Component out = prefixed();
         for (int i = 0; i + 1 < colorText.length; i += 2) {

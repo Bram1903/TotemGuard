@@ -35,13 +35,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Loads a {@link ConfigFile} from disk, applies migrations, merges in any missing bundled
- * defaults, and produces a {@link ConfigSnapshot}.
- * <p>
- * Defaults are loaded once per {@link ConfigFile} (cached in {@link #defaultsCache}) and
- * shared across all snapshots of that file.
- */
 public final class ConfigService {
 
     private static final String VERSION_KEY = "config_version";
@@ -92,7 +85,7 @@ public final class ConfigService {
             // The version was already stamped on migratedMap above.
             finalText = YamlMerger.dumpFresh(migratedMap);
         } else {
-            // User file is at the bundled version (or higher — a downgrade scenario we leave alone).
+            // User file is at the bundled version (or higher, a downgrade scenario we leave alone).
             // Surgically insert any missing defaults; the on-disk version line is preserved as-is.
             finalText = YamlMerger.addMissingDefaults(diskText, migratedMap, bundled.map);
         }

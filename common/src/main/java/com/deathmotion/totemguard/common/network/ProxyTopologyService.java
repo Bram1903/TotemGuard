@@ -114,18 +114,8 @@ public final class ProxyTopologyService {
     }
 
     public enum RouteStatus {
-        /**
-         * Target is bound to our local proxy — safe to route.
-         */
         ROUTABLE,
-        /**
-         * Target is explicitly bound to a different proxy — routing will not succeed.
-         */
         NOT_ROUTABLE,
-        /**
-         * Target binding is unknown (topology hasn't converged yet, or Redis is unavailable).
-         * Callers should treat this as "best effort routable" rather than fail-closed.
-         */
         UNKNOWN
     }
 }

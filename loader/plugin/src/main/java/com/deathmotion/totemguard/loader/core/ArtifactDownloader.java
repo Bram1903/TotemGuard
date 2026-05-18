@@ -37,11 +37,6 @@ import java.util.HexFormat;
 import java.util.Map;
 import java.util.logging.Logger;
 
-/**
- * Downloads an {@link Artifact}'s bytes into memory and verifies the source-native
- * checksum. Used by the fleet update path where the bytes need to be re-broadcast
- * rather than cached on disk.
- */
 final class ArtifactDownloader {
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);

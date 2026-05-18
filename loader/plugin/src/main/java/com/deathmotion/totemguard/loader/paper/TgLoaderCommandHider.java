@@ -25,15 +25,6 @@ import org.bukkit.event.player.PlayerCommandSendEvent;
 import java.util.Collection;
 import java.util.Iterator;
 
-/**
- * Strips {@code /tgloader} (and aliases / namespaced forms) from the command list
- * the server sends to a connecting client when that client lacks
- * {@code totemguard.loader.admin}. Defense-in-depth on top of the permission gate
- * declared in plugin.yml: if a plugin re-injects the entry into the brigadier tree
- * after Bukkit's own permission filter ran, this listener removes it again.
- * <p>
- * Players who have been granted the permission still see the command normally.
- */
 public final class TgLoaderCommandHider implements Listener {
 
     private static final String PERMISSION = "totemguard.loader.admin";

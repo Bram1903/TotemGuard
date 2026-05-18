@@ -31,11 +31,6 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Picks a TotemGuard plugin jar from the version cache that the {@code LocalImporter}
- * populated. The cache is the canonical store for both remote-downloaded and locally-
- * imported builds, so this source just performs version matching against it.
- */
 public final class LocalSource implements VersionResolver {
 
     private static boolean isChannel(String requested) {

@@ -24,8 +24,8 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 
 /**
- * Child classloader for the TotemGuard plugin jar. Parent-first delegation routes API
- * class lookups to the loader's plugin classloader (where {@link ApiClassInjector}
+ * Child classloader for the TotemGuard plugin jar. Parent-first delegation routes
+ * API class lookups to the loader's plugin classloader (where {@code ApiClassInjector}
  * defined them) so {@code Class<TGUserFlagEvent>} stays stable across hot-reloads.
  */
 public final class TGPluginClassLoader extends URLClassLoader {

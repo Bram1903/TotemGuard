@@ -22,10 +22,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
-/**
- * Mirrors {@code com.deathmotion.totemguard.common.util.Palette}. The loader cannot
- * depend on the common module, so the hex values are duplicated here.
- */
 final class LoaderPalette {
 
     static final TextColor BRAND = TextColor.fromHexString("#FBAF00");

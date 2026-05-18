@@ -35,9 +35,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
-/**
- * Alphabetical list of every check this player has ever flagged.
- */
 public final class PlayerAlertChecksScreen extends GuiScreen {
 
     static final int PAGE_SIZE = 28;

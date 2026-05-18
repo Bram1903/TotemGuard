@@ -38,15 +38,6 @@ import java.util.EnumMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Default {@link ConfigRepository} implementation.
- * <p>
- * Atomic {@link AtomicReference}s per file ensure reads see either the old snapshot or
- * the new one across reloads. Typed views ({@link ChecksView}, {@link ModsView},
- * {@link DiscordView}) are internal types — accessed directly off this concrete impl
- * (which is what {@link TGPlatform#getConfigRepository()} returns) rather than through
- * the public {@link ConfigRepository} interface.
- */
 public final class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Path configDir;

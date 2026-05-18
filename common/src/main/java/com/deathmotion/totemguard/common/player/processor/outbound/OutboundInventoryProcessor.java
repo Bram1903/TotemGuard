@@ -219,12 +219,6 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         });
     }
 
-    /**
-     * GUI windows are rendered by TotemGuard itself, so state must be applied in lockstep with the
-     * packet actually going out to the client (no latency compensation). Real server windows need
-     * latency-compensated application so our tracker moves in sync with the client's own tick
-     * that processes the packet.
-     */
     private void schedule(PacketSendEvent event, boolean isGui, LongConsumer apply) {
         if (isGui) {
             trackAfterSend(event, apply);

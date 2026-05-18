@@ -27,10 +27,6 @@ import java.time.Duration;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Guava cache with per-entry TTLs — Guava only supports one TTL per cache,
- * so we stamp each entry with its own expiry and check at read time.
- */
 public final class LocalCacheBackend implements CacheBackend {
 
     private static final int MAX_ENTRIES = 10_000;

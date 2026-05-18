@@ -18,10 +18,6 @@
 
 package com.deathmotion.totemguard.host;
 
-/**
- * Identifies the runtime platform the TotemGuard plugin is executing on. Used by the
- * loader to pick the correct {@link TGPluginEntry} from the plugin jar's service file.
- */
 public enum Platform {
     PAPER,
     FABRIC

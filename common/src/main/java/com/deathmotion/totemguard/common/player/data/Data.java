@@ -94,10 +94,6 @@ public class Data {
         }
     }
 
-    /**
-     * Milliseconds since the inventory most recently transitioned to open. {@code 0} if the
-     * inventory is closed (or has never been opened this session).
-     */
     public long getInventoryOpenDurationMs() {
         if (!openInventory || inventoryOpenedAt == 0L) return 0L;
         return System.currentTimeMillis() - inventoryOpenedAt;

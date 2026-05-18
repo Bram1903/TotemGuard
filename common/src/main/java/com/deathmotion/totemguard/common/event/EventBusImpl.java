@@ -31,16 +31,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * The {@link EventBus} implementation TotemGuard ships with. Every concrete
- * channel is exposed as a typed field so internal fire sites can call
- * {@code fire(...)} without paying for a map lookup. The same channels are
- * also reachable through {@link #get(Class)} for plugin code.
- * <p>
- * When a caller asks for a supertype such as {@code TGCheckEvent.class}, the
- * bus builds (and caches) a {@link VirtualEventChannel} that routes a single
- * subscribe call to every concrete channel whose event class matches.
- */
 public final class EventBusImpl implements EventBus {
 
     @Getter
@@ -68,14 +58,8 @@ public final class EventBusImpl implements EventBus {
     @Getter
     private final TGPluginShutdownChannel pluginShutdown = new TGPluginShutdownChannel();
 
-    /**
-     * Lookup table from event class to its concrete channel.
-     */
     private final ConcurrentMap<Class<?>, EventChannelImpl<?>> concrete = new ConcurrentHashMap<>();
 
-    /**
-     * Memoised composite channels, one per supertype lookup class seen so far.
-     */
     private final ConcurrentMap<Class<?>, VirtualEventChannel<?>> virtualCache = new ConcurrentHashMap<>();
 
     public EventBusImpl() {

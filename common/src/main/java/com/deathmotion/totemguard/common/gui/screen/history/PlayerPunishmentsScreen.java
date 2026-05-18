@@ -42,9 +42,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
-/**
- * Paginated punishment history — one tile per dispatched command.
- */
 public final class PlayerPunishmentsScreen extends GuiScreen {
 
     public static final String PERMISSION = "TotemGuard.Gui.History.Punishments";

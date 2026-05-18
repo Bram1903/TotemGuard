@@ -101,10 +101,6 @@ public record MonitorSnapshot(
         return itemAt(InventoryConstants.SLOT_OFFHAND);
     }
 
-    /**
-     * Field-by-field equality excluding {@link #capturedAtMillis}, used to skip publishing
-     * heartbeat snapshots that didn't change anything material since the last tick.
-     */
     public boolean contentEquals(@NotNull MonitorSnapshot other) {
         return selectedHotbarIndex == other.selectedHotbarIndex
                 && mainHandSlot == other.mainHandSlot

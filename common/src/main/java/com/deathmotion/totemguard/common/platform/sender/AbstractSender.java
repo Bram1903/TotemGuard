@@ -10,11 +10,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-/**
- * Simple implementation of {@link Sender} using a {@link SenderFactory}
- *
- * @param <T> the command sender type
- */
 public final class AbstractSender<T> implements Sender {
     private final SenderFactory<T> factory;
     private final T sender;

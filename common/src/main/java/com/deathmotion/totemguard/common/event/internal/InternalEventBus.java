@@ -21,15 +21,6 @@ package com.deathmotion.totemguard.common.event.internal;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Holds the event channels TotemGuard fires for its own subsystems. These
- * never reach the public {@link com.deathmotion.totemguard.api.event.EventBus},
- * so third-party plugins cannot listen for or trigger them.
- * <p>
- * Each channel is exposed through its own getter. Firing an internal event
- * just calls the channel directly with the relevant values, without wrapping
- * them in an event object.
- */
 @Getter
 public final class InternalEventBus {
 
@@ -37,9 +28,6 @@ public final class InternalEventBus {
     private final TotemReplenishedChannel totemReplenished = new TotemReplenishedChannel();
     private final InventoryChangedChannel inventoryChanged = new InventoryChangedChannel();
 
-    /**
-     * Sweeps every internal subscription owned by the given context.
-     */
     public void unregisterAll(@NotNull Object pluginContext) {
         totemActivated.unsubscribeAllFromPlugin(pluginContext);
         totemReplenished.unsubscribeAllFromPlugin(pluginContext);

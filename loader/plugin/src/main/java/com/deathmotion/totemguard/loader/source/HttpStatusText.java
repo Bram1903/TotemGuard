@@ -18,12 +18,6 @@
 
 package com.deathmotion.totemguard.loader.source;
 
-/**
- * Formats an HTTP status as {@code "code (reason)"} so operators reading the log don't
- * need to remember what 429 or 503 mean. Only the codes the loader actually surfaces via
- * upstream APIs (GitHub, Modrinth) are covered; anything else falls through to bare
- * "code (status N)".
- */
 public final class HttpStatusText {
 
     private HttpStatusText() {

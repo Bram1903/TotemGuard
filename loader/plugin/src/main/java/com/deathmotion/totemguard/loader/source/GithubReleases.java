@@ -34,11 +34,6 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.util.Optional;
 
-/**
- * Fetches the full GitHub releases listing for the TotemGuard repo. Reads in order:
- * L1 file cache (per host) → L2 Redis cache (fleet-wide, when attached) → GitHub. On
- * cache miss the result is written back through every available layer.
- */
 final class GithubReleases {
 
     static final String L2_KEY = "totemguard:loader:cache:github:releases";

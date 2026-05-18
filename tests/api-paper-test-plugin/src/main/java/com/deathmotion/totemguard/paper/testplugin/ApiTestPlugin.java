@@ -28,12 +28,6 @@ import com.deathmotion.totemguard.api.user.TGUser;
 import com.deathmotion.totemguard.paper.testplugin.listeners.InventoryActivityListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * Sample plugin against the TotemGuard event bus. Logs a short message for
- * a handful of representative events so it's easy to see them firing in
- * the console. Hot-reload safe: re-hooks against the new API instance
- * when a loader-driven restart fires {@link TGPluginShutdownEvent}.
- */
 public final class ApiTestPlugin extends JavaPlugin {
 
     private final InventoryActivityListener inventoryListener = new InventoryActivityListener(getLogger());

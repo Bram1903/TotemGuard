@@ -22,10 +22,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Wraps a bundled YAML map and exposes path-based lookups. Used as the fallback source
- * for typed-key reads when the user file is missing a key.
- */
 public record DefaultsResolver(Map<String, Object> root) {
 
     public DefaultsResolver(Map<String, Object> root) {

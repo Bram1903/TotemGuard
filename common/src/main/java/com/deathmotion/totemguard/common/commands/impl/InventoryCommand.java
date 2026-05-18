@@ -34,10 +34,6 @@ import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Snapshot-only inventory dump. Output is hardcoded against {@link Palette} on purpose —
- * this is a developer-facing tool, not user-configurable surface.
- */
 public final class InventoryCommand extends AbstractCommand {
 
     private static Component labeledSlot(String label, int slot, PacketInventory inv) {

@@ -27,11 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Internal typed view of {@code config.yml}. Owns the typed snapshots for each domain
- * subsection so consumers (database, redis, commands) pull config values
- * through this view rather than constructing their own readers.
- */
 public final class ConfigView {
 
     private final int version;

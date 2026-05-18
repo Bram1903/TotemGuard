@@ -30,11 +30,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-/**
- * Translates inventory-change dispatches into totem-replenish dispatches by
- * tracking when a hand slot gains a totem of undying within the tracked
- * interval after the last activation.
- */
 public final class TotemReplenishedDetector implements InventoryChangedChannel.Handler {
 
     private final TotemReplenishedChannel replenished;

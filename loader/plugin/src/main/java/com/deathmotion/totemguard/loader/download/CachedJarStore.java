@@ -174,11 +174,6 @@ public final class CachedJarStore {
         }
     }
 
-    /**
-     * Records that {@code jar} is the most recently fetched build for {@code channel}
-     * (one of {@code LATEST}, {@code EXPERIMENTAL}, {@code GIT}). The pointer is used
-     * by {@link #locateFallback} when a later resolve or download fails.
-     */
     public void recordChannel(String channel, Path jar) throws IOException {
         Path channelsDir = versionsDir.resolve(CHANNELS_DIR_NAME);
         Files.createDirectories(channelsDir);

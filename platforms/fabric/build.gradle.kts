@@ -65,11 +65,6 @@ tasks.named<ProcessResources>("processResources").configure {
     }
 }
 
-// shadow-conventions disables `jar`. Loom hooks into `jar` to attach JIJ
-// entries (the META-INF/jars/ payload from `include(...)`), so re-enable it
-// and produce a "dev"-classified intermediate. shadowJar then consumes that
-// jar's content so the final fat jar carries both the JIJ payload (cloud-
-// fabric, fabric-permissions-api) and the relocated, shaded common-side libs.
 tasks.named<Jar>("jar") {
     enabled = true
     archiveClassifier = "dev"
@@ -79,23 +74,10 @@ tasks.named<Jar>("jar") {
 tasks.named<ShadowJar>("shadowJar") {
     val devJar = tasks.named<Jar>("jar")
     dependsOn(devJar)
-    // Pull in the JIJ-bearing dev jar (META-INF/jars/, fabric.mod.json with
-    // version expanded). Project classes are already on shadowJar's input via
-    // the runtime classpath; duplicates are dropped automatically.
     from(devJar.flatMap { it.archiveFile }.map { zipTree(it) })
 
-    // Fabric only shades MySQL — cloud (cloud-fabric mod, JIJ'd), adventure
-    // (adventure-platform-fabric mod, JIJ'd), and bstats (no Fabric variant)
-    // are NOT bundled here, so relocating their packages would just rewrite
-    // :common's references to non-existent paths.
     relocate("com.mysql", "com.deathmotion.totemguard.common.libs.mysql")
 
-    // Whitelist what gets shaded. Bukkit/Velocity/Bungee/Sponge land at ~7 MB
-    // because their server API is `compileOnly`; on Fabric, loader / api / MC
-    // have to be on the runtime classpath for dev mode to work, which would
-    // drag the whole game (~75 MB) into shadowJar. So we explicitly include
-    // only what `:common`'s runtime needs — everything else is supplied by
-    // the runtime or JIJ'd as a Fabric mod.
     dependencies {
         include(project(":api"))
         include(project(":common"))
@@ -107,7 +89,6 @@ tasks.named<ShadowJar>("shadowJar") {
         include(dependency("org.reactivestreams:.*"))
         include(dependency("com.zaxxer:HikariCP:.*"))
         include(dependency("com.mysql:.*"))
-        // Kept for minimize() so its used classes survive trimming.
         include(dependency("com.github.ben-manes.caffeine:caffeine:.*"))
         include(dependency("com.google.errorprone:.*"))
         include(dependency("org.jspecify:.*"))

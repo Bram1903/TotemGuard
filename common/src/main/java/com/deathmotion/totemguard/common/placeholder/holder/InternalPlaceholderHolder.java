@@ -22,9 +22,6 @@ import com.deathmotion.totemguard.common.placeholder.engine.InternalContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Internal holders can access TGPlayer/CheckImpl.
- */
 public interface InternalPlaceholderHolder {
 
     @Nullable String resolve(@NotNull String key, @NotNull InternalContext ctx);

@@ -18,12 +18,6 @@
 
 package com.deathmotion.totemguard.common.config.migration;
 
-/**
- * Migrates a single YAML config file from one version to the next.
- * <p>
- * Migrations are run in version order; a v1→v3 file goes through migration_1_to_2 then
- * migration_2_to_3.
- */
 public interface ConfigMigration {
 
     int fromVersion();

@@ -25,12 +25,6 @@ import com.deathmotion.totemguard.common.config.yaml.DefaultsResolver;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Immutable snapshot of one loaded config file.
- * <p>
- * Holds the merged user-map, the bundled-defaults resolver, and the resolved version.
- * The {@link #view()} accessor produces a thread-safe {@link Config} backed by this snapshot.
- */
 public final class ConfigSnapshot {
 
     private final ConfigFile file;

@@ -24,15 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Lightweight x/y/z store for active followers. Populated by
- * {@link FollowerPacketListener} off the packet thread and read by
- * {@link FollowRepository}'s tick on the async scheduler thread.
- *
- * <p>Uniform path for TG-tracked players and bypassed players — we never need
- * rotation or world here, the follow tick treats either as "good enough" for
- * a 100-block separation check.</p>
- */
 public final class FollowerPositionTracker {
 
     private final ConcurrentHashMap<UUID, double[]> positions = new ConcurrentHashMap<>();

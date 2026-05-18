@@ -38,7 +38,7 @@ public record PunishmentCommand(PunishmentType type, String raw) {
             PunishmentType type = PunishmentType.valueOf(tag);
             return new PunishmentCommand(type, trimmed.substring(end + 1).trim());
         } catch (IllegalArgumentException ignored) {
-            // Unknown tag — keep the line verbatim, treat as GENERIC.
+            // Unknown tag, keep the line verbatim, treat as GENERIC.
             return new PunishmentCommand(PunishmentType.GENERIC, trimmed);
         }
     }

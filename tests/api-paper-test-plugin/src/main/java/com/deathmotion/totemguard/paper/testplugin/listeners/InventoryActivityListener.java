@@ -28,13 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
-/**
- * Listens to a user's inventory open and close events and logs a short
- * status line each time. Tracks per-user open counts and the timestamp of
- * the last open so the close handler can report how long the inventory
- * stayed open. Demonstrates keeping listener state in a dedicated class
- * and cleaning it up on quit so the maps do not grow forever.
- */
 public final class InventoryActivityListener {
 
     private final Logger logger;
@@ -62,10 +55,6 @@ public final class InventoryActivityListener {
                 + (event.isServerInitiated() ? "server" : "client") + duration);
     }
 
-    /**
-     * Drops cached state for a user that just left. Without this the
-     * per-UUID maps would keep growing for the life of the JVM.
-     */
     public void onQuit(TGUserQuitEvent event) {
         UUID uuid = event.getUser().getUuid();
         openedAt.remove(uuid);

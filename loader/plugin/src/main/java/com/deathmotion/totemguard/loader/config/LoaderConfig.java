@@ -104,11 +104,6 @@ public final class LoaderConfig {
         return isGit() ? Source.GITHUB : source;
     }
 
-    /**
-     * If the configured version is a moving channel (LATEST, EXPERIMENTAL, GIT),
-     * returns its canonical upper-case name. Returns {@code null} for pinned versions
-     * like {@code 3.0.0}.
-     */
     public String channel() {
         String upper = version.toUpperCase(Locale.ROOT);
         return switch (upper) {

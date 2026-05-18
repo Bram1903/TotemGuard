@@ -22,20 +22,11 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
 import com.deathmotion.totemguard.common.redis.RedisConnection;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
-import com.deathmotion.totemguard.host.LoaderController;
 
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Glue that attaches/detaches the {@link RedisFleetCache} from the loader's
- * {@link LoaderController} based on Redis connection state. Lives on the TG side; the
- * loader has no knowledge of this class.
- *
- * <p>Idempotent: attach is a no-op if the cache is already attached; detach a no-op if
- * already detached.</p>
- */
 public final class FleetCacheLifecycle implements ConnectionStateListener {
 
     private final TGPlatform platform;

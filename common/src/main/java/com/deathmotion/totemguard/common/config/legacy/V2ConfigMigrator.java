@@ -31,18 +31,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Detects a leftover TotemGuard V2 install in or alongside the V3 plugin directory and
- * archives its config files (and embedded H2 database) into an {@code old/} subdirectory.
- * Before archiving, scrapes a small set of carry-over settings (database credentials,
- * Redis credentials, Discord webhooks, server name) and exposes them via a
- * {@link V2Migration} that the caller applies onto the freshly-written V3 configs.
- * <p>
- * Checks and mod-detection sections are intentionally skipped — V3 reworked them.
- * <p>
- * Idempotent: a directory whose recognised V2 artefacts have already been moved is
- * skipped on subsequent runs.
- */
 public final class V2ConfigMigrator {
 
     private static final List<String> V2_FILES = List.of(
@@ -98,11 +86,6 @@ public final class V2ConfigMigrator {
         return migration;
     }
 
-    /**
-     * Applies the carry-over settings extracted by {@link #migrate(Path)} onto the V3 config
-     * files in {@code v3PluginDir}. Existing V3 default scalars are overwritten in place;
-     * comments and structure are preserved.
-     */
     public void applyOverrides(@NotNull Path v3PluginDir, @NotNull V2Migration migration) {
         if (migration.isEmpty()) return;
 
@@ -358,10 +341,6 @@ public final class V2ConfigMigrator {
         throw new IllegalStateException("Could not pick a unique archive name for " + target);
     }
 
-    /**
-     * Carry-over settings scraped from a V2 install. Keys are nested paths into the V3
-     * {@code config.yml} or {@code discord.yml} (e.g. {@code [redis, messaging, channel]}).
-     */
     public static final class V2Migration {
         private final Map<List<String>, Object> configOverrides = new LinkedHashMap<>();
         private final Map<List<String>, Object> discordOverrides = new LinkedHashMap<>();

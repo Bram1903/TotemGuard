@@ -28,13 +28,6 @@ import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Reads {@code com/deathmotion/totemguard/api/**.class} entries from the TotemGuard plugin
- * jar and defines them on the target classloader via the JNI bridge. Classes already
- * present on the target are skipped (the JVM forbids redefining a loaded class), so a
- * future plugin version can add new api types without trouble; modifying an existing api
- * class's shape across hot-reloads requires a full server restart.
- */
 public final class ApiClassInjector {
 
     private static final String[] INJECT_PREFIXES = {

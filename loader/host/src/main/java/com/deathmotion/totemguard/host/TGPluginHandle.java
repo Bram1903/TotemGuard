@@ -21,27 +21,9 @@ package com.deathmotion.totemguard.host;
 import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Loader-side handle to a running TotemGuard plugin. Returned by
- * {@link TGPluginEntry#start(TGPluginHost)}.
- */
 public interface TGPluginHandle {
 
-    /**
-     * Synchronously stops the TotemGuard plugin. The implementation must fire
-     * {@link TGPluginShutdownEvent} with the supplied {@code reason} before
-     * tearing down internal state, unregister every platform-side hook
-     * (PacketEvents listeners, platform listeners, Cloud commands, scheduled
-     * tasks), and null out any static state that would keep the previous
-     * classloader alive.
-     * <p>
-     * Safe to call once; subsequent calls are no-ops.
-     */
     void stop(@NotNull TGPluginShutdownEvent.Reason reason);
 
-    /**
-     * Reports the running TotemGuard plugin's version. Used by the loader's
-     * {@code /tgloader status} output.
-     */
     @NotNull String version();
 }

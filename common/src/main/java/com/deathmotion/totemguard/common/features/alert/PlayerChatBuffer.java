@@ -55,7 +55,7 @@ final class PlayerChatBuffer {
 
         ChatBuffer prior = checkBuffers.putIfAbsent(checkName, fresh);
         if (prior != null) {
-            // Lost the race — merge into the winner.
+            // Lost the race, merge into the winner.
             prior.update(violations, debug, extras);
             return;
         }

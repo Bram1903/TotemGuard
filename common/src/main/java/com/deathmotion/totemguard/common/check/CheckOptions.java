@@ -30,10 +30,6 @@ import java.util.Set;
 @Getter
 public class CheckOptions {
 
-    /**
-     * Mitigation is meaningful only for the inventory checks that actually act on it
-     * inside CheckImpl#failInventory; surfacing the key elsewhere would be a no-op.
-     */
     private static final Set<String> MITIGATION_CAPABLE = Set.of("InventoryA", "InventoryB", "InventoryC");
 
     private final String checkName;

@@ -39,10 +39,6 @@ public class MathUtil {
                 .sum();
     }
 
-    /**
-     * Tukey IQR outliers.
-     * Returns Pair(lowOutliers, highOutliers).
-     */
     public Pair<List<Double>, List<Double>> getOutliers(final Collection<? extends Number> collection) {
         final List<Double> values = new ArrayList<>(collection.size());
         for (final Number number : collection) {
@@ -80,9 +76,6 @@ public class MathUtil {
         return tuple;
     }
 
-    /**
-     * Sample variance (unbiased): sum((x-mean)^2) / (n-1)
-     */
     public double getVariance(final Collection<? extends Number> data) {
         final int n = data.size();
         if (n < 2) return Double.NaN;
@@ -96,25 +89,16 @@ public class MathUtil {
         return ss / (n - 1.0);
     }
 
-    /**
-     * Sample standard deviation (sqrt of sample variance).
-     */
     public double getStandardDeviation(final Collection<? extends Number> data) {
         return Math.sqrt(getVariance(data));
     }
 
-    /**
-     * Median of an arbitrary list (this method sorts a copy).
-     */
     public double getMedian(final List<Double> data) {
         final List<Double> copy = new ArrayList<>(data);
         copy.sort(Double::compareTo);
         return getMedianSorted(copy);
     }
 
-    /**
-     * Median of a list that is already sorted ascending.
-     */
     private double getMedianSorted(final List<Double> sorted) {
         final int n = sorted.size();
         if (n == 0) return Double.NaN;
@@ -132,19 +116,11 @@ public class MathUtil {
         return sum(Number::doubleValue, iterable) / n;
     }
 
-    /**
-     * Kurtosis (non-excess). Equals excessKurtosis + 3.
-     * Uses a small-sample corrected estimator; returns NaN for n < 4.
-     */
     public double getKurtosis(final Collection<? extends Number> data) {
         final double excess = getExcessKurtosis(data);
         return Double.isNaN(excess) ? Double.NaN : (excess + 3.0);
     }
 
-    /**
-     * Excess kurtosis (Fisher) with small-sample correction.
-     * Returns NaN for n < 4 or zero variance.
-     */
     public double getExcessKurtosis(final Collection<? extends Number> data) {
         final int n = data.size();
         if (n < 4) return Double.NaN;
@@ -168,10 +144,6 @@ public class MathUtil {
         return a * (m4 / (m2 * m2)) - b;
     }
 
-    /**
-     * Sample skewness with Fisher-Pearson small-sample correction.
-     * Returns NaN for n < 3 or zero variance.
-     */
     public double getSkewness(final Collection<? extends Number> data) {
         final int n = data.size();
         if (n < 3) return Double.NaN;
@@ -193,10 +165,6 @@ public class MathUtil {
         return (n * m3) / ((n - 1.0) * (n - 2.0) * s * s * s);
     }
 
-    /**
-     * Exact mode based on doubleValue() equality.
-     * Returns null if empty.
-     */
     public Number getMode(Collection<? extends Number> data) {
         if (data == null || data.isEmpty()) return null;
 
@@ -334,10 +302,6 @@ public class MathUtil {
         return new Vector3f(x, y, z);
     }
 
-    /**
-     * Angle between vectors in radians.
-     * Returns NaN if either vector is zero-length.
-     */
     public double angle(Vector3f a, Vector3f b) {
         final double la = length(a);
         final double lb = length(b);

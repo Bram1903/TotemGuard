@@ -416,16 +416,6 @@ public final class PresenceStore {
         }
     }
 
-    /**
-     * Scans {@link #KEY_PLAYERS} and removes any entry whose backing
-     * {@code totemguard:p:<uuid>} key no longer exists. The player hash and the
-     * name zset have no TTL of their own, so they only get pruned by
-     * {@link #claimOfflineIfOwned} (clean quit) or {@link #purgeServer} (sweep).
-     * If a server dies hard and stays offline past {@link #OWNED_SET_TTL_MS}, its
-     * {@code s:<iid>:p} ownership index expires and {@code purgeServer} can no
-     * longer find the players to delete, leaving orphans that would otherwise
-     * inflate {@link #trackedPlayerCount()} forever.
-     */
     public int reconcileOrphanPlayers() {
         RedisCommands<byte[], byte[]> c = sync();
         if (c == null) return 0;

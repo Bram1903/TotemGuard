@@ -18,20 +18,6 @@
 
 package com.deathmotion.totemguard.common.config.key;
 
-/**
- * Constants for {@code discord.yml}.
- * <p>
- * Per-channel settings (alerts/punishments) are read as nested sections under each prefix:
- * <pre>
- *   ConfigSection alerts = repo.config(ConfigFile.DISCORD)
- *           .getSection(DiscordKeys.ALERTS_PREFIX)
- *           .orElseThrow();
- *   boolean enabled = alerts.getBoolean("enabled").orElse(false);
- * </pre>
- * Defaults live in the bundled {@code discord.yml} resource. These constants are an
- * internal implementation detail of TotemGuard's bundled YAML — they are intentionally
- * not part of the published API.
- */
 public final class DiscordKeys {
 
     public static final String ALERTS_PREFIX = "alerts";

@@ -21,10 +21,6 @@ package com.deathmotion.totemguard.loader.core;
 import java.io.IOException;
 import java.util.Locale;
 
-/**
- * Refuses TotemGuard versions below {@link #MINIMUM}. Older releases lack the jar
- * integrity stamp the loader's defense-in-depth relies on.
- */
 public final class PluginVersionGate {
 
     public static final LoaderSemver MINIMUM = new LoaderSemver(3, 0, 0, true);
@@ -32,11 +28,6 @@ public final class PluginVersionGate {
     private PluginVersionGate() {
     }
 
-    /**
-     * Channels (LATEST/EXPERIMENTAL/GIT) are accepted since they only resolve to a
-     * concrete version inside {@link #isSupportedConcrete}; unparseable strings are
-     * rejected so the loader never launches a jar it cannot prove is recent enough.
-     */
     public static boolean isSupportedConcrete(String version) {
         if (version == null || version.isBlank()) return false;
         try {
@@ -53,11 +44,6 @@ public final class PluginVersionGate {
         }
     }
 
-    /**
-     * Fails early when a user-supplied pin is parseable as semver and falls below
-     * {@link #MINIMUM}. Channel tokens (LATEST/EXPERIMENTAL/GIT) and unparseable tokens
-     * (tags, branch names) are deferred to the post-download {@link #require} check.
-     */
     public static void rejectIfPinnedTooOld(String version, String context) throws IOException {
         if (version == null || version.isBlank()) return;
         String trimmed = version.trim();

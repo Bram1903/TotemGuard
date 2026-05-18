@@ -104,7 +104,7 @@ public final class JarIntegrityChecker {
         try {
             Path path = Path.of(codeSource.getLocation().toURI()).toAbsolutePath().normalize();
             if (!Files.isRegularFile(path) || !path.getFileName().toString().endsWith(".jar")) {
-                // Development classpath (classes on disk, not a jar) — nothing to verify.
+                // Development classpath (classes on disk, not a jar), nothing to verify.
                 return null;
             }
             return path;

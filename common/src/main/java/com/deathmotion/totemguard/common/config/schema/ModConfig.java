@@ -22,10 +22,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/**
- * Typed view of one mod entry in {@code mods.yml}. Internal type — fields may evolve
- * across plugin versions.
- */
 public record ModConfig(
         @NotNull String id,
         @NotNull String severity,

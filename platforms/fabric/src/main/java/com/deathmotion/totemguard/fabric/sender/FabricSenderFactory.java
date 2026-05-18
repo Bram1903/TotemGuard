@@ -66,7 +66,7 @@ public final class FabricSenderFactory extends SenderFactory<CommandSourceStack>
     @Override
     protected boolean hasPermission(CommandSourceStack source, String node, boolean defaultIfUnset) {
         // The boolean overload of `Permissions.check` already encodes the
-        // "default when unset" semantics — use it directly so we don't have to
+        // "default when unset" semantics, use it directly so we don't have to
         // map true/false to op-level proxies.
         return Permissions.check(source, node, defaultIfUnset);
     }

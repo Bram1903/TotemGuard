@@ -26,21 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * Composite channel used when a plugin asks for a supertype rather than one
- * specific event. Holds a list of the concrete channels whose event class
- * matches the requested supertype, and forwards every subscribe call to all
- * of them.
- * <p>
- * As an example, {@code bus.get(TGCheckEvent.class)} hands back one of these,
- * pointing at the flag channel and the punish channel. A single handler
- * registered through it ends up on both child channels.
- * <p>
- * No adapter logic is needed because a {@code Consumer<? super TGCheckEvent>}
- * already accepts subtype arguments such as {@code TGUserFlagEvent} directly.
- *
- * @param <E> the supertype event interface
- */
 public final class VirtualEventChannel<E> implements EventChannel<E> {
 
     private final Class<E> eventType;

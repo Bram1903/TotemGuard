@@ -26,34 +26,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Text-level YAML editing utilities that preserve user comments and structure.
- * <p>
- * Two operations are exposed:
- * <ul>
- *     <li>{@link #addMissingDefaults} — given user text and a defaults map, surgically inserts
- *     any missing top-level keys at file-end and any missing nested keys at the end of their
- *     parent block. User comments and ordering are preserved.</li>
- *     <li>{@link #dumpFresh} — emits a complete YAML document for a parsed map using SnakeYAML.
- *     Used when migrations have rewritten the file and comment preservation is no longer
- *     possible.</li>
- * </ul>
- */
 public final class YamlMerger {
 
     private YamlMerger() {
     }
 
-    /**
-     * Returns {@code currentText} with any keys present in {@code defaultsMap} but missing from
-     * {@code currentMap} inserted at the appropriate location:
-     * <ul>
-     *     <li>Missing top-level keys are appended to the end of the file.</li>
-     *     <li>Missing nested keys (where the parent map exists in both) are inserted at the
-     *     end of the parent's block, with the correct indentation.</li>
-     * </ul>
-     * Existing keys are left untouched, including their values, comments, and ordering.
-     */
     public static String addMissingDefaults(String currentText, Map<String, Object> currentMap, Map<String, Object> defaultsMap) {
         String text = currentText;
 
@@ -77,19 +54,6 @@ public final class YamlMerger {
         return text;
     }
 
-    /**
-     * Returns {@code currentText} with the value at the given nested key path replaced.
-     * <p>
-     * Scalars: the leaf line's indent, key, and inline comment (if any) are preserved.
-     * Lists: the leaf line plus all subsequent lines belonging to its block (indent strictly
-     * greater than the leaf) are rewritten as a fresh block-style list at the leaf indent.
-     * Comments interleaved INSIDE the existing list block are not preserved; comments and
-     * blank lines AFTER the last block line (before the next sibling) are preserved.
-     * <p>
-     * If any segment in the path is missing, or the leaf line isn't a {@code key:} entry,
-     * the input text is returned unchanged. Block scalars and multi-line scalar values
-     * aren't supported.
-     */
     public static String setValueAtPath(String currentText, List<String> path, Object value) {
         if (path.isEmpty()) return currentText;
         String[] lines = splitLines(currentText);
@@ -182,10 +146,6 @@ public final class YamlMerger {
         return "";
     }
 
-    /**
-     * Renders a complete YAML document for a parsed map. Comments are NOT preserved.
-     * Used after a migration changes the file shape, when the safe option is to rebuild.
-     */
     public static String dumpFresh(Map<String, Object> root) {
         DumperOptions opts = new DumperOptions();
         opts.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);

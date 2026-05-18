@@ -22,15 +22,6 @@ import com.deathmotion.totemguard.api.config.key.ConfigKey;
 
 import java.util.List;
 
-/**
- * Typed paths into {@code config.yml}.
- * <p>
- * Defaults are not declared here; they live in the bundled {@code config.yml} resource.
- * These constants are an internal implementation detail of TotemGuard's bundled YAML —
- * they are intentionally not part of the published API. External code that needs a value
- * should call {@link com.deathmotion.totemguard.api.config.Config#getString(String)}
- * (or one of its sibling path-based accessors) directly with the dotted path.
- */
 public final class ConfigKeys {
 
     public static final ConfigKey<String> SERVER = ConfigKey.string("server");

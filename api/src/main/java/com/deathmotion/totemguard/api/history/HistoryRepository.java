@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
  * cheap; writes (i.e. {@link #clear}) invalidate every cached page for the target.
  * <p>
  * This API is intentionally narrow: there is no method to dump every alert at once.
- * Callers must walk the pages — that protects the database from a single rogue
+ * Callers must walk the pages, that protects the database from a single rogue
  * plugin asking for thousands of rows in one query.
  */
 public interface HistoryRepository {
@@ -44,7 +44,7 @@ public interface HistoryRepository {
 
     /**
      * Returns a {@link HistoryView} bound to {@code uuid}. The view is cheap to create
-     * and safe to retain — it holds no connection or page state of its own.
+     * and safe to retain, it holds no connection or page state of its own.
      */
     @NotNull HistoryView of(@NotNull UUID uuid);
 
@@ -58,7 +58,7 @@ public interface HistoryRepository {
      * on completion so subsequent reads see an empty record.
      * <p>
      * The future settles with a {@link Result} carrying either the row counts
-     * removed or a failure reason — it does not complete exceptionally for the database
+     * removed or a failure reason, it does not complete exceptionally for the database
      * being offline or a query failing.
      */
     @NotNull CompletableFuture<Result<HistoryClearResult>> clear(@NotNull UUID uuid);

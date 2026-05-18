@@ -18,11 +18,6 @@
 
 package com.deathmotion.totemguard.loader.core;
 
-/**
- * Self-contained semver parser used by {@link PluginVersionGate}. The loader runs
- * before the TotemGuard api classes are injected onto the parent classloader, so we
- * can't rely on the api's {@code TGVersion} type at startup.
- */
 public record LoaderSemver(int major, int minor, int patch, boolean snapshot) implements Comparable<LoaderSemver> {
 
     public static LoaderSemver fromString(String version) {

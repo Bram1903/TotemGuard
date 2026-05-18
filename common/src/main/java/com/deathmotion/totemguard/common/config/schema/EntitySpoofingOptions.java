@@ -18,9 +18,6 @@
 
 package com.deathmotion.totemguard.common.config.schema;
 
-/**
- * Snapshot of the {@code entity-spoofing.*} section of {@code config.yml}.
- */
 public record EntitySpoofingOptions(
         boolean health,
         boolean absorption

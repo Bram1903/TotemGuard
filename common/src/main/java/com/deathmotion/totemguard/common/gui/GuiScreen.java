@@ -26,9 +26,6 @@ public abstract class GuiScreen {
 
     public abstract GuiRenderResult render(GuiSession session);
 
-    /**
-     * @return permission the viewer must hold, or {@code null} for no check.
-     */
     public @Nullable String requiredPermission() {
         return null;
     }

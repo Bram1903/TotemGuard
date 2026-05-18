@@ -41,12 +41,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
-/**
- * Restarts the inner TotemGuard plugin through the loader. Two-step confirmation
- * because operators muscle-memory {@code /tg reload} when they mean a config refresh,
- * and a full restart is a much heavier operation (closes the inner classloader,
- * drops all Redis/DB connections, and rebuilds checks/commands).
- */
 public final class RestartCommand extends AbstractCommand {
 
     private static final Duration CONFIRMATION_WINDOW = Duration.ofSeconds(30);

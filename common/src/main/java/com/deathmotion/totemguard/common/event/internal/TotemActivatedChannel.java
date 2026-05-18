@@ -26,11 +26,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.logging.Level;
 
-/**
- * Internal channel dispatched when a totem of undying is activated for a
- * player. Handlers receive the player and activation timestamp positionally.
- * No event object is allocated.
- */
 public final class TotemActivatedChannel extends ChannelBase<TotemActivatedChannel.Handler> {
 
     public void register(@NotNull Object owner, @NotNull Handler handler) {

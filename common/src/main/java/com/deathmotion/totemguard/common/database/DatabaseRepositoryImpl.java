@@ -133,13 +133,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
             writer.start();
             sweeper.start();
 
-            // Always register a tg_servers row up front so alerts have somewhere to land
-            // even if the configured placeholder never resolves. If the placeholder is
-            // already resolved (static config, or db is restarting after the listener
-            // fired) we use the real name; otherwise we fall back to the raw config value
-            // (e.g. literal "%mcpvp_server_id%") — stable across restarts so it doesn't
-            // spam new rows. The listener wired in TGPlatform swaps to the real name once
-            // resolution succeeds.
             NetworkPresenceRepository presence = TGPlatform.getInstance().getNetworkPresenceRepository();
             String dbName = (presence != null && presence.isServerNameResolved())
                     ? presence.getLocalServerName()
@@ -156,12 +149,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         }
     }
 
-    /**
-     * Assigns (and persists) the server name to {@code tg_servers}, caching the resolved
-     * id for subsequent profile/alert writes. Safe to call multiple times — idempotent.
-     * Invoked by {@link NetworkPresenceRepository}'s server-name-resolved listener so the
-     * fallback {@code tg-<hex>} name is never written to the table.
-     */
     public synchronized void assignThisServerName(@NotNull String serverName) {
         CatalogDao catalog = this.catalogDao;
         if (catalog == null) return;
@@ -252,11 +239,6 @@ public final class DatabaseRepositoryImpl implements DatabaseRepository {
         recordAlert(profileId, playerId, checkName, debug, null, createdAt);
     }
 
-    /**
-     * @param compiledDebug optional precompiled (template, args). When non-null the
-     *                      auto numeric extractor is skipped and the supplied template
-     *                      is interned directly.
-     */
     public void recordAlert(@Nullable Long profileId,
                             int playerId,
                             String checkName,

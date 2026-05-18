@@ -20,11 +20,5 @@ package com.deathmotion.totemguard.common.check.type;
 
 import com.deathmotion.totemguard.api.check.Check;
 
-/**
- * Marker for checks that are never driven by packets or events and only fire
- * through an explicit staff-triggered entry point — today, {@code /tg check}.
- * They still live in {@link com.deathmotion.totemguard.common.check.CheckManagerImpl}
- * so they pick up config, snapshot/restore, and the alert/punishment pipeline.
- */
 public interface ManualCheck extends Check {
 }

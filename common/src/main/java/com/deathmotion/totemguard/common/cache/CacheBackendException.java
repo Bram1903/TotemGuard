@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.cache;
 
-// Signals an op failure (transport/timeout) — not a clean miss. Triggers local fallback.
+// Signals an op failure (transport/timeout), not a clean miss. Triggers local fallback.
 public final class CacheBackendException extends RuntimeException {
 
     public CacheBackendException(String message, Throwable cause) {

@@ -22,11 +22,6 @@ import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 
-/**
- * Abstract representation of a Packet that can be serialized and deserialized.
- *
- * @param <T> the type of data carried by the packet
- */
 public abstract class Packet<T> {
 
     private final int id;
@@ -41,23 +36,11 @@ public abstract class Packet<T> {
         return topic;
     }
 
-    /**
-     * Reads the packet payload from a ByteArrayDataInput stream.
-     *
-     * @param input the data input containing the serialized packet
-     * @return the deserialized packet payload
-     */
     public abstract T read(ByteArrayDataInput input);
 
     public final int getId() {
         return id;
     }
 
-    /**
-     * Writes the packet payload to the output stream.
-     *
-     * @param output the data output stream
-     * @param obj    the packet payload
-     */
     public abstract void writeData(ByteArrayDataOutput output, T obj);
 }

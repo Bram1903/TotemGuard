@@ -40,9 +40,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
-/**
- * Paginated alert history, optionally filtered by check name and time window.
- */
 public final class PlayerAlertsScreen extends GuiScreen {
 
     public static final String PERMISSION = "TotemGuard.Gui.History.Alerts";

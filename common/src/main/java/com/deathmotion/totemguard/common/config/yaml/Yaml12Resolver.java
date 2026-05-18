@@ -23,13 +23,6 @@ import org.yaml.snakeyaml.resolver.Resolver;
 
 import java.util.regex.Pattern;
 
-/**
- * SnakeYAML's default {@link Resolver} follows YAML 1.1, which treats {@code yes}, {@code no},
- * {@code on}, {@code off} (and their case variants) as booleans. That silently rewrites map keys
- * like {@code gui.status.yes} into {@code Boolean.TRUE}, which then lookup misses.
- *
- * <p>This resolver matches YAML 1.2 / JSON: only {@code true|false} are booleans.
- */
 public final class Yaml12Resolver extends Resolver {
 
     private static final Pattern BOOL_1_2 = Pattern.compile("^(?:true|True|TRUE|false|False|FALSE)$");

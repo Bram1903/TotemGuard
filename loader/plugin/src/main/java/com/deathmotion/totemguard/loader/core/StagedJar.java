@@ -31,16 +31,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * A jar that was pre-staged by an external trigger (typically a fleet-wide update
- * command) and should be loaded on the next loader start, bypassing source resolution.
- * <p>
- * Backed by two files in the loader directory: {@code staged.jar} carries the bytes,
- * {@code staged.meta} carries {@code version=...} / {@code source=...} / {@code sha256=...}
- * lines. The meta file is treated as the source of truth: a stray {@code staged.jar}
- * without metadata is ignored. After a successful pickup the marker files are removed
- * so a normal startup follows the next time.
- */
 public record StagedJar(Path jar, String version, String source, String sha256) {
 
     public static StagedJar consumeIfPresent(LoaderPaths paths, Logger logger) {

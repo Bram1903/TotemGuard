@@ -58,7 +58,7 @@ public final class FollowRepository implements PresenceListener {
     // locomotion at a 500 ms tick.
     private static final double TELEPORT_JUMP_THRESHOLD_SQ = 80.0 * 80.0;
     // Separation² between a local follower and the target above which we
-    // pull the follower back. Approximate — the user's intent is "around 100".
+    // pull the follower back. Approximate, the user's intent is "around 100".
     private static final double LOCAL_REPULL_THRESHOLD_SQ = 100.0 * 100.0;
 
     private final TGPlatform platform;

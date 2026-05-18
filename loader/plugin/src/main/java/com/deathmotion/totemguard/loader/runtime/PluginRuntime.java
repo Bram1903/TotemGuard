@@ -34,10 +34,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Owns the live TotemGuard plugin: holds its {@link TGPluginClassLoader}, the api
+ * Owns the live TotemGuard plugin: holds its {@link TGPluginClassLoader}, the API
  * {@link TGPluginHandle}, and drives start / restart / stop.
  * <p>
- * The api classes ({@link TGPluginHost}, {@link TGPluginEntry}, etc.) are injected
+ * The API classes ({@link TGPluginHost}, {@link TGPluginEntry}, etc.) are injected
  * into the host classloader by {@code ApiClassInjector} before this runtime is
  * constructed, so the direct references below resolve at first method invocation.
  */
@@ -80,10 +80,6 @@ public final class PluginRuntime {
         loadOnce(pluginJar, reason);
     }
 
-    /**
-     * Api-type-free entry point so callers (e.g. the command class) don't need to
-     * reference {@code TGPluginShutdownEvent.Reason} in their method descriptors.
-     */
     public void loadVersionForCommand(String versionOverride) throws Exception {
         loadVersion(versionOverride, TGPluginShutdownEvent.Reason.LOADER_RESTART);
     }

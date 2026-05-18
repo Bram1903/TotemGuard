@@ -40,9 +40,6 @@ public final class StaffAlertPrefDao {
         this.connection = connection;
     }
 
-    /**
-     * @return {@code null} if the UUID has no stored preference yet.
-     */
     @Blocking
     public @Nullable StaffAlertPref find(UUID uuid) throws SQLException {
         try (Connection c = connection.borrow();

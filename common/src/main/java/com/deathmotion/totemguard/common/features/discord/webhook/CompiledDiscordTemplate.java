@@ -29,19 +29,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Pre-compiles a Discord message template once (per config reload) and tracks the
- * markdown context surrounding each {@code %placeholder%} token so placeholder
- * values can be escaped correctly at render time.
- */
 public record CompiledDiscordTemplate(Segment[] segments) {
 
-    /**
-     * Substitute character used in place of literal backticks inside Discord code spans.
-     * <p>
-     * Discord ignores backslash escapes inside code spans, so a backtick in placeholder
-     * data would terminate the span. We replace it with a visually-similar character.
-     */
     public static final char BACKTICK_REPLACEMENT = 'ʼ';
     private static final Pattern PLACEHOLDER = Pattern.compile("%([a-zA-Z0-9_]+)%");
 
@@ -78,17 +67,6 @@ public record CompiledDiscordTemplate(Segment[] segments) {
         return escapeMarkdown(value);
     }
 
-    /**
-     * Full Discord Markdown escaping for untrusted data values.
-     * <p>
-     * This method treats input as <b>raw data</b>, not pre-formatted markdown.
-     * A literal backslash in a player name is data and must render as a visible backslash.
-     * This means "already escaped" input like {@code \*} correctly becomes {@code \\*}
-     * (rendering as {@code \*}), which is the intended behavior — identical to SQL parameterization.
-     * <p>
-     * All escaped characters ({@code \X}) render identically to their unescaped form ({@code X})
-     * in Discord's CommonMark variant, so escaping is invisible to end users.
-     */
     public static String escapeMarkdown(String s) {
         if (s == null || s.isEmpty()) return s;
         StringBuilder sb = new StringBuilder(s.length() + 16);
@@ -118,27 +96,11 @@ public record CompiledDiscordTemplate(Segment[] segments) {
         return sb.toString();
     }
 
-    /**
-     * Code span escaping: Discord ignores backslash escapes inside code spans,
-     * so backticks are replaced with {@link #BACKTICK_REPLACEMENT}.
-     */
     public static String escapeCodeSpan(String s) {
         if (s == null || s.isEmpty()) return s;
         return s.replace('`', BACKTICK_REPLACEMENT);
     }
 
-    /**
-     * Advances Markdown context through literal template text.
-     * Handles: backslash escapes (NORMAL only), single-` inline code, triple-` code blocks.
-     * <p>
-     * Edge cases resolved:
-     * <pre>
-     *   `text %p% text`  → INLINE_CODE  (` opens before placeholder)
-     *   `a`%p%`b`        → NORMAL       (` opens then ` closes before placeholder)
-     *   \`%p%`           → NORMAL       (backtick is backslash-escaped)
-     * </pre>
-     * <b>Known limitation:</b> Double-backtick code spans ({@code `` text ``}) are not tracked.
-     */
     private static MarkdownContext advanceContext(MarkdownContext ctx, String text) {
         int i = 0;
         while (i < text.length()) {
@@ -175,12 +137,6 @@ public record CompiledDiscordTemplate(Segment[] segments) {
         return ctx;
     }
 
-    /**
-     * Render the template by resolving placeholders with the supplied function.
-     *
-     * @param resolver resolves a placeholder key (without the surrounding {@code %}) to its value,
-     *                 or {@code null} if the placeholder could not be resolved
-     */
     public String render(@NotNull Function<String, @Nullable String> resolver) {
         StringBuilder sb = new StringBuilder(segments.length * 32);
         for (Segment seg : segments) {
@@ -198,31 +154,15 @@ public record CompiledDiscordTemplate(Segment[] segments) {
         return sb.toString();
     }
 
-    /**
-     * Markdown context as determined by a state-machine scan of the template.
-     * Used only at compile time.
-     */
     private enum MarkdownContext {
         NORMAL,
         INLINE_CODE,
         CODE_BLOCK
     }
 
-    /**
-     * Escape strategy assigned to each placeholder at compile time.
-     */
     public enum EscapeMode {
-        /**
-         * Full Markdown escaping: \, `, *, _, ~, |, [], (), line-start chars, newlines
-         */
         FULL_MARKDOWN,
-        /**
-         * Inside a code span: only backtick substitution (backslash escaping doesn't work in Discord code spans)
-         */
         CODE_SPAN,
-        /**
-         * No escaping (placeholder left raw)
-         */
         NONE
     }
 

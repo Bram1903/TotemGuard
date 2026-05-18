@@ -40,14 +40,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Adapter that exposes the TotemGuard Redis connection to the loader as a
- * {@link FleetCache}. Lives on the TG side because the loader has no Redis client of
- * its own; TG attaches an instance once it's connected, detaches on disconnect.
- *
- * <p>All ops are best-effort. Transport failures are logged at FINE and swallowed so a
- * misbehaving Redis can't cascade into the loader's hot paths.</p>
- */
 public final class RedisFleetCache implements FleetCache {
 
     private final RedisRepositoryImpl redis;
@@ -288,10 +280,6 @@ public final class RedisFleetCache implements FleetCache {
         return conn == null ? null : conn.pubSub();
     }
 
-    /**
-     * Loader-driven shutdown notification. Cancels every active subscription so reattach
-     * after a reconnect doesn't accumulate ghost handlers.
-     */
     public void detach() {
         for (Map.Entry<String, SubscriberSet> entry : subscriptions.entrySet()) {
             synchronized (entry.getValue()) {

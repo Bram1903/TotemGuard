@@ -18,12 +18,6 @@
 
 package com.deathmotion.totemguard.common.platform.player;
 
-/**
- * Opaque handle returned by {@link PlatformPlayer#beginManualCheck} that owns the
- * inventory snapshot captured when the check started plus any listeners/guards the
- * platform installed (e.g. drop cancellation). Calling {@link #restore()} rewinds
- * the player to that snapshot and releases the guards. Safe to call from any thread.
- */
 public interface ManualCheckHandle {
 
     void restore();

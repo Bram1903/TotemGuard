@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * One slice of a paginated history result. Generic to keep the alert and punishment
- * surfaces aligned — callers can write the same loop over either.
+ * surfaces aligned, callers can write the same loop over either.
  *
  * @param page         zero-based page index returned, capped at {@code totalPages - 1}.
  * @param pageSize     maximum number of entries per page; equal across all pages.

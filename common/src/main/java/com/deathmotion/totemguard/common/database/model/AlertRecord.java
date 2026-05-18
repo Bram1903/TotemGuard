@@ -20,10 +20,6 @@ package com.deathmotion.totemguard.common.database.model;
 
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Read projection of one alert row joined to its check, server, brand and debug template.
- * {@code debug} is already rendered with template args substituted.
- */
 public record AlertRecord(
         long id,
         String checkName,

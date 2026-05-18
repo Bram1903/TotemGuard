@@ -23,10 +23,6 @@ import com.deathmotion.totemguard.common.redis.broker.packets.Packet;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 
-/**
- * Broadcast that the publishing server has discovered a new TotemGuard release.
- * Payload is the raw GitHub tag (e.g. {@code v3.1.0}).
- */
 public class SyncUpdateAvailablePacket extends Packet<String> {
 
     public SyncUpdateAvailablePacket(int id) {

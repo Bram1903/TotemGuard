@@ -18,10 +18,5 @@
 
 package com.deathmotion.totemguard.loader.source;
 
-/**
- * One result row from {@link GithubSearch}. {@link #version} is what an operator would
- * pass to {@code /tgloader load <version>}; {@link #matchReason} is the human-readable
- * "why did this match" hint shown to the player.
- */
 public record SearchMatch(String version, String matchReason, Artifact artifact) {
 }

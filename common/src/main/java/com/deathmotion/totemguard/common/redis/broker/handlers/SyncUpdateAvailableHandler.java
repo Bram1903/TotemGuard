@@ -28,11 +28,6 @@ import com.deathmotion.totemguard.common.redis.broker.packets.PacketProcessor;
 import com.deathmotion.totemguard.common.redis.broker.packets.PacketRegistry;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 
-/**
- * Receives "new release discovered" broadcasts from sibling servers and forwards
- * the payload to {@link UpdateCheckerRepositoryImpl} so it can flip the local
- * "update available" state without waiting for its own polling cycle.
- */
 public final class SyncUpdateAvailableHandler implements PacketProcessor<String>, Reloadable {
 
     private final TGPlatform platform;

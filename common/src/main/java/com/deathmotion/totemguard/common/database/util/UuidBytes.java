@@ -21,9 +21,6 @@ package com.deathmotion.totemguard.common.database.util;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-/**
- * Packs/unpacks a UUID as 16 raw bytes for binary-column storage.
- */
 public final class UuidBytes {
 
     private UuidBytes() {

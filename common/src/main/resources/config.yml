@@ -82,7 +82,7 @@ entity-spoofing:
 
 # Command run for "teleport to flagged player" actions (GUI, alert click, /tg follow).
 # %tg_player% is the target. %tg_silent% appends "--silent" on internal dispatches
-# (e.g. /tg follow) and is empty otherwise — only useful if your custom command
+# (e.g. /tg follow) and is empty otherwise, only useful if your custom command
 # wants to detect follow-driven calls. Example: "n tp %tg_player% %tg_silent%".
 teleport:
   command: "/tg teleport %tg_player%"

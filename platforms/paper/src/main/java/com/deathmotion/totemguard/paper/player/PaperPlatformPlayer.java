@@ -114,7 +114,7 @@ public class PaperPlatformPlayer implements PlatformPlayer {
 
             PlayerInventory inventory = paperPlayer.getInventory();
             if (inventory.getItemInOffHand().getType() != Material.TOTEM_OF_UNDYING) {
-                // Authoritative server-side state disagrees with our PacketInventory — refuse
+                // Authoritative server-side state disagrees with our PacketInventory, refuse
                 // rather than risk killing the target.
                 onDamageRefused.run();
                 return;
@@ -172,12 +172,6 @@ public class PaperPlatformPlayer implements PlatformPlayer {
         }, null);
     }
 
-    /**
-     * Watches the target's next {@code EntityDamageEvent} to see whether our forced-damage
-     * call actually landed. A canceled event — or one dropped to zero final damage by an
-     * anticheat / damage-cap plugin — means the check can't proceed, and we'll restore
-     * immediately without a window.
-     */
     private static final class DamageObserver implements Listener {
 
         private final UUID target;

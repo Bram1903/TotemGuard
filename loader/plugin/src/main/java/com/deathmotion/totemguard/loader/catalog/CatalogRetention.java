@@ -23,15 +23,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Keep at most {@link #PER_BUCKET} entries per source bucket. Always preserves the
- * currently-loaded jar's SHA and any staged jar's SHA, regardless of bucket sizing,
- * so an operator can never accidentally garbage-collect the build they're running.
- *
- * <p>Buckets are derived from {@link CatalogSidecar#sources()}; a jar that belongs to
- * multiple buckets (e.g. local-imported and later picked as LATEST) is kept as long as
- * any of its buckets wants it.</p>
- */
 public final class CatalogRetention {
 
     private static final int PER_BUCKET = 2;
@@ -44,11 +35,6 @@ public final class CatalogRetention {
         this.logger = logger;
     }
 
-    /**
-     * Run a retention sweep, preserving the running and staged SHA-256s.
-     *
-     * @return number of catalog entries deleted
-     */
     public int sweep(Set<String> protectedShas) {
         List<CatalogIndex.Entry> entries = index.readAll();
         if (entries.isEmpty()) return 0;

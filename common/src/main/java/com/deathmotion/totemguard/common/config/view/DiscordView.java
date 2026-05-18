@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Internal typed view of {@code discord.yml}. Each webhook channel is parsed on demand.
- */
 public final class DiscordView {
 
     private final Config config;

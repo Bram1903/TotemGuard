@@ -26,7 +26,7 @@ package com.deathmotion.totemguard.api.punishment;
 public enum PunishmentType {
 
     /**
-     * Announcements, logging, webhooks — nothing that removes the player.
+     * Announcements, logging, webhooks, nothing that removes the player.
      */
     GENERIC,
 

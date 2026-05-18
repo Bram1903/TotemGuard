@@ -22,11 +22,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/**
- * Typed view of one check entry in {@code checks.yml}. Internal type — fields may evolve
- * across plugin versions. Public API consumers should read raw config via
- * {@link com.deathmotion.totemguard.api.config.Config} sections instead.
- */
 public record CheckConfig(
         @NotNull String name,
         boolean enabled,

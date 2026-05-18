@@ -20,9 +20,5 @@ package com.deathmotion.totemguard.common.config.schema;
 
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Typed view of one Discord embed field. Internal type — fields may evolve across plugin
- * versions.
- */
 public record WebhookField(@NotNull String name, @NotNull String value, boolean inline) {
 }

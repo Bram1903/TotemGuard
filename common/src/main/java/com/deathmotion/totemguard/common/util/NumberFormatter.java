@@ -25,17 +25,10 @@ import java.util.Locale;
 @UtilityClass
 public class NumberFormatter {
 
-    /**
-     * Formats a count with a thousand separators, e.g. {@code 11323049 -> "11,323,049"}.
-     */
     public String grouped(long value) {
         return String.format(Locale.ROOT, "%,d", value);
     }
 
-    /**
-     * Formats a count in compact form for tight UI slots, e.g. {@code 11323049 -> "11.3M"}.
-     * Falls back to {@link #grouped(long)} for values below 10,000.
-     */
     public String compact(long value) {
         long abs = Math.abs(value);
         if (abs < 10_000L) return grouped(value);

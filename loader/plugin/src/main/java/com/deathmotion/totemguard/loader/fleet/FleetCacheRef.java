@@ -29,16 +29,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Shared, mutable holder for the loader's view of {@link FleetCache}. Components that
- * want to use L2 (HTTP cache, jar broadcaster, rollout coordinator) read through this
- * reference instead of holding their own. When TotemGuard attaches/detaches, every
- * registered listener is invoked exactly once so subscribers can register/cancel pub
- * handlers and heartbeat tasks.
- *
- * <p>Thread-safe: writes go through {@link #set} under a synchronized block; reads use
- * {@link #current()} which is a volatile read.</p>
- */
 public final class FleetCacheRef {
 
     private final Logger logger;
@@ -57,11 +47,6 @@ public final class FleetCacheRef {
         return current;
     }
 
-    /**
-     * Returns the cache only if it's both present and healthy. Use this from hot paths
-     * so unhealthy caches don't add latency to operations that have a perfectly good
-     * file-local fallback.
-     */
     public Optional<FleetCache> available() {
         FleetCache c = current;
         return (c != null && c.isHealthy()) ? Optional.of(c) : Optional.empty();
@@ -80,11 +65,6 @@ public final class FleetCacheRef {
         }
     }
 
-    /**
-     * Register a listener invoked once on every fresh attach (after the cache has been
-     * stored). If a cache is already attached when {@code listener} is added, the
-     * listener fires synchronously to keep the contract simple.
-     */
     public synchronized void onAttach(Consumer<FleetCache> listener) {
         attachListeners.add(listener);
         FleetCache c = this.current;

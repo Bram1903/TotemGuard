@@ -27,12 +27,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-/**
- * Updates {@link FollowerPositionTracker} from inbound Flying packets for any
- * UUID currently registered as a local follower. Bypassed players never reach
- * the regular check-manager path, so we listen on a separate global hook —
- * this gives us follow tracking without needing a {@code TGPlayer}.
- */
 public final class FollowerPacketListener extends PacketListenerAbstract {
 
     private final FollowRepository followRepository;

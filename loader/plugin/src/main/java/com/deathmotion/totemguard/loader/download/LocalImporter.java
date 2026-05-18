@@ -43,14 +43,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 
-/**
- * Absorbs user-dropped jars from the loader's {@code local/} bucket into the
- * {@code versions/} catalog. Lets operators sideload builds (Discord drops, CI artifacts,
- * commit-specific snapshots) without bypassing the loader's integrity + version gates.
- * <p>
- * Imported jars are moved into {@code local/.imported/} so the same file is not
- * processed twice on subsequent loader starts.
- */
 public final class LocalImporter {
 
     private static final String IMPORTED_DIR = ".imported";
