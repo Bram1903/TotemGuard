@@ -80,8 +80,8 @@ final class GithubReleases {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
-            throw new IOException("GitHub returned " + response.statusCode()
-                    + " for " + GithubSource.REPOSITORY + " releases");
+            throw new IOException("GitHub returned " + HttpStatusText.describe(response.statusCode())
+                    + " for the releases listing.");
         }
         JsonElement parsed = JsonParser.parseString(response.body());
         if (!parsed.isJsonArray()) {

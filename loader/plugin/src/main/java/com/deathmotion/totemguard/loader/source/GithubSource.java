@@ -109,9 +109,16 @@ public final class GithubSource implements VersionResolver {
             return artifactFromRelease(viaChannel, assetSuffix);
         }
 
+        String upper = requested.toUpperCase(Locale.ROOT);
+        boolean isChannel = upper.equals("LATEST") || upper.equals("EXPERIMENTAL") || upper.equals("GIT");
+        if (isChannel) {
+            throw new IOException("GitHub has no compatible " + upper + " build"
+                    + " (no release ships a *" + assetSuffix + "*.jar asset).");
+        }
+
         List<SearchMatch> matches = GithubSearch.searchMatches(releases, requested, context.platform());
         if (matches.isEmpty()) {
-            throw new IOException("No GitHub release matched '" + requested + "' for " + REPOSITORY);
+            throw new IOException("No GitHub release matched '" + requested + "'.");
         }
         if (matches.size() > 1) {
             throw new IOException("'" + requested + "' matched " + matches.size()

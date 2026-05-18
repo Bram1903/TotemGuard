@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.loader.download;
 import com.deathmotion.totemguard.loader.config.LoaderConfig;
 import com.deathmotion.totemguard.loader.core.HostPlatform;
 import com.deathmotion.totemguard.loader.source.Artifact;
+import com.deathmotion.totemguard.loader.source.HttpStatusText;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -142,7 +143,7 @@ public final class CachedJarStore {
             HttpResponse<InputStream> response = client.send(builder.build(),
                     HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() / 100 != 2) {
-                throw new IOException("HTTP " + response.statusCode() + " for " + uri);
+                throw new IOException("HTTP " + HttpStatusText.describe(response.statusCode()) + " for " + uri);
             }
 
             MessageDigest digest = newDigest(artifact);
@@ -187,13 +188,6 @@ public final class CachedJarStore {
         Files.move(tmp, pointer, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    /**
-     * Strict fallback lookup: returns a previously cached jar for the exact target
-     * the user asked for. For channel requests this is the jar pinned by the channel
-     * pointer. For pinned versions this is the newest cached jar carrying that
-     * version string in its filename. Channel requests never fall through to a
-     * different channel, pinned requests never fall through to a different version.
-     */
     public Optional<Path> locateFallback(LoaderConfig config, HostPlatform platform) {
         String channel = config.channel();
         if (channel != null) {
@@ -233,11 +227,6 @@ public final class CachedJarStore {
         return new ArrayList<>(versions);
     }
 
-    /**
-     * Returns the newest jar in the catalog matching the exact pinned version string.
-     * Used both as a fallback for unreachable sources and as a fast path for pinned
-     * loads so the loader can skip the network when the build is already on disk.
-     */
     public Optional<Path> findPinnedJar(String version, HostPlatform platform) {
         String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT)
                 + "-" + sanitize(version) + "-";
@@ -258,12 +247,6 @@ public final class CachedJarStore {
         }
     }
 
-    /**
-     * Last-resort lookup: returns the newest jar in the version catalog for this
-     * platform, ignoring channel pointers and the requested version. Used by the
-     * loader's resilience path when the configured source is unreachable and no
-     * better-matching fallback exists.
-     */
     public Optional<Path> findNewestCachedJar(HostPlatform platform) {
         String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT) + "-";
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(versionsDir, prefix + "*.jar")) {

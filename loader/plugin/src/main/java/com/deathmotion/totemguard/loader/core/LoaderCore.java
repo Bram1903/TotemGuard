@@ -97,6 +97,36 @@ public final class LoaderCore {
         return CatalogSidecar.SOURCE_PINNED;
     }
 
+    /**
+     * Sorts a resolve failure into a small set of buckets so the fallback log line can say
+     * something true. The "unreachable" message used to fire for every failure including
+     * "upstream returned 200 but the version it offered is too old" or "the channel was
+     * filtered out by the asset suffix", which read like a network problem.
+     */
+    private static ResolveFailureKind classifyResolveFailure(Throwable t) {
+        Throwable root = t;
+        for (int hops = 0; hops < 32; hops++) {
+            Throwable next = root.getCause();
+            if (next == null || next == root) break;
+            root = next;
+        }
+        if (root instanceof java.net.UnknownHostException
+                || root instanceof java.net.ConnectException
+                || root instanceof java.net.http.HttpTimeoutException
+                || root instanceof java.net.SocketTimeoutException
+                || root instanceof javax.net.ssl.SSLException) {
+            return ResolveFailureKind.UNREACHABLE;
+        }
+        String msg = root.getMessage();
+        if (msg != null) {
+            if (msg.startsWith("Refusing to load TotemGuard")) return ResolveFailureKind.GATE_REJECTED;
+            if (msg.contains("has no compatible")) return ResolveFailureKind.NO_MATCH;
+            if (msg.startsWith("No ") && msg.contains(" matched ")) return ResolveFailureKind.NO_MATCH;
+            if (msg.contains(" returned ")) return ResolveFailureKind.UPSTREAM_ERROR;
+        }
+        return ResolveFailureKind.RESOLVE_FAILED;
+    }
+
     public void initRolloutCoordinator(Consumer<RolloutCoordinator.RolloutApply> applyHandler) {
         this.rolloutCoordinator = new RolloutCoordinator(logger, fleetCacheRef, applyHandler, this::stageFromCatalogBySha);
     }
@@ -216,11 +246,18 @@ public final class LoaderCore {
             } catch (Exception ex) {
                 Path cached = pickFallbackJar(store, config, platform, ex);
                 if (cached == null) throw ex;
-                logger.warning(resolver.sourceName() + " unreachable (" + ex.getMessage()
-                        + "). Falling back to cached " + cached.getFileName() + ".");
+                ResolveFailureKind kind = classifyResolveFailure(ex);
+                String rootMsg = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+                String summary = switch (kind) {
+                    case UNREACHABLE -> resolver.sourceName() + " unreachable: " + rootMsg;
+                    case RESOLVE_FAILED -> resolver.sourceName() + " resolve failed: " + rootMsg;
+                    // GATE_REJECTED, NO_MATCH, UPSTREAM_ERROR are already self-describing.
+                    default -> rootMsg;
+                };
+                logger.warning(summary + " Falling back to cached " + cached.getFileName() + ".");
                 jar = cached;
                 resolvedVersion = parseVersionFromCacheName(cached.getFileName().toString());
-                sourceLabel = "Cached fallback (" + resolver.sourceName() + " unreachable)";
+                sourceLabel = "Cached fallback (" + kind.headline + ")";
                 alreadyVerified = true;
             }
         }
@@ -454,6 +491,20 @@ public final class LoaderCore {
 
     public void shutdown() {
         fleetBroker.shutdown();
+    }
+
+    private enum ResolveFailureKind {
+        UNREACHABLE("unreachable"),
+        UPSTREAM_ERROR("returned an error"),
+        NO_MATCH("had no matching build"),
+        GATE_REJECTED("rejected by version gate"),
+        RESOLVE_FAILED("resolve failed");
+
+        private final String headline;
+
+        ResolveFailureKind(String headline) {
+            this.headline = headline;
+        }
     }
 
     public record StageResult(String version, String sha256, String source) {

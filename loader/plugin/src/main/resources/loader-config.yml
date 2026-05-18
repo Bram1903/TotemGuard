@@ -18,4 +18,4 @@
 # load <version> can use it. local/ files are moved into local/.imported/
 # after import to avoid double-processing.
 version: "LATEST"
-source: "GITHUB"
+source: "MODRINTH"

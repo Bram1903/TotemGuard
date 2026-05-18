@@ -78,8 +78,7 @@ public final class ModrinthSource implements VersionResolver {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
-            throw new IOException("Modrinth returned " + response.statusCode()
-                    + " for project " + PROJECT_ID);
+            throw new IOException("Modrinth returned " + HttpStatusText.describe(response.statusCode()) + ".");
         }
 
         JsonElement parsed = JsonParser.parseString(response.body());
@@ -90,7 +89,13 @@ public final class ModrinthSource implements VersionResolver {
         String requested = config.version();
         JsonObject picked = pickVersion(parsed.getAsJsonArray(), requested);
         if (picked == null) {
-            throw new IOException("No Modrinth version matched '" + requested + "' for " + PROJECT_ID);
+            String upper = requested.toUpperCase(Locale.ROOT);
+            boolean isChannel = upper.equals("LATEST") || upper.equals("EXPERIMENTAL");
+            if (isChannel) {
+                throw new IOException("Modrinth has no compatible " + upper + " build for the "
+                        + platform.modrinthLoader() + " loader.");
+            }
+            throw new IOException("No Modrinth version matched '" + requested + "'.");
         }
 
         String number = picked.get("version_number").getAsString();

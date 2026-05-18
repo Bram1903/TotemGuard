@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.loader.core;
 
 import com.deathmotion.totemguard.loader.source.Artifact;
+import com.deathmotion.totemguard.loader.source.HttpStatusText;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -82,7 +83,8 @@ final class ArtifactDownloader {
             HttpResponse<InputStream> response = client.send(builder.build(),
                     HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() / 100 != 2) {
-                throw new IOException("HTTP " + response.statusCode() + " for " + artifact.downloadUri());
+                throw new IOException("HTTP " + HttpStatusText.describe(response.statusCode())
+                        + " for " + artifact.downloadUri());
             }
 
             ByteArrayOutputStream buffer = new ByteArrayOutputStream(1 << 20);
