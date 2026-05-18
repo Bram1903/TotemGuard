@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.loader.source;
 
 import com.deathmotion.totemguard.loader.config.LoaderConfig;
 import com.deathmotion.totemguard.loader.core.HostPlatform;
+import com.deathmotion.totemguard.loader.download.LoaderHttp;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -28,7 +29,6 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
@@ -39,7 +39,6 @@ public final class ModrinthSource implements VersionResolver {
 
     static final String PROJECT_ID = "wRuOKIM4";
     private static final String API_BASE = "https://api.modrinth.com/v2";
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
 
     private static JsonObject pickVersion(JsonArray versions, String requested) {
@@ -69,14 +68,14 @@ public final class ModrinthSource implements VersionResolver {
         LoaderConfig config = context.config();
         HostPlatform platform = context.platform();
         String loaderFilter = URLEncoder.encode("[\"" + platform.modrinthLoader() + "\"]", StandardCharsets.UTF_8);
-        HttpClient client = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_BASE + "/project/" + PROJECT_ID + "/version?loaders=" + loaderFilter))
                 .timeout(READ_TIMEOUT)
                 .header("Accept", "application/json")
+                .header("User-Agent", "TotemGuard-Loader")
                 .GET().build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = LoaderHttp.client().send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
             throw new IOException("Modrinth returned " + HttpStatusText.describe(response.statusCode()) + ".");
         }

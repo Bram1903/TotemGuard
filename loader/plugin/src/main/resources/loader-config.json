@@ -1,0 +1,35 @@
+// TotemGuard Loader configuration.
+//
+// version:
+//   - "3.0.0":       pin to a specific version
+//   - "LATEST":      newest stable release on the configured source
+//   - "EXPERIMENTAL": newest pre-release (GitHub pre-release / Modrinth alpha+beta)
+//   - "GIT":         artifact built from the latest commit
+//
+// source:
+//   - "GITHUB":   GitHub releases. SHA-256 verified via each asset's digest field.
+//   - "MODRINTH": Modrinth releases. SHA-512 verified via the v2 API hashes field.
+//   - "LOCAL":    pick the jar from the loader's own local/ drop directory.
+//                 Useful for fully air-gapped servers that want to update by hand
+//                 while keeping jar integrity, hot reload, etc.
+//
+// Any jar dropped into the local/ directory is auto-imported into the version
+// cache on every loader start, so /tgloader load <version> can use it even when
+// "source" is GITHUB or MODRINTH. Imported files are moved into local/.imported/
+// after import to avoid double-processing.
+{
+  "version": "LATEST",
+  "source": "MODRINTH",
+
+  // Fleet (multi-node) settings. Only relevant if you run TotemGuard on more than
+  // one server backed by the same Redis instance.
+  "fleet": {
+    // HMAC-SHA256 key used to sign and verify fleet pub/sub payloads (jar-available,
+    // catalog-changed, rollout BEGIN/APPLY/CANCEL). Set the SAME random 32+ byte
+    // string on every node in the fleet. Leave empty for single-node setups, or for
+    // fleets where Redis itself is fully trusted (e.g. requirepass + private network).
+    // Without it, a peer with Redis write access can publish a malicious jar that
+    // every node will load.
+    "shared-secret": ""
+  }
+}

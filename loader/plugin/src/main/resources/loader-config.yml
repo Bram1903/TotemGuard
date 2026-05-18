@@ -19,3 +19,14 @@
 # after import to avoid double-processing.
 version: "LATEST"
 source: "MODRINTH"
+
+# Fleet (multi-node) settings. Only relevant if you run TotemGuard on more than
+# one server backed by the same Redis instance.
+fleet:
+  # HMAC-SHA256 key used to sign and verify fleet pub/sub payloads (jar-available,
+  # catalog-changed, rollout BEGIN/APPLY/CANCEL). Set the SAME random 32+ byte
+  # string on every node in the fleet. Leave empty for single-node setups, or for
+  # fleets where Redis itself is fully trusted (e.g. requirepass + private network).
+  # Without it, a peer with Redis write access can publish a malicious jar that
+  # every node will load.
+  shared-secret: ""

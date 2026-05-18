@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.loader.source;
 
+import com.deathmotion.totemguard.loader.core.LoaderPaths;
+import com.deathmotion.totemguard.loader.download.LoaderHttp;
 import com.deathmotion.totemguard.loader.fleet.FleetCacheRef;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -26,11 +28,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -38,7 +42,6 @@ final class GithubReleases {
 
     static final String L2_KEY = "totemguard:loader:cache:github:releases";
     private static final String API_BASE = "https://api.github.com";
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration CACHE_TTL = Duration.ofMinutes(10);
     private static final int PER_PAGE = 100;
@@ -46,8 +49,9 @@ final class GithubReleases {
     private GithubReleases() {
     }
 
-    static JsonArray fetchAll(@Nullable FleetCacheRef fleetCacheRef) throws IOException, InterruptedException {
-        Path cacheFile = cachePath();
+    static JsonArray fetchAll(LoaderPaths paths, @Nullable FleetCacheRef fleetCacheRef)
+            throws IOException, InterruptedException {
+        Path cacheFile = cachePath(paths);
         JsonArray cached = readCacheIfFresh(cacheFile);
         if (cached != null) return cached;
 
@@ -64,16 +68,16 @@ final class GithubReleases {
             }
         }
 
-        HttpClient client = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_BASE + "/repos/" + GithubSource.REPOSITORY
                         + "/releases?per_page=" + PER_PAGE))
                 .timeout(READ_TIMEOUT)
                 .header("Accept", "application/vnd.github+json")
                 .header("X-GitHub-Api-Version", "2022-11-28")
+                .header("User-Agent", "TotemGuard-Loader")
                 .GET().build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = LoaderHttp.client().send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
             throw new IOException("GitHub returned " + HttpStatusText.describe(response.statusCode())
                     + " for the releases listing.");
@@ -113,7 +117,7 @@ final class GithubReleases {
         }
     }
 
-    private static Path cachePath() {
-        return Paths.get(System.getProperty("java.io.tmpdir"), "totemguard-loader-cache", "github-releases.json");
+    private static Path cachePath(LoaderPaths paths) {
+        return paths.loaderDir().resolve("cache").resolve("github-releases.json");
     }
 }

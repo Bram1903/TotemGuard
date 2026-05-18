@@ -67,18 +67,22 @@ public final class FleetBroker {
     private final LoaderPaths paths;
     private final HostPlatform platform;
     private final FleetCacheRef cacheRef;
+    private final CatalogIndex catalogIndex;
     private final ScheduledExecutorService scheduler;
-
     private final Object subscriptionLock = new Object();
+    private volatile FleetMessageAuth auth;
     private volatile @Nullable AutoCloseable jarSubscription;
     private volatile @Nullable AutoCloseable catalogSubscription;
     private volatile @Nullable ScheduledFuture<?> heartbeatFuture;
 
-    public FleetBroker(Logger logger, LoaderPaths paths, HostPlatform platform, FleetCacheRef cacheRef) {
+    public FleetBroker(Logger logger, LoaderPaths paths, HostPlatform platform,
+                       FleetCacheRef cacheRef, CatalogIndex catalogIndex) {
         this.logger = logger;
         this.paths = paths;
         this.platform = platform;
         this.cacheRef = cacheRef;
+        this.catalogIndex = catalogIndex;
+        this.auth = new FleetMessageAuth(logger, null);
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "TotemGuard-Loader-Fleet");
             t.setDaemon(true);
@@ -89,8 +93,16 @@ public final class FleetBroker {
         // the inner plugin jar has injected the api classes.
     }
 
+    private static String randomNonce() {
+        return java.util.UUID.randomUUID().toString();
+    }
+
     private static String sanitize(String value) {
         return value.replaceAll("[^A-Za-z0-9._+-]", "_");
+    }
+
+    public void setAuth(FleetMessageAuth auth) {
+        this.auth = auth;
     }
 
     public void connect() {
@@ -104,7 +116,8 @@ public final class FleetBroker {
             try {
                 jarSubscription = cache.subscribe(TOPIC_JAR_AVAILABLE, payload -> handleJarAvailable(cache, payload));
                 catalogSubscription = cache.subscribe(TOPIC_CATALOG_CHANGED, this::handleCatalogChanged);
-                heartbeatFuture = scheduler.scheduleAtFixedRate(this::pushHeartbeat,
+                // Fixed-delay so a slow disk scan can't queue up backlogged heartbeats.
+                heartbeatFuture = scheduler.scheduleWithFixedDelay(this::pushHeartbeat,
                         0L, CATALOG_HEARTBEAT_PERIOD.toMillis(), TimeUnit.MILLISECONDS);
                 logger.fine("Fleet broker connected (instance " + cache.instanceId() + ").");
             } catch (Throwable t) {
@@ -157,6 +170,7 @@ public final class FleetBroker {
             payload.addProperty("version", version);
             payload.addProperty("sourceLabel", sourceLabel == null ? "" : sourceLabel);
             payload.addProperty("senderInstance", cache.instanceId().toString());
+            auth.sign(payload, FleetBroker::randomNonce);
             cache.publish(TOPIC_JAR_AVAILABLE, GSON.toJson(payload).getBytes(StandardCharsets.UTF_8));
 
             announceCatalogEntry(cache, version, sha256, sourceLabel);
@@ -185,6 +199,7 @@ public final class FleetBroker {
         pub.addProperty("sha256", sha256);
         pub.addProperty("version", version);
         pub.addProperty("action", "added");
+        auth.sign(pub, FleetBroker::randomNonce);
         try {
             cache.publish(TOPIC_CATALOG_CHANGED, GSON.toJson(pub).getBytes(StandardCharsets.UTF_8));
         } catch (Throwable ignored) {
@@ -195,8 +210,7 @@ public final class FleetBroker {
         Optional<FleetCache> cacheOpt = cacheRef.available();
         if (cacheOpt.isEmpty()) return;
         FleetCache cache = cacheOpt.get();
-        CatalogIndex index = new CatalogIndex(paths.versionsDir(), platform, logger);
-        for (CatalogIndex.Entry entry : index.readAll()) {
+        for (CatalogIndex.Entry entry : catalogIndex.readAll()) {
             CatalogSidecar sidecar = entry.sidecar();
             if (sidecar.sha256() == null || sidecar.sha256().isBlank()) continue;
             try {
@@ -217,6 +231,7 @@ public final class FleetBroker {
             }
             String sender = json.has("senderInstance") ? json.get("senderInstance").getAsString() : "";
             if (sender.equals(cache.instanceId().toString())) return; // our own broadcast
+            if (!auth.verify(json, TOPIC_JAR_AVAILABLE)) return;
 
             String sha256 = json.get("sha256").getAsString();
             String version = json.get("version").getAsString();
@@ -228,8 +243,7 @@ public final class FleetBroker {
             }
 
             // Already on disk?
-            CatalogIndex index = new CatalogIndex(paths.versionsDir(), platform, logger);
-            if (index.findBySha(sha256).isPresent()) return;
+            if (catalogIndex.findBySha(sha256).isPresent()) return;
 
             // Pull bytes and import.
             scheduler.execute(() -> downloadAndImport(cache, sha256, version, sourceLabel));
@@ -242,6 +256,7 @@ public final class FleetBroker {
         // Informational: log at fine level so /tgloader peers diagnostics have something to grep.
         try {
             JsonObject json = JsonParser.parseString(new String(payload, StandardCharsets.UTF_8)).getAsJsonObject();
+            if (!auth.verify(json, TOPIC_CATALOG_CHANGED)) return;
             String version = json.has("version") ? json.get("version").getAsString() : "?";
             String sha = json.has("sha256") ? json.get("sha256").getAsString() : "";
             String action = json.has("action") ? json.get("action").getAsString() : "?";
@@ -252,47 +267,73 @@ public final class FleetBroker {
     }
 
     private void downloadAndImport(FleetCache cache, String sha256, String version, String sourceLabel) {
+        try {
+            if (tryImportFromBlob(cache, sha256, version, sourceLabel)) {
+                String hashPrefix = sha256.substring(0, Math.min(10, sha256.length()));
+                logger.info("Imported fleet TotemGuard " + version + " (" + hashPrefix + "…)"
+                        + (sourceLabel == null || sourceLabel.isBlank() ? "" : " from " + sourceLabel) + ".");
+            }
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "Failed to import fleet jar " + sha256, t);
+        }
+    }
+
+    /**
+     * Synchronously pull a jar blob from Redis, verify its hash, and add it to the
+     * local catalog. Returns true if the jar is now available locally (either we
+     * just imported it, or it was already on disk). Used by the rollout APPLY
+     * receiver to recover from a missed jar-available broadcast before giving up.
+     */
+    public boolean fetchAndImportSync(String version, String sha256, String sourceLabel) {
+        if (sha256 == null || sha256.isBlank()) return false;
+        if (catalogIndex.findBySha(sha256).isPresent()) return true;
+        Optional<FleetCache> cacheOpt = cacheRef.available();
+        if (cacheOpt.isEmpty()) return false;
+        try {
+            return tryImportFromBlob(cacheOpt.get(), sha256, version == null ? "" : version,
+                    sourceLabel == null ? "" : sourceLabel);
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "Failed to pull fleet jar " + sha256 + " on demand", t);
+            return false;
+        }
+    }
+
+    private boolean tryImportFromBlob(FleetCache cache, String sha256, String version, String sourceLabel) throws java.io.IOException {
         String key = JAR_KEY_PREFIX + sha256.toLowerCase(Locale.ROOT);
         Optional<byte[]> bytes;
         try {
             bytes = cache.get(key);
         } catch (Throwable t) {
             logger.log(Level.FINE, "Failed to pull fleet jar " + sha256, t);
-            return;
+            return false;
         }
         if (bytes.isEmpty()) {
             logger.fine("Fleet jar " + sha256 + " blob already expired. Skipping pull.");
-            return;
+            return false;
         }
 
-        try {
-            String actual = Checksums.hashBytes(bytes.get(), Artifact.HashAlgorithm.SHA_256);
-            if (!actual.equalsIgnoreCase(sha256)) {
-                logger.warning("Fleet jar payload hash " + actual + " did not match announcement " + sha256
-                        + ". Refusing to import.");
-                return;
-            }
-
-            String hashPrefix = sha256.substring(0, Math.min(10, sha256.length()));
-            Path destination = paths.versionsDir().resolve("TotemGuard-"
-                    + platform.name().toLowerCase(Locale.ROOT)
-                    + "-" + sanitize(version)
-                    + "-" + hashPrefix + ".jar");
-            Files.createDirectories(destination.getParent());
-
-            Path partial = destination.resolveSibling(destination.getFileName() + ".partial");
-            Files.write(partial, bytes.get(),
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            Files.move(partial, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-
-            CatalogIndex index = new CatalogIndex(paths.versionsDir(), platform, logger);
-            index.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_FLEET, null);
-
-            logger.info("Imported fleet TotemGuard " + version + " (" + hashPrefix + "…)"
-                    + (sourceLabel == null || sourceLabel.isBlank() ? "" : " from " + sourceLabel) + ".");
-        } catch (Throwable t) {
-            logger.log(Level.WARNING, "Failed to import fleet jar " + sha256, t);
+        String actual = Checksums.hashBytes(bytes.get(), Artifact.HashAlgorithm.SHA_256);
+        if (!actual.equalsIgnoreCase(sha256)) {
+            logger.warning("Fleet jar payload hash " + actual + " did not match announcement " + sha256
+                    + ". Refusing to import.");
+            return false;
         }
+
+        String hashPrefix = sha256.substring(0, Math.min(10, sha256.length()));
+        String filenameVersion = version.isBlank() ? "unknown" : version;
+        Path destination = paths.versionsDir().resolve("TotemGuard-"
+                + platform.name().toLowerCase(Locale.ROOT)
+                + "-" + sanitize(filenameVersion)
+                + "-" + hashPrefix + ".jar");
+        Files.createDirectories(destination.getParent());
+
+        Path partial = destination.resolveSibling(destination.getFileName() + ".partial");
+        Files.write(partial, bytes.get(),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.move(partial, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+
+        catalogIndex.upsertSource(destination, filenameVersion, sha256, CatalogSidecar.SOURCE_FLEET, null);
+        return true;
     }
 
     private String catalogKey(String version, String sha256) {

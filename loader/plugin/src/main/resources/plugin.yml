@@ -19,7 +19,6 @@ commands:
   tgloader:
     description: TotemGuard loader administration.
     usage: /tgloader <status|peers|versions|search|import|plugin|load|stage|apply|rollout>
-    permission: totemguard.loader.admin
 permissions:
   totemguard.loader.admin:
     description: Permits use of /tgloader. Not granted to operators or anyone else by default. Grant explicitly.

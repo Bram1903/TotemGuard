@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.channels.FileChannel;
@@ -37,7 +36,6 @@ import java.nio.file.*;
 import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -45,22 +43,15 @@ import java.util.regex.Pattern;
 
 public final class CachedJarStore {
 
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
     private static final String CHANNELS_DIR_NAME = ".channels";
 
     private final Path versionsDir;
     private final Logger logger;
-    private final HttpClient client;
 
     public CachedJarStore(Path versionsDir, Logger logger) throws IOException {
         this.versionsDir = versionsDir;
         Files.createDirectories(versionsDir);
         this.logger = logger;
-        this.client = HttpClient.newBuilder()
-                .connectTimeout(CONNECT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
     }
 
     private static void verifyAndMove(Path partial, Path destination, Artifact artifact) throws IOException {
@@ -110,9 +101,11 @@ public final class CachedJarStore {
         }
 
         URI uri = artifact.downloadUri();
-        return "file".equals(uri.getScheme())
-                ? copyLocal(uri, cached, artifact)
-                : downloadHttp(uri, cached, artifact);
+        if ("file".equals(uri.getScheme())) {
+            return copyLocal(uri, cached, artifact);
+        }
+        return LoaderHttp.retry(logger, "download " + artifact.fileName(),
+                () -> downloadHttp(uri, cached, artifact));
     }
 
     private Path copyLocal(URI uri, Path destination, Artifact artifact) throws IOException {
@@ -127,26 +120,31 @@ public final class CachedJarStore {
         }
     }
 
-    private Path downloadHttp(URI uri, Path destination, Artifact artifact) throws IOException {
+    private Path downloadHttp(URI uri, Path destination, Artifact artifact) throws IOException, InterruptedException {
         logger.info("Downloading " + artifact.fileName() + " from " + artifact.sourceLabel());
         Path partial = destination.resolveSibling(destination.getFileName() + ".partial");
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(uri)
-                    .timeout(READ_TIMEOUT)
+                    .timeout(LoaderHttp.READ_TIMEOUT)
                     .header("User-Agent", "TotemGuard-Loader")
                     .GET();
             for (Map.Entry<String, String> header : artifact.headers().entrySet()) {
                 builder.header(header.getKey(), header.getValue());
             }
 
-            HttpResponse<InputStream> response = client.send(builder.build(),
+            HttpResponse<InputStream> response = LoaderHttp.client().send(builder.build(),
                     HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() / 100 != 2) {
-                throw new IOException("HTTP " + HttpStatusText.describe(response.statusCode()) + " for " + uri);
+            int status = response.statusCode();
+            if (status / 100 != 2) {
+                String msg = "HTTP " + HttpStatusText.describe(status) + " for " + uri;
+                if (status >= 500 || status == 408 || status == 429) throw new IOException(msg);
+                throw new PermanentDownloadException(msg);
             }
 
             MessageDigest digest = newDigest(artifact);
+            long contentLength = response.headers().firstValueAsLong("Content-Length").orElse(-1L);
+            long written = 0L;
             try (InputStream in = response.body();
                  OutputStream out = Files.newOutputStream(partial,
                          StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
@@ -155,10 +153,16 @@ public final class CachedJarStore {
                 while ((read = in.read(buffer)) != -1) {
                     out.write(buffer, 0, read);
                     digest.update(buffer, 0, read);
+                    written += read;
                 }
             }
 
-            String actual = HexFormat.of().formatHex(digest.digest());
+            if (contentLength >= 0 && written != contentLength) {
+                throw new IOException("Short read for " + artifact.fileName()
+                        + " (got " + written + " of " + contentLength + " bytes). Retrying.");
+            }
+
+            String actual = java.util.HexFormat.of().formatHex(digest.digest());
             if (!actual.equalsIgnoreCase(artifact.hashHex())) {
                 throw new IOException("Downloaded " + artifact.fileName()
                         + " hash " + actual + " did not match advertised " + artifact.hashHex());
@@ -166,9 +170,6 @@ public final class CachedJarStore {
 
             Files.move(partial, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             return destination;
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Download interrupted", ex);
         } finally {
             Files.deleteIfExists(partial);
         }
@@ -258,6 +259,12 @@ public final class CachedJarStore {
             return Optional.ofNullable(newest);
         } catch (IOException ex) {
             return Optional.empty();
+        }
+    }
+
+    private static final class PermanentDownloadException extends IOException implements LoaderHttp.Permanent {
+        PermanentDownloadException(String message) {
+            super(message);
         }
     }
 }

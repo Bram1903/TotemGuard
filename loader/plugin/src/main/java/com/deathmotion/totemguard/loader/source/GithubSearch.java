@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.loader.source;
 
 import com.deathmotion.totemguard.loader.core.HostPlatform;
+import com.deathmotion.totemguard.loader.core.LoaderPaths;
 import com.deathmotion.totemguard.loader.fleet.FleetCacheRef;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -35,9 +36,9 @@ public final class GithubSearch {
     private GithubSearch() {
     }
 
-    public static List<SearchMatch> search(String query, HostPlatform platform,
+    public static List<SearchMatch> search(String query, HostPlatform platform, LoaderPaths paths,
                                            @Nullable FleetCacheRef fleetCacheRef) throws Exception {
-        JsonArray releases = GithubReleases.fetchAll(fleetCacheRef);
+        JsonArray releases = GithubReleases.fetchAll(paths, fleetCacheRef);
         return matchAgainst(releases, query, platform);
     }
 

@@ -31,7 +31,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -52,8 +55,8 @@ public final class ResolveCache {
     private final Logger logger;
     private final @Nullable FleetCacheRef fleetCacheRef;
 
-    public ResolveCache(Logger logger, @Nullable FleetCacheRef fleetCacheRef) {
-        this.cacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "totemguard-loader-cache");
+    public ResolveCache(Path loaderDir, Logger logger, @Nullable FleetCacheRef fleetCacheRef) {
+        this.cacheDir = loaderDir.resolve("cache").resolve("resolve");
         this.logger = logger;
         this.fleetCacheRef = fleetCacheRef;
     }

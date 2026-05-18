@@ -46,6 +46,7 @@ public final class RolloutCoordinator {
     public static final String PHASE_APPLY = "APPLY";
     public static final String PHASE_CANCEL = "CANCEL";
     public static final String PHASE_COMPLETE = "COMPLETE";
+    public static final String PHASE_APPLY_FAILED = "APPLY_FAILED";
 
     public static final Duration DEFAULT_APPLY_OFFSET = Duration.ofSeconds(3);
 
@@ -53,6 +54,7 @@ public final class RolloutCoordinator {
     private final FleetCacheRef cacheRef;
     private final Consumer<RolloutApply> applyHandler;
     private final BiPredicate<String, String> catalogStager;
+    private volatile FleetMessageAuth auth;
 
     private volatile @Nullable AutoCloseable subscription;
     private volatile @Nullable LeaderState leaderState;
@@ -64,6 +66,15 @@ public final class RolloutCoordinator {
         this.cacheRef = cacheRef;
         this.applyHandler = applyHandler;
         this.catalogStager = catalogStager;
+        this.auth = new FleetMessageAuth(logger, null);
+    }
+
+    private static String randomNonce() {
+        return java.util.UUID.randomUUID().toString();
+    }
+
+    public void setAuth(FleetMessageAuth auth) {
+        this.auth = auth;
     }
 
     public void connect() {
@@ -130,6 +141,7 @@ public final class RolloutCoordinator {
         payload.addProperty("version", version);
         payload.addProperty("sha256", sha256);
         payload.addProperty("leader", leader.toString());
+        auth.sign(payload, RolloutCoordinator::randomNonce);
         try {
             cache.publish(TOPIC, payload.toString().getBytes(StandardCharsets.UTF_8));
         } catch (Throwable ignored) {
@@ -169,8 +181,23 @@ public final class RolloutCoordinator {
                 .orElseThrow(() -> new IllegalStateException("Fleet cache not attached"));
 
         Map<String, String> existing = cache.getHash(HASH_PREFIX + opId);
+        if (existing.isEmpty()) {
+            try {
+                lock.close();
+            } catch (Throwable ignored) {
+            }
+            throw new IllegalStateException("Rollout " + opId + " state is missing from Redis. "
+                    + "It may have expired or been evicted. Run /tgloader rollout stage <version> to restart.");
+        }
         String targetVersion = existing.getOrDefault("targetVersion", "");
         String targetSha256 = existing.getOrDefault("targetSha256", "");
+        if (targetVersion.isBlank() || targetSha256.isBlank()) {
+            try {
+                lock.close();
+            } catch (Throwable ignored) {
+            }
+            throw new IllegalStateException("Rollout " + opId + " has no target version/sha256. Refusing to broadcast APPLY.");
+        }
 
         JsonObject payload = new JsonObject();
         payload.addProperty("schemaVersion", SCHEMA_VERSION);
@@ -179,6 +206,7 @@ public final class RolloutCoordinator {
         payload.addProperty("applyAtMillis", applyAt.toEpochMilli());
         payload.addProperty("targetVersion", targetVersion);
         payload.addProperty("targetSha256", targetSha256);
+        auth.sign(payload, RolloutCoordinator::randomNonce);
         cache.publish(TOPIC, payload.toString().getBytes(StandardCharsets.UTF_8));
 
         Map<String, String> hash = new LinkedHashMap<>(existing);
@@ -200,6 +228,7 @@ public final class RolloutCoordinator {
             payload.addProperty("schemaVersion", SCHEMA_VERSION);
             payload.addProperty("opId", opId.toString());
             payload.addProperty("phase", PHASE_CANCEL);
+            auth.sign(payload, RolloutCoordinator::randomNonce);
             try {
                 cache.publish(TOPIC, payload.toString().getBytes(StandardCharsets.UTF_8));
             } catch (Throwable ignored) {
@@ -213,6 +242,35 @@ public final class RolloutCoordinator {
         });
         try {
             lock.close();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    // Without this signal the leader assumes every peer applied cleanly and releases
+    // the rollout lock, leaving the fleet in a split state.
+    public void reportApplyFailure(UUID opId, String reason) {
+        Optional<FleetCache> cacheOpt = cacheRef.available();
+        if (cacheOpt.isEmpty()) return;
+        FleetCache cache = cacheOpt.get();
+        JsonObject payload = new JsonObject();
+        payload.addProperty("schemaVersion", SCHEMA_VERSION);
+        payload.addProperty("opId", opId.toString());
+        payload.addProperty("phase", PHASE_APPLY_FAILED);
+        payload.addProperty("peer", cache.instanceId().toString());
+        payload.addProperty("reason", reason == null ? "" : reason);
+        auth.sign(payload, RolloutCoordinator::randomNonce);
+        try {
+            cache.publish(TOPIC, payload.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (Throwable ignored) {
+        }
+        try {
+            Map<String, String> existing = cache.getHash(HASH_PREFIX + opId);
+            if (!existing.isEmpty()) {
+                Map<String, String> hash = new LinkedHashMap<>(existing);
+                String failedKey = "failed:" + cache.instanceId();
+                hash.put(failedKey, reason == null ? "" : reason);
+                cache.putHash(HASH_PREFIX + opId, hash, HASH_TTL);
+            }
         } catch (Throwable ignored) {
         }
     }
@@ -252,6 +310,7 @@ public final class RolloutCoordinator {
             JsonObject json = JsonParser.parseString(new String(payload, StandardCharsets.UTF_8)).getAsJsonObject();
             int schema = json.has("schemaVersion") ? json.get("schemaVersion").getAsInt() : 0;
             if (schema > SCHEMA_VERSION) return;
+            if (!auth.verify(json, TOPIC)) return;
             String phase = json.get("phase").getAsString();
             UUID opId = UUID.fromString(json.get("opId").getAsString());
 
@@ -275,6 +334,11 @@ public final class RolloutCoordinator {
                 }
                 case PHASE_CANCEL -> logger.info("Rollout " + opId + " was cancelled by the leader.");
                 case PHASE_COMPLETE -> logger.fine("Rollout " + opId + " marked COMPLETE.");
+                case PHASE_APPLY_FAILED -> {
+                    String peer = json.has("peer") ? json.get("peer").getAsString() : "?";
+                    String reason = json.has("reason") ? json.get("reason").getAsString() : "?";
+                    logger.warning("Rollout " + opId + " failed on peer " + peer + ": " + reason);
+                }
                 default -> logger.fine("Unknown rollout phase: " + phase);
             }
         } catch (Throwable t) {

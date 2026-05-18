@@ -48,9 +48,11 @@ public final class LocalImporter {
     private static final String IMPORTED_DIR = ".imported";
 
     private final Logger logger;
+    private final CatalogIndex catalogIndex;
 
-    public LocalImporter(Logger logger) {
+    public LocalImporter(Logger logger, CatalogIndex catalogIndex) {
         this.logger = logger;
+        this.catalogIndex = catalogIndex;
     }
 
     private static String readJarVersion(Path jar) throws IOException {
@@ -153,17 +155,16 @@ public final class LocalImporter {
                 + "-" + sanitize(version)
                 + "-" + hashPrefix + ".jar");
 
-        CatalogIndex index = new CatalogIndex(paths.versionsDir(), platform, logger);
         boolean freshlyImported;
         if (Files.isRegularFile(destination)) {
             logger.info("Local " + jar.getFileName() + " already in cache as "
                     + destination.getFileName() + ".");
-            index.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_LOCAL, null);
+            catalogIndex.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_LOCAL, null);
             freshlyImported = false;
         } else {
             Files.createDirectories(destination.getParent());
             Files.copy(jar, destination, StandardCopyOption.REPLACE_EXISTING);
-            index.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_LOCAL, null);
+            catalogIndex.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_LOCAL, null);
             logger.info("Imported " + jar.getFileName() + " as " + destination.getFileName() + ".");
             freshlyImported = true;
         }

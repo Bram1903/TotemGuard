@@ -100,7 +100,7 @@ public final class GithubSource implements VersionResolver {
 
     @Override
     public Artifact resolve(ResolverContext context) throws Exception {
-        JsonArray releases = GithubReleases.fetchAll(context.fleetCacheRef());
+        JsonArray releases = GithubReleases.fetchAll(context.paths(), context.fleetCacheRef());
         String requested = context.config().version();
         String assetSuffix = context.platform().assetSuffix();
 

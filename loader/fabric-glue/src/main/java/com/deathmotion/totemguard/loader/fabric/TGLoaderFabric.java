@@ -16,35 +16,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.loader.paper;
+package com.deathmotion.totemguard.loader.fabric;
 
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.deathmotion.totemguard.loader.command.LoaderApp;
 import com.deathmotion.totemguard.loader.core.*;
 import com.deathmotion.totemguard.loader.fleet.RolloutCoordinator;
 import com.deathmotion.totemguard.loader.runtime.PluginRuntime;
-import org.bukkit.Bukkit;
-import org.bukkit.command.PluginCommand;
-import org.bukkit.event.HandlerList;
-import org.bukkit.plugin.java.JavaPlugin;
+import net.fabricmc.api.DedicatedServerModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
+public final class TGLoaderFabric implements DedicatedServerModInitializer, LoaderApp {
 
-    private final Logger loaderLog = Logger.getLogger("TotemGuard-Loader");
+    private final Logger logger = Logger.getLogger("TotemGuard-Loader");
     private final Set<Future<?>> inFlight = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private volatile boolean integrityFailed;
     private volatile boolean disabling;
     private volatile LoaderPaths paths;
     private volatile LoaderCore core;
     private volatile PluginRuntime runtime;
     private volatile ExecutorService bootstrapWorker;
+    private volatile ScheduledExecutorService delayScheduler;
     private volatile Future<?> startupFuture;
 
     private static String describeRootCause(Throwable t) {
@@ -59,55 +60,56 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
     }
 
     @Override
-    public void onLoad() {
-        if (!new JarIntegrityChecker(loaderLog, "TotemGuard-Loader").verifyCurrentJar()) {
-            integrityFailed = true;
-        }
-    }
+    public void onInitializeServer() {
+        // Reroute JUL through SLF4J before anything logs, otherwise the JDK's default
+        // ConsoleHandler emits two-line records that look broken next to Fabric's
+        // single-line Log4j2 output.
+        bridgeLoggingToFabric();
 
-    @Override
-    public void onEnable() {
-        // Self-integrity is the only condition that disables the loader. Everything else
-        // (network failures, bad pins, missing assets, plugin start crashes) must keep
-        // the loader online so operators can recover via /tgloader.
-        if (integrityFailed) {
-            loaderLog.severe("TotemGuard Loader will NOT load the TotemGuard plugin because the loader jar failed integrity verification.");
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
+        // In dev (loom launches us from sourceSet classes, not a built jar) there is
+        // no integrity manifest to verify, so skip the check. Production runs the
+        // shadow jar where the manifest is present.
+        boolean dev = FabricLoader.getInstance().isDevelopmentEnvironment();
+        if (!dev) {
+            if (!new JarIntegrityChecker(logger, "TotemGuard-Loader").verifyCurrentJar()) {
+                logger.severe("TotemGuard Loader will NOT load the TotemGuard plugin because the loader jar failed integrity verification.");
+                return;
+            }
+        } else {
+            logger.info("Dev environment detected, skipping loader jar integrity verification.");
         }
-
-        loaderLog.info("TotemGuard Loader " + LoaderManifest.loaderVersion() + " on Paper");
+        logger.info("TotemGuard Loader " + LoaderManifest.loaderVersion() + " on Fabric");
 
         try {
-            this.paths = LoaderPaths.forPaper(getDataFolder().toPath());
-            this.core = new LoaderCore(loaderLog, paths, HostPlatform.PAPER);
+            this.paths = LoaderPaths.forFabric(FabricLoader.getInstance().getConfigDir());
+            this.core = new LoaderCore(logger, paths, HostPlatform.FABRIC);
             this.core.initRolloutCoordinator(this::onFleetApply);
         } catch (Throwable t) {
-            loaderLog.log(Level.SEVERE, "TotemGuard Loader could not prepare its data directory. "
+            logger.log(Level.SEVERE, "TotemGuard Loader could not prepare its data directory. "
                     + "The loader will stay enabled but inert. Check filesystem permissions.", t);
             return;
         }
 
         this.bootstrapWorker = Executors.newSingleThreadExecutor(new NamedThreadFactory("TotemGuard-Loader-Bootstrap"));
-        registerCommand();
+        this.delayScheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("TotemGuard-Loader-Delay"));
 
-        // Off the main thread so a slow resolve/download can't stall Paper boot.
+        new FabricTgLoaderCommand(this).register();
+
         startupFuture = bootstrapWorker.submit(() -> {
             try {
                 attemptStart(null);
             } catch (Throwable t) {
                 if (disabling) return;
-                loaderLog.log(Level.SEVERE, "TotemGuard could not be loaded automatically ("
-                        + describeRootCause(t) + "). The loader is still enabled. "
-                        + "Recover with /tgloader load <version>, or drop a jar into "
-                        + paths.localDir() + " then run /tgloader import followed by "
-                        + "/tgloader load <version>.", t);
+                logger.log(Level.SEVERE, "TotemGuard could not be loaded automatically ("
+                        + describeRootCause(t) + "). The loader is still online. "
+                        + "Drop a jar into " + paths.localDir() + " and run /tgloader load <version> from console.", t);
             }
         });
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "TotemGuard-Loader-Shutdown"));
     }
 
-    @Override
-    public void onDisable() {
+    private void shutdown() {
         disabling = true;
         if (startupFuture != null) {
             startupFuture.cancel(true);
@@ -123,26 +125,23 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
                 Thread.currentThread().interrupt();
             }
         }
+        if (delayScheduler != null) {
+            delayScheduler.shutdownNow();
+        }
         if (runtime != null) {
             try {
                 runtime.shutdown();
             } catch (Throwable t) {
-                loaderLog.log(Level.WARNING, "TotemGuard Loader shutdown threw", t);
+                logger.log(Level.WARNING, "TotemGuard Loader shutdown threw", t);
             }
         }
         if (core != null) {
             try {
                 core.shutdown();
             } catch (Throwable t) {
-                loaderLog.log(Level.WARNING, "Loader core shutdown threw", t);
+                logger.log(Level.WARNING, "Loader core shutdown threw", t);
             }
         }
-        HandlerList.unregisterAll(this);
-    }
-
-    @Override
-    public boolean isDisabling() {
-        return disabling;
     }
 
     @Override
@@ -157,19 +156,18 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
 
     @Override
     public Logger logger() {
-        return loaderLog;
+        return logger;
     }
 
-    /**
-     * Submit work to the loader's background bootstrap pool. Callers use this instead
-     * of {@code Bukkit.getScheduler().runTaskAsynchronously} when they want their task
-     * tracked (and cancelled on disable) so a long-running apply does not race against
-     * server shutdown.
-     */
+    @Override
+    public boolean isDisabling() {
+        return disabling;
+    }
+
     @Override
     public Future<?> submitBackground(Runnable task) {
         if (disabling || bootstrapWorker == null) {
-            return java.util.concurrent.CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
         Future<?>[] holder = new Future<?>[1];
         Future<?> f = bootstrapWorker.submit(() -> {
@@ -188,8 +186,8 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
     public synchronized void attemptStart(String versionOverride) throws Exception {
         if (disabling) return;
         if (runtime == null) {
-            LoaderResult result = core.run(getClassLoader(), versionOverride);
-            PluginRuntime created = new PluginRuntime(core, this, paths, getClassLoader(), loaderLog);
+            LoaderResult result = core.run(getClass().getClassLoader(), versionOverride);
+            PluginRuntime created = new PluginRuntime(core, this, paths, getClass().getClassLoader(), logger);
             created.start(result.pluginJar());
             this.runtime = created;
         } else {
@@ -220,13 +218,10 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
         if (core.readStaged().isEmpty()) {
             boolean staged = core.stageFromCatalogBySha(apply.targetVersion(), apply.targetSha256());
             if (!staged) {
-                // Try to pull the jar from the fleet blob cache (jar-available may have
-                // arrived after we missed it, or this peer joined late). If still nothing,
-                // surface the failure so operators see a partial rollout.
                 staged = core.tryPullAndStageFromFleet(apply.targetVersion(), apply.targetSha256());
             }
             if (!staged) {
-                loaderLog.warning("Received fleet APPLY for " + apply.opId()
+                logger.warning("Received fleet APPLY for " + apply.opId()
                         + " but target "
                         + (apply.targetSha256() == null || apply.targetSha256().isBlank()
                         ? "(no SHA in APPLY payload)"
@@ -241,32 +236,66 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
             if (disabling) return;
             try {
                 attemptApplyStaged();
-                loaderLog.info("Applied fleet rollout (" + apply.opId().toString().substring(0, 8) + ").");
+                logger.info("Applied fleet rollout (" + apply.opId().toString().substring(0, 8) + ").");
             } catch (Throwable t) {
-                loaderLog.log(Level.WARNING, "Fleet APPLY for " + apply.opId() + " failed on this peer.", t);
+                logger.log(Level.WARNING, "Fleet APPLY for " + apply.opId() + " failed on this peer.", t);
                 core.reportApplyFailure(apply.opId(), describeRootCause(t));
             }
         });
         if (delayMillis <= 0) {
             doApply.run();
         } else {
-            long delayTicks = delayMillis / 50L;
-            Bukkit.getScheduler().runTaskLater(this, doApply, delayTicks);
+            delayScheduler.schedule(doApply, delayMillis, TimeUnit.MILLISECONDS);
             long delaySeconds = Math.round(delayMillis / 1000.0);
-            loaderLog.info("Applying staged rollout in " + delaySeconds + "s.");
+            logger.info("Applying staged rollout in " + delaySeconds + "s.");
         }
     }
 
-    private void registerCommand() {
-        PluginCommand command = getCommand("tgloader");
-        if (command == null) return;
-        PaperTgLoaderCommand executor = new PaperTgLoaderCommand(this);
-        command.setExecutor(executor);
-        command.setTabCompleter(executor);
-        Bukkit.getPluginManager().registerEvents(new TgLoaderCommandHider(), this);
+    private void bridgeLoggingToFabric() {
+        org.slf4j.Logger slf4j = org.slf4j.LoggerFactory.getLogger("TotemGuard-Loader");
+        logger.setUseParentHandlers(false);
+        for (Handler h : logger.getHandlers()) logger.removeHandler(h);
+        logger.addHandler(new Slf4jBridgeHandler(slf4j));
+        logger.setLevel(Level.ALL);
     }
 
-    private static final class NamedThreadFactory implements java.util.concurrent.ThreadFactory {
+    private static final class Slf4jBridgeHandler extends Handler {
+        private final org.slf4j.Logger target;
+
+        Slf4jBridgeHandler(org.slf4j.Logger target) {
+            this.target = target;
+        }
+
+        @Override
+        public void publish(LogRecord r) {
+            if (r == null) return;
+            String msg = r.getMessage();
+            Object[] params = r.getParameters();
+            if (msg != null && params != null && params.length > 0) {
+                try {
+                    msg = MessageFormat.format(msg, params);
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            Throwable t = r.getThrown();
+            int lvl = r.getLevel().intValue();
+            if (lvl >= Level.SEVERE.intValue()) target.error(msg, t);
+            else if (lvl >= Level.WARNING.intValue()) target.warn(msg, t);
+            else if (lvl >= Level.INFO.intValue()) target.info(msg, t);
+            else if (lvl >= Level.FINE.intValue()) target.debug(msg, t);
+            else target.trace(msg, t);
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
+    private static final class NamedThreadFactory implements ThreadFactory {
         private final AtomicInteger id = new AtomicInteger();
         private final String prefix;
 

@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import loader.CompileNativeTask
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -11,6 +12,15 @@ plugins {
 version = "1.0.0" + if (rootProject.extra["snapshot"] as Boolean) "-SNAPSHOT" else ""
 description = "TotemGuard Loader"
 
+tasks.named<Jar>("jar") {
+    enabled = true
+    archiveClassifier = "dev"
+    destinationDirectory = layout.buildDirectory.dir("libs")
+    manifest {
+        attributes["Implementation-Version"] = project.version.toString()
+    }
+}
+
 dependencies {
     implementation(project(":integrity"))
 
@@ -22,6 +32,14 @@ dependencies {
 
     compileOnly(libs.paper)
     compileOnly(libs.fabric.loader)
+}
+
+tasks.named<ShadowJar>("shadowJar") {
+    dependsOn(":loader:fabric-glue:jar")
+    from(provider {
+        val glueJar = project(":loader:fabric-glue").tasks.named<Jar>("jar").get().archiveFile.get().asFile
+        zipTree(glueJar)
+    })
 }
 
 tasks.register<CompileNativeTask>("compileNative") {

@@ -44,8 +44,18 @@ public final class NativeClassLoader {
             }
             Path extracted = Files.createTempFile("tgloader_native_", librarySuffix());
             extracted.toFile().deleteOnExit();
-            Files.copy(in, extracted, StandardCopyOption.REPLACE_EXISTING);
-            System.load(extracted.toAbsolutePath().toString());
+            try {
+                Files.copy(in, extracted, StandardCopyOption.REPLACE_EXISTING);
+                System.load(extracted.toAbsolutePath().toString());
+            } catch (Throwable t) {
+                // If load fails (bad architecture, corrupted bytes, SELinux), drop the
+                // extracted file immediately rather than waiting for JVM exit.
+                try {
+                    Files.deleteIfExists(extracted);
+                } catch (IOException ignored) {
+                }
+                throw t;
+            }
         }
         loaded = true;
     }

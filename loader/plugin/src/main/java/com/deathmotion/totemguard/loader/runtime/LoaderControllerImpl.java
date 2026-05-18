@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.api.fleet.FleetCache;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
 import com.deathmotion.totemguard.host.LoaderController;
+import com.deathmotion.totemguard.host.LoaderResolveException;
 import com.deathmotion.totemguard.host.UpdateTarget;
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.deathmotion.totemguard.loader.config.LoaderConfig;
@@ -60,6 +61,16 @@ final class LoaderControllerImpl implements LoaderController {
         } catch (NoSuchAlgorithmException ex) {
             throw new IOException(ex);
         }
+    }
+
+    private static LoaderResolveException.Reason reasonOf(Throwable t) {
+        return switch (LoaderCore.classifyResolveFailure(t)) {
+            case UNREACHABLE -> LoaderResolveException.Reason.UNREACHABLE;
+            case UPSTREAM_ERROR -> LoaderResolveException.Reason.UPSTREAM_ERROR;
+            case NO_MATCH -> LoaderResolveException.Reason.NO_MATCH;
+            case GATE_REJECTED -> LoaderResolveException.Reason.GATE_REJECTED;
+            case RESOLVE_FAILED -> LoaderResolveException.Reason.RESOLVE_FAILED;
+        };
     }
 
     @Override
@@ -111,10 +122,11 @@ final class LoaderControllerImpl implements LoaderController {
             Artifact artifact = core.resolveCurrentTarget();
             String source = sourceNameOf(artifact);
             return new UpdateTarget(source, artifact.version(), null, -1L, artifact.fileName());
-        } catch (IOException ex) {
+        } catch (LoaderResolveException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new IOException("Failed to resolve loader target: " + ex.getMessage(), ex);
+            throw new LoaderResolveException(reasonOf(ex),
+                    "Failed to resolve loader target: " + ex.getMessage(), ex);
         }
     }
 
@@ -138,10 +150,13 @@ final class LoaderControllerImpl implements LoaderController {
                         + " differs from requested " + target.version() + ". Downloading the resolved one.");
             }
             return core.downloadArtifact(artifact);
+        } catch (LoaderResolveException ex) {
+            throw ex;
         } catch (IOException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new IOException("Failed to download " + target.version() + ": " + ex.getMessage(), ex);
+            throw new LoaderResolveException(reasonOf(ex),
+                    "Failed to download " + target.version() + ": " + ex.getMessage(), ex);
         }
     }
 

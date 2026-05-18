@@ -18,12 +18,10 @@
 
 package com.deathmotion.totemguard.loader.config;
 
+import com.deathmotion.totemguard.loader.core.HostPlatform;
 import com.deathmotion.totemguard.loader.core.PluginVersionGate;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
@@ -33,37 +31,25 @@ public final class LoaderConfig {
 
     private final String version;
     private final Source source;
+    private final String fleetSharedSecret;
 
-    private LoaderConfig(String version, Source source) {
+    private LoaderConfig(String version, Source source, String fleetSharedSecret) {
         this.version = version;
         this.source = source;
+        this.fleetSharedSecret = fleetSharedSecret;
     }
 
-    public static LoaderConfig loadOrWriteDefault(Path loaderDir, Logger logger) throws IOException {
-        Files.createDirectories(loaderDir);
-        Path configFile = loaderDir.resolve("loader-config.yml");
-        if (!Files.exists(configFile)) {
-            try (InputStream defaultStream = LoaderConfig.class.getResourceAsStream("/loader-config.yml")) {
-                if (defaultStream == null) {
-                    throw new IOException("Loader default config resource is missing from the jar.");
-                }
-                Files.copy(defaultStream, configFile);
-            }
-            logger.info("loader-config.yml: wrote default at " + configFile + ". Edit and restart to change the source.");
+    public static LoaderConfig loadOrWriteDefault(Path loaderDir, Logger logger, HostPlatform platform) throws IOException {
+        // Branch into a separate class for each format so the JVM never resolves the
+        // unused parser. Paper bundles snakeyaml at runtime, Fabric bundles gson, and
+        // neither bundles the other.
+        if (platform == HostPlatform.FABRIC) {
+            return JsonLoaderConfigIO.load(loaderDir, logger);
         }
+        return YamlLoaderConfigIO.load(loaderDir, logger);
+    }
 
-        Yaml yaml = new Yaml();
-        Map<String, Object> root;
-        try (InputStream in = Files.newInputStream(configFile)) {
-            Object parsed = yaml.load(in);
-            if (!(parsed instanceof Map<?, ?> map)) {
-                throw new IOException("loader-config.yml is empty or malformed.");
-            }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> typed = (Map<String, Object>) map;
-            root = typed;
-        }
-
+    static LoaderConfig fromMap(Map<String, Object> root, String sourceName, Logger logger) throws IOException {
         String version = asString(root.get("version"), "LATEST").trim();
         if (version.isEmpty()) version = "LATEST";
 
@@ -72,12 +58,32 @@ public final class LoaderConfig {
         try {
             source = Source.valueOf(sourceRaw);
         } catch (IllegalArgumentException ex) {
-            throw new IOException("Invalid 'source' in loader-config.yml: '" + sourceRaw
+            throw new IOException("Invalid 'source' in " + sourceName + ": '" + sourceRaw
                     + "'. Expected GITHUB or MODRINTH.");
         }
 
-        PluginVersionGate.rejectIfPinnedTooOld(version, "loader-config.yml");
-        return new LoaderConfig(version, source);
+        String fleetSecret = readFleetSecret(root);
+        if (fleetSecret == null || fleetSecret.isEmpty()) {
+            logger.warning(sourceName + ": fleet.shared-secret is not set. "
+                    + "Fleet messages will be authenticated trust-on-first-use only. "
+                    + "If your Redis is on a shared network, set fleet.shared-secret to a 32+ byte random string on every node.");
+        }
+
+        PluginVersionGate.rejectIfPinnedTooOld(version, sourceName);
+        return new LoaderConfig(version, source, fleetSecret);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String readFleetSecret(Map<String, Object> root) {
+        Object fleet = root.get("fleet");
+        if (fleet instanceof Map<?, ?> map) {
+            Object secret = ((Map<String, Object>) map).get("shared-secret");
+            if (secret != null) {
+                String trimmed = secret.toString().trim();
+                return trimmed.isEmpty() ? null : trimmed;
+            }
+        }
+        return null;
     }
 
     private static String asString(Object value, String fallback) {
@@ -85,7 +91,11 @@ public final class LoaderConfig {
     }
 
     public LoaderConfig withVersion(String overrideVersion) {
-        return new LoaderConfig(overrideVersion, source);
+        return new LoaderConfig(overrideVersion, source, fleetSharedSecret);
+    }
+
+    public String fleetSharedSecret() {
+        return fleetSharedSecret;
     }
 
     public String version() {

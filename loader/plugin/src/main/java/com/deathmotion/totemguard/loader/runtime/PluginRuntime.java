@@ -37,6 +37,13 @@ import java.util.logging.Logger;
  * Owns the live TotemGuard plugin: holds its {@link TGPluginClassLoader}, the API
  * {@link TGPluginHandle}, and drives start / restart / stop.
  * <p>
+ * Reload uses a prepare-then-swap pattern. {@link #prepareNext} does everything that
+ * does not require the running plugin to be stopped: resolve, download, integrity-
+ * check, classloader creation, and ServiceLoader entry-point lookup. Only once that
+ * succeeds does {@link #loadVersion} call {@link #stopCurrent} followed by
+ * {@link #commitPrepared}. This narrows the window during which TotemGuard is not
+ * active on the server to the time it takes the plugin's {@code start()} to return.
+ * <p>
  * The API classes ({@link TGPluginHost}, {@link TGPluginEntry}, etc.) are injected
  * into the host classloader by {@code ApiClassInjector} before this runtime is
  * constructed, so the direct references below resolve at first method invocation.
@@ -69,15 +76,21 @@ public final class PluginRuntime {
             logger.warning("PluginRuntime.start() called while a plugin is already loaded. Skipping.");
             return;
         }
-        loadOnce(pluginJar, null);
+        PreparedPlugin prepared = prepareFromJar(pluginJar);
+        commitPrepared(prepared, null);
     }
 
     public synchronized void loadVersion(String versionOverride, TGPluginShutdownEvent.Reason reason) throws Exception {
-        if (handle != null) {
-            stopCurrent(reason);
+        PreparedPlugin prepared = prepareNext(versionOverride);
+        try {
+            if (handle != null) {
+                stopCurrent(reason);
+            }
+            commitPrepared(prepared, reason);
+        } catch (Throwable t) {
+            safeClose(prepared.classLoader);
+            throw t;
         }
-        Path pluginJar = core.run(hostClassLoader, versionOverride).pluginJar();
-        loadOnce(pluginJar, reason);
     }
 
     public void loadVersionForCommand(String versionOverride) throws Exception {
@@ -106,9 +119,7 @@ public final class PluginRuntime {
     }
 
     public synchronized void restart(TGPluginShutdownEvent.Reason reason) throws Exception {
-        stopCurrent(reason);
-        Path pluginJar = core.run(hostClassLoader).pluginJar();
-        loadOnce(pluginJar, reason);
+        loadVersion(null, reason);
     }
 
     public synchronized void shutdown() {
@@ -141,29 +152,35 @@ public final class PluginRuntime {
             }
         }
         if (pluginClassLoader != null) {
-            try {
-                pluginClassLoader.close();
-            } catch (Throwable t) {
-                logger.log(Level.WARNING, "Failed to close TotemGuard plugin classloader", t);
-            }
+            safeClose(pluginClassLoader);
         }
         handle = null;
         pluginClassLoader = null;
         loadedVersion = null;
     }
 
-    private void loadOnce(Path pluginJar, TGPluginShutdownEvent.Reason reasonHint) throws Exception {
-        TGPluginClassLoader child = new TGPluginClassLoader(pluginJar, hostClassLoader);
+    private PreparedPlugin prepareNext(String versionOverride) throws Exception {
+        Path pluginJar = core.run(hostClassLoader, versionOverride).pluginJar();
+        return prepareFromJar(pluginJar);
+    }
 
-        TGPluginEntry entry = pickEntry(child);
+    private PreparedPlugin prepareFromJar(Path pluginJar) throws Exception {
+        TGPluginClassLoader child = new TGPluginClassLoader(pluginJar, hostClassLoader);
+        TGPluginEntry entry;
+        try {
+            entry = pickEntry(child);
+        } catch (Throwable t) {
+            safeClose(child);
+            throw t;
+        }
         if (entry == null) {
-            try {
-                child.close();
-            } catch (Exception ignored) {
-            }
+            safeClose(child);
             throw new IllegalStateException("TotemGuard plugin jar exposes no TGPluginEntry for " + core.platform());
         }
+        return new PreparedPlugin(child, entry, pluginJar);
+    }
 
+    private void commitPrepared(PreparedPlugin prepared, TGPluginShutdownEvent.Reason reasonHint) throws Exception {
         HostPlatform hostPlatform = core.platform();
         Platform platform = Platform.valueOf(hostPlatform.name());
         PluginHost host = new PluginHost(platform, nativePlugin, logger,
@@ -172,12 +189,9 @@ public final class PluginRuntime {
         long startNanos = System.nanoTime();
         TGPluginHandle started;
         try {
-            started = entry.start(host);
+            started = prepared.entry.start(host);
         } catch (Throwable t) {
-            try {
-                child.close();
-            } catch (Exception ignored) {
-            }
+            safeClose(prepared.classLoader);
             Throwable cause = t.getCause() != null ? t.getCause() : t;
             throw new IllegalStateException("TotemGuard plugin failed to start: " + cause.getMessage(), cause);
         }
@@ -187,10 +201,11 @@ public final class PluginRuntime {
         try {
             version = started.version();
         } catch (Throwable t) {
+            logger.log(Level.WARNING, "TGPluginHandle.version() threw; reporting as 'unknown'", t);
             version = "unknown";
         }
 
-        this.pluginClassLoader = child;
+        this.pluginClassLoader = prepared.classLoader;
         this.handle = started;
         this.loadedVersion = version;
 
@@ -210,5 +225,16 @@ public final class PluginRuntime {
             }
         }
         return null;
+    }
+
+    private void safeClose(AutoCloseable closeable) {
+        try {
+            closeable.close();
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "Failed to close " + closeable.getClass().getSimpleName(), t);
+        }
+    }
+
+    private record PreparedPlugin(TGPluginClassLoader classLoader, TGPluginEntry entry, Path jar) {
     }
 }

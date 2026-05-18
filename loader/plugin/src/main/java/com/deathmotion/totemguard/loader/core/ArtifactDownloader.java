@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.loader.core;
 
+import com.deathmotion.totemguard.loader.download.LoaderHttp;
 import com.deathmotion.totemguard.loader.source.Artifact;
 import com.deathmotion.totemguard.loader.source.HttpStatusText;
 
@@ -25,32 +26,31 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.logging.Logger;
 
 final class ArtifactDownloader {
 
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
-
     private final Logger logger;
-    private final HttpClient client;
 
     ArtifactDownloader(Logger logger) {
         this.logger = logger;
-        this.client = HttpClient.newBuilder()
-                .connectTimeout(CONNECT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
+    }
+
+    private static MessageDigest newDigest(Artifact artifact) throws IOException {
+        try {
+            return MessageDigest.getInstance(artifact.hashAlgorithm().jdkName());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IOException(ex);
+        }
     }
 
     byte[] download(Artifact artifact) throws IOException {
@@ -60,53 +60,64 @@ final class ArtifactDownloader {
             verify(bytes, artifact);
             return bytes;
         }
-        return downloadHttp(artifact);
+        return LoaderHttp.retry(logger, "download " + artifact.fileName(), () -> downloadHttp(artifact));
     }
 
-    private byte[] downloadHttp(Artifact artifact) throws IOException {
+    private byte[] downloadHttp(Artifact artifact) throws IOException, InterruptedException {
         logger.info("Downloading " + artifact.fileName() + " from " + artifact.sourceLabel());
-        try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(artifact.downloadUri())
-                    .timeout(READ_TIMEOUT)
-                    .header("User-Agent", "TotemGuard-Loader")
-                    .GET();
-            for (Map.Entry<String, String> header : artifact.headers().entrySet()) {
-                builder.header(header.getKey(), header.getValue());
-            }
 
-            HttpResponse<InputStream> response = client.send(builder.build(),
-                    HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() / 100 != 2) {
-                throw new IOException("HTTP " + HttpStatusText.describe(response.statusCode())
-                        + " for " + artifact.downloadUri());
-            }
-
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream(1 << 20);
-            try (InputStream in = response.body()) {
-                in.transferTo(buffer);
-            }
-            byte[] bytes = buffer.toByteArray();
-            verify(bytes, artifact);
-            return bytes;
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Download interrupted", ex);
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(artifact.downloadUri())
+                .timeout(LoaderHttp.READ_TIMEOUT)
+                .header("User-Agent", "TotemGuard-Loader")
+                .GET();
+        for (Map.Entry<String, String> header : artifact.headers().entrySet()) {
+            builder.header(header.getKey(), header.getValue());
         }
+
+        HttpResponse<InputStream> response = LoaderHttp.client().send(builder.build(),
+                HttpResponse.BodyHandlers.ofInputStream());
+        if (response.statusCode() / 100 != 2) {
+            int status = response.statusCode();
+            String message = "HTTP " + HttpStatusText.describe(status) + " for " + artifact.downloadUri();
+            // 5xx is transient: throwing IOException lets LoaderHttp.retry kick in.
+            if (status >= 500 || status == 408 || status == 429) {
+                throw new IOException(message);
+            }
+            throw new PermanentHttpException(message);
+        }
+
+        MessageDigest digest = newDigest(artifact);
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(1 << 20);
+        try (InputStream in = response.body();
+             DigestInputStream digestIn = new DigestInputStream(in, digest)) {
+            digestIn.transferTo(buffer);
+        }
+        byte[] bytes = buffer.toByteArray();
+        String actual = HexFormat.of().formatHex(digest.digest());
+        if (!actual.equalsIgnoreCase(artifact.hashHex())) {
+            throw new IOException("Downloaded " + artifact.fileName()
+                    + " hash " + actual + " did not match advertised " + artifact.hashHex());
+        }
+        return bytes;
     }
 
     private void verify(byte[] bytes, Artifact artifact) throws IOException {
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance(artifact.hashAlgorithm().jdkName());
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IOException(ex);
-        }
+        MessageDigest digest = newDigest(artifact);
         digest.update(bytes);
         String actual = HexFormat.of().formatHex(digest.digest());
         if (!actual.equalsIgnoreCase(artifact.hashHex())) {
             throw new IOException("Downloaded " + artifact.fileName()
                     + " hash " + actual + " did not match advertised " + artifact.hashHex());
+        }
+    }
+
+    /**
+     * Sentinel IOException that {@link LoaderHttp#retry} treats as non-retryable.
+     */
+    static final class PermanentHttpException extends IOException implements LoaderHttp.Permanent {
+        PermanentHttpException(String message) {
+            super(message);
         }
     }
 }

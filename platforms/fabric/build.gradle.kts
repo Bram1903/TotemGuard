@@ -16,6 +16,9 @@ dependencies {
     implementation(libs.fabric.api)
 
     implementation(project(":common"))
+    // Paper bundles snakeyaml at runtime, Fabric does not, so the Fabric plugin
+    // must ship its own copy. common/ keeps it compileOnly so Paper isn't double-bundled.
+    implementation(libs.snakeyaml)
     implementation(libs.mysql.jdbc) {
         exclude(group = "org.slf4j")
         exclude(group = "com.google.protobuf")
@@ -77,12 +80,16 @@ tasks.named<ShadowJar>("shadowJar") {
     from(devJar.flatMap { it.archiveFile }.map { zipTree(it) })
 
     relocate("com.mysql", "com.deathmotion.totemguard.common.libs.mysql")
+    relocate("org.yaml.snakeyaml", "com.deathmotion.totemguard.common.libs.snakeyaml")
 
     dependencies {
         include(project(":api"))
         include(project(":common"))
         include(project(":integrity"))
         include(project(":bridge:protocol"))
+        // Loader-host types are extracted from the plugin jar by ApiClassInjector
+        // and injected into the loader's classloader, so they have to ship in the jar.
+        include(project(":loader:host"))
         include(dependency("io.lettuce:.*"))
         include(dependency("io.netty:.*"))
         include(dependency("io.projectreactor:.*"))
@@ -92,6 +99,7 @@ tasks.named<ShadowJar>("shadowJar") {
         include(dependency("com.github.ben-manes.caffeine:caffeine:.*"))
         include(dependency("com.google.errorprone:.*"))
         include(dependency("org.jspecify:.*"))
+        include(dependency("org.yaml:snakeyaml:.*"))
     }
 }
 

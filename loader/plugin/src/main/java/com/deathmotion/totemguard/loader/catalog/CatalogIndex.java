@@ -36,9 +36,14 @@ import java.util.logging.Logger;
 
 public final class CatalogIndex {
 
+    private static final long CACHE_TTL_MS = 30_000L;
+
     private final Path versionsDir;
     private final HostPlatform platform;
     private final Logger logger;
+
+    private volatile List<Entry> cached;
+    private volatile long cachedAtMs;
 
     public CatalogIndex(Path versionsDir, HostPlatform platform, Logger logger) {
         this.versionsDir = versionsDir;
@@ -57,19 +62,39 @@ public final class CatalogIndex {
         return fileName.substring(secondDash + 1, lastDash);
     }
 
+    // Call after any write (upsert/delete) so the next readAll() re-scans the disk
+    // instead of returning the cached snapshot.
+    public synchronized void invalidate() {
+        this.cached = null;
+        this.cachedAtMs = 0L;
+    }
+
     public List<Entry> readAll() {
-        List<Entry> entries = new ArrayList<>();
-        if (!Files.isDirectory(versionsDir)) return entries;
-        String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT) + "-";
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(versionsDir, prefix + "*.jar")) {
-            for (Path jar : stream) {
-                if (!Files.isRegularFile(jar)) continue;
-                entries.add(loadEntry(jar));
-            }
-        } catch (IOException ex) {
-            logger.log(Level.WARNING, "Failed to scan catalog at " + versionsDir, ex);
+        List<Entry> snapshot = cached;
+        if (snapshot != null && System.currentTimeMillis() - cachedAtMs < CACHE_TTL_MS) {
+            return snapshot;
         }
-        return entries;
+        synchronized (this) {
+            snapshot = cached;
+            if (snapshot != null && System.currentTimeMillis() - cachedAtMs < CACHE_TTL_MS) {
+                return snapshot;
+            }
+            List<Entry> entries = new ArrayList<>();
+            if (Files.isDirectory(versionsDir)) {
+                String prefix = "TotemGuard-" + platform.name().toLowerCase(Locale.ROOT) + "-";
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(versionsDir, prefix + "*.jar")) {
+                    for (Path jar : stream) {
+                        if (!Files.isRegularFile(jar)) continue;
+                        entries.add(loadEntry(jar));
+                    }
+                } catch (IOException ex) {
+                    logger.log(Level.WARNING, "Failed to scan catalog at " + versionsDir, ex);
+                }
+            }
+            this.cached = List.copyOf(entries);
+            this.cachedAtMs = System.currentTimeMillis();
+            return this.cached;
+        }
     }
 
     private Entry loadEntry(Path jar) {
@@ -131,11 +156,13 @@ public final class CatalogIndex {
         } catch (IOException ex) {
             logger.log(Level.WARNING, "Failed to write sidecar " + meta.getFileName(), ex);
         }
+        invalidate();
     }
 
     public void delete(Entry entry) throws IOException {
         Files.deleteIfExists(entry.jar());
         Files.deleteIfExists(entry.metaPath());
+        invalidate();
     }
 
     public record Entry(Path jar, Path metaPath, CatalogSidecar sidecar) {

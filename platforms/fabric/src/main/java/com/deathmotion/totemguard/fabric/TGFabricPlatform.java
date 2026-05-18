@@ -124,4 +124,13 @@ public class TGFabricPlatform extends TGPlatform {
     public boolean checkPlatformCompatibility() {
         return FabricCompatibility.check(getLogger(), getPlatformVersion());
     }
+
+    @Override
+    public boolean shouldVerifyJarIntegrity() {
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            getLogger().info("Dev environment detected, skipping plugin jar integrity verification.");
+            return false;
+        }
+        return true;
+    }
 }

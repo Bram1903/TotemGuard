@@ -37,6 +37,10 @@ tasks.withType<ShadowJar>().configureEach {
     minimize {
         exclude(dependency("org.bstats:.*:.*"))
         exclude(dependency("com.mysql:.*"))
+        // Loader-host classes are picked up at runtime by ApiClassInjector (which
+        // scans the plugin jar for com/deathmotion/totemguard/host/ entries), so
+        // they must survive even though plugin code doesn't reference them all.
+        exclude(project(":loader:host"))
     }
 
     doLast {

@@ -176,6 +176,13 @@ public abstract class TGPlatform {
 
     public abstract boolean checkPlatformCompatibility();
 
+    // Overridden on Fabric to skip verification in loom dev, where loom loads classes
+    // from sourceSet directories instead of the shaded jar so the integrity manifest
+    // is never present. Defaults to true so Paper and production Fabric still verify.
+    public boolean shouldVerifyJarIntegrity() {
+        return true;
+    }
+
     public void handleIncomingTeleportRequest(SyncTeleportRequestPacket.Payload payload) {
     }
 

@@ -48,10 +48,14 @@ import java.util.logging.Logger;
 
 public final class LoaderCore {
 
+    public static final int SHA_PREFIX_LEN = 10;
+    static final int MAX_CAUSE_HOPS = 32;
     private final Logger logger;
     private final LoaderPaths paths;
     private final HostPlatform platform;
     private final FleetCacheRef fleetCacheRef;
+    private final CatalogIndex catalogIndex;
+    private final JarIntegrityChecker integrityChecker;
     private final FleetBroker fleetBroker;
     private final AtomicBoolean fleetWired = new AtomicBoolean();
     private volatile RolloutCoordinator rolloutCoordinator;
@@ -63,7 +67,9 @@ public final class LoaderCore {
         this.paths = paths;
         this.platform = platform;
         this.fleetCacheRef = new FleetCacheRef(logger);
-        this.fleetBroker = new FleetBroker(logger, paths, platform, fleetCacheRef);
+        this.catalogIndex = new CatalogIndex(paths.versionsDir(), platform, logger);
+        this.integrityChecker = new JarIntegrityChecker(logger, "TotemGuard");
+        this.fleetBroker = new FleetBroker(logger, paths, platform, fleetCacheRef, catalogIndex);
     }
 
     private static String parseVersionFromCacheName(String fileName) {
@@ -89,9 +95,9 @@ public final class LoaderCore {
         return CatalogSidecar.SOURCE_PINNED;
     }
 
-    private static ResolveFailureKind classifyResolveFailure(Throwable t) {
+    public static ResolveFailureKind classifyResolveFailure(Throwable t) {
         Throwable root = t;
-        for (int hops = 0; hops < 32; hops++) {
+        for (int hops = 0; hops < MAX_CAUSE_HOPS; hops++) {
             Throwable next = root.getCause();
             if (next == null || next == root) break;
             root = next;
@@ -113,8 +119,43 @@ public final class LoaderCore {
         return ResolveFailureKind.RESOLVE_FAILED;
     }
 
+    /**
+     * Only cache deterministic failures (the source actually answered "no such version").
+     * Transient errors (timeouts, DNS, 5xx) must not poison the cache for {@code NEGATIVE_TTL}
+     * because the next attempt should be allowed to succeed immediately.
+     */
+    private static void cacheNegativeIfDeterministic(ResolveCache cache, String source, String version, Throwable t) {
+        ResolveFailureKind kind = classifyResolveFailure(t);
+        if (kind != ResolveFailureKind.NO_MATCH && kind != ResolveFailureKind.GATE_REJECTED) {
+            return;
+        }
+        String message = t.getMessage() == null ? "resolve failed" : t.getMessage();
+        cache.putNegative(source, version, message);
+    }
+
+    static String shortSha(String sha) {
+        if (sha == null) return "";
+        return sha.substring(0, Math.min(SHA_PREFIX_LEN, sha.length()));
+    }
+
+    public CatalogIndex catalogIndex() {
+        return catalogIndex;
+    }
+
+    public JarIntegrityChecker integrityChecker() {
+        return integrityChecker;
+    }
+
     public void initRolloutCoordinator(Consumer<RolloutCoordinator.RolloutApply> applyHandler) {
         this.rolloutCoordinator = new RolloutCoordinator(logger, fleetCacheRef, applyHandler, this::stageFromCatalogBySha);
+    }
+
+    private void applyAuthFromConfig(LoaderConfig config) {
+        com.deathmotion.totemguard.loader.fleet.FleetMessageAuth auth =
+                new com.deathmotion.totemguard.loader.fleet.FleetMessageAuth(logger, config.fleetSharedSecret());
+        fleetBroker.setAuth(auth);
+        RolloutCoordinator coord = this.rolloutCoordinator;
+        if (coord != null) coord.setAuth(auth);
     }
 
     public RolloutCoordinator rolloutCoordinator() {
@@ -130,7 +171,7 @@ public final class LoaderCore {
         Path cached = targeted.orElseGet(() -> store.findNewestCachedJar(platform).orElse(null));
         if (cached == null) return null;
         logger.log(Level.FINE, "Falling back to cached jar " + cached.getFileName() + " after resolve failure.", originalEx);
-        if (!new JarIntegrityChecker(logger, "TotemGuard").verifyJar(cached)) {
+        if (!integrityChecker.verifyJar(cached)) {
             logger.warning("Cached fallback " + cached.getFileName() + " failed integrity verification. Refusing to use it.");
             return null;
         }
@@ -148,17 +189,16 @@ public final class LoaderCore {
     }
 
     public LoaderResult run(ClassLoader injectTarget, String versionOverride) throws Exception {
-        LoaderConfig diskConfig = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger);
+        LoaderConfig diskConfig = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger, platform);
         this.lastConfig = diskConfig;
+        applyAuthFromConfig(diskConfig);
         LoaderConfig config = versionOverride == null ? diskConfig : diskConfig.withVersion(versionOverride);
 
-        int imported = new LocalImporter(logger).importAll(paths, platform, record ->
+        int imported = new LocalImporter(logger, catalogIndex).importAll(paths, platform, record ->
                 fleetBroker.announceJar(record.jar(), record.version(), record.sha256(), "local-import"));
         if (imported > 0) {
             logger.info("Imported " + imported + " jar" + (imported == 1 ? "" : "s") + " from local/ into the version catalog.");
         }
-
-        CatalogIndex catalogIndex = new CatalogIndex(paths.versionsDir(), platform, logger);
 
         StagedJar staged = StagedJar.consumeIfPresent(paths, logger);
         Path jar;
@@ -183,7 +223,7 @@ public final class LoaderCore {
                     : Optional.empty();
             if (pinnedCache.isPresent()
                     && PluginVersionGate.isSupportedConcrete(config.version())
-                    && new JarIntegrityChecker(logger, "TotemGuard").verifyJar(pinnedCache.get())) {
+                    && integrityChecker.verifyJar(pinnedCache.get())) {
                 Path cached = pinnedCache.get();
                 logger.info("Using cached TotemGuard " + config.version() + " (" + cached.getFileName() + ").");
                 String sha = Checksums.hashFile(cached, Artifact.HashAlgorithm.SHA_256);
@@ -199,7 +239,7 @@ public final class LoaderCore {
             logger.info("Resolving TotemGuard (version: " + config.version() + ", source: " + resolver.sourceName() + ")");
 
             try {
-                ResolveCache resolveCache = new ResolveCache(logger, fleetCacheRef);
+                ResolveCache resolveCache = new ResolveCache(paths.loaderDir(), logger, fleetCacheRef);
                 Optional<String> negative = resolveCache.getNegative(resolver.sourceName(), config.version());
                 if (negative.isPresent()) {
                     throw new IOException(negative.get());
@@ -209,8 +249,7 @@ public final class LoaderCore {
                     try {
                         artifact = resolver.resolve(ResolverContext.of(config, platform, paths, fleetCacheRef));
                     } catch (Exception resolverEx) {
-                        resolveCache.putNegative(resolver.sourceName(), config.version(),
-                                resolverEx.getMessage() == null ? "resolve failed" : resolverEx.getMessage());
+                        cacheNegativeIfDeterministic(resolveCache, resolver.sourceName(), config.version(), resolverEx);
                         throw resolverEx;
                     }
                     resolveCache.put(resolver.sourceName(), config.version(), artifact);
@@ -248,7 +287,7 @@ public final class LoaderCore {
             }
         }
 
-        if (!alreadyVerified && !new JarIntegrityChecker(logger, "TotemGuard").verifyJar(jar)) {
+        if (!alreadyVerified && !integrityChecker.verifyJar(jar)) {
             throw new IOException("TotemGuard jar at " + jar + " failed integrity verification.");
         }
 
@@ -317,10 +356,10 @@ public final class LoaderCore {
     }
 
     public Artifact resolveCurrentTarget() throws Exception {
-        LoaderConfig config = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger);
+        LoaderConfig config = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger, platform);
         this.lastConfig = config;
         VersionResolver resolver = VersionResolver.forConfig(config);
-        ResolveCache cache = new ResolveCache(logger, fleetCacheRef);
+        ResolveCache cache = new ResolveCache(paths.loaderDir(), logger, fleetCacheRef);
         Artifact cached = cache.get(resolver.sourceName(), config.version());
         if (cached != null) return cached;
         Artifact resolved = resolver.resolve(ResolverContext.of(config, platform, paths, fleetCacheRef));
@@ -342,11 +381,11 @@ public final class LoaderCore {
     }
 
     public int importLocal() {
-        return new LocalImporter(logger).importAll(paths, platform);
+        return new LocalImporter(logger, catalogIndex).importAll(paths, platform);
     }
 
     public StageResult stageVersion(String versionOverride) throws Exception {
-        LoaderConfig diskConfig = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger);
+        LoaderConfig diskConfig = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger, platform);
         LoaderConfig config = versionOverride == null ? diskConfig : diskConfig.withVersion(versionOverride);
         PluginVersionGate.rejectIfPinnedTooOld(config.version(), "/tgloader stage");
 
@@ -356,14 +395,13 @@ public final class LoaderCore {
         }
 
         VersionResolver resolver = VersionResolver.forConfig(config);
-        ResolveCache resolveCache = new ResolveCache(logger, fleetCacheRef);
+        ResolveCache resolveCache = new ResolveCache(paths.loaderDir(), logger, fleetCacheRef);
         Artifact artifact = resolveCache.get(resolver.sourceName(), config.version());
         if (artifact == null) {
             try {
                 artifact = resolver.resolve(ResolverContext.of(config, platform, paths, fleetCacheRef));
             } catch (Exception resolverEx) {
-                resolveCache.putNegative(resolver.sourceName(), config.version(),
-                        resolverEx.getMessage() == null ? "resolve failed" : resolverEx.getMessage());
+                cacheNegativeIfDeterministic(resolveCache, resolver.sourceName(), config.version(), resolverEx);
                 throw resolverEx;
             }
             resolveCache.put(resolver.sourceName(), config.version(), artifact);
@@ -378,7 +416,7 @@ public final class LoaderCore {
                 + "…). Run /tgloader apply to restart.");
 
         try {
-            String hashPrefix = sha.substring(0, Math.min(10, sha.length()));
+            String hashPrefix = shortSha(sha);
             Path destination = paths.versionsDir().resolve("TotemGuard-"
                     + platform.name().toLowerCase(Locale.ROOT)
                     + "-" + artifact.version().replaceAll("[^A-Za-z0-9._+-]", "_")
@@ -387,8 +425,7 @@ public final class LoaderCore {
             Path partial = destination.resolveSibling(destination.getFileName() + ".partial");
             Files.write(partial, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             Files.move(partial, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            new CatalogIndex(paths.versionsDir(), platform, logger)
-                    .upsertSource(destination, artifact.version(), sha, CatalogSidecar.SOURCE_PINNED, null);
+            catalogIndex.upsertSource(destination, artifact.version(), sha, CatalogSidecar.SOURCE_PINNED, null);
             fleetBroker.announceJar(destination, artifact.version(), sha, resolver.sourceName());
         } catch (Throwable t) {
             logger.log(Level.FINE, "Stage post-write to catalog failed (staged.jar still valid)", t);
@@ -424,42 +461,61 @@ public final class LoaderCore {
         Optional<Path> located = store.findPinnedJar(version, platform);
         if (located.isEmpty()) return null;
         Path jar = located.get();
-        if (!new JarIntegrityChecker(logger, "TotemGuard").verifyJar(jar)) {
+        if (!integrityChecker.verifyJar(jar)) {
             logger.warning("Local catalog jar " + jar.getFileName() + " failed integrity. Skipping stage.");
             return null;
         }
-        byte[] bytes = Files.readAllBytes(jar);
-        String sha = Checksums.hashBytes(bytes, Artifact.HashAlgorithm.SHA_256);
-        StagedJar.write(paths, bytes, version, "LOCAL-CACHE", sha);
+        String sha = Checksums.hashFile(jar, Artifact.HashAlgorithm.SHA_256);
+        StagedJar.writeFromFile(paths, jar, version, "LOCAL-CACHE", sha);
         logger.info("Staged TotemGuard " + version + " from local catalog (" + jar.getFileName() + ").");
-        new CatalogIndex(paths.versionsDir(), platform, logger)
-                .upsertSource(jar, version, sha, CatalogSidecar.SOURCE_PINNED, null);
+        catalogIndex.upsertSource(jar, version, sha, CatalogSidecar.SOURCE_PINNED, null);
         fleetBroker.announceJar(jar, version, sha, "local-cache");
         return new StageResult(version, sha, "LOCAL-CACHE");
+    }
+
+    /**
+     * Pull a fleet-announced jar blob from Redis on demand and stage it locally.
+     * Called by the rollout APPLY receiver when a missed jar-available broadcast
+     * would otherwise leave this peer unable to participate in the rollout.
+     */
+    public boolean tryPullAndStageFromFleet(String version, String sha256) {
+        if (!fleetBroker.fetchAndImportSync(version, sha256, "FLEET")) {
+            return false;
+        }
+        return stageFromCatalogBySha(version, sha256);
+    }
+
+    /**
+     * Report that an APPLY failed on this peer. No-op when there is no active rollout
+     * coordinator (single-node mode).
+     */
+    public void reportApplyFailure(java.util.UUID opId, String reason) {
+        RolloutCoordinator coord = this.rolloutCoordinator;
+        if (coord != null) {
+            coord.reportApplyFailure(opId, reason);
+        }
     }
 
     public boolean stageFromCatalogBySha(String version, String sha256) {
         if (sha256 == null || sha256.isBlank()) return false;
         try {
-            CatalogIndex index = new CatalogIndex(paths.versionsDir(), platform, logger);
-            Optional<CatalogIndex.Entry> match = index.findBySha(sha256);
+            Optional<CatalogIndex.Entry> match = catalogIndex.findBySha(sha256);
             if (match.isEmpty()) {
                 logger.fine("Rollout target " + sha256 + " is not in the local catalog yet. "
                         + "Skipping catalog-stage. The leader's jar-available broadcast may not have arrived.");
                 return false;
             }
             Path jar = match.get().jar();
-            if (!new JarIntegrityChecker(logger, "TotemGuard").verifyJar(jar)) {
+            if (!integrityChecker.verifyJar(jar)) {
                 logger.warning("Catalog jar " + jar.getFileName()
                         + " failed integrity verification. Refusing to stage rollout target.");
                 return false;
             }
-            byte[] bytes = Files.readAllBytes(jar);
             String resolvedVersion = (version == null || version.isBlank())
                     ? match.get().sidecar().version() : version;
-            StagedJar.write(paths, bytes, resolvedVersion, "FLEET", sha256);
+            StagedJar.writeFromFile(paths, jar, resolvedVersion, "FLEET", sha256);
             logger.info("Staged rollout target TotemGuard " + resolvedVersion + " ("
-                    + sha256.substring(0, Math.min(10, sha256.length())) + ") from local catalog.");
+                    + shortSha(sha256) + ") from local catalog.");
             return true;
         } catch (Throwable t) {
             logger.log(Level.WARNING, "Failed to stage rollout target " + sha256 + " from local catalog", t);
@@ -471,6 +527,10 @@ public final class LoaderCore {
         return platform;
     }
 
+    public LoaderPaths paths() {
+        return paths;
+    }
+
     public Logger logger() {
         return logger;
     }
@@ -479,7 +539,7 @@ public final class LoaderCore {
         fleetBroker.shutdown();
     }
 
-    private enum ResolveFailureKind {
+    public enum ResolveFailureKind {
         UNREACHABLE("unreachable"),
         UPSTREAM_ERROR("returned an error"),
         NO_MATCH("had no matching build"),

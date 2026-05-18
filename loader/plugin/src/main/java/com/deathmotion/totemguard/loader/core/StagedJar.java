@@ -19,10 +19,14 @@
 package com.deathmotion.totemguard.loader.core;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -80,7 +84,47 @@ public record StagedJar(Path jar, String version, String source, String sha256) 
         Path tmpJar = paths.loaderDir().resolve("staged.jar.partial");
         Files.write(tmpJar, bytes);
         Files.move(tmpJar, paths.stagedJar(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        writeMeta(paths, version, source, sha256);
+    }
 
+    /**
+     * Stage a jar without materialising the whole file in memory. Streams the contents
+     * through a digest, copies to the staged path, and atomically moves into place.
+     * The provided {@code sha256} is verified against the streamed digest to catch
+     * concurrent modification of the source file between callers reading it and us
+     * staging it.
+     */
+    public static void writeFromFile(LoaderPaths paths, Path sourceJar, String version, String source, String sha256) throws IOException {
+        Files.createDirectories(paths.loaderDir());
+        Path tmpJar = paths.loaderDir().resolve("staged.jar.partial");
+
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            throw new IOException(ex);
+        }
+        try (InputStream in = Files.newInputStream(sourceJar);
+             DigestInputStream digestIn = new DigestInputStream(in, digest);
+             OutputStream out = Files.newOutputStream(tmpJar,
+                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            digestIn.transferTo(out);
+        }
+        String actualSha = HexFormat.of().formatHex(digest.digest());
+        if (!actualSha.equalsIgnoreCase(sha256)) {
+            try {
+                Files.deleteIfExists(tmpJar);
+            } catch (IOException ignored) {
+            }
+            throw new IOException("Source jar " + sourceJar.getFileName()
+                    + " hash " + actualSha + " differs from expected " + sha256
+                    + ". Refusing to stage.");
+        }
+        Files.move(tmpJar, paths.stagedJar(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        writeMeta(paths, version, source, sha256);
+    }
+
+    private static void writeMeta(LoaderPaths paths, String version, String source, String sha256) throws IOException {
         String meta = "version=" + version + "\n"
                 + "source=" + source + "\n"
                 + "sha256=" + sha256.toLowerCase(Locale.ROOT) + "\n";
@@ -100,13 +144,20 @@ public record StagedJar(Path jar, String version, String source, String sha256) 
     }
 
     private static String sha256(Path jarPath) throws IOException {
+        MessageDigest digest;
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            digest.update(Files.readAllBytes(jarPath));
-            return HexFormat.of().formatHex(digest.digest());
+            digest = MessageDigest.getInstance("SHA-256");
         } catch (java.security.NoSuchAlgorithmException ex) {
             throw new IOException(ex);
         }
+        try (InputStream in = Files.newInputStream(jarPath);
+             DigestInputStream digestIn = new DigestInputStream(in, digest)) {
+            byte[] buffer = new byte[16_384];
+            while (digestIn.read(buffer) != -1) {
+                // The DigestInputStream updates the digest as a side-effect of read.
+            }
+        }
+        return HexFormat.of().formatHex(digest.digest());
     }
 
     private static void discard(LoaderPaths paths) {

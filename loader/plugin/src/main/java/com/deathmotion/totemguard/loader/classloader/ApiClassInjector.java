@@ -140,7 +140,14 @@ public final class ApiClassInjector {
                         : cause.getClass().getSimpleName()
                           + (cause.getMessage() == null ? "" : ": " + cause.getMessage());
                 failures.add(name + " [" + reason + "]");
-                if (t != null) logger.log(Level.WARNING, "Failed to inject " + name, t);
+            }
+            // The throwables for the final-pass failures live on each Throwable's
+            // stack trace via the exception chain. Log only the first one to avoid
+            // burying the message in repeated stack dumps.
+            Throwable first = pending.isEmpty() ? null : lastError.get(pending.keySet().iterator().next());
+            if (first != null) {
+                logger.log(Level.WARNING, "API class injection failed after retry. Final failure follows; "
+                        + failures.size() + " class(es) unresolved.", first);
             }
             throw new IOException(failures.size() + " API class(es) could not be defined: "
                     + String.join(", ", failures));
