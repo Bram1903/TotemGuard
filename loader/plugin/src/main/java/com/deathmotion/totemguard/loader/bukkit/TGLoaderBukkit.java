@@ -38,6 +38,17 @@ public final class TGLoaderBukkit extends JavaPlugin {
     private volatile LoaderCore core;
     private volatile PluginRuntime runtime;
 
+    private static String describeRootCause(Throwable t) {
+        Throwable root = t;
+        for (int hops = 0; hops < 32; hops++) {
+            Throwable next = root.getCause();
+            if (next == null || next == root) break;
+            root = next;
+        }
+        String msg = root.getMessage();
+        return root.getClass().getSimpleName() + (msg == null || msg.isBlank() ? "" : ": " + msg);
+    }
+
     @Override
     public void onLoad() {
         if (!new JarIntegrityChecker(loaderLog, "TotemGuard-Loader").verifyCurrentJar()) {
@@ -73,10 +84,11 @@ public final class TGLoaderBukkit extends JavaPlugin {
         try {
             attemptStart(null);
         } catch (Throwable t) {
-            loaderLog.log(Level.SEVERE, "TotemGuard could not be loaded automatically. "
-                    + "The loader is still enabled. Recover with /tgloader load <version>, "
-                    + "or drop a jar into " + paths.localDir() + " then run "
-                    + "/tgloader import followed by /tgloader load <version>.", t);
+            loaderLog.log(Level.SEVERE, "TotemGuard could not be loaded automatically ("
+                    + describeRootCause(t) + "). The loader is still enabled. "
+                    + "Recover with /tgloader load <version>, or drop a jar into "
+                    + paths.localDir() + " then run /tgloader import followed by "
+                    + "/tgloader load <version>.", t);
         }
     }
 
@@ -98,11 +110,6 @@ public final class TGLoaderBukkit extends JavaPlugin {
         }
     }
 
-    /**
-     * Loads (or reloads) the TotemGuard plugin. The first successful call constructs the
-     * {@link PluginRuntime}; subsequent calls delegate to {@link PluginRuntime#loadVersion}.
-     * Throws on any failure; callers are expected to keep the loader enabled regardless.
-     */
     public synchronized void attemptStart(String versionOverride) throws Exception {
         if (runtime == null) {
             LoaderResult result = core.run(getClassLoader(), versionOverride);
@@ -114,17 +121,10 @@ public final class TGLoaderBukkit extends JavaPlugin {
         }
     }
 
-    /**
-     * Stage (resolve + download) a version into the loader's staging slot without
-     * restarting. Operators apply it later with {@code /tgloader apply}.
-     */
     public LoaderCore.StageResult attemptStage(String versionOverride) throws Exception {
         return core.stageVersion(versionOverride);
     }
 
-    /**
-     * Restart the inner plugin so it picks up whatever sits in the staged slot.
-     */
     public synchronized void attemptApplyStaged() throws Exception {
         if (core.readStaged().isEmpty()) {
             throw new IllegalStateException("Nothing is staged. Use /tgloader stage <version> first.");
@@ -136,17 +136,18 @@ public final class TGLoaderBukkit extends JavaPlugin {
         }
     }
 
-    /**
-     * Callback invoked by {@link RolloutCoordinator} when this peer receives a fleet
-     * APPLY pubsub. Schedules the restart for the leader-supplied wall-clock instant so
-     * every peer restarts together (precision bounded by NTP drift). If the apply
-     * instant is already in the past we restart immediately.
-     */
     private void onFleetApply(RolloutCoordinator.RolloutApply apply) {
         if (core.readStaged().isEmpty()) {
-            loaderLog.warning("Received fleet APPLY for " + apply.opId()
-                    + " but nothing is staged on this peer. Skipping.");
-            return;
+            boolean staged = core.stageFromCatalogBySha(apply.targetVersion(), apply.targetSha256());
+            if (!staged) {
+                loaderLog.warning("Received fleet APPLY for " + apply.opId()
+                        + " but nothing is staged on this peer and the target "
+                        + (apply.targetSha256() == null || apply.targetSha256().isBlank()
+                        ? "(no SHA in APPLY payload)"
+                        : apply.targetSha256().substring(0, Math.min(10, apply.targetSha256().length())))
+                        + " is not in the local catalog. Skipping.");
+                return;
+            }
         }
         long delayMillis = Math.max(0L, apply.applyAt().toEpochMilli() - System.currentTimeMillis());
         long delayTicks = delayMillis / 50L;

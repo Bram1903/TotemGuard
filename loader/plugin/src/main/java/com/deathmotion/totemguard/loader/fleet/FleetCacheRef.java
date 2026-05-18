@@ -19,8 +19,10 @@
 package com.deathmotion.totemguard.loader.fleet;
 
 import com.deathmotion.totemguard.api.fleet.FleetCache;
+import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -44,6 +46,8 @@ public final class FleetCacheRef {
     private final CopyOnWriteArrayList<Consumer<FleetCache>> detachListeners = new CopyOnWriteArrayList<>();
 
     private volatile @Nullable FleetCache current;
+    @Getter
+    private volatile boolean apiReady;
 
     public FleetCacheRef(Logger logger) {
         this.logger = logger;
@@ -89,6 +93,29 @@ public final class FleetCacheRef {
 
     public void onDetach(Consumer<FleetCache> listener) {
         detachListeners.add(listener);
+    }
+
+    public void markApiReady() {
+        this.apiReady = true;
+    }
+
+    public Optional<byte[]> l2Get(String key) {
+        FleetCache c = current;
+        if (c == null || !c.isHealthy()) return Optional.empty();
+        try {
+            return c.get(key);
+        } catch (Throwable ignored) {
+            return Optional.empty();
+        }
+    }
+
+    public void l2Put(String key, byte[] value, Duration ttl) {
+        FleetCache c = current;
+        if (c == null || !c.isHealthy()) return;
+        try {
+            c.put(key, value, ttl);
+        } catch (Throwable ignored) {
+        }
     }
 
     private void fire(Iterable<Consumer<FleetCache>> listeners, FleetCache cache, String label) {

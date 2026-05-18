@@ -28,24 +28,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Owns the cross-fleet update protocol. Two phases:
- * <ol>
- *     <li><b>Rollout</b>: leader broadcasts a staged jar to peers via the existing
- *         {@link FleetBroker} pipe and records a {@code totemguard:loader:rollout:&lt;opId&gt;}
- *         marker so all peers know what version they should be on.</li>
- *     <li><b>Apply</b>: leader publishes APPLY, each peer restarts via its loader's
- *         existing apply path and stamps the rollout hash with its status.</li>
- * </ol>
- *
- * <p>State persists in Redis (24h TTL on the rollout hash) so an operator can pick up a
- * partially-completed rollout after a leader restart, and so peers that join late can
- * see whether they need to catch up.</p>
- */
 public final class RolloutCoordinator {
 
     public static final int SCHEMA_VERSION = 1;
@@ -65,22 +52,20 @@ public final class RolloutCoordinator {
     private final Logger logger;
     private final FleetCacheRef cacheRef;
     private final Consumer<RolloutApply> applyHandler;
+    private final BiPredicate<String, String> catalogStager;
 
     private volatile @Nullable AutoCloseable subscription;
     private volatile @Nullable LeaderState leaderState;
 
-    public RolloutCoordinator(Logger logger, FleetCacheRef cacheRef, Consumer<RolloutApply> applyHandler) {
+    public RolloutCoordinator(Logger logger, FleetCacheRef cacheRef,
+                              Consumer<RolloutApply> applyHandler,
+                              BiPredicate<String, String> catalogStager) {
         this.logger = logger;
         this.cacheRef = cacheRef;
         this.applyHandler = applyHandler;
-        // Method-reference resolution is deferred to connect() so the JVM does not need
-        // FleetCache on the classpath before api injection.
+        this.catalogStager = catalogStager;
     }
 
-    /**
-     * Register attach/detach hooks. Call after api classes are injected onto the parent
-     * classloader (otherwise the method references below cannot be resolved).
-     */
     public void connect() {
         cacheRef.onAttach(this::onAttach);
         cacheRef.onDetach(this::onDetach);
@@ -104,15 +89,6 @@ public final class RolloutCoordinator {
         }
     }
 
-    /**
-     * Leader-side: acquire the rollout lock, write the rollout hash, broadcast BEGIN.
-     * Caller is expected to have already staged the target locally via {@code stage}
-     * (which broadcasts the jar bytes); this just records the operation and tells
-     * peers what version they should be moving to.
-     *
-     * @throws RolloutBusyException  if another operator holds the lock
-     * @throws IllegalStateException if no fleet cache is attached
-     */
     public RolloutBegin begin(String version, String sha256, String sourceLabel) throws RolloutBusyException {
         FleetCache cache = cacheRef.available()
                 .orElseThrow(() -> new IllegalStateException("Fleet cache not attached. Rollouts require Redis."));
@@ -164,21 +140,11 @@ public final class RolloutCoordinator {
         return begin;
     }
 
-    /**
-     * Returns the rollout currently begun on this host (only set on the leader). Used
-     * by the command layer so {@code apply} / {@code cancel} can act without taking
-     * another opId argument from the operator.
-     */
     public Optional<LeaderState> leaderState() {
         LeaderState s = leaderState;
         return Optional.ofNullable(s);
     }
 
-    /**
-     * Apply the rollout this host began. {@code applyOffset} controls how far into the
-     * future the synchronized apply instant is scheduled. Peers (and the leader) all
-     * restart at the same wall-clock moment.
-     */
     public void applyActive(Duration applyOffset) {
         LeaderState state = leaderState;
         if (state == null) {
@@ -189,9 +155,6 @@ public final class RolloutCoordinator {
         leaderState = null;
     }
 
-    /**
-     * Cancel the rollout this host began.
-     */
     public void cancelActive() {
         LeaderState state = leaderState;
         if (state == null) {
@@ -201,24 +164,24 @@ public final class RolloutCoordinator {
         leaderState = null;
     }
 
-    /**
-     * Leader-side: broadcast APPLY for the given operation with a synchronized wall-clock
-     * apply instant. Peers schedule their restart for {@code applyAt} so the fleet
-     * restarts together (precision is bounded by the peers' NTP drift). Releases the
-     * rollout lock once the message is sent.
-     */
     public void apply(UUID opId, FleetLock lock, Instant applyAt) {
         FleetCache cache = cacheRef.available()
                 .orElseThrow(() -> new IllegalStateException("Fleet cache not attached"));
+
+        Map<String, String> existing = cache.getHash(HASH_PREFIX + opId);
+        String targetVersion = existing.getOrDefault("targetVersion", "");
+        String targetSha256 = existing.getOrDefault("targetSha256", "");
 
         JsonObject payload = new JsonObject();
         payload.addProperty("schemaVersion", SCHEMA_VERSION);
         payload.addProperty("opId", opId.toString());
         payload.addProperty("phase", PHASE_APPLY);
         payload.addProperty("applyAtMillis", applyAt.toEpochMilli());
+        payload.addProperty("targetVersion", targetVersion);
+        payload.addProperty("targetSha256", targetSha256);
         cache.publish(TOPIC, payload.toString().getBytes(StandardCharsets.UTF_8));
 
-        Map<String, String> hash = new LinkedHashMap<>(cache.getHash(HASH_PREFIX + opId));
+        Map<String, String> hash = new LinkedHashMap<>(existing);
         hash.put("phase", PHASE_APPLY);
         hash.put("applyAt", applyAt.toString());
         try {
@@ -231,9 +194,6 @@ public final class RolloutCoordinator {
         }
     }
 
-    /**
-     * Leader-side: abort an active rollout. Releases the lock and announces cancel.
-     */
     public void cancel(UUID opId, FleetLock lock) {
         cacheRef.available().ifPresent(cache -> {
             JsonObject payload = new JsonObject();
@@ -257,9 +217,6 @@ public final class RolloutCoordinator {
         }
     }
 
-    /**
-     * Read the active rollout's state, if any. Active = lock present and phase != COMPLETE.
-     */
     public Optional<RolloutSnapshot> active() {
         Optional<FleetCache> cacheOpt = cacheRef.available();
         if (cacheOpt.isEmpty()) return Optional.empty();
@@ -303,10 +260,17 @@ public final class RolloutCoordinator {
                     long applyAtMillis = json.has("applyAtMillis")
                             ? json.get("applyAtMillis").getAsLong()
                             : System.currentTimeMillis();
-                    applyHandler.accept(new RolloutApply(opId, Instant.ofEpochMilli(applyAtMillis)));
+                    String targetVersion = json.has("targetVersion") ? json.get("targetVersion").getAsString() : "";
+                    String targetSha256 = json.has("targetSha256") ? json.get("targetSha256").getAsString() : "";
+                    applyHandler.accept(new RolloutApply(opId, Instant.ofEpochMilli(applyAtMillis),
+                            targetVersion, targetSha256));
                 }
                 case PHASE_BEGIN -> {
-                    // FleetBroker already covers the jar pull. Just log here.
+                    String beginVersion = json.has("version") ? json.get("version").getAsString() : "";
+                    String beginSha = json.has("sha256") ? json.get("sha256").getAsString() : "";
+                    if (!beginSha.isBlank() && catalogStager != null) {
+                        catalogStager.test(beginVersion, beginSha);
+                    }
                     logger.fine("Rollout " + opId + " BEGIN received.");
                 }
                 case PHASE_CANCEL -> logger.info("Rollout " + opId + " was cancelled by the leader.");
@@ -318,17 +282,13 @@ public final class RolloutCoordinator {
         }
     }
 
-    /**
-     * Snapshot of the leader's in-memory rollout state. The {@code lock} reference is
-     * held only on the leader process; if the leader dies the lock TTL releases it.
-     */
     public record LeaderState(UUID opId, FleetLock lock, String targetVersion, String targetSha256) {
     }
 
     public record RolloutBegin(UUID opId, FleetLock lock, UUID leader) {
     }
 
-    public record RolloutApply(UUID opId, Instant applyAt) {
+    public record RolloutApply(UUID opId, Instant applyAt, String targetVersion, String targetSha256) {
     }
 
     public record RolloutSnapshot(UUID opId, UUID leader, String targetVersion, String targetSha256,

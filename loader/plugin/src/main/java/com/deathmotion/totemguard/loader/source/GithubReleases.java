@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.loader.source;
 
-import com.deathmotion.totemguard.api.fleet.FleetCache;
 import com.deathmotion.totemguard.loader.fleet.FleetCacheRef;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -57,9 +56,9 @@ final class GithubReleases {
         JsonArray cached = readCacheIfFresh(cacheFile);
         if (cached != null) return cached;
 
-        Optional<FleetCache> fleet = fleetCacheRef == null ? Optional.empty() : fleetCacheRef.available();
-        if (fleet.isPresent()) {
-            Optional<byte[]> l2 = safeGet(fleet.get());
+        boolean l2Ready = fleetCacheRef != null && fleetCacheRef.isApiReady();
+        if (l2Ready) {
+            Optional<byte[]> l2 = fleetCacheRef.l2Get(L2_KEY);
             if (l2.isPresent()) {
                 String body = new String(l2.get(), StandardCharsets.UTF_8);
                 JsonElement parsed = JsonParser.parseString(body);
@@ -90,23 +89,10 @@ final class GithubReleases {
         }
 
         writeCache(cacheFile, response.body());
-        fleet.ifPresent(c -> safePut(c, response.body()));
+        if (l2Ready) {
+            fleetCacheRef.l2Put(L2_KEY, response.body().getBytes(StandardCharsets.UTF_8), CACHE_TTL);
+        }
         return parsed.getAsJsonArray();
-    }
-
-    private static Optional<byte[]> safeGet(FleetCache cache) {
-        try {
-            return cache.get(L2_KEY);
-        } catch (Throwable ignored) {
-            return Optional.empty();
-        }
-    }
-
-    private static void safePut(FleetCache cache, String body) {
-        try {
-            cache.put(L2_KEY, body.getBytes(StandardCharsets.UTF_8), CACHE_TTL);
-        } catch (Throwable ignored) {
-        }
     }
 
     private static JsonArray readCacheIfFresh(Path cacheFile) {

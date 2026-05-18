@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.loader.source;
 
-import com.deathmotion.totemguard.api.fleet.FleetCache;
 import com.deathmotion.totemguard.loader.fleet.FleetCacheRef;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -40,18 +39,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Process-shared cache of {@link Artifact} resolutions. Three layers, in order:
- * <ol>
- *     <li><b>L1:</b> {@code java.io.tmpdir/totemguard-loader-cache} on the local host</li>
- *     <li><b>L2:</b> Redis (when a {@link FleetCacheRef} is attached), shared fleet-wide</li>
- *     <li><b>L3:</b> the source itself (GitHub, Modrinth)</li>
- * </ol>
- *
- * <p>Channels (LATEST/EXPERIMENTAL/GIT) get a short TTL since they move; pinned versions
- * get a long TTL since the URL+sha never change. Negative results (resolve threw) get a
- * very short TTL so a transient failure doesn't spam the upstream API for 10 minutes.</p>
- */
 public final class ResolveCache {
 
     private static final Duration CHANNEL_TTL = Duration.ofMinutes(10);
@@ -128,21 +115,19 @@ public final class ResolveCache {
         Artifact local = readLocal(source, token);
         if (local != null) return local;
 
-        Optional<FleetCache> fleet = fleetCacheRef == null ? Optional.empty() : fleetCacheRef.available();
-        if (fleet.isPresent()) {
-            try {
-                Optional<byte[]> bytes = fleet.get().get(L2_PREFIX + keyHash(source, token));
-                if (bytes.isPresent()) {
-                    JsonObject root = JsonParser.parseString(new String(bytes.get(), StandardCharsets.UTF_8)).getAsJsonObject();
-                    writeLocal(source, token, root);
-                    if (root.has("expiresAt") && System.currentTimeMillis() > root.get("expiresAt").getAsLong()) {
-                        return null;
-                    }
-                    return artifactFromJson(root);
+        if (fleetCacheRef == null || !fleetCacheRef.isApiReady()) return null;
+        try {
+            Optional<byte[]> bytes = fleetCacheRef.l2Get(L2_PREFIX + keyHash(source, token));
+            if (bytes.isPresent()) {
+                JsonObject root = JsonParser.parseString(new String(bytes.get(), StandardCharsets.UTF_8)).getAsJsonObject();
+                writeLocal(source, token, root);
+                if (root.has("expiresAt") && System.currentTimeMillis() > root.get("expiresAt").getAsLong()) {
+                    return null;
                 }
-            } catch (Throwable t) {
-                logger.log(Level.FINE, "L2 resolve get failed for " + source + ":" + token, t);
+                return artifactFromJson(root);
             }
+        } catch (Throwable t) {
+            logger.log(Level.FINE, "L2 resolve get failed for " + source + ":" + token, t);
         }
         return null;
     }
@@ -168,15 +153,13 @@ public final class ResolveCache {
         root.addProperty("expiresAt", System.currentTimeMillis() + ttlFor(token).toMillis());
         writeLocal(source, token, root);
 
-        Optional<FleetCache> fleet = fleetCacheRef == null ? Optional.empty() : fleetCacheRef.available();
-        if (fleet.isPresent()) {
-            try {
-                fleet.get().put(L2_PREFIX + keyHash(source, token),
-                        GSON.toJson(root).getBytes(StandardCharsets.UTF_8),
-                        ttlFor(token));
-            } catch (Throwable t) {
-                logger.log(Level.FINE, "L2 resolve put failed for " + source + ":" + token, t);
-            }
+        if (fleetCacheRef == null || !fleetCacheRef.isApiReady()) return;
+        try {
+            fleetCacheRef.l2Put(L2_PREFIX + keyHash(source, token),
+                    GSON.toJson(root).getBytes(StandardCharsets.UTF_8),
+                    ttlFor(token));
+        } catch (Throwable t) {
+            logger.log(Level.FINE, "L2 resolve put failed for " + source + ":" + token, t);
         }
     }
 
@@ -198,10 +181,6 @@ public final class ResolveCache {
         }
     }
 
-    /**
-     * Cached negative result for "I asked source/token and it threw". Empty means we
-     * don't have a recent negative for this pair.
-     */
     public Optional<String> getNegative(String source, String token) {
         Path file = negativePath(source, token);
         if (Files.isRegularFile(file)) {
@@ -215,19 +194,17 @@ public final class ResolveCache {
             } catch (Throwable ignored) {
             }
         }
-        Optional<FleetCache> fleet = fleetCacheRef == null ? Optional.empty() : fleetCacheRef.available();
-        if (fleet.isPresent()) {
-            try {
-                Optional<byte[]> bytes = fleet.get().get(L2_NEG_PREFIX + keyHash(source, token));
-                if (bytes.isPresent()) {
-                    JsonObject root = JsonParser.parseString(new String(bytes.get(), StandardCharsets.UTF_8)).getAsJsonObject();
-                    long expiresAt = root.has("expiresAt") ? root.get("expiresAt").getAsLong() : 0;
-                    if (System.currentTimeMillis() <= expiresAt) {
-                        return Optional.of(root.has("message") ? root.get("message").getAsString() : "");
-                    }
+        if (fleetCacheRef == null || !fleetCacheRef.isApiReady()) return Optional.empty();
+        try {
+            Optional<byte[]> bytes = fleetCacheRef.l2Get(L2_NEG_PREFIX + keyHash(source, token));
+            if (bytes.isPresent()) {
+                JsonObject root = JsonParser.parseString(new String(bytes.get(), StandardCharsets.UTF_8)).getAsJsonObject();
+                long expiresAt = root.has("expiresAt") ? root.get("expiresAt").getAsLong() : 0;
+                if (System.currentTimeMillis() <= expiresAt) {
+                    return Optional.of(root.has("message") ? root.get("message").getAsString() : "");
                 }
-            } catch (Throwable ignored) {
             }
+        } catch (Throwable ignored) {
         }
         return Optional.empty();
     }
@@ -246,12 +223,10 @@ public final class ResolveCache {
             Files.move(tmp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException ignored) {
         }
-        Optional<FleetCache> fleet = fleetCacheRef == null ? Optional.empty() : fleetCacheRef.available();
-        if (fleet.isPresent()) {
-            try {
-                fleet.get().put(L2_NEG_PREFIX + keyHash(source, token), bytes, NEGATIVE_TTL);
-            } catch (Throwable ignored) {
-            }
+        if (fleetCacheRef == null || !fleetCacheRef.isApiReady()) return;
+        try {
+            fleetCacheRef.l2Put(L2_NEG_PREFIX + keyHash(source, token), bytes, NEGATIVE_TTL);
+        } catch (Throwable ignored) {
         }
     }
 

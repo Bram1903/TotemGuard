@@ -97,12 +97,8 @@ public final class LoaderCore {
         return CatalogSidecar.SOURCE_PINNED;
     }
 
-    /**
-     * Plug in a callback for when this loader receives a fleet APPLY pubsub. Wired up
-     * by the platform entrypoint so it can call into the live {@code TGLoaderBukkit}.
-     */
     public void initRolloutCoordinator(Consumer<RolloutCoordinator.RolloutApply> applyHandler) {
-        this.rolloutCoordinator = new RolloutCoordinator(logger, fleetCacheRef, applyHandler);
+        this.rolloutCoordinator = new RolloutCoordinator(logger, fleetCacheRef, applyHandler, this::stageFromCatalogBySha);
     }
 
     public RolloutCoordinator rolloutCoordinator() {
@@ -113,11 +109,6 @@ public final class LoaderCore {
         return fleetCacheRef;
     }
 
-    /**
-     * Resilience helper: tries the precise channel/pin fallback first, then any cached
-     * jar in the catalog. Returns {@code null} when nothing safe is available, leaving
-     * the caller to propagate the original failure.
-     */
     private Path pickFallbackJar(CachedJarStore store, LoaderConfig config, HostPlatform platform, Exception originalEx) {
         Optional<Path> targeted = store.locateFallback(config, platform);
         Path cached = targeted.orElseGet(() -> store.findNewestCachedJar(platform).orElse(null));
@@ -140,11 +131,6 @@ public final class LoaderCore {
         return run(injectTarget, null);
     }
 
-    /**
-     * Same as {@link #run(ClassLoader)} but resolves {@code versionOverride} (e.g. a
-     * pinned version or a channel like {@code "LATEST"}) instead of the version in
-     * {@code loader-config.yml}. A staged jar still wins when present.
-     */
     public LoaderResult run(ClassLoader injectTarget, String versionOverride) throws Exception {
         LoaderConfig diskConfig = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger);
         this.lastConfig = diskConfig;
@@ -176,9 +162,6 @@ public final class LoaderCore {
             VersionResolver resolver = VersionResolver.forConfig(config);
             catalogSource = sourceTagFor(config);
 
-            // Fast path for pinned versions: if the build is already in the catalog, use
-            // it directly. Channels (LATEST/EXPERIMENTAL/GIT) skip this so we still pick
-            // up newer builds from the configured source.
             Optional<Path> pinnedCache = config.channel() == null
                     ? store.findPinnedJar(config.version(), platform)
                     : Optional.empty();
@@ -261,13 +244,9 @@ public final class LoaderCore {
         return result;
     }
 
-    /**
-     * Activate fleet broker and rollout coordinator subscriptions. Called once the api
-     * classes are on the parent classloader (i.e. right after the first injection).
-     * Idempotent so it can be called from every successful load path.
-     */
     private void wireFleetHooks() {
         if (!fleetWired.compareAndSet(false, true)) return;
+        fleetCacheRef.markApiReady();
         try {
             fleetBroker.connect();
             RolloutCoordinator coord = this.rolloutCoordinator;
@@ -277,10 +256,6 @@ public final class LoaderCore {
         }
     }
 
-    /**
-     * Run a retention sweep, always preserving the just-loaded SHA plus anything
-     * referenced by the loader's staged-jar metadata.
-     */
     private void runRetention(CatalogIndex catalogIndex, String runningSha) {
         Set<String> protectedShas = new HashSet<>();
         if (runningSha != null) protectedShas.add(runningSha);
@@ -318,12 +293,6 @@ public final class LoaderCore {
         return lastResult;
     }
 
-    /**
-     * Re-reads the loader config from disk, resolves the configured target via the
-     * appropriate source, and returns the resulting {@link Artifact}. Performs the
-     * network calls each source requires (GitHub releases listing, Modrinth versions
-     * endpoint, etc.) but does not download the jar bytes.
-     */
     public Artifact resolveCurrentTarget() throws Exception {
         LoaderConfig config = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger);
         this.lastConfig = config;
@@ -336,9 +305,6 @@ public final class LoaderCore {
         return resolved;
     }
 
-    /**
-     * Downloads the bytes for an {@link Artifact}, verifying the source-native checksum.
-     */
     public byte[] downloadArtifact(Artifact artifact) throws IOException {
         return new ArtifactDownloader(logger).download(artifact);
     }
@@ -356,21 +322,11 @@ public final class LoaderCore {
         return new LocalImporter(logger).importAll(paths, platform);
     }
 
-    /**
-     * Resolves and downloads the bytes for {@code versionOverride} (a pinned version
-     * or channel token) and writes them to the staged-jar slot. Does <em>not</em>
-     * restart; callers use {@code applyStaged()} or {@code /tgloader apply} when ready.
-     *
-     * @return the resolved version and sha256 actually staged
-     */
     public StageResult stageVersion(String versionOverride) throws Exception {
         LoaderConfig diskConfig = LoaderConfig.loadOrWriteDefault(paths.loaderDir(), logger);
         LoaderConfig config = versionOverride == null ? diskConfig : diskConfig.withVersion(versionOverride);
         PluginVersionGate.rejectIfPinnedTooOld(config.version(), "/tgloader stage");
 
-        // Fast path for pinned versions already in the catalog. Lets operators rollout a
-        // build that was sideloaded via local/ even when source: GITHUB. Channels still
-        // go through the remote resolver so they pick up newer builds.
         if (config.channel() == null) {
             StageResult cached = stageFromLocalCatalog(config.version());
             if (cached != null) return cached;
@@ -398,9 +354,6 @@ public final class LoaderCore {
         logger.info("Staged TotemGuard " + artifact.version() + " (sha " + sha.substring(0, 10)
                 + "…). Run /tgloader apply to restart.");
 
-        // Best-effort: also drop the bytes into the version catalog so retention can pick
-        // them up (and they survive a restart that doesn't pick up the staged slot for
-        // some reason). Then broadcast so peers can grab the same build.
         try {
             String hashPrefix = sha.substring(0, Math.min(10, sha.length()));
             Path destination = paths.versionsDir().resolve("TotemGuard-"
@@ -421,9 +374,6 @@ public final class LoaderCore {
         return new StageResult(artifact.version(), sha, resolver.sourceName());
     }
 
-    /**
-     * Reads the {@code staged.meta} marker if present.
-     */
     public Optional<StagedSnapshot> readStaged() {
         try {
             if (!Files.isRegularFile(paths.stagedMeta()) || !Files.isRegularFile(paths.stagedJar())) {
@@ -446,14 +396,6 @@ public final class LoaderCore {
         }
     }
 
-    /**
-     * Stage from the local catalog when a pinned version is already on disk. Verifies
-     * integrity, writes the bytes to the staged slot, stamps the catalog sidecar with
-     * the pinned source, and announces to peers so a fleet rollout works against a
-     * sideloaded jar without going back to the configured remote.
-     *
-     * @return staged result, or {@code null} if the version is not present locally
-     */
     private StageResult stageFromLocalCatalog(String version) throws IOException {
         CachedJarStore store = new CachedJarStore(paths.versionsDir(), logger);
         Optional<Path> located = store.findPinnedJar(version, platform);
@@ -473,6 +415,35 @@ public final class LoaderCore {
         return new StageResult(version, sha, "LOCAL-CACHE");
     }
 
+    public boolean stageFromCatalogBySha(String version, String sha256) {
+        if (sha256 == null || sha256.isBlank()) return false;
+        try {
+            CatalogIndex index = new CatalogIndex(paths.versionsDir(), platform, logger);
+            Optional<CatalogIndex.Entry> match = index.findBySha(sha256);
+            if (match.isEmpty()) {
+                logger.fine("Rollout target " + sha256 + " is not in the local catalog yet. "
+                        + "Skipping catalog-stage. The leader's jar-available broadcast may not have arrived.");
+                return false;
+            }
+            Path jar = match.get().jar();
+            if (!new JarIntegrityChecker(logger, "TotemGuard").verifyJar(jar)) {
+                logger.warning("Catalog jar " + jar.getFileName()
+                        + " failed integrity verification. Refusing to stage rollout target.");
+                return false;
+            }
+            byte[] bytes = Files.readAllBytes(jar);
+            String resolvedVersion = (version == null || version.isBlank())
+                    ? match.get().sidecar().version() : version;
+            StagedJar.write(paths, bytes, resolvedVersion, "FLEET", sha256);
+            logger.info("Staged rollout target TotemGuard " + resolvedVersion + " ("
+                    + sha256.substring(0, Math.min(10, sha256.length())) + ") from local catalog.");
+            return true;
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "Failed to stage rollout target " + sha256 + " from local catalog", t);
+            return false;
+        }
+    }
+
     public HostPlatform platform() {
         return platform;
     }
@@ -481,11 +452,6 @@ public final class LoaderCore {
         return logger;
     }
 
-    /**
-     * Tear down long-lived resources. Called from the platform entrypoint's disable hook
-     * so the fleet broker's scheduler and any rollout subscriptions don't outlive the
-     * plugin lifecycle.
-     */
     public void shutdown() {
         fleetBroker.shutdown();
     }
