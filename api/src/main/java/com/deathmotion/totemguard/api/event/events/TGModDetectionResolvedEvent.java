@@ -26,16 +26,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Set;
 
 /**
- * Fired when a player's mod-detection session resolves into a single action.
- * <p>
- * One event per resolution, not one per detected mod. Mods observed after the
- * session has already resolved fire a follow-up event with {@link #isLate()}
- * returning {@code true}. The mod set on a late event contains only the
- * newly-observed mods.
- * <p>
- * Cancelling suppresses the staff alert, the punishment dispatch, and the
- * kick-then-ban bookkeeping for this resolution. The {@link TGUserFlagEvent}
- * fired downstream is skipped as well.
+ * Fired when a player's mod-detection session resolves. One event per resolution, not
+ * per mod. Mods observed after the session resolved fire a follow-up event with
+ * {@link #isLate()} {@code true} containing only the new mods. Cancelling suppresses
+ * the staff alert, punishment dispatch, kick-then-ban bookkeeping, and the downstream
+ * {@link TGUserFlagEvent}.
  */
 public interface TGModDetectionResolvedEvent extends TGUserEvent, Cancellable {
 
@@ -50,8 +45,7 @@ public interface TGModDetectionResolvedEvent extends TGUserEvent, Cancellable {
     @NotNull ModAction getAction();
 
     /**
-     * {@code true} when this resolution fired for mods observed after the
-     * session boundary tick had already resolved.
+     * Whether this fired for mods observed after the session boundary tick resolved.
      */
     boolean isLate();
 }

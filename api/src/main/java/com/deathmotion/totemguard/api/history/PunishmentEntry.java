@@ -25,13 +25,14 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Public projection of a single recorded punishment.
  *
- * @param id         primary key in {@code tg_punishments}.
- * @param checkName  the check whose threshold was reached.
- * @param serverName the server that dispatched the command.
- * @param type       kind of punishment (generic announcement, kick, ban).
- * @param command    fully-expanded command string that was run.
- * @param debug      optional debug payload, or {@code null}.
- * @param createdAt  epoch ms when the command was dispatched.
+ * @param id         primary key in {@code tg_punishments}, stable identifier
+ * @param checkName  check whose threshold was reached, matches {@link com.deathmotion.totemguard.api.check.Check#getName()}
+ * @param serverName server that dispatched the command, the local server name at write time
+ * @param type       punishment category ({@link PunishmentType#GENERIC},
+ *                   {@link PunishmentType#KICK}, {@link PunishmentType#BAN})
+ * @param command    fully-expanded command string after placeholder substitution
+ * @param debug      pre-rendered debug payload, {@code null} when the check produced none
+ * @param createdAt  epoch milliseconds when the punishment was dispatched
  */
 public record PunishmentEntry(
         long id,

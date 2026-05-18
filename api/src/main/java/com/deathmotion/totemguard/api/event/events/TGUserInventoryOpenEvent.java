@@ -19,18 +19,16 @@
 package com.deathmotion.totemguard.api.event.events;
 
 /**
- * Fired when TotemGuard sees a user's inventory move from closed to open.
- * Server-driven opens are transaction guarded, so the event fires when
- * the client actually applies the open, not when the server queued the
- * packet. Mod-detection windows are excluded.
+ * Fired when a user's inventory moves from closed to open. Server-driven opens are
+ * transaction guarded, so the event fires when the client applies the open, not when
+ * the server queued the packet. Mod-detection windows are excluded.
  */
 public interface TGUserInventoryOpenEvent extends TGUserEvent {
 
     /**
-     * {@code true} for server-driven opens (an {@code OPEN_WINDOW} packet,
-     * including GUIs TotemGuard sends itself). {@code false} for client
-     * actions inferred to imply an open (clicking inside the player's own
-     * inventory, the recipe book opening the crafting grid, etc.).
+     * {@code true} for server-driven opens ({@code OPEN_WINDOW}, including TotemGuard
+     * GUIs), {@code false} for client actions inferred as an open (inventory clicks,
+     * recipe book opening the crafting grid).
      */
     boolean isServerInitiated();
 }

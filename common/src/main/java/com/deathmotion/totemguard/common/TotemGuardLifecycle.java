@@ -121,7 +121,9 @@ final class TotemGuardLifecycle {
         p.teleportService = new TeleportService(p);
         p.commandManager = new CommandManagerImpl();
         p.afterCommandsRegistered();
-        p.updateCheckerRepository = new UpdateCheckerRepositoryImpl();
+        if (!p.isManagedByLoader()) {
+            p.updateCheckerRepository = new UpdateCheckerRepositoryImpl();
+        }
         p.networkPresenceRepository = new NetworkPresenceRepository(p, serverIdentity);
         p.networkPresenceRepository.addListener(p.alertRepository);
         p.redisRepository.addStateListener(p.alertRepository);

@@ -22,20 +22,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Immutable snapshot of the loader's configuration and current state. Consumers obtain
- * one via {@link com.deathmotion.totemguard.api.TotemGuardAPI#getLoaderInfo()} when the
- * TotemGuard plugin is being driven by the TotemGuard loader.
+ * Immutable snapshot of the loader's configuration and state.
  *
- * @param loaderVersion     the loader plugin's own version
- * @param configuredSource  the configured source for resolving TotemGuard plugin jars
- *                          (e.g. {@code GITHUB}, {@code MODRINTH}, {@code LOCAL}).
- *                          A free-form label so the api can survive future source additions
- * @param configuredVersion the configured version pin
- *                          (e.g. {@code LATEST}, {@code GIT}, or a concrete version like {@code 3.0.5}).
- *                          A free-form label for the same reason
- * @param loadedVersion     the version of the TotemGuard plugin currently running
- * @param stagedVersion     a version that has been staged for the next loader restart,
- *                          or {@code null} when no jar is staged
+ * @param loaderVersion     version string of the TotemGuard loader plugin itself,
+ *                          independent of the loaded plugin's version
+ * @param configuredSource  configured source for resolving jars ({@code GITHUB},
+ *                          {@code MODRINTH}, {@code LOCAL}), free-form to survive future
+ *                          source kinds
+ * @param configuredVersion configured version pin ({@code LATEST}, {@code GIT}, or a
+ *                          concrete value like {@code 3.0.5}), free-form for the same reason
+ * @param loadedVersion     version string of the TotemGuard plugin currently running
+ *                          inside the loader
+ * @param stagedVersion     version staged for the next restart, or {@code null} when no
+ *                          update is staged
  */
 public record LoaderInfo(
         @NotNull String loaderVersion,

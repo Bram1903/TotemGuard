@@ -25,10 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Static access point for the {@link TotemGuardAPI} instance.
- * <p>
- * The API is initialized once via {@link #init(TotemGuardAPI)}. Consumers may access the
- * instance synchronously via {@link #get()} or asynchronously via {@link #getAsync()}.
+ * Static access point for the {@link TotemGuardAPI} instance. Initialized once via
+ * {@link #init(TotemGuardAPI)}, accessed via {@link #get()} or {@link #getAsync()}.
  */
 public final class TotemGuard {
 
@@ -43,8 +41,6 @@ public final class TotemGuard {
     /**
      * Initializes the global API instance for the first time.
      *
-     * @param api the API instance
-     * @throws NullPointerException  if {@code api} is null
      * @throws IllegalStateException if already initialized. Use {@link #replace(TotemGuardAPI)}
      *                               when the loader is swapping the running plugin
      */
@@ -59,11 +55,9 @@ public final class TotemGuard {
     }
 
     /**
-     * Loader-internal: replace the current API instance with a freshly started one.
-     * <p>
-     * Used during {@code /tgloader restart} when the TotemGuard plugin is rebooted. The
-     * pending future returned by {@link #getAsync()} for any consumer that called it
-     * after the previous {@link #shutdown()} completes with the new instance.
+     * Loader-internal. Replaces the current API instance with a freshly started one and
+     * completes any future returned by {@link #getAsync()} after the previous
+     * {@link #shutdown()}.
      */
     public static void replace(@NotNull TotemGuardAPI api) {
         Objects.requireNonNull(api, "api");
@@ -72,13 +66,10 @@ public final class TotemGuard {
     }
 
     /**
-     * Loader-internal: clear the API instance and arm a fresh future. Called
-     * immediately before {@link com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent}
-     * is dispatched, so handlers that re-hook via {@link #getAsync()} receive the
-     * fresh (pending) future rather than a completed future pointing at the API
-     * that is about to be torn down. {@link #get()} throws inside a shutdown
-     * handler. Consumers needing to use the API one last time during shutdown
-     * must cache their reference at startup.
+     * Loader-internal. Clears the API instance and arms a fresh future. Called immediately
+     * before {@link com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent} is
+     * dispatched, so {@link #get()} throws inside a shutdown handler. Consumers needing the
+     * API one last time during shutdown must cache their reference at startup.
      */
     public static void shutdown() {
         INSTANCE.set(null);
@@ -88,7 +79,6 @@ public final class TotemGuard {
     /**
      * Returns the initialized API instance.
      *
-     * @return the API instance
      * @throws IllegalStateException if not initialized
      */
     public static @NotNull TotemGuardAPI get() {
@@ -102,13 +92,8 @@ public final class TotemGuard {
     }
 
     /**
-     * Returns a future that completes when the API is initialized.
-     * <p>
-     * If the API is already initialized, a completed future is returned. After a
-     * {@link #shutdown()} the future is reset, so consumers can re-acquire by calling
-     * this method again from their shutdown event handler.
-     *
-     * @return a future supplying the API instance
+     * Returns a future that completes when the API is initialized. After a {@link #shutdown()}
+     * the future is reset, so consumers must re-call this method from their shutdown handler.
      */
     public static @NotNull CompletableFuture<TotemGuardAPI> getAsync() {
         TotemGuardAPI api = INSTANCE.get();
@@ -116,9 +101,9 @@ public final class TotemGuard {
     }
 
     /**
-     * Returns whether the API has been initialized.
-     *
-     * @return true if initialized
+     * Whether {@link #init(TotemGuardAPI)} has run and {@link #shutdown()} has not been
+     * called since. Use this to feature-gate code paths that depend on the API without
+     * triggering the {@link #get()} throw.
      */
     public static boolean isInitialized() {
         return INSTANCE.get() != null;

@@ -26,29 +26,44 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * Fired when a staff member toggles {@code /tg focus}, and re-fired when a
- * cached focus is restored on join. Target fields are populated only when
- * {@link #isEnabling()} is {@code true}. On a disable they are all {@code null}.
+ * Fired when a staff member toggles {@code /tg focus}, and re-fired when a cached focus
+ * is restored on join. Target fields are populated only when {@link #isEnabling()} is
+ * {@code true}, otherwise all {@code null}.
  */
 public interface TGFocusEvent extends TGEvent, Cancellable {
 
+    /**
+     * UUID of the staff member toggling focus.
+     */
     @NotNull UUID getCallerUuid();
 
+    /**
+     * UUID of the focused player when enabling, {@code null} when clearing.
+     */
     @Nullable UUID getTargetUuid();
 
+    /**
+     * Display name of the focused player when enabling, {@code null} when clearing.
+     */
     @Nullable String getTargetName();
 
     /**
-     * The target's {@link TGUser} handle when online on this server. {@code null} otherwise.
+     * The target's {@link TGUser} handle when online on this server, {@code null} otherwise.
      */
     @Nullable TGUser getTargetUser();
 
+    /**
+     * Stable instance UUID of the backend hosting the target, {@code null} when clearing.
+     */
     @Nullable UUID getTargetServerInstanceId();
 
+    /**
+     * Friendly server name of the backend hosting the target, {@code null} when clearing.
+     */
     @Nullable String getTargetServerName();
 
     /**
-     * {@code true} when the call sets a focus, {@code false} when it clears one.
+     * {@code true} when setting a focus, {@code false} when clearing one.
      */
     boolean isEnabling();
 

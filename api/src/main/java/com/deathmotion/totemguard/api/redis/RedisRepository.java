@@ -19,29 +19,21 @@
 package com.deathmotion.totemguard.api.redis;
 
 /**
- * Simple Redis status interface.
- *
- * <p>Allows consumers to check whether Redis is enabled by configuration
- * and whether a connection to Redis is currently available.</p>
- *
- * <p>This interface does not expose any Redis client or connection objects.
- * It is intended only for feature-gating and basic availability checks.</p>
+ * Redis availability status. Does not expose client or connection objects, only used
+ * for feature-gating and availability checks.
  */
 public interface RedisRepository {
 
     /**
-     * Returns whether Redis is enabled in the configuration.
-     *
-     * @return {@code true} if Redis support is enabled, {@code false} otherwise
+     * Whether Redis is configured to start. Reflects the {@code redis.enabled} toggle,
+     * independent of whether the connection actually came up.
      */
     boolean isEnabled();
 
     /**
-     * Returns whether Redis is currently connected and usable.
-     *
-     * <p>This is a best-effort snapshot of the current connection state.</p>
-     *
-     * @return {@code true} if Redis appears connected, {@code false} otherwise
+     * Best-effort snapshot of Lettuce's connection state. Cheap to call but lags by the
+     * reconnect heartbeat, so do not treat a {@code true} as a guarantee that the next
+     * call will succeed.
      */
     boolean isConnected();
 }

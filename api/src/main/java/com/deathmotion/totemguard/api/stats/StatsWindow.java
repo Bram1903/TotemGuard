@@ -24,15 +24,26 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Duration;
 
 /**
- * A time window over which {@link StatsRepository} aggregates alert and punishment counts.
- * Use {@link #ALL_TIME} for an unbounded total, or one of the rolling windows to limit
- * the count to events whose {@code created_at} falls within {@link #window()} of "now".
+ * A time window over which {@link StatsRepository} aggregates counts. Rolling windows
+ * limit events to those whose {@code created_at} falls within {@link #window()} of now.
  */
 public enum StatsWindow {
 
+    /**
+     * Unbounded, every row TotemGuard has on disk. {@link #window()} returns {@code null}.
+     */
     ALL_TIME("all", "All time", null),
+    /**
+     * Rolling 30-day window, the longest bounded period exposed.
+     */
     LAST_30_DAYS("30d", "Last 30 days", Duration.ofDays(30)),
+    /**
+     * Rolling 7-day window, the weekly view.
+     */
     LAST_7_DAYS("7d", "Last 7 days", Duration.ofDays(7)),
+    /**
+     * Rolling 24-hour window, the daily view.
+     */
     LAST_24_HOURS("24h", "Last 24 hours", Duration.ofHours(24));
 
     private final String id;
@@ -46,28 +57,30 @@ public enum StatsWindow {
     }
 
     /**
-     * Stable identifier for this window, suitable for cache keys and configuration values.
+     * Short stable identifier ({@code "all"}, {@code "30d"}, {@code "7d"}, {@code "24h"}),
+     * safe to use as a cache key segment or YAML value.
      */
     public @NotNull String id() {
         return id;
     }
 
     /**
-     * Human-readable label for display in UIs.
+     * Human-readable label rendered in stats GUIs (e.g. {@code "Last 24 hours"}).
      */
     public @NotNull String label() {
         return label;
     }
 
     /**
-     * The rolling duration this window covers, or {@code null} for {@link #ALL_TIME}.
+     * Rolling duration applied against {@code created_at}, or {@code null} for
+     * {@link #ALL_TIME}. Same value the SQL window clause is built from.
      */
     public @Nullable Duration window() {
         return window;
     }
 
     /**
-     * Whether this window is unbounded.
+     * Whether this window is {@link #ALL_TIME} (i.e. {@link #window()} is {@code null}).
      */
     public boolean isAllTime() {
         return window == null;

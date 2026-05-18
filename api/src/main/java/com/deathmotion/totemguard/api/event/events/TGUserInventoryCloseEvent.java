@@ -19,24 +19,17 @@
 package com.deathmotion.totemguard.api.event.events;
 
 /**
- * Fired when TotemGuard sees a user's inventory move from open to closed.
- * Server-driven closes are transaction guarded, so the event fires when
- * the client actually applies the close. Mod-detection windows are
- * excluded.
- * <p>
- * Caveat: when an inventory check fails on a user and mitigations are
- * disabled, TotemGuard flips its tracker to closed to suppress repeat
- * flagging even though no close packet went out. This event fires in
- * that case, even though the player's screen still shows the inventory
- * open. With mitigations enabled the close is real and guarded.
+ * Fired when a user's inventory moves from open to closed. Server-driven closes are
+ * transaction guarded, so the event fires when the client applies the close.
+ * Mod-detection windows are excluded. Caveat, when an inventory check fails with
+ * mitigations disabled TotemGuard flips its tracker to closed to suppress repeat
+ * flagging, firing this event even though the client still shows the inventory open.
  */
 public interface TGUserInventoryCloseEvent extends TGUserEvent {
 
     /**
-     * {@code true} when the close was driven by the server side (an
-     * outgoing {@code CLOSE_WINDOW} packet, or a TotemGuard-internal
-     * close from the caveat above). {@code false} when the client sent
-     * the close packet itself.
+     * {@code true} for server-side closes (outgoing {@code CLOSE_WINDOW} or the
+     * mitigations-disabled tracker flip above), {@code false} for client-sent closes.
      */
     boolean isServerInitiated();
 }

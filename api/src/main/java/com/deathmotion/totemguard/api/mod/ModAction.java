@@ -21,36 +21,31 @@ package com.deathmotion.totemguard.api.mod;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The action TotemGuard actually applied to a mod-detection session at resolution
- * time, after collapsing every detected mod's {@link ModSeverity} down to a single
- * outcome.
+ * Action applied to a mod-detection session at resolution, after collapsing every
+ * detected mod's {@link ModSeverity} into one outcome.
  */
 public enum ModAction {
 
     /**
-     * No disallowed mods were detected, or every detected mod has severity
-     * {@link ModSeverity#LOG}. Staff still receive an alert; the player is not
-     * disconnected.
+     * No disallowed mods, or all detected mods are {@link ModSeverity#LOG}. Staff alert
+     * fires but the player is not disconnected.
      */
     NONE(""),
 
     /**
-     * The player was kicked. The kick message lists every disallowed mod from the
-     * resolved set (capped by the configured display limit).
+     * Player was kicked. Kick message lists detected mods (capped by display limit).
      */
     KICK("K"),
 
     /**
-     * The player was kicked and a kick-then-ban warning was recorded. A re-join inside
-     * the configured warning window with any of the warned mods escalates to
-     * {@link #BAN}; a re-join with a brand-new disallowed mod is treated as a fresh
-     * first offense.
+     * Player was kicked and a kick-then-ban warning was recorded. A re-join in the
+     * warning window with any warned mod escalates to {@link #BAN}, a brand-new
+     * disallowed mod is treated as a fresh first offense.
      */
     KICK_THEN_BAN("KB"),
 
     /**
-     * The player was banned. The ban message lists every disallowed mod from the
-     * resolved set (capped by the configured display limit).
+     * Player was banned. Ban message lists detected mods (capped by display limit).
      */
     BAN("B");
 
@@ -61,11 +56,7 @@ public enum ModAction {
     }
 
     /**
-     * Compact display label suitable for inline staff alerts: {@code "K"} for
-     * {@link #KICK}, {@code "KB"} for {@link #KICK_THEN_BAN}, {@code "B"} for
-     * {@link #BAN}, and the empty string for {@link #NONE}.
-     *
-     * @return the short label, never {@code null}
+     * Compact inline-alert label: {@code K}, {@code KB}, {@code B}, or empty for {@link #NONE}.
      */
     public @NotNull String shortLabel() {
         return shortLabel;

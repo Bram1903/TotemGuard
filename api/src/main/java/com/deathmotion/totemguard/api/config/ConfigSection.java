@@ -25,74 +25,52 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Represents a subsection of a {@link Config} at a specific path.
- * <p>
- * Sections provide the same read helpers as {@link Config}, but are scoped to the section root.
+ * A subsection of a {@link Config} scoped to a path. Provides the same read helpers as
+ * {@link Config}. All {@code path} arguments are dot-separated and relative to this section.
  */
 public interface ConfigSection {
 
     /**
-     * Returns whether a value exists at the given relative path.
-     *
-     * @param path dot-separated path relative to this section
-     * @return true if present, otherwise false
+     * Whether the dot-separated {@code path} resolves to any value (including explicit
+     * {@code null}) within this section.
      */
     boolean contains(@NotNull String path);
 
     /**
-     * Reads the raw value at the given relative path.
-     *
-     * @param path dot-separated path relative to this section
-     * @return the value if present
+     * Raw value at {@code path} with no type coercion. Returns the YAML node as-is
+     * ({@code String}, {@code Map}, {@code List}, etc.), empty when the path is missing.
      */
     @NotNull Optional<Object> get(@NotNull String path);
 
     /**
-     * Reads a value as a string.
-     *
-     * @param path dot-separated path relative to this section
-     * @return the string value if present
+     * String value at {@code path}, empty when missing or the node is not a string.
      */
     @NotNull Optional<String> getString(@NotNull String path);
 
     /**
-     * Reads a value as an integer.
-     *
-     * @param path dot-separated path relative to this section
-     * @return the integer value if present and parseable
+     * Integer value at {@code path}, empty when missing or the node is not an integer.
      */
     @NotNull Optional<Integer> getInt(@NotNull String path);
 
     /**
-     * Reads a value as a boolean.
-     *
-     * @param path dot-separated path relative to this section
-     * @return the boolean value if present and parseable
+     * Boolean value at {@code path}, empty when missing or the node is not a boolean.
      */
     @NotNull Optional<Boolean> getBoolean(@NotNull String path);
 
     /**
-     * Reads a value as a list of strings.
-     * <p>
-     * If the value is missing, not a list, or an empty list, an empty list is returned.
-     *
-     * @param path dot-separated path relative to this section
-     * @return an immutable list of strings (possibly empty)
+     * Immutable string list at {@code path}, empty when missing or not a list. Non-string
+     * elements are dropped silently.
      */
     @NotNull List<@NotNull String> getStringList(@NotNull String path);
 
     /**
-     * Returns a nested section if the value at the path is a map/object.
-     *
-     * @param path dot-separated path relative to this section
-     * @return the nested section if present and a map
+     * Nested section view at {@code path}, empty when missing or the node is not a map.
      */
     @NotNull Optional<ConfigSection> getSection(@NotNull String path);
 
     /**
-     * Returns an unmodifiable view of the underlying map for this section.
-     *
-     * @return the section map
+     * Unmodifiable view of this section's underlying map. Mutation attempts throw, nested
+     * structures retain their YAML shape.
      */
     @NotNull Map<@NotNull String, @NotNull Object> asMap();
 }

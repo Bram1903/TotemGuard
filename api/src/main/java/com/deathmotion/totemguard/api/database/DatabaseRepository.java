@@ -19,30 +19,20 @@
 package com.deathmotion.totemguard.api.database;
 
 /**
- * Simple database status interface.
- *
- * <p>Allows consumers to check whether the database is enabled by configuration and
- * whether a connection is currently available. Useful for feature-gating: history
- * and statistics require a live database connection.</p>
- *
- * <p>This interface does not expose any JDBC connection or DAO objects. It is
- * intended only for availability checks.</p>
+ * Database availability status. Used to feature-gate history and statistics, which
+ * require a live connection. Does not expose JDBC or DAO objects.
  */
 public interface DatabaseRepository {
 
     /**
-     * Returns whether the database is enabled in the configuration.
-     *
-     * @return {@code true} if database support is enabled, {@code false} otherwise
+     * Whether the database is configured to start. Reflects the {@code database.enabled}
+     * toggle, independent of whether the connection actually came up.
      */
     boolean isEnabled();
 
     /**
-     * Returns whether the database is currently connected and usable.
-     *
-     * <p>This is a best-effort snapshot of the current connection state.</p>
-     *
-     * @return {@code true} if the database appears connected, {@code false} otherwise
+     * Best-effort snapshot of pool health. Cheap to call but lags by the pool's keepalive
+     * interval, do not rely on it for strong "is the next query going to succeed" guarantees.
      */
     boolean isConnected();
 }

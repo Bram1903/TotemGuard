@@ -22,12 +22,25 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Default {@link TGVersion} implementation. Most callers should construct versions
- * via {@link TGVersion#of} or {@link TGVersion#fromString}; this record is exposed
- * only so third-party tooling can reach the concrete type when needed.
+ * Default {@link TGVersion} implementation. Prefer {@link TGVersion#of} or
+ * {@link TGVersion#fromString}, this record is exposed only for tooling that needs the
+ * concrete type.
+ *
+ * @param major          semver major, incremented on incompatible changes
+ * @param minor          semver minor, incremented on backwards-compatible feature additions
+ * @param patch          semver patch, incremented on backwards-compatible fixes
+ * @param snapshot       whether this is a {@code -SNAPSHOT} build, snapshots compare older
+ *                       than the matching release
+ * @param snapshotCommit short commit hash baked into the build, {@code null} when unknown
+ *                       or when this is not a snapshot build
  */
 public record BasicTGVersion(int major, int minor, int patch, boolean snapshot,
                              @Nullable String snapshotCommit) implements TGVersion {
+    /**
+     * Canonical display string. Releases render as {@code major.minor.patch}, snapshots
+     * with a commit hash render as {@code major.minor.patch+commit-SNAPSHOT}, snapshots
+     * without a commit hash collapse to the release form.
+     */
     @Override
     public @NotNull String toString() {
         return major + "." + minor + "." + patch + (snapshot && snapshotCommit != null ? ("+" + snapshotCommit + "-SNAPSHOT") : "");

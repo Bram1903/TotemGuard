@@ -19,11 +19,17 @@
 package com.deathmotion.totemguard.api.history;
 
 /**
- * Outcome of {@link HistoryRepository#clear}, how many rows were actually removed
- * across both tables. {@code 0/0} is a successful clear of an already-empty record.
+ * Outcome of {@link HistoryRepository#clear}. {@code 0/0} is a successful clear of an
+ * already-empty record.
+ *
+ * @param alertsRemoved      number of {@code tg_alerts} rows deleted for the target UUID
+ * @param punishmentsRemoved number of {@code tg_punishments} rows deleted for the target UUID
  */
 public record HistoryClearResult(long alertsRemoved, long punishmentsRemoved) {
 
+    /**
+     * Combined row count, the sum of {@link #alertsRemoved()} and {@link #punishmentsRemoved()}.
+     */
     public long total() {
         return alertsRemoved + punishmentsRemoved;
     }

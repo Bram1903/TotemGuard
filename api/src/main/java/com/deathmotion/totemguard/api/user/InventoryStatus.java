@@ -19,18 +19,16 @@
 package com.deathmotion.totemguard.api.user;
 
 /**
- * Snapshot of how TotemGuard sees a user's inventory. Returned by
- * {@link TGUser#getInventoryStatus()}. Server-driven transitions are
- * transaction guarded, so the snapshot mirrors the client's view.
- * <p>
- * Caveat: when an inventory check fails with mitigations disabled,
- * TotemGuard flips this to closed to suppress repeat flagging even
- * though the player still has the inventory open on their screen. With
- * mitigations enabled the close is real and guarded.
+ * Snapshot of TotemGuard's view of a user's inventory. Server-driven transitions are
+ * transaction guarded so the snapshot mirrors the client. Caveat, when an inventory
+ * check fails with mitigations disabled TotemGuard flips this to closed to suppress
+ * repeat flagging even though the player still has the inventory open client-side.
  *
- * @param open            {@code true} when TotemGuard tracks the inventory as open
- * @param serverInitiated {@code true} when the last transition came from
- *                        the server side (including TotemGuard itself)
+ * @param open            {@code true} if TotemGuard tracks the inventory as open after the
+ *                        latest transition
+ * @param serverInitiated {@code true} if the last open or close was server-driven (OPEN_WINDOW,
+ *                        CLOSE_WINDOW, or TotemGuard's own mitigations-disabled flip),
+ *                        {@code false} for client-driven transitions
  */
 public record InventoryStatus(boolean open, boolean serverInitiated) {
 }

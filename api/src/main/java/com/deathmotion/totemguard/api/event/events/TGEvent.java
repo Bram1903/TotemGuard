@@ -21,25 +21,15 @@ package com.deathmotion.totemguard.api.event.events;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Root marker for every event TotemGuard fires through its public event bus.
- * <p>
- * Subscribing to {@code TGEvent.class} fans the handler out across every
- * concrete event. Useful for metrics, debug logging, or audit hooks that need
- * to see everything without enumerating each type. Cast or pattern-match on
- * the concrete subtype when you need field access:
- * <pre>{@code
- * bus.get(TGEvent.class).subscribe(pluginContext, event -> {
- *     if (event instanceof TGUserFlagEvent flag) {
- *         metrics.increment("flags." + flag.getCheck().getName());
- *     }
- * });
- * }</pre>
+ * Root marker for every event TotemGuard fires. Subscribing to {@code TGEvent.class}
+ * fans the handler across every concrete event.
  */
 public interface TGEvent {
 
     /**
-     * Convenience name for this event. Defaults to the implementing class's
-     * simple name, which is good enough for log lines and dashboards.
+     * Display name for logging and metrics, defaults to the implementing class's simple
+     * name (e.g. {@code TGUserFlagEventImpl}). Implementations may override to provide a
+     * stable name unaffected by class renames.
      */
     default @NotNull String getName() {
         return getClass().getSimpleName();

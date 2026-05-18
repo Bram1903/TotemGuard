@@ -26,30 +26,35 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * Fired when a staff member runs {@code /tg teleport <player>}. Cancelling
- * aborts the teleport before any local hop or cross-server route is published.
- * <p>
- * The caller is identified by UUID only. Admins running this command
- * typically hold {@code TotemGuard.Bypass} and are not registered as a
- * {@link TGUser}.
+ * Fired on {@code /tg teleport <player>}. Cancelling aborts before any local hop or
+ * cross-server route is published. The caller is identified by UUID only since admins
+ * running this command typically bypass registration as a {@link TGUser}.
  */
 public interface TGTeleportEvent extends TGEvent, Cancellable {
 
+    /**
+     * UUID of the staff member running the teleport command.
+     */
     @NotNull UUID getCallerUuid();
 
+    /**
+     * UUID of the player being teleported to.
+     */
     @NotNull UUID getTargetUuid();
 
+    /**
+     * Display name of the player being teleported to.
+     */
     @NotNull String getTargetName();
 
     /**
-     * The target's {@link TGUser} handle when online on this server.
-     * {@code null} for cross-server targets.
+     * The target's {@link TGUser} when online on this server, {@code null} for cross-server targets.
      */
     @Nullable TGUser getTargetUser();
 
     /**
-     * Stable per-instance UUID of the backend currently hosting the target.
-     * Equals this server's instance id when {@link #isCrossServer()} is {@code false}.
+     * Stable per-instance UUID of the backend hosting the target. Equals this server's
+     * instance id when {@link #isCrossServer()} is {@code false}.
      */
     @NotNull UUID getTargetServerInstanceId();
 
@@ -59,8 +64,7 @@ public interface TGTeleportEvent extends TGEvent, Cancellable {
     @NotNull String getTargetServerName();
 
     /**
-     * {@code true} when the target is on a different backend than the caller
-     * and the teleport requires a server hop.
+     * Whether the target is on a different backend and the teleport needs a server hop.
      */
     boolean isCrossServer();
 }

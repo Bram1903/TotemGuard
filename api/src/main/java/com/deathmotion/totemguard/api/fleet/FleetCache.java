@@ -28,88 +28,76 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Cross-fleet cache + pub/sub provided by a TotemGuard instance to its loader. Backed
- * by the TotemGuard Redis connection; only attached after Redis is up. Detached when
- * Redis disconnects or TotemGuard shuts down.
- *
- * <p>Every operation is best-effort and side-effect-isolated. Failures must not bubble
- * up to the loader's critical path; implementations swallow transport errors and
- * return {@link Optional#empty()} or {@code false}.</p>
- *
- * <p>Keys are caller-namespaced. The loader uses the {@code totemguard:loader:*}
- * prefix. Values are opaque byte arrays so the loader chooses its own encoding
- * (JSON, raw jar bytes, etc).</p>
+ * Cross-fleet cache and pub/sub backed by TotemGuard's Redis connection. Only attached
+ * while Redis is up. Every operation is best-effort, transport failures are swallowed
+ * and surface as {@link Optional#empty()} or {@code false}. Keys are caller-namespaced
+ * (the loader uses {@code totemguard:loader:*}) and values are opaque byte arrays.
  */
 public interface FleetCache {
 
     /**
-     * GET a key, returning the raw bytes if present and the key has not expired.
+     * GET, returning bytes if the key exists and has not expired.
      */
     @NotNull Optional<byte[]> get(@NotNull String key);
 
     /**
-     * SET a key with a hard TTL. {@code ttl} must be positive.
+     * SET with a hard positive TTL.
      */
     void put(@NotNull String key, byte @NotNull [] value, @NotNull Duration ttl);
 
     /**
-     * DEL a key. No-op if absent.
+     * DEL, no-op if absent.
      */
     void delete(@NotNull String key);
 
     /**
-     * EXISTS check without fetching the value.
+     * EXISTS without fetching the value.
      */
     boolean exists(@NotNull String key);
 
     /**
-     * Read a Redis HASH as a string map. Returns empty when the key is absent.
+     * Read a Redis HASH as a string map, empty when absent.
      */
     @NotNull Map<String, String> getHash(@NotNull String key);
 
     /**
-     * Atomically write all fields of {@code value} to a Redis HASH and apply a TTL.
-     * Existing fields not present in {@code value} are deleted.
+     * Atomically write all fields of {@code value} to a HASH and apply a TTL. Existing
+     * fields not in {@code value} are deleted.
      */
     void putHash(@NotNull String key, @NotNull Map<String, String> value, @NotNull Duration ttl);
 
     /**
-     * SCAN keys matching {@code prefix*}. Returns up to {@code limit} entries.
-     * Implementations may return fewer; callers should not rely on completeness for
-     * tight time budgets.
+     * SCAN keys matching {@code prefix*}, returning up to {@code limit}. Implementations
+     * may return fewer, so do not rely on completeness for tight time budgets.
      */
     @NotNull List<String> scanKeys(@NotNull String prefix, int limit);
 
     /**
-     * Try to acquire a Redis-backed distributed lock (SET NX EX). Returns empty if
-     * another instance holds it. The lock auto-expires after {@code ttl}; callers
-     * should refresh in long-running operations or accept the TTL as the upper bound.
+     * Acquire a Redis-backed distributed lock (SET NX EX), or empty if another instance
+     * holds it. The lock auto-expires at {@code ttl}, refresh for long operations.
      */
     @NotNull Optional<FleetLock> tryLock(@NotNull String key, @NotNull Duration ttl);
 
     /**
-     * Publish a fire-and-forget message on a fleet topic. Delivery is best-effort;
-     * peers not currently subscribed (e.g. starting up) will miss the message.
+     * Fire-and-forget publish on a topic. Best-effort, peers not currently subscribed
+     * will miss the message.
      */
     void publish(@NotNull String topic, byte @NotNull [] payload);
 
     /**
-     * Subscribe to a topic. The returned {@link AutoCloseable} cancels the
-     * subscription when closed. The handler runs on a Redis I/O thread; implementations
-     * should not perform blocking work inside it.
+     * Subscribe to a topic. The returned {@link AutoCloseable} cancels the subscription.
+     * The handler runs on a Redis I/O thread and must not block.
      */
     @NotNull AutoCloseable subscribe(@NotNull String topic, @NotNull Consumer<byte[]> handler);
 
     /**
-     * Stable id for this TotemGuard instance, used as the sender id in rollout
-     * coordination and as the lock-holder identifier.
+     * Stable id for this TotemGuard instance, used as sender id and lock holder.
      */
     @NotNull UUID instanceId();
 
     /**
-     * Best-effort snapshot of the Redis connection state. Loader code should call this
-     * before issuing fleet operations; when {@code false}, callers fall back to the
-     * file-only cache path.
+     * Best-effort Redis connection state. When {@code false}, fall back to the file-only
+     * cache path.
      */
     boolean isHealthy();
 }

@@ -24,21 +24,20 @@ package com.deathmotion.totemguard.api.mod;
 public enum ModDetectionMethod {
 
     /**
-     * The client sent a {@code minecraft:register} plugin-message listing a channel
-     * matched by a {@code payloads} entry in {@code mods.yml}.
+     * Client sent {@code minecraft:register} listing a channel matched by a
+     * {@code payloads} entry in {@code mods.yml}.
      */
     PLUGIN_CHANNEL_REGISTRATION,
 
     /**
-     * The client sent a plugin-message on a channel matched by a {@code payloads}
-     * entry in {@code mods.yml} (either during the configuration or play phase).
+     * Client sent a plugin-message on a channel matched by a {@code payloads} entry
+     * (configuration or play phase).
      */
     PLUGIN_MESSAGE,
 
     /**
-     * The client resolved a translation key listed in a {@code translations} entry
-     * to a localized string different from the key itself, indicating that the
-     * client owns a language pack from the targeted mod.
+     * Client resolved a {@code translations} key to a localized string different from
+     * the key, indicating it owns the mod's language pack.
      */
     TRANSLATION
 }

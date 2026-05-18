@@ -19,14 +19,13 @@
 package com.deathmotion.totemguard.api.punishment;
 
 /**
- * Declared inline by prefixing {@code punishment-commands} entries with
- * {@code [TYPE]}, e.g. {@code [BAN] ban %tg_player% Unfair Advantage}.
- * Untagged commands default to {@link #GENERIC}.
+ * Declared inline by prefixing {@code punishment-commands} entries with {@code [TYPE]}
+ * (e.g. {@code [BAN] ban %tg_player% ...}). Untagged commands default to {@link #GENERIC}.
  */
 public enum PunishmentType {
 
     /**
-     * Announcements, logging, webhooks, nothing that removes the player.
+     * Announcements, logging, webhooks. Does not remove the player.
      */
     GENERIC,
 
@@ -36,7 +35,7 @@ public enum PunishmentType {
     KICK,
 
     /**
-     * Bans the player from the server / network.
+     * Bans the player from the server or network.
      */
     BAN
 }

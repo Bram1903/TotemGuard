@@ -18,6 +18,13 @@
 
 package com.deathmotion.totemguard.api.reload;
 
+/**
+ * Implemented by types whose state can be reloaded from config.
+ */
 public interface Reloadable {
+
+    /**
+     * Re-reads the backing configuration and rebuilds derived state. Safe to call repeatedly.
+     */
     void reload();
 }

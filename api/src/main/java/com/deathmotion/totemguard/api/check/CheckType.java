@@ -18,11 +18,40 @@
 
 package com.deathmotion.totemguard.api.check;
 
+/**
+ * Category a {@link Check} declares via {@code @CheckData(type = ...)}. Drives grouping
+ * in alerts, history, and the in-game GUIs.
+ */
 public enum CheckType {
+
+    /**
+     * Fallback when a check omits {@code @CheckData(type)} or sets it to none.
+     */
     UNSPECIFIED,
+
+    /**
+     * Auto-totem checks, players swapping a totem into the offhand suspiciously fast.
+     */
     AUTO_TOTEM,
+
+    /**
+     * Inventory interaction checks, clicks or moves while the inventory should be closed.
+     */
     INVENTORY,
+
+    /**
+     * Protocol-level checks, packets that violate the vanilla client contract.
+     */
     PROTOCOL,
+
+    /**
+     * Tick-rate and tick-end timing checks. Mostly the {@code @RequiresTickEnd} family, used
+     * to catch impossible tick cadences and stale-state mismatches.
+     */
     TICK,
+
+    /**
+     * Client-mod fingerprinting checks driven by the mod detection subsystem.
+     */
     MOD
 }

@@ -20,11 +20,7 @@ package com.deathmotion.totemguard.api.event.events;
 
 /**
  * Fired when a check flags a {@link com.deathmotion.totemguard.api.user.TGUser}.
- * <p>
- * Cancelling suppresses the flag's downstream side effects: alert dispatch,
- * violation increment, and punishment evaluation. A handler that wants the
- * flag to count internally but suppress only the public alert should not
- * cancel here.
+ * Cancelling suppresses alert dispatch, violation increment, and punishment evaluation.
  */
 public interface TGUserFlagEvent extends TGCheckEvent {
 }

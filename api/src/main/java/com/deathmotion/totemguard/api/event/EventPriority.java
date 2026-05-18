@@ -19,43 +19,41 @@
 package com.deathmotion.totemguard.api.event;
 
 /**
- * Pre-defined priority slots that callers can pass into the priority-aware
- * subscribe overloads.
- * <p>
- * Smaller numbers run earlier in the dispatch chain. Larger numbers run later
- * and therefore decide the final cancellation state. Any {@code int} works,
- * the constants here just give plugins a shared vocabulary so two unrelated
- * plugins can order against each other without inventing arbitrary values.
+ * Pre-defined priority slots for the priority-aware subscribe overloads. Smaller numbers
+ * run earlier, larger numbers run later and decide the final cancellation state. Any
+ * {@code int} works, these constants are a shared vocabulary.
  */
 public final class EventPriority {
 
     /**
-     * Runs first, ahead of every other priority.
+     * Earliest slot, for handlers that want to observe (or veto) an event before anyone else.
      */
     public static final int LOWEST = -200;
 
     /**
-     * Sits between {@link #LOWEST} and {@link #NORMAL}.
+     * Between {@link #LOWEST} and {@link #NORMAL}, room for early pre-processing handlers.
      */
     public static final int LOW = -100;
 
     /**
-     * The default slot, used when no priority is passed.
+     * Default slot when the no-priority {@code subscribe} overload is used.
      */
     public static final int NORMAL = 0;
 
     /**
-     * Sits between {@link #NORMAL} and {@link #HIGHEST}.
+     * Between {@link #NORMAL} and {@link #HIGHEST}, room for late post-processing handlers.
      */
     public static final int HIGH = 100;
 
     /**
-     * Runs after the regular priorities. Use this when a handler needs the last word on cancellation.
+     * Last slot among handlers that can mutate cancellation state. Use this when your
+     * handler needs to override decisions made by other handlers.
      */
     public static final int HIGHEST = 200;
 
     /**
-     * Reserved for read-only observers such as metrics or audit logging. Runs after everything else.
+     * Observe-only slot for metrics, audit, and logging. Runs after every cancellation-mutating
+     * handler so observers see the final state, must not mutate the event.
      */
     public static final int MONITOR = 300;
 

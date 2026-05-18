@@ -28,16 +28,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Context provided to {@link PlaceholderHolder}s during placeholder resolution.
+ * Context passed to {@link PlaceholderHolder}s during resolution. {@code user} and
+ * {@code check} are call-site dependent and may be {@code null}. {@link #extras()} holds
+ * call-specific values from TotemGuard (e.g. violation counts) with no fixed schema.
  *
- * <p>
- * {@code user} and {@code check} are optional and depend on the call site.
- * Implementations must handle {@code null} values gracefully.
- *
- * <p>
- * The {@link #extras()} map contains call-specific values supplied by TotemGuard
- * (for example, alert-related data such as violation counts).
- * Keys and value types are not fixed and should be accessed defensively.
+ * @param user   user bound to this resolution, or {@code null} for non-user call sites
+ * @param check  check bound to this resolution, or {@code null} for non-check call sites
+ * @param extras opaque per-call values (defensively copied into an unmodifiable map by the
+ *               canonical constructor), keys are namespaced by the producer
  */
 public record PlaceholderContext(
         @Nullable TGUser user,
@@ -57,25 +55,21 @@ public record PlaceholderContext(
     }
 
     /**
-     * Creates a context without any extra values.
-     *
-     * @param user  user context, or {@code null}
-     * @param check check context, or {@code null}
+     * Creates a context with no extras.
      */
     public PlaceholderContext(@Nullable TGUser user, @Nullable Check check) {
         this(user, check, Map.of());
     }
 
+    /**
+     * Shared empty instance, no user, no check, no extras.
+     */
     public static @NotNull PlaceholderContext empty() {
         return EMPTY;
     }
 
     /**
-     * Retrieves a typed value from {@link #extras()}.
-     *
-     * @param key  extra key
-     * @param type expected type
-     * @return the value if present and of the requested type, otherwise {@code null}
+     * Retrieves a typed value from {@link #extras()}, or {@code null} if absent or wrong type.
      */
     @SuppressWarnings("unchecked")
     public <T> @Nullable T extra(@NotNull String key, @NotNull Class<T> type) {

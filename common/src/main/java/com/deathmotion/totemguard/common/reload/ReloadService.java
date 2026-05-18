@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.reload;
 import com.deathmotion.totemguard.api.reload.Reloadable;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.features.mods.ModRegistry;
+import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
 import org.jetbrains.annotations.Blocking;
 
 public class ReloadService {
@@ -35,7 +36,8 @@ public class ReloadService {
         platform.getNetworkPresenceRepository().reloadServerName();
         platform.getDatabaseRepository().restart();
         platform.getPunishmentRepository().reload();
-        platform.getUpdateCheckerRepository().reload();
+        UpdateCheckerRepositoryImpl updateChecker = platform.getUpdateCheckerRepository();
+        if (updateChecker != null) updateChecker.reload();
         platform.getDiscordWebhookService().reload();
 
         ModRegistry.load();

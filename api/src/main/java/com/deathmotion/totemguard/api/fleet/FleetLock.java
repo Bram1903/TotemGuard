@@ -25,31 +25,28 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Distributed lock handed out by {@link FleetCache#tryLock}. Locks auto-expire via
- * Redis TTL even if the holder dies; callers can extend with {@link #refresh}.
+ * Distributed lock from {@link FleetCache#tryLock}. Auto-expires via Redis TTL even if
+ * the holder dies, extend with {@link #refresh}.
  */
 public interface FleetLock extends AutoCloseable {
 
     /**
-     * Instance that holds the lock. Always equals {@link FleetCache#instanceId()} on
-     * the holder's side.
+     * Instance holding the lock. Equals {@link FleetCache#instanceId()} on the holder's side.
      */
     @NotNull UUID holder();
 
     /**
-     * Wall-clock instant at which Redis will release the lock if nobody calls
-     * {@link #refresh}.
+     * Wall-clock instant Redis will release the lock unless {@link #refresh} is called.
      */
     @NotNull Instant expiresAt();
 
     /**
-     * Best-effort extend the TTL. Returns {@code false} if the lock has already expired
-     * or was stolen.
+     * Extends the TTL. Returns {@code false} if the lock already expired or was stolen.
      */
     boolean refresh(@NotNull Duration ttl);
 
     /**
-     * Release the lock. Safe to call multiple times.
+     * Releases the lock. Safe to call multiple times.
      */
     @Override
     void close();

@@ -23,9 +23,12 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A single mod that was detected for a player during one detection session.
  *
- * @param id              the mod identifier as declared in {@code mods.yml}
- * @param severity        the configured severity of this mod
- * @param detectionMethod the signal that produced the detection
+ * @param id              identifier as declared in the {@code mods.yml} entry that matched,
+ *                        the same key used by config edits and overrides
+ * @param severity        per-mod severity from {@code mods.yml}, drives session resolution
+ *                        and the eventual {@link ModAction}
+ * @param detectionMethod which signal fingerprinted this mod (plugin channel, plugin
+ *                        message payload, or translation key resolution)
  */
 public record DetectedMod(
         @NotNull String id,

@@ -24,21 +24,22 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Common supertype for events fired around a {@link Check}. Subscribe to
- * {@code TGCheckEvent} when you want to react to every check-driven event
- * ({@link TGUserFlagEvent}, {@link TGUserPunishEvent}, and any future
- * subtypes) with one handler.
+ * Common supertype for events fired around a {@link Check}. Subscribe to react to every
+ * check-driven event ({@link TGUserFlagEvent}, {@link TGUserPunishEvent}, future subtypes)
+ * with one handler.
  */
 public interface TGCheckEvent extends TGUserEvent, Cancellable {
 
     /**
-     * The check responsible for the event.
+     * The check that produced this event. Same instance the violation was recorded
+     * against, so {@link Check#getViolations()} reflects the count after this flag.
      */
     @NotNull Check getCheck();
 
     /**
-     * Optional debug information formatted by the check. {@code null} when the
-     * check did not produce debug text for this dispatch.
+     * Pre-rendered debug payload from the check (already template-substituted), or
+     * {@code null} when the check did not produce debug text for this dispatch. The same
+     * string that ends up in {@code tg_alerts.debug} and the staff debug toggle.
      */
     @Nullable String getDebug();
 }

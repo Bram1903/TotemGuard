@@ -105,8 +105,8 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     }
 
     @Override
-    public @NotNull UpdateCheckerRepository getUpdateCheckerRepository() {
-        return platform.getUpdateCheckerRepository();
+    public @NotNull Optional<UpdateCheckerRepository> getUpdateCheckerRepository() {
+        return Optional.ofNullable(platform.getUpdateCheckerRepository());
     }
 
     @Override

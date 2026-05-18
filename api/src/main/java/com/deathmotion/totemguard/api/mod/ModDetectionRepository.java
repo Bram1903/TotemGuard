@@ -25,59 +25,33 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Read-only access to the mod detection subsystem.
- * <p>
- * Mod detection is intentionally decoupled from the per-tick check pipeline. Each
- * online player has at most one active session that accumulates detections from
- * plugin-channel registrations, plugin-messages, and translation probes, then
- * resolves on the next tick boundary into a single
- * {@link com.deathmotion.totemguard.api.event.events.TGModDetectionResolvedEvent}.
- * <p>
- * Detections are not persisted: every accessor on this repository is a synchronous,
- * in-memory lookup against the currently online player set. UUIDs that are offline
- * or have not yet finished joining return empty / {@code null} results.
+ * Read-only access to the mod detection subsystem. Detection is decoupled from the
+ * check pipeline. Each online player has at most one session that resolves on a tick
+ * boundary into a {@link com.deathmotion.totemguard.api.event.events.TGModDetectionResolvedEvent}.
+ * Detections are not persisted, accessors are synchronous in-memory lookups against
+ * online players, offline UUIDs return empty or {@code null}.
  */
 public interface ModDetectionRepository {
 
     /**
-     * Returns the immutable snapshot of disallowed mods detected for the given
-     * player so far during their current session.
-     * <p>
-     * The set may grow until the session resolves and may continue to grow in the
-     * post-resolve {@code late} pathway. It does not persist across re-joins.
-     *
-     * @param uuid the UUID of the player
-     * @return the detected mods, or an empty set if the player has no active session
+     * Immutable snapshot of disallowed mods detected this session. May grow until the
+     * session resolves and during the post-resolve late pathway. Empty if no active session.
      */
     @NotNull Set<DetectedMod> getDetectedMods(@NotNull UUID uuid);
 
     /**
-     * Returns whether the given player has been observed with the given mod during
-     * their current session.
-     *
-     * @param uuid  the UUID of the player
-     * @param modId the mod identifier as declared in {@code mods.yml}
-     * @return {@code true} if the mod was detected for that player this session
+     * Whether the player has been observed with {@code modId} this session.
      */
     boolean hasDetectedMod(@NotNull UUID uuid, @NotNull String modId);
 
     /**
-     * Returns whether the given player's detection session has resolved (the
-     * boundary tick after the probe burst has fired and the resolver has run).
-     * Detections that arrive after this point follow the {@code late} pathway and
-     * dispatch as delta events.
-     *
-     * @param uuid the UUID of the player
-     * @return {@code true} if the session exists and has resolved
+     * Whether the session has resolved. Detections arriving after this take the late
+     * pathway and dispatch as delta events.
      */
     boolean isSessionResolved(@NotNull UUID uuid);
 
     /**
-     * Returns the action that was applied when the given player's session
-     * resolved, or {@code null} if no session has resolved yet for that UUID.
-     *
-     * @param uuid the UUID of the player
-     * @return the resolved action, or {@code null} if not yet resolved
+     * The resolved action, or {@code null} if no session has resolved for this UUID.
      */
     @Nullable ModAction getResolvedAction(@NotNull UUID uuid);
 }

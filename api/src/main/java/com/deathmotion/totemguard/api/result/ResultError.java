@@ -19,22 +19,18 @@
 package com.deathmotion.totemguard.api.result;
 
 /**
- * Reason a {@link Result} came back as a failure. Match on this in your handler to
- * decide whether to surface a soft warning or a real error report. Shared by every
- * data-backed repository in the API (history, statistics, etc.).
+ * Failure reason on a {@link Result}. Shared by every data-backed repository.
  */
 public enum ResultError {
 
     /**
-     * The database is disabled in {@code config.yml} or is currently unreachable.
-     * Treat as a soft failure; retry once the connection is back.
+     * Database is disabled or unreachable. Soft failure, retry when the connection returns.
      */
     DATABASE_UNAVAILABLE,
 
     /**
-     * A query reached the database but failed to complete (driver error, malformed
-     * statement, timeout, etc.). The associated message contains the cause; this is
-     * always a bug worth surfacing to the operator.
+     * A query reached the database but failed (driver error, malformed statement,
+     * timeout). The message carries the cause and indicates a bug worth surfacing.
      */
     INTERNAL_ERROR
 }

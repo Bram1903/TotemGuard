@@ -22,17 +22,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Public projection of a single recorded alert. Equivalent to one row in the GUI history.
+ * Public projection of a single recorded alert.
  *
- * @param id            primary key in {@code tg_alerts}; useful as a stable identifier
- *                      when threading user input back to a specific alert.
- * @param checkName     the check that flagged the player (e.g. {@code AutoTotemA}).
- * @param serverName    the name of the server that wrote the alert (multi-server installs).
- * @param debug         the rendered debug payload from the check, or {@code null} if the
- *                      check did not provide one. Template args are already substituted.
- * @param clientBrand   Minecraft client brand string (e.g. {@code vanilla}, {@code lunarclient}).
- * @param clientVersion protocol version number recorded on the matching profile.
- * @param createdAt     epoch ms when the alert was logged.
+ * @param id            primary key in {@code tg_alerts}, stable identifier
+ * @param checkName     check that flagged the player, matches {@link com.deathmotion.totemguard.api.check.Check#getName()}
+ * @param serverName    server that wrote the alert, the local server name at write time
+ * @param debug         rendered debug payload (template args substituted), or {@code null}
+ *                      when the check produced none
+ * @param clientBrand   client brand reported by the player (e.g. {@code vanilla},
+ *                      {@code fabric}), captured at alert time
+ * @param clientVersion Minecraft protocol version number captured at alert time
+ * @param createdAt     epoch milliseconds when the alert was logged
  */
 public record AlertEntry(
         long id,

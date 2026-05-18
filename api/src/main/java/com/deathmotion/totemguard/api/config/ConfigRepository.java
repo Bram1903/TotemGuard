@@ -23,19 +23,32 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.file.Path;
 
 /**
- * Central access point for TotemGuard's configuration.
- * <p>
- * Reload is atomic: callers reading during a {@link #reload(ConfigFile)} or
- * {@link #reloadAll()} see either the old snapshot or the new one, never a partially
- * loaded one.
+ * Central access point for TotemGuard's configuration. Reload is atomic, concurrent
+ * readers see either the old or new snapshot but never a partial one.
  */
 public interface ConfigRepository {
 
+    /**
+     * Filesystem directory where TotemGuard's YAML files live (typically
+     * {@code plugins/TotemGuard/}), used to resolve add-on file paths and asset locations.
+     */
     @NotNull Path configDirectory();
 
+    /**
+     * Current snapshot for the given file. Never {@code null}, missing or unparseable user
+     * files fall back to the bundled defaults so reads always succeed.
+     */
     @NotNull Config config(@NotNull ConfigFile file);
 
+    /**
+     * Re-reads one file from disk, atomically swapping the snapshot returned by
+     * {@link #config(ConfigFile)}. Concurrent readers never see a half-loaded state.
+     */
     void reload(@NotNull ConfigFile file);
 
+    /**
+     * Re-reads every managed file from disk in one pass. Each file is swapped
+     * independently (no global lock across files).
+     */
     void reloadAll();
 }

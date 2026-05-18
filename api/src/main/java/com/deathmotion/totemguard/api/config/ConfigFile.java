@@ -21,35 +21,33 @@ package com.deathmotion.totemguard.api.config;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Identifies a concrete configuration file managed by TotemGuard.
- * <p>
- * The filenames are the resource names inside the plugin JAR and the persisted names
- * inside the server's configuration directory.
+ * A configuration file managed by TotemGuard. Filenames are both the bundled resource
+ * name and the on-disk name.
  */
 public enum ConfigFile {
 
     /**
-     * Main plugin configuration.
+     * Main plugin configuration, the {@code config.yml} that owns server-wide toggles and integrations.
      */
     CONFIG("config.yml"),
 
     /**
-     * Check configuration.
+     * Per-check tuning ({@code checks.yml}), enable flag, thresholds, punishment commands.
      */
     CHECKS("checks.yml"),
 
     /**
-     * User-facing messages (prefixes, alerts, etc.).
+     * User-facing strings ({@code messages.yml}), the source for every chat and GUI line.
      */
     MESSAGES("messages.yml"),
 
     /**
-     * Client mod detection configuration.
+     * Mod-detection ruleset ({@code mods.yml}), severities, payload patterns, translation keys.
      */
     MODS("mods.yml"),
 
     /**
-     * Discord webhook configuration.
+     * Discord webhook routing ({@code discord.yml}), endpoint URLs and template overrides.
      */
     DISCORD("discord.yml");
 
@@ -60,9 +58,8 @@ public enum ConfigFile {
     }
 
     /**
-     * Returns the file name for this config (resource name and persisted name).
-     *
-     * @return the config file name
+     * Bundled-resource and on-disk filename for this config. Identical strings so the
+     * default resource can be copied to disk unchanged.
      */
     @NotNull
     public String fileName() {

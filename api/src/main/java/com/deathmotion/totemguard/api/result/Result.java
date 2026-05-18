@@ -23,25 +23,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Outcome of a single asynchronous repository call. Always present on a settled future,
- * so callers never have to attach {@code .exceptionally(...)} just to learn that the
- * database was offline. Inspect {@link #ok()} first; on {@code false}, {@link #error()}
- * and {@link #message()} carry the reason.
+ * Outcome of an async repository call. Always present on a settled future so callers
+ * never need {@code .exceptionally(...)} to learn about expected failures. Inspect
+ * {@link #ok()} first.
  *
- * <pre>
- *     repo.someCall().thenAccept(result -&gt; {
- *         if (result.ok()) {
- *             render(result.value());
- *         } else {
- *             player.sendMessage("Unavailable: " + result.message());
- *         }
- *     });
- * </pre>
- *
- * @param ok      {@code true} if the call succeeded; {@code value} is non-null in that case.
- * @param value   the result, or {@code null} when {@code ok} is {@code false}.
- * @param error   the failure category, or {@code null} when {@code ok} is {@code true}.
- * @param message human-readable reason, never {@code null} when {@code ok} is {@code false}.
+ * @param ok      {@code true} on success, in which case {@code value} is non-null.
+ * @param value   the result, or {@code null} when {@code !ok}.
+ * @param error   failure category, or {@code null} when {@code ok}.
+ * @param message human-readable reason, never {@code null} when {@code !ok}.
  */
 public record Result<T>(
         boolean ok,
@@ -50,18 +39,27 @@ public record Result<T>(
         @Nullable String message
 ) {
 
+    /**
+     * Successful result wrapping a non-null value. {@link #error()} and {@link #message()}
+     * are {@code null} on the returned instance.
+     */
     @Contract(value = "_ -> new", pure = true)
     public static <T> @NotNull Result<T> ok(@NotNull T value) {
         return new Result<>(true, value, null, null);
     }
 
+    /**
+     * Failure with an explicit human-readable message. Prefer this over the
+     * single-argument overload when the cause carries detail beyond the error category.
+     */
     @Contract(value = "_, _ -> new", pure = true)
     public static <T> @NotNull Result<T> failure(@NotNull ResultError error, @NotNull String message) {
         return new Result<>(false, null, error, message);
     }
 
     /**
-     * Convenience overload that derives a default message from the error constant.
+     * Failure with the canned default message for the error constant. Convenient when the
+     * caller has nothing more specific to say than the category itself.
      */
     @Contract(value = "_ -> new", pure = true)
     public static <T> @NotNull Result<T> failure(@NotNull ResultError error) {

@@ -22,25 +22,20 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Resolves custom placeholders.
- *
- * <p>
- * Implementations should return {@code null} when a key is not handled,
- * allowing other holders or built-in placeholders to resolve it.
- *
- * <p>
- * The {@code key} is provided without surrounding '%' characters.
- * For example, {@code %myplugin_rank%} will be passed as {@code "myplugin_rank"}.
+ * Resolves custom placeholders. Return {@code null} for unhandled keys so other holders
+ * or built-ins can try. {@code key} is passed without surrounding '%' characters.
  */
 @FunctionalInterface
 public interface PlaceholderHolder {
 
     /**
-     * Attempts to resolve a placeholder.
+     * Resolves one placeholder key into its replacement string. Implementations should
+     * return {@code null} for keys outside their namespace so other holders or built-ins
+     * get a chance to handle it.
      *
-     * @param key     placeholder key (without '%')
-     * @param context resolution context (may contain null values)
-     * @return resolved value, or {@code null} if not handled
+     * @param key     placeholder key, without surrounding {@code %} characters
+     * @param context call-site context (user, check, extras) the holder may consult
+     * @return resolved replacement text, or {@code null} when this holder does not handle the key
      */
     @Nullable
     String resolve(@NotNull String key, @NotNull PlaceholderContext context);

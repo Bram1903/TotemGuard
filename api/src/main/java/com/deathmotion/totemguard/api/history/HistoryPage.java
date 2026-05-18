@@ -23,15 +23,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * One slice of a paginated history result. Generic to keep the alert and punishment
- * surfaces aligned, callers can write the same loop over either.
+ * One slice of a paginated history result.
  *
- * @param page         zero-based page index returned, capped at {@code totalPages - 1}.
- * @param pageSize     maximum number of entries per page; equal across all pages.
- * @param totalEntries total number of matching rows on the server side.
- * @param totalPages   number of pages the caller can iterate through ({@code >= 1}).
- * @param entries      the rows for {@code page}, ordered newest-first; never {@code null}.
- * @param <T>          {@link AlertEntry} or {@link PunishmentEntry}.
+ * @param page         zero-based page index this page represents, capped at {@code totalPages - 1}
+ * @param pageSize     entries-per-page cap, identical to {@link HistoryRepository#pageSize()}
+ *                     and equal across every page
+ * @param totalEntries total matching rows across all pages (not just this page)
+ * @param totalPages   page count, always at least {@code 1} even when {@code totalEntries == 0}
+ * @param entries      rows for {@code page}, ordered newest-first by {@code created_at}
+ * @param <T>          row projection, {@link AlertEntry} or {@link PunishmentEntry}
  */
 public record HistoryPage<T>(
         int page,
@@ -41,14 +41,23 @@ public record HistoryPage<T>(
         @NotNull List<T> entries
 ) {
 
+    /**
+     * Whether a page after this one exists (i.e. {@code page + 1 < totalPages}).
+     */
     public boolean hasNext() {
         return page + 1 < totalPages;
     }
 
+    /**
+     * Whether a page before this one exists (i.e. {@code page > 0}).
+     */
     public boolean hasPrevious() {
         return page > 0;
     }
 
+    /**
+     * Whether this page has no entries. {@code true} for empty results and pages past the end.
+     */
     public boolean isEmpty() {
         return entries.isEmpty();
     }

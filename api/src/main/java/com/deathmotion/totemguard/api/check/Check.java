@@ -22,75 +22,54 @@ import com.deathmotion.totemguard.api.reload.Reloadable;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents a single check within TotemGuard.
- * <p>
- * Checks are responsible for identifying suspicious or invalid behavior
- * and may trigger flag events when their conditions are met.
+ * A single check. Identifies suspicious behavior and may trigger flag events when its
+ * conditions are met.
  */
 public interface Check extends Reloadable {
 
     /**
-     * Gets the unique, human-readable name of this check.
-     * <p>
-     * This name is typically used for logging, debugging, and
-     * administrative output.
-     *
-     * @return the check name
+     * Stable identifier from {@code @CheckData(name = ...)}. Used as the alert prefix, the
+     * bypass permission suffix ({@code TotemGuard.Bypass.<name>}), and the history filter
+     * key, so it must remain stable across releases.
      */
     @NotNull String getName();
 
     /**
-     * Gets a short description explaining what this check detects.
-     *
-     * @return the check description
+     * One-line summary from {@code @CheckData(description = ...)}, rendered in admin GUIs.
      */
     @NotNull String getDescription();
 
     /**
-     * Gets the category of this check.
-     * <p>
-     * For example, auto totem, inventory, protocol, etc
-     *
-     * @return the check category
+     * Category bucket from {@code @CheckData(type = ...)}, drives grouping in alerts and history.
      */
     @NotNull CheckType getType();
 
     /**
-     * Indicates whether this check is considered experimental.
-     * <p>
-     * Experimental checks may be incomplete, unstable, or subject to change,
-     * and should typically not be enabled by default in production environments.
-     *
-     * @return {@code true} if the check is experimental, {@code false} otherwise
+     * Whether this check is experimental. Experimental checks may be incomplete or
+     * unstable and should not be enabled by default in production.
      */
     boolean isExperimental();
 
     /**
-     * Indicates whether this check is currently enabled.
-     *
-     * @return {@code true} if the check is enabled, {@code false} otherwise
+     * Live snapshot of the per-instance enable flag from {@code checks.yml}, reflects reloads.
      */
     boolean isEnabled();
 
     /**
-     * Indicates whether this check requires the tick end packet
-     *
-     * @return {@code true} if the tick end is required, {@code false} otherwise
+     * Whether this check is marked {@code @RequiresTickEnd}, meaning it must run inside the
+     * tick-end pass rather than at packet receive time.
      */
     boolean requiresTickEnd();
 
     /**
-     * Indicates whether this check is heuristic-based (buffer + decay + sanity guards)
-     * rather than a deterministic packet/state assertion.
-     *
-     * @return {@code true} if the check is heuristic, {@code false} otherwise
+     * Whether this check is heuristic-based (buffer plus decay plus sanity guards) rather
+     * than a deterministic packet or state assertion.
      */
     boolean isHeuristic();
 
     /**
-     * Gets the current number of violations recorded by this check.
-     *
-     * @return the number of violations
+     * Running violation count since the player was bound to this check instance, reset on
+     * player quit. Not the same as historical violations in the database.
      */
     int getViolations();
 }

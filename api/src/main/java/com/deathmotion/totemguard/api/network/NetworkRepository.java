@@ -21,41 +21,33 @@ package com.deathmotion.totemguard.api.network;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Read-only view of the cross-server network state shared via Redis.
- * <p>
- * All values are best-effort snapshots maintained by a heartbeat loop and
- * Redis pub/sub. They reflect what this server has observed within the last
- * heartbeat window; a backend that has crashed without a clean shutdown will
- * still appear in the count for up to ~30 seconds before the stale-server
- * sweep removes it.
- * <p>
- * When Redis is unreachable {@link #isConnected()} returns {@code false} and
- * counts collapse to local-only state ({@link #getConnectedServerCount()}
- * returns {@code 1}, {@link #getTrackedPlayerCount()} returns the local
- * online-player count visible to TotemGuard).
+ * Read-only view of cross-server state shared via Redis. Values are heartbeat-driven
+ * snapshots, a crashed backend may linger in counts for up to about 30 seconds. When
+ * Redis is unreachable, accessors collapse to local-only state.
  */
 public interface NetworkRepository {
 
     /**
-     * Number of TotemGuard backends currently active in the fleet, including this one.
-     * Always at least {@code 1}.
+     * Active TotemGuard backends in the fleet including this one, counted from Redis
+     * heartbeats. Always at least {@code 1}, collapses to {@code 1} when Redis is offline.
      */
     int getConnectedServerCount();
 
     /**
-     * Total number of players tracked by TotemGuard across the whole fleet.
+     * Sum of player counts reported by every backend in the fleet. Mirrors what staff see
+     * in cross-server alerts, falls back to the local player count when Redis is offline.
      */
     int getTrackedPlayerCount();
 
     /**
-     * Display name of this server as advertised to other backends. Comes from
-     * {@code config.yml} and is what other backends print in alert messages.
+     * This backend's friendly name from {@code config.yml} ({@code server-name}). Used as
+     * the {@code serverName} stamped on alerts and punishments written from this node.
      */
     @NotNull String getLocalServerName();
 
     /**
-     * Whether this server's Redis connection is open. When {@code false} the
-     * other accessors fall back to local-only data.
+     * Whether the Lettuce Redis connection is currently open. Same value the rest of the
+     * repository uses to decide between fleet-aware and local-only behavior.
      */
     boolean isConnected();
 }

@@ -26,38 +26,49 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * Fired when a staff member opens the TotemGuard monitor GUI on another
- * player, and re-fired whenever a monitored target migrates to a different
- * backend in the fleet.
- * <p>
- * Cancelling blocks the open (or, on a re-fire, closes the already-open GUI
- * for that viewer).
+ * Fired when a staff member opens the monitor GUI on a player, and re-fired when the
+ * target migrates between backends. Cancelling blocks the open (or closes the open GUI
+ * on a re-fire).
  */
 public interface TGMonitorOpenEvent extends TGEvent, Cancellable {
 
+    /**
+     * UUID of the staff member opening the monitor GUI.
+     */
     @NotNull UUID getViewerUuid();
 
+    /**
+     * UUID of the player being monitored.
+     */
     @NotNull UUID getTargetUuid();
 
+    /**
+     * Display name of the player being monitored.
+     */
     @NotNull String getTargetName();
 
     /**
-     * The target's {@link TGUser} handle when online on this server. {@code null} for cross-server targets.
+     * The target's {@link TGUser} when online on this server, {@code null} for cross-server targets.
      */
     @Nullable TGUser getTargetUser();
 
+    /**
+     * Stable instance UUID of the backend hosting the target.
+     */
     @NotNull UUID getTargetServerInstanceId();
 
+    /**
+     * Friendly server name of the backend hosting the target.
+     */
     @NotNull String getTargetServerName();
 
     /**
-     * {@code true} when the target is on a different backend than the viewer.
+     * Whether the target is on a different backend than the viewer.
      */
     boolean isCrossServer();
 
     /**
-     * {@code true} when this event is being re-fired because the target moved
-     * to a different backend while the viewer's monitor GUI was already open.
+     * Whether this is a re-fire triggered by the target switching backend while the GUI was open.
      */
     boolean isServerSwitch();
 }

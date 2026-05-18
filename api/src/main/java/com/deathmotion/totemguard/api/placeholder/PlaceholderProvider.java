@@ -24,19 +24,19 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Optional capability: holders can expose the keys they support for introspection / documentation.
+ * Optional capability for holders to expose their supported keys for introspection.
  */
 public interface PlaceholderProvider {
 
     /**
-     * @return all exact placeholder keys this holder can resolve (without surrounding '%').
+     * Exact placeholder keys this holder resolves, without surrounding '%'.
      */
     @NotNull
     Collection<String> keys();
 
     /**
-     * Optional: if your holder supports dynamic keys (prefix/regex), expose them here.
-     * Example: "myplugin_stat_*" or "myplugin_stat:<id>"
+     * Dynamic key patterns (prefix or regex) the holder supports. Example,
+     * {@code "myplugin_stat_*"} or {@code "myplugin_stat:<id>"}.
      */
     default @NotNull Collection<String> patterns() {
         return List.of();

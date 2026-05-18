@@ -26,50 +26,92 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * In-memory view of a YAML configuration file.
- * <p>
- * Reads on a {@link Config} are thread-safe. Each call returns the value present in the
- * snapshot at the time of the call; reloading produces a new snapshot, so callers should
- * not cache references across reloads if they want to see updated values.
- * <p>
- * Typed-key reads ({@link #getString(ConfigKey)} etc.) fall back to the value from the
- * bundled-default YAML resource when the user file is missing the key. Path-string reads
- * ({@link #getString(String)} etc.) do not fall back; they return {@link Optional#empty()}
- * for missing values.
+ * In-memory view of a YAML configuration file. Reads are thread-safe and return the
+ * snapshot's value at call time, reloading swaps the snapshot atomically so callers
+ * should not cache across reloads. Typed-key reads fall back to the bundled-default
+ * resource on miss, path-string reads return empty on miss.
  */
 public interface Config {
 
+    /**
+     * The {@link ConfigFile} this snapshot was parsed from, identifies which file on disk it represents.
+     */
     @NotNull ConfigFile file();
 
+    /**
+     * Numeric schema version from the {@code config-version} root field. Drives the
+     * migration pipeline, returns {@code 0} when the field is absent.
+     */
     int version();
 
+    /**
+     * Whether the dot-separated {@code path} resolves to any value (including explicit
+     * {@code null}) in this snapshot.
+     */
     boolean contains(@NotNull String path);
 
+    /**
+     * Raw value at {@code path} with no type coercion. Returns the YAML node as-is
+     * ({@code String}, {@code Map}, {@code List}, etc.), empty when the path is missing.
+     */
     @NotNull Optional<Object> get(@NotNull String path);
 
+    /**
+     * String value at {@code path}, empty when missing or the node is not a string.
+     */
     @NotNull Optional<String> getString(@NotNull String path);
 
+    /**
+     * Integer value at {@code path}, empty when missing or the node is not an integer.
+     */
     @NotNull Optional<Integer> getInt(@NotNull String path);
 
+    /**
+     * Boolean value at {@code path}, empty when missing or the node is not a boolean.
+     */
     @NotNull Optional<Boolean> getBoolean(@NotNull String path);
 
+    /**
+     * Immutable string list at {@code path}, empty when missing or not a list. Non-string
+     * elements are dropped silently.
+     */
     @NotNull List<@NotNull String> getStringList(@NotNull String path);
 
+    /**
+     * Nested section view at {@code path}, empty when missing or the node is not a map.
+     */
     @NotNull Optional<ConfigSection> getSection(@NotNull String path);
 
+    /**
+     * Unmodifiable view of this snapshot's root map. Mutation attempts throw, the map
+     * shape mirrors the YAML root and may contain nested maps and lists.
+     */
     @NotNull Map<@NotNull String, @NotNull Object> asMap();
 
     /**
-     * Typed-key reads. Fall back to the bundled-default value if the user file does not
-     * contain the key. Throw {@link IllegalStateException} if neither the user file nor
-     * the bundled defaults contain the key (which indicates a programming error: every
-     * declared key must exist in the bundled YAML).
+     * Typed-key string read. Falls back to the bundled-default value on miss, and throws
+     * {@link IllegalStateException} when neither the user file nor the bundled defaults
+     * contain the key (a programming error, since every declared key must exist in the
+     * bundled YAML).
      */
     @NotNull String getString(@NotNull ConfigKey<String> key);
 
+    /**
+     * Typed-key integer read, returns the user value or the bundled default. See
+     * {@link #getString(ConfigKey)} for the throw-on-missing-default contract.
+     */
     int getInt(@NotNull ConfigKey<Integer> key);
 
+    /**
+     * Typed-key boolean read, returns the user value or the bundled default. See
+     * {@link #getString(ConfigKey)} for the throw-on-missing-default contract.
+     */
     boolean getBoolean(@NotNull ConfigKey<Boolean> key);
 
+    /**
+     * Typed-key string-list read, returns the user value or the bundled default as an
+     * unmodifiable list. See {@link #getString(ConfigKey)} for the throw-on-missing-default
+     * contract.
+     */
     @NotNull List<@NotNull String> getStringList(@NotNull ConfigKey<List<String>> key);
 }

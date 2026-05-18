@@ -22,19 +22,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
+/**
+ * Read-only view of TotemGuard's punishment dispatch state. Does not expose a write API,
+ * punishments are triggered by checks reaching thresholds, this repository just lets
+ * callers ask whether the cross-server BAN lock is held for a player.
+ */
 public interface PunishmentRepository {
 
     /**
-     * Returns whether a {@link PunishmentType#BAN} for the given player is currently
-     * in-flight or recently dispatched.
-     *
-     * <p>Only BAN-type punishments take this lock; KICK and GENERIC commands are
-     * always allowed to run again so re-flagging a player triggers another kick or
-     * announcement immediately. When Redis-backed caching is enabled, this reflects
-     * the shared cross-server ban lock; otherwise it reflects only the local node.</p>
-     *
-     * @param uuid the player UUID
-     * @return {@code true} if a ban lock currently exists, otherwise {@code false}
+     * Whether a {@link PunishmentType#BAN} is in-flight or recently dispatched for the
+     * player. Only BAN takes this lock, KICK and GENERIC always re-run. Reflects the
+     * cross-server lock when Redis is enabled, otherwise local state only.
      */
     boolean isPunishmentQueued(@NotNull UUID uuid);
 }

@@ -24,14 +24,12 @@ package com.deathmotion.totemguard.api.event;
 public interface Cancellable {
 
     /**
-     * Returns the current cancelled state. A higher-priority handler may have
-     * cancelled the event before this one ran.
+     * Current cancelled state. An earlier handler may have already cancelled the event.
      */
     boolean isCancelled();
 
     /**
-     * Sets the cancelled state. Handlers that already cancelled an event can
-     * be un-cancelled by a later handler if it deems the cancellation incorrect.
+     * Sets the cancelled state. Later handlers may un-cancel a previously cancelled event.
      */
     void setCancelled(boolean cancelled);
 }

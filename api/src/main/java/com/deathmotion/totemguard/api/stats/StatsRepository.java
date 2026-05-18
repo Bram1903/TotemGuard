@@ -25,24 +25,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Entry point for aggregate alert and punishment statistics. Reads always consult
- * TotemGuard's cache (local memory, then Redis, then the database) so repeated calls
- * within the cache TTL are cheap.
- * <p>
- * Snapshots are global: counts cover every player on every server sharing the database.
- * Statistics are only available while the database is reachable; offline calls settle
- * with {@link ResultError#DATABASE_UNAVAILABLE} rather than completing exceptionally.
+ * Aggregate alert and punishment statistics. Reads consult the cache chain (memory,
+ * Redis, database) and are cheap within the TTL. Counts are global across every player
+ * on every server sharing the database. Offline calls settle with
+ * {@link ResultError#DATABASE_UNAVAILABLE} rather than completing exceptionally.
  */
 public interface StatsRepository {
 
     /**
-     * Returns aggregate counts for the given window.
-     * <p>
-     * The future settles with a {@link Result} carrying either the counts or a failure
-     * reason; it does not complete exceptionally for the database being offline or a
-     * query failing.
-     *
-     * @param window the window to aggregate over, must not be {@code null}
+     * Aggregate counts for the given window. The future never completes exceptionally
+     * for expected failures (database offline, query error), inspect the {@link Result}.
      */
     @NotNull CompletableFuture<Result<StatsSnapshot>> snapshot(@NotNull StatsWindow window);
 }

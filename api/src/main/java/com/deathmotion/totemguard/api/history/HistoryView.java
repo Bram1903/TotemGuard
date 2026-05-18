@@ -27,95 +27,84 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * History queries scoped to a single player UUID. All methods are paginated,
- * there is no bulk "fetch everything" path, so a single API call can never return
- * more than {@link HistoryRepository#pageSize()} rows. Reads consult the in-memory
- * and Redis caches before falling through to the database.
- * <p>
- * Every method completes asynchronously on TotemGuard's worker pool with a
- * {@link Result}, the future itself never completes exceptionally for
- * expected failures (database offline, query error). Inspect {@link Result#ok()}
- * to branch.
- * <p>
- * Every method has an overload accepting a {@link StatsWindow} that restricts the
- * query to events whose {@code created_at} (alerts/punishments) falls inside the
- * window. The no-window overloads behave like passing {@link StatsWindow#ALL_TIME}.
+ * History queries scoped to one player UUID. All methods are paginated. Every method
+ * completes asynchronously with a {@link Result} (never exceptionally for expected
+ * failures like database offline). Window overloads restrict to events whose
+ * {@code created_at} falls in the window, no-window overloads behave like
+ * {@link StatsWindow#ALL_TIME}. {@code checkName} is exact and case-sensitive,
+ * {@code null} returns all checks. Negative {@code page} is treated as {@code 0}, past
+ * the end yields an empty page.
  */
 public interface HistoryView {
 
     /**
-     * The UUID this view targets, the same one passed to {@link HistoryRepository#of(UUID)}.
+     * UUID this view is bound to, the same value passed when it was created.
      */
     @NotNull UUID uuid();
 
     /**
-     * Convenience accessor; identical to {@link HistoryRepository#pageSize()}.
+     * Entries-per-page cap for every query on this view. Forwarded from
+     * {@link HistoryRepository#pageSize()} so all views in the same install agree.
      */
     int pageSize();
 
     /**
-     * Fetches one page of alerts (newest-first) for this user.
-     *
-     * @param page zero-based page index. Negative values are treated as {@code 0};
-     *             values past the end yield an empty page.
+     * One page of alerts, newest-first, across all checks and all time.
      */
     @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page);
 
     /**
-     * Same as {@link #alerts(int)} but restricted to a specific check name.
-     *
-     * @param checkName exact check name (e.g. {@code AutoTotemA}), case-sensitive,
-     *                  matched against the stored value. {@code null} returns all checks.
+     * One page of alerts filtered to {@code checkName}, or all checks when {@code null}.
      */
     @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName);
 
     /**
-     * Same as {@link #alerts(int)} but restricted to {@code window}.
+     * One page of alerts restricted to the given time window.
      */
     @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @NotNull StatsWindow window);
 
     /**
-     * Same as {@link #alerts(int, String)} but restricted to {@code window}.
+     * One page of alerts filtered by both check name and time window.
      */
     @NotNull CompletableFuture<Result<HistoryPage<AlertEntry>>> alerts(int page, @Nullable String checkName, @NotNull StatsWindow window);
 
     /**
-     * Total number of alerts on record for this user (no filter).
+     * Total alerts on record across all checks and all time.
      */
     @NotNull CompletableFuture<Result<Integer>> alertCount();
 
     /**
-     * Total alerts matching {@code checkName}, or all alerts if {@code null}.
+     * Total alerts for {@code checkName}, or all checks when {@code null}.
      */
     @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName);
 
     /**
-     * Total alerts inside {@code window}.
+     * Total alerts in the given time window across all checks.
      */
     @NotNull CompletableFuture<Result<Integer>> alertCount(@NotNull StatsWindow window);
 
     /**
-     * Total alerts matching {@code checkName} (or all if {@code null}) inside {@code window}.
+     * Total alerts filtered by both check name and time window.
      */
     @NotNull CompletableFuture<Result<Integer>> alertCount(@Nullable String checkName, @NotNull StatsWindow window);
 
     /**
-     * Fetches one page of punishments (newest-first) for this user.
+     * One page of punishments, newest-first, across all time.
      */
     @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page);
 
     /**
-     * Same as {@link #punishments(int)} but restricted to {@code window}.
+     * One page of punishments restricted to the given time window.
      */
     @NotNull CompletableFuture<Result<HistoryPage<PunishmentEntry>>> punishments(int page, @NotNull StatsWindow window);
 
     /**
-     * Total number of punishments on record for this user.
+     * Total punishments on record across all time.
      */
     @NotNull CompletableFuture<Result<Integer>> punishmentCount();
 
     /**
-     * Total punishments inside {@code window}.
+     * Total punishments in the given time window.
      */
     @NotNull CompletableFuture<Result<Integer>> punishmentCount(@NotNull StatsWindow window);
 }

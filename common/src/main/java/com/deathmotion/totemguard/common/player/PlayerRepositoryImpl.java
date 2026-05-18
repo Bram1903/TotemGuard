@@ -31,6 +31,7 @@ import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.model.StaffAlertPref;
 import com.deathmotion.totemguard.common.features.alert.AlertFilter;
 import com.deathmotion.totemguard.common.features.alert.RealtimeAlertRoster;
+import com.deathmotion.totemguard.common.features.update.UpdateCheckerRepositoryImpl;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
@@ -129,7 +130,8 @@ public final class PlayerRepositoryImpl implements UserRepository {
         if (presence != null) {
             presence.onLocalPlayerJoin(uuid, user.getName(), user.getProfile(), bypassed);
         }
-        platform.getUpdateCheckerRepository().notifyIfOutdated(platformPlayer);
+        UpdateCheckerRepositoryImpl updateChecker = platform.getUpdateCheckerRepository();
+        if (updateChecker != null) updateChecker.notifyIfOutdated(platformPlayer);
     }
 
     private void restoreSubscriptions(UUID uuid, PlatformPlayer platformPlayer) {

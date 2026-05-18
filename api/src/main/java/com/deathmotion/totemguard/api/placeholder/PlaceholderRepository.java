@@ -26,101 +26,76 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 /**
- * Handles placeholder replacement and registration.
- * <p>
- * Placeholders use the format {@code %key%}.
+ * Placeholder replacement and registration. Placeholders use {@code %key%} syntax.
  */
 public interface PlaceholderRepository {
 
     /**
-     * Replaces placeholders using the supplied resolution context.
-     *
-     * @param message input message
-     * @param context resolution context
-     * @return message with placeholders replaced
+     * Replaces every {@code %key%} in {@code message} using the supplied context. Unknown
+     * keys are left literal (the original {@code %key%} text). Built-in keys resolve first,
+     * registered holders only see keys the core could not handle.
      */
     @NotNull
     String replace(@NotNull String message, @NotNull PlaceholderContext context);
 
     /**
-     * Replace placeholders without any context.
-     *
-     * @param message input message
-     * @return message with placeholders replaced
+     * Replace with the {@linkplain PlaceholderContext#empty() empty context}. User-bound
+     * and check-bound placeholders won't resolve.
      */
     default @NotNull String replace(@NotNull String message) {
         return replace(message, PlaceholderContext.empty());
     }
 
     /**
-     * Replace placeholders using a user context.
-     *
-     * @param message input message
-     * @param user    user context (nullable)
-     * @return message with placeholders replaced
+     * Replace binding only a user, so {@code %tg_player%} and related user keys resolve
+     * but check-bound keys don't.
      */
     default @NotNull String replace(@NotNull String message, @Nullable TGUser user) {
         return replace(message, new PlaceholderContext(user, null));
     }
 
     /**
-     * Replace placeholders using a check context.
-     *
-     * @param message input message
-     * @param check   check context (nullable)
-     * @return message with placeholders replaced
+     * Replace binding only a check, so check-bound keys (name, violation count) resolve
+     * but user-bound keys don't.
      */
     default @NotNull String replace(@NotNull String message, @Nullable Check check) {
         return replace(message, new PlaceholderContext(null, check));
     }
 
     /**
-     * Replace placeholders using both user and check context.
-     *
-     * @param message input message
-     * @param user    user context (nullable)
-     * @param check   check context (nullable)
-     * @return message with placeholders replaced
+     * Replace binding both a user and a check, the typical call site for alert and
+     * punishment-command rendering.
      */
     default @NotNull String replace(@NotNull String message, @Nullable TGUser user, @Nullable Check check) {
         return replace(message, new PlaceholderContext(user, check));
     }
 
     /**
-     * Returns all currently registered placeholder keys for holders that implement {@link PlaceholderProvider}.
-     *
-     * <p>Keys are returned without surrounding '%' characters.</p>
-     *
-     * @return an immutable set of registered placeholder keys
+     * Registered placeholder keys from holders implementing {@link PlaceholderProvider},
+     * without surrounding '%'.
      */
     @NotNull
     Set<String> registeredKeys();
 
     /**
-     * Returns the currently registered dynamic placeholder patterns.
-     *
-     * <p>Patterns are descriptive metadata exposed by holders implementing
-     * {@link PlaceholderProvider}. They are not required to be exhaustive.</p>
-     *
-     * @return an immutable set of registered placeholder patterns
+     * Registered dynamic placeholder patterns. Descriptive metadata, not guaranteed
+     * exhaustive.
      */
     default @NotNull Set<String> registeredPatterns() {
         return Set.of();
     }
 
     /**
-     * Register a custom placeholder holder.
+     * Register a holder.
      *
-     * @param holder holder to register
-     * @return true if registered, false if already present
+     * @return {@code true} if registered, {@code false} if already present
      */
     boolean registerHolder(@NotNull PlaceholderHolder holder);
 
     /**
-     * Unregister a previously registered placeholder holder.
+     * Unregister a holder.
      *
-     * @param holder holder to unregister
-     * @return true if removed, false if not present
+     * @return {@code true} if removed, {@code false} if not present
      */
     boolean unregisterHolder(@NotNull PlaceholderHolder holder);
 }

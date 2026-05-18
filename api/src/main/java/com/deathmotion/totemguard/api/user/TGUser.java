@@ -24,61 +24,48 @@ import org.jetbrains.annotations.NotNull;
 import java.util.UUID;
 
 /**
- * Represents a user within TotemGuard.
+ * A user tracked by TotemGuard.
  */
 public interface TGUser {
+
     /**
-     * Returns the unique identifier (UUID) of this user.
-     *
-     * @return the UUID of the user.
+     * The player's Minecraft UUID. Stable across sessions and across name changes.
      */
     @NotNull UUID getUuid();
 
     /**
-     * Returns the username of this user.
-     *
-     * @return the user's name as a non-null string.
+     * The player's display name captured at login. Not updated mid-session, so a name
+     * change won't appear until the next join.
      */
     @NotNull String getName();
 
     /**
-     * Returns whether this user has alerts enabled.
-     *
-     * @return whether this user has alerts enabled.
+     * Whether this user receives staff alerts. Mirrors the
+     * {@link com.deathmotion.totemguard.api.alert.AlertRepository} state for this UUID.
      */
     boolean hasAlertsEnabled();
 
     /**
-     * Toggles the alert status for this user.
+     * Flips the alert state and notifies the user (chat feedback) on the same call.
      *
-     * @return the new alert status after toggling.
+     * @return the new alert state after the toggle
      */
     boolean toggleAlerts();
 
     /**
-     * Shortcut to this user's paginated alert and punishment history. Equivalent to
-     * {@code TotemGuard.getApi().getHistoryRepository().of(this)} but spares the caller
-     * from threading the UUID through.
-     *
-     * @return a {@link HistoryView} bound to this user; never {@code null}.
+     * Shortcut to this user's paginated history, equivalent to {@code historyRepository.of(this)}.
      */
     @NotNull HistoryView getHistory();
 
     /**
-     * Returns this user's ban-animation handle. A small controller that lets
-     * callers play the animation and inspect its support and duration.
-     *
-     * @return the ban-animation handle bound to this user. Never {@code null}.
+     * Ban-animation handle bound to this user. Cheap singleton per user, safe to call
+     * repeatedly. See {@link BanAnimation} for the visual contract.
      */
     @NotNull BanAnimation getBanAnimation();
 
     /**
-     * Returns a snapshot of this user's current inventory open or closed
-     * state, together with the source (server or client) of the most recent
-     * transition. The state is latency compensated and mirrors what the
-     * client sees, not what the server-side view currently is.
-     *
-     * @return the inventory-status snapshot. Never {@code null}.
+     * Latency-compensated snapshot of the inventory state, mirroring the client view
+     * rather than the server view.
      */
     @NotNull InventoryStatus getInventoryStatus();
 }

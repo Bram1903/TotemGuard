@@ -22,15 +22,15 @@ import com.deathmotion.totemguard.api.user.TGUser;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Marker interface for every event that carries a {@link TGUser}. Subscribing
- * to {@code TGUserEvent.class} fans across every concrete user-bearing event
- * ({@link TGUserJoinEvent}, {@link TGUserQuitEvent}, {@link TGCheckEvent},
- * {@link TGModDetectionResolvedEvent}, etc.).
+ * Marker for every event carrying a {@link TGUser}. Subscribing to
+ * {@code TGUserEvent.class} fans across every concrete user-bearing event.
  */
 public interface TGUserEvent extends TGEvent {
 
     /**
-     * The TotemGuard user involved in this event.
+     * The user this event concerns. Stable for the lifetime of the event, the same handle
+     * available via {@link com.deathmotion.totemguard.api.user.UserRepository#getUser}
+     * while the player remains online.
      */
     @NotNull TGUser getUser();
 }

@@ -19,19 +19,14 @@
 package com.deathmotion.totemguard.api.event;
 
 /**
- * Reference to a single registration on a channel. Calling
- * {@link #unsubscribe()} detaches just that one handler.
- * <p>
- * For the common case of cleaning up on plugin disable, do not bother
- * keeping these around. Hand a plugin context to subscribe and rely on
- * {@link EventBus#unregisterAll(Object)} to clear them in bulk. Hold on to
- * a {@code Subscription} only if you want to detach one specific handler
- * while the plugin is still running.
+ * Reference to one handler registration on a channel. For shutdown cleanup prefer
+ * {@link EventBus#unregisterAll(Object)}, keep a {@code Subscription} only to detach a
+ * specific handler while the plugin is still running.
  */
 public interface Subscription {
 
     /**
-     * Detaches the handler this subscription points at. Idempotent.
+     * Detaches the handler. Idempotent.
      */
     void unsubscribe();
 }

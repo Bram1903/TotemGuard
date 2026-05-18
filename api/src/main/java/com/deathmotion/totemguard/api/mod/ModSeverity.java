@@ -19,41 +19,32 @@
 package com.deathmotion.totemguard.api.mod;
 
 /**
- * Severity declared by an entry in {@code mods.yml}.
- * <p>
- * The severity is a per-mod policy, but resolution is per-session: when a session
- * accumulates multiple disallowed mods, TotemGuard collapses them down to a single
- * outcome by picking the highest severity in the set, with this ordering (highest
- * first): {@link #BAN}, {@link #KICK_THEN_BAN}, {@link #KICK}, {@link #LOG}.
- * <p>
- * For the action that was actually applied to a session see {@link ModAction}; the
- * two are not the same in {@link #KICK_THEN_BAN}, where the recorded action depends
- * on whether the player was previously warned within the configured window.
+ * Per-mod severity from {@code mods.yml}. Session resolution collapses multiple detected
+ * mods to one outcome by picking the highest in this order: {@link #BAN},
+ * {@link #KICK_THEN_BAN}, {@link #KICK}, {@link #LOG}. The applied {@link ModAction} can
+ * differ from severity for {@link #KICK_THEN_BAN} based on the warning window.
  */
 public enum ModSeverity {
 
     /**
-     * Detection is logged and dispatched to staff but no punishment is issued.
+     * Logged and alerted to staff, no punishment.
      */
     LOG,
 
     /**
-     * The player is kicked. Re-joining is permitted.
+     * Player is kicked. Re-joining is permitted.
      */
     KICK,
 
     /**
-     * The player is banned outright on the first detection.
+     * Player is banned outright on the first detection.
      */
     BAN,
 
     /**
-     * The player is kicked the first time the mod is detected, then banned if any
-     * disallowed mod from the same warning set is still present on a re-join inside
-     * the configured warning window.
-     * <p>
-     * A brand-new disallowed mod (one not in the warning set) is treated as a fresh
-     * first offense and triggers another kick rather than a ban.
+     * Player is kicked the first time, then banned on re-join inside the warning window
+     * if any disallowed mod from the warning set is still present. A brand-new disallowed
+     * mod is treated as a fresh first offense and kicks again rather than bans.
      */
     KICK_THEN_BAN
 }

@@ -21,43 +21,50 @@ package com.deathmotion.totemguard.api.event.events;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Fired at the start of a TotemGuard shutdown, before any internal teardown
- * begins. Consumers receive this synchronously and should drop any cached API
- * references. The singleton returned by
- * {@link com.deathmotion.totemguard.api.TotemGuard#get()} becomes unavailable
- * shortly after this event resolves.
- * <p>
- * When the {@link Reason} is {@link Reason#LOADER_RESTART} or
- * {@link Reason#UPDATE_TRIGGERED}, TotemGuard intends to come back online
- * shortly. Consumers can wait for the API to become available again via
+ * Fired at the start of a TotemGuard shutdown, synchronously, before any internal
+ * teardown. Consumers should drop cached API references, the singleton from
+ * {@link com.deathmotion.totemguard.api.TotemGuard#get()} becomes unavailable shortly
+ * after. For {@link Reason#LOADER_RESTART} and {@link Reason#UPDATE_TRIGGERED} the
+ * plugin will come back, consumers can re-acquire via
  * {@link com.deathmotion.totemguard.api.TotemGuard#getAsync()}.
  */
 public interface TGPluginShutdownEvent extends TGEvent {
 
+    /**
+     * Cause of the shutdown, lets handlers decide whether the API will be coming back
+     * ({@link Reason#LOADER_RESTART}, {@link Reason#UPDATE_TRIGGERED}) or is gone for good
+     * ({@link Reason#SERVER_STOP}, {@link Reason#LOADER_STOP}, {@link Reason#OPERATOR_SHUTDOWN},
+     * {@link Reason#ERROR}).
+     */
     @NotNull Reason getReason();
 
+    /**
+     * Version string of the plugin that is shutting down (the value reported by
+     * {@link com.deathmotion.totemguard.api.TotemGuardAPI#getVersion()}). Captured before
+     * teardown so it remains accurate inside the handler.
+     */
     @NotNull String getVersion();
 
+    /**
+     * Distinguishes the cause of a {@link TGPluginShutdownEvent}, see each constant for semantics.
+     */
     enum Reason {
         /**
-         * The host platform (Paper or Fabric) is stopping or unloading the plugin.
+         * Host platform (Paper or Fabric) is stopping or unloading the plugin.
          */
         SERVER_STOP,
         /**
-         * The loader's {@code /tgloader restart} command is restarting the plugin.
+         * Loader's {@code /tgloader restart} is restarting the plugin.
          */
         LOADER_RESTART,
         /**
-         * The loader is stopping the plugin without bringing it back online (for
-         * example {@code /tgloader stop} or {@code /totemguard shutdown} on a
-         * loader-managed install). Operators can re-enable with
-         * {@code /tgloader start}.
+         * Loader stopped the plugin without bringing it back online (e.g. {@code /tgloader stop}).
+         * Operators re-enable with {@code /tgloader start}.
          */
         LOADER_STOP,
         /**
-         * An operator stopped the plugin via {@code /totemguard shutdown} on a
-         * standalone install (no loader). It will not come back online until
-         * the host platform is restarted.
+         * Operator stopped the plugin via {@code /totemguard shutdown} on a standalone install.
+         * Stays down until the host restarts.
          */
         OPERATOR_SHUTDOWN,
         /**
@@ -65,7 +72,7 @@ public interface TGPluginShutdownEvent extends TGEvent {
          */
         UPDATE_TRIGGERED,
         /**
-         * A startup or runtime error forced the plugin to abort.
+         * Startup or runtime error forced the plugin to abort.
          */
         ERROR
     }

@@ -42,143 +42,94 @@ import java.util.Optional;
 public interface TotemGuardAPI {
 
     /**
-     * Returns the version of the running TotemGuard plugin (e.g. {@code 3.1.0}).
-     * <p>
-     * This advances every plugin release. Consumers should not depend on its exact value
-     * for compatibility checks. Use {@link #getApiVersion()} for that.
-     *
-     * @return the plugin version, never {@code null}
+     * The running TotemGuard plugin version (e.g. {@code 3.1.0}). Advances every release.
+     * Use {@link #getApiVersion()} for compatibility checks.
      */
     @NotNull TGVersion getVersion();
 
     /**
-     * Returns the version of the {@code totemguard-api} jar shaded into this build of
-     * TotemGuard. Independent of the plugin version: an API 1.0.x consumer shading
-     * {@code totemguard-api:1.0.0} can run against TotemGuard 3.1, 3.2, 3.3, etc. as long
-     * as the plugin still ships an API 1.x jar.
-     *
-     * @return the API version, never {@code null}
+     * The {@code totemguard-api} jar version shaded into this build. Independent of the
+     * plugin version, so an API 1.0.x consumer runs against any TotemGuard that ships an
+     * API 1.x jar.
      */
     @NotNull TGVersion getApiVersion();
 
     /**
-     * Returns the event bus.
-     * <p>
-     * Subscribe through channels obtained via {@link EventBus#get(Class)} and
-     * fired internally by TotemGuard. The bus is the only entry point for
-     * public event subscriptions.
-     *
-     * @return the event bus, never {@code null}
+     * The event bus. Subscribe through channels obtained via {@link EventBus#get(Class)}.
      */
     @NotNull EventBus getEventBus();
 
     /**
-     * Returns the repository for configuration management.
-     *
-     * @return the configuration repository, never {@code null}
+     * Returns the configuration repository, the entry point for reading TotemGuard's YAML
+     * files and triggering reloads. Reads return atomic snapshots.
      */
     @NotNull ConfigRepository getConfigRepository();
 
     /**
-     * Returns the repository for user management.
-     *
-     * @return the user repository, never {@code null}
+     * Returns the user repository for in-memory lookups of {@link com.deathmotion.totemguard.api.user.TGUser}
+     * instances by UUID. Only tracks online players, offline UUIDs return {@code null}.
      */
     @NotNull UserRepository getUserRepository();
 
     /**
-     * Returns the repository for placeholder management.
-     *
-     * @return the placeholder repository, never {@code null}
+     * Returns the placeholder repository for resolving {@code %key%} placeholders and
+     * registering custom holders that contribute keys to that resolution.
      */
     @NotNull PlaceholderRepository getPlaceholderRepository();
 
     /**
-     * Returns the repository for punishment management.
-     *
-     * @return the punishment repository, never {@code null}
+     * Returns the punishment repository, which exposes whether a punishment is currently
+     * queued or in-flight for a given player. Reflects the cross-server lock when Redis
+     * is enabled.
      */
     @NotNull PunishmentRepository getPunishmentRepository();
 
     /**
-     * Returns the Redis repository.
-     *
-     * @return the redis repository, never {@code null}
+     * Returns the Redis repository, a read-only view of TotemGuard's Redis client used
+     * to feature-gate cross-server functionality.
      */
     @NotNull RedisRepository getRedisRepository();
 
     /**
-     * Returns the repository for alert management.
-     *
-     * @return the alert repository, never {@code null}
+     * Returns the alert repository, a UUID-keyed toggle for staff alert subscriptions.
+     * Equivalent to the alert-toggle methods on {@link com.deathmotion.totemguard.api.user.TGUser}
+     * but usable without a user handle.
      */
     @NotNull AlertRepository getAlertRepository();
 
     /**
-     * Returns the repository for paginated alert and punishment history. The same backing
-     * data the in-game history GUI shows, exposed through a strict pagination API so a
-     * single call can never request more than {@link HistoryRepository#pageSize()} rows.
-     *
-     * @return the history repository, never {@code null}
+     * Paginated alert and punishment history. The same data the in-game history GUI shows,
+     * exposed via a strict pagination API capped at {@link HistoryRepository#pageSize()} rows
+     * per call.
      */
     @NotNull HistoryRepository getHistoryRepository();
 
     /**
-     * Returns the repository for aggregate alert and punishment statistics. Counts cover
-     * every player on every server sharing the database. Results are cached for a short
-     * window so repeated calls are cheap.
-     *
-     * @return the statistics repository, never {@code null}
+     * Aggregate alert and punishment statistics across every server sharing the database.
+     * Results are cached briefly so repeated calls are cheap.
      */
     @NotNull StatsRepository getStatsRepository();
 
     /**
-     * Returns the cross-server network view: connected backend count, tracked
-     * player count, this server's display name, and Redis connection state.
-     * <p>
-     * Useful for dashboards and integrations that want to know how big the
-     * TotemGuard fleet currently is. All accessors degrade gracefully when
-     * Redis is offline.
-     *
-     * @return the network repository, never {@code null}
+     * Cross-server network view. Accessors degrade gracefully when Redis is offline.
      */
     @NotNull NetworkRepository getNetworkRepository();
 
     /**
-     * Returns the repository that tracks the latest published TotemGuard release.
-     * <p>
-     * Reads of {@link UpdateCheckerRepository#latestKnownVersion()} are cheap
-     * and reflect data shared across the fleet via Redis. Use
-     * {@link UpdateCheckerRepository#checkNow()} to trigger a fresh HTTP fetch
-     * when needed. The result is propagated to other servers automatically.
-     *
-     * @return the update checker repository, never {@code null}
+     * Returns the update checker repository, or empty when running under the loader
+     * (the loader owns release discovery in that mode, see {@link #getLoaderInfo()}).
      */
-    @NotNull UpdateCheckerRepository getUpdateCheckerRepository();
+    @NotNull Optional<UpdateCheckerRepository> getUpdateCheckerRepository();
 
     /**
-     * Returns the repository for the mod detection subsystem.
-     * <p>
-     * Mod detection runs as its own service, separate from the per-tick check
-     * pipeline. Each player's session accumulates detections from plugin-channel
-     * registrations, plugin-messages, and translation probes, then resolves on
-     * the next tick boundary into a single
+     * Repository for the mod detection subsystem. Detections accumulate per session and
+     * resolve on the next tick into a
      * {@link com.deathmotion.totemguard.api.event.events.TGModDetectionResolvedEvent}.
-     *
-     * @return the mod detection repository, never {@code null}
      */
     @NotNull ModDetectionRepository getModDetectionRepository();
 
     /**
-     * Returns information about the TotemGuard loader if this instance is being driven
-     * by one. {@link Optional#empty()} when TotemGuard is installed as a standalone
-     * plugin without the loader in front of it.
-     * <p>
-     * Useful for diagnostics ("we're running under loader vX.Y.Z") and for plugins that
-     * want to behave differently across {@code LOADER_RESTART} and {@code UPDATE_TRIGGERED}
-     * shutdown reasons.
-     *
-     * @return loader info if loader-managed, otherwise empty
+     * Returns loader info if this plugin is loader-managed, otherwise empty.
      */
     @NotNull Optional<LoaderInfo> getLoaderInfo();
 }

@@ -26,45 +26,36 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Entry point for paginated alert and punishment history. Reads always consult
- * TotemGuard's cache (local memory → Redis → database) so repeated lookups are
- * cheap; writes (i.e. {@link #clear}) invalidate every cached page for the target.
- * <p>
- * This API is intentionally narrow: there is no method to dump every alert at once.
- * Callers must walk the pages, that protects the database from a single rogue
- * plugin asking for thousands of rows in one query.
+ * Entry point for paginated alert and punishment history. Reads consult the cache chain
+ * (memory, Redis, database), {@link #clear} invalidates every cached page for the target.
+ * There is no bulk-fetch path so callers must walk pages.
  */
 public interface HistoryRepository {
 
     /**
-     * Maximum number of entries returned in a single page. Always equal across alerts
-     * and punishments and stable for the lifetime of a TotemGuard install.
+     * Page size cap for both alerts and punishments, stable for the lifetime of the install.
      */
     int pageSize();
 
     /**
-     * Returns a {@link HistoryView} bound to {@code uuid}. The view is cheap to create
-     * and safe to retain, it holds no connection or page state of its own.
+     * A {@link HistoryView} bound to {@code uuid}. Cheap to create and safe to retain.
      */
     @NotNull HistoryView of(@NotNull UUID uuid);
 
     /**
-     * Convenience overload of {@link #of(UUID)} for an already-resolved {@link TGUser}.
+     * Convenience overload of {@link #of(UUID)} that reads the UUID from {@code user}.
      */
     @NotNull HistoryView of(@NotNull TGUser user);
 
     /**
-     * Removes every alert and punishment row for the target. Caches are invalidated
-     * on completion so subsequent reads see an empty record.
-     * <p>
-     * The future settles with a {@link Result} carrying either the row counts
-     * removed or a failure reason, it does not complete exceptionally for the database
-     * being offline or a query failing.
+     * Removes every alert and punishment row for the target and invalidates caches. The
+     * future never completes exceptionally for expected failures (database offline, query
+     * error), inspect the {@link Result}.
      */
     @NotNull CompletableFuture<Result<HistoryClearResult>> clear(@NotNull UUID uuid);
 
     /**
-     * Convenience overload of {@link #clear(UUID)}.
+     * Convenience overload of {@link #clear(UUID)} that reads the UUID from {@code user}.
      */
     @NotNull CompletableFuture<Result<HistoryClearResult>> clear(@NotNull TGUser user);
 }
