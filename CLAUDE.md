@@ -41,12 +41,19 @@ Gradle wrapper, Java 21 toolchain for most modules. The Fabric platform requires
 - Build a single artifact: `./gradlew :platforms:paper:shadowJar`, `:platforms:fabric:shadowJar`,
   `:loader:plugin:shadowJar`, or `:bridge:plugin:shadowJar`.
 - Clean: `./gradlew clean`. The root `clean` deletes the top-level `build/` where shaded jars live.
-- Run a Paper dev server (plain plugin): `./gradlew :platforms:paper:runServer`. Downloads Paper 1.21.11 plus
-  PacketEvents, ViaVersion, ViaBackwards, PlaceholderAPI, EssentialsX, and LuckPerms into `run/paper/1.21.11/`.
-- Run Folia: `./gradlew :platforms:paper:runFolia`.
-- Run a Paper dev server through the loader: `./gradlew :loader:plugin:runServer`. Drops into
-  `loader/plugin/run/paper/<mc>/` and seeds `plugins/TotemGuard-Loader/local/` with the freshly shaded Paper
-  jar so `/tgloader load LOCAL` works.
+- Run a Paper dev server (plain plugin): `./gradlew :platforms:paper:runServer` (default 1.21.11) or pick a
+  version with `:platforms:paper:runServer_<mc>`. Matrix is 1.19.4, 1.20.4, 1.21.1, 1.21.2, 1.21.4, 1.21.11,
+  26.1.2. Downloads Paper plus PacketEvents, ViaVersion, ViaBackwards, PlaceholderAPI, EssentialsX, and
+  LuckPerms into `run/paper/<mc>/`.
+- Run Folia: `./gradlew :platforms:paper:runFolia` or `:platforms:paper:runFolia_<mc>` for the same matrix.
+- Run a Fabric dev server: `./gradlew :platforms:fabric:runServer`. Modrinth-resolved
+  packetevents-fabric and LuckPerms-Fabric are cached in `build/fabric-mod-cache/` and copied into
+  `run/mods/` if missing. `eula.txt` and `server.properties` are seeded automatically.
+- Run a Paper dev server through the loader: `./gradlew :loader:plugin:runServer` (same versioned variants).
+  Stages the freshly shaded `platforms/paper` jar into `plugins/TotemGuard-Loader/local/` so
+  `/tgloader load LOCAL` works.
+- Run a Fabric dev server through the loader: `./gradlew :loader:fabric-glue:runServer`. Stages the
+  `platforms/fabric` shadow jar into `run/config/totemguard-loader/local/`.
 - Run a Velocity dev proxy (bridge plugin): `./gradlew :bridge:plugin:runVelocity`.
 - Publish the API: `./gradlew :api:publish`. Needs `PVPHUB_MAVEN_USERNAME` and `PVPHUB_MAVEN_SECRET`.
 - Local dev services: `docker-compose up` starts MariaDB (3306, db `TotemGuard`, root and `password`) and
@@ -91,22 +98,12 @@ harnesses.
 - `platforms/fabric/`. Fabric mod (`TGFabric`, entrypoint declared in `fabric.mod.json`). Uses fabric-loom,
   JDK 25 toolchain, embeds adventure-platform-fabric, cloud-fabric, fabric-permissions-api, and mysql-jdbc.
 - `tests/api-paper-test-plugin/`. Sample plugin demonstrating the public API. Not a test harness.
-- `build-logic/`. `includeBuild` with four Gradle convention plugins under `build-logic/src/main/kotlin/`
-  (note, at the kotlin root, not inside a `totemguard/` subpackage).
-    - `totemguard.java-conventions`. Lombok plus JetBrains annotations, JDK 21 toolchain, Java 17 release,
-      and `processResources` `expand()` of `${version}` and `${description}` into `plugin.yml`,
-      `fabric.mod.json`, `bungee.yml`, and `velocity-plugin.json` (with the `+<gitHash>` stripped so
-      manifests stay reproducible).
-    - `totemguard.shadow-conventions`. Relocations under `com.deathmotion.totemguard.common.libs.*`, jar
-      minimization, shadow output goes to root `build/`, and writes the SHA-256 integrity entry after
-      shading.
-    - `totemguard.loader-shadow-conventions`. Same as above but for the loader jar. Relocates
-      `com.deathmotion.totemguard.integrity` to `com.deathmotion.totemguard.loader.libs.integrity` so the
-      loader and the plugin do not collide on the integrity class.
-    - `totemguard.proxy-shadow-conventions`. Bridge-jar variant.
-    - `tg-version`. Task that generates a `TGVersions.java`-style class from the project version into a
-      generated source set. Configured per-module via the `tgVersion { packageName, className }` extension.
-      Defaults to `com.deathmotion.totemguard.common.util.TGVersions`.
+- `build-logic/`. `includeBuild` with precompiled convention plugins under
+  `build-logic/src/main/kotlin/totemguard/`, grouped into `java/` (toolchain and Lombok variants), `shadow/`
+  (relocation + integrity variants for plugin, loader, proxy), and `runs/` (Paper/Folia matrix, Fabric loom
+  runs with Modrinth mod staging, Velocity). Root-level scripts cover `root` (version assembly via
+  `GitHashValueSource`), `manifest-expand`, `maven-publish`, `loader-stage-platform`, and `tg-version`
+  (generates `TGVersions.java` from the project version). Helper Kotlin lives flat under `totemguard/build/`.
 - `gradle/libs.versions.toml`. All dependency versions. Edit here, not in individual module
   `build.gradle.kts`.
 - `docs/showcase/`. Screenshots and media only.
@@ -161,18 +158,21 @@ topology and routes RPC requests over Redis (`bridge/plugin/common/redis`, `rpc/
 plugins discover the proxy via `common/network/bridge/BridgeManager`. The wire format is in
 `bridge/protocol/`. Bump it carefully.
 
-**Shading and integrity.** `shadow-conventions` relocates Cloud, bstats, Lettuce, Netty, reactor, redis
+**Shading and integrity.** `totemguard.shadow.plugin` relocates Cloud, bstats, Lettuce, Netty, reactor, redis
 clients, Hikari, errorprone and jspecify annotations, geantyref, and so on under
-`com.deathmotion.totemguard.common.libs.*`. The loader uses `com.deathmotion.totemguard.loader.libs.*`. After
-shading, every entry except the integrity entry itself is hashed into
-`META-INF/totemguard/integrity.sha256`. `JarIntegrityChecker.verifyCurrentJar()` validates this at startup
-and refuses to enable the plugin or loader if tampered with. Do not repack a built jar, because it
+`com.deathmotion.totemguard.common.libs.*`. `totemguard.shadow.loader` uses
+`com.deathmotion.totemguard.loader.libs.*`. `totemguard.shadow.proxy` uses
+`com.deathmotion.totemguard.proxybridge.libs.*`. After shading, every entry except the integrity entry itself
+is hashed into `META-INF/totemguard/integrity.sha256`. `JarIntegrityChecker.verifyCurrentJar()` validates this
+at startup and refuses to enable the plugin or loader if tampered with. Do not repack a built jar, because it
 invalidates the fingerprint. If you ever need to inspect the integrity logic, see
 `build-logic/src/main/kotlin/totemguard/build/JarIntegrity.kt` (write side) and
 `integrity/src/main/java/.../JarIntegrityChecker.java` (verify side).
 
-**Versioning.** Root version is `3.0.0` plus `+<git short hash>` plus `-SNAPSHOT` (see root
-`build.gradle.kts`). The `tg-version` convention plugin generates
-`com.deathmotion.totemguard.common.util.TGVersions` and the API-side `TGAPIVersions` at build time. The Java
-convention plugin expands `${version}` into plugin manifests during `processResources`, with the `+<hash>`
-stripped so manifests stay stable across rebuilds.
+**Versioning.** Root version is `3.0.0` plus `+<git short hash>` plus `-SNAPSHOT`, assembled by
+`totemguard.root` using a `GitHashValueSource` so the value is configuration-cache clean. The `tg-version`
+convention plugin generates `com.deathmotion.totemguard.common.util.TGVersions` and the API-side
+`TGAPIVersions` at build time. `totemguard.manifest-expand` expands `${version}` into plugin manifests during
+`processResources`, with the `+<hash>` stripped so manifests stay stable across rebuilds. Configuration cache
+is enabled (`problems=warn`) and type-safe project accessors are on, so prefer `projects.api` over
+`project(":api")` in new build scripts.
