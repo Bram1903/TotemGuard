@@ -109,16 +109,19 @@ public final class PlayerRepositoryImpl implements UserRepository {
             return;
         }
 
-        final TGPlayer player = players.get(user);
+        TGPlayer player = players.get(user);
 
-        PlatformPlayer platformPlayer;
-        if (player != null) {
-            playersByUuid.putIfAbsent(uuid, player);
-            player.onLogin();
-            platformPlayer = player.getPlatformPlayer();
+        if (player == null) {
+            if (!shouldCheck(user, null)) return;
+            player = new TGPlayer(user);
+            players.put(user, player);
+            playersByUuid.put(uuid, player);
         } else {
-            platformPlayer = platform.getPlatformPlayerFactory().create(uuid);
+            playersByUuid.putIfAbsent(uuid, player);
         }
+
+        player.onLogin();
+        PlatformPlayer platformPlayer = player.getPlatformPlayer();
         if (platformPlayer == null) return;
 
         restoreSubscriptions(uuid, platformPlayer);

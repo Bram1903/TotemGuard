@@ -78,7 +78,12 @@ public final class GuiManager {
             return false;
         }
 
-        User user = PacketEvents.getAPI().getPlayerManager().getUser(sender.getNativeSender());
+        UUID senderUuid = sender.getUniqueId();
+        Object channel = PacketEvents.getAPI().getProtocolManager().getChannel(senderUuid);
+        if (channel == null) {
+            return false;
+        }
+        User user = PacketEvents.getAPI().getProtocolManager().getUser(channel);
         if (user == null || user.getUUID() == null) {
             return false;
         }

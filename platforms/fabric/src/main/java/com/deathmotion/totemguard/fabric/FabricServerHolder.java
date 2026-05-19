@@ -34,6 +34,13 @@ public final class FabricServerHolder {
     private FabricServerHolder() {
     }
 
+    // Forces class initialization at a known point so the static block registers its
+    // lifecycle listeners before SERVER_STARTED fires. Without an explicit touch, the
+    // class would not load until something on the runtime hot path referenced it, which
+    // is after the event we want to observe.
+    public static void init() {
+    }
+
     public static @Nullable MinecraftServer server() {
         return instance;
     }

@@ -28,7 +28,6 @@ import net.kyori.adventure.text.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.GameType;
 import org.jetbrains.annotations.NotNull;
@@ -55,7 +54,7 @@ public class FabricPlatformPlayer implements PlatformPlayer {
 
     @Override
     public boolean hasPermission(@NotNull String permission) {
-        return Permissions.check(fabricPlayer, permission, PermissionLevel.GAMEMASTERS);
+        return Permissions.check(fabricPlayer, permission, false);
     }
 
     @Override

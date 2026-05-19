@@ -43,19 +43,14 @@ public final class TGFabric implements DedicatedServerModInitializer {
 
     @Override
     public void onInitializeServer() {
-        // Reroute the "TotemGuard" JUL logger through SLF4J before anything logs.
-        // Paper auto-wires JUL into Log4j2 but Fabric does not, so without this the
-        // default ConsoleHandler emits ugly two-line records.
         bridgeJulToFabricLog("TotemGuard");
 
+        FabricServerHolder.init();
+
         tg = new TGFabricPlatform(FabricLoader.getInstance().getConfigDir().resolve("totemguard"));
+        tg.commonOnEnable();
 
-        ServerLifecycleEvents.SERVER_STARTED.register(_ -> tg.commonOnEnable());
         ServerLifecycleEvents.SERVER_STOPPING.register(_ -> tg.commonOnDisable());
-    }
-
-    public TGFabricPlatform getTg() {
-        return tg;
     }
 
     private static final class Slf4jBridgeHandler extends Handler {
