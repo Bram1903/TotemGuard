@@ -8,22 +8,23 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode = RepositoriesMode.PREFER_PROJECT
     repositories {
         mavenCentral()
-        maven("https://repo.codemc.io/repository/maven-releases/")
-        maven("https://repo.codemc.io/repository/maven-snapshots/")
-        maven("https://repo.grim.ac/snapshots")
         maven("https://repo.papermc.io/repository/maven-public/")
+        maven("https://maven.fabricmc.net/")
+        maven("https://repo.codemc.io/repository/maven-releases/")
+        maven("https://repo.grim.ac/snapshots")
         maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
         maven("https://oss.sonatype.org/content/groups/public/")
-        maven("https://maven.fabricmc.net/")
+        maven("https://repo.codemc.io/repository/maven-snapshots/")
     }
 }
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "TotemGuard"
 

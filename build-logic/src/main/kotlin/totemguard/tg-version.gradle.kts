@@ -1,22 +1,24 @@
-import version.TGVersionTask
+package totemguard
+
+import totemguard.build.TGVersionTask
 
 interface TGVersionPluginExtension {
     val packageName: org.gradle.api.provider.Property<String>
     val className: org.gradle.api.provider.Property<String>
 }
 
-val ext = extensions.create<TGVersionPluginExtension>("tgVersion")
-ext.packageName.convention("com.deathmotion.totemguard.common.util")
-ext.className.convention("TGVersions")
+val tgVersion = extensions.create<TGVersionPluginExtension>("tgVersion")
+tgVersion.packageName.convention("com.deathmotion.totemguard.common.util")
+tgVersion.className.convention("TGVersions")
 
 pluginManager.withPlugin("java") {
     val generateTask = tasks.register<TGVersionTask>(TGVersionTask.TASK_NAME) {
         group = LifecycleBasePlugin.BUILD_GROUP
         description = "Generates a TGVersions-style class from the project version."
 
-        packageName.set(ext.packageName)
-        className.set(ext.className)
-        versionValue.set(provider { project.version.toString() })
+        packageName.set(tgVersion.packageName)
+        className.set(tgVersion.className)
+        versionValue.set(project.version.toString())
         outputDir.set(layout.buildDirectory.dir("generated/sources/tgversion/main"))
     }
 

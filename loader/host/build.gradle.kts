@@ -1,21 +1,11 @@
 plugins {
-    java
+    id("totemguard.java.standard")
 }
 
 version = "1.0.0" + if (rootProject.extra["snapshot"] as Boolean) "-SNAPSHOT" else ""
-description = "Loader<->plugin contract types. Class identity is shared across the loader and TotemGuard plugin classloaders via ApiClassInjector, so consumers should not import these types directly."
-
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-    disableAutoTargetJvm()
-}
+description =
+    "Loader<->plugin contract types. Class identity is shared across the loader and TotemGuard plugin classloaders via ApiClassInjector, so consumers should not import these types directly."
 
 dependencies {
-    compileOnly("org.jetbrains:annotations:26.0.2-1")
-    compileOnly(project(":api"))
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = Charsets.UTF_8.name()
-    options.release = 17
+    compileOnly(projects.api)
 }

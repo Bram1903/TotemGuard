@@ -4,15 +4,16 @@ plugins {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
-repositories {
-    gradlePluginPortal()
-    mavenCentral()
-}
+@Suppress("UnstableApiUsage")
+val versionCatalogAccessorsClasspath = files(libs.javaClass.superclass.protectionDomain.codeSource.location)
 
 dependencies {
     implementation(libs.shadow.gradle.plugin)
+    implementation(libs.run.paper.gradle.plugin)
+    implementation(libs.run.velocity.gradle.plugin)
+    implementation(versionCatalogAccessorsClasspath)
 }

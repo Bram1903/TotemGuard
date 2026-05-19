@@ -18,10 +18,23 @@
 
 package totemguard.build
 
-import java.util.Locale
+import java.util.*
 
-fun String.withoutSnapshotHash(): String =
-    replace(Regex("\\+[0-9a-f]+-SNAPSHOT$"), "-SNAPSHOT")
+private val SNAPSHOT_HASH_SUFFIX = Regex("\\+[0-9a-f]+-SNAPSHOT$")
+
+fun String.withoutSnapshotHash(): String = replace(SNAPSHOT_HASH_SUFFIX, "-SNAPSHOT")
 
 fun String.capitalizedName(): String =
-    replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+    replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+
+fun String.withSnapshotMetadata(snapshot: Boolean, gitHash: String?): String {
+    if (!snapshot) return this
+    return buildString {
+        append(this@withSnapshotMetadata)
+        if (!gitHash.isNullOrBlank()) {
+            append('+')
+            append(gitHash)
+        }
+        append("-SNAPSHOT")
+    }
+}

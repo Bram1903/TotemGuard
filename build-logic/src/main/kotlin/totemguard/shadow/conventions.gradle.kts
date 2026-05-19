@@ -1,3 +1,5 @@
+package totemguard.shadow
+
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.jvm.tasks.Jar
 import totemguard.build.capitalizedName
@@ -13,24 +15,20 @@ tasks.named<Jar>("jar") {
 }
 
 tasks.withType<ShadowJar>().configureEach {
-    archiveFileName =
+    archiveFileName.set(
         "${rootProject.name}-${project.name.capitalizedName()}-${project.version.toString().withoutSnapshotHash()}.jar"
-    archiveClassifier = null
-    destinationDirectory = rootProject.layout.buildDirectory
+    )
+    archiveClassifier.set(null as String?)
+    destinationDirectory.set(rootProject.layout.buildDirectory)
+
     exclude("META-INF/maven/**")
     exclude("INFO_BIN", "INFO_SRC", "LICENSE", "README", "LICENSE.txt", "README.txt")
 
-    val libsPrefix = "com.deathmotion.totemguard.proxybridge.libs"
-    relocate("io.lettuce", "$libsPrefix.lettuce")
-    relocate("io.netty", "$libsPrefix.netty")
-    relocate("org.reactivestreams", "$libsPrefix.reactivestreams")
-    relocate("reactor", "$libsPrefix.reactor")
-
     mergeServiceFiles()
-    minimize()
 
+    val outputFile = archiveFile
     doLast {
-        writeJarIntegrity(archiveFile.get().asFile.toPath())
+        writeJarIntegrity(outputFile.get().asFile.toPath())
     }
 }
 

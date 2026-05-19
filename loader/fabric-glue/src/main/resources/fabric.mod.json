@@ -3,7 +3,9 @@
   "id": "totemguard-loader",
   "version": "${version}",
   "name": "TotemGuard-Loader",
-  "provides": ["totemguard"],
+  "provides": [
+    "totemguard"
+  ],
   "description": "${description}",
   "authors": [
     "Bram",

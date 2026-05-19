@@ -88,8 +88,6 @@ final class TotemGuardLifecycle {
 
         ConsoleBanner.print();
 
-        // The loader already runs this exact check against the same jar before injecting
-        // the api classes, so skip it here to avoid double-logging when loader-driven.
         if (p.shouldVerifyJarIntegrity() && !p.isManagedByLoader()
                 && !new JarIntegrityChecker(p.getLogger(), "TotemGuard").verifyCurrentJar()) {
             p.setEnabled(false);

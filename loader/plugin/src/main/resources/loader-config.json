@@ -20,7 +20,6 @@
 {
   "version": "LATEST",
   "source": "MODRINTH",
-
   // Fleet (multi-node) settings. Only relevant if you run TotemGuard on more than
   // one server backed by the same Redis instance.
   "fleet": {

@@ -1,111 +1,32 @@
-import org.gradle.jvm.tasks.Jar
-
 plugins {
-    java
-    `maven-publish`
-    id("tg-version")
+    id("totemguard.java.api")
+    id("totemguard.tg-version")
+    id("totemguard.maven-publish")
 }
 
-val apiBaseVersion = "1.0.0"
-val apiSnapshot = rootProject.extra["snapshot"] as Boolean
-
-version = buildString {
-    append(apiBaseVersion)
-    if (apiSnapshot) append("-SNAPSHOT")
-}
+version = "1.0.0" + if (rootProject.extra["snapshot"] as Boolean) "-SNAPSHOT" else ""
+description = "TotemGuard API"
 
 tgVersion {
     packageName.set("com.deathmotion.totemguard.api.versioning")
     className.set("TGAPIVersions")
 }
 
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-    withJavadocJar()
-    withSourcesJar()
-}
-
-dependencies {
-    compileOnly("org.jetbrains:annotations:26.0.2-1")
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = Charsets.UTF_8.name()
-    options.release = 21
-}
-
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.add("-parameters")
-    options.compilerArgs.add("-g")
-    sequenceOf("unchecked", "deprecation", "removal").forEach { options.compilerArgs.add("-Xlint:$it") }
-}
+val artifactBaseName = "${rootProject.name}API"
 
 tasks.named<Jar>("jar") {
-    archiveFileName = "${rootProject.name}API-${project.version}.jar"
-    archiveClassifier = null
+    archiveFileName.set("$artifactBaseName-${project.version}.jar")
+    archiveClassifier.set(null as String?)
 }
 
 tasks.named<Jar>("javadocJar") {
-    archiveFileName.set("${rootProject.name}API-${project.version}-javadoc.jar")
+    archiveFileName.set("$artifactBaseName-${project.version}-javadoc.jar")
 }
 
 tasks.named<Jar>("sourcesJar") {
-    archiveFileName.set("${rootProject.name}API-${project.version}-sources.jar")
+    archiveFileName.set("$artifactBaseName-${project.version}-sources.jar")
 }
 
 tasks.named<Javadoc>("javadoc") {
     title = "TotemGuard API v${project.version}"
-    options.encoding = Charsets.UTF_8.name()
-    options {
-        (this as CoreJavadocOptions).addBooleanOption("Xdoclint:none", true)
-    }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("api") {
-            groupId = "com.deathmotion"
-            artifactId = "${rootProject.name}-api".lowercase()
-            version = project.version.toString()
-            from(components["java"])
-
-            pom {
-                name = "${rootProject.name}API"
-                description = "TotemGuard API"
-                url = "https://github.com/Bram1903/TotemGuard"
-
-                developers {
-                    developer {
-                        id = "bram"
-                        name = "Bram"
-                    }
-                    developer {
-                        id = "outdev"
-                        name = "OutDev"
-                    }
-                }
-
-                scm {
-                    connection = "scm:git:https://github.com/Bram1903/TotemGuard.git"
-                    developerConnection = "scm:git:https://github.com/Bram1903/TotemGuard.git"
-                    url = "https://github.com/Bram1903/TotemGuard"
-                }
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            name = "PvPHub"
-            url = uri("https://maven.pvphub.me/bram")
-            credentials {
-                username = System.getenv("PVPHUB_MAVEN_USERNAME")
-                password = System.getenv("PVPHUB_MAVEN_SECRET")
-            }
-        }
-    }
-}
-
-configurations.configureEach {
-    resolutionStrategy.cacheDynamicVersionsFor(0, TimeUnit.SECONDS)
 }

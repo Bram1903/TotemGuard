@@ -1,14 +1,14 @@
 plugins {
     `java-library`
-    id("totemguard.java-conventions")
-    id("tg-version")
+    id("totemguard.java.internal")
+    id("totemguard.tg-version")
 }
 
 dependencies {
-    api(project(":api"))
-    api(project(":loader:host"))
-    implementation(project(":integrity"))
-    implementation(project(":bridge:protocol"))
+    api(projects.api)
+    api(projects.loader.host)
+    implementation(projects.integrity)
+    implementation(projects.bridge.protocol)
     implementation(libs.lettuce) {
         exclude(group = "org.slf4j")
     }
