@@ -1,0 +1,129 @@
+#    ___________     __                   ________                       .___
+#    \__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+#      |    | /  _ \   __\/ __ \ /     \/   \  ___|  |  \__  \\_  __ \/ __ |
+#      |    |(  <_> )  | \  ___/|  Y Y  \    \_\  \  |  // __ \|  | \/ /_/ |
+#      |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
+#                             \/      \/        \/           \/           \/
+
+# The version of the checks file. DO NOT TOUCH!!!
+config_version: 1
+
+# Tag each command with [BAN], [KICK], or [GENERIC]. Untagged = GENERIC.
+# GENERIC commands are dispatched but not persisted in punishment history.
+
+default-punishment: "[BAN] ban %tg_player% Unfair Advantage"
+
+AutoTotemA:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+AutoTotemB:
+  enabled: true
+  punishable: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryA:
+  enabled: true
+  punishable: false
+  mitigate: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryB:
+  enabled: true
+  punishable: false
+  mitigate: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryC:
+  enabled: true
+  punishable: false
+  mitigate: false
+  max-violations: 2
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolB:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolC:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolD:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolE:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
+TickA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "[KICK] kick %tg_player% Packet Manipulation"
+
+TickB:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "[KICK] kick %tg_player% Packet Manipulation"
+
+TickC:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "[KICK] kick %tg_player% Packet Manipulation"
+
+ManualTotemA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"

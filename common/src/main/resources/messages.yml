@@ -1,0 +1,381 @@
+#    ___________     __                   ________                       .___
+#    \__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+#      |    | /  _ \   __\/ __ \ /     \/   \  ___|  |  \__  \\_  __ \/ __ |
+#      |    |(  <_> )  | \  ___/|  Y Y  \    \_\  \  |  // __ \|  | \/ /_/ |
+#      |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
+#                             \/      \/        \/           \/           \/
+#
+
+# The version of the messages file. DO NOT TOUCH!!!
+config_version: 1
+
+prefix: "&#FBAF00&lTG &r&#6E6651»"
+
+alerts:
+  enabled: "%prefix% &#6FB04AAlerts enabled"
+  enabled-local-only: "%prefix% &#6FB04AAlerts enabled &#B8AC8F(local only)"
+  disabled: "%prefix% &#D4452CAlerts disabled"
+  local-only-enabled: "%prefix% &#6FB04ANow only showing alerts from your local server"
+  local-only-disabled: "%prefix% &#6FB04AAlerts now showing from all servers"
+
+  tester:
+    enabled: "%prefix% &#6FB04ATester alerts enabled &#B8AC8F(only your own flags)"
+    disabled: "%prefix% &#D4452CTester alerts disabled"
+    bypass: "%prefix% &#D4452CTester alerts won't fire while you hold &#FEE067TotemGuard.Bypass&#D4452C."
+
+  focus:
+    enabled: "%prefix% &#6FB04AFocus enabled on &#FEE067%tg_player%"
+    disabled: "%prefix% &#D4452CFocus disabled"
+    none-active: "%prefix% &#D4452CYou have no focus active."
+    target-offline: "%prefix% &#D4452CFocus target &#FEE067%tg_player% &#D4452Cwent offline."
+    not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
+    self-not-allowed: "%prefix% &#D4452CYou cannot focus on yourself."
+
+  message: "%prefix% &#FEE067%tg_player%&#B8AC8F failed &#FBAF00%tg_check_name% &#B8AC8FVL[&#FBAF00%tg_check_violations%&#B8AC8F/&#FBAF00%tg_check_max_violations%&#B8AC8F]"
+  hover: |-
+    &#E7DEC4Client Version: &#FEE067%tg_player_version% &#8F7440| &#E7DEC4Client Brand: &#FEE067%tg_player_brand%
+
+    &#E7DEC4Player: &#FEE067%tg_player%
+    &#E7DEC4Ping: &#E7DEC4(K: &#B8AC8F%tg_player_ping_k%ms &#8F7440| &#E7DEC4T: &#B8AC8F%tg_player_ping_t%ms&#E7DEC4)
+
+    &#E7DEC4Check: &#FBAF00%tg_check_name%
+    &#E7DEC4Description: &#FEE067%tg_check_description%
+    &#E7DEC4Server: &#FEE067%tg_server%
+
+    &#E7DEC4Debug: &#B8AC8F%tg_check_debug%
+
+    &#E7DEC4Click to &#FBAF00teleport &#E7DEC4to &#FEE067%tg_player%&#E7DEC4.
+  # Resolved through `teleport.command` in config.yml. Blank disables click-to-teleport.
+  command: "%tg_teleport_command%"
+
+mod-detection:
+  alert:
+    message: "%prefix% &#FEE067%tg_player%&#B8AC8F failed &#FBAF00Mod Detection"
+
+reload: "%prefix% &#6FB04ATotemGuard reloaded successfully!"
+
+update-checker:
+  available: "<click:open_url:'%tg_update_url%'><hover:show_text:'Click to download'>%prefix% &#6FB04AA new version is available: &#FBAF00%tg_update_latest%&#B8AC8F (running &#FBAF00%tg_update_current%&#B8AC8F).<newline>&#C68500&nDownload here</hover></click>"
+
+general:
+  player-only: "%prefix% &#D4452CYou must be a player to use this command!"
+  player-not-found: "%prefix% &#D4452CCould not find a tracked TotemGuard player named &#F5A48F%tg_input%&#D4452C."
+  player-data-missing: "%prefix% &#D4452CYour player data could not be found in the player repository."
+  database-unavailable: "%prefix% &#D4452C'&#F5A48F%tg_input%&#D4452C' is not online and the database is unavailable."
+  no-records: "%prefix% &#D4452CNo TotemGuard records found for '&#F5A48F%tg_input%&#D4452C'."
+  lookup-failed: "%prefix% &#D4452CLookup failed: &#F5A48F%tg_error%"
+
+commands:
+  root:
+    version: "%prefix% &#FBAF00TotemGuard &#FEE067%tg_version% &#B8AC8Fon &#FEE067%tg_platform%"
+    gui-open-failed: "%prefix% &#D4452CFailed to open the TotemGuard GUI."
+
+  check:
+    already-checking: "%prefix% &#F5A48F%tg_player% &#D4452Cis already being checked."
+    on-cooldown: "%prefix% &#F5A48F%tg_player% &#D4452Cis on check cooldown for another &#F5A48F%tg_remaining_ms%ms&#D4452C."
+    wrong-gamemode: "%prefix% &#F5A48F%tg_player% &#D4452Cmust be in survival or adventure mode."
+    invulnerable: "%prefix% &#F5A48F%tg_player% &#D4452Cis invulnerable."
+    no-totem: "%prefix% &#F5A48F%tg_player% &#D4452Cdoes not have a totem in their offhand."
+    no-backup-totem: "%prefix% &#F5A48F%tg_player% &#D4452Chas no backup totem in their inventory."
+    damage-failed: "%prefix% &#F5A48F%tg_player% &#D4452Ccould not be damaged. Check aborted."
+    flagged: "%prefix% &#FEE067%tg_player%&#B8AC8F re-totemed in &#FBAF00%tg_elapsed_ms%ms&#B8AC8F (window &#FBAF00%tg_window_ms%ms&#B8AC8F)."
+    passed: "%prefix% &#FEE067%tg_player% &#6FB04Apassed the check."
+    no-redis: "%prefix% &#D4452CCheck service unavailable for cross-server targets."
+    timeout: "%prefix% &#D4452CCheck on &#F5A48F%tg_player%&#D4452C timed out."
+    dispatched: "%prefix% &#B8AC8FDispatching check on &#FEE067%tg_player%&#B8AC8F to &#FEE067%tg_server%&#B8AC8F."
+    staff-notice: "%prefix% &#B8AC8F%tg_sender% &#FEE067(%tg_sender_server%) &#B8AC8Fis running a totem check on &#FEE067%tg_player% &#FEE067(%tg_target_server%)&#B8AC8F."
+    staff-notice-local: "%prefix% &#B8AC8F%tg_sender% &#B8AC8Fis running a totem check on &#FEE067%tg_player%&#B8AC8F."
+
+  monitor:
+    self-monitor: "%prefix% &#D4452CYou cannot monitor your own inventory."
+    blocked: "%prefix% &#D4452COpening the monitor was blocked."
+    open-failed: "%prefix% &#D4452CFailed to open the monitor GUI."
+    target-offline: "%prefix% &#D4452CMonitor target &#FEE067%tg_player% &#D4452Cwent offline."
+    target-bypassed: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Chas the &#FEE067TotemGuard.Bypass &#D4452Cpermission on &#FEE067%tg_server%&#D4452C and can't be monitored."
+
+  follow:
+    enabled: "%prefix% &#6FB04ANow following &#FEE067%tg_player%&#6FB04A."
+    disabled: "%prefix% &#D4452CFollow disabled."
+    none-active: "%prefix% &#D4452CYou have no follow active."
+    not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
+    self-not-allowed: "%prefix% &#D4452CYou cannot follow yourself."
+    target-offline: "%prefix% &#D4452CFollow target &#FEE067%tg_player% &#D4452Cwent offline."
+    different-proxy: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Cmoved to a different proxy (server &#FEE067%tg_server%&#D4452C). Follow stopped."
+    no-bridge: "%prefix% &#D4452CCross-server follow requires the TotemGuard-Bridge plugin on your proxy."
+    no-redis: "%prefix% &#D4452CFollow service unavailable."
+    target-bypassed: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Chas the &#FEE067TotemGuard.Bypass &#D4452Cpermission on &#FEE067%tg_server%&#D4452C and can't be followed."
+    action-bar: "&#FBAF00Following &#FEE067%tg_player% &#B8AC8F(&#FEE067%tg_server%&#B8AC8F)"
+
+  teleport:
+    no-redis: "%prefix% &#D4452CTeleport service unavailable."
+    no-bridge: "%prefix% &#D4452CCross-server teleport requires the TotemGuard-Bridge plugin on your proxy."
+    different-proxy: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Cis behind a different proxy (server &#FEE067%tg_server%&#D4452C). TotemGuard can only teleport players within the same proxy."
+    not-found: "%prefix% &#D4452CCould not find a player named &#F5A48F%tg_input%&#D4452C."
+    self-not-allowed: "%prefix% &#D4452CYou cannot teleport to yourself."
+    same-server: "%prefix% &#6FB04ATeleporting you to &#FEE067%tg_player%&#6FB04A."
+    cross-server: "%prefix% &#6FB04ATeleporting you to &#FEE067%tg_player%&#6FB04A."
+    target-bypassed: "%prefix% &#D4452C&#FEE067%tg_player% &#D4452Chas the &#FEE067TotemGuard.Bypass &#D4452Cpermission on &#FEE067%tg_server%&#D4452C. Use vanilla &#FEE067/tp &#D4452Cinstead."
+
+  history:
+    open-failed: "%prefix% &#D4452CFailed to open the history GUI."
+
+  profile:
+    open-failed: "%prefix% &#D4452CFailed to open the profile GUI."
+
+  stats:
+    open-failed: "%prefix% &#D4452CFailed to open the statistics GUI."
+
+  clearhistory:
+    clearing: "%prefix% &#B8AC8FClearing history for &#FEE067%tg_player%&#B8AC8F…"
+    cleared: "%prefix% &#6FB04ACleared &#FEE067%tg_alerts_removed% alert(s) &#6FB04Aand &#FEE067%tg_punishments_removed% punishment(s) &#6FB04Afor &#FEE067%tg_player%&#6FB04A."
+    clear-failed: "%prefix% &#D4452CFailed to clear history: &#F5A48F%tg_error%"
+
+gui:
+
+  # Reusable button labels. Used across many screens.
+  button:
+    close:
+      title: "&#D4452CClose"
+      lore: "&#B8AC8FClose this screen"
+    back:
+      title: "&#FBAF00Back"
+      lore: "&#B8AC8FReturn to the previous screen"
+    back-to-profile:
+      title: "&#FBAF00Back"
+      lore: "&#B8AC8FReturn to the profile"
+    back-to-history:
+      title: "&#FBAF00Back"
+      lore: "&#B8AC8FReturn to the history menu"
+    back-to-overview:
+      title: "&#FBAF00Back"
+      lore: "&#B8AC8FReturn to the overview"
+    back-to-alerts:
+      title: "&#FBAF00Back"
+      lore: "&#B8AC8FReturn to the full alerts feed"
+    return:
+      title: "&#FBAF00Return"
+      lore: "&#B8AC8FReturn to the profile"
+    next-page:
+      title: "&#FBAF00Next page"
+    previous-page:
+      title: "&#FBAF00Previous page"
+
+  # Inline status indicators.
+  status:
+    yes: "&#6FB04AYes"
+    no: "&#D4452CNo"
+    empty: "&#6E6651Empty"
+    enabled: "&#6FB04AEnabled"
+    disabled: "&#6E6651Disabled"
+    connected: "&#6FB04AConnected"
+    disconnected: "&#D4452CDisconnected"
+    not-installed: "&#6E6651Not installed"
+    currently-selected: "&#6FB04ACurrently selected"
+    click-to-switch: "&#6E6651Click to switch ▶"
+    click-to-browse: "&#6E6651Click to browse ▶"
+
+  error:
+    no-permission: "&#D4452CYou lack the permission &#F5A48F%tg_permission% &#D4452Cto open that screen."
+    mod-detection-running: "&#D4452CMod detection is still running on your client. Try again in a moment."
+    cannot-monitor-self: "&#D4452CYou cannot monitor your own inventory."
+    monitor-blocked: "&#D4452COpening the monitor was blocked."
+    database-offline: "&#D4452CDatabase offline"
+    db-unreachable: "&#B8AC8Fis disabled or currently unreachable."
+    check-server-log: "&#B8AC8FCheck the server log for details."
+    failed-load-alerts: "&#D4452CFailed to load alerts"
+    failed-load-checks: "&#D4452CFailed to load checks"
+    failed-load-stats: "&#D4452CFailed to load statistics"
+
+  loading:
+    generic: "&#FBAF00Loading…"
+    querying-database: "&#B8AC8FQuerying the database"
+    join-times: "&#FBAF00Loading join times…"
+
+  # /tg → root info screen.
+  info:
+    title: "&#6E6651&lTotemGuard"
+    services-title: "&#FBAF00Services"
+    services-lore-1: "&#B8AC8FLive status of TotemGuard services"
+    information-title: "&#FBAF00Information"
+    section-version: "&#F4ECD8&lVersion"
+    section-platform: "&#F4ECD8&lPlatform"
+    section-dev-build: "&#F4ECD8&lDevelopment build"
+    section-loader: "&#F4ECD8&lLoader"
+    statistics-title: "&#FBAF00Statistics"
+    statistics-disabled: "&#6E6651Statistics"
+    statistics-lore-1: "&#B8AC8FAggregated alert and punishment"
+    statistics-lore-2: "&#B8AC8Fcounts across all players."
+    statistics-offline-1: "&#D4452CDatabase is offline."
+    statistics-offline-2: "&#B8AC8FStatistics are unavailable."
+    network-backends: "&#B8AC8FBackends synced: &#FEE067%tg_count%"
+    network-players: "&#B8AC8FTracked players: &#FEE067%tg_count%"
+
+  # /tg profile <player>
+  profile:
+    title: "&#6E6651&lProfile: %tg_player%"
+    untracked-title: "&#D4452C%tg_player% is no longer tracked"
+    untracked-lore: "&#B8AC8FThe player left the repository."
+    no-violations: "&#6FB04ANo active violations"
+    first-joined-loading: "&#B8AC8FFirst joined: loading…"
+    monitor-self-title: "&#6E6651Self Monitor Disabled"
+    monitor-self-lore: "&#B8AC8FMonitoring your own inventory is disabled"
+    monitor-open-title: "&#FBAF00Open Monitor"
+    monitor-open-lore-1: "&#B8AC8FView the live packet inventory"
+    monitor-open-lore-2: "&#B8AC8Fand watch updates in-place"
+    history-title: "&#FBAF00History"
+    history-lore-1: "&#B8AC8FBrowse this player's alert and"
+    history-lore-2: "&#B8AC8Fpunishment history from the database."
+    mods:
+      clean-title: "&#6FB04ANo mods detected"
+      clean-lore: "&#B8AC8FNo tracked client mods flagged this session."
+      detected-title: "&#FBAF00Detected Mods"
+      detected-summary: "&#FEE067%tg_count% &#B8AC8Fmod(s) detected this session"
+      detected-entry: "&#B8AC8F  %tg_mod_id% &#6E6651(%tg_severity%)"
+      detected-overflow: "&#6E6651  + %tg_hidden% more"
+      click-hint: "&#6E6651Click to view all ▶"
+    head:
+      uuid-label: "UUID"
+      client-version-label: "Client version"
+      client-brand-label: "Client brand"
+      keepalive-ping-label: "KeepAlive ping"
+      transaction-ping-label: "Transaction ping"
+      first-joined-label: "First joined"
+      violations-label: "Violations this session"
+      violations-summary: "%tg_total_vl% across %tg_active_checks% check(s)"
+      violations-entry: "&#B8AC8F  %tg_check_name% - VL %tg_check_vl%"
+      violations-overflow: "&#6E6651  + %tg_hidden% more check(s)"
+
+  # /tg monitor <player>
+  monitor:
+    title: "&#6E6651&lMonitor: %tg_player%"
+    untracked-title: "&#D4452C%tg_player% is no longer tracked"
+    untracked-lore: "&#B8AC8FAll monitor viewers are closed"
+    self-disabled-title: "&#6E6651Self Monitor Disabled"
+    self-disabled-lore: "&#B8AC8FMonitoring your own inventory is disabled to prevent ghost item desync."
+    head-tooltip: "&#B8AC8FHead opens the full profile."
+    packet-state-title: "&#FBAF00Packet State"
+    latency-title: "&#FBAF00Latency"
+    client-title: "&#FBAF00Client"
+
+  # /tg history <player>: entry hub.
+  history-hub:
+    title: "&#6E6651&lHistory: %tg_player%"
+    db-unavailable-lore-1: "&#B8AC8FHistory is unavailable - the database"
+    alerts-title: "&#FBAF00Alerts"
+    alerts-lore-1: "&#B8AC8FEvery violation TotemGuard has flagged"
+    alerts-lore-2: "&#B8AC8Ffor this player, newest first."
+    punishments-title: "&#FBAF00Punishments"
+    punishments-lore-1: "&#B8AC8FEvery kick or ban"
+    punishments-lore-2: "&#B8AC8FTotemGuard dispatched, newest first."
+
+  alerts:
+    title: "&#6E6651&lAlerts: %tg_player%"
+    db-unavailable-lore-1: "&#B8AC8FAlert history is unavailable. The database"
+    debug-label: "&#E7DEC4Debug:"
+    empty-clean-title: "&#6FB04AClean record"
+    empty-filter-title: "&#6E6651No alerts for &#FEE067%tg_check%"
+    empty-clean-lore: "&#B8AC8FNo alerts have been logged%tg_window_suffix%."
+    empty-filter-lore-1: "&#B8AC8FNothing to show for this filter."
+    empty-filter-lore-2: "&#B8AC8FTry a different check or window."
+    filter-pick-title: "&#FBAF00Filter by check"
+    filter-change-title: "&#FBAF00Change filter"
+    filter-clear-title: "&#FBAF00Clear filter"
+    filter-pick-lore-1: "&#B8AC8FOnly show alerts for a specific check."
+    filter-pick-lore-2: "&#6E6651Click to pick a check ▶"
+    filter-change-lore: "&#B8AC8FPick a different check"
+    filter-clear-lore: "&#B8AC8FReturn to all alerts"
+
+  alert-checks:
+    title: "&#6E6651&lAlerts by check: %tg_player%"
+    empty-title: "&#6FB04AClean record"
+    empty-lore: "&#B8AC8FNo alerts have been logged for this player."
+    filter-unavailable: "&#B8AC8FFiltering is unavailable right now."
+    view-filter-hint: "&#6E6651Click to view only this check ▶"
+
+  # /tg top
+  top:
+    title: "&#6E6651&lTotemGuard · Top Violators"
+    title-filtered: "&#6E6651&lTop Violators · %tg_check%"
+    local-only-title: "&#E68A2ELocal server only"
+    local-only-lore-1: "&#B8AC8FRedis isn't connected. Showing violators"
+    local-only-lore-2: "&#B8AC8Ffrom this server only."
+    loading-lore: "&#B8AC8FAggregating violations from Redis…"
+    empty-title: "&#6FB04ANo violators"
+    empty-filter-title: "&#6FB04ANo violators for %tg_check%"
+    empty-lore: "&#B8AC8FNo online player has flagged this session."
+    empty-filter-lore: "&#B8AC8FNobody has flagged %tg_check% this session."
+    err-self-teleport: "&#D4452CYou can't teleport to yourself."
+    err-teleport-unavailable: "&#D4452CTeleport unavailable: you're no longer online here."
+    page-number: "&#B8AC8FPage %tg_page%"
+    page-summary: "&#FBAF00Page %tg_current% of %tg_total%"
+    footer-tracked-label: "Tracked violators"
+    footer-matching-label: "Matching violators"
+    footer-filter-label: "Check filter"
+    footer-hint-left-click: "&#B8AC8FLeft-click a head to open profile"
+    footer-hint-right-click: "&#B8AC8FRight-click to teleport"
+    filter-pick-title: "&#FBAF00Filter by check"
+    filter-pick-lore-1: "&#B8AC8FRestrict the ranking to one check."
+    filter-pick-lore-2: "&#6E6651Click ▶ pick a check"
+    filter-change-title: "&#FBAF00Change check"
+    filter-change-lore: "&#B8AC8FPick a different check to filter by."
+    filter-clear-title: "&#D4452CClear filter"
+    filter-clear-lore: "&#B8AC8FShow every active violator again."
+    head:
+      server-label: "Server"
+      session-label: "Session"
+      filter-vl-label: "%tg_check% VL"
+      total-vl-label: "Total VL"
+      top-checks-label: "&#E7DEC4Top checks"
+      top-checks-entry: "&#B8AC8F  %tg_check% · VL %tg_check_vl%"
+      top-checks-overflow: "&#6E6651  + %tg_hidden% more check(s)"
+      left-click-action: "&#6E6651Left-click ▶ open profile"
+      right-click-action: "&#6E6651Right-click ▶ teleport"
+
+  # /tg top → check picker
+  top-checks:
+    title: "&#6E6651&lTotemGuard · Pick check"
+    local-only-lore: "&#B8AC8FRedis isn't connected. Showing checks from this server only."
+    loading-lore: "&#B8AC8FAggregating checks from Redis…"
+    empty-title: "&#6FB04ANothing to filter"
+    empty-lore: "&#B8AC8FNo active session violations to filter by."
+    entry-total-vl-label: "Total VL"
+    entry-violators-label: "Violators"
+    entry-action: "&#6E6651Click ▶ filter top by %tg_check%"
+    footer-distinct-label: "Distinct checks"
+
+  mod-session:
+    title: "&#6E6651&lMods: %tg_player%"
+    empty-title: "&#6FB04ANo mods detected"
+    empty-lore: "&#B8AC8FNo tracked client mods flagged this session."
+    severity-label: "Severity"
+    method-label: "Detected via"
+    footer-title: "&#FBAF00Detected mods"
+    footer-label: "Total"
+
+  mod:
+    severity:
+      log: "Log"
+      kick: "Kick"
+      kick-then-ban: "Kick then ban"
+      ban: "Ban"
+    method:
+      plugin-channel: "Plugin channel"
+      plugin-message: "Plugin message"
+      translation: "Translation key"
+
+  punishments:
+    title: "&#6E6651&lPunishments: %tg_player%"
+    db-unavailable-lore-1: "&#B8AC8FPunishment history is unavailable. The database"
+    command-label: "&#E7DEC4Command:"
+    debug-label: "&#E7DEC4Debug:"
+    empty-clean-title: "&#6FB04AClean record"
+    empty-clean-lore: "&#B8AC8FNo punishments have been issued%tg_window_suffix%."
+
+  statistics:
+    title: "&#6E6651&lTotemGuard Statistics"
+    db-unavailable-lore-1: "&#B8AC8FStatistics are unavailable. The database"
+    pick-window-lore: "&#B8AC8FPick a different window below."
+    current-window-title: "&#FBAF00Current window"
+    section-activity: "&#FBAF00Activity"
+    section-players: "&#FBAF00Players"
+    section-storage: "&#FBAF00Storage"

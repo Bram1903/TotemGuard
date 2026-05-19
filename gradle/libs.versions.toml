@@ -1,39 +1,89 @@
 [versions]
-paper = "1.21.8-R0.1-SNAPSHOT"
-packetevents = "2.11.1"
-lombok = "1.18.42"
-shadow = "9.0.1"
-run-paper = "3.0.2"
-configlib = "4.6.1"
-lettuce = "6.8.1.RELEASE"
-cloud = "2.0.0-beta.15"
-expiringmap = "0.5.11"
-ormlite = "6.1"
-hikaricp = "7.0.2"
+packetevents = "2.12.1"
+adventure = "4.25.0"
+snakeyaml = "2.2"
+guava = "33.3.1-jre"
+paper = "1.21.11-R0.1-SNAPSHOT"
+velocity = "3.5.0-SNAPSHOT"
+bungeecord = "1.21-R0.5-SNAPSHOT"
+minecraft = "26.1.2"
+fabric-loader = "0.19.2"
+fabric-api = "0.145.1+26.1"
+fabric-permissions-api = "0.7.0"
+adventure-platform-fabric = "6.9.0"
+fabric-loom = "1.16-SNAPSHOT"
 
-# Runtime only
-mysql = "9.4.0"
-mariadb = "3.5.6"
-h2 = "2.4.240"
-adventure-text-serializer-plain = "4.25.0"
+cloud-core = "2.0.0"
+cloud-platform = "2.0.0-beta.15"
+cloud-fabric = "2.0.0-beta.16"
+bstats = "3.1.0"
+lettuce = "7.5.0.RELEASE"
+hikaricp = "6.2.1"
+mysql-jdbc = "9.1.0"
+
+placeholderapi = "2.11.7"
+grim-api = "1.3.1.0"
+
+jetbrains-annotations = "26.0.2-1"
+lombok = "1.18.42"
+gson = "2.11.0"
+slf4j = "2.0.13"
+
+run-paper = "3.0.2"
+shadow = "9.3.1"
+foojay-resolver = "1.0.0"
 
 [libraries]
-paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
+packetevents-api = { group = "com.github.retrooper", name = "packetevents-api", version.ref = "packetevents" }
 packetevents-spigot = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
-lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
-configlib-yaml = { group = "de.exlll", name = "configlib-yaml", version.ref = "configlib" }
-lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
-cloud = { group = "org.incendo", name = "cloud-paper", version.ref = "cloud" }
-expiringmap = { group = "net.jodah", name = "expiringmap", version.ref = "expiringmap" }
-ormlite = { group = "com.j256.ormlite", name = "ormlite-jdbc", version.ref = "ormlite" }
-hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
+adventure-api = { group = "net.kyori", name = "adventure-api", version.ref = "adventure" }
+adventure-text-serializer-gson = { group = "net.kyori", name = "adventure-text-serializer-gson", version.ref = "adventure" }
+adventure-text-serializer-legacy = { group = "net.kyori", name = "adventure-text-serializer-legacy", version.ref = "adventure" }
+minimessage = { group = "net.kyori", name = "adventure-text-minimessage", version.ref = "adventure" }
+snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyaml" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+paper = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
+velocity = { group = "com.velocitypowered", name = "velocity-api", version.ref = "velocity" }
+bungeecord = { group = "net.md-5", name = "bungeecord-api", version.ref = "bungeecord" }
+minecraft = { group = "com.mojang", name = "minecraft", version.ref = "minecraft" }
+fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabric-loader" }
+fabric-api = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabric-api" }
+fabric-permissions-api = { group = "me.lucko", name = "fabric-permissions-api", version.ref = "fabric-permissions-api" }
+adventure-platform-fabric = { group = "net.kyori", name = "adventure-platform-fabric", version.ref = "adventure-platform-fabric" }
 
-# Runtime only
-mysql = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql" }
-mariadb = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version.ref = "mariadb" }
-h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
-adventure-text-serializer-plain = { group = "net.kyori", name = "adventure-text-serializer-plain", version.ref = "adventure-text-serializer-plain" }
+cloud-core = { group = "org.incendo", name = "cloud-core", version.ref = "cloud-core" }
+cloud-paper = { group = "org.incendo", name = "cloud-paper", version.ref = "cloud-platform" }
+cloud-velocity = { group = "org.incendo", name = "cloud-velocity", version.ref = "cloud-platform" }
+cloud-bungee = { group = "org.incendo", name = "cloud-bungee", version.ref = "cloud-platform" }
+cloud-fabric = { group = "org.incendo", name = "cloud-fabric", version.ref = "cloud-fabric" }
+
+bstats-base = { group = "org.bstats", name = "bstats-base", version.ref = "bstats" }
+bstats-bungeecord = { group = "org.bstats", name = "bstats-bungeecord", version.ref = "bstats" }
+bstats-velocity = { group = "org.bstats", name = "bstats-velocity", version.ref = "bstats" }
+lettuce = { group = "io.lettuce", name = "lettuce-core", version.ref = "lettuce" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
+mysql-jdbc = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql-jdbc" }
+
+placeholderapi = { group = "me.clip", name = "placeholderapi", version.ref = "placeholderapi" }
+grim-api = { group = "ac.grim.grimac", name = "GrimAPI", version.ref = "grim-api" }
+
+jetbrains-annotations = { group = "org.jetbrains", name = "annotations", version.ref = "jetbrains-annotations" }
+lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+
+shadow-gradle-plugin = { group = "com.gradleup.shadow", name = "com.gradleup.shadow.gradle.plugin", version.ref = "shadow" }
+run-paper-gradle-plugin = { group = "xyz.jpenilla.run-paper", name = "xyz.jpenilla.run-paper.gradle.plugin", version.ref = "run-paper" }
+run-velocity-gradle-plugin = { group = "xyz.jpenilla.run-velocity", name = "xyz.jpenilla.run-velocity.gradle.plugin", version.ref = "run-paper" }
+
+[bundles]
+adventure = ["adventure-api"]
+adventure-serializers = ["adventure-text-serializer-gson", "adventure-text-serializer-legacy"]
+adventure-minimessage = ["minimessage"]
 
 [plugins]
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
+run-velocity = { id = "xyz.jpenilla.run-velocity", version.ref = "run-paper" }
+fabric-loom = { id = "net.fabricmc.fabric-loom", version.ref = "fabric-loom" }
+gradleup-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+foojay-resolver-convention = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "foojay-resolver" }

@@ -1,0 +1,83 @@
+#    ___________     __                   ________                       .___
+#    \__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+#      |    | /  _ \   __\/ __ \ /     \/   \  ___|  |  \__  \\_  __ \/ __ |
+#      |    |(  <_> )  | \  ___/|  Y Y  \    \_\  \  |  // __ \|  | \/ /_/ |
+#      |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
+#                             \/      \/        \/           \/           \/
+
+# The version of the discord file. DO NOT TOUCH!!!
+config_version: 1
+
+# Webhook Alert Settings
+alerts:
+  # Enable or disable alert webhooks.
+  enabled: false
+
+  # Webhook URL: The Discord webhook to post alerts to.
+  url: "https://discord.com/api/webhooks/your_webhook_url"
+
+  # Username shown on the webhook message.
+  username: "TotemGuard"
+
+  # Avatar shown on the webhook message.
+  # Must be a direct image URL (ending in .png / .jpg / .gif).
+  avatar: "https://media.discordapp.net/attachments/892046266341662833/1496616437232697405/image.png"
+
+  # Title of the embed.
+  title: "TotemGuard Alert"
+
+  # Color of the embed, in hex (e.g. "#FBAF00").
+  color: "#FBAF00"
+
+  # Include a timestamp on the embed.
+  timestamp: true
+
+  # Thumbnail URL shown on the embed. Placeholders are supported.
+  thumbnail: "https://crafthead.net/helm/%tg_player_uuid%"
+
+  # Footer of the embed. Leave blank to disable.
+  footer: "Server: %tg_server%"
+
+  # Fields shown on the embed. Placeholders are supported in both name and value.
+  # The first 25 fields are used (Discord's limit).
+  fields:
+    - name: "**Player**"
+      value: "`%tg_player%`"
+      inline: true
+    - name: "**Check**"
+      value: "%tg_check_name%"
+      inline: true
+    - name: "**Violations**"
+      value: "%tg_check_violations%"
+      inline: true
+    - name: "**Brand**"
+      value: "`%tg_player_brand%`"
+      inline: true
+    - name: "**Version**"
+      value: "%tg_player_version%"
+      inline: true
+    - name: "**Ping**"
+      value: "K: %tg_player_ping_k%ms | T: %tg_player_ping_t%ms"
+      inline: true
+    - name: "**Debug**"
+      value: "```%tg_check_debug%```"
+      inline: false
+
+# Webhook Punishment Settings
+punishments:
+  enabled: false
+  url: "https://discord.com/api/webhooks/your_webhook_url"
+  username: "TotemGuard"
+  avatar: "https://media.discordapp.net/attachments/892046266341662833/1496616437232697405/image.png"
+  title: "TotemGuard Punishment"
+  color: "#D4452C"
+  timestamp: true
+  thumbnail: "https://crafthead.net/helm/%tg_player_uuid%"
+  footer: "Server: %tg_server%"
+  fields:
+    - name: "**Player**"
+      value: "`%tg_player%`"
+      inline: true
+    - name: "**Check**"
+      value: "%tg_check_name%"
+      inline: true
