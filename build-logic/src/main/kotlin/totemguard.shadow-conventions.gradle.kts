@@ -29,17 +29,12 @@ tasks.withType<ShadowJar>().configureEach {
     relocate("com.google.errorprone.annotations", "com.deathmotion.totemguard.common.libs.errorprone.annotations")
     relocate("org.jspecify.annotations", "com.deathmotion.totemguard.common.libs.jspecify.annotations")
     relocate("org.bstats", "com.deathmotion.totemguard.common.libs.bstats")
-    relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
-    relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
 
     mergeServiceFiles()
 
     minimize {
         exclude(dependency("org.bstats:.*:.*"))
         exclude(dependency("com.mysql:.*"))
-        // Loader-host classes are picked up at runtime by ApiClassInjector (which
-        // scans the plugin jar for com/deathmotion/totemguard/host/ entries), so
-        // they must survive even though plugin code doesn't reference them all.
         exclude(project(":loader:host"))
     }
 

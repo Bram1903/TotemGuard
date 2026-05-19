@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.fabric.player.FabricPlatformPlayerFactory;
 import com.deathmotion.totemguard.fabric.scheduler.FabricScheduler;
 import com.deathmotion.totemguard.fabric.sender.FabricSenderFactory;
 import lombok.Getter;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
@@ -58,10 +59,25 @@ public class TGFabricPlatform extends TGPlatform {
         this.scheduler = new FabricScheduler();
         this.platformPlayerFactory = Lazy.of(FabricPlatformPlayerFactory::new);
         this.senderFactory = Lazy.of(FabricSenderFactory::new);
-        this.commandManager = Lazy.of(() -> new FabricServerCommandManager<>(
+        this.commandManager = Lazy.of(() -> FabricLifecycleHack.createBypassingStartedCheck(
                 ExecutionCoordinator.simpleCoordinator(),
-                senderFactory.get()
-        ));
+                senderFactory.get(),
+                getLogger()));
+    }
+
+    @Override
+    protected void afterCommandsRegistered() {
+        if (!isManagedByLoader()) return;
+        if (FabricServerHolder.server() != null) {
+            FabricLifecycleHack.publishCommandsToDispatcher(
+                    (FabricServerCommandManager<?>) commandManager.get(), getLogger());
+            return;
+        }
+        ServerLifecycleEvents.SERVER_STARTED.register(srv -> {
+            if (!isEnabled()) return;
+            FabricLifecycleHack.publishCommandsToDispatcher(
+                    (FabricServerCommandManager<?>) commandManager.get(), getLogger());
+        });
     }
 
     @Override

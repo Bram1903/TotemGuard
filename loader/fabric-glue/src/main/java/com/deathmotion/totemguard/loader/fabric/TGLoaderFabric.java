@@ -61,14 +61,9 @@ public final class TGLoaderFabric implements DedicatedServerModInitializer, Load
 
     @Override
     public void onInitializeServer() {
-        // Reroute JUL through SLF4J before anything logs, otherwise the JDK's default
-        // ConsoleHandler emits two-line records that look broken next to Fabric's
-        // single-line Log4j2 output.
         bridgeLoggingToFabric();
+        LoaderServerHolder.init();
 
-        // In dev (loom launches us from sourceSet classes, not a built jar) there is
-        // no integrity manifest to verify, so skip the check. Production runs the
-        // shadow jar where the manifest is present.
         boolean dev = FabricLoader.getInstance().isDevelopmentEnvironment();
         if (!dev) {
             if (!new JarIntegrityChecker(logger, "TotemGuard-Loader").verifyCurrentJar()) {
@@ -252,23 +247,25 @@ public final class TGLoaderFabric implements DedicatedServerModInitializer, Load
     }
 
     private void bridgeLoggingToFabric() {
-        org.slf4j.Logger slf4j = org.slf4j.LoggerFactory.getLogger("TotemGuard-Loader");
-        logger.setUseParentHandlers(false);
+        // Bridge the root JUL logger so the dynamically loaded plugin's per-class
+        // loggers route through SLF4J instead of JUL's default two-line stderr format.
+        Logger root = Logger.getLogger("");
+        root.setUseParentHandlers(false);
+        for (Handler h : root.getHandlers()) root.removeHandler(h);
+        root.addHandler(new Slf4jBridgeHandler());
+        root.setLevel(Level.ALL);
+        logger.setUseParentHandlers(true);
         for (Handler h : logger.getHandlers()) logger.removeHandler(h);
-        logger.addHandler(new Slf4jBridgeHandler(slf4j));
         logger.setLevel(Level.ALL);
     }
 
     private static final class Slf4jBridgeHandler extends Handler {
-        private final org.slf4j.Logger target;
-
-        Slf4jBridgeHandler(org.slf4j.Logger target) {
-            this.target = target;
-        }
-
         @Override
         public void publish(LogRecord r) {
             if (r == null) return;
+            String name = r.getLoggerName();
+            if (name == null || name.isEmpty()) name = "TotemGuard";
+            org.slf4j.Logger target = org.slf4j.LoggerFactory.getLogger(name);
             String msg = r.getMessage();
             Object[] params = r.getParameters();
             if (msg != null && params != null && params.length > 0) {

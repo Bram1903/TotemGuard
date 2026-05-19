@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
     java
     alias(libs.plugins.fabric.loom)
@@ -27,6 +30,11 @@ dependencies {
     implementation(project(":loader:host"))
     implementation(project(":loader:plugin"))
     implementation(project(":integrity"))
+
+    // Puts cloud on Knot in dev. Production JIJ is packed by loader/plugin shadowJar.
+    implementation(libs.cloud.fabric)
+    implementation(libs.adventure.platform.fabric)
+    implementation(libs.fabric.permissions.api)
 }
 
 java {
@@ -44,6 +52,22 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test>().configureEach {
     failOnNoDiscoveredTests = false
+}
+
+tasks.named("runServer").configure {
+    val fabricShadow = project(":platforms:fabric").tasks.named("shadowJar")
+    dependsOn(fabricShadow)
+    doFirst {
+        val localDir = layout.projectDirectory.dir("run/config/totemguard-loader/local").asFile.toPath()
+        Files.createDirectories(localDir)
+        Files.newDirectoryStream(localDir, "*.jar").use { entries ->
+            entries.forEach { Files.delete(it) }
+        }
+        val source = fabricShadow.get().outputs.files.singleFile.toPath()
+        val destination = localDir.resolve(source.fileName.toString())
+        Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING)
+        logger.lifecycle("Copied ${source.fileName} -> $destination for /tgloader LOCAL source.")
+    }
 }
 
 tasks.named<ProcessResources>("processResources").configure {

@@ -18,6 +18,9 @@ tasks {
         manifest {
             attributes["paperweight-mappings-namespace"] = "mojang"
         }
+
+        relocate("org.incendo.cloud", "com.deathmotion.totemguard.common.libs.cloud")
+        relocate("io.leangen.geantyref", "com.deathmotion.totemguard.common.libs.geantyref")
     }
 
     // 1.8.8 - 1.16.5 = Java 8

@@ -22,9 +22,13 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Method;
+
 public final class FabricServerHolder {
 
     private static volatile @Nullable MinecraftServer instance;
+    private static volatile @Nullable Method loaderHolderServerMethod;
+    private static volatile boolean loaderHolderResolved;
 
     static {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> instance = server);
@@ -34,14 +38,42 @@ public final class FabricServerHolder {
     private FabricServerHolder() {
     }
 
-    // Forces class initialization at a known point so the static block registers its
-    // lifecycle listeners before SERVER_STARTED fires. Without an explicit touch, the
-    // class would not load until something on the runtime hot path referenced it, which
-    // is after the event we want to observe.
     public static void init() {
     }
 
     public static @Nullable MinecraftServer server() {
-        return instance;
+        MinecraftServer own = instance;
+        if (own != null) return own;
+        return serverFromLoaderHolder();
+    }
+
+    private static @Nullable MinecraftServer serverFromLoaderHolder() {
+        Method method = loaderHolderServerMethod;
+        if (method == null) {
+            if (loaderHolderResolved) return null;
+            synchronized (FabricServerHolder.class) {
+                if (loaderHolderResolved) {
+                    method = loaderHolderServerMethod;
+                } else {
+                    try {
+                        Class<?> holder = Class.forName(
+                                "com.deathmotion.totemguard.loader.fabric.LoaderServerHolder",
+                                true,
+                                FabricServerHolder.class.getClassLoader());
+                        method = holder.getMethod("server");
+                        loaderHolderServerMethod = method;
+                    } catch (Throwable ignored) {
+                        // Standalone: no loader holder on the classpath.
+                    }
+                    loaderHolderResolved = true;
+                }
+            }
+        }
+        if (method == null) return null;
+        try {
+            return (MinecraftServer) method.invoke(null);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 }

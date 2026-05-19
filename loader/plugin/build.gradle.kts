@@ -21,6 +21,12 @@ tasks.named<Jar>("jar") {
     }
 }
 
+val fabricJij: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+
 dependencies {
     implementation(project(":integrity"))
 
@@ -32,6 +38,12 @@ dependencies {
 
     compileOnly(libs.paper)
     compileOnly(libs.fabric.loader)
+
+    // JIJ'd into the loader jar so Fabric extracts them as standalone mods, putting
+    // their classes on Knot for the dynamically loaded plugin to resolve.
+    fabricJij(libs.cloud.fabric)
+    fabricJij(libs.adventure.platform.fabric)
+    fabricJij(libs.fabric.permissions.api)
 }
 
 tasks.named<ShadowJar>("shadowJar") {
@@ -40,6 +52,10 @@ tasks.named<ShadowJar>("shadowJar") {
         val glueJar = project(":loader:fabric-glue").tasks.named<Jar>("jar").get().archiveFile.get().asFile
         zipTree(glueJar)
     })
+
+    from(fabricJij) {
+        into("META-INF/jars")
+    }
 }
 
 tasks.register<CompileNativeTask>("compileNative") {
