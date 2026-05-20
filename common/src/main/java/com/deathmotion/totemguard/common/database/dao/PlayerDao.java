@@ -51,30 +51,56 @@ public final class PlayerDao {
 
     @Blocking
     public int upsertAndResolveId(UUID uuid, String name, long nowEpochMs) throws SQLException {
-        Integer cached = idCache.get(uuid);
         int nowSeconds = EpochSeconds.fromMillis(nowEpochMs);
+        byte[] uuidBytes = UuidBytes.toBytes(uuid);
+        Integer cached = idCache.get(uuid);
+
         try (Connection c = connection.borrow()) {
+            if (cached != null) {
+                updatePresence(c, cached, name, nowSeconds);
+                return cached;
+            }
+
+            Integer existing = selectIdByUuid(c, uuidBytes);
+            if (existing != null) {
+                idCache.put(uuid, existing);
+                updatePresence(c, existing, name, nowSeconds);
+                return existing;
+            }
+
             try (PreparedStatement upsert = c.prepareStatement(Sql.UPSERT_PLAYER)) {
-                upsert.setBytes(1, UuidBytes.toBytes(uuid));
+                upsert.setBytes(1, uuidBytes);
                 upsert.setString(2, name);
                 upsert.setInt(3, nowSeconds);
                 upsert.setInt(4, nowSeconds);
                 upsert.executeUpdate();
             }
-            if (cached != null) return cached;
 
-            try (PreparedStatement select = c.prepareStatement("SELECT id FROM tg_players WHERE uuid = ?")) {
-                select.setBytes(1, UuidBytes.toBytes(uuid));
-                try (ResultSet rs = select.executeQuery()) {
-                    if (rs.next()) {
-                        int id = rs.getInt(1);
-                        idCache.put(uuid, id);
-                        return id;
-                    }
-                }
+            Integer inserted = selectIdByUuid(c, uuidBytes);
+            if (inserted != null) {
+                idCache.put(uuid, inserted);
+                return inserted;
             }
         }
         throw new SQLException("Failed to resolve tg_players.id for " + uuid);
+    }
+
+    private void updatePresence(Connection c, int id, String name, int nowSeconds) throws SQLException {
+        try (PreparedStatement stmt = c.prepareStatement(Sql.UPDATE_PLAYER_PRESENCE)) {
+            stmt.setString(1, name);
+            stmt.setInt(2, nowSeconds);
+            stmt.setInt(3, id);
+            stmt.executeUpdate();
+        }
+    }
+
+    private Integer selectIdByUuid(Connection c, byte[] uuidBytes) throws SQLException {
+        try (PreparedStatement select = c.prepareStatement("SELECT id FROM tg_players WHERE uuid = ?")) {
+            select.setBytes(1, uuidBytes);
+            try (ResultSet rs = select.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : null;
+            }
+        }
     }
 
     @Blocking

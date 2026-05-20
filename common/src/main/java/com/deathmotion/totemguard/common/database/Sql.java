@@ -48,6 +48,8 @@ public final class Sql {
             "INSERT INTO tg_players (uuid, last_name, first_seen, last_seen) " +
                     "VALUES (?, ?, ?, ?) " +
                     "ON DUPLICATE KEY UPDATE last_name = VALUES(last_name), last_seen = VALUES(last_seen)";
+    public static final String UPDATE_PLAYER_PRESENCE =
+            "UPDATE tg_players SET last_name = ?, last_seen = ? WHERE id = ?";
     public static final String SELECT_PLAYER_BY_NAME =
             "SELECT id, uuid, last_name, first_seen, last_seen FROM tg_players " +
                     "WHERE last_name_lower = LOWER(?) " +
