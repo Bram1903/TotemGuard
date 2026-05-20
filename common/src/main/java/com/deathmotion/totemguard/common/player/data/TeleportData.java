@@ -30,6 +30,7 @@ public class TeleportData {
     private final Set<Integer> pendingTeleportIds = new LinkedHashSet<>();
 
     private boolean lastPacketWasTeleport;
+    private boolean lastTickHadTeleport;
     private boolean lastTeleportConfirmValid;
     private boolean lastTeleportConfirmSkipped;
 
@@ -74,6 +75,7 @@ public class TeleportData {
         pendingTeleportIds.remove(teleportId);
 
         lastPacketWasTeleport = true;
+        lastTickHadTeleport = true;
         return new TeleportConfirmResult(true, teleportId, List.copyOf(skippedTeleportIds));
     }
 
@@ -91,6 +93,14 @@ public class TeleportData {
 
     public void clearLastPacketWasTeleport() {
         lastPacketWasTeleport = false;
+    }
+
+    public boolean lastTickHadTeleport() {
+        return lastTickHadTeleport;
+    }
+
+    public void clearLastTickHadTeleport() {
+        lastTickHadTeleport = false;
     }
 
     public record TeleportConfirmResult(boolean valid, int teleportId, List<Integer> skippedTeleportIds) {

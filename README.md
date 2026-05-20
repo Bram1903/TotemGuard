@@ -68,7 +68,7 @@ For per-check tuning, thresholds, and bypass details, see the [wiki](https://git
 
 ### Protocol
 
-- **ProtocolA** - Slot change after a block place in the same tick.
+- **ProtocolA** - Slot change after action in the same tick.
 - **ProtocolB** - Invalid slot change.
 - **ProtocolC** - Attack and place in the same tick.
 - **ProtocolD** - Multiple entities attacked in the same tick.

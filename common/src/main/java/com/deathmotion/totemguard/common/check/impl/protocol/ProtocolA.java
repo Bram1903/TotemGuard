@@ -27,29 +27,57 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.DiggingAction;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 
 @RequiresTickEnd
-@CheckData(description = "Slot change after block place in same tick", type = CheckType.PROTOCOL)
+@CheckData(description = "Slot change after action in same tick", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
-    private boolean blockPlaced;
+    private String lastFlushingAction;
 
     public ProtocolA(TGPlayer player) {
         super(player);
+    }
+
+    private static String flushingActionName(PacketTypeCommon type, PacketReceiveEvent event) {
+        if (type == PacketType.Play.Client.ATTACK) return "attack";
+        if (type == PacketType.Play.Client.INTERACT_ENTITY) {
+            return new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK
+                    ? "attack"
+                    : "interact";
+        }
+        if (type == PacketType.Play.Client.USE_ITEM) return "use_item";
+        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
+        if (type == PacketType.Play.Client.PLAYER_DIGGING) {
+            DiggingAction action = new WrapperPlayClientPlayerDigging(event).getAction();
+            if (action == DiggingAction.RELEASE_USE_ITEM) return "release_use_item";
+            if (action == DiggingAction.STAB) return "stab";
+            if (action == DiggingAction.FINISHED_DIGGING) return "finished_digging";
+        }
+        return null;
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon type = event.getPacketType();
 
-        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            blockPlaced = true;
-        } else if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            if (blockPlaced) {
-                fail();
+        if (type == PacketType.Play.Client.CLIENT_TICK_END) {
+            lastFlushingAction = null;
+            return;
+        }
+
+        if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
+            if (lastFlushingAction != null && !player.getData().getTeleportData().lastTickHadTeleport()) {
+                fail(lastFlushingAction);
             }
-        } else if (type == PacketType.Play.Client.CLIENT_TICK_END) {
-            blockPlaced = false;
+            return;
+        }
+
+        String action = flushingActionName(type, event);
+        if (action != null) {
+            lastFlushingAction = action;
         }
     }
 }

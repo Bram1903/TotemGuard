@@ -53,6 +53,8 @@ public class InboundTeleportProcessor extends ProcessorInbound {
     public void handleInboundPost(PacketReceiveEvent event) {
         if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
             data.getTeleportData().clearLastPacketWasTeleport();
+        } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
+            data.getTeleportData().clearLastTickHadTeleport();
         }
     }
 }
