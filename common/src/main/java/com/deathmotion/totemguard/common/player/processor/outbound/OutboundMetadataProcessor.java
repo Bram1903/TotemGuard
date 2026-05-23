@@ -22,11 +22,14 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.config.schema.EntitySpoofingOptions;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.WorldEntityData;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 
@@ -42,14 +45,18 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     };
     private static final boolean COMPETING_PLUGIN_ACTIVE = detectCompetingPlugin();
 
+    private final Data data;
     private final WorldEntityData worldEntityData;
+    private final PacketLatencyHandler latencyHandler;
     private final ConfigRepositoryImpl configRepository;
     private final int healthIndex;
     private final int absorptionIndex;
 
     public OutboundMetadataProcessor(TGPlayer player) {
         super(player);
+        this.data = player.getData();
         this.worldEntityData = player.getData().getWorldEntityData();
+        this.latencyHandler = player.getLatencyHandler();
         this.configRepository = TGPlatform.getInstance().getConfigRepository();
         this.healthIndex = MetadataIndex.health(player.getClientVersion());
         this.absorptionIndex = MetadataIndex.absorption(player.getClientVersion());
@@ -72,14 +79,19 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
         if (event.getPacketType() != PacketType.Play.Server.ENTITY_METADATA) return;
+
+        WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(event);
+        int entityId = packet.getEntityId();
+
+        if (entityId == player.getUser().getEntityId()) {
+            trackOwnPose(event, packet);
+            return;
+        }
+
         if (COMPETING_PLUGIN_ACTIVE) return;
 
         EntitySpoofingOptions options = configRepository.configView().entitySpoofing();
         if (!options.health() && !options.absorption()) return;
-
-        WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(event);
-        int entityId = packet.getEntityId();
-        if (entityId == player.getUser().getEntityId()) return;
         if (!worldEntityData.isPlayer(entityId)) return;
 
         boolean modified = false;
@@ -93,6 +105,21 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         }
 
         if (modified) event.markForReEncode(true);
+    }
+
+    private void trackOwnPose(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {
+        EntityPose pose = null;
+        for (EntityData<?> meta : packet.getEntityMetadata()) {
+            Object value = meta.getValue();
+            if (value instanceof EntityPose entityPose) {
+                pose = entityPose;
+                break;
+            }
+        }
+        if (pose == null) return;
+
+        EntityPose appliedPose = pose;
+        latencyHandler.compensate(event, () -> data.setPose(appliedPose));
     }
 
     @SuppressWarnings("unchecked")

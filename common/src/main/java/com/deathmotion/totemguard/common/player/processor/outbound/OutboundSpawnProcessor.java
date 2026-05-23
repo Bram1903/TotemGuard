@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -76,6 +77,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.setGameMode(packet.getGameMode());
                 data.setOpenInventory(false, Issuer.SERVER);
                 data.setSprinting(false);
+                data.setPose(EntityPose.STANDING);
                 recipeTracker.reset();
                 inputData.reset();
                 data.getMovementData().reset();
