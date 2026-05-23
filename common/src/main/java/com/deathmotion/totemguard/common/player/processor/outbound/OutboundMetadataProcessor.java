@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.common.config.schema.EntitySpoofingOptions;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.WorldEntityData;
-import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -47,7 +46,6 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
 
     private final Data data;
     private final WorldEntityData worldEntityData;
-    private final PacketLatencyHandler latencyHandler;
     private final ConfigRepositoryImpl configRepository;
     private final int healthIndex;
     private final int absorptionIndex;
@@ -56,7 +54,6 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         super(player);
         this.data = player.getData();
         this.worldEntityData = player.getData().getWorldEntityData();
-        this.latencyHandler = player.getLatencyHandler();
         this.configRepository = TGPlatform.getInstance().getConfigRepository();
         this.healthIndex = MetadataIndex.health(player.getClientVersion());
         this.absorptionIndex = MetadataIndex.absorption(player.getClientVersion());
@@ -84,7 +81,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         int entityId = packet.getEntityId();
 
         if (entityId == player.getUser().getEntityId()) {
-            trackOwnPose(event, packet);
+            trackOwnPose(packet);
             return;
         }
 
@@ -107,19 +104,18 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         if (modified) event.markForReEncode(true);
     }
 
-    private void trackOwnPose(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {
-        EntityPose pose = null;
+    private void trackOwnPose(WrapperPlayServerEntityMetadata packet) {
+        // Applied without latency compensation. Pose is server-derived from inbound state
+        // (sprint, sneak, position, water), so the client is already in the new pose locally
+        // by the time this outbound metadata is sent. Compensating would delay our view by
+        // another RTT and let checks fire on the stale pose right after a swim transition.
         for (EntityData<?> meta : packet.getEntityMetadata()) {
             Object value = meta.getValue();
             if (value instanceof EntityPose entityPose) {
-                pose = entityPose;
-                break;
+                data.setPose(entityPose);
+                return;
             }
         }
-        if (pose == null) return;
-
-        EntityPose appliedPose = pose;
-        latencyHandler.compensate(event, () -> data.setPose(appliedPose));
     }
 
     @SuppressWarnings("unchecked")

@@ -45,7 +45,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
         if (data.isServerOpenedInventoryThisTick()) return;
 
         // Pose.SWIMMING (real swim or 1-block crawl) keeps the sprint flag set vanilla-side
-        // until shouldStopSwimSprinting fires, so a click during that window is not a violation.
+        // until shouldStopSwimSprinting fires.
         boolean sprinting = data.isSprinting() && data.getPose() != EntityPose.SWIMMING;
 
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {

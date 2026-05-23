@@ -102,7 +102,11 @@ public final class PlayerRepositoryImpl implements UserRepository {
         }
     }
 
-    public void onLogin(final @NotNull User user) {
+    public void onLogin(final @Nullable User user) {
+        // Some fake-player plugins (e.g. Asteroid) fire UserLoginEvent with a null user
+        // This is normally not possible, but not much I can do about it, so just ignore these events
+        if (user == null) return;
+
         final UUID uuid = user.getUUID();
         if (uuid == null) {
             removeUser(user);
