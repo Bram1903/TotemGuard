@@ -27,13 +27,16 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPl
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerRotation;
 import lombok.Getter;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 public class MovementData {
 
     private final Set<Integer> pendingTeleports = new LinkedHashSet<>();
+    // One entry per outbound PlayerRotation (no teleport ID to bind to), drained as
+    // matching client echoes arrive. Unbounded because the transaction watchdog kicks
+    // unresponsive clients within 30s, so the queue can't grow without bound in practice.
+    private final Deque<ExpectedRotation> pendingServerRotationSyncs = new ArrayDeque<>();
     private Location current = emptyLocation();
     private Location previous = emptyLocation();
     private boolean lastFlyingPositionChanged;
@@ -43,9 +46,6 @@ public class MovementData {
     private boolean onGround;
     private boolean horizontalCollision;
     private boolean pendingTeleportResync;
-    private boolean pendingServerRotationSync;
-    private float pendingServerYaw;
-    private float pendingServerPitch;
     private boolean cameraIsSelf = true;
     private boolean pendingCameraResync;
 
@@ -103,7 +103,8 @@ public class MovementData {
         current = resolveTeleportLocation(packet, previous);
         lastServerPositionChanged = hasPositionChanged(previous, current);
         lastServerRotationChanged = hasRotationChanged(previous, current);
-        queueServerRotationSync();
+        // Don't queue. The teleport ID round-trip (pendingTeleportResync, set on
+        // TELEPORT_CONFIRM) is the precise binding for the echo of this packet.
     }
 
     public void handleServerSync(WrapperPlayServerPlayerRotation packet) {
@@ -119,6 +120,8 @@ public class MovementData {
         current = new Location(new Vector3d(previous.getX(), previous.getY(), previous.getZ()), yaw, pitch);
         lastServerPositionChanged = false;
         lastServerRotationChanged = hasRotationChanged(previous, current);
+        // Queue the expected echo. PlayerRotation packets carry no teleport ID, so we have
+        // no round-trip to bind the response to. Match by FIFO of (yaw, pitch) instead.
         queueServerRotationSync();
     }
 
@@ -142,9 +145,7 @@ public class MovementData {
         onGround = false;
         horizontalCollision = false;
         pendingTeleportResync = false;
-        pendingServerRotationSync = false;
-        pendingServerYaw = 0.0F;
-        pendingServerPitch = 0.0F;
+        pendingServerRotationSyncs.clear();
         cameraIsSelf = true;
         pendingCameraResync = false;
         pendingTeleports.clear();
@@ -192,25 +193,32 @@ public class MovementData {
     }
 
     private boolean isServerRotationResync(WrapperPlayClientPlayerFlying packet, float yaw, float pitch) {
-        if (!packet.hasRotationChanged()) {
+        if (!packet.hasRotationChanged() || pendingServerRotationSyncs.isEmpty()) {
             return false;
         }
 
-        boolean matches = pendingServerRotationSync
-                && Float.compare(yaw, pendingServerYaw) == 0
-                && Float.compare(pitch, pendingServerPitch) == 0;
-
-        pendingServerRotationSync = false;
-        return matches;
+        Iterator<ExpectedRotation> it = pendingServerRotationSyncs.iterator();
+        int skipBeforeMatch = 0;
+        while (it.hasNext()) {
+            ExpectedRotation entry = it.next();
+            if (Float.compare(yaw, entry.yaw()) == 0 && Float.compare(pitch, entry.pitch()) == 0) {
+                for (int i = 0; i <= skipBeforeMatch; i++) {
+                    pendingServerRotationSyncs.pollFirst();
+                }
+                return true;
+            }
+            skipBeforeMatch++;
+        }
+        return false;
     }
 
     private void queueServerRotationSync() {
         if (!lastServerRotationChanged) {
             return;
         }
+        pendingServerRotationSyncs.addLast(new ExpectedRotation(current.getYaw(), current.getPitch()));
+    }
 
-        pendingServerRotationSync = true;
-        pendingServerYaw = current.getYaw();
-        pendingServerPitch = current.getPitch();
+    private record ExpectedRotation(float yaw, float pitch) {
     }
 }

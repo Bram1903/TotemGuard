@@ -69,6 +69,10 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
 
+            if ((packet.getKeptData() & WrapperPlayServerRespawn.KEEP_ENTITY_DATA) == 0) {
+                data.setPose(EntityPose.STANDING);
+            }
+
             latencyHandler.compensate(event, timestamp -> {
                 if (player.getClientVersion().isOlderThan(ClientVersion.V_1_16) || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
                     data.setSneaking(false);
@@ -77,7 +81,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.setGameMode(packet.getGameMode());
                 data.setOpenInventory(false, Issuer.SERVER);
                 data.setSprinting(false);
-                data.setPose(EntityPose.STANDING);
+                data.setVehicleId(-1);
                 recipeTracker.reset();
                 inputData.reset();
                 data.getMovementData().reset();

@@ -44,6 +44,7 @@ public class Data {
     private boolean canFly;
     private boolean isFlying;
     private EntityPose pose = EntityPose.STANDING;
+    private int vehicleId = -1;
 
     @Setter(AccessLevel.NONE)
     private boolean openInventory;
@@ -99,6 +100,10 @@ public class Data {
     public long getInventoryOpenDurationMs() {
         if (!openInventory || inventoryOpenedAt == 0L) return 0L;
         return System.currentTimeMillis() - inventoryOpenedAt;
+    }
+
+    public boolean isInVehicle() {
+        return vehicleId != -1;
     }
 
     public void setVerifiedOpenInventory() {

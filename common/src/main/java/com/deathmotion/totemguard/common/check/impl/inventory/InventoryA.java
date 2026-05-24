@@ -91,6 +91,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         final PacketTypeCommon type = event.getPacketType();
 
         if (WrapperPlayClientPlayerFlying.isFlying(type)) {
+            if (data.isInVehicle()) return;
             if (data.getMovementData().isLastFlyingRotationChanged() && data.getGameMode() != GameMode.SPECTATOR) {
                 failInventory("aim");
             }

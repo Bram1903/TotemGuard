@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.TeleportData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -60,9 +61,10 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
         }
 
         if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            if (lastFlushingAction != null && !player.getData().getTeleportData().lastTickHadTeleport()) {
-                fail(lastFlushingAction);
-            }
+            if (lastFlushingAction == null) return;
+            TeleportData teleportData = player.getData().getTeleportData();
+            if (teleportData.lastTickHadTeleport() || teleportData.hasPendingTeleport()) return;
+            fail(lastFlushingAction);
             return;
         }
 

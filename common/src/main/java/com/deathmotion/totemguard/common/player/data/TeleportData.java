@@ -99,6 +99,10 @@ public class TeleportData {
         return lastTickHadTeleport;
     }
 
+    public boolean hasPendingTeleport() {
+        return !pendingTeleportIds.isEmpty();
+    }
+
     public void clearLastTickHadTeleport() {
         lastTickHadTeleport = false;
     }
