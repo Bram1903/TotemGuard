@@ -30,7 +30,7 @@ import java.util.Set;
 @Getter
 public class CheckOptions {
 
-    private static final Set<String> MITIGATION_CAPABLE = Set.of("InventoryA", "InventoryB", "InventoryC");
+    private static final Set<String> MITIGATION_CAPABLE = Set.of("InventoryA", "InventoryB", "InventoryD");
 
     private final String checkName;
     private final boolean enabled;

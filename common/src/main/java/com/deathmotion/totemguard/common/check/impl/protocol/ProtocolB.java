@@ -24,8 +24,10 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHeldItemChange;
 
 @CheckData(description = "Invalid slot change", type = CheckType.PROTOCOL)
 public class ProtocolB extends CheckImpl implements PacketCheck {
@@ -50,5 +52,13 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
         }
 
         lastSlot = slot;
+    }
+
+    @Override
+    public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() != PacketType.Play.Server.HELD_ITEM_CHANGE) return;
+        final int slot = new WrapperPlayServerHeldItemChange(event).getSlot();
+        if (slot < 0 || slot > 8) return;
+        player.getLatencyHandler().compensate(event, () -> lastSlot = -1);
     }
 }

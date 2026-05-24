@@ -21,45 +21,45 @@ package com.deathmotion.totemguard.common.check.impl.inventory;
 import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
+import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.InputData;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
 
-@CheckData(description = "Moving during inventory interaction", type = CheckType.INVENTORY)
-public class InventoryB extends CheckImpl implements PacketCheck {
+@RequiresTickEnd
+@CheckData(description = "Inventory interaction without open inventory", type = CheckType.INVENTORY)
+public class InventoryD extends CheckImpl implements PacketCheck {
 
-    private final InputData inputData;
+    private final InventoryRecipeTracker recipeTracker;
 
-    public InventoryB(TGPlayer player) {
+    public InventoryD(TGPlayer player) {
         super(player);
-        this.inputData = player.getData().getInputData();
+        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        final PacketTypeCommon packetType = event.getPacketType();
-        if (data.isServerOpenedInventoryThisTick()) return;
-        if (data.isInVehicle()) return;
+        if (!recipeTracker.isAwaitingVisualConfirmation()) return;
 
-        boolean sprinting = data.isSprinting() && !data.isSwimming();
-
-        if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
-            if (sprinting) {
-                failInventory("click (sprinting)");
-            } else if (inputData.hasMovement(true)) {
-                failInventory("click (move)");
+        if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
+            WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
+                return;
             }
-        } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
-            if (data.isInventoryMitigatedThisTick()) return;
 
-            if (sprinting) {
-                fail("close (sprinting)");
-            } else if (inputData.hasMovement(true)) {
-                fail("close (move)");
+            failInventory("click");
+        } else if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
+            WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
+            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
+                return;
             }
+
+            fail("close");
         }
     }
 }

@@ -25,41 +25,49 @@ import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
 
 @RequiresTickEnd
-@CheckData(description = "Inventory interaction without open inventory", type = CheckType.INVENTORY)
+@CheckData(description = "Impossible inventory packet sequence", type = CheckType.INVENTORY)
 public class InventoryC extends CheckImpl implements PacketCheck {
 
-    private final InventoryRecipeTracker recipeTracker;
+    private int closesInTick;
 
     public InventoryC(TGPlayer player) {
         super(player);
-        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!recipeTracker.isAwaitingVisualConfirmation()) return;
+        final PacketTypeCommon type = event.getPacketType();
 
-        if (event.getPacketType() == PacketType.Play.Client.CLICK_WINDOW) {
-            WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
-                return;
+        if (type == PacketType.Play.Client.CLIENT_TICK_END) {
+            closesInTick = 0;
+            return;
+        }
+
+        if (data.isInventoryMitigatedThisTick()) return;
+
+        if (type == PacketType.Play.Client.CLICK_WINDOW) {
+            int windowId = new WrapperPlayClientClickWindow(event).getWindowId();
+            if (windowId != InventoryConstants.PLAYER_WINDOW_ID) return;
+            if (closesInTick > 0) {
+                fail("click after close (closes={0})", closesInTick);
             }
+            return;
+        }
 
-            failInventory("click");
-        } else if (event.getPacketType() == PacketType.Play.Client.CLOSE_WINDOW) {
-            WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
-            if (packet.getWindowId() != InventoryConstants.PLAYER_WINDOW_ID) {
-                return;
+        if (type == PacketType.Play.Client.CLOSE_WINDOW) {
+            int windowId = new WrapperPlayClientCloseWindow(event).getWindowId();
+            if (windowId != InventoryConstants.PLAYER_WINDOW_ID) return;
+            closesInTick++;
+            if (closesInTick >= 2) {
+                fail("multiple closes (closes={0})", closesInTick);
             }
-
-            fail("close");
         }
     }
 }
