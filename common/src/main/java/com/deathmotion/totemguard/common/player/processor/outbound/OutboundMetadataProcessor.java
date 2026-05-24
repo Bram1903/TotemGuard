@@ -28,7 +28,6 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
-import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 
@@ -81,7 +80,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         int entityId = packet.getEntityId();
 
         if (entityId == player.getUser().getEntityId()) {
-            trackOwnPose(packet);
+            trackOwnMetadata(packet);
             return;
         }
 
@@ -104,15 +103,15 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         if (modified) event.markForReEncode(true);
     }
 
-    private void trackOwnPose(WrapperPlayServerEntityMetadata packet) {
-        // Applied without latency compensation. Pose is server-derived from inbound state
-        // (sprint, sneak, position, water), so the client is already in the new pose locally
-        // by the time this outbound metadata is sent. Compensating would delay our view by
-        // another RTT and let checks fire on the stale pose right after a swim transition.
+    private void trackOwnMetadata(WrapperPlayServerEntityMetadata packet) {
+        // Applied without latency compensation. Server-derived from inbound state (sprint
+        // and water), so the client is already in the new state locally by the time this
+        // outbound metadata is sent. Compensating would delay our view by another RTT.
         for (EntityData<?> meta : packet.getEntityMetadata()) {
+            if (meta.getIndex() != 0) continue;
             Object value = meta.getValue();
-            if (value instanceof EntityPose entityPose) {
-                data.setPose(entityPose);
+            if (value instanceof Byte sharedFlags) {
+                data.setSwimming((sharedFlags & 0x10) != 0);
                 return;
             }
         }

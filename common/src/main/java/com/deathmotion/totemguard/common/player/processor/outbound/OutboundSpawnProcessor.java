@@ -26,7 +26,6 @@ import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -68,10 +67,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
             }
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
-
-            if ((packet.getKeptData() & WrapperPlayServerRespawn.KEEP_ENTITY_DATA) == 0) {
-                data.setPose(EntityPose.STANDING);
-            }
+            boolean resetSwimming = (packet.getKeptData() & WrapperPlayServerRespawn.KEEP_ENTITY_DATA) == 0;
 
             latencyHandler.compensate(event, timestamp -> {
                 if (player.getClientVersion().isOlderThan(ClientVersion.V_1_16) || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
@@ -82,6 +78,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.setOpenInventory(false, Issuer.SERVER);
                 data.setSprinting(false);
                 data.setVehicleId(-1);
+                if (resetSwimming) data.setSwimming(false);
                 recipeTracker.reset();
                 inputData.reset();
                 data.getMovementData().reset();

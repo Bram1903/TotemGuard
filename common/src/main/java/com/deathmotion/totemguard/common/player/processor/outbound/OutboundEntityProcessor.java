@@ -83,6 +83,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
                 serverVehicleId = -1;
                 latencyHandler.compensate(event, () -> {
                     if (data.getVehicleId() == entityId) data.setVehicleId(-1);
+                    data.getMovementData().markVehicleSwitchResync();
                 });
                 return;
             }
@@ -112,6 +113,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             serverVehicleId = -1;
             latencyHandler.compensate(event, () -> {
                 if (data.getVehicleId() == vehicleId) data.setVehicleId(-1);
+                data.getMovementData().markVehicleSwitchResync();
             });
         }
     }

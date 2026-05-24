@@ -25,7 +25,6 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 
@@ -44,9 +43,7 @@ public class InventoryB extends CheckImpl implements PacketCheck {
         final PacketTypeCommon packetType = event.getPacketType();
         if (data.isServerOpenedInventoryThisTick()) return;
 
-        // Pose.SWIMMING (real swim or 1-block crawl) keeps the sprint flag set vanilla-side
-        // until shouldStopSwimSprinting fires.
-        boolean sprinting = data.isSprinting() && data.getPose() != EntityPose.SWIMMING;
+        boolean sprinting = data.isSprinting() && !data.isSwimming();
 
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             if (sprinting) {

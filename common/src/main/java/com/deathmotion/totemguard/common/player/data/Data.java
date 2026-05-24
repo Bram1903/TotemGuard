@@ -21,7 +21,6 @@ package com.deathmotion.totemguard.common.player.data;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
-import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -43,7 +42,7 @@ public class Data {
     private boolean sneaking;
     private boolean canFly;
     private boolean isFlying;
-    private EntityPose pose = EntityPose.STANDING;
+    private boolean swimming;
     private int vehicleId = -1;
 
     @Setter(AccessLevel.NONE)

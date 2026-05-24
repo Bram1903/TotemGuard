@@ -33,9 +33,6 @@ import java.util.*;
 public class MovementData {
 
     private final Set<Integer> pendingTeleports = new LinkedHashSet<>();
-    // One entry per outbound PlayerRotation (no teleport ID to bind to), drained as
-    // matching client echoes arrive. Unbounded because the transaction watchdog kicks
-    // unresponsive clients within 30s, so the queue can't grow without bound in practice.
     private final Deque<ExpectedRotation> pendingServerRotationSyncs = new ArrayDeque<>();
     private Location current = emptyLocation();
     private Location previous = emptyLocation();
@@ -48,6 +45,7 @@ public class MovementData {
     private boolean pendingTeleportResync;
     private boolean cameraIsSelf = true;
     private boolean pendingCameraResync;
+    private boolean pendingVehicleSwitchResync;
 
     public void handleFlying(WrapperPlayClientPlayerFlying packet) {
         previous = copy(current);
@@ -64,12 +62,14 @@ public class MovementData {
         boolean serverRotationResync = isServerRotationResync(packet, yaw, pitch);
         boolean cameraResync = !cameraIsSelf || pendingCameraResync;
         pendingCameraResync = false;
+        boolean vehicleSwitchResync = pendingVehicleSwitchResync;
+        pendingVehicleSwitchResync = false;
         current = new Location(new Vector3d(x, y, z), yaw, pitch);
 
         boolean positionDifferent = hasPositionChanged(previous, current);
         boolean rotationDifferent = hasRotationChanged(previous, current);
 
-        if (teleportResync || serverRotationResync || cameraResync) {
+        if (teleportResync || serverRotationResync || cameraResync || vehicleSwitchResync) {
             lastFlyingPositionChanged = false;
             lastFlyingRotationChanged = false;
         } else {
@@ -83,6 +83,10 @@ public class MovementData {
 
     public void trackTeleport(int teleportId) {
         pendingTeleports.add(teleportId);
+    }
+
+    public void markVehicleSwitchResync() {
+        pendingVehicleSwitchResync = true;
     }
 
     public void handleTeleportConfirm(TeleportData.TeleportConfirmResult confirmResult) {
@@ -103,8 +107,6 @@ public class MovementData {
         current = resolveTeleportLocation(packet, previous);
         lastServerPositionChanged = hasPositionChanged(previous, current);
         lastServerRotationChanged = hasRotationChanged(previous, current);
-        // Don't queue. The teleport ID round-trip (pendingTeleportResync, set on
-        // TELEPORT_CONFIRM) is the precise binding for the echo of this packet.
     }
 
     public void handleServerSync(WrapperPlayServerPlayerRotation packet) {
@@ -120,8 +122,6 @@ public class MovementData {
         current = new Location(new Vector3d(previous.getX(), previous.getY(), previous.getZ()), yaw, pitch);
         lastServerPositionChanged = false;
         lastServerRotationChanged = hasRotationChanged(previous, current);
-        // Queue the expected echo. PlayerRotation packets carry no teleport ID, so we have
-        // no round-trip to bind the response to. Match by FIFO of (yaw, pitch) instead.
         queueServerRotationSync();
     }
 
@@ -148,6 +148,7 @@ public class MovementData {
         pendingServerRotationSyncs.clear();
         cameraIsSelf = true;
         pendingCameraResync = false;
+        pendingVehicleSwitchResync = false;
         pendingTeleports.clear();
     }
 
