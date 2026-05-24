@@ -30,13 +30,15 @@ import lombok.Setter;
 @Setter
 public class Data {
 
+
+    private static final int NETHER_PORTAL_ABSENT_TICKS_TO_CLEAR = 3;
+
     private final TGPlayer player;
     private final TGPlatform platform;
     private final TeleportData teleportData;
     private final InputData inputData;
     private final MovementData movementData;
     private final WorldEntityData worldEntityData;
-
     private GameMode gameMode;
     private boolean sprinting;
     private boolean sneaking;
@@ -44,23 +46,25 @@ public class Data {
     private boolean isFlying;
     private boolean swimming;
     private int vehicleId = -1;
-
     @Setter(AccessLevel.NONE)
     private boolean openInventory;
     @Setter(AccessLevel.NONE)
     private Issuer lastInventoryIssuer = Issuer.CLIENT;
-
     private boolean verifiedOpenInventory;
     private boolean pendingOpenInventory;
     private long inventoryOpenedAt;
-
     private boolean serverOpenedInventoryThisTick;
     private boolean clientOpenedInventoryThisTick;
-
     private boolean inventoryMitigated;
     private boolean inventoryMitigatedThisTick;
-
     private volatile boolean sendingBundlePacket;
+
+    @Setter(AccessLevel.NONE)
+    private volatile boolean inNetherPortal;
+    @Setter(AccessLevel.NONE)
+    private volatile boolean netherPortalContactThisTick;
+    @Setter(AccessLevel.NONE)
+    private int netherPortalAbsentTicks;
 
     public Data(TGPlayer player) {
         this.player = player;
@@ -104,6 +108,25 @@ public class Data {
     public boolean isInVehicle() {
         return vehicleId != -1;
     }
+
+    public void markNetherPortalContact() {
+        netherPortalContactThisTick = true;
+        netherPortalAbsentTicks = 0;
+        inNetherPortal = true;
+    }
+
+    public void flushNetherPortalContact() {
+        if (netherPortalContactThisTick) {
+            netherPortalContactThisTick = false;
+            netherPortalAbsentTicks = 0;
+            return;
+        }
+        if (inNetherPortal && ++netherPortalAbsentTicks >= NETHER_PORTAL_ABSENT_TICKS_TO_CLEAR) {
+            inNetherPortal = false;
+            netherPortalAbsentTicks = 0;
+        }
+    }
+
 
     public void setVerifiedOpenInventory() {
         verifiedOpenInventory = true;

@@ -73,4 +73,11 @@ final class PaperLegacyScheduler implements PaperScheduler {
         BukkitTask paperTask = scheduler.runTaskTimerAsynchronously(plugin, task, initialTicks, periodTicks);
         return paperTask::cancel;
     }
+
+    @Override
+    public ScheduledTask runGlobalAtFixedRateTicks(@NotNull Runnable task, long periodTicks) {
+        long period = Math.max(1L, periodTicks);
+        BukkitTask paperTask = scheduler.runTaskTimer(plugin, task, period, period);
+        return paperTask::cancel;
+    }
 }

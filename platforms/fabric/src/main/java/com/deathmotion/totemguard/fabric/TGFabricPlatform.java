@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.fabric.compatibility.FabricCompatibility;
 import com.deathmotion.totemguard.fabric.player.FabricPlatformPlayerFactory;
 import com.deathmotion.totemguard.fabric.scheduler.FabricScheduler;
 import com.deathmotion.totemguard.fabric.sender.FabricSenderFactory;
+import com.deathmotion.totemguard.fabric.tick.FabricTickRunner;
 import lombok.Getter;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -53,6 +54,8 @@ public class TGFabricPlatform extends TGPlatform {
     private final Lazy<FabricSenderFactory> senderFactory;
     private final Lazy<CommandManager<Sender>> commandManager;
 
+    private final FabricTickRunner tickRunner;
+
     public TGFabricPlatform(Path configDirectory) {
         super(Platform.FABRIC);
         this.configDirectory = configDirectory;
@@ -63,6 +66,19 @@ public class TGFabricPlatform extends TGPlatform {
                 ExecutionCoordinator.simpleCoordinator(),
                 senderFactory.get(),
                 getLogger()));
+        this.tickRunner = new FabricTickRunner(this);
+    }
+
+    @Override
+    public void commonOnEnable() {
+        super.commonOnEnable();
+        tickRunner.start();
+    }
+
+    @Override
+    public void commonOnDisable() {
+        tickRunner.stop();
+        super.commonOnDisable();
     }
 
     @Override

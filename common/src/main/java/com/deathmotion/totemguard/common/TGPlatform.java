@@ -50,6 +50,7 @@ import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckRequestPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckResultPacket;
@@ -127,6 +128,7 @@ public abstract class TGPlatform {
 
     @Setter
     private TGPluginHost pluginHost;
+    private volatile int currentServerTick;
 
     public TGPlatform(Platform platform) {
         instance = this;
@@ -139,6 +141,13 @@ public abstract class TGPlatform {
     }
 
     protected void afterCommandsRegistered() {
+    }
+
+    public void tickPlayers() {
+        currentServerTick++;
+        for (TGPlayer player : playerRepository.getPlayers()) {
+            player.onServerTick();
+        }
     }
 
     public void commonOnEnable() {
@@ -176,9 +185,6 @@ public abstract class TGPlatform {
 
     public abstract boolean checkPlatformCompatibility();
 
-    // Overridden on Fabric to skip verification in loom dev, where loom loads classes
-    // from sourceSet directories instead of the shaded jar so the integrity manifest
-    // is never present. Defaults to true so Paper and production Fabric still verify.
     public boolean shouldVerifyJarIntegrity() {
         return true;
     }

@@ -76,4 +76,12 @@ final class FoliaScheduler implements PaperScheduler {
                         Math.max(0L, initialDelay), periodClamped, timeUnit);
         return scheduled::cancel;
     }
+
+    @Override
+    public ScheduledTask runGlobalAtFixedRateTicks(@NotNull Runnable task, long periodTicks) {
+        long period = Math.max(1L, periodTicks);
+        io.papermc.paper.threadedregions.scheduler.ScheduledTask scheduled =
+                globalScheduler.runAtFixedRate(plugin, t -> task.run(), period, period);
+        return scheduled::cancel;
+    }
 }

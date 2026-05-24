@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
@@ -36,7 +37,7 @@ import java.util.List;
 @CheckData(description = "Impossible click time difference", type = CheckType.AUTO_TOTEM)
 public class AutoTotemA extends CheckImpl implements EventCheck {
 
-    private static final long MAX_CLICK_DIFF_MS = 75L;
+    private static final long MAX_CLICK_DIFF_MS = 5L;
     private static final long MAX_USE_TO_PLACE_DIFF_MS = 1500L;
 
     private Long popTimestamp;
@@ -74,7 +75,7 @@ public class AutoTotemA extends CheckImpl implements EventCheck {
         if (popTimestamp == null || pickupTimestamp == null) return;
 
         for (InventorySlot changedSlot : changedSlots) {
-            if (!inventory.isHandSlot(changedSlot.getSlot())) continue;
+            if (changedSlot.getSlot() != InventoryConstants.SLOT_OFFHAND) continue;
             if (changedSlot.getSlotAction() != SlotAction.CLICK) continue;
             if (changedSlot.getPrevious().item().getType() == ItemTypes.TOTEM_OF_UNDYING) continue;
             if (changedSlot.getItem().getType() != ItemTypes.TOTEM_OF_UNDYING) continue;

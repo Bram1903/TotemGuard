@@ -254,6 +254,10 @@ public class TGPlayer implements TGUser {
         return platform.getModDetectionService().isDetectionActiveFor(uuid);
     }
 
+    public void onServerTick() {
+        data.flushNetherPortalContact();
+    }
+
     public void triggerInventoryEvent() {
         CarriedItem carriedItem = inventory.getCarriedItem();
         boolean carriedItemUpdated = carriedItem != null && carriedItem.isUpdated();

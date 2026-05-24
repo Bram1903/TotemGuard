@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.paper.scheduler;
 
+import com.deathmotion.totemguard.common.util.ScheduledTask;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
@@ -45,4 +46,6 @@ public interface PaperScheduler extends Scheduler {
     void runGlobal(@NotNull Runnable task);
 
     void runForEntity(@NotNull Entity entity, @NotNull Runnable task, @Nullable Runnable retired);
+
+    ScheduledTask runGlobalAtFixedRateTicks(@NotNull Runnable task, long periodTicks);
 }

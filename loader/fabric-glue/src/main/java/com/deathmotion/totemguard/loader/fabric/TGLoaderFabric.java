@@ -18,12 +18,14 @@
 
 package com.deathmotion.totemguard.loader.fabric;
 
+import com.deathmotion.totemguard.host.RuntimeDispatch;
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.deathmotion.totemguard.loader.command.LoaderApp;
 import com.deathmotion.totemguard.loader.core.*;
 import com.deathmotion.totemguard.loader.fleet.RolloutCoordinator;
 import com.deathmotion.totemguard.loader.runtime.PluginRuntime;
 import net.fabricmc.api.DedicatedServerModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.text.MessageFormat;
@@ -84,6 +86,8 @@ public final class TGLoaderFabric implements DedicatedServerModInitializer, Load
                     + "The loader will stay enabled but inert. Check filesystem permissions.", t);
             return;
         }
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> RuntimeDispatch.onServerTick());
 
         this.bootstrapWorker = Executors.newSingleThreadExecutor(new NamedThreadFactory("TotemGuard-Loader-Bootstrap"));
         this.delayScheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("TotemGuard-Loader-Delay"));

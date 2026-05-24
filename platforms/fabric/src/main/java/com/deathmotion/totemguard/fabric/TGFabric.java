@@ -18,8 +18,10 @@
 
 package com.deathmotion.totemguard.fabric;
 
+import com.deathmotion.totemguard.host.RuntimeDispatch;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.text.MessageFormat;
@@ -50,6 +52,7 @@ public final class TGFabric implements DedicatedServerModInitializer {
         tg = new TGFabricPlatform(FabricLoader.getInstance().getConfigDir().resolve("totemguard"));
         tg.commonOnEnable();
 
+        ServerTickEvents.END_SERVER_TICK.register(_ -> RuntimeDispatch.onServerTick());
         ServerLifecycleEvents.SERVER_STOPPING.register(_ -> tg.commonOnDisable());
     }
 

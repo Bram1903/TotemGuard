@@ -26,12 +26,14 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportR
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.paper.compatibility.PaperCompatibility;
+import com.deathmotion.totemguard.paper.event.NetherPortalListener;
 import com.deathmotion.totemguard.paper.event.PluginUnregisterHook;
 import com.deathmotion.totemguard.paper.metrics.TGMetrics;
 import com.deathmotion.totemguard.paper.network.PaperCrossServerTeleportRouter;
 import com.deathmotion.totemguard.paper.player.PaperPlatformPlayerFactory;
 import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
 import com.deathmotion.totemguard.paper.sender.PaperSenderFactory;
+import com.deathmotion.totemguard.paper.tick.PaperTickRunner;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -61,7 +63,7 @@ public class TGPaperPlatform extends TGPlatform {
     private final Lazy<PaperPlatformPlayerFactory> platformPlayerFactory;
     private final Lazy<CommandManager<Sender>> commandManager;
     private final Lazy<PaperCrossServerTeleportRouter> teleportRouter;
-
+    private final PaperTickRunner tickRunner;
     private boolean brigadierNeedsLifecyclePublish;
     private TGMetrics metrics;
 
@@ -69,6 +71,7 @@ public class TGPaperPlatform extends TGPlatform {
         super(Platform.PAPER);
         this.plugin = plugin;
         this.scheduler = PaperScheduler.create(plugin);
+        this.tickRunner = new PaperTickRunner(this, scheduler);
 
         this.senderFactory = Lazy.of(() -> new PaperSenderFactory(scheduler));
         this.platformPlayerFactory = Lazy.of(() -> new PaperPlatformPlayerFactory(plugin, scheduler));
@@ -188,11 +191,14 @@ public class TGPaperPlatform extends TGPlatform {
         super.commonOnEnable();
         if (!isEnabled()) return;
         Bukkit.getPluginManager().registerEvents(new PluginUnregisterHook(getEventBus(), plugin), plugin);
+        Bukkit.getPluginManager().registerEvents(new NetherPortalListener(), plugin);
+        tickRunner.start();
     }
 
     @Override
     public void commonOnDisable() {
         super.commonOnDisable();
+        tickRunner.stop();
         if (metrics != null) {
             try {
                 metrics.shutdown();
