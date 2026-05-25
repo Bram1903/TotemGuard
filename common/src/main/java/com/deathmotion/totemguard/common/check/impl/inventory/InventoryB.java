@@ -58,9 +58,9 @@ public class InventoryB extends CheckImpl implements PacketCheck {
 
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             if (sprinting) {
-                failInventory("click (sprinting)");
+                failInventoryMovement("click (sprinting)");
             } else if (inputData.hasMovement(true)) {
-                failInventory("click (move)");
+                failInventoryMovement("click (move)");
             }
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             if (data.isInventoryMitigatedThisTick()) return;
@@ -99,6 +99,6 @@ public class InventoryB extends CheckImpl implements PacketCheck {
         pendingCloseReason = null;
 
         if (data.isInNetherPortal()) return;
-        fail(reason);
+        failMovement(reason);
     }
 }
