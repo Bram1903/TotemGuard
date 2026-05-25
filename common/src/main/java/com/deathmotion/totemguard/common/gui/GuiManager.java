@@ -94,12 +94,6 @@ public final class GuiManager {
             return false;
         }
 
-        TGPlayer viewer = platform.getPlayerRepository().getPlayer(user);
-        if (viewer != null && viewer.isModDetectionActive()) {
-            sender.sendMessage(platform.getMessageService().getComponent(MessagesKeys.GUI_ERR_MOD_DETECTION_RUNNING));
-            return false;
-        }
-
         UUID viewerId = user.getUUID();
         close(viewerId, false);
 

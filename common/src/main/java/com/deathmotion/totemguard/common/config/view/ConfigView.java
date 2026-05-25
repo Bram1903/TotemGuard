@@ -38,7 +38,7 @@ public final class ConfigView {
     private final EntitySpoofingOptions entitySpoofing;
     private final boolean banAnimationEnabled;
     private final boolean tickSkipKeepAliveValidation;
-    private final DebugModifierPolicy debugModifierPolicy;
+    private final boolean debugModifierKickEnabled;
     private final Set<String> developerOverrides;
 
     public ConfigView(Config config) {
@@ -84,7 +84,7 @@ public final class ConfigView {
         );
         this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
         this.tickSkipKeepAliveValidation = config.getBoolean(ConfigKeys.TICK_SKIP_KEEP_ALIVE_VALIDATION);
-        this.debugModifierPolicy = DebugModifierPolicy.parse(config.getString(ConfigKeys.DEBUG_MODIFIER_EXPLOIT));
+        this.debugModifierKickEnabled = config.getBoolean(ConfigKeys.DEBUG_MODIFIER_KICK_ENABLED);
         List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
         this.developerOverrides = overrides.isEmpty() ? Set.of() : Set.copyOf(new HashSet<>(overrides));
     }
@@ -125,8 +125,8 @@ public final class ConfigView {
         return tickSkipKeepAliveValidation;
     }
 
-    public @NotNull DebugModifierPolicy debugModifierPolicy() {
-        return debugModifierPolicy;
+    public boolean debugModifierKickEnabled() {
+        return debugModifierKickEnabled;
     }
 
     public boolean hasDeveloperOverride(@NotNull String flag) {

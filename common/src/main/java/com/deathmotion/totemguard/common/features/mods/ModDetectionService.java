@@ -24,6 +24,8 @@ import com.deathmotion.totemguard.api.mod.ModDetectionMethod;
 import com.deathmotion.totemguard.api.mod.ModDetectionRepository;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.util.MessageUtil;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,36 +35,47 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ModDetectionService implements ModDetectionRepository {
 
+    private static final Component DEBUG_MODIFIER_KICK_MESSAGE = MessageUtil.formatMessage(
+            "&#D4452C&lKeybind conflict<newline><newline>"
+                    + "&#B8AC8FYour &#FEE067Debug Modifier Key &#B8AC8Fis bound to the same key as a movement key.<newline>"
+                    + "This lets you move with an open inventory, which TotemGuard does not allow.<newline><newline>"
+                    + "&#B8AC8FPlease bind your &#FEE067Debug Modifier Key &#B8AC8Fto a different key, then reconnect.");
+
     private final TGPlatform platform;
     private final ModResolver resolver;
-    private final ModKickThenBanTracker kickThenBanTracker;
     private final ModSessionStore modSessionStore;
 
     private final ConcurrentHashMap<UUID, ModSession> sessions = new ConcurrentHashMap<>();
 
     public ModDetectionService(TGPlatform platform,
                                ModResolver resolver,
-                               ModKickThenBanTracker kickThenBanTracker,
                                ModSessionStore modSessionStore) {
         this.platform = platform;
         this.resolver = resolver;
-        this.kickThenBanTracker = kickThenBanTracker;
         this.modSessionStore = modSessionStore;
     }
 
-    public @Nullable ModSession sessionFor(@NotNull UUID uuid) {
-        return sessions.get(uuid);
+    private static boolean punishes(@Nullable ModAction action) {
+        return action != null && action != ModAction.NONE;
     }
 
     public void onPlayerLogin(@NotNull TGPlayer player) {
-        ModRegistry.Snapshot snapshot = ModRegistry.snapshot();
-        ModTranslationDetector detector = new ModTranslationDetector(player, snapshot);
-
-        ModSession session = new ModSession(player, snapshot, detector);
+        boolean checkDebugModifier = platform.getConfigRepository().configView().debugModifierKickEnabled();
+        ModSession session = new ModSession(player, ModRegistry.snapshot(), checkDebugModifier);
         sessions.put(player.getUuid(), session);
         player.setModSession(session);
 
-        detector.start(session::tryEnterAwaitingBoundary);
+        AnvilNameEcho.send(player, player.getModDetectionWindowId(), session.questions());
+        player.getLatencyHandler().sendTransaction(timestamp -> onInterrogationAnswered(session));
+    }
+
+    private void onInterrogationAnswered(@NotNull ModSession session) {
+        if (session.snapshotDetected().isEmpty() && session.hasDebugModifierConflict()) {
+            session.cancel();
+            kickForDebugModifier(session);
+            return;
+        }
+        session.tryEnterAwaitingBoundary();
     }
 
     public void onPlayerLogout(@NotNull UUID uuid) {
@@ -90,6 +103,18 @@ public final class ModDetectionService implements ModDetectionRepository {
         if (!session.tryResolve()) return;
         resolver.resolve(session);
         publishResolved(session);
+        kickForDebugModifierConflict(session);
+    }
+
+    private void kickForDebugModifierConflict(@NotNull ModSession session) {
+        if (!session.hasDebugModifierConflict()) return;
+        if (punishes(session.resolvedAction())) return;
+        kickForDebugModifier(session);
+    }
+
+    private void kickForDebugModifier(@NotNull ModSession session) {
+        session.player().disconnect(DEBUG_MODIFIER_KICK_MESSAGE,
+                "Debug Modifier Key shares a key with a movement key");
     }
 
     private void publishResolved(@NotNull ModSession session) {
@@ -136,10 +161,5 @@ public final class ModDetectionService implements ModDetectionRepository {
     public @Nullable ModAction getResolvedAction(@NotNull UUID uuid) {
         ModSession session = sessions.get(uuid);
         return session == null ? null : session.resolvedAction();
-    }
-
-    public boolean isDetectionActiveFor(@NotNull UUID uuid) {
-        ModSession session = sessions.get(uuid);
-        return session != null && session.translationDetector().isActive();
     }
 }

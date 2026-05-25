@@ -50,7 +50,7 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> TICK_SKIP_KEEP_ALIVE_VALIDATION = ConfigKey.bool("tick.skip-keep-alive-validation");
 
-    public static final ConfigKey<String> DEBUG_MODIFIER_EXPLOIT = ConfigKey.string("debug-modifier-exploit");
+    public static final ConfigKey<Boolean> DEBUG_MODIFIER_KICK_ENABLED = ConfigKey.bool("debug-modifier-kick.enabled");
 
     public static final ConfigKey<String> TELEPORT_COMMAND = ConfigKey.string("teleport.command");
 

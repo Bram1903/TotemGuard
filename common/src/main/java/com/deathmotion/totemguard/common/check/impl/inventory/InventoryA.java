@@ -79,7 +79,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         if (movementFlagged) return;
 
         movementFlagged = true;
-        failInventoryMovement(sprinting ? "sprint" : "move");
+        failInventory(sprinting ? "sprint" : "move");
     }
 
     @Override
@@ -126,7 +126,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             }
             if (movementFlagged) return;
 
-            failInventoryMovement("move");
+            failInventory("move");
             movementFlagged = true;
             return;
         }
@@ -149,9 +149,9 @@ public class InventoryA extends CheckImpl implements PacketCheck {
 
         if (type == PacketType.Play.Client.ENTITY_ACTION) {
             switch (new WrapperPlayClientEntityAction(event).getAction()) {
-                case START_SNEAKING -> failInventoryMovement("sneak");
+                case START_SNEAKING -> failInventory("sneak");
                 case LEAVE_BED -> failInventory("leave bed");
-                case START_SPRINTING -> failInventoryMovement("sprint");
+                case START_SPRINTING -> failInventory("sprint");
                 case OPEN_HORSE_INVENTORY -> failInventory("open horse inv");
                 case START_FLYING_WITH_ELYTRA -> failInventory("start glide");
             }

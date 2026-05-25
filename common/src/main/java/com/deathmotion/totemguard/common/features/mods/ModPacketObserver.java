@@ -75,12 +75,15 @@ public final class ModPacketObserver extends PacketListenerAbstract {
         if (state != ConnectionState.PLAY) return;
 
         if (type == PacketType.Play.Client.NAME_ITEM) {
-            ModTranslationDetector.ConsumeResult result = session.translationDetector().tryConsumeResponse(
-                    new WrapperPlayClientNameItem(event),
-                    () -> event.setCancelled(true)
-            );
-            if (result.outcome() == ModTranslationDetector.ResponseOutcome.OURS_DETECTED && result.mod() != null) {
-                service.recordDetection(session, result.mod(), ModDetectionMethod.TRANSLATION);
+            AnvilNameEcho.Reflection reflection = AnvilNameEcho.parse(new WrapperPlayClientNameItem(event).getItemName());
+            if (reflection == null) return;
+
+            ModSession.Answer answer = session.consume(reflection);
+            if (!answer.ours()) return;
+
+            event.setCancelled(true);
+            if (answer.detectedMod() != null) {
+                service.recordDetection(session, answer.detectedMod(), ModDetectionMethod.TRANSLATION);
             }
             return;
         }

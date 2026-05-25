@@ -29,8 +29,6 @@ import java.util.function.Function;
 
 public final class CheckPlaceholders extends MapResolverHolder<CheckImpl> {
 
-    public static final String PUNISHMENT_DISABLED_SYMBOL = "∞";
-
     private static final Map<String, Function<CheckImpl, String>> RESOLVERS = Map.of(
             "tg_check_name", CheckImpl::getName,
             "tg_check_description", CheckImpl::getDescription,
@@ -40,7 +38,7 @@ public final class CheckPlaceholders extends MapResolverHolder<CheckImpl> {
             "tg_check_enabled", c -> String.valueOf(c.isEnabled()),
             "tg_check_punishable", c -> String.valueOf(c.isPunishable()),
             "tg_check_violations", c -> String.valueOf(c.getViolations()),
-            "tg_check_max_violations", c -> c.isPunishable() ? String.valueOf(c.getMaxViolations()) : PUNISHMENT_DISABLED_SYMBOL
+            "tg_check_max_violations", c -> c.isPunishable() ? String.valueOf(c.getMaxViolations()) : "∞"
     );
 
     public CheckPlaceholders() {

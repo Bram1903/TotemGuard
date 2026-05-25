@@ -31,7 +31,6 @@ import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.PresenceListener;
 import com.deathmotion.totemguard.common.network.RemotePlayerEntry;
-import com.deathmotion.totemguard.common.placeholder.holder.impl.CheckPlaceholders;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.redis.ConnectionStateListener;
 import com.deathmotion.totemguard.common.redis.RedisConnection;
@@ -45,7 +44,6 @@ import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -155,19 +153,6 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
 
     public void alert(CheckImpl check, int violations, @Nullable String debug,
                       @Nullable DebugTemplate.Compiled compiledDebug, Map<String, Object> extras) {
-        alert(check, violations, debug, compiledDebug, extras, true);
-    }
-
-    public void alert(CheckImpl check, int violations, @Nullable String debug,
-                      @Nullable DebugTemplate.Compiled compiledDebug, Map<String, Object> extras, boolean punish) {
-        if (!punish) {
-            // This flag never reaches the punishment pipeline regardless of the violation
-            // count, so render it like a non-punishable check (VL[n/∞]) instead of n/max.
-            Map<String, Object> overridden = new HashMap<>(extras);
-            overridden.put("tg_check_punishable", "false");
-            overridden.put("tg_check_max_violations", CheckPlaceholders.PUNISHMENT_DISABLED_SYMBOL);
-            extras = overridden;
-        }
         UUID violatorUuid = check.player.getUuid();
         String violatorName = check.player.getName();
         Component realtimeMessage = AlertBuilder.build(check, violations, debug, extras);
@@ -192,7 +177,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
         );
         platform.getScheduler().runAsyncTask(() -> {
             platform.getDiscordWebhookService().sendAlert(check, violations, debug);
-            if (punish) punishmentRepository.punish(check, violations, debug, compiledDebug);
+            punishmentRepository.punish(check, violations, debug, compiledDebug);
             if (platform.getSessionViolationStore() != null && check.getType() != CheckType.MOD) {
                 platform.getSessionViolationStore().recordViolation(violatorUuid, check.getName());
             }

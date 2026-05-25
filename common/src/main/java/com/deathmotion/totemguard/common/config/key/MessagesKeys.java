@@ -146,7 +146,6 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_STATUS_CLICK_TO_BROWSE = ConfigKey.string("gui.status.click-to-browse");
 
     public static final ConfigKey<String> GUI_ERR_NO_PERMISSION = ConfigKey.string("gui.error.no-permission");
-    public static final ConfigKey<String> GUI_ERR_MOD_DETECTION_RUNNING = ConfigKey.string("gui.error.mod-detection-running");
     public static final ConfigKey<String> GUI_ERR_CANNOT_MONITOR_SELF = ConfigKey.string("gui.error.cannot-monitor-self");
     public static final ConfigKey<String> GUI_ERR_MONITOR_BLOCKED = ConfigKey.string("gui.error.monitor-blocked");
     public static final ConfigKey<String> GUI_ERR_DATABASE_OFFLINE = ConfigKey.string("gui.error.database-offline");

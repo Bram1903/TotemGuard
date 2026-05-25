@@ -31,6 +31,8 @@ import java.util.*;
 
 public final class ModRegistry {
 
+    private static final int MAX_TRANSLATION_KEYS = 2048;
+
     private static volatile Snapshot SNAPSHOT = Snapshot.empty();
 
     private ModRegistry() {
@@ -47,6 +49,8 @@ public final class ModRegistry {
         LinkedHashMap<String, ModDefinition> definitions = new LinkedHashMap<>();
         Map<String, String> payloadOwners = new HashMap<>();
         Map<String, String> translationOwners = new HashMap<>();
+        int translationBudget = MAX_TRANSLATION_KEYS;
+        boolean translationCapWarned = false;
 
         for (ModConfig cfg : view.all().values()) {
             ModSeverity severity = parseSeverity(cfg.severity());
@@ -58,6 +62,16 @@ public final class ModRegistry {
 
             Set<String> payloads = claimUnique(cfg.id(), cfg.payloads(), payloadOwners, true, "payload");
             Set<String> translations = claimUnique(cfg.id(), cfg.translations(), translationOwners, false, "translation");
+
+            if (translations.size() > translationBudget) {
+                if (!translationCapWarned) {
+                    warn("More than " + MAX_TRANSLATION_KEYS + " translation keys configured across mods.yml. "
+                            + "Translation keys past that limit are skipped for client probing (payload detection still applies).");
+                    translationCapWarned = true;
+                }
+                translations = capToBudget(translations, translationBudget);
+            }
+            translationBudget -= translations.size();
 
             if (payloads.isEmpty() && translations.isEmpty()) {
                 warn("Ignoring mod '" + cfg.id() + "' because it has no usable payloads or translations.");
@@ -85,6 +99,18 @@ public final class ModRegistry {
         } catch (IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    private static Set<String> capToBudget(Set<String> values, int budget) {
+        if (budget <= 0) return Set.of();
+        if (values.size() <= budget) return values;
+
+        LinkedHashSet<String> capped = new LinkedHashSet<>(budget);
+        for (String value : values) {
+            if (capped.size() >= budget) break;
+            capped.add(value);
+        }
+        return capped;
     }
 
     private static Set<String> claimUnique(

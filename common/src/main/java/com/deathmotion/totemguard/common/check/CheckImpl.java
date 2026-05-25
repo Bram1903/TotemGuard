@@ -26,7 +26,6 @@ import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
-import com.deathmotion.totemguard.common.config.schema.DebugModifierPolicy;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.features.punishment.PunishmentCommand;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -150,11 +149,7 @@ public abstract class CheckImpl implements Check {
     }
 
     protected void failInventory(@NotNull String template, @Nullable Object @NotNull ... args) {
-        failInventory(true, template, args);
-    }
-
-    private void failInventory(boolean punish, @NotNull String template, @Nullable Object @NotNull ... args) {
-        if (!(punish ? fail(template, args) : failNoPunish(template, args))) {
+        if (!fail(template, args)) {
             return;
         }
 
@@ -167,37 +162,6 @@ public abstract class CheckImpl implements Check {
         } else {
             data.setOpenInventory(false, Issuer.SERVER);
         }
-    }
-
-    protected void failInventoryMovement(@NotNull String template, @Nullable Object @NotNull ... args) {
-        switch (debugModifierPolicy()) {
-            case IGNORE -> {
-            }
-            case FLAG -> failInventory(false, template, args);
-            case PUNISH -> failInventory(true, template, args);
-        }
-    }
-
-    protected boolean failMovement(@NotNull String template, @Nullable Object @NotNull ... args) {
-        return switch (debugModifierPolicy()) {
-            case IGNORE -> false;
-            case FLAG -> failNoPunish(template, args);
-            case PUNISH -> fail(template, args);
-        };
-    }
-
-    private boolean failNoPunish(@NotNull String template, @Nullable Object @NotNull ... args) {
-        DebugTemplate.Compiled compiled = DebugTemplate.precompiled(template, args);
-        String rendered = compiled == null ? null : DebugTemplate.render(compiled.template(), compiled.args());
-        if (!shouldFail(rendered)) return false;
-        violations++;
-
-        TGPlatform.getInstance().getAlertRepository().alert(this, violations, rendered, compiled, Map.of(), false);
-        return true;
-    }
-
-    private DebugModifierPolicy debugModifierPolicy() {
-        return platform.getConfigRepository().configView().debugModifierPolicy();
     }
 
     protected boolean shouldFail(@Nullable String debug) {

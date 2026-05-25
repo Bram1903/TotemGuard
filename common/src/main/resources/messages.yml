@@ -176,7 +176,6 @@ gui:
 
   error:
     no-permission: "&#D4452CYou lack the permission &#F5A48F%tg_permission% &#D4452Cto open that screen."
-    mod-detection-running: "&#D4452CMod detection is still running on your client. Try again in a moment."
     cannot-monitor-self: "&#D4452CYou cannot monitor your own inventory."
     monitor-blocked: "&#D4452COpening the monitor was blocked."
     database-offline: "&#D4452CDatabase offline"

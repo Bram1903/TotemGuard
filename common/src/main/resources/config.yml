@@ -95,15 +95,14 @@ tick:
   # branch. Leave false on a stock setup.
   skip-keep-alive-validation: false
 
-# A vanilla client bug lets you keep moving while an inventory is open by sharing a
-# movement key with the Debug Modifier Key (F3) or holding both at once. A cheat moving
-# in an inventory looks identical on the wire, so anything but PUNISH gives up some
-# detection, abusing it is cheating just the same. Only the movement part of the
-# inventory checks is affected, not things like aiming with an open inventory.
-#   PUNISH - (default) flag, mitigate, and punish it.
-#   FLAG - flag and mitigate, but never punish.
-#   IGNORE - do not flag it at all.
-debug-modifier-exploit: PUNISH
+# A vanilla client bug lets you keep moving while an inventory is open when the Debug
+# Modifier Key (F3) is bound to the same key as a movement key. When enabled, TotemGuard
+# reads the client's keybinds on join and disconnects players whose Debug Modifier Key
+# shares a key with forward, back, left, right, or jump, asking them to rebind it. This
+# only catches honest clients that report their keybinds. The inventory checks
+#  catch packet-level inventory cheating regardless.
+debug-modifier-kick:
+  enabled: true
 
 # Just before a player is kicked or banned, show them a fake totem-pop animation
 # using a player head with a hacker skin. The head is sent via packets only

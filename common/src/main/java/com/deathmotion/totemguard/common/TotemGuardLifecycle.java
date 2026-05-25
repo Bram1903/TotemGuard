@@ -150,7 +150,7 @@ final class TotemGuardLifecycle {
         ModLogAlertTracker logAlertTracker = new ModLogAlertTracker(p.cacheRepository);
         p.networkPresenceRepository.addListener(logAlertTracker);
         ModResolver modResolver = new ModResolver(p, kickThenBanTracker, logAlertTracker);
-        p.modDetectionService = new ModDetectionService(p, modResolver, kickThenBanTracker, p.modSessionStore);
+        p.modDetectionService = new ModDetectionService(p, modResolver, p.modSessionStore);
 
         p.registerPacketListenerInternal(new PacketPlayerJoinQuit());
         p.registerPacketListenerInternal(new PacketCheckManagerListener(p.playerRepository));
@@ -243,11 +243,6 @@ final class TotemGuardLifecycle {
         }
         p.packetListeners.clear();
 
-        // Every internal subscription was bound to the platform context, so one
-        // sweep per bus reaches CheckService, MonitorRepository, GuiManager, and
-        // the totem-replenish detector in a single shot. Plugins that subscribed
-        // with their own context are not touched here. They get the public
-        // TGPluginShutdownEvent fired above and clean up via the bus they hold.
         if (p.eventBus != null) {
             try {
                 p.eventBus.unregisterAll(p);

@@ -228,6 +228,16 @@ public class TGPlayer implements TGUser {
         user.closeConnection();
     }
 
+    public void disconnect(Component screen, String logReason) {
+        if (!hasDisconnected.compareAndSet(false, true)) return;
+        platform.getLogger().info("Disconnecting " + user.getName() + ": " + logReason);
+        try {
+            user.sendPacket(new WrapperPlayServerDisconnect(screen));
+        } catch (Exception ignored) {
+        }
+        user.closeConnection();
+    }
+
     void resolveDatabaseProfile() {
         if (!platform.getDatabaseRepository().isConnected()) return;
         try {
@@ -248,10 +258,6 @@ public class TGPlayer implements TGUser {
 
     public boolean isModDetectionWindow(int windowId) {
         return windowId == modDetectionWindowId;
-    }
-
-    public boolean isModDetectionActive() {
-        return platform.getModDetectionService().isDetectionActiveFor(uuid);
     }
 
     public void onServerTick() {
