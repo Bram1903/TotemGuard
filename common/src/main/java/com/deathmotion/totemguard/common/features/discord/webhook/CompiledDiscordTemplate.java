@@ -35,6 +35,14 @@ public record CompiledDiscordTemplate(Segment[] segments) {
     private static final Pattern PLACEHOLDER = Pattern.compile("%([a-zA-Z0-9_]+)%");
 
     public static CompiledDiscordTemplate compile(@NotNull String template) {
+        return compile(template, true);
+    }
+
+    public static CompiledDiscordTemplate compilePlain(@NotNull String template) {
+        return compile(template, false);
+    }
+
+    private static CompiledDiscordTemplate compile(@NotNull String template, boolean markdown) {
         List<Segment> parts = new ArrayList<>();
         Matcher m = PLACEHOLDER.matcher(template);
         MarkdownContext ctx = MarkdownContext.NORMAL;
@@ -44,13 +52,17 @@ public record CompiledDiscordTemplate(Segment[] segments) {
             String gap = template.substring(lastEnd, m.start());
             if (!gap.isEmpty()) parts.add(new Literal(gap));
 
-            ctx = advanceContext(ctx, gap);
-
-            EscapeMode mode = switch (ctx) {
-                case NORMAL -> EscapeMode.FULL_MARKDOWN;
-                case INLINE_CODE,
-                     CODE_BLOCK -> EscapeMode.CODE_SPAN;
-            };
+            EscapeMode mode;
+            if (markdown) {
+                ctx = advanceContext(ctx, gap);
+                mode = switch (ctx) {
+                    case NORMAL -> EscapeMode.FULL_MARKDOWN;
+                    case INLINE_CODE,
+                         CODE_BLOCK -> EscapeMode.CODE_SPAN;
+                };
+            } else {
+                mode = EscapeMode.NONE;
+            }
             parts.add(new Placeholder(m.group(1), mode));
             lastEnd = m.end();
         }

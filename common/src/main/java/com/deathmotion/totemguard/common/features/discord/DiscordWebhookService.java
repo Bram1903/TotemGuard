@@ -198,7 +198,7 @@ public final class DiscordWebhookService implements Reloadable {
         }
 
         List<CompiledField> compiled = compileFields(cfg.fields());
-        CompiledDiscordTemplate footer = cfg.footer().isBlank() ? null : CompiledDiscordTemplate.compile(cfg.footer());
+        CompiledDiscordTemplate footer = cfg.footer().isBlank() ? null : CompiledDiscordTemplate.compilePlain(cfg.footer());
 
         return new ChannelConfig(
                 true,
@@ -222,7 +222,7 @@ public final class DiscordWebhookService implements Reloadable {
         for (int i = 0; i < max; i++) {
             WebhookField f = fields.get(i);
             out.add(new CompiledField(
-                    CompiledDiscordTemplate.compile(f.name()),
+                    CompiledDiscordTemplate.compilePlain(f.name()),
                     CompiledDiscordTemplate.compile(f.value()),
                     f.inline()
             ));
