@@ -87,10 +87,12 @@ public class InboundActionProcessor extends ProcessorInbound {
                 }
                 case START_SPRINTING -> {
                     data.setSprinting(true);
+                    data.recordSprinting(true);
                     tickData.setSprinting(true);
                 }
                 case STOP_SPRINTING -> {
                     data.setSprinting(false);
+                    data.recordSprinting(false);
                     tickData.setSprinting(true);
                 }
                 case LEAVE_BED -> tickData.setLeavingBed(true);

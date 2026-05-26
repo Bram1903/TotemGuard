@@ -46,6 +46,11 @@ public class Data {
     private boolean isFlying;
     private boolean swimming;
     private int vehicleId = -1;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Boolean lastSprinting;
+    @Setter(AccessLevel.NONE)
+    private boolean redundantSprint;
     @Setter(AccessLevel.NONE)
     private boolean openInventory;
     @Setter(AccessLevel.NONE)
@@ -107,6 +112,16 @@ public class Data {
 
     public boolean isInVehicle() {
         return vehicleId != -1;
+    }
+
+    public void recordSprinting(boolean sprinting) {
+        this.redundantSprint = lastSprinting != null && lastSprinting == sprinting;
+        this.lastSprinting = sprinting;
+    }
+
+    public void resetSprintTracking() {
+        this.lastSprinting = null;
+        this.redundantSprint = false;
     }
 
     public void markNetherPortalContact() {

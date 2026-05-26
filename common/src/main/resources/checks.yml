@@ -104,6 +104,22 @@ ProtocolE:
   punishment-commands:
     - "%default_punishment%"
 
+ProtocolF:
+  enabled: true
+  punishable: false
+  max-violations: 5
+
+  punishment-commands:
+    - "%default_punishment%"
+
+ProtocolG:
+  enabled: true
+  punishable: false
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
+
 TickA:
   enabled: true
   punishable: true
@@ -127,6 +143,14 @@ TickC:
 
   punishment-commands:
     - "[KICK] kick %tg_player% Packet Manipulation"
+
+TickD:
+  enabled: true
+  punishable: false
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
 
 ManualTotemA:
   enabled: true

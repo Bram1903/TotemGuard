@@ -77,6 +77,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.setGameMode(packet.getGameMode());
                 data.setOpenInventory(false, Issuer.SERVER);
                 data.setSprinting(false);
+                data.resetSprintTracking();
                 data.setVehicleId(-1);
                 if (resetSwimming) data.setSwimming(false);
                 recipeTracker.reset();
