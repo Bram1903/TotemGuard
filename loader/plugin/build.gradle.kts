@@ -11,12 +11,6 @@ plugins {
 version = "1.0.0" + if (rootProject.extra["snapshot"] as Boolean) "-SNAPSHOT" else ""
 description = "TotemGuard Loader"
 
-val fabricJij: Configuration by configurations.creating {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-    isTransitive = false
-}
-
 dependencies {
     implementation(projects.integrity)
 
@@ -28,10 +22,6 @@ dependencies {
 
     compileOnly(libs.paper)
     compileOnly(libs.fabric.loader)
-
-    fabricJij(libs.cloud.fabric)
-    fabricJij(libs.adventure.platform.fabric)
-    fabricJij(libs.fabric.permissions.api)
 }
 
 tasks.named<Jar>("jar") {
@@ -51,9 +41,6 @@ val paperShadowJar = project(":platforms:paper").tasks.named<ShadowJar>("shadowJ
 tasks.named<ShadowJar>("shadowJar") {
     dependsOn(":loader:fabric-glue:jar")
     from(zipTree(fabricGlueJar))
-    from(fabricJij) {
-        into("META-INF/jars")
-    }
 }
 
 tasks.register<CompileNativeTask>("compileNative") {

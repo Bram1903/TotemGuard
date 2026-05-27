@@ -23,10 +23,6 @@ dependencies {
     implementation(projects.loader.host)
     implementation(projects.loader.plugin)
     implementation(projects.integrity)
-
-    implementation(libs.cloud.fabric)
-    implementation(libs.adventure.platform.fabric)
-    implementation(libs.fabric.permissions.api)
 }
 
 evaluationDependsOn(":platforms:fabric")
