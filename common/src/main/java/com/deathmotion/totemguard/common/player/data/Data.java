@@ -46,15 +46,20 @@ public class Data {
     private boolean isFlying;
     private boolean swimming;
     private int vehicleId = -1;
+
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private Boolean lastSprinting;
+
     @Setter(AccessLevel.NONE)
     private boolean redundantSprint;
+
     @Setter(AccessLevel.NONE)
     private boolean openInventory;
+
     @Setter(AccessLevel.NONE)
     private Issuer lastInventoryIssuer = Issuer.CLIENT;
+
     private boolean verifiedOpenInventory;
     private boolean pendingOpenInventory;
     private long inventoryOpenedAt;

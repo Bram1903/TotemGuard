@@ -42,8 +42,7 @@ public class ProtocolF extends CheckImpl implements PacketCheck {
         if (packet.getEntityId() != player.getUser().getEntityId()) return;
 
         WrapperPlayClientEntityAction.Action action = packet.getAction();
-        if (action != WrapperPlayClientEntityAction.Action.START_SPRINTING
-                && action != WrapperPlayClientEntityAction.Action.STOP_SPRINTING) {
+        if (action != WrapperPlayClientEntityAction.Action.START_SPRINTING && action != WrapperPlayClientEntityAction.Action.STOP_SPRINTING) {
             return;
         }
 

@@ -19,10 +19,7 @@
 package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.ClickData;
-import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.player.data.InputData;
-import com.deathmotion.totemguard.common.player.data.TickData;
+import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -36,6 +33,7 @@ public class InboundActionProcessor extends ProcessorInbound {
     private final ClickData clickData;
     private final TickData tickData;
     private final InputData inputData;
+    private final CombatTracker combatTracker;
 
     public InboundActionProcessor(TGPlayer player) {
         super(player);
@@ -43,6 +41,7 @@ public class InboundActionProcessor extends ProcessorInbound {
         this.clickData = player.getClickData();
         this.tickData = player.getTickData();
         this.inputData = player.getData().getInputData();
+        this.combatTracker = player.getCombatTracker();
     }
 
     @Override
@@ -62,13 +61,17 @@ public class InboundActionProcessor extends ProcessorInbound {
 
             clickData.recordRightClick();
         } else if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
-            if (new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
+            WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
+            if (packet.getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
                 tickData.setAttacking(true);
+                combatTracker.recordOutgoingAttack(packet.getEntityId(), event.getTimestamp());
             } else {
                 tickData.setInteracting(true);
             }
         } else if (packetType == PacketType.Play.Client.ATTACK) {
+            WrapperPlayClientAttack packet = new WrapperPlayClientAttack(event);
             tickData.setAttacking(true);
+            combatTracker.recordOutgoingAttack(packet.getEntityId(), event.getTimestamp());
         } else if (packetType == PacketType.Play.Client.USE_ITEM) {
             tickData.setUsing(true);
             clickData.recordRightClick();

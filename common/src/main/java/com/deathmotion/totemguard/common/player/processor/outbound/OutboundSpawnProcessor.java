@@ -18,7 +18,9 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
+import com.deathmotion.totemguard.common.check.impl.inventory.InventoryE;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.CombatTracker;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
@@ -40,6 +42,8 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
     private final InputData inputData;
     private final PacketLatencyHandler latencyHandler;
     private final InventoryRecipeTracker recipeTracker;
+    private final CombatTracker combatTracker;
+    private final InventoryE inventoryE;
 
     public OutboundSpawnProcessor(TGPlayer player) {
         super(player);
@@ -47,6 +51,8 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         this.inputData = player.getData().getInputData();
         this.latencyHandler = player.getLatencyHandler();
         this.recipeTracker = player.getInventoryRecipeTracker();
+        this.combatTracker = player.getCombatTracker();
+        this.inventoryE = player.getCheckManager().allChecks.getInstance(InventoryE.class);
     }
 
     @Override
@@ -83,6 +89,8 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 recipeTracker.reset();
                 inputData.reset();
                 data.getMovementData().reset();
+                combatTracker.reset();
+                if (inventoryE != null) inventoryE.resetSession();
             });
         }
     }

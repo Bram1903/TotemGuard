@@ -50,8 +50,7 @@ public class ProtocolG extends CheckImpl implements PacketCheck {
 
         boolean forwardImpulse = input.forward() && !input.backward();
         if (!forwardImpulse) {
-            fail("forward={0},back={1},left={2},right={3}",
-                    input.forward(), input.backward(), input.left(), input.right());
+            fail();
         }
     }
 }
