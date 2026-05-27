@@ -18,10 +18,12 @@
 
 package com.deathmotion.totemguard.loader.download;
 
+import com.deathmotion.totemguard.loader.catalog.CatalogIndex;
 import com.deathmotion.totemguard.loader.config.LoaderConfig;
 import com.deathmotion.totemguard.loader.core.HostPlatform;
 import com.deathmotion.totemguard.loader.source.Artifact;
 import com.deathmotion.totemguard.loader.source.HttpStatusText;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,30 +39,60 @@ import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.jar.JarFile;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
 
 public final class CachedJarStore {
 
     private static final String CHANNELS_DIR_NAME = ".channels";
+    private static final String BUILD_PROPS_ENTRY = "META-INF/totemguard/build.properties";
 
     private final Path versionsDir;
     private final Logger logger;
+    private final @Nullable CatalogIndex catalogIndex;
 
     public CachedJarStore(Path versionsDir, Logger logger) throws IOException {
+        this(versionsDir, logger, null);
+    }
+
+    public CachedJarStore(Path versionsDir, Logger logger, @Nullable CatalogIndex catalogIndex) throws IOException {
         this.versionsDir = versionsDir;
         Files.createDirectories(versionsDir);
         this.logger = logger;
+        this.catalogIndex = catalogIndex;
     }
 
-    private static void verifyAndMove(Path partial, Path destination, Artifact artifact) throws IOException {
+    private static void verifyHash(Path partial, Artifact artifact) throws IOException {
         String actual = Checksums.hashFile(partial, artifact.hashAlgorithm());
         if (!actual.equalsIgnoreCase(artifact.hashHex())) {
             throw new IOException("Local jar " + artifact.fileName()
                     + " hash " + actual + " did not match expected " + artifact.hashHex());
         }
-        Files.move(partial, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private static BuildProps readBuildProps(Path jar) {
+        try (JarFile jf = new JarFile(jar.toFile())) {
+            ZipEntry entry = jf.getEntry(BUILD_PROPS_ENTRY);
+            if (entry == null) return BuildProps.EMPTY;
+            Properties props = new Properties();
+            try (InputStream in = jf.getInputStream(entry)) {
+                props.load(in);
+            }
+            long ts = 0L;
+            String tsRaw = props.getProperty("build.timestamp", "").trim();
+            if (!tsRaw.isEmpty()) {
+                try {
+                    ts = Long.parseLong(tsRaw);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            return new BuildProps(props.getProperty("git.commit", "").trim(), ts);
+        } catch (IOException ex) {
+            return BuildProps.EMPTY;
+        }
     }
 
     private static MessageDigest newDigest(Artifact artifact) throws IOException {
@@ -85,94 +117,110 @@ public final class CachedJarStore {
     }
 
     private Path getOrFetchLocked(Artifact artifact, HostPlatform platform) throws IOException {
-        String hashPrefix = artifact.hashHex().substring(0, Math.min(10, artifact.hashHex().length()));
-        Path cached = versionsDir.resolve("TotemGuard-" + platform.name().toLowerCase()
-                + "-" + sanitize(artifact.version())
-                + "-" + hashPrefix + ".jar");
-
-        if (Files.isRegularFile(cached)) {
-            String actual = Checksums.hashFile(cached, artifact.hashAlgorithm());
-            if (actual.equalsIgnoreCase(artifact.hashHex())) {
+        // Cache hit: any jar with this exact SHA, regardless of how it's currently named.
+        if (catalogIndex != null) {
+            Optional<CatalogIndex.Entry> existing = catalogIndex.findBySha(artifact.hashHex());
+            if (existing.isPresent()) {
+                Path cached = existing.get().jar();
                 logger.fine("Reusing cached jar " + cached.getFileName());
                 return cached;
             }
-            logger.warning("Cached jar " + cached.getFileName() + " hash mismatch. Redownloading.");
-            Files.deleteIfExists(cached);
         }
 
-        URI uri = artifact.downloadUri();
-        if ("file".equals(uri.getScheme())) {
-            return copyLocal(uri, cached, artifact);
-        }
-        return LoaderHttp.retry(logger, "download " + artifact.fileName(),
-                () -> downloadHttp(uri, cached, artifact));
-    }
-
-    private Path copyLocal(URI uri, Path destination, Artifact artifact) throws IOException {
-        Path source = Path.of(uri);
-        Path partial = destination.resolveSibling(destination.getFileName() + ".partial");
+        String tmpKey = artifact.hashHex().substring(0, Math.min(16, artifact.hashHex().length()));
+        Path partial = versionsDir.resolve("." + tmpKey + ".partial");
         try {
-            Files.copy(source, partial, StandardCopyOption.REPLACE_EXISTING);
-            verifyAndMove(partial, destination, artifact);
-            return destination;
+            URI uri = artifact.downloadUri();
+            if ("file".equals(uri.getScheme())) {
+                Files.copy(Path.of(uri), partial, StandardCopyOption.REPLACE_EXISTING);
+                verifyHash(partial, artifact);
+            } else {
+                LoaderHttp.retry(logger, "download " + artifact.fileName(),
+                        () -> downloadHttpTo(uri, partial, artifact));
+            }
+            return finalizeDownload(partial, artifact, platform);
         } finally {
             Files.deleteIfExists(partial);
         }
     }
 
-    private Path downloadHttp(URI uri, Path destination, Artifact artifact) throws IOException, InterruptedException {
+    private Path finalizeDownload(Path partial, Artifact artifact, HostPlatform platform) throws IOException {
+        BuildProps incoming = readBuildProps(partial);
+        if (incoming.gitCommit().isEmpty()) {
+            throw new IOException("Downloaded " + artifact.fileName()
+                    + " is missing META-INF/totemguard/build.properties (refusing to cache without a commit identifier).");
+        }
+
+        Path destination = versionsDir.resolve("TotemGuard-" + platform.name().toLowerCase(Locale.ROOT)
+                + "-" + sanitize(artifact.version())
+                + "-" + sanitize(incoming.gitCommit()) + ".jar");
+
+        if (Files.isRegularFile(destination)) {
+            String existingSha = Checksums.hashFile(destination, Artifact.HashAlgorithm.SHA_256);
+            if (existingSha.equalsIgnoreCase(artifact.hashHex())) {
+                logger.fine("Reusing cached jar " + destination.getFileName());
+                return destination;
+            }
+            // Same commit, different content. Newer build wins (timestamp comparison).
+            BuildProps existing = readBuildProps(destination);
+            if (incoming.buildTimestamp() <= existing.buildTimestamp() && existing.buildTimestamp() > 0L) {
+                throw new IOException("Refusing to overwrite newer cached " + destination.getFileName()
+                        + " (cached built at " + existing.buildTimestamp()
+                        + ", incoming at " + incoming.buildTimestamp() + ").");
+            }
+            logger.info("Replacing " + destination.getFileName() + " with a newer build of the same commit.");
+        }
+
+        Files.move(partial, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        return destination;
+    }
+
+    private Path downloadHttpTo(URI uri, Path partial, Artifact artifact) throws IOException, InterruptedException {
         logger.info("Downloading " + artifact.fileName() + " from " + artifact.sourceLabel());
-        Path partial = destination.resolveSibling(destination.getFileName() + ".partial");
-        try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(uri)
-                    .timeout(LoaderHttp.READ_TIMEOUT)
-                    .header("User-Agent", "TotemGuard-Loader")
-                    .GET();
-            for (Map.Entry<String, String> header : artifact.headers().entrySet()) {
-                builder.header(header.getKey(), header.getValue());
-            }
-
-            HttpResponse<InputStream> response = LoaderHttp.client().send(builder.build(),
-                    HttpResponse.BodyHandlers.ofInputStream());
-            int status = response.statusCode();
-            if (status / 100 != 2) {
-                String msg = "HTTP " + HttpStatusText.describe(status) + " for " + uri;
-                if (status >= 500 || status == 408 || status == 429) throw new IOException(msg);
-                throw new PermanentDownloadException(msg);
-            }
-
-            MessageDigest digest = newDigest(artifact);
-            long contentLength = response.headers().firstValueAsLong("Content-Length").orElse(-1L);
-            long written = 0L;
-            try (InputStream in = response.body();
-                 OutputStream out = Files.newOutputStream(partial,
-                         StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-                byte[] buffer = new byte[16_384];
-                int read;
-                while ((read = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, read);
-                    digest.update(buffer, 0, read);
-                    written += read;
-                }
-            }
-
-            if (contentLength >= 0 && written != contentLength) {
-                throw new IOException("Short read for " + artifact.fileName()
-                        + " (got " + written + " of " + contentLength + " bytes). Retrying.");
-            }
-
-            String actual = java.util.HexFormat.of().formatHex(digest.digest());
-            if (!actual.equalsIgnoreCase(artifact.hashHex())) {
-                throw new IOException("Downloaded " + artifact.fileName()
-                        + " hash " + actual + " did not match advertised " + artifact.hashHex());
-            }
-
-            Files.move(partial, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            return destination;
-        } finally {
-            Files.deleteIfExists(partial);
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(uri)
+                .timeout(LoaderHttp.READ_TIMEOUT)
+                .header("User-Agent", "TotemGuard-Loader")
+                .GET();
+        for (Map.Entry<String, String> header : artifact.headers().entrySet()) {
+            builder.header(header.getKey(), header.getValue());
         }
+
+        HttpResponse<InputStream> response = LoaderHttp.client().send(builder.build(),
+                HttpResponse.BodyHandlers.ofInputStream());
+        int status = response.statusCode();
+        if (status / 100 != 2) {
+            String msg = "HTTP " + HttpStatusText.describe(status) + " for " + uri;
+            if (status >= 500 || status == 408 || status == 429) throw new IOException(msg);
+            throw new PermanentDownloadException(msg);
+        }
+
+        MessageDigest digest = newDigest(artifact);
+        long contentLength = response.headers().firstValueAsLong("Content-Length").orElse(-1L);
+        long written = 0L;
+        try (InputStream in = response.body();
+             OutputStream out = Files.newOutputStream(partial,
+                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            byte[] buffer = new byte[16_384];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+                digest.update(buffer, 0, read);
+                written += read;
+            }
+        }
+
+        if (contentLength >= 0 && written != contentLength) {
+            throw new IOException("Short read for " + artifact.fileName()
+                    + " (got " + written + " of " + contentLength + " bytes). Retrying.");
+        }
+
+        String actual = java.util.HexFormat.of().formatHex(digest.digest());
+        if (!actual.equalsIgnoreCase(artifact.hashHex())) {
+            throw new IOException("Downloaded " + artifact.fileName()
+                    + " hash " + actual + " did not match advertised " + artifact.hashHex());
+        }
+        return partial;
     }
 
     public void recordChannel(String channel, Path jar) throws IOException {
@@ -260,6 +308,10 @@ public final class CachedJarStore {
         } catch (IOException ex) {
             return Optional.empty();
         }
+    }
+
+    private record BuildProps(String gitCommit, long buildTimestamp) {
+        static final BuildProps EMPTY = new BuildProps("", 0L);
     }
 
     private static final class PermanentDownloadException extends IOException implements LoaderHttp.Permanent {

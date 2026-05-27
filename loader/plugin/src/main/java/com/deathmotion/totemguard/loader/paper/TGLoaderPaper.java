@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.loader.paper;
 
+import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.integrity.JarIntegrityChecker;
 import com.deathmotion.totemguard.loader.command.LoaderApp;
 import com.deathmotion.totemguard.loader.core.*;
@@ -190,10 +191,13 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
         if (runtime == null) {
             LoaderResult result = core.run(getClassLoader(), versionOverride);
             PluginRuntime created = new PluginRuntime(core, this, paths, getClassLoader(), loaderLog);
-            created.start(result.pluginJar());
+            PluginRuntime.PreparedPlugin prepared = created.prepareInitial(result.pluginJar());
+            PaperLoaderScheduler.runMainAndWait(this, () -> created.commitInitialPrepared(prepared));
             this.runtime = created;
         } else {
-            runtime.loadVersionForCommand(versionOverride);
+            PluginRuntime.PreparedPlugin prepared = runtime.prepareReplacement(versionOverride);
+            PaperLoaderScheduler.runMainAndWait(this, () ->
+                    runtime.commitReplacement(prepared, TGPluginShutdownEvent.Reason.LOADER_RESTART));
         }
     }
 
@@ -211,7 +215,9 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
         if (runtime == null) {
             attemptStart(null);
         } else {
-            runtime.loadVersionForCommand(null);
+            PluginRuntime.PreparedPlugin prepared = runtime.prepareReplacement(null);
+            PaperLoaderScheduler.runMainAndWait(this, () ->
+                    runtime.commitReplacement(prepared, TGPluginShutdownEvent.Reason.LOADER_RESTART));
         }
     }
 
@@ -220,9 +226,6 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
         if (core.readStaged().isEmpty()) {
             boolean staged = core.stageFromCatalogBySha(apply.targetVersion(), apply.targetSha256());
             if (!staged) {
-                // Try to pull the jar from the fleet blob cache (jar-available may have
-                // arrived after we missed it, or this peer joined late). If still nothing,
-                // surface the failure so operators see a partial rollout.
                 staged = core.tryPullAndStageFromFleet(apply.targetVersion(), apply.targetSha256());
             }
             if (!staged) {
@@ -251,7 +254,7 @@ public final class TGLoaderPaper extends JavaPlugin implements LoaderApp {
             doApply.run();
         } else {
             long delayTicks = delayMillis / 50L;
-            Bukkit.getScheduler().runTaskLater(this, doApply, delayTicks);
+            PaperLoaderScheduler.runMainLater(this, doApply, delayTicks);
             long delaySeconds = Math.round(delayMillis / 1000.0);
             loaderLog.info("Applying staged rollout in " + delaySeconds + "s.");
         }

@@ -22,6 +22,10 @@ import java.util.*
 
 private val SNAPSHOT_HASH_SUFFIX = Regex("\\+[0-9a-f]+-SNAPSHOT$")
 
+const val GIT_SHORT_HASH_LENGTH = 7
+
+fun String.gitShortHash(): String = take(GIT_SHORT_HASH_LENGTH)
+
 fun String.withoutSnapshotHash(): String = replace(SNAPSHOT_HASH_SUFFIX, "-SNAPSHOT")
 
 fun String.capitalizedName(): String =

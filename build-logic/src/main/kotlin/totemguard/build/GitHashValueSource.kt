@@ -41,7 +41,7 @@ abstract class GitHashValueSource : ValueSource<String, GitHashValueSource.Param
         val stdout = ByteArrayOutputStream()
         val result = execOperations.exec {
             workingDir = dir
-            commandLine("git", "rev-parse", "--short", "HEAD")
+            commandLine("git", "rev-parse", "HEAD")
             standardOutput = stdout
             isIgnoreExitValue = true
         }

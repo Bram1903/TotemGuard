@@ -1,10 +1,11 @@
 package totemguard
 
+import totemguard.build.BuildPropertiesTask
 import totemguard.build.TGVersionTask
 
 interface TGVersionPluginExtension {
-    val packageName: org.gradle.api.provider.Property<String>
-    val className: org.gradle.api.provider.Property<String>
+    val packageName: Property<String>
+    val className: Property<String>
 }
 
 val tgVersion = extensions.create<TGVersionPluginExtension>("tgVersion")
@@ -29,5 +30,18 @@ pluginManager.withPlugin("java") {
 
     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME) {
         dependsOn(generateTask)
+    }
+
+    val rootGitHash = rootProject.extra.properties["gitHash"] as String?
+    val buildPropsTask = tasks.register<BuildPropertiesTask>(BuildPropertiesTask.TASK_NAME) {
+        group = LifecycleBasePlugin.BUILD_GROUP
+        description = "Generates META-INF/totemguard/build.properties for runtime identification."
+        versionValue.set(project.version.toString())
+        if (rootGitHash != null) gitCommit.set(rootGitHash)
+        outputDir.set(layout.buildDirectory.dir("generated/resources/build-properties"))
+    }
+
+    sourceSets.named("main") {
+        resources.srcDir(buildPropsTask.flatMap { it.outputDir })
     }
 }
