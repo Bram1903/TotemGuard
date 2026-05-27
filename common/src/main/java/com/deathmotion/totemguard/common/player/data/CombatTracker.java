@@ -43,6 +43,10 @@ public class CombatTracker {
         this.lastAttackedEntityId = targetEntityId;
     }
 
+    public void recordOutgoingStab(long timestamp) {
+        this.lastOutgoingAttackMs = timestamp;
+    }
+
     public boolean inActiveCombat() {
         return inActiveCombat(ACTIVE_COMBAT_WINDOW_MS);
     }

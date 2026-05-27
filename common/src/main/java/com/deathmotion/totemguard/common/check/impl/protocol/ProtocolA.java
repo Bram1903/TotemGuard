@@ -28,7 +28,10 @@ import com.deathmotion.totemguard.common.player.data.TeleportData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.DiggingAction;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 
 @RequiresTickEnd
 @CheckData(description = "Slot change after action in same tick", type = CheckType.PROTOCOL)
@@ -48,6 +51,9 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
                     : "interact";
         }
         if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
+        if (type == PacketType.Play.Client.PLAYER_DIGGING) {
+            return new WrapperPlayClientPlayerDigging(event).getAction() == DiggingAction.STAB ? "stab" : null;
+        }
         return null;
     }
 
@@ -62,6 +68,7 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
 
         if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
             if (lastFlushingAction == null) return;
+            if (player.getData().getGameMode() == GameMode.SPECTATOR) return;
             TeleportData teleportData = player.getData().getTeleportData();
             if (teleportData.lastTickHadTeleport() || teleportData.hasPendingTeleport()) return;
             fail(lastFlushingAction);

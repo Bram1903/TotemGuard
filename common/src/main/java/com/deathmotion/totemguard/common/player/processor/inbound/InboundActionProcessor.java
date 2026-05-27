@@ -110,6 +110,10 @@ public class InboundActionProcessor extends ProcessorInbound {
                 case DROP_ITEM, DROP_ITEM_STACK -> tickData.setDropping(true);
                 case RELEASE_USE_ITEM -> tickData.setReleasing(true);
                 case FINISHED_DIGGING, CANCELLED_DIGGING, START_DIGGING -> tickData.setDigging(true);
+                case STAB -> {
+                    tickData.setStabbing(true);
+                    combatTracker.recordOutgoingStab(event.getTimestamp());
+                }
             }
         } else if (packetType == PacketType.Play.Client.PICK_ITEM) {
             tickData.setPicking(true);

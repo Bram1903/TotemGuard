@@ -31,6 +31,7 @@ public class TickData {
     private boolean dropping;
     private boolean interacting;
     private boolean attacking;
+    private boolean stabbing;
     private boolean releasing;
     private boolean digging;
     private boolean sprinting;
@@ -51,6 +52,7 @@ public class TickData {
         dropping = false;
         interacting = false;
         attacking = false;
+        stabbing = false;
         releasing = false;
         digging = false;
         sprinting = false;
@@ -73,5 +75,9 @@ public class TickData {
         if (isPlacing()) return true;
 
         return false;
+    }
+
+    public boolean isAttackingOrStabbing() {
+        return attacking || stabbing;
     }
 }

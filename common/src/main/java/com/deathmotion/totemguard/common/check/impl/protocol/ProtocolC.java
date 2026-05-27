@@ -27,9 +27,10 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.TickData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 
 @RequiresTickEnd
-@CheckData(description = "Attack and place", type = CheckType.PROTOCOL)
+@CheckData(description = "Attack while placing or using in the same tick", type = CheckType.PROTOCOL)
 public class ProtocolC extends CheckImpl implements PacketCheck {
 
     private final TickData tickData;
@@ -43,9 +44,16 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.CLIENT_TICK_END) return;
 
-        if (tickData.isAttacking() && tickData.isPlacing() && !tickData.isInteracting()) {
-            if (player.isMarlowOptimizer()) return;
-            fail();
+        if (player.getData().getGameMode() == GameMode.SPECTATOR) return;
+        if (!tickData.isAttackingOrStabbing() || tickData.isInteracting()) return;
+
+        if (tickData.isUsing()) {
+            fail("using");
+            return;
+        }
+
+        if (tickData.isPlacing() && !player.isMarlowOptimizer()) {
+            fail("placing");
         }
     }
 }
