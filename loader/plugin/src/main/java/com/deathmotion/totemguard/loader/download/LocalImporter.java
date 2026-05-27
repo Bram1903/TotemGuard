@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
@@ -46,6 +47,7 @@ import java.util.zip.ZipEntry;
 public final class LocalImporter {
 
     private static final String IMPORTED_DIR = ".imported";
+    private static final String BUILD_PROPS_ENTRY = "META-INF/totemguard/build.properties";
 
     private final Logger logger;
     private final CatalogIndex catalogIndex;
@@ -86,6 +88,29 @@ public final class LocalImporter {
             JsonObject root = JsonParser.parseString(new String(in.readAllBytes())).getAsJsonObject();
             if (!root.has("version")) return null;
             return root.get("version").getAsString();
+        }
+    }
+
+    private static BuildProps readBuildProps(Path jar) {
+        try (JarFile jf = new JarFile(jar.toFile())) {
+            ZipEntry entry = jf.getEntry(BUILD_PROPS_ENTRY);
+            if (entry == null) return BuildProps.EMPTY;
+            Properties props = new Properties();
+            try (InputStream in = jf.getInputStream(entry)) {
+                props.load(in);
+            }
+            String commit = props.getProperty("git.commit", "").trim();
+            long timestamp = 0L;
+            String tsRaw = props.getProperty("build.timestamp", "").trim();
+            if (!tsRaw.isEmpty()) {
+                try {
+                    timestamp = Long.parseLong(tsRaw);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            return new BuildProps(commit, timestamp);
+        } catch (IOException ex) {
+            return BuildProps.EMPTY;
         }
     }
 
@@ -149,18 +174,42 @@ public final class LocalImporter {
         }
 
         String sha256 = Checksums.hashFile(jar, Artifact.HashAlgorithm.SHA_256);
-        String hashPrefix = sha256.substring(0, Math.min(10, sha256.length()));
+        BuildProps incomingProps = readBuildProps(jar);
+        if (incomingProps.gitCommit().isEmpty()) {
+            logger.warning("Skipping " + jar.getFileName()
+                    + ": missing META-INF/totemguard/build.properties (was this built from TotemGuard 3.0 or newer?).");
+            return null;
+        }
+
         Path destination = paths.versionsDir().resolve("TotemGuard-"
                 + platform.name().toLowerCase(Locale.ROOT)
                 + "-" + sanitize(version)
-                + "-" + hashPrefix + ".jar");
+                + "-" + sanitize(incomingProps.gitCommit()) + ".jar");
 
         boolean freshlyImported;
         if (Files.isRegularFile(destination)) {
-            logger.info("Local " + jar.getFileName() + " already in cache as "
-                    + destination.getFileName() + ".");
-            catalogIndex.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_LOCAL, null);
-            freshlyImported = false;
+            String existingSha = Checksums.hashFile(destination, Artifact.HashAlgorithm.SHA_256);
+            if (existingSha.equalsIgnoreCase(sha256)) {
+                logger.info("Local " + jar.getFileName() + " already in cache as "
+                        + destination.getFileName() + ".");
+                catalogIndex.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_LOCAL, null);
+                freshlyImported = false;
+            } else {
+                // Same commit (or same SHA-prefix), different content. Newer build wins.
+                BuildProps existingProps = readBuildProps(destination);
+                if (incomingProps.buildTimestamp() <= existingProps.buildTimestamp()
+                        && existingProps.buildTimestamp() > 0L) {
+                    logger.warning("Skipping " + jar.getFileName() + ": cached "
+                            + destination.getFileName() + " was built at "
+                            + existingProps.buildTimestamp() + " and the incoming jar is older.");
+                    return null;
+                }
+                Files.copy(jar, destination, StandardCopyOption.REPLACE_EXISTING);
+                catalogIndex.upsertSource(destination, version, sha256, CatalogSidecar.SOURCE_LOCAL, null);
+                logger.info("Replaced " + destination.getFileName()
+                        + " with a newer build of the same commit.");
+                freshlyImported = true;
+            }
         } else {
             Files.createDirectories(destination.getParent());
             Files.copy(jar, destination, StandardCopyOption.REPLACE_EXISTING);
@@ -169,6 +218,10 @@ public final class LocalImporter {
             freshlyImported = true;
         }
         return new ImportRecord(destination, version, sha256, freshlyImported);
+    }
+
+    private record BuildProps(String gitCommit, long buildTimestamp) {
+        static final BuildProps EMPTY = new BuildProps("", 0L);
     }
 
     public record ImportRecord(Path jar, String version, String sha256, boolean freshlyImported) {

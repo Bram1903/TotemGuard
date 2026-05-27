@@ -214,7 +214,7 @@ public final class LoaderCore {
             sourceLabel = staged.source();
             catalogSource = stagedSourceTag(staged.source());
         } else {
-            CachedJarStore store = new CachedJarStore(paths.versionsDir(), logger);
+            CachedJarStore store = new CachedJarStore(paths.versionsDir(), logger, catalogIndex);
             VersionResolver resolver = VersionResolver.forConfig(config);
             catalogSource = sourceTagFor(config);
 
@@ -373,7 +373,7 @@ public final class LoaderCore {
 
     public List<String> listCachedVersions() {
         try {
-            return new CachedJarStore(paths.versionsDir(), logger).listCachedVersions(platform);
+            return new CachedJarStore(paths.versionsDir(), logger, catalogIndex).listCachedVersions(platform);
         } catch (IOException ex) {
             logger.warning("Failed to list cached versions: " + ex.getMessage());
             return List.of();
@@ -457,7 +457,7 @@ public final class LoaderCore {
     }
 
     private StageResult stageFromLocalCatalog(String version) throws IOException {
-        CachedJarStore store = new CachedJarStore(paths.versionsDir(), logger);
+        CachedJarStore store = new CachedJarStore(paths.versionsDir(), logger, catalogIndex);
         Optional<Path> located = store.findPinnedJar(version, platform);
         if (located.isEmpty()) return null;
         Path jar = located.get();

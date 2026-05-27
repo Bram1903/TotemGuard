@@ -80,8 +80,32 @@ public final class PluginRuntime {
         commitPrepared(prepared, null);
     }
 
+    public synchronized PreparedPlugin prepareInitial(Path pluginJar) throws Exception {
+        if (handle != null) {
+            throw new IllegalStateException("prepareInitial() called while a plugin is already loaded");
+        }
+        return prepareFromJar(pluginJar);
+    }
+
+    public synchronized void commitInitialPrepared(PreparedPlugin prepared) throws Exception {
+        if (handle != null) {
+            logger.warning("commitInitialPrepared() called while a plugin is already loaded. Closing the prepared classloader.");
+            safeClose(prepared.classLoader);
+            return;
+        }
+        commitPrepared(prepared, null);
+    }
+
     public synchronized void loadVersion(String versionOverride, TGPluginShutdownEvent.Reason reason) throws Exception {
         PreparedPlugin prepared = prepareNext(versionOverride);
+        commitReplacement(prepared, reason);
+    }
+
+    public synchronized PreparedPlugin prepareReplacement(String versionOverride) throws Exception {
+        return prepareNext(versionOverride);
+    }
+
+    public synchronized void commitReplacement(PreparedPlugin prepared, TGPluginShutdownEvent.Reason reason) throws Exception {
         try {
             if (handle != null) {
                 stopCurrent(reason);
@@ -235,6 +259,6 @@ public final class PluginRuntime {
         }
     }
 
-    private record PreparedPlugin(TGPluginClassLoader classLoader, TGPluginEntry entry, Path jar) {
+    public record PreparedPlugin(TGPluginClassLoader classLoader, TGPluginEntry entry, Path jar) {
     }
 }

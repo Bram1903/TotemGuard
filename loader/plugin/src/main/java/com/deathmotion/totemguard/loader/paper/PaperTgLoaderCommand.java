@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.loader.command.LoaderMessage;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -73,20 +72,14 @@ public final class PaperTgLoaderCommand implements TabExecutor {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String @NonNull [] args) {
-        // Console is always allowed. For players we require the permission explicitly,
-        // never granting it via `default: op`, because the loader controls which jar
-        // runs as TotemGuard and that's too important to hand to every op by default.
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NonNull [] args) {
         if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission(PERMISSION)) {
             sender.sendMessage(Component.text(
                     "You don't have permission to use /tgloader.", NamedTextColor.RED));
             return true;
         }
-        // Sender messaging is scheduled to the main thread so the Sink can be invoked
-        // from any background worker without Bukkit complaining.
-        LoaderMessage.Sink sink = line -> Bukkit.getScheduler().runTask(plugin,
-                () -> sender.sendMessage(render(line)));
+
+        LoaderMessage.Sink sink = line -> PaperLoaderScheduler.runMain(plugin, () -> sender.sendMessage(render(line)));
         service.dispatch(sink, args);
         return true;
     }

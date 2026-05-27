@@ -1,6 +1,7 @@
 package totemguard
 
 import totemguard.build.GitHashValueSource
+import totemguard.build.gitShortHash
 import totemguard.build.withSnapshotMetadata
 
 plugins {
@@ -16,8 +17,12 @@ val gitHash: Provider<String> = providers.of(GitHashValueSource::class) {
     parameters.projectDir.set(rootProject.projectDir)
 }
 
-extra["snapshot"] = snapshot
-extra["gitHash"] = gitHash.orNull
+val fullHash = gitHash.orNull
+val shortHash = fullHash?.gitShortHash()
 
-version = baseVersion.withSnapshotMetadata(snapshot, gitHash.orNull)
+extra["snapshot"] = snapshot
+extra["gitHash"] = fullHash
+extra["gitHashShort"] = shortHash
+
+version = baseVersion.withSnapshotMetadata(snapshot, shortHash)
 description = "TotemGuard is a simple anti-cheat that tries to detect players who are using AutoTotem."
