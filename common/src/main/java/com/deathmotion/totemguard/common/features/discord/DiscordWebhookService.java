@@ -26,11 +26,13 @@ import com.deathmotion.totemguard.common.config.key.DiscordKeys;
 import com.deathmotion.totemguard.common.config.schema.WebhookConfig;
 import com.deathmotion.totemguard.common.config.schema.WebhookField;
 import com.deathmotion.totemguard.common.config.view.DiscordView;
-import com.deathmotion.totemguard.common.features.discord.webhook.*;
+import com.deathmotion.totemguard.common.features.discord.webhook.CompiledDiscordTemplate;
+import com.deathmotion.totemguard.common.features.discord.webhook.WebhookCv2;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.util.ReflectiveHttpClientCloser;
 import com.deathmotion.totemguard.common.util.ScheduledTask;
+import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +61,7 @@ public final class DiscordWebhookService implements Reloadable {
                     .asMatchPredicate();
 
     private static final int MAX_QUEUE_SIZE = 20;
+    private static final int MAX_FIELDS = 25;
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(15);
     private static final String UNSPECIFIED_DEBUG = "Not specified";
 
@@ -83,6 +86,16 @@ public final class DiscordWebhookService implements Reloadable {
 
         this.alertChannel.start();
         this.punishmentChannel.start();
+    }
+
+    private static String footerText(@Nullable String footer, boolean timestamp) {
+        StringBuilder sb = new StringBuilder();
+        if (footer != null && !footer.isBlank()) sb.append(footer);
+        if (timestamp) {
+            if (sb.length() > 0) sb.append(" • ");
+            sb.append("<t:").append(Instant.now().getEpochSecond()).append(":f>");
+        }
+        return sb.toString();
     }
 
     @Override
@@ -118,50 +131,55 @@ public final class DiscordWebhookService implements Reloadable {
 
         Function<String, String> resolver = key -> resolvePlaceholder(key, player, check, extras);
 
-        Embed embed = new Embed(render(cfg.description, resolver))
-                .title(cfg.title)
-                .color(cfg.color);
+        List<String[]> fields = new ArrayList<>(cfg.fields.length);
+        for (CompiledField cf : cfg.fields) {
+            fields.add(new String[]{render(cf.name, resolver), render(cf.value, resolver)});
+        }
 
+        String thumbnail = null;
         if (!cfg.thumbnail.isBlank()) {
-            String thumbnail = placeholderRepository.replace(cfg.thumbnail, player, check, extras);
-            if (!thumbnail.isBlank()) embed.thumbnailURL(thumbnail);
+            String resolved = placeholderRepository.replace(cfg.thumbnail, player, check, extras);
+            if (!resolved.isBlank()) thumbnail = resolved;
         }
 
-        if (cfg.fields.length > 0) {
-            EmbedField[] fields = new EmbedField[cfg.fields.length];
-            for (int i = 0; i < cfg.fields.length; i++) {
-                CompiledField cf = cfg.fields[i];
-                fields[i] = new EmbedField(
-                        render(cf.name, resolver),
-                        render(cf.value, resolver),
-                        cf.inline
-                );
-            }
-            embed.fields(fields);
-        }
+        String footer = cfg.footer == null ? null : render(cfg.footer, resolver);
 
-        if (cfg.timestamp) embed.timestamp(Instant.now());
-
-        if (cfg.footer != null) {
-            String footerText = render(cfg.footer, resolver);
-            if (!footerText.isBlank()) {
-                embed.footer(new EmbedFooter(footerText));
-            }
-        }
-
-        WebhookMessage msg = new WebhookMessage()
-                .username(cfg.username)
-                .avatar(cfg.avatar.isBlank() ? null : cfg.avatar)
-                .addEmbeds(embed);
+        JsonObject payload = card(cfg, fields, thumbnail, footer).build();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(cfg.uri)
                 .header("Content-Type", "application/json")
                 .timeout(HTTP_TIMEOUT)
-                .POST(HttpRequest.BodyPublishers.ofString(msg.toJson().toString()))
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                 .build();
 
         channel.enqueue(request);
+    }
+
+    private WebhookCv2 card(ChannelConfig cfg, List<String[]> fields, @Nullable String thumbnail, @Nullable String footer) {
+        WebhookCv2 card = WebhookCv2.container(cfg.color)
+                .identity(cfg.username, cfg.avatar.isBlank() ? null : cfg.avatar);
+
+        if (thumbnail != null) {
+            StringBuilder body = new StringBuilder();
+            if (cfg.title != null && !cfg.title.isBlank()) body.append("## ").append(cfg.title);
+            for (String[] field : fields) {
+                if (body.length() > 0) body.append("\n\n");
+                body.append("**").append(field[0]).append("**\n").append(field[1]);
+            }
+            card.section(body.toString().strip(), thumbnail);
+        } else {
+            if (cfg.title != null && !cfg.title.isBlank()) card.heading(cfg.title);
+            for (String[] field : fields) {
+                card.field(field[0], field[1]);
+            }
+        }
+
+        String footerLine = footerText(footer, cfg.timestamp);
+        if (!footerLine.isBlank()) {
+            card.divider().subtle(footerLine);
+        }
+        return card;
     }
 
     private String render(CompiledDiscordTemplate template, Function<String, String> resolver) {
@@ -185,7 +203,9 @@ public final class DiscordWebhookService implements Reloadable {
 
         URI uri;
         try {
-            uri = URI.create(cfg.url());
+            // Components V2 requires the with_components flag on the webhook execute call.
+            String withComponents = cfg.url() + (cfg.url().contains("?") ? "&" : "?") + "with_components=true";
+            uri = URI.create(withComponents);
         } catch (IllegalArgumentException e) {
             platform.getLogger().warning("[Discord] Failed to parse webhook URL for '" + prefix + "': " + e.getMessage());
             return ChannelConfig.disabled();
@@ -209,7 +229,6 @@ public final class DiscordWebhookService implements Reloadable {
                 color,
                 cfg.timestamp(),
                 cfg.thumbnail(),
-                CompiledDiscordTemplate.compile(""),
                 footer,
                 compiled.toArray(CompiledField[]::new)
         );
@@ -217,7 +236,7 @@ public final class DiscordWebhookService implements Reloadable {
 
     private List<CompiledField> compileFields(List<WebhookField> fields) {
         if (fields.isEmpty()) return List.of();
-        int max = Math.min(fields.size(), Embed.MAX_FIELDS);
+        int max = Math.min(fields.size(), MAX_FIELDS);
         List<CompiledField> out = new ArrayList<>(max);
         for (int i = 0; i < max; i++) {
             WebhookField f = fields.get(i);
@@ -253,12 +272,11 @@ public final class DiscordWebhookService implements Reloadable {
             int color,
             boolean timestamp,
             String thumbnail,
-            CompiledDiscordTemplate description,
             @Nullable CompiledDiscordTemplate footer,
             CompiledField[] fields
     ) {
         static ChannelConfig disabled() {
-            return new ChannelConfig(false, null, null, null, null, 0, false, "", null, null, new CompiledField[0]);
+            return new ChannelConfig(false, null, null, null, null, 0, false, "", null, new CompiledField[0]);
         }
     }
 

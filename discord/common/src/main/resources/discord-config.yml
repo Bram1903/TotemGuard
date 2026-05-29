@@ -1,0 +1,108 @@
+#    ___________     __                   ________                       .___
+#    \__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+#      |    | /  _ \   __\/ __ \ /     \/   \  ___|  |  \__  \\_  __ \/ __ |
+#      |    |(  <_> )  | \  ___/|  Y Y  \    \_\  \  |  // __ \|  | \/ /_/ |
+#      |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
+#                             \/      \/        \/           \/           \/
+#
+# TotemGuard Discord bot. This is an OPTIONAL add-on plugin. It talks to the running
+# TotemGuard through its API, so install it on a server that already runs TotemGuard.
+#
+# With Redis enabled you can install it on as many backend servers as you like. The nodes
+# coordinate over TotemGuard's Redis so only one holds the bot connection at a time (with
+# automatic failover), and every node's alerts still reach Discord. Without Redis there is no
+# coordination between nodes, so install it on a single backend only. Stats and history are
+# network-wide either way (they come from the shared database).
+
+bot:
+  # Paste your Discord bot token here. Leave blank to keep the bot turned off.
+  token: ""
+
+  # The bot's presence/activity line.
+  status:
+    enabled: true
+    # PLAYING, WATCHING, LISTENING, or COMPETING.
+    activity: "WATCHING"
+    # Supports %players% (tracked players across the network) and %servers% (connected servers).
+    text: "%players% players"
+    update-interval-seconds: 60
+
+# Slash commands. They appear as /<base> <subcommand>.
+commands:
+  base: "totemguard"
+
+  # Guild (server) IDs to register commands in. Guild commands appear instantly.
+  # Leave empty to register globally instead (can take up to an hour to show up).
+  guild-ids: []
+
+  # Toggle individual subcommands.
+  enabled:
+    history: true
+    status: true
+    version: true
+    stats: true
+    reload: true
+    restart: true
+    update: true
+
+  # Access control, split into two tiers plus optional per-command overrides.
+  permissions:
+    # Regular commands (history, status, version, stats). Add role/user IDs to limit them to
+    # staff. Leave both lists empty to let anyone use them (so version is open by default).
+    regular:
+      role-ids: []
+      user-ids: []
+
+    # Admin commands (reload, restart, update). These always also accept the Discord
+    # Administrator permission, and are Administrator-only when both lists here are empty.
+    admin:
+      role-ids: []
+      user-ids: []
+
+    # Optional per-command overrides. A command with a non-empty list here uses that instead
+    # of its tier above. Leave a command's lists empty to keep using its tier default.
+    overrides:
+      history:
+        role-ids: []
+        user-ids: []
+      status:
+        role-ids: []
+        user-ids: []
+      version:
+        role-ids: []
+        user-ids: []
+      stats:
+        role-ids: []
+        user-ids: []
+      reload:
+        role-ids: []
+        user-ids: []
+      restart:
+        role-ids: []
+        user-ids: []
+      update:
+        role-ids: []
+        user-ids: []
+
+# Live posting of the connected node's local detections into a channel (via the bot).
+alerts:
+  enabled: false
+  channel-id: ""
+  color: "#FBAF00"
+  title: "TotemGuard Alert"
+
+punishments:
+  enabled: false
+  channel-id: ""
+  color: "#D4452C"
+  title: "TotemGuard Punishment"
+
+# Operational health notices posted to a staff channel. This covers infrastructure problems
+# (the database or Redis going down and recovering) and unexpected bot errors. In a cluster
+# these are gathered network-wide, so one bot reports problems on any backend.
+diagnostics:
+  enabled: false
+  channel-id: ""
+  # The lowest severity worth posting: INFO, WARNING, ERROR, or CRITICAL. INFO includes the
+  # recovery notices, so leaving it at INFO gives you both the outage and the all-clear.
+  min-severity: "INFO"

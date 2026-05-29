@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.features.punishment;
 
+import com.deathmotion.totemguard.api.event.events.TGNetworkAlertEvent;
 import com.deathmotion.totemguard.api.punishment.PunishmentRepository;
 import com.deathmotion.totemguard.api.punishment.PunishmentType;
 import com.deathmotion.totemguard.api.reload.Reloadable;
@@ -30,6 +31,7 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.event.EventBusImpl;
+import com.deathmotion.totemguard.common.features.alert.NetworkAlertBroadcaster;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.placeholder.engine.PlaceholderEngine;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -132,6 +134,9 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                     }
 
                     platform.getDiscordWebhookService().sendPunishment(check, debug);
+
+                    NetworkAlertBroadcaster.broadcast(platform, playerUuid, player.getName(), check.getName(),
+                            check.getType(), check.getViolations(), debug, TGNetworkAlertEvent.Kind.PUNISHMENT);
 
                     if (clearViolationsAfter) player.getCheckManager().clearAllViolations();
                     keepDistributedLock = containsBan;

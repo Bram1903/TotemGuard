@@ -28,6 +28,7 @@ jetbrains-annotations = "26.0.2-1"
 lombok = "1.18.42"
 gson = "2.11.0"
 slf4j = "2.0.13"
+jda = "6.4.1"
 
 run-paper = "3.0.2"
 shadow = "9.3.1"
@@ -71,6 +72,7 @@ jetbrains-annotations = { group = "org.jetbrains", name = "annotations", version
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+jda = { group = "net.dv8tion", name = "JDA", version.ref = "jda" }
 
 shadow-gradle-plugin = { group = "com.gradleup.shadow", name = "com.gradleup.shadow.gradle.plugin", version.ref = "shadow" }
 run-paper-gradle-plugin = { group = "xyz.jpenilla.run-paper", name = "xyz.jpenilla.run-paper.gradle.plugin", version.ref = "run-paper" }

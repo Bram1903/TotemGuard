@@ -20,9 +20,11 @@ package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.event.events.TGPluginShutdownEvent;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
+import com.deathmotion.totemguard.common.cluster.ClusterServiceImpl;
 import com.deathmotion.totemguard.common.commands.CommandManagerImpl;
 import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.database.DatabaseRepositoryImpl;
+import com.deathmotion.totemguard.common.diagnostic.DiagnosticService;
 import com.deathmotion.totemguard.common.event.EventBusImpl;
 import com.deathmotion.totemguard.common.event.internal.InternalEventBus;
 import com.deathmotion.totemguard.common.features.alert.AlertRepositoryImpl;
@@ -89,10 +91,12 @@ public abstract class TGPlatform {
     ConfigRepositoryImpl configRepository;
     PlaceholderRepositoryImpl placeholderRepository;
     RedisRepositoryImpl redisRepository;
+    ClusterServiceImpl clusterService;
     DatabaseRepositoryImpl databaseRepository;
     CacheRepositoryImpl cacheRepository;
     MessageService messageService;
     EventBusImpl eventBus;
+    DiagnosticService diagnosticService;
     InternalEventBus internalEventBus;
     PunishmentRepositoryImpl punishmentRepository;
     AlertRepositoryImpl alertRepository;

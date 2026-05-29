@@ -20,10 +20,12 @@ package com.deathmotion.totemguard.common;
 
 import com.deathmotion.totemguard.api.TotemGuardAPI;
 import com.deathmotion.totemguard.api.alert.AlertRepository;
+import com.deathmotion.totemguard.api.cluster.ClusterService;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventBus;
 import com.deathmotion.totemguard.api.history.HistoryRepository;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
+import com.deathmotion.totemguard.api.loader.LoaderControl;
 import com.deathmotion.totemguard.api.mod.ModDetectionRepository;
 import com.deathmotion.totemguard.api.network.NetworkRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
@@ -34,6 +36,7 @@ import com.deathmotion.totemguard.api.update.UpdateCheckerRepository;
 import com.deathmotion.totemguard.api.user.UserRepository;
 import com.deathmotion.totemguard.api.versioning.TGAPIVersions;
 import com.deathmotion.totemguard.api.versioning.TGVersion;
+import com.deathmotion.totemguard.common.loader.LoaderControlAdapter;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.host.LoaderController;
 import com.deathmotion.totemguard.host.TGPluginHost;
@@ -67,6 +70,11 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     @Override
     public @NotNull ConfigRepository getConfigRepository() {
         return platform.getConfigRepository();
+    }
+
+    @Override
+    public void reload() {
+        platform.getReloadService().reload();
     }
 
     @Override
@@ -115,6 +123,11 @@ public final class TGPlatformAPI implements TotemGuardAPI {
     }
 
     @Override
+    public @NotNull ClusterService getCluster() {
+        return platform.getClusterService();
+    }
+
+    @Override
     public @NotNull ModDetectionRepository getModDetectionRepository() {
         return platform.getModDetectionService();
     }
@@ -124,5 +137,12 @@ public final class TGPlatformAPI implements TotemGuardAPI {
         TGPluginHost host = platform.getPluginHost();
         if (host == null || !host.managedByLoader()) return Optional.empty();
         return host.loaderController().map(LoaderController::info);
+    }
+
+    @Override
+    public @NotNull Optional<LoaderControl> getLoaderControl() {
+        TGPluginHost host = platform.getPluginHost();
+        if (host == null || !host.managedByLoader()) return Optional.empty();
+        return host.loaderController().map(LoaderControlAdapter::new);
     }
 }

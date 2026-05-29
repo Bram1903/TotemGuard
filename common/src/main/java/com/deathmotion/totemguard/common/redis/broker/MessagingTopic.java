@@ -23,7 +23,8 @@ public enum MessagingTopic {
     ALERTS("alerts", true),
     FOCUS("focus", false),
     UPDATES("updates", false),
-    PRESENCE("presence", false);
+    PRESENCE("presence", false),
+    EVENTS("events", false);
 
     public static final String PREFIX = "totemguard";
 

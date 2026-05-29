@@ -67,7 +67,9 @@ public final class RedisRepositoryImpl implements RedisRepository {
                 new SyncMonitorUpdateHandler(TGPlatform.getInstance(), this, registry),
                 new SyncCheckRequestHandler(TGPlatform.getInstance(), this, registry),
                 new SyncCheckResultHandler(TGPlatform.getInstance(), this, registry),
-                new SyncFollowEventHandler(TGPlatform.getInstance(), this, registry)
+                new SyncFollowEventHandler(TGPlatform.getInstance(), this, registry),
+                new SyncNetworkAlertHandler(TGPlatform.getInstance(), this, registry),
+                new SyncDiagnosticHandler(TGPlatform.getInstance(), this, registry)
         );
 
         // Initial start is blocking so the connection is up before any player can join.
@@ -99,7 +101,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         if (current == null || !current.enabled() || !current.cluster()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().send();
-            case FOCUS, UPDATES, PRESENCE -> true;
+            case FOCUS, UPDATES, PRESENCE, EVENTS -> true;
         };
     }
 
@@ -108,7 +110,7 @@ public final class RedisRepositoryImpl implements RedisRepository {
         if (current == null || !current.enabled() || !current.cluster()) return false;
         return switch (topic) {
             case ALERTS -> current.messaging().alerts().receive();
-            case FOCUS, UPDATES, PRESENCE -> true;
+            case FOCUS, UPDATES, PRESENCE, EVENTS -> true;
         };
     }
 

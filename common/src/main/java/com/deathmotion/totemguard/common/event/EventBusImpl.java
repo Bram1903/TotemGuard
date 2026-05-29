@@ -57,6 +57,10 @@ public final class EventBusImpl implements EventBus {
     private final TGFocusChannel focus = new TGFocusChannel();
     @Getter
     private final TGPluginShutdownChannel pluginShutdown = new TGPluginShutdownChannel();
+    @Getter
+    private final TGNetworkAlertChannel networkAlert = new TGNetworkAlertChannel();
+    @Getter
+    private final TGDiagnosticChannel diagnostic = new TGDiagnosticChannel();
 
     private final ConcurrentMap<Class<?>, EventChannelImpl<?>> concrete = new ConcurrentHashMap<>();
 
@@ -75,6 +79,8 @@ public final class EventBusImpl implements EventBus {
         concrete.put(follow.eventType(), follow);
         concrete.put(focus.eventType(), focus);
         concrete.put(pluginShutdown.eventType(), pluginShutdown);
+        concrete.put(networkAlert.eventType(), networkAlert);
+        concrete.put(diagnostic.eventType(), diagnostic);
     }
 
     @Override

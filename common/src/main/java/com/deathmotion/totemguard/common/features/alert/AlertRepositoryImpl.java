@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.features.alert;
 import com.deathmotion.totemguard.api.alert.AlertRepository;
 import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.api.config.key.ConfigKey;
+import com.deathmotion.totemguard.api.event.events.TGNetworkAlertEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.check.CheckImpl;
@@ -164,6 +165,9 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
                     new SyncFocusAlertPacket.Payload(violatorUuid, violatorName, realtimeMessage)
             ));
         }
+
+        NetworkAlertBroadcaster.broadcast(platform, violatorUuid, violatorName, check.getName(),
+                check.getType(), violations, debug, TGNetworkAlertEvent.Kind.FLAG);
 
         bufferChatAlert(check, violations, debug, extras);
 

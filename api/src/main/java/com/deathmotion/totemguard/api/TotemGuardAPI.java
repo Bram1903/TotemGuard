@@ -19,10 +19,12 @@
 package com.deathmotion.totemguard.api;
 
 import com.deathmotion.totemguard.api.alert.AlertRepository;
+import com.deathmotion.totemguard.api.cluster.ClusterService;
 import com.deathmotion.totemguard.api.config.ConfigRepository;
 import com.deathmotion.totemguard.api.event.EventBus;
 import com.deathmotion.totemguard.api.history.HistoryRepository;
 import com.deathmotion.totemguard.api.host.LoaderInfo;
+import com.deathmotion.totemguard.api.loader.LoaderControl;
 import com.deathmotion.totemguard.api.mod.ModDetectionRepository;
 import com.deathmotion.totemguard.api.network.NetworkRepository;
 import com.deathmotion.totemguard.api.placeholder.PlaceholderRepository;
@@ -64,6 +66,15 @@ public interface TotemGuardAPI {
      * files and triggering reloads. Reads return atomic snapshots.
      */
     @NotNull ConfigRepository getConfigRepository();
+
+    /**
+     * Performs a full reload, equivalent to the in-game reload command: re-reads every config
+     * file and re-applies it to the live subsystems (messages, Redis, database, punishments,
+     * per-player checks, webhooks). This is blocking and potentially slow, so call it off the
+     * server's main thread. When you only need fresh config snapshots and not a service
+     * re-apply, use {@link #getConfigRepository()} instead.
+     */
+    void reload();
 
     /**
      * Returns the user repository for in-memory lookups of {@link com.deathmotion.totemguard.api.user.TGUser}
@@ -116,6 +127,12 @@ public interface TotemGuardAPI {
     @NotNull NetworkRepository getNetworkRepository();
 
     /**
+     * Cross-fleet coordination primitives (leases and pub/sub) backed by the shared Redis
+     * connection. Degrades gracefully when Redis is offline.
+     */
+    @NotNull ClusterService getCluster();
+
+    /**
      * Returns the update checker repository, or empty when running under the loader
      * (the loader owns release discovery in that mode, see {@link #getLoaderInfo()}).
      */
@@ -132,4 +149,13 @@ public interface TotemGuardAPI {
      * Returns loader info if this plugin is loader-managed, otherwise empty.
      */
     @NotNull Optional<LoaderInfo> getLoaderInfo();
+
+    /**
+     * Returns a handle for driving the loader (reload-in-place restart, self-update) if this
+     * plugin is loader-managed, otherwise empty. Standalone installs cannot restart or update
+     * themselves through the loader, so callers should treat empty as "control unavailable".
+     * Configuration reloads do not need this and are always available via
+     * {@link #getConfigRepository()}.
+     */
+    @NotNull Optional<LoaderControl> getLoaderControl();
 }

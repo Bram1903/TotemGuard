@@ -18,12 +18,14 @@
 
 package com.deathmotion.totemguard.common.database;
 
+import com.deathmotion.totemguard.api.event.events.TGDiagnosticEvent;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.database.dao.AlertDao;
 import com.deathmotion.totemguard.common.database.dao.PlayerDao;
 import com.deathmotion.totemguard.common.database.dao.StatsRollupDao;
 import com.deathmotion.totemguard.common.database.model.PendingAlert;
 import com.deathmotion.totemguard.common.database.util.EpochSeconds;
+import com.deathmotion.totemguard.common.diagnostic.DiagnosticService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -129,7 +131,13 @@ public final class AlertWriter {
     private void flush(List<PendingAlert> batch) {
         try {
             alertDao.insertBatch(batch);
+            reportHealthy();
         } catch (Exception ex) {
+            DiagnosticService diagnostics = TGPlatform.getInstance().getDiagnosticService();
+            if (diagnostics != null) {
+                diagnostics.unhealthy(TGDiagnosticEvent.Severity.CRITICAL, "Database",
+                        "Failed to write alerts to the database. It may have gone offline.", ex);
+            }
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
                     "Failed to flush " + batch.size() + " alert(s) to database", ex);
             return;
@@ -152,6 +160,13 @@ public final class AlertWriter {
         } catch (Exception ex) {
             TGPlatform.getInstance().getLogger().log(Level.WARNING,
                     "Alert batch persisted, but rollup updates failed for " + batch.size() + " row(s)", ex);
+        }
+    }
+
+    private void reportHealthy() {
+        DiagnosticService diagnostics = TGPlatform.getInstance().getDiagnosticService();
+        if (diagnostics != null) {
+            diagnostics.healthy("Database", "Database writes have recovered, alerts are persisting again.");
         }
     }
 

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "totemguard-discord",
+  "version": "${version}",
+  "name": "TotemGuard Discord",
+  "description": "${description}",
+  "authors": [
+    "Bram",
+    "OutDev"
+  ],
+  "license": "GPL-3.0",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "com.deathmotion.totemguard.discord.fabric.DiscordFabricMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": ">=26.1",
+    "java": ">=25",
+    "totemguard": "*"
+  }
+}

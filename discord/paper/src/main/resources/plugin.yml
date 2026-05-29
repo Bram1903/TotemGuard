@@ -1,0 +1,23 @@
+name: TotemGuard-Discord
+description: ${description}
+authors:
+  - Bram
+  - OutDev
+main: com.deathmotion.totemguard.discord.paper.DiscordPaperPlugin
+version: ${version}
+api-version: '1.13'
+folia-supported: true
+load: POSTWORLD
+# Depends on TotemGuard for the API and shared class identity. The loader declares
+# 'provides: TotemGuard', so this resolves in both standalone and loader-managed setups.
+depend:
+  - TotemGuard
+commands:
+  tgdiscord:
+    description: Manage the TotemGuard Discord bot.
+    usage: /tgdiscord reload
+    permission: totemguard.discord.reload
+permissions:
+  totemguard.discord.reload:
+    description: Allows reloading the TotemGuard Discord bot from in game or the console.
+    default: op

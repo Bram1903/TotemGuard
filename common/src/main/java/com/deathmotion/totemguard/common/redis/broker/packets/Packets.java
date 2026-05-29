@@ -34,7 +34,9 @@ public enum Packets {
     SYNC_FOCUS_ALERT(new SyncFocusAlertPacket(11)),
     SYNC_CHECK_REQUEST(new SyncCheckRequestPacket(12)),
     SYNC_CHECK_RESULT(new SyncCheckResultPacket(13)),
-    SYNC_FOLLOW_EVENT(new SyncFollowEventPacket(14));
+    SYNC_FOLLOW_EVENT(new SyncFollowEventPacket(14)),
+    SYNC_NETWORK_ALERT(new SyncNetworkAlertPacket(15)),
+    SYNC_DIAGNOSTIC(new SyncDiagnosticPacket(16));
 
     private final Packet<?> packet;
 
