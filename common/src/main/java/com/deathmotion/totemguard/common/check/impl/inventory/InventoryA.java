@@ -113,11 +113,6 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         }
 
         if (type == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            // In a vehicle, PLAYER_INPUT drives vehicle controls (boat/horse), not the player.
-            if (data.isInVehicle()) {
-                movementFlagged = false;
-                return;
-            }
             final InputData.State current = data.getInputData().current();
 
             if (current == null || !current.hasMovement()) {
