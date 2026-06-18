@@ -32,11 +32,11 @@ object PaperRunDefaults {
         "https://github.com/ViaVersion/ViaVersion/releases/download/5.9.1/ViaVersion-5.9.1.jar",
         "https://github.com/ViaVersion/ViaBackwards/releases/download/5.9.1/ViaBackwards-5.9.1.jar",
         "https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/2.12.2/PlaceholderAPI-2.12.2.jar",
+        "https://download.luckperms.net/1643/bukkit/loader/LuckPerms-Bukkit-5.5.55.jar"
     )
 
     val PAPER_TEST_PLUGINS: List<String> = listOf(
-        "https://cdn.modrinth.com/data/hXiIvTyT/versions/Oa9ZDzZq/EssentialsX-2.21.2.jar",
-        "https://download.luckperms.net/1631/bukkit/loader/LuckPerms-Bukkit-5.5.42.jar",
+        "https://cdn.modrinth.com/data/hXiIvTyT/versions/Oa9ZDzZq/EssentialsX-2.21.2.jar"
     )
 
     const val DEFAULT_STAGED_PLUGIN_DIR: String = "plugins/TotemGuard-Loader/local"

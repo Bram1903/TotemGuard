@@ -24,9 +24,11 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientAttack;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 
@@ -34,15 +36,19 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientIn
 @CheckData(description = "Attacked multiple entities in the same tick", type = CheckType.PROTOCOL)
 public class ProtocolD extends CheckImpl implements PacketCheck {
 
+    private final MovementData movementData;
+
     private int lastAttackedEntityId = -1;
     private int attacks;
 
     public ProtocolD(TGPlayer player) {
         super(player);
+        this.movementData = data.getMovementData();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
+        if (data.getGameMode() == GameMode.SPECTATOR || !movementData.isCameraIsSelf()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.INTERACT_ENTITY) {
