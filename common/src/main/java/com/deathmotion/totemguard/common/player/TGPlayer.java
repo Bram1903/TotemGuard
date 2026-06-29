@@ -36,7 +36,6 @@ import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
 import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
@@ -82,7 +81,6 @@ public class TGPlayer implements TGUser {
     private final TickData tickData;
     private final PingData pingData;
     private final CombatTracker combatTracker;
-    private final InventoryRecipeTracker inventoryRecipeTracker;
     private final DebugOverlayManager debugOverlayManager;
     private final PacketLatencyHandler latencyHandler;
     private final BanAnimation banAnimation;
@@ -135,7 +133,6 @@ public class TGPlayer implements TGUser {
         this.tickData = new TickData();
         this.pingData = new PingData();
         this.combatTracker = new CombatTracker();
-        this.inventoryRecipeTracker = new InventoryRecipeTracker(this);
         this.debugOverlayManager = new DebugOverlayManager(this);
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());

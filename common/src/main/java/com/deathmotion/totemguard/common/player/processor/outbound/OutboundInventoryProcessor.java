@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
@@ -44,7 +43,6 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     private final PacketInventory inventory;
     private final PacketLatencyHandler latencyHandler;
     private final GuiManager guiManager;
-    private final InventoryRecipeTracker recipeTracker;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
@@ -52,7 +50,6 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         this.inventory = player.getInventory();
         this.latencyHandler = player.getLatencyHandler();
         this.guiManager = TGPlatform.getInstance().getGuiManager();
-        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
@@ -64,9 +61,6 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         else if (type == PacketType.Play.Server.OPEN_WINDOW) handleOpenWindow(event);
         else if (type == PacketType.Play.Server.OPEN_HORSE_WINDOW) handleOpenHorseWindow(event);
         else if (type == PacketType.Play.Server.CLOSE_WINDOW) handleCloseWindow(event);
-        else if (type == PacketType.Play.Server.RECIPE_BOOK_ADD) recipeTracker.handleRecipeAdd(event);
-        else if (type == PacketType.Play.Server.RECIPE_BOOK_REMOVE) recipeTracker.handleRecipeRemove(event);
-        else if (type == PacketType.Play.Server.RECIPE_BOOK_SETTINGS) recipeTracker.handleServerSettings(event);
         else if (type == PacketType.Play.Server.SET_PLAYER_INVENTORY) handleSetPlayerInventory(event);
         else if (type == PacketType.Play.Server.SET_SLOT) handleSetSlot(event);
         else if (type == PacketType.Play.Server.SET_CURSOR_ITEM) handleSetCursorItem(event);

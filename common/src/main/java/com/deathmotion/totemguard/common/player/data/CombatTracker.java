@@ -20,15 +20,6 @@ package com.deathmotion.totemguard.common.player.data;
 
 import lombok.Getter;
 
-// Tracks recent combat intent for use by heuristic checks that should only run while a player
-// is actively fighting. Only inbound packets are sampled: we look at what the client claims to
-// be doing (ATTACK / INTERACT_ENTITY(ATTACK)), not at server-side damage events, so this tracker
-// adds zero outbound traffic (no extra transaction packets) and no latency-compensation cost.
-//
-// "Actively fighting" here means the client has sent an attack packet recently. That is a strict
-// signal: the cheats InventoryE targets are auto-totem class bots, which by definition attack
-// someone while clicking. A defender who is only taking damage but not swinging is excluded by
-// design. That's fine for our threat model.
 public class CombatTracker {
 
     public static final long ACTIVE_COMBAT_WINDOW_MS = 10_000L;

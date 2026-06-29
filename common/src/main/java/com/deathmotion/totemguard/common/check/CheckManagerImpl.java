@@ -100,7 +100,6 @@ public class CheckManagerImpl {
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
                 .put(InventoryD.class, new InventoryD(player))
-                .put(InventoryE.class, new InventoryE(player))
                 .build();
 
         ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = ImmutableClassToInstanceMap.<ExtendedCheck>builder()

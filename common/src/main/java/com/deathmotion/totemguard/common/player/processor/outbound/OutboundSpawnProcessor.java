@@ -18,12 +18,11 @@
 
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
-import com.deathmotion.totemguard.common.check.impl.inventory.InventoryE;
+import com.deathmotion.totemguard.common.check.impl.inventory.InventoryD;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.CombatTracker;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.InputData;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
@@ -41,18 +40,16 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
     private final Data data;
     private final InputData inputData;
     private final PacketLatencyHandler latencyHandler;
-    private final InventoryRecipeTracker recipeTracker;
     private final CombatTracker combatTracker;
-    private final InventoryE inventoryE;
+    private final InventoryD inventoryD;
 
     public OutboundSpawnProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
         this.inputData = player.getData().getInputData();
         this.latencyHandler = player.getLatencyHandler();
-        this.recipeTracker = player.getInventoryRecipeTracker();
         this.combatTracker = player.getCombatTracker();
-        this.inventoryE = player.getCheckManager().allChecks.getInstance(InventoryE.class);
+        this.inventoryD = player.getCheckManager().allChecks.getInstance(InventoryD.class);
     }
 
     @Override
@@ -86,11 +83,10 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.resetSprintTracking();
                 data.setVehicleId(-1);
                 if (resetSwimming) data.setSwimming(false);
-                recipeTracker.reset();
                 inputData.reset();
                 data.getMovementData().reset();
                 combatTracker.reset();
-                if (inventoryE != null) inventoryE.resetSession();
+                if (inventoryD != null) inventoryD.resetSession();
             });
         }
     }

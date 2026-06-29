@@ -60,8 +60,6 @@ public class Data {
     @Setter(AccessLevel.NONE)
     private Issuer lastInventoryIssuer = Issuer.CLIENT;
 
-    private boolean verifiedOpenInventory;
-    private boolean pendingOpenInventory;
     private long inventoryOpenedAt;
     private boolean serverOpenedInventoryThisTick;
     private boolean clientOpenedInventoryThisTick;
@@ -89,11 +87,6 @@ public class Data {
         boolean changed = this.openInventory != openInventory;
         this.openInventory = openInventory;
         this.lastInventoryIssuer = issuer;
-
-        if (!openInventory) {
-            this.verifiedOpenInventory = false;
-            this.pendingOpenInventory = false;
-        }
 
         if (!changed) return;
 
@@ -145,21 +138,4 @@ public class Data {
             inNetherPortal = false;
             netherPortalAbsentTicks = 0;
         }
-    }
-
-
-    public void setVerifiedOpenInventory() {
-        verifiedOpenInventory = true;
-        pendingOpenInventory = true;
-    }
-
-    public void applyPendingOpenInventory() {
-        if (!pendingOpenInventory) {
-            return;
-        }
-
-        pendingOpenInventory = false;
-        if (!openInventory) clientOpenedInventoryThisTick = true;
-        setOpenInventory(true, Issuer.CLIENT);
-    }
-}
+    }}
