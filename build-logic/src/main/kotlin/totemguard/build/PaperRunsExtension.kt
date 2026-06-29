@@ -28,15 +28,16 @@ object PaperRunDefaults {
     )
 
     val CORE_PLUGINS: List<String> = listOf(
-        "https://cdn.modrinth.com/data/HYKaKraK/versions/ap8qHs7D/packetevents-spigot-2.12.1.jar",
-        "https://github.com/ViaVersion/ViaVersion/releases/download/5.9.1/ViaVersion-5.9.1.jar",
-        "https://github.com/ViaVersion/ViaBackwards/releases/download/5.9.1/ViaBackwards-5.9.1.jar",
+        "https://cdn.modrinth.com/data/HYKaKraK/versions/h0ncTpUP/packetevents-spigot-2.13.0.jar?mr_download_reason=standalone",
+        "https://github.com/ViaVersion/ViaVersion/releases/download/5.10.0/ViaVersion-5.10.0.jar",
+        "https://github.com/ViaVersion/ViaBackwards/releases/download/5.10.0/ViaBackwards-5.10.0.jar",
         "https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/2.12.2/PlaceholderAPI-2.12.2.jar",
-        "https://download.luckperms.net/1643/bukkit/loader/LuckPerms-Bukkit-5.5.55.jar"
+        "https://download.luckperms.net/1645/bukkit/loader/LuckPerms-Bukkit-5.5.57.jar"
     )
 
     val PAPER_TEST_PLUGINS: List<String> = listOf(
-        "https://cdn.modrinth.com/data/hXiIvTyT/versions/Oa9ZDzZq/EssentialsX-2.21.2.jar"
+        "https://cdn.modrinth.com/data/hXiIvTyT/versions/nY6VN1XH/EssentialsX-2.22.0.jar?mr_download_reason=standalone",
+        "https://cdn.modrinth.com/data/z4HZZnLr/versions/tG0Vfeqx/FastAsyncWorldEdit-Paper-2.15.2.jar?mr_download_reason=standalone"
     )
 
     const val DEFAULT_STAGED_PLUGIN_DIR: String = "plugins/TotemGuard-Loader/local"

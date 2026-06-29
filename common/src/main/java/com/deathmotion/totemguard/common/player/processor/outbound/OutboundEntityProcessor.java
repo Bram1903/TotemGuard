@@ -71,6 +71,10 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             WrapperPlayServerEntityTeleport packet = new WrapperPlayServerEntityTeleport(event);
             Vector3d pos = packet.getPosition();
             worldEntityData.setPosition(packet.getEntityId(), pos.getX(), pos.getY(), pos.getZ());
+        } else if (type == PacketType.Play.Server.ENTITY_POSITION_SYNC) {
+            WrapperPlayServerEntityPositionSync packet = new WrapperPlayServerEntityPositionSync(event);
+            Vector3d pos = packet.getValues().getPosition();
+            worldEntityData.setPosition(packet.getId(), pos.getX(), pos.getY(), pos.getZ());
         } else if (type == PacketType.Play.Server.DESTROY_ENTITIES) {
             handleDestroyEntities(event);
         } else if (type == PacketType.Play.Server.SET_PASSENGERS) {

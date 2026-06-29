@@ -38,7 +38,6 @@ public class MovementEstimator {
 
     private static final double ENTITY_PUSH_PER = 0.08;
     private static final double MAX_ENTITY_PUSH = 0.30;
-    private static final double ENTITY_LAG_MARGIN = 0.5;
 
     private final Data data;
 
@@ -79,6 +78,8 @@ public class MovementEstimator {
         final MovementData movement = data.getMovementData();
         final ExternalVelocityData external = data.getExternalVelocityData();
 
+        data.getWorldEntityData().advanceInterpolation();
+
         final Location current = movement.getCurrent();
         final Location previous = movement.getPrevious();
 
@@ -113,10 +114,11 @@ public class MovementEstimator {
             Interval areaX = Interval.ZERO.hull(prevVelX * FRICTION).expand(ENVELOPE_PAD).add(external.x());
             Interval areaZ = Interval.ZERO.hull(prevVelZ * FRICTION).expand(ENVELOPE_PAD).add(external.z());
 
-            double excess = horizontalExcess(areaX, areaZ, obsVelX, obsVelZ);
+            double rawExcess = horizontalExcess(areaX, areaZ, obsVelX, obsVelZ);
 
-            if (excess > HIT_EPSILON) {
-                double entityPush = nearbyEntityPush(current);
+            double excess = rawExcess;
+            if (rawExcess > HIT_EPSILON) {
+                double entityPush = nearbyEntityPush(previous, current);
                 if (entityPush > 0.0) {
                     excess = horizontalExcess(areaX.expand(entityPush), areaZ.expand(entityPush), obsVelX, obsVelZ);
                 }
@@ -165,11 +167,17 @@ public class MovementEstimator {
         prevVelZ = velZ;
     }
 
-    private double nearbyEntityPush(Location current) {
+    private double nearbyEntityPush(Location previous, Location current) {
         PlayerAttributeData attributes = data.getAttributeData();
+        double minX = Math.min(previous.getX(), current.getX());
+        double maxX = Math.max(previous.getX(), current.getX());
+        double minY = Math.min(previous.getY(), current.getY());
+        double maxY = Math.max(previous.getY(), current.getY());
+        double minZ = Math.min(previous.getZ(), current.getZ());
+        double maxZ = Math.max(previous.getZ(), current.getZ());
         int count = data.getWorldEntityData().countPushableNear(
-                current.getX(), current.getY(), current.getZ(),
-                attributes.width() / 2.0, attributes.height(), ENTITY_LAG_MARGIN);
+                minX, minY, minZ, maxX, maxY, maxZ,
+                attributes.width() / 2.0, attributes.height());
         return Math.min(MAX_ENTITY_PUSH, count * ENTITY_PUSH_PER);
     }
 
