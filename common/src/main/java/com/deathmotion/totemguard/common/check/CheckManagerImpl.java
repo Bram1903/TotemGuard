@@ -72,6 +72,8 @@ public class CheckManagerImpl {
 
     @Getter
     private final InventoryA inventoryA;
+    @Getter
+    private final InventoryE inventoryE;
 
     private volatile CheckDispatch dispatch;
 
@@ -84,6 +86,7 @@ public class CheckManagerImpl {
                 .build();
 
         this.inventoryA = new InventoryA(player);
+        this.inventoryE = new InventoryE(player);
         this.packetChecks = ImmutableClassToInstanceMap.<PacketCheck>builder()
                 .put(TickA.class, new TickA(player))
                 .put(TickB.class, new TickB(player))
@@ -96,10 +99,12 @@ public class CheckManagerImpl {
                 .put(ProtocolE.class, new ProtocolE(player))
                 .put(ProtocolF.class, new ProtocolF(player))
                 .put(ProtocolG.class, new ProtocolG(player))
+                .put(ProtocolH.class, new ProtocolH(player))
                 .put(InventoryA.class, inventoryA)
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
                 .put(InventoryD.class, new InventoryD(player))
+                .put(InventoryE.class, inventoryE)
                 .build();
 
         ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = ImmutableClassToInstanceMap.<ExtendedCheck>builder()

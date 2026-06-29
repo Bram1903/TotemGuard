@@ -48,14 +48,17 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     private final ConfigRepositoryImpl configRepository;
     private final int healthIndex;
     private final int absorptionIndex;
+    private final int slimeSizeIndex;
 
     public OutboundMetadataProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
         this.worldEntityData = player.getData().getWorldEntityData();
         this.configRepository = TGPlatform.getInstance().getConfigRepository();
-        this.healthIndex = MetadataIndex.health(player.getClientVersion());
-        this.absorptionIndex = MetadataIndex.absorption(player.getClientVersion());
+        MetadataIndex metadataIndex = player.getMetadataIndex();
+        this.healthIndex = metadataIndex.health();
+        this.absorptionIndex = metadataIndex.absorption();
+        this.slimeSizeIndex = metadataIndex.slimeSize();
     }
 
     private static boolean detectCompetingPlugin() {
@@ -84,6 +87,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
             return;
         }
 
+        trackSlimeSize(entityId, packet);
+
         if (COMPETING_PLUGIN_ACTIVE) return;
 
         EntitySpoofingOptions options = configRepository.configView().entitySpoofing();
@@ -103,6 +108,18 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         if (modified) event.markForReEncode(true);
     }
 
+    private void trackSlimeSize(int entityId, WrapperPlayServerEntityMetadata packet) {
+        if (slimeSizeIndex < 0) return;
+        if (!worldEntityData.isSlimeLike(entityId)) return;
+        for (EntityData<?> meta : packet.getEntityMetadata()) {
+            if (meta.getIndex() != slimeSizeIndex) continue;
+            if (meta.getValue() instanceof Integer size) {
+                worldEntityData.setSlimeSize(entityId, size);
+            }
+            return;
+        }
+    }
+
     private void trackOwnMetadata(WrapperPlayServerEntityMetadata packet) {
         // Applied without latency compensation. Server-derived from inbound state (sprint
         // and water), so the client is already in the new state locally by the time this
@@ -112,6 +129,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
             Object value = meta.getValue();
             if (value instanceof Byte sharedFlags) {
                 data.setSwimming((sharedFlags & 0x10) != 0);
+                data.setGliding((sharedFlags & 0x80) != 0);
                 return;
             }
         }

@@ -27,6 +27,7 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 public class OutboundEntityProcessor extends ProcessorOutbound {
@@ -50,12 +51,26 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
 
         if (type == PacketType.Play.Server.SPAWN_ENTITY) {
             WrapperPlayServerSpawnEntity packet = new WrapperPlayServerSpawnEntity(event);
-            worldEntityData.add(packet.getEntityId(), packet.getEntityType());
+            Vector3d pos = packet.getPosition();
+            worldEntityData.add(packet.getEntityId(), packet.getEntityType(), pos.getX(), pos.getY(), pos.getZ());
         } else if (type == PacketType.Play.Server.SPAWN_LIVING_ENTITY) {
             WrapperPlayServerSpawnLivingEntity packet = new WrapperPlayServerSpawnLivingEntity(event);
-            worldEntityData.add(packet.getEntityId(), packet.getEntityType());
+            Vector3d pos = packet.getPosition();
+            worldEntityData.add(packet.getEntityId(), packet.getEntityType(), pos.getX(), pos.getY(), pos.getZ());
         } else if (type == PacketType.Play.Server.SPAWN_PLAYER) {
-            worldEntityData.add(new WrapperPlayServerSpawnPlayer(event).getEntityId(), EntityTypes.PLAYER);
+            WrapperPlayServerSpawnPlayer packet = new WrapperPlayServerSpawnPlayer(event);
+            Vector3d pos = packet.getPosition();
+            worldEntityData.add(packet.getEntityId(), EntityTypes.PLAYER, pos.getX(), pos.getY(), pos.getZ());
+        } else if (type == PacketType.Play.Server.ENTITY_RELATIVE_MOVE) {
+            WrapperPlayServerEntityRelativeMove packet = new WrapperPlayServerEntityRelativeMove(event);
+            worldEntityData.move(packet.getEntityId(), packet.getDeltaX(), packet.getDeltaY(), packet.getDeltaZ());
+        } else if (type == PacketType.Play.Server.ENTITY_RELATIVE_MOVE_AND_ROTATION) {
+            WrapperPlayServerEntityRelativeMoveAndRotation packet = new WrapperPlayServerEntityRelativeMoveAndRotation(event);
+            worldEntityData.move(packet.getEntityId(), packet.getDeltaX(), packet.getDeltaY(), packet.getDeltaZ());
+        } else if (type == PacketType.Play.Server.ENTITY_TELEPORT) {
+            WrapperPlayServerEntityTeleport packet = new WrapperPlayServerEntityTeleport(event);
+            Vector3d pos = packet.getPosition();
+            worldEntityData.setPosition(packet.getEntityId(), pos.getX(), pos.getY(), pos.getZ());
         } else if (type == PacketType.Play.Server.DESTROY_ENTITIES) {
             handleDestroyEntities(event);
         } else if (type == PacketType.Play.Server.SET_PASSENGERS) {

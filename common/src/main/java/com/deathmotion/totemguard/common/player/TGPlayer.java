@@ -34,6 +34,7 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
+import com.deathmotion.totemguard.common.player.debug.provider.MovementDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
@@ -44,6 +45,7 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.*;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
+import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -72,6 +74,7 @@ public class TGPlayer implements TGUser {
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
+    private final MetadataIndex metadataIndex;
     private final Instant sessionStart = Instant.now();
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
@@ -125,6 +128,7 @@ public class TGPlayer implements TGUser {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
+        this.metadataIndex = new MetadataIndex(getClientVersion());
 
         this.inventory = new PacketInventory();
         this.data = new Data(this);
@@ -136,6 +140,7 @@ public class TGPlayer implements TGUser {
         this.debugOverlayManager = new DebugOverlayManager(this);
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());
+        this.debugOverlayManager.register(new MovementDebugProvider());
         this.latencyHandler = new PacketLatencyHandler(this);
         this.banAnimation = new BanAnimationImpl(this);
         this.checkManager = new CheckManagerImpl(this);
@@ -158,6 +163,10 @@ public class TGPlayer implements TGUser {
                 new OutboundTeleportProcessor(this),
                 new OutboundMovementProcessor(this),
                 new OutboundEntityProcessor(this),
+                new OutboundVelocityProcessor(this),
+                new OutboundPistonProcessor(this),
+                new OutboundAttributeProcessor(this),
+                new OutboundWorldBorderProcessor(this),
                 new OutboundCameraProcessor(this),
                 new OutboundMetadataProcessor(this),
         };

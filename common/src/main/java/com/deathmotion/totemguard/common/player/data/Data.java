@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.player.data;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.deathmotion.totemguard.common.player.movement.MovementEstimator;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,12 +40,18 @@ public class Data {
     private final InputData inputData;
     private final MovementData movementData;
     private final WorldEntityData worldEntityData;
+    private final PlayerAttributeData attributeData;
+    private final ExternalVelocityData externalVelocityData;
+    private final WorldBorderData worldBorderData;
+    private final PistonData pistonData;
+    private final MovementEstimator movementEstimator;
     private GameMode gameMode;
     private boolean sprinting;
     private boolean sneaking;
     private boolean canFly;
     private boolean isFlying;
     private boolean swimming;
+    private boolean gliding;
     private int vehicleId = -1;
 
     @Getter(AccessLevel.NONE)
@@ -81,6 +88,11 @@ public class Data {
         this.inputData = new InputData();
         this.movementData = new MovementData();
         this.worldEntityData = new WorldEntityData();
+        this.attributeData = new PlayerAttributeData();
+        this.externalVelocityData = new ExternalVelocityData();
+        this.worldBorderData = new WorldBorderData();
+        this.pistonData = new PistonData();
+        this.movementEstimator = new MovementEstimator(this);
     }
 
     public void setOpenInventory(boolean openInventory, Issuer issuer) {
@@ -89,6 +101,8 @@ public class Data {
         this.lastInventoryIssuer = issuer;
 
         if (!changed) return;
+
+        movementEstimator.clearHistory();
 
         if (openInventory) {
             this.inventoryOpenedAt = System.currentTimeMillis();
@@ -138,4 +152,5 @@ public class Data {
             inNetherPortal = false;
             netherPortalAbsentTicks = 0;
         }
-    }}
+    }
+}

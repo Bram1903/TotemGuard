@@ -85,6 +85,8 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 if (resetSwimming) data.setSwimming(false);
                 inputData.reset();
                 data.getMovementData().reset();
+                data.getMovementEstimator().reset();
+                data.getAttributeData().reset();
                 combatTracker.reset();
                 if (inventoryD != null) inventoryD.resetSession();
             });

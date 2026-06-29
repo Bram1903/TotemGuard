@@ -63,8 +63,13 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
 
         final CheckManagerImpl checkManager = player.getCheckManager();
         final PacketTypeCommon packetType = event.getPacketType();
+        if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
+            player.getData().getMovementEstimator().onFlying();
+            player.getDebugOverlayManager().refresh();
+        }
         if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
             checkManager.getInventoryA().validateMovement();
+            checkManager.getInventoryE().validateMovement();
         }
         checkManager.onPacketReceive(event);
         player.triggerInventoryEvent();

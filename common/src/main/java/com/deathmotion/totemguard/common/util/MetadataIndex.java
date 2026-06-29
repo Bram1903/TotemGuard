@@ -22,17 +22,24 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
 public final class MetadataIndex {
 
-    private MetadataIndex() {
+    private final int health;
+    private final int absorption;
+    private final int slimeSize;
+
+    public MetadataIndex(ClientVersion version) {
+        this.health = resolveHealth(version);
+        this.absorption = resolveAbsorption(version);
+        this.slimeSize = resolveSlimeSize(version);
     }
 
-    public static int health(ClientVersion version) {
+    private static int resolveHealth(ClientVersion version) {
         if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 9;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_14)) return 8;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_10)) return 7;
         return 6;
     }
 
-    public static int absorption(ClientVersion version) {
+    private static int resolveAbsorption(ClientVersion version) {
         if (version.isNewerThanOrEquals(ClientVersion.V_1_21_9)) return 17;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 15;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_15)) return 14;
@@ -40,5 +47,24 @@ public final class MetadataIndex {
         if (version.isNewerThanOrEquals(ClientVersion.V_1_10)) return 11;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_9)) return 10;
         return 17;
+    }
+
+    private static int resolveSlimeSize(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 16;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_15)) return 15;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_14)) return 14;
+        return -1;
+    }
+
+    public int health() {
+        return health;
+    }
+
+    public int absorption() {
+        return absorption;
+    }
+
+    public int slimeSize() {
+        return slimeSize;
     }
 }
