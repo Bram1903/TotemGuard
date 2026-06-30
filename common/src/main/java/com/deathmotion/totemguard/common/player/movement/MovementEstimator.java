@@ -191,7 +191,7 @@ public class MovementEstimator {
 
     private boolean shouldBail(Location current, double obsVelX, double obsVelZ) {
         if (data.isInVehicle()) return true;
-        if (data.isSwimming() || data.isGliding()) return true;
+        if (data.isSwimming() || data.isGliding() || data.isSpinAttacking()) return true;
         if (data.getPistonData().isActive()) return true;
         if (Math.hypot(obsVelX, obsVelZ) > FAST_MOVEMENT_CAP) return true;
         WorldBorderData border = data.getWorldBorderData();

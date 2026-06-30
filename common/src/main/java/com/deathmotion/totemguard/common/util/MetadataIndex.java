@@ -25,11 +25,13 @@ public final class MetadataIndex {
     private final int health;
     private final int absorption;
     private final int slimeSize;
+    private final int livingEntityFlags;
 
     public MetadataIndex(ClientVersion version) {
         this.health = resolveHealth(version);
         this.absorption = resolveAbsorption(version);
         this.slimeSize = resolveSlimeSize(version);
+        this.livingEntityFlags = resolveLivingEntityFlags(version);
     }
 
     private static int resolveHealth(ClientVersion version) {
@@ -56,6 +58,14 @@ public final class MetadataIndex {
         return -1;
     }
 
+    private static int resolveLivingEntityFlags(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 8;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_14)) return 7;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_10)) return 6;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_9)) return 5;
+        return -1;
+    }
+
     public int health() {
         return health;
     }
@@ -66,5 +76,9 @@ public final class MetadataIndex {
 
     public int slimeSize() {
         return slimeSize;
+    }
+
+    public int livingEntityFlags() {
+        return livingEntityFlags;
     }
 }

@@ -49,6 +49,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     private final int healthIndex;
     private final int absorptionIndex;
     private final int slimeSizeIndex;
+    private final int livingFlagsIndex;
 
     public OutboundMetadataProcessor(TGPlayer player) {
         super(player);
@@ -59,6 +60,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         this.healthIndex = metadataIndex.health();
         this.absorptionIndex = metadataIndex.absorption();
         this.slimeSizeIndex = metadataIndex.slimeSize();
+        this.livingFlagsIndex = metadataIndex.livingEntityFlags();
     }
 
     private static boolean detectCompetingPlugin() {
@@ -125,12 +127,13 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         // and water), so the client is already in the new state locally by the time this
         // outbound metadata is sent. Compensating would delay our view by another RTT.
         for (EntityData<?> meta : packet.getEntityMetadata()) {
-            if (meta.getIndex() != 0) continue;
+            int index = meta.getIndex();
             Object value = meta.getValue();
-            if (value instanceof Byte sharedFlags) {
+            if (index == 0 && value instanceof Byte sharedFlags) {
                 data.setSwimming((sharedFlags & 0x10) != 0);
                 data.setGliding((sharedFlags & 0x80) != 0);
-                return;
+            } else if (index == livingFlagsIndex && value instanceof Byte livingFlags) {
+                data.setSpinAttacking((livingFlags & 0x04) != 0);
             }
         }
     }

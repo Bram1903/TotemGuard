@@ -54,6 +54,7 @@ public class Data {
     private boolean isFlying;
     private boolean swimming;
     private boolean gliding;
+    private boolean spinAttacking;
     private int vehicleId = -1;
 
     @Getter(AccessLevel.NONE)

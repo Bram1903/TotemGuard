@@ -33,7 +33,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 @CheckData(description = "Movement without input", type = CheckType.PROTOCOL, experimental = true)
 public class ProtocolH extends CheckImpl implements PacketCheck {
 
-    private static final int STREAK_TO_FLAG = 3;
+    private static final int STREAK_TO_FLAG = 2;
 
     private final InputData inputData;
     private final MovementEstimator movementEstimator;
