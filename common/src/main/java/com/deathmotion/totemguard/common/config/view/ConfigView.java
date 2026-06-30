@@ -38,6 +38,7 @@ public final class ConfigView {
     private final EntitySpoofingOptions entitySpoofing;
     private final boolean banAnimationEnabled;
     private final boolean tickSkipKeepAliveValidation;
+    private final boolean physicsEngineEnabled;
     private final boolean debugModifierKickEnabled;
     private final Set<String> developerOverrides;
 
@@ -84,6 +85,7 @@ public final class ConfigView {
         );
         this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
         this.tickSkipKeepAliveValidation = config.getBoolean(ConfigKeys.TICK_SKIP_KEEP_ALIVE_VALIDATION);
+        this.physicsEngineEnabled = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_ENABLED);
         this.debugModifierKickEnabled = config.getBoolean(ConfigKeys.DEBUG_MODIFIER_KICK_ENABLED);
         List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
         this.developerOverrides = overrides.isEmpty() ? Set.of() : Set.copyOf(new HashSet<>(overrides));
@@ -123,6 +125,10 @@ public final class ConfigView {
 
     public boolean tickSkipKeepAliveValidation() {
         return tickSkipKeepAliveValidation;
+    }
+
+    public boolean physicsEngineEnabled() {
+        return physicsEngineEnabled;
     }
 
     public boolean debugModifierKickEnabled() {

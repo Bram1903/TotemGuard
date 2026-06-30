@@ -95,6 +95,13 @@ tick:
   # branch. Leave false on a stock setup.
   skip-keep-alive-validation: false
 
+# The movement prediction engine. It simulates vanilla physics each tick and powers the
+# Physics check (fly, hover, speed) as well as InventoryE (moving while the inventory is
+# open). Disabling it stops all of those from running, so Physics and InventoryE will no
+# longer flag. This applies on reload, no restart needed.
+physics-engine:
+  enabled: true
+
 # A vanilla client bug lets you keep moving while an inventory is open when the Debug
 # Modifier Key (F3) is bound to the same key as a movement key. When enabled, TotemGuard
 # reads the client's keybinds on join and disconnects players whose Debug Modifier Key

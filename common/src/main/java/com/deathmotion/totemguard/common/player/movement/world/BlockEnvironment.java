@@ -16,25 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement;
+package com.deathmotion.totemguard.common.player.movement.world;
 
-import com.deathmotion.totemguard.common.player.movement.area.MotionArea;
-import com.github.retrooper.packetevents.util.Vector3d;
-
-public record MovementResult(
-        MovementCause cause,
-        Vector3d observed,
-        MotionArea predicted,
-        double horizontalExcess,
-        double verticalExcess,
-        boolean movedThisTick,
-        boolean ascendingThisTick,
-        boolean knockbackConsumed
+public record BlockEnvironment(
+        boolean feetLoaded,
+        boolean fluid,
+        boolean climbable,
+        boolean stuck,
+        double stuckHorizontal,
+        double stuckVertical,
+        boolean bouncyBelow,
+        boolean supported,
+        boolean fluidBelow,
+        double slipperiness,
+        double groundGap
 ) {
 
-    public static final MovementResult INITIAL = unpredictable(MovementCause.INIT, Vector3d.zero());
-
-    public static MovementResult unpredictable(MovementCause cause, Vector3d observed) {
-        return new MovementResult(cause, observed, null, 0.0, 0.0, false, false, false);
-    }
+    public static final BlockEnvironment UNLOADED =
+            new BlockEnvironment(false, false, false, false, 1.0, 1.0, false, false, false, 0.6, 0.0);
 }

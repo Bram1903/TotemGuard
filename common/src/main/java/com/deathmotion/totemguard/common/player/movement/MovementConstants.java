@@ -24,6 +24,11 @@ public final class MovementConstants {
     public static final double BASE_WIDTH = 0.6;
     public static final double STANDING_HEIGHT = 1.8;
     public static final double SNEAKING_HEIGHT = 1.5;
+    public static final double SNEAKING_SPEED = 0.3;
+    public static final double MOVEMENT_EFFICIENCY = 0.0;
+    public static final double WATER_MOVEMENT_EFFICIENCY = 0.0;
+    public static final double FLYING_SPEED = 0.4;
+    public static final double SAFE_FALL_DISTANCE = 3.0;
 
     public static final double LEVITATION_PER_LEVEL = 0.05;
     public static final double LEVITATION_RATE = 0.2;
@@ -32,6 +37,15 @@ public final class MovementConstants {
     public static final double SLOW_FALLING_GRAVITY = 0.01;
     public static final double VERTICAL_DRAG = 0.98;
     public static final double STEP_HEIGHT = 0.6;
+
+    public static final double BASE_MOVEMENT_SPEED = 0.1;
+    public static final double SPRINT_SPEED_MULTIPLIER = 1.3;
+    public static final double GROUND_ACCEL_NUMERATOR = 0.21600002;
+    public static final double AIR_ACCEL = 0.02;
+    public static final double AIR_ACCEL_SPRINTING = 0.026;
+
+    public static final double JUMP_POWER = 0.42;
+    public static final double SPRINT_JUMP_BOOST = 0.2;
 
     private MovementConstants() {
     }

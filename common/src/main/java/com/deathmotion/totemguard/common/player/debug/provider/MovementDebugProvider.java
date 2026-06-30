@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayFrame;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
 import com.deathmotion.totemguard.common.player.movement.MovementEstimator;
-import com.deathmotion.totemguard.common.player.movement.MovementResult;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import net.kyori.adventure.text.Component;
@@ -57,7 +56,7 @@ public final class MovementDebugProvider implements DebugOverlayProvider {
         double speed = Math.hypot(current.getX() - previous.getX(), current.getZ() - previous.getZ());
         double vSpeed = current.getY() - previous.getY();
 
-        boolean moved = estimator.getResult() == MovementResult.MOVED;
+        boolean moved = estimator.movedHorizontally();
         boolean ascending = estimator.isAscendingThisTick();
 
         Component horizontal = Component.empty()
@@ -70,7 +69,7 @@ public final class MovementDebugProvider implements DebugOverlayProvider {
                 .append(field("V ", ascending ? "asc" : "ok", ascending ? Palette.DANGER : Palette.SUCCESS))
                 .append(field("vy", String.format("%.3f", vSpeed), Palette.BRAND))
                 .append(field("ex", String.format("%.4f", estimator.getLastVerticalExcess()), Palette.BRAND))
-                .append(field("", estimator.getVerticalCause().name().toLowerCase(), Palette.CAPTION));
+                .append(field("", estimator.getCause().name().toLowerCase(), Palette.CAPTION));
 
         return DebugOverlayFrame.of(horizontal, vertical);
     }

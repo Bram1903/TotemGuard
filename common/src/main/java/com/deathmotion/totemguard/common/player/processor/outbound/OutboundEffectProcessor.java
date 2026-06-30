@@ -55,6 +55,8 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
             int duration = packet.getEffectDurationTicks();
             if (potion == PotionTypes.LEVITATION) {
                 latencyHandler.compensate(event, () -> effectData.setLevitation(amplifier, duration));
+            } else if (potion == PotionTypes.JUMP_BOOST) {
+                latencyHandler.compensate(event, () -> effectData.setJumpBoost(amplifier, duration));
             } else if (potion == PotionTypes.SLOW_FALLING) {
                 latencyHandler.compensate(event, () -> effectData.setSlowFalling(duration));
             }
@@ -65,6 +67,8 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
             PotionType potion = packet.getPotionType();
             if (potion == PotionTypes.LEVITATION) {
                 latencyHandler.compensate(event, effectData::clearLevitation);
+            } else if (potion == PotionTypes.JUMP_BOOST) {
+                latencyHandler.compensate(event, effectData::clearJumpBoost);
             } else if (potion == PotionTypes.SLOW_FALLING) {
                 latencyHandler.compensate(event, effectData::clearSlowFalling);
             }

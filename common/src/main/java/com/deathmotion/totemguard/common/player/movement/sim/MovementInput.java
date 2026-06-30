@@ -16,25 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement;
+package com.deathmotion.totemguard.common.player.movement.sim;
 
-import com.deathmotion.totemguard.common.player.movement.area.MotionArea;
-import com.github.retrooper.packetevents.util.Vector3d;
-
-public record MovementResult(
-        MovementCause cause,
-        Vector3d observed,
-        MotionArea predicted,
-        double horizontalExcess,
-        double verticalExcess,
-        boolean movedThisTick,
-        boolean ascendingThisTick,
-        boolean knockbackConsumed
+public record MovementInput(
+        boolean lastOnGround,
+        boolean onGround,
+        boolean horizontalInput,
+        boolean jumpPossible,
+        boolean sprinting,
+        double movementSpeed,
+        double jumpStrength,
+        double gravity,
+        double stepHeight,
+        int jumpBoostAmplifier,
+        boolean levitation,
+        int levitationAmplifier,
+        boolean slowFalling
 ) {
 
-    public static final MovementResult INITIAL = unpredictable(MovementCause.INIT, Vector3d.zero());
+    public boolean sprintJump() {
+        return jumpPossible && sprinting;
+    }
 
-    public static MovementResult unpredictable(MovementCause cause, Vector3d observed) {
-        return new MovementResult(cause, observed, null, 0.0, 0.0, false, false, false);
+    public double jumpBoostPower() {
+        return jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;
     }
 }

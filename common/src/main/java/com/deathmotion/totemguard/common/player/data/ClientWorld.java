@@ -93,13 +93,17 @@ public class ClientWorld {
     }
 
     public boolean hasBlock(BoundingBox box, Predicate<WrappedBlockState> test) {
+        return forEachBlock(box, test::test);
+    }
+
+    public boolean forEachBlock(BoundingBox box, BlockVisitor visitor) {
         int x0 = floor(box.minX()), x1 = floor(box.maxX());
         int y0 = floor(box.minY()), y1 = floor(box.maxY());
         int z0 = floor(box.minZ()), z1 = floor(box.maxZ());
         for (int x = x0; x <= x1; x++) {
             for (int y = y0; y <= y1; y++) {
                 for (int z = z0; z <= z1; z++) {
-                    if (test.test(getBlockState(x, y, z))) return true;
+                    if (visitor.visit(getBlockState(x, y, z))) return true;
                 }
             }
         }
@@ -150,5 +154,10 @@ public class ClientWorld {
             return new Chunk_v1_9(0, PaletteType.CHUNK.create());
         }
         return null;
+    }
+
+    @FunctionalInterface
+    public interface BlockVisitor {
+        boolean visit(WrappedBlockState state);
     }
 }

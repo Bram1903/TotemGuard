@@ -127,15 +127,7 @@ ProtocolG:
   punishment-commands:
     - "%default_punishment%"
 
-MovementA:
-  enabled: true
-  punishable: false
-  max-violations: 10
-
-  punishment-commands:
-    - "%default_punishment%"
-
-MovementB:
+Physics:
   enabled: true
   punishable: false
   max-violations: 10

@@ -21,15 +21,23 @@ package com.deathmotion.totemguard.common.player.data;
 public class EffectData {
 
     private static final int UNSET = -1;
+    private static final int INFINITE = -1;
 
     private int levitationAmplifier = UNSET;
     private int levitationTicks;
 
+    private int jumpBoostAmplifier = UNSET;
+    private int jumpBoostTicks;
+
     private int slowFallingTicks;
+
+    private static int normalize(int durationTicks) {
+        return durationTicks < 0 ? INFINITE : durationTicks;
+    }
 
     public void setLevitation(int amplifier, int durationTicks) {
         this.levitationAmplifier = amplifier;
-        this.levitationTicks = Math.max(0, durationTicks);
+        this.levitationTicks = normalize(durationTicks);
     }
 
     public void clearLevitation() {
@@ -37,8 +45,18 @@ public class EffectData {
         this.levitationTicks = 0;
     }
 
+    public void setJumpBoost(int amplifier, int durationTicks) {
+        this.jumpBoostAmplifier = amplifier;
+        this.jumpBoostTicks = normalize(durationTicks);
+    }
+
+    public void clearJumpBoost() {
+        this.jumpBoostAmplifier = UNSET;
+        this.jumpBoostTicks = 0;
+    }
+
     public void setSlowFalling(int durationTicks) {
-        this.slowFallingTicks = Math.max(0, durationTicks);
+        this.slowFallingTicks = normalize(durationTicks);
     }
 
     public void clearSlowFalling() {
@@ -49,25 +67,37 @@ public class EffectData {
         if (levitationTicks > 0 && --levitationTicks <= 0) {
             levitationAmplifier = UNSET;
         }
+        if (jumpBoostTicks > 0 && --jumpBoostTicks <= 0) {
+            jumpBoostAmplifier = UNSET;
+        }
         if (slowFallingTicks > 0) {
             slowFallingTicks--;
         }
     }
 
     public boolean hasLevitation() {
-        return levitationAmplifier != UNSET && levitationTicks > 0;
+        return levitationAmplifier != UNSET && levitationTicks != 0;
     }
 
     public int levitationAmplifier() {
         return levitationAmplifier;
     }
 
+    public boolean hasJumpBoost() {
+        return jumpBoostAmplifier != UNSET && jumpBoostTicks != 0;
+    }
+
+    public int jumpBoostAmplifier() {
+        return jumpBoostAmplifier;
+    }
+
     public boolean hasSlowFalling() {
-        return slowFallingTicks > 0;
+        return slowFallingTicks != 0;
     }
 
     public void reset() {
         clearLevitation();
+        clearJumpBoost();
         clearSlowFalling();
     }
 }

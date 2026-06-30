@@ -56,8 +56,8 @@ public enum CheckType {
     MOD,
 
     /**
-     * Movement and physics checks, motion the vanilla client could not have produced
-     * (fly, hover, ascent without support).
+     * Physics and prediction checks. Motion the vanilla client could not have produced, caught by simulating the
+     * reachable velocity each tick (fly, hover, ascent without support, excess speed).
      */
-    MOVEMENT
+    PHYSICS
 }

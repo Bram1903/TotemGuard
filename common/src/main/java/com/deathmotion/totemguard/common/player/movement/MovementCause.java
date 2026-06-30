@@ -18,38 +18,30 @@
 
 package com.deathmotion.totemguard.common.player.movement;
 
-public final class Interval {
-
-    public static final Interval ZERO = new Interval(0.0, 0.0);
-
-    private final double lo;
-    private final double hi;
-
-    private Interval(double lo, double hi) {
-        this.lo = lo;
-        this.hi = hi;
-    }
-
-    public Interval expand(double pad) {
-        return new Interval(lo - pad, hi + pad);
-    }
-
-    public Interval shift(double delta) {
-        return new Interval(lo + delta, hi + delta);
-    }
-
-    public Interval hull(double v) {
-        return new Interval(Math.min(lo, v), Math.max(hi, v));
-    }
-
-    public double distanceOutside(double v) {
-        if (v < lo) return lo - v;
-        if (v > hi) return v - hi;
-        return 0.0;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("[%.4f,%.4f]", lo, hi);
-    }
+public enum MovementCause {
+    INIT,
+    GROUND,
+    STEP,
+    AIR,
+    JUMP,
+    LEVITATION,
+    FLUID,
+    CLIMB,
+    STUCK,
+    BOUNCE,
+    PISTON,
+    VEHICLE,
+    GLIDE,
+    FLY,
+    HOVER,
+    GROUNDSPOOF,
+    AIRWALK,
+    WATER_WALK,
+    FAST,
+    FAST_FALL,
+    BORDER,
+    RESYNC,
+    UNLOADED,
+    WITHHELD,
+    DOUBLE_MOVE
 }

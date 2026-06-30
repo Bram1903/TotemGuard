@@ -67,6 +67,8 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
             player.getData().getMovementEstimator().onFlying();
             player.getData().updateNetherPortalContact();
             player.getDebugOverlayManager().refresh();
+        } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
+            player.getData().getMovementEstimator().onTickEnd();
         }
         if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
             checkManager.getInventoryA().validateMovement();
