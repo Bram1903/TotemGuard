@@ -27,15 +27,12 @@ import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
 @CheckData(description = "Moving during inventory interaction", type = CheckType.INVENTORY)
 public class InventoryB extends CheckImpl implements PacketCheck {
 
     private final InputData inputData;
-
-    private String pendingCloseReason;
-    private int pendingCloseServerTick;
 
     public InventoryB(TGPlayer player) {
         super(player);
@@ -45,11 +42,6 @@ public class InventoryB extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
-
-        if (isTickBoundary(packetType)) {
-            evaluatePendingClose();
-            return;
-        }
 
         if (data.isServerOpenedInventoryThisTick()) return;
         if (data.isInVehicle()) return;
@@ -65,40 +57,22 @@ public class InventoryB extends CheckImpl implements PacketCheck {
         } else if (packetType == PacketType.Play.Client.CLOSE_WINDOW) {
             if (data.isInventoryMitigatedThisTick()) return;
 
-            String reason = null;
+            String reason;
             if (sprinting) {
                 reason = "close (sprinting)";
             } else if (inputData.hasMovement(true)) {
                 reason = "close (move)";
-            }
-            if (reason == null) return;
-
-            if (pendingCloseReason != null && platform.getCurrentServerTick() != pendingCloseServerTick) {
-                resolvePendingClose();
+            } else {
+                return;
             }
 
-            pendingCloseReason = reason;
-            pendingCloseServerTick = platform.getCurrentServerTick();
+            // The 1.12.2+ client force-closes the inventory while in a nether portal, sending this
+            // packet even while moving, so that close is not a violation on those clients.
+            if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12_2) && data.isInNetherPortal()) {
+                return;
+            }
+
+            fail(reason);
         }
-    }
-
-    private boolean isTickBoundary(PacketTypeCommon packetType) {
-        return player.supportsEndTick()
-                ? packetType == PacketType.Play.Client.CLIENT_TICK_END
-                : WrapperPlayClientPlayerFlying.isFlying(packetType);
-    }
-
-    private void evaluatePendingClose() {
-        if (pendingCloseReason == null) return;
-        if (platform.getCurrentServerTick() == pendingCloseServerTick) return;
-        resolvePendingClose();
-    }
-
-    private void resolvePendingClose() {
-        String reason = pendingCloseReason;
-        pendingCloseReason = null;
-
-        if (data.isInNetherPortal()) return;
-        fail(reason);
     }
 }

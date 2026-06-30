@@ -42,6 +42,12 @@ public class WorldEntityData {
                 || EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT);
     }
 
+    private static double intervalGap(double aMin, double aMax, double bMin, double bMax) {
+        if (aMax < bMin) return bMin - aMax;
+        if (bMax < aMin) return aMin - bMax;
+        return 0.0;
+    }
+
     public void add(int entityId, EntityType type, double x, double y, double z) {
         Tracked tracked = new Tracked(type);
         tracked.snapTo(x, y, z);
@@ -126,12 +132,6 @@ public class WorldEntityData {
             if (xOk && zOk && yOk) count++;
         }
         return count;
-    }
-
-    private static double intervalGap(double aMin, double aMax, double bMin, double bMax) {
-        if (aMax < bMin) return bMin - aMax;
-        if (bMax < aMin) return aMin - bMax;
-        return 0.0;
     }
 
     public void handleJoinGame(WrapperPlayServerJoinGame packet) {

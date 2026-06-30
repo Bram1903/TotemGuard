@@ -19,9 +19,7 @@
 package com.deathmotion.totemguard.fabric.tick;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.fabric.FabricServerHolder;
 import com.deathmotion.totemguard.host.RuntimeDispatch;
-import net.minecraft.server.MinecraftServer;
 
 public final class FabricTickRunner {
 
@@ -41,10 +39,6 @@ public final class FabricTickRunner {
 
     private void onServerTick() {
         if (!platform.isEnabled()) return;
-        MinecraftServer server = FabricServerHolder.server();
-        if (server != null) {
-            FabricNetherPortalTracker.markNetherPortalContacts(platform, server);
-        }
         platform.tickPlayers();
     }
 }

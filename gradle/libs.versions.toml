@@ -1,5 +1,5 @@
 [versions]
-packetevents = "2.12.1"
+packetevents = "2.13.0"
 adventure = "4.25.0"
 snakeyaml = "2.2"
 guava = "33.3.1-jre"

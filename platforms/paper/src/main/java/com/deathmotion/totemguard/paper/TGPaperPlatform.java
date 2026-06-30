@@ -26,7 +26,6 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportR
 import com.deathmotion.totemguard.common.util.Lazy;
 import com.deathmotion.totemguard.common.util.TGVersions;
 import com.deathmotion.totemguard.paper.compatibility.PaperCompatibility;
-import com.deathmotion.totemguard.paper.event.NetherPortalListener;
 import com.deathmotion.totemguard.paper.event.PluginUnregisterHook;
 import com.deathmotion.totemguard.paper.metrics.TGMetrics;
 import com.deathmotion.totemguard.paper.network.PaperCrossServerTeleportRouter;
@@ -191,7 +190,6 @@ public class TGPaperPlatform extends TGPlatform {
         super.commonOnEnable();
         if (!isEnabled()) return;
         Bukkit.getPluginManager().registerEvents(new PluginUnregisterHook(getEventBus(), plugin), plugin);
-        Bukkit.getPluginManager().registerEvents(new NetherPortalListener(), plugin);
         tickRunner.start();
     }
 

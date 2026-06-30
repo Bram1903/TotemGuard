@@ -65,6 +65,7 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         final PacketTypeCommon packetType = event.getPacketType();
         if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
             player.getData().getMovementEstimator().onFlying();
+            player.getData().updateNetherPortalContact();
             player.getDebugOverlayManager().refresh();
         }
         if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {

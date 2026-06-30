@@ -47,4 +47,9 @@ public final class Interval {
         if (v > hi) return v - hi;
         return 0.0;
     }
+
+    @Override
+    public String toString() {
+        return String.format("[%.4f,%.4f]", lo, hi);
+    }
 }

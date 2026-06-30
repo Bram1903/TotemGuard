@@ -37,6 +37,7 @@ import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
 import com.deathmotion.totemguard.common.player.debug.provider.MovementDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
+import com.deathmotion.totemguard.common.player.debug.provider.WorldDebugProvider;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
@@ -141,6 +142,7 @@ public class TGPlayer implements TGUser {
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());
         this.debugOverlayManager.register(new MovementDebugProvider());
+        this.debugOverlayManager.register(new WorldDebugProvider());
         this.latencyHandler = new PacketLatencyHandler(this);
         this.banAnimation = new BanAnimationImpl(this);
         this.checkManager = new CheckManagerImpl(this);
@@ -165,6 +167,7 @@ public class TGPlayer implements TGUser {
                 new OutboundEntityProcessor(this),
                 new OutboundVelocityProcessor(this),
                 new OutboundPistonProcessor(this),
+                new OutboundChunkProcessor(this),
                 new OutboundAttributeProcessor(this),
                 new OutboundWorldBorderProcessor(this),
                 new OutboundCameraProcessor(this),

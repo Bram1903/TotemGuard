@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.movement.MovementEstimator;
+import com.deathmotion.totemguard.common.util.BoundingBox;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -44,6 +45,7 @@ public class Data {
     private final ExternalVelocityData externalVelocityData;
     private final WorldBorderData worldBorderData;
     private final PistonData pistonData;
+    private final ClientWorld clientWorld;
     private final MovementEstimator movementEstimator;
     private GameMode gameMode;
     private boolean sprinting;
@@ -92,6 +94,7 @@ public class Data {
         this.externalVelocityData = new ExternalVelocityData();
         this.worldBorderData = new WorldBorderData();
         this.pistonData = new PistonData();
+        this.clientWorld = new ClientWorld();
         this.movementEstimator = new MovementEstimator(this);
     }
 
@@ -134,6 +137,15 @@ public class Data {
     public void resetSprintTracking() {
         this.lastSprinting = null;
         this.redundantSprint = false;
+    }
+
+    public void updateNetherPortalContact() {
+        BoundingBox box = BoundingBox.sweptPlayer(
+                movementData.getCurrent(), movementData.getPrevious(),
+                attributeData.width(), attributeData.height());
+        if (clientWorld.containsNetherPortal(box)) {
+            markNetherPortalContact();
+        }
     }
 
     public void markNetherPortalContact() {

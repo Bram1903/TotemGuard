@@ -128,7 +128,6 @@ public abstract class TGPlatform {
 
     @Setter
     private TGPluginHost pluginHost;
-    private volatile int currentServerTick;
 
     public TGPlatform(Platform platform) {
         instance = this;
@@ -144,7 +143,6 @@ public abstract class TGPlatform {
     }
 
     public void tickPlayers() {
-        currentServerTick++;
         for (TGPlayer player : playerRepository.getPlayers()) {
             player.onServerTick();
         }
