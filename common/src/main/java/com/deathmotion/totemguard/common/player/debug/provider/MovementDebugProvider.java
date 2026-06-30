@@ -28,15 +28,12 @@ import com.deathmotion.totemguard.common.player.movement.MovementResult;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 
 public final class MovementDebugProvider implements DebugOverlayProvider {
 
-    private static Component label(String text) {
-        return Component.text(text, Palette.LABEL);
-    }
-
-    private static Component separator() {
-        return Component.text(" | ", Palette.SEPARATOR);
+    private static Component field(String label, String value, TextColor valueColor) {
+        return Component.text(label, Palette.LABEL).append(Component.text(value + " ", valueColor));
     }
 
     @Override
@@ -54,41 +51,27 @@ public final class MovementDebugProvider implements DebugOverlayProvider {
         Data data = player.getData();
         MovementEstimator estimator = data.getMovementEstimator();
         MovementData movement = data.getMovementData();
-        boolean moved = estimator.getResult() == MovementResult.MOVED;
-        boolean kb = data.getExternalVelocityData().hasHorizontal();
 
         Location current = movement.getCurrent();
         Location previous = movement.getPrevious();
         double speed = Math.hypot(current.getX() - previous.getX(), current.getZ() - previous.getZ());
+        double vSpeed = current.getY() - previous.getY();
 
-        Component line = Component.empty()
-                .append(label("Move "))
-                .append(Component.text(moved ? "MOVING" : "not moving", moved ? Palette.DANGER : Palette.SUCCESS))
-                .append(separator())
-                .append(label("speed "))
-                .append(Component.text(String.format("%.3f", speed), Palette.BRAND))
-                .append(separator())
-                .append(label("excess "))
-                .append(Component.text(String.format("%.4f", estimator.getLastExcess()), Palette.BRAND))
-                .append(separator())
-                .append(label("hits "))
-                .append(Component.text(estimator.windowHits() + "/" + estimator.hitsForMoved(), Palette.BRAND))
-                .append(separator())
-                .append(label("ground "))
-                .append(Component.text(movement.isOnGround() ? "yes" : "no", Palette.CAPTION))
-                .append(separator())
-                .append(label("fric "))
-                .append(Component.text(String.format("%.3f", estimator.getLastFriction()), Palette.CAPTION))
-                .append(separator())
-                .append(label("fluid "))
-                .append(Component.text(estimator.isLastInFluid() ? "yes" : "no", estimator.isLastInFluid() ? Palette.WARN : Palette.SUCCESS))
-                .append(separator())
-                .append(label("scale "))
-                .append(Component.text(String.format("%.2f", data.getAttributeData().scale()), Palette.CAPTION))
-                .append(separator())
-                .append(label("kb "))
-                .append(Component.text(kb ? "yes" : "no", kb ? Palette.WARN : Palette.SUCCESS));
+        boolean moved = estimator.getResult() == MovementResult.MOVED;
+        boolean ascending = estimator.isAscendingThisTick();
 
-        return DebugOverlayFrame.of(line);
+        Component horizontal = Component.empty()
+                .append(field("H ", moved ? "moved" : "ok", moved ? Palette.DANGER : Palette.SUCCESS))
+                .append(field("sp", String.format("%.3f", speed), Palette.BRAND))
+                .append(field("ex", String.format("%.4f", estimator.getLastExcess()), Palette.BRAND))
+                .append(field("", estimator.windowHits() + "/" + estimator.hitsForMoved(), Palette.CAPTION));
+
+        Component vertical = Component.empty()
+                .append(field("V ", ascending ? "asc" : "ok", ascending ? Palette.DANGER : Palette.SUCCESS))
+                .append(field("vy", String.format("%.3f", vSpeed), Palette.BRAND))
+                .append(field("ex", String.format("%.4f", estimator.getLastVerticalExcess()), Palette.BRAND))
+                .append(field("", estimator.getVerticalCause().name().toLowerCase(), Palette.CAPTION));
+
+        return DebugOverlayFrame.of(horizontal, vertical);
     }
 }

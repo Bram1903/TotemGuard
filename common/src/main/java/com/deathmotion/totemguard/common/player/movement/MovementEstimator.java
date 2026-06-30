@@ -21,10 +21,8 @@ package com.deathmotion.totemguard.common.player.movement;
 import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.util.BoundingBox;
 import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
-import com.github.retrooper.packetevents.protocol.world.states.type.StateValue;
 import lombok.Getter;
 
 public class MovementEstimator {
@@ -32,7 +30,7 @@ public class MovementEstimator {
     private static final double FRICTION = MovementConstants.MAX_HORIZONTAL_FRICTION;
     private static final double ENVELOPE_PAD = 0.010;
     private static final double HIT_EPSILON = 0.002;
-    private static final double FAST_MOVEMENT_CAP = 3.0;
+    private static final double FAST_MOVEMENT_CAP = 10.0;
     private static final double BORDER_MARGIN = 2.0;
 
     private static final double DEFAULT_SLIPPERINESS = 0.6;
@@ -50,10 +48,39 @@ public class MovementEstimator {
     private static final double ENTITY_PUSH_PER = 0.08;
     private static final double MAX_ENTITY_PUSH = 0.30;
 
+    private static final double KNOCKBACK_PAD = 0.05;
+
+    private static final double GRAVITY = MovementConstants.GRAVITY;
+    private static final double SLOW_FALLING_GRAVITY = MovementConstants.SLOW_FALLING_GRAVITY;
+    private static final double VERTICAL_DRAG = MovementConstants.VERTICAL_DRAG;
+    private static final double STEP_HEIGHT = MovementConstants.STEP_HEIGHT;
+    private static final double VERTICAL_PAD = 0.025;
+    private static final double VERTICAL_HIT_EPSILON = 0.003;
+    private static final double FAST_VERTICAL_CAP = 1.5;
+    private static final double ONGROUND_RISE_TOLERANCE = 0.1;
+
+    public enum VerticalCause {
+        NONE,
+        GROUND,
+        STEP,
+        AIR,
+        LEVITATION,
+        FLUID,
+        CLIMB,
+        STUCK,
+        BOUNCE,
+        PISTON,
+        VEHICLE,
+        FLY,
+        FAST,
+        UNLOADED
+    }
+
     private final Data data;
 
     private boolean initialized;
     private double prevVelX;
+    private double prevVelY;
     private double prevVelZ;
 
     private long hitWindow;
@@ -64,10 +91,14 @@ public class MovementEstimator {
     private double lastExcess;
     @Getter
     private boolean movedThisTick;
+
     @Getter
-    private double lastFriction = FRICTION;
+    private boolean ascendingThisTick;
+    private boolean supportedByGround;
     @Getter
-    private boolean lastInFluid;
+    private double lastVerticalExcess;
+    @Getter
+    private VerticalCause verticalCause = VerticalCause.NONE;
 
     public MovementEstimator(Data data) {
         this.data = data;
@@ -77,10 +108,8 @@ public class MovementEstimator {
         return Math.hypot(areaX.distanceOutside(obsVelX), areaZ.distanceOutside(obsVelZ));
     }
 
-    private static boolean isFluidState(WrappedBlockState state) {
-        StateType type = state.getType();
-        if (type == StateTypes.WATER || type == StateTypes.LAVA) return true;
-        return state.hasProperty(StateValue.WATERLOGGED) && state.isWaterlogged();
+    private static boolean isBouncy(StateType type) {
+        return type == StateTypes.SLIME_BLOCK || type.getName().endsWith("_BED");
     }
 
     private static double slipperiness(StateType type) {
@@ -118,59 +147,76 @@ public class MovementEstimator {
         final Location previous = movement.getPrevious();
 
         final double obsVelX = current.getX() - previous.getX();
+        final double obsVelY = current.getY() - previous.getY();
         final double obsVelZ = current.getZ() - previous.getZ();
 
         try {
             if (!initialized) {
-                anchor(obsVelX, obsVelZ);
+                anchor(obsVelX, obsVelY, obsVelZ);
                 initialized = true;
                 movedThisTick = false;
                 result = MovementResult.UNKNOWN;
+                clearVertical();
                 return;
             }
 
             if (shouldBail(current, obsVelX, obsVelZ)) {
-                anchor(obsVelX, obsVelZ);
+                anchor(obsVelX, obsVelY, obsVelZ);
                 shiftWindow(false);
                 movedThisTick = false;
                 result = MovementResult.UNKNOWN;
+                clearVertical();
                 return;
             }
 
-            if (!movement.isLastFlyingPositionChanged()) {
-                anchor(0.0, 0.0);
+            if (movement.isLastFlyingWasResync()) {
+                anchor(0.0, 0.0, 0.0);
                 shiftWindow(false);
                 movedThisTick = false;
                 result = MovementResult.EXTERNAL;
+                clearVertical();
                 return;
             }
 
             boolean inFluid = inFluidSwept(current, previous);
-            double friction = (inFluid || !movement.isOnGround())
+            double friction = (inFluid || !movement.isLastOnGround())
                     ? FRICTION
                     : Math.max(groundFriction(current), groundFriction(previous));
-            lastInFluid = inFluid;
-            lastFriction = friction;
 
-            Interval areaX = Interval.ZERO.hull(prevVelX * friction).expand(ENVELOPE_PAD).add(external.x());
-            Interval areaZ = Interval.ZERO.hull(prevVelZ * friction).expand(ENVELOPE_PAD).add(external.z());
+            Interval baseX = Interval.ZERO.hull(prevVelX * friction).expand(ENVELOPE_PAD);
+            Interval baseZ = Interval.ZERO.hull(prevVelZ * friction).expand(ENVELOPE_PAD);
             if (inFluid) {
-                areaX = areaX.expand(FLUID_PUSH_PAD);
-                areaZ = areaZ.expand(FLUID_PUSH_PAD);
+                baseX = baseX.expand(FLUID_PUSH_PAD);
+                baseZ = baseZ.expand(FLUID_PUSH_PAD);
             }
 
-            double rawExcess = horizontalExcess(areaX, areaZ, obsVelX, obsVelZ);
+            double excess = horizontalExcess(baseX, baseZ, obsVelX, obsVelZ);
 
-            double excess = rawExcess;
-            if (rawExcess > HIT_EPSILON) {
+            Interval envX = baseX;
+            Interval envZ = baseZ;
+            boolean kbConsumed = false;
+            if (external.isActive() && excess > HIT_EPSILON) {
+                Interval kbX = baseX.shift(external.x()).expand(KNOCKBACK_PAD);
+                Interval kbZ = baseZ.shift(external.z()).expand(KNOCKBACK_PAD);
+                double kbExcess = horizontalExcess(kbX, kbZ, obsVelX, obsVelZ);
+                if (kbExcess < excess) {
+                    excess = kbExcess;
+                    envX = kbX;
+                    envZ = kbZ;
+                    if (kbExcess <= HIT_EPSILON) kbConsumed = true;
+                }
+            }
+
+            if (excess > HIT_EPSILON) {
                 double entityPush = nearbyEntityPush(previous, current);
                 if (entityPush > 0.0) {
-                    excess = horizontalExcess(areaX.expand(entityPush), areaZ.expand(entityPush), obsVelX, obsVelZ);
+                    excess = Math.min(excess, horizontalExcess(envX.expand(entityPush), envZ.expand(entityPush), obsVelX, obsVelZ));
                 }
             }
 
             lastExcess = excess;
-            movedThisTick = excess > HIT_EPSILON;
+            boolean groundTransition = movement.isOnGround() != movement.isLastOnGround();
+            movedThisTick = !groundTransition && excess > HIT_EPSILON;
             shiftWindow(movedThisTick);
 
             int hits = Long.bitCount(hitWindow);
@@ -182,11 +228,77 @@ public class MovementEstimator {
                 result = MovementResult.EXTERNAL;
             }
 
-            anchor(obsVelX, obsVelZ);
+            estimateVertical(current, previous, obsVelY, inFluid);
+
+            if (kbConsumed) external.consume();
+            anchor(obsVelX, obsVelY, obsVelZ);
         } finally {
             external.tick();
             data.getPistonData().tick();
+            data.getEffectData().tick();
         }
+    }
+
+    private void estimateVertical(Location current, Location previous, double obsVelY, boolean inFluid) {
+        if (!feetChunkLoaded(current)) {
+            supportedByGround = false;
+            setVertical(false, 0.0, VerticalCause.UNLOADED);
+            return;
+        }
+
+        supportedByGround = supportedByGround(current);
+
+        VerticalCause bail = verticalBail(current, previous, obsVelY, inFluid);
+        if (bail != null) {
+            setVertical(false, 0.0, bail);
+            return;
+        }
+
+        EffectData effects = data.getEffectData();
+        boolean levitating = effects.hasLevitation();
+        double predictedY = predictVerticalNoInput(levitating, effects);
+
+        boolean groundClaim = data.getMovementData().isOnGround() && obsVelY <= ONGROUND_RISE_TOLERANCE;
+        boolean grounded = supportedByGround || groundClaim;
+        double base;
+        VerticalCause cause;
+        if (grounded) {
+            base = STEP_HEIGHT;
+            cause = obsVelY > VERTICAL_PAD ? VerticalCause.STEP : VerticalCause.GROUND;
+        } else {
+            base = predictedY;
+            cause = levitating ? VerticalCause.LEVITATION : VerticalCause.AIR;
+        }
+
+        ExternalVelocityData external = data.getExternalVelocityData();
+        double externalUp = external.isActive() ? Math.max(0.0, external.y()) + KNOCKBACK_PAD : 0.0;
+        double upper = base + externalUp + VERTICAL_PAD;
+        double excess = obsVelY - upper;
+
+        boolean ascending = excess > VERTICAL_HIT_EPSILON;
+        setVertical(ascending, Math.max(0.0, excess), cause);
+    }
+
+    private double predictVerticalNoInput(boolean levitating, EffectData effects) {
+        if (levitating) {
+            double target = MovementConstants.LEVITATION_PER_LEVEL * (effects.levitationAmplifier() + 1);
+            return (prevVelY + (target - prevVelY) * MovementConstants.LEVITATION_RATE) * VERTICAL_DRAG;
+        }
+        double gravity = effects.hasSlowFalling() ? SLOW_FALLING_GRAVITY : GRAVITY;
+        return (prevVelY - gravity) * VERTICAL_DRAG;
+    }
+
+    private VerticalCause verticalBail(Location current, Location previous, double obsVelY, boolean inFluid) {
+        if (data.isCanFly()) return VerticalCause.FLY;
+        if (data.isInVehicle()) return VerticalCause.VEHICLE;
+        if (data.isSwimming() || data.isGliding() || data.isSpinAttacking()) return VerticalCause.VEHICLE;
+        if (data.getPistonData().isActive()) return VerticalCause.PISTON;
+        if (Math.abs(obsVelY) > FAST_VERTICAL_CAP) return VerticalCause.FAST;
+        if (inFluid) return VerticalCause.FLUID;
+        if (bouncyBelow(current)) return VerticalCause.BOUNCE;
+        if (nearClimbable(current, previous)) return VerticalCause.CLIMB;
+        if (inStuckBlock(current, previous)) return VerticalCause.STUCK;
+        return null;
     }
 
     private boolean shouldBail(Location current, double obsVelX, double obsVelZ) {
@@ -198,10 +310,60 @@ public class MovementEstimator {
         return border.isActive() && border.distanceToEdge(current.getX(), current.getZ()) < BORDER_MARGIN;
     }
 
+    private double poseHeight() {
+        double base = data.isSneaking() ? MovementConstants.SNEAKING_HEIGHT : MovementConstants.STANDING_HEIGHT;
+        return base * data.getAttributeData().scale();
+    }
+
     private boolean inFluidSwept(Location current, Location previous) {
         BoundingBox box = BoundingBox.sweptPlayer(current, previous,
-                data.getAttributeData().width(), data.getAttributeData().height());
-        return data.getClientWorld().hasBlock(box, MovementEstimator::isFluidState);
+                data.getAttributeData().width(), poseHeight());
+        return data.getClientWorld().hasBlock(box, MovementBlocks::isFluid);
+    }
+
+    private boolean nearClimbable(Location current, Location previous) {
+        BoundingBox box = BoundingBox.sweptPlayer(current, previous,
+                data.getAttributeData().width(), poseHeight());
+        return data.getClientWorld().hasBlock(box, state -> MovementBlocks.isClimbable(state.getType()));
+    }
+
+    private boolean inStuckBlock(Location current, Location previous) {
+        BoundingBox box = BoundingBox.sweptPlayer(current, previous,
+                data.getAttributeData().width(), poseHeight());
+        return data.getClientWorld().hasBlock(box, state -> MovementBlocks.isStuck(state.getType()));
+    }
+
+    private boolean feetChunkLoaded(Location feet) {
+        return data.getClientWorld().isLoaded(floor(feet.getX()) >> 4, floor(feet.getZ()) >> 4);
+    }
+
+    private boolean supportedByGround(Location feet) {
+        double half = data.getAttributeData().width() / 2.0;
+        int y = floor(feet.getY() - SUPPORT_BLOCK_OFFSET);
+        return isSupporting(feet.getX() - half, y, feet.getZ() - half)
+                || isSupporting(feet.getX() + half, y, feet.getZ() - half)
+                || isSupporting(feet.getX() - half, y, feet.getZ() + half)
+                || isSupporting(feet.getX() + half, y, feet.getZ() + half)
+                || isSupporting(feet.getX(), y, feet.getZ());
+    }
+
+    private boolean isSupporting(double x, int y, double z) {
+        StateType type = data.getClientWorld().getBlockState(floor(x), y, floor(z)).getType();
+        return MovementBlocks.isSolidSupport(type);
+    }
+
+    private boolean bouncyBelow(Location feet) {
+        double half = data.getAttributeData().width() / 2.0;
+        int y = floor(feet.getY() - SUPPORT_BLOCK_OFFSET);
+        return isBouncyAt(feet.getX() - half, y, feet.getZ() - half)
+                || isBouncyAt(feet.getX() + half, y, feet.getZ() - half)
+                || isBouncyAt(feet.getX() - half, y, feet.getZ() + half)
+                || isBouncyAt(feet.getX() + half, y, feet.getZ() + half)
+                || isBouncyAt(feet.getX(), y, feet.getZ());
+    }
+
+    private boolean isBouncyAt(double x, int y, double z) {
+        return isBouncy(data.getClientWorld().getBlockState(floor(x), y, floor(z)).getType());
     }
 
     private double groundFriction(Location feet) {
@@ -217,9 +379,23 @@ public class MovementEstimator {
         hitWindow = ((hitWindow << 1) | (hit ? 1L : 0L)) & WINDOW_MASK;
     }
 
-    private void anchor(double velX, double velZ) {
+    private void anchor(double velX, double velY, double velZ) {
         prevVelX = velX;
+        prevVelY = velY;
         prevVelZ = velZ;
+    }
+
+    private void setVertical(boolean ascending, double excess, VerticalCause cause) {
+        ascendingThisTick = ascending;
+        lastVerticalExcess = excess;
+        verticalCause = cause;
+    }
+
+    private void clearVertical() {
+        ascendingThisTick = false;
+        supportedByGround = false;
+        lastVerticalExcess = 0.0;
+        verticalCause = VerticalCause.NONE;
     }
 
     private double nearbyEntityPush(Location previous, Location current) {
@@ -232,17 +408,19 @@ public class MovementEstimator {
         double maxZ = Math.max(previous.getZ(), current.getZ());
         int count = data.getWorldEntityData().countPushableNear(
                 minX, minY, minZ, maxX, maxY, maxZ,
-                attributes.width() / 2.0, attributes.height());
+                attributes.width() / 2.0, poseHeight());
         return Math.min(MAX_ENTITY_PUSH, count * ENTITY_PUSH_PER);
     }
 
     public void reset() {
         initialized = false;
         prevVelX = 0;
+        prevVelY = 0;
         prevVelZ = 0;
         clearHistory();
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();
+        data.getEffectData().reset();
     }
 
     public void clearHistory() {
@@ -250,5 +428,6 @@ public class MovementEstimator {
         result = MovementResult.UNKNOWN;
         lastExcess = 0;
         movedThisTick = false;
+        clearVertical();
     }
 }

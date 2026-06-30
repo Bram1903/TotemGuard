@@ -58,7 +58,8 @@ public class OutboundVelocityProcessor extends ProcessorOutbound {
     private void pushOnClientAck(PacketSendEvent event, Vector3d velocity) {
         if (velocity == null) return;
         final double vx = velocity.getX();
+        final double vy = velocity.getY();
         final double vz = velocity.getZ();
-        latencyHandler.compensate(event, () -> externalVelocity.addPush(vx, vz));
+        latencyHandler.compensate(event, () -> externalVelocity.addPush(vx, vy, vz));
     }
 }

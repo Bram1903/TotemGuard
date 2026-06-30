@@ -33,6 +33,7 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJoinGame;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRespawn;
 
 public class OutboundSpawnProcessor extends ProcessorOutbound {
@@ -68,6 +69,14 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                     latencyHandler.compensate(event, () -> data.setGameMode(GameMode.values()[ordinal]));
                 }
             }
+        } else if (packetType == PacketType.Play.Server.PLAYER_ABILITIES) {
+            WrapperPlayServerPlayerAbilities packet = new WrapperPlayServerPlayerAbilities(event);
+            boolean flightAllowed = packet.isFlightAllowed();
+            boolean flying = packet.isFlying();
+            latencyHandler.compensate(event, () -> {
+                data.setCanFly(flightAllowed);
+                data.setFlying(flying);
+            });
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
             boolean resetSwimming = (packet.getKeptData() & WrapperPlayServerRespawn.KEEP_ENTITY_DATA) == 0;
@@ -87,6 +96,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.getMovementData().reset();
                 data.getMovementEstimator().reset();
                 data.getAttributeData().reset();
+                data.getEffectData().reset();
                 combatTracker.reset();
                 if (inventoryD != null) inventoryD.resetSession();
             });

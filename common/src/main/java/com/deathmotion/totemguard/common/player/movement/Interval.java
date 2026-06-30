@@ -34,8 +34,8 @@ public final class Interval {
         return new Interval(lo - pad, hi + pad);
     }
 
-    public Interval add(Interval other) {
-        return new Interval(lo + other.lo, hi + other.hi);
+    public Interval shift(double delta) {
+        return new Interval(lo + delta, hi + delta);
     }
 
     public Interval hull(double v) {

@@ -45,6 +45,7 @@ public class Data {
     private final ExternalVelocityData externalVelocityData;
     private final WorldBorderData worldBorderData;
     private final PistonData pistonData;
+    private final EffectData effectData;
     private final ClientWorld clientWorld;
     private final MovementEstimator movementEstimator;
     private GameMode gameMode;
@@ -95,6 +96,7 @@ public class Data {
         this.externalVelocityData = new ExternalVelocityData();
         this.worldBorderData = new WorldBorderData();
         this.pistonData = new PistonData();
+        this.effectData = new EffectData();
         this.clientWorld = new ClientWorld();
         this.movementEstimator = new MovementEstimator(this);
     }

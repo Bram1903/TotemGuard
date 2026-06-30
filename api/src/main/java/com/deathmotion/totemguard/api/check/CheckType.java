@@ -53,5 +53,11 @@ public enum CheckType {
     /**
      * Client-mod fingerprinting checks driven by the mod detection subsystem.
      */
-    MOD
+    MOD,
+
+    /**
+     * Movement and physics checks, motion the vanilla client could not have produced
+     * (fly, hover, ascent without support).
+     */
+    MOVEMENT
 }

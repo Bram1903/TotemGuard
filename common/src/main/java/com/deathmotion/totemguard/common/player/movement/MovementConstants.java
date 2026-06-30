@@ -23,6 +23,15 @@ public final class MovementConstants {
     public static final double MAX_HORIZONTAL_FRICTION = 0.91;
     public static final double BASE_WIDTH = 0.6;
     public static final double STANDING_HEIGHT = 1.8;
+    public static final double SNEAKING_HEIGHT = 1.5;
+
+    public static final double LEVITATION_PER_LEVEL = 0.05;
+    public static final double LEVITATION_RATE = 0.2;
+
+    public static final double GRAVITY = 0.08;
+    public static final double SLOW_FALLING_GRAVITY = 0.01;
+    public static final double VERTICAL_DRAG = 0.98;
+    public static final double STEP_HEIGHT = 0.6;
 
     private MovementConstants() {
     }

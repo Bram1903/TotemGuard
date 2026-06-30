@@ -25,6 +25,8 @@ import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.inventory.*;
 import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
+import com.deathmotion.totemguard.common.check.impl.movement.MovementA;
+import com.deathmotion.totemguard.common.check.impl.movement.MovementB;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.impl.tick.TickA;
 import com.deathmotion.totemguard.common.check.impl.tick.TickB;
@@ -99,7 +101,8 @@ public class CheckManagerImpl {
                 .put(ProtocolE.class, new ProtocolE(player))
                 .put(ProtocolF.class, new ProtocolF(player))
                 .put(ProtocolG.class, new ProtocolG(player))
-                .put(ProtocolH.class, new ProtocolH(player))
+                .put(MovementA.class, new MovementA(player))
+                .put(MovementB.class, new MovementB(player))
                 .put(InventoryA.class, inventoryA)
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))

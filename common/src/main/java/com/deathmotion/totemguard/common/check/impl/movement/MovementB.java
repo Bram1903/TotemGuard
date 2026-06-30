@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.protocol;
+package com.deathmotion.totemguard.common.check.impl.movement;
 
 import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
@@ -30,8 +30,8 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @RequiresTickEnd
-@CheckData(description = "Movement without input", type = CheckType.PROTOCOL, experimental = true)
-public class ProtocolH extends CheckImpl implements PacketCheck {
+@CheckData(description = "Horizontal movement without input", type = CheckType.MOVEMENT, experimental = true)
+public class MovementB extends CheckImpl implements PacketCheck {
 
     private static final int STREAK_TO_FLAG = 2;
 
@@ -40,7 +40,7 @@ public class ProtocolH extends CheckImpl implements PacketCheck {
 
     private int streak;
 
-    public ProtocolH(TGPlayer player) {
+    public MovementB(TGPlayer player) {
         super(player);
         this.inputData = player.getData().getInputData();
         this.movementEstimator = player.getData().getMovementEstimator();

@@ -18,45 +18,64 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
-import com.deathmotion.totemguard.common.player.movement.Interval;
-
 public class ExternalVelocityData {
 
-    private static final int HOLD_TICKS = 4;
+    private static final int WINDOW_TICKS = 3;
 
-    private Interval x = Interval.ZERO;
-    private Interval z = Interval.ZERO;
-    private int holdTicks;
+    private double x;
+    private double y;
+    private double z;
+    private int ticks;
+    private boolean active;
 
-    public void addPush(double px, double pz) {
-        x = x.hull(0.0).hull(px);
-        z = z.hull(0.0).hull(pz);
-        holdTicks = HOLD_TICKS;
+    public void addPush(double px, double py, double pz) {
+        if (active) {
+            x += px;
+            y += py;
+            z += pz;
+        } else {
+            x = px;
+            y = py;
+            z = pz;
+        }
+        active = true;
+        ticks = WINDOW_TICKS;
     }
 
     public void tick() {
-        if (holdTicks <= 0) return;
-        if (--holdTicks <= 0) {
-            x = Interval.ZERO;
-            z = Interval.ZERO;
-        }
+        if (!active) return;
+        if (--ticks <= 0) clear();
     }
 
-    public Interval x() {
+    public void consume() {
+        clear();
+    }
+
+    public double x() {
         return x;
     }
 
-    public Interval z() {
+    public double y() {
+        return y;
+    }
+
+    public double z() {
         return z;
     }
 
-    public boolean hasHorizontal() {
-        return holdTicks > 0;
+    public boolean isActive() {
+        return active;
     }
 
     public void reset() {
-        x = Interval.ZERO;
-        z = Interval.ZERO;
-        holdTicks = 0;
+        clear();
+    }
+
+    private void clear() {
+        x = 0.0;
+        y = 0.0;
+        z = 0.0;
+        ticks = 0;
+        active = false;
     }
 }

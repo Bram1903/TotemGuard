@@ -167,6 +167,7 @@ public class TGPlayer implements TGUser {
                 new OutboundEntityProcessor(this),
                 new OutboundVelocityProcessor(this),
                 new OutboundPistonProcessor(this),
+                new OutboundEffectProcessor(this),
                 new OutboundChunkProcessor(this),
                 new OutboundAttributeProcessor(this),
                 new OutboundWorldBorderProcessor(this),

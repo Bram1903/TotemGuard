@@ -38,9 +38,11 @@ public class MovementData {
     private Location previous = emptyLocation();
     private boolean lastFlyingPositionChanged;
     private boolean lastFlyingRotationChanged;
+    private boolean lastFlyingWasResync;
     private boolean lastServerPositionChanged;
     private boolean lastServerRotationChanged;
     private boolean onGround;
+    private boolean lastOnGround;
     private boolean horizontalCollision;
     private boolean pendingTeleportResync;
     private boolean cameraIsSelf = true;
@@ -69,7 +71,8 @@ public class MovementData {
         boolean positionDifferent = hasPositionChanged(previous, current);
         boolean rotationDifferent = hasRotationChanged(previous, current);
 
-        if (teleportResync || serverRotationResync || cameraResync || vehicleSwitchResync) {
+        lastFlyingWasResync = teleportResync || serverRotationResync || cameraResync || vehicleSwitchResync;
+        if (lastFlyingWasResync) {
             lastFlyingPositionChanged = false;
             lastFlyingRotationChanged = false;
         } else {
@@ -77,6 +80,7 @@ public class MovementData {
             lastFlyingRotationChanged = packet.hasRotationChanged() && rotationDifferent;
         }
 
+        lastOnGround = onGround;
         onGround = packet.isOnGround();
         horizontalCollision = packet.isHorizontalCollision();
     }
@@ -140,9 +144,11 @@ public class MovementData {
         previous = emptyLocation();
         lastFlyingPositionChanged = false;
         lastFlyingRotationChanged = false;
+        lastFlyingWasResync = false;
         lastServerPositionChanged = false;
         lastServerRotationChanged = false;
         onGround = false;
+        lastOnGround = false;
         horizontalCollision = false;
         pendingTeleportResync = false;
         pendingServerRotationSyncs.clear();
