@@ -67,6 +67,7 @@ public final class MovementDebug {
         if (env.fluid()) return "fluid";
         if (env.stuck()) return "stuck";
         if (env.climbable()) return "climb";
+        if (env.bounceFactor() > 0.0) return "bounce";
         return "land";
     }
 }

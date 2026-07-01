@@ -69,6 +69,9 @@ public class MovementEstimator {
     private static final int STEP_UNCERTAINTY_TICKS = 4;
     private static final double STEP_HORIZONTAL_SLACK = 0.15;
 
+    private static final double BOUNCE_MIN_DESCENT = 0.4;
+    private static final int BOUNCE_UNCERTAINTY_TICKS = 3;
+
     private static final double SPRINT_MIN_SPEED = 0.15;
     private static final double SPRINT_BACKWARD_COS = -0.6;
     private static final int SPRINT_TURN_TOLERANCE = 8;
@@ -92,6 +95,8 @@ public class MovementEstimator {
     private double lastGroundGap;
     private double prevObservedVy;
     private int stepMoveTicks;
+    private int bounceTicks;
+    private double lastSlipperiness = MovementConstants.DEFAULT_SLIPPERINESS;
 
     @Getter
     private boolean improperSprint;
@@ -101,12 +106,6 @@ public class MovementEstimator {
 
     public MovementEstimator(Data data) {
         this.data = data;
-    }
-
-    private static MovementCause bailCause(BlockEnvironment env) {
-        if (!env.feetLoaded()) return MovementCause.UNLOADED;
-        if (env.bouncyBelow()) return MovementCause.BOUNCE;
-        return MovementCause.STUCK;
     }
 
     public void onTickEnd() {
@@ -167,8 +166,8 @@ public class MovementEstimator {
 
             BlockEnvironment env = BlockEnvironmentScanner.scan(
                     data.getClientWorld(), current, previous, data.getAttributeData().width(), poseHeight(), data.isSneaking());
-            if (!env.feetLoaded() || env.bouncyBelow()) {
-                decline(bailCause(env), observed);
+            if (!env.feetLoaded()) {
+                decline(MovementCause.UNLOADED, observed);
                 return;
             }
 
@@ -194,7 +193,14 @@ public class MovementEstimator {
             prevGroundedEnd = lastGroundedEnd;
             lastGroundedEnd = groundedEnd;
 
-            MovementInput input = buildInput(movement, env, observed, groundedStart, groundedEnd, recentlyGrounded);
+            double bounceFloor = carried.vertical().min();
+            boolean bounced = env.bounceFactor() > 0.0 && groundedEnd && !data.isSneaking()
+                    && bounceFloor < -BOUNCE_MIN_DESCENT;
+            if (bounced) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
+            else if (bounceTicks > 0) bounceTicks--;
+
+            MovementInput input = buildInput(movement, env, observed, groundedStart, groundedEnd, recentlyGrounded, lastSlipperiness);
+            lastSlipperiness = env.slipperiness();
 
             if (trusted(movement)) {
                 judge(MovementSimulator.predictMove(carried, input, env), input, env, observed);
@@ -216,6 +222,10 @@ public class MovementEstimator {
                 }
                 MovementDebug.log(data.getPlayer(), withheld ? "coast:withheld" : "coast:double",
                         observed, input, env, null, 0.0, 0.0);
+            }
+
+            if (bounced) {
+                carried = MovementSimulator.advanceBounce(carried, bounceFloor, env.bounceFactor(), input);
             }
         } finally {
             data.getExternalVelocityData().tick();
@@ -313,7 +323,8 @@ public class MovementEstimator {
     }
 
     private MovementInput buildInput(MovementData movement, BlockEnvironment env, Vector3d observed,
-                                     boolean groundedStart, boolean groundedEnd, boolean recentlyGrounded) {
+                                     boolean groundedStart, boolean groundedEnd, boolean recentlyGrounded,
+                                     double slipperinessStart) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
         boolean horizontalInput = !inventoryOpen
@@ -326,7 +337,8 @@ public class MovementEstimator {
         double jumpTakeoff = attr.jumpStrength() + (jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0);
 
         boolean freshJump = observed.getY() >= jumpTakeoff - COYOTE_TAKEOFF_EPS;
-        boolean coyoteJump = !groundedStart && recentlyGrounded && jumpHeld && freshJump && !inventoryOpen;
+        boolean coyoteJump = !groundedStart && recentlyGrounded && jumpHeld && freshJump && !inventoryOpen
+                && bounceTicks == 0;
         boolean effectiveGroundedStart = groundedStart || coyoteJump;
         boolean jumpPossible = effectiveGroundedStart && jumpHeld && !inventoryOpen;
 
@@ -341,7 +353,7 @@ public class MovementEstimator {
 
         return new MovementInput(effectiveGroundedStart, groundedEnd, horizontalInput, jumpPossible,
                 sprinting, effectiveSpeed(sprinting, sneaking, diagonal),
-                attr.jumpStrength(), attr.gravity(), attr.stepHeight(),
+                attr.jumpStrength(), attr.gravity(), attr.stepHeight(), slipperinessStart,
                 jumpBoostAmplifier,
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling());
     }
@@ -440,6 +452,7 @@ public class MovementEstimator {
         if (env.fluid()) return MovementCause.FLUID;
         if (env.stuck()) return MovementCause.STUCK;
         if (env.climbable()) return MovementCause.CLIMB;
+        if (env.bounceFactor() > 0.0 && input.groundedEnd()) return MovementCause.BOUNCE;
         if (input.levitation()) return MovementCause.LEVITATION;
         if (input.groundedEnd()) return observedVy > VERTICAL_HIT_EPSILON ? MovementCause.STEP : MovementCause.GROUND;
         if (observedVy > JUMP_LIKE_ASCENT) return MovementCause.JUMP;
@@ -491,6 +504,7 @@ public class MovementEstimator {
         fastStreak = 0;
         groundMoveStreak = 0;
         sneakStreak = 0;
+        bounceTicks = 0;
     }
 
     public boolean movedHorizontally() {
@@ -529,6 +543,7 @@ public class MovementEstimator {
         initialized = false;
         carried = MotionArea.resting();
         flyingSinceTickEnd = 0;
+        lastSlipperiness = MovementConstants.DEFAULT_SLIPPERINESS;
         clearHistory();
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();

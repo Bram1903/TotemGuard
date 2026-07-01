@@ -51,9 +51,9 @@ public final class BlockEnvironmentScanner {
 
         Stuck stuck = scanStuck(world, previous, width, poseHeight);
         boolean climbable = climbableAt(world, previous);
-        Below below = scanBelow(world, current, width, new CollisionContext(current.getY(), sneaking));
+        Below below = scanBelow(world, current, previous, width, new CollisionContext(current.getY(), sneaking));
         return new BlockEnvironment(true, fluid[0], climbable, stuck.active, stuck.horizontal, stuck.vertical,
-                below.bouncy, below.slipperiness, below.groundGap);
+                below.bounceFactor, below.slipperiness, below.groundGap);
     }
 
     private static Stuck scanStuck(ClientWorld world, Location feet, double width, double poseHeight) {
@@ -81,23 +81,40 @@ public final class BlockEnvironmentScanner {
         return MovementBlocks.trapdoorUsableAsLadder(state, world.getBlockState(x, y - 1, z));
     }
 
-    private static Below scanBelow(ClientWorld world, Location feet, double width, CollisionContext ctx) {
+    private static Below scanBelow(ClientWorld world, Location feet, Location previous, double width, CollisionContext ctx) {
         double half = width / 2.0;
         double feetYd = feet.getY();
-        int y = floor(feetYd - SUPPORT_BLOCK_OFFSET);
         int feetCell = floor(feetYd);
-        double cx = feet.getX(), cz = feet.getZ();
 
-        boolean bouncy = false;
+        Support current = scanSupport(world, feet.getX(), feet.getZ(), half, feetYd, feetCell, ctx);
+        Support fallback = scanSupport(world, previous.getX(), previous.getZ(), half, feetYd, feetCell, ctx);
+        boolean usePrevious = fallback.top > current.top;
+        Support support = usePrevious ? fallback : current;
+
+        double bounceFactor = scanBounce(world, usePrevious ? previous.getX() : feet.getX(),
+                usePrevious ? previous.getZ() : feet.getZ(), half, feetYd);
+
+        double groundGap = support.top == Double.NEGATIVE_INFINITY ? UNSUPPORTED_GAP : feetYd - support.top;
+        return new Below(bounceFactor, support.slipperiness, groundGap);
+    }
+
+    private static double scanBounce(ClientWorld world, double cx, double cz, double half, double feetYd) {
+        int y = floor(feetYd - SUPPORT_BLOCK_OFFSET);
+        double bounceFactor = 0.0;
+        for (double[] point : footprint(cx, cz, half)) {
+            StateType nearType = world.getBlockState(floor(point[0]), y, floor(point[1])).getType();
+            bounceFactor = Math.max(bounceFactor, MovementBlocks.bounceFactor(nearType));
+        }
+        return bounceFactor;
+    }
+
+    private static Support scanSupport(ClientWorld world, double cx, double cz, double half, double feetYd, int feetCell, CollisionContext ctx) {
         double slipperiness = MovementBlocks.slipperiness(StateTypes.AIR);
         double maxTop = Double.NEGATIVE_INFINITY;
         double feetTop = Double.NEGATIVE_INFINITY;
 
-        double[][] footprint = {{cx - half, cz - half}, {cx + half, cz - half}, {cx - half, cz + half}, {cx + half, cz + half}, {cx, cz}};
-        for (double[] point : footprint) {
+        for (double[] point : footprint(cx, cz, half)) {
             int px = floor(point[0]), pz = floor(point[1]);
-            StateType nearType = world.getBlockState(px, y, pz).getType();
-            if (nearType != StateTypes.AIR && MovementBlocks.isBouncy(nearType)) bouncy = true;
             CollisionShape feetShape = BlockShapes.shapeOf(world.getBlockState(px, feetCell, pz), feetCell, ctx);
             if (!feetShape.isEmpty()) {
                 double top = Math.min(feetCell + feetShape.maxY(), feetYd);
@@ -115,16 +132,21 @@ public final class BlockEnvironmentScanner {
                 }
             }
         }
-        double support = Math.max(maxTop, feetTop);
-        double groundGap = support == Double.NEGATIVE_INFINITY ? UNSUPPORTED_GAP : feetYd - support;
-        return new Below(bouncy, slipperiness, groundGap);
+        return new Support(Math.max(maxTop, feetTop), slipperiness);
+    }
+
+    private static double[][] footprint(double cx, double cz, double half) {
+        return new double[][]{{cx - half, cz - half}, {cx + half, cz - half}, {cx - half, cz + half}, {cx + half, cz + half}, {cx, cz}};
     }
 
     private static int floor(double value) {
         return (int) Math.floor(value);
     }
 
-    private record Below(boolean bouncy, double slipperiness, double groundGap) {
+    private record Support(double top, double slipperiness) {
+    }
+
+    private record Below(double bounceFactor, double slipperiness, double groundGap) {
     }
 
     private record Stuck(boolean active, double horizontal, double vertical) {

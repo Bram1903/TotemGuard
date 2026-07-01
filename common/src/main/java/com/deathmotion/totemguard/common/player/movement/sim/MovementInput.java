@@ -28,6 +28,7 @@ public record MovementInput(
         double jumpStrength,
         double gravity,
         double stepHeight,
+        double slipperiness,
         int jumpBoostAmplifier,
         boolean levitation,
         int levitationAmplifier,

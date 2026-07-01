@@ -46,18 +46,24 @@ public final class MovementSimulator {
         if (env.fluid()) return predictFluid(carried);
         if (env.stuck()) return predictStuck(carried, in, env);
         if (env.climbable()) return predictClimb();
-        return predictLand(carried, in, env);
+        return predictLand(carried, in);
     }
 
     public static MotionArea advance(double legalSpeed, double legalVerticalVelocity, MovementInput in, BlockEnvironment env) {
         if (env.fluid()) return advanceFluid(legalSpeed, legalVerticalVelocity);
         if (env.stuck()) return advanceStuck();
         if (env.climbable()) return advanceClimb(legalSpeed, legalVerticalVelocity);
-        return advanceLand(legalSpeed, legalVerticalVelocity, in, env);
+        return advanceLand(legalSpeed, legalVerticalVelocity, in);
     }
 
-    private static MotionArea predictLand(MotionArea carried, MovementInput in, BlockEnvironment env) {
-        double accel = in.horizontalInput() ? landAcceleration(in, env) : 0.0;
+    public static MotionArea advanceBounce(MotionArea advanced, double incomingVertical, double bounceFactor, MovementInput in) {
+        if (incomingVertical >= 0.0 || bounceFactor <= 0.0) return advanced;
+        double reflected = -incomingVertical * bounceFactor;
+        return MotionArea.of(advanced.horizontalSpeed().max(), endOfTickVertical(reflected, in));
+    }
+
+    private static MotionArea predictLand(MotionArea carried, MovementInput in) {
+        double accel = in.horizontalInput() ? landAcceleration(in) : 0.0;
         Range horizontal = carried.horizontalSpeed().expand(accel).clampToNonNegative();
         if (in.sprintJump()) horizontal = horizontal.grow(0.0, SPRINT_JUMP_BOOST);
 
@@ -69,17 +75,17 @@ public final class MovementSimulator {
         return new MotionArea(horizontal, vertical);
     }
 
-    private static MotionArea advanceLand(double legalSpeed, double legalVerticalVelocity, MovementInput in, BlockEnvironment env) {
-        double friction = in.groundedStart() ? env.slipperiness() * AIR_FRICTION : AIR_FRICTION;
+    private static MotionArea advanceLand(double legalSpeed, double legalVerticalVelocity, MovementInput in) {
+        double friction = in.groundedStart() ? in.slipperiness() * AIR_FRICTION : AIR_FRICTION;
         double nextHorizontal = legalSpeed * friction;
 
         double moveVertical = in.groundedEnd() ? 0.0 : legalVerticalVelocity;
         return MotionArea.of(Math.max(0.0, nextHorizontal), endOfTickVertical(moveVertical, in));
     }
 
-    private static double landAcceleration(MovementInput in, BlockEnvironment env) {
+    private static double landAcceleration(MovementInput in) {
         if (in.groundedStart()) {
-            double slip = env.slipperiness();
+            double slip = in.slipperiness();
             return in.movementSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
         }
         return in.sprinting() ? AIR_ACCEL_SPRINTING : AIR_ACCEL;
@@ -94,7 +100,7 @@ public final class MovementSimulator {
     }
 
     private static MotionArea predictStuck(MotionArea carried, MovementInput in, BlockEnvironment env) {
-        double accel = in.horizontalInput() ? landAcceleration(in, env) : 0.0;
+        double accel = in.horizontalInput() ? landAcceleration(in) : 0.0;
         double horizontalBase = carried.horizontalSpeed().max() + accel;
         if (in.sprintJump()) horizontalBase += SPRINT_JUMP_BOOST;
         double horizontalCap = horizontalBase * env.stuckHorizontal();

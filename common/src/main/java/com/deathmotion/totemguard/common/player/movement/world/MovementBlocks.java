@@ -34,8 +34,10 @@ public final class MovementBlocks {
     private MovementBlocks() {
     }
 
-    public static boolean isBouncy(StateType type) {
-        return type == StateTypes.SLIME_BLOCK || BlockTags.BEDS.contains(type);
+    public static double bounceFactor(StateType type) {
+        if (type == StateTypes.SLIME_BLOCK) return 1.0;
+        if (BlockTags.BEDS.contains(type)) return 0.66;
+        return 0.0;
     }
 
     public static double slipperiness(StateType type) {

@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.player.movement;
 public final class MovementConstants {
 
     public static final double MAX_HORIZONTAL_FRICTION = 0.91;
+    public static final double DEFAULT_SLIPPERINESS = 0.6;
     public static final double BASE_WIDTH = 0.6;
     public static final double STANDING_HEIGHT = 1.8;
     public static final double SNEAKING_HEIGHT = 1.5;
