@@ -165,7 +165,7 @@ public class MovementEstimator {
             if (handleFast(observed)) return;
 
             BlockEnvironment env = BlockEnvironmentScanner.scan(
-                    data.getClientWorld(), current, previous, data.getAttributeData().width(), poseHeight(), data.isSneaking());
+                    data.getClientWorld(), data.getWorldEntityData(), current, previous, data.getAttributeData().width(), poseHeight(), data.isSneaking());
             if (!env.feetLoaded()) {
                 decline(MovementCause.UNLOADED, observed);
                 return;

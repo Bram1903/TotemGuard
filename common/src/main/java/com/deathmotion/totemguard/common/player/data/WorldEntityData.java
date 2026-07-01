@@ -32,7 +32,12 @@ public class WorldEntityData {
 
     private static final double SNAP_THRESHOLD = 4.0;
 
+    private static final double SUPPORT_HORIZONTAL_PAD = 0.1;
+    private static final double SUPPORT_TOP_EPS = 0.03;
+    private static final double SUPPORT_MAX_DROP = 2.0;
+
     private final Map<Integer, Tracked> trackedEntities = new HashMap<>();
+    private int standableCount;
     private String worldName;
     private DimensionType dimensionType;
 
@@ -40,6 +45,13 @@ public class WorldEntityData {
         return EntityTypes.isTypeInstanceOf(type, EntityTypes.LIVINGENTITY)
                 || EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT)
                 || EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT);
+    }
+
+    private static boolean isStandable(EntityType type) {
+        if (type == null) return false;
+        if (EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT)) return true;
+        if (type == EntityTypes.SHULKER) return true;
+        return type.getName() != null && "happy_ghast".equals(type.getName().getKey());
     }
 
     private static double intervalGap(double aMin, double aMax, double bMin, double bMax) {
@@ -51,11 +63,14 @@ public class WorldEntityData {
     public void add(int entityId, EntityType type, double x, double y, double z) {
         Tracked tracked = new Tracked(type);
         tracked.snapTo(x, y, z);
-        trackedEntities.put(entityId, tracked);
+        Tracked previous = trackedEntities.put(entityId, tracked);
+        if (previous != null && previous.standable) standableCount--;
+        if (tracked.standable) standableCount++;
     }
 
     public void remove(int entityId) {
-        trackedEntities.remove(entityId);
+        Tracked removed = trackedEntities.remove(entityId);
+        if (removed != null && removed.standable) standableCount--;
     }
 
     public void setPosition(int entityId, double x, double y, double z) {
@@ -134,6 +149,28 @@ public class WorldEntityData {
         return count;
     }
 
+    public double standableSupportTop(double pMinX, double pMinZ, double pMaxX, double pMaxZ, double feetY) {
+        if (standableCount == 0) return Double.NEGATIVE_INFINITY;
+        double best = Double.NEGATIVE_INFINITY;
+        for (Tracked tracked : trackedEntities.values()) {
+            if (!tracked.positioned || !tracked.standable) continue;
+
+            double half = tracked.halfWidth() + SUPPORT_HORIZONTAL_PAD;
+            double eMinX = Math.min(tracked.prevRenderX, tracked.targetX) - half;
+            double eMaxX = Math.max(tracked.prevRenderX, tracked.targetX) + half;
+            double eMinZ = Math.min(tracked.prevRenderZ, tracked.targetZ) - half;
+            double eMaxZ = Math.max(tracked.prevRenderZ, tracked.targetZ) + half;
+            if (pMaxX <= eMinX || pMinX >= eMaxX) continue;
+            if (pMaxZ <= eMinZ || pMinZ >= eMaxZ) continue;
+
+            double top = Math.max(tracked.prevRenderY, tracked.targetY) + tracked.height();
+            if (top > feetY + SUPPORT_TOP_EPS) continue;
+            if (top < feetY - SUPPORT_MAX_DROP) continue;
+            if (top > best) best = top;
+        }
+        return best;
+    }
+
     public void handleJoinGame(WrapperPlayServerJoinGame packet) {
         worldName = packet.getWorldName();
         dimensionType = packet.getDimensionType();
@@ -156,6 +193,7 @@ public class WorldEntityData {
 
     private void clearAll() {
         trackedEntities.clear();
+        standableCount = 0;
     }
 
     private boolean isWorldChange(WrapperPlayServerRespawn respawn) {
@@ -170,6 +208,7 @@ public class WorldEntityData {
 
         private final EntityType type;
         private final boolean pushable;
+        private final boolean standable;
         private final double baseHalfWidth;
         private final double baseHeight;
         private double scale = 1.0;
@@ -190,6 +229,7 @@ public class WorldEntityData {
         private Tracked(EntityType type) {
             this.type = type;
             this.pushable = isPushable(type);
+            this.standable = isStandable(type);
             this.baseHalfWidth = EntityHitboxes.width(type) / 2.0;
             this.baseHeight = EntityHitboxes.height(type);
         }

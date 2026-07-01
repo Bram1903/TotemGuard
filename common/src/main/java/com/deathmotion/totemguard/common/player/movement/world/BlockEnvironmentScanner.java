@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.movement.world;
 
 import com.deathmotion.totemguard.common.player.data.ClientWorld;
+import com.deathmotion.totemguard.common.player.data.WorldEntityData;
 import com.deathmotion.totemguard.common.util.BoundingBox;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
@@ -34,7 +35,7 @@ public final class BlockEnvironmentScanner {
     private BlockEnvironmentScanner() {
     }
 
-    public static BlockEnvironment scan(ClientWorld world, Location current, Location previous, double width, double poseHeight, boolean sneaking) {
+    public static BlockEnvironment scan(ClientWorld world, WorldEntityData entities, Location current, Location previous, double width, double poseHeight, boolean sneaking) {
         if (!world.isLoaded(floor(current.getX()) >> 4, floor(current.getZ()) >> 4)) {
             return BlockEnvironment.UNLOADED;
         }
@@ -51,7 +52,7 @@ public final class BlockEnvironmentScanner {
 
         Stuck stuck = scanStuck(world, previous, width, poseHeight);
         boolean climbable = climbableAt(world, previous);
-        Below below = scanBelow(world, current, previous, width, new CollisionContext(current.getY(), sneaking));
+        Below below = scanBelow(world, entities, current, previous, width, new CollisionContext(current.getY(), sneaking));
         return new BlockEnvironment(true, fluid[0], climbable, stuck.active, stuck.horizontal, stuck.vertical,
                 below.bounceFactor, below.slipperiness, below.groundGap);
     }
@@ -81,7 +82,7 @@ public final class BlockEnvironmentScanner {
         return MovementBlocks.trapdoorUsableAsLadder(state, world.getBlockState(x, y - 1, z));
     }
 
-    private static Below scanBelow(ClientWorld world, Location feet, Location previous, double width, CollisionContext ctx) {
+    private static Below scanBelow(ClientWorld world, WorldEntityData entities, Location feet, Location previous, double width, CollisionContext ctx) {
         double half = width / 2.0;
         double feetYd = feet.getY();
         int feetCell = floor(feetYd);
@@ -94,8 +95,27 @@ public final class BlockEnvironmentScanner {
         double bounceFactor = scanBounce(world, usePrevious ? previous.getX() : feet.getX(),
                 usePrevious ? previous.getZ() : feet.getZ(), half, feetYd);
 
-        double groundGap = support.top == Double.NEGATIVE_INFINITY ? UNSUPPORTED_GAP : feetYd - support.top;
-        return new Below(bounceFactor, support.slipperiness, groundGap);
+        double supportTop = support.top;
+        double slipperiness = support.slipperiness;
+
+        double entityTop = entitySupportTop(entities, feet, previous, half, feetYd);
+        if (entityTop > supportTop) {
+            supportTop = entityTop;
+            slipperiness = MovementBlocks.slipperiness(StateTypes.AIR);
+            bounceFactor = 0.0;
+        }
+
+        double groundGap = supportTop == Double.NEGATIVE_INFINITY ? UNSUPPORTED_GAP : feetYd - supportTop;
+        return new Below(bounceFactor, slipperiness, groundGap);
+    }
+
+    private static double entitySupportTop(WorldEntityData entities, Location feet, Location previous, double half, double feetYd) {
+        if (entities == null) return Double.NEGATIVE_INFINITY;
+        double minX = Math.min(feet.getX(), previous.getX()) - half;
+        double maxX = Math.max(feet.getX(), previous.getX()) + half;
+        double minZ = Math.min(feet.getZ(), previous.getZ()) - half;
+        double maxZ = Math.max(feet.getZ(), previous.getZ()) + half;
+        return entities.standableSupportTop(minX, minZ, maxX, maxZ, feetYd);
     }
 
     private static double scanBounce(ClientWorld world, double cx, double cz, double half, double feetYd) {
