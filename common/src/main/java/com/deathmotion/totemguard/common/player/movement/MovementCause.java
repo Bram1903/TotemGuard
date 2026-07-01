@@ -35,8 +35,6 @@ public enum MovementCause {
     FLY,
     HOVER,
     GROUNDSPOOF,
-    AIRWALK,
-    WATER_WALK,
     FAST,
     FAST_FALL,
     BORDER,

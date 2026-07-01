@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.player.movement.world;
 
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Type;
+import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateValue;
@@ -35,7 +35,7 @@ public final class MovementBlocks {
     }
 
     public static boolean isBouncy(StateType type) {
-        return type == StateTypes.SLIME_BLOCK || type.getName().endsWith("_BED");
+        return type == StateTypes.SLIME_BLOCK || BlockTags.BEDS.contains(type);
     }
 
     public static double slipperiness(StateType type) {
@@ -94,24 +94,6 @@ public final class MovementBlocks {
     }
 
     private static boolean isTrapdoor(StateType type) {
-        return type.getName().endsWith("_TRAPDOOR");
-    }
-
-    public static boolean isSolidSupport(StateType type) {
-        return type != StateTypes.AIR && type.isBlocking() && !isFluidType(type);
-    }
-
-    public static double supportTopOffset(WrappedBlockState state) {
-        String name = state.getType().getName();
-        if (name.endsWith("_FENCE") || name.endsWith("_FENCE_GATE") || name.endsWith("_WALL")) {
-            return 1.5;
-        }
-        if (name.endsWith("_SLAB")) {
-            return state.getTypeData() == Type.BOTTOM ? 0.5 : 1.0;
-        }
-        if (name.endsWith("_CARPET")) {
-            return 0.0625;
-        }
-        return 1.0;
+        return BlockTags.TRAPDOORS.contains(type);
     }
 }

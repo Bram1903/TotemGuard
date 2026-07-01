@@ -18,18 +18,16 @@
 
 package com.deathmotion.totemguard.common.player.movement.world;
 
-public record BlockEnvironment(
-        boolean feetLoaded,
-        boolean fluid,
-        boolean climbable,
-        boolean stuck,
-        double stuckHorizontal,
-        double stuckVertical,
-        boolean bouncyBelow,
-        double slipperiness,
-        double groundGap
-) {
+public record CollisionShape(boolean present, double maxY) {
 
-    public static final BlockEnvironment UNLOADED =
-            new BlockEnvironment(false, false, false, false, 1.0, 1.0, false, 0.6, 0.0);
+    public static final CollisionShape EMPTY = new CollisionShape(false, 0.0);
+    public static final CollisionShape FULL = new CollisionShape(true, 1.0);
+
+    public static CollisionShape top(double maxY) {
+        return new CollisionShape(true, maxY);
+    }
+
+    public boolean isEmpty() {
+        return !present;
+    }
 }

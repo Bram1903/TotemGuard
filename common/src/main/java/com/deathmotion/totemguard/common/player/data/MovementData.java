@@ -42,7 +42,6 @@ public class MovementData {
     private boolean lastServerPositionChanged;
     private boolean lastServerRotationChanged;
     private boolean onGround;
-    private boolean lastOnGround;
     private boolean horizontalCollision;
     private boolean pendingTeleportResync;
     private boolean cameraIsSelf = true;
@@ -80,7 +79,6 @@ public class MovementData {
             lastFlyingRotationChanged = packet.hasRotationChanged() && rotationDifferent;
         }
 
-        lastOnGround = onGround;
         onGround = packet.isOnGround();
         horizontalCollision = packet.isHorizontalCollision();
     }
@@ -148,7 +146,6 @@ public class MovementData {
         lastServerPositionChanged = false;
         lastServerRotationChanged = false;
         onGround = false;
-        lastOnGround = false;
         horizontalCollision = false;
         pendingTeleportResync = false;
         pendingServerRotationSyncs.clear();

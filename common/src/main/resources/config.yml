@@ -101,6 +101,11 @@ tick:
 # longer flag. This applies on reload, no restart needed.
 physics-engine:
   enabled: true
+  # Logs one simulation line per movement tick to the console for every player, so movement
+  # false positives can be copied and diagnosed (observed motion, the predicted caps, the
+  # excess, ground state, medium, and inputs). Very spammy, intended for a dev/test server
+  # with a single player. Applies on reload, no restart needed.
+  debug: false
 
 # A vanilla client bug lets you keep moving while an inventory is open when the Debug
 # Modifier Key (F3) is bound to the same key as a movement key. When enabled, TotemGuard

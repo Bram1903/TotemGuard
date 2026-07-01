@@ -28,12 +28,13 @@ import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 public final class BlockEnvironmentScanner {
 
     private static final double SUPPORT_BLOCK_OFFSET = 0.5000001;
+    private static final double SUPPORT_TOP_EPS = 0.001;
     private static final double UNSUPPORTED_GAP = 10.0;
 
     private BlockEnvironmentScanner() {
     }
 
-    public static BlockEnvironment scan(ClientWorld world, Location current, Location previous, double width, double poseHeight) {
+    public static BlockEnvironment scan(ClientWorld world, Location current, Location previous, double width, double poseHeight, boolean sneaking) {
         if (!world.isLoaded(floor(current.getX()) >> 4, floor(current.getZ()) >> 4)) {
             return BlockEnvironment.UNLOADED;
         }
@@ -50,9 +51,9 @@ public final class BlockEnvironmentScanner {
 
         Stuck stuck = scanStuck(world, previous, width, poseHeight);
         boolean climbable = climbableAt(world, previous);
-        Below below = scanBelow(world, current, width);
+        Below below = scanBelow(world, current, width, new CollisionContext(current.getY(), sneaking));
         return new BlockEnvironment(true, fluid[0], climbable, stuck.active, stuck.horizontal, stuck.vertical,
-                below.bouncy, below.supported, below.fluid, below.slipperiness, below.groundGap);
+                below.bouncy, below.slipperiness, below.groundGap);
     }
 
     private static Stuck scanStuck(ClientWorld world, Location feet, double width, double poseHeight) {
@@ -80,17 +81,14 @@ public final class BlockEnvironmentScanner {
         return MovementBlocks.trapdoorUsableAsLadder(state, world.getBlockState(x, y - 1, z));
     }
 
-    private static Below scanBelow(ClientWorld world, Location feet, double width) {
+    private static Below scanBelow(ClientWorld world, Location feet, double width, CollisionContext ctx) {
         double half = width / 2.0;
         double feetYd = feet.getY();
         int y = floor(feetYd - SUPPORT_BLOCK_OFFSET);
         int feetCell = floor(feetYd);
         double cx = feet.getX(), cz = feet.getZ();
 
-        boolean supported = false;
         boolean bouncy = false;
-        boolean fluid = false;
-        boolean restAtFeet = false;
         boolean feetCellSolid = false;
         double slipperiness = MovementBlocks.slipperiness(StateTypes.AIR);
         double maxTop = Double.NEGATIVE_INFINITY;
@@ -98,37 +96,32 @@ public final class BlockEnvironmentScanner {
         double[][] footprint = {{cx - half, cz - half}, {cx + half, cz - half}, {cx - half, cz + half}, {cx + half, cz + half}, {cx, cz}};
         for (double[] point : footprint) {
             int px = floor(point[0]), pz = floor(point[1]);
-            StateType type = world.getBlockState(px, y, pz).getType();
-            if (type != StateTypes.AIR) {
-                if (MovementBlocks.isSolidSupport(type)) {
-                    if (!supported) slipperiness = MovementBlocks.slipperiness(type);
-                    supported = true;
-                }
-                if (MovementBlocks.isBouncy(type)) bouncy = true;
-                if (MovementBlocks.isFluidType(type)) fluid = true;
-            }
-            StateType feetType = world.getBlockState(px, feetCell, pz).getType();
-            if (feetType != StateTypes.AIR) {
-                restAtFeet = true;
-                if (!MovementBlocks.isFluidType(feetType)) feetCellSolid = true;
-            }
+            StateType nearType = world.getBlockState(px, y, pz).getType();
+            if (nearType != StateTypes.AIR && MovementBlocks.isBouncy(nearType)) bouncy = true;
+            WrappedBlockState feetState = world.getBlockState(px, feetCell, pz);
+            if (!BlockShapes.shapeOf(feetState, feetCell, ctx).isEmpty()) feetCellSolid = true;
             for (int dy = 1; dy <= 2; dy++) {
-                WrappedBlockState below = world.getBlockState(px, feetCell - dy, pz);
-                if (MovementBlocks.isSolidSupport(below.getType())) {
-                    maxTop = Math.max(maxTop, (feetCell - dy) + MovementBlocks.supportTopOffset(below));
+                int cellY = feetCell - dy;
+                WrappedBlockState below = world.getBlockState(px, cellY, pz);
+                CollisionShape shape = BlockShapes.shapeOf(below, cellY, ctx);
+                if (shape.isEmpty()) continue;
+                double topAbs = cellY + shape.maxY();
+                if (topAbs <= feetYd + SUPPORT_TOP_EPS && topAbs > maxTop) {
+                    maxTop = topAbs;
+                    slipperiness = MovementBlocks.slipperiness(below.getType());
                 }
             }
         }
         double groundGap = feetCellSolid ? 0.0
                 : (maxTop == Double.NEGATIVE_INFINITY ? UNSUPPORTED_GAP : feetYd - maxTop);
-        return new Below(supported, bouncy, fluid && !restAtFeet, slipperiness, groundGap);
+        return new Below(bouncy, slipperiness, groundGap);
     }
 
     private static int floor(double value) {
         return (int) Math.floor(value);
     }
 
-    private record Below(boolean supported, boolean bouncy, boolean fluid, double slipperiness, double groundGap) {
+    private record Below(boolean bouncy, double slipperiness, double groundGap) {
     }
 
     private record Stuck(boolean active, double horizontal, double vertical) {

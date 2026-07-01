@@ -53,8 +53,6 @@ public class Physics extends CheckImpl implements PacketCheck {
     private static String classify(MovementCause cause, boolean verticalDominant, boolean improperSprint,
                                    boolean sneaking) {
         if (cause == MovementCause.GROUNDSPOOF) return "groundspoof";
-        if (cause == MovementCause.AIRWALK) return "airwalk";
-        if (cause == MovementCause.WATER_WALK) return "jesus";
         if (cause == MovementCause.HOVER) return "hover";
         if (cause == MovementCause.FAST_FALL) return "fastfall";
         if (verticalDominant) {
@@ -104,11 +102,6 @@ public class Physics extends CheckImpl implements PacketCheck {
 
         if (r.cause() == MovementCause.GROUNDSPOOF) {
             fail(extras, "{0} | claims onGround, vy={1} | over={2}", type, fmt(r.observed().getY()), fmt(excess));
-        } else if (r.cause() == MovementCause.AIRWALK) {
-            fail(extras, "{0} | claims onGround, floating {1} above support", type, fmt(excess));
-        } else if (r.cause() == MovementCause.WATER_WALK) {
-            fail(extras, "{0} | on water surface, vy={1} not sinking | over={2}",
-                    type, fmt(r.observed().getY()), fmt(excess));
         } else if (r.cause() == MovementCause.HOVER) {
             fail(extras, "{0} | airborne, not falling | over={1}", type, fmt(excess));
         } else if (r.cause() == MovementCause.FAST_FALL) {

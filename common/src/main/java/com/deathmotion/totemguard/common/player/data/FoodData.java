@@ -16,20 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.world;
+package com.deathmotion.totemguard.common.player.data;
 
-public record BlockEnvironment(
-        boolean feetLoaded,
-        boolean fluid,
-        boolean climbable,
-        boolean stuck,
-        double stuckHorizontal,
-        double stuckVertical,
-        boolean bouncyBelow,
-        double slipperiness,
-        double groundGap
-) {
+public class FoodData {
 
-    public static final BlockEnvironment UNLOADED =
-            new BlockEnvironment(false, false, false, false, 1.0, 1.0, false, 0.6, 0.0);
+    private boolean canSprint = true;
+
+    public boolean canSprint() {
+        return canSprint;
+    }
+
+    public void setCanSprint(boolean canSprint) {
+        this.canSprint = canSprint;
+    }
+
+    public void reset() {
+        canSprint = true;
+    }
 }

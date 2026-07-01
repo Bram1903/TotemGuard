@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.common.player.movement.sim;
 
 public record MovementInput(
-        boolean lastOnGround,
-        boolean onGround,
+        boolean groundedStart,
+        boolean groundedEnd,
         boolean horizontalInput,
         boolean jumpPossible,
         boolean sprinting,

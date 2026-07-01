@@ -63,21 +63,22 @@ public final class MovementSimulator {
 
         Range vertical = carried.vertical();
         if (in.jumpPossible()) vertical = vertical.raiseCeiling(in.jumpStrength() + in.jumpBoostPower());
-        if (in.lastOnGround()) vertical = vertical.raiseCeiling(in.stepHeight());
+        if (in.groundedStart()) vertical = vertical.raiseCeiling(in.stepHeight());
+        if (in.groundedEnd()) vertical = vertical.raiseCeiling(0.0);
 
         return new MotionArea(horizontal, vertical);
     }
 
     private static MotionArea advanceLand(double legalSpeed, double legalVerticalVelocity, MovementInput in, BlockEnvironment env) {
-        double friction = in.lastOnGround() ? env.slipperiness() * AIR_FRICTION : AIR_FRICTION;
+        double friction = in.groundedStart() ? env.slipperiness() * AIR_FRICTION : AIR_FRICTION;
         double nextHorizontal = legalSpeed * friction;
 
-        double moveVertical = in.onGround() ? 0.0 : legalVerticalVelocity;
+        double moveVertical = in.groundedEnd() ? 0.0 : legalVerticalVelocity;
         return MotionArea.of(Math.max(0.0, nextHorizontal), endOfTickVertical(moveVertical, in));
     }
 
     private static double landAcceleration(MovementInput in, BlockEnvironment env) {
-        if (in.lastOnGround()) {
+        if (in.groundedStart()) {
             double slip = env.slipperiness();
             return in.movementSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
         }
@@ -100,7 +101,7 @@ public final class MovementSimulator {
 
         double ceiling = carried.vertical().max();
         if (in.jumpPossible()) ceiling = Math.max(ceiling, in.jumpStrength() + in.jumpBoostPower());
-        if (in.lastOnGround()) ceiling = Math.max(ceiling, in.stepHeight());
+        if (in.groundedStart()) ceiling = Math.max(ceiling, in.stepHeight());
         double ascent = Math.max(0.0, ceiling) * Math.min(1.0, env.stuckVertical());
 
         return new MotionArea(new Range(0.0, horizontalCap), new Range(STUCK_DESCENT, ascent));
