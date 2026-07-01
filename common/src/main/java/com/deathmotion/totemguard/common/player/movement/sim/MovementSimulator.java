@@ -63,7 +63,7 @@ public final class MovementSimulator {
 
         Range vertical = carried.vertical();
         if (in.jumpPossible()) vertical = vertical.raiseCeiling(in.jumpStrength() + in.jumpBoostPower());
-        if (in.groundedStart()) vertical = vertical.raiseCeiling(in.stepHeight());
+        if (in.groundedStart() || in.groundedEnd()) vertical = vertical.raiseCeiling(in.stepHeight());
         if (in.groundedEnd()) vertical = vertical.raiseCeiling(0.0);
 
         return new MotionArea(horizontal, vertical);

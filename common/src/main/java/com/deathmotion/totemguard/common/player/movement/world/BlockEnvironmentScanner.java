@@ -89,17 +89,20 @@ public final class BlockEnvironmentScanner {
         double cx = feet.getX(), cz = feet.getZ();
 
         boolean bouncy = false;
-        boolean feetCellSolid = false;
         double slipperiness = MovementBlocks.slipperiness(StateTypes.AIR);
         double maxTop = Double.NEGATIVE_INFINITY;
+        double feetTop = Double.NEGATIVE_INFINITY;
 
         double[][] footprint = {{cx - half, cz - half}, {cx + half, cz - half}, {cx - half, cz + half}, {cx + half, cz + half}, {cx, cz}};
         for (double[] point : footprint) {
             int px = floor(point[0]), pz = floor(point[1]);
             StateType nearType = world.getBlockState(px, y, pz).getType();
             if (nearType != StateTypes.AIR && MovementBlocks.isBouncy(nearType)) bouncy = true;
-            WrappedBlockState feetState = world.getBlockState(px, feetCell, pz);
-            if (!BlockShapes.shapeOf(feetState, feetCell, ctx).isEmpty()) feetCellSolid = true;
+            CollisionShape feetShape = BlockShapes.shapeOf(world.getBlockState(px, feetCell, pz), feetCell, ctx);
+            if (!feetShape.isEmpty()) {
+                double top = Math.min(feetCell + feetShape.maxY(), feetYd);
+                if (top > feetTop) feetTop = top;
+            }
             for (int dy = 1; dy <= 2; dy++) {
                 int cellY = feetCell - dy;
                 WrappedBlockState below = world.getBlockState(px, cellY, pz);
@@ -112,8 +115,8 @@ public final class BlockEnvironmentScanner {
                 }
             }
         }
-        double groundGap = feetCellSolid ? 0.0
-                : (maxTop == Double.NEGATIVE_INFINITY ? UNSUPPORTED_GAP : feetYd - maxTop);
+        double support = Math.max(maxTop, feetTop);
+        double groundGap = support == Double.NEGATIVE_INFINITY ? UNSUPPORTED_GAP : feetYd - support;
         return new Below(bouncy, slipperiness, groundGap);
     }
 

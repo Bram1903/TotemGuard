@@ -66,6 +66,9 @@ public class MovementEstimator {
     private static final double HOVER_EXCESS = MovementConstants.GRAVITY;
     private static final double JUMP_LIKE_ASCENT = 0.3;
 
+    private static final int STEP_UNCERTAINTY_TICKS = 4;
+    private static final double STEP_HORIZONTAL_SLACK = 0.15;
+
     private static final double SPRINT_MIN_SPEED = 0.15;
     private static final double SPRINT_BACKWARD_COS = -0.6;
     private static final int SPRINT_TURN_TOLERANCE = 8;
@@ -87,6 +90,8 @@ public class MovementEstimator {
     private boolean lastGroundedEnd;
     private boolean prevGroundedEnd;
     private double lastGroundGap;
+    private double prevObservedVy;
+    private int stepMoveTicks;
 
     @Getter
     private boolean improperSprint;
@@ -172,17 +177,20 @@ public class MovementEstimator {
             boolean rising = observed.getY() > GROUND_RISE_EPS;
             boolean fellFreely = freeFall < 0.0 && observed.getY() <= freeFall + GROUND_ARREST_EPS;
             boolean supportedNow = env.groundGap() <= GROUND_EPS;
+            boolean descendedLast = prevObservedVy < -GROUND_RISE_EPS;
+            boolean landingSupport = descendedLast && env.groundGap() <= data.getAttributeData().stepHeight();
             boolean groundedEnd;
             if (rising) {
-                groundedEnd = supportedNow && groundedStart;
+                groundedEnd = supportedNow && (groundedStart || descendedLast);
             } else if (fellFreely) {
                 groundedEnd = false;
             } else {
                 groundedEnd = supportedNow || lastGroundGap <= GROUND_EPS;
             }
             lastGroundGap = env.groundGap();
+            prevObservedVy = observed.getY();
 
-            boolean recentlyGrounded = groundedStart || prevGroundedEnd;
+            boolean recentlyGrounded = groundedStart || prevGroundedEnd || landingSupport;
             prevGroundedEnd = lastGroundedEnd;
             lastGroundedEnd = groundedEnd;
 
@@ -222,6 +230,9 @@ public class MovementEstimator {
         double observedSpeed = Math.hypot(observed.getX(), observed.getZ());
         double observedVy = observed.getY();
 
+        boolean steppedUp = input.groundedEnd() && observedVy > VERTICAL_HIT_EPSILON;
+        if (steppedUp) stepMoveTicks = STEP_UNCERTAINTY_TICKS;
+
         MotionArea allowed = move.expand(HORIZONTAL_PAD, VERTICAL_PAD);
         double horizontalExcess = allowed.horizontalExcess(observedSpeed);
         double verticalExcess = allowed.ascentExcess(observedVy);
@@ -250,6 +261,10 @@ public class MovementEstimator {
             }
         }
 
+        if (stepMoveTicks > 0 && horizontalExcess > 0.0) {
+            horizontalExcess = Math.max(0.0, horizontalExcess - STEP_HORIZONTAL_SLACK);
+        }
+
         boolean landMedium = !env.fluid() && !env.climbable() && !env.stuck();
         double descentFloor = carried.vertical().min();
         boolean fellTooFast = false;
@@ -275,8 +290,11 @@ public class MovementEstimator {
         movedSticky = horizontalExcess >= STRONG_SINGLE_EXCESS || Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
 
         if (knockbackConsumed) external.consume();
+        if (stepMoveTicks > 0) stepMoveTicks--;
 
-        double legalSpeed = Math.min(observedSpeed, allowed.horizontalSpeed().max());
+        double legalSpeed = steppedUp
+                ? move.horizontalSpeed().max()
+                : Math.min(observedSpeed, allowed.horizontalSpeed().max());
         double legalVy = Math.min(observedVy, allowed.vertical().max());
         carried = MovementSimulator.advance(legalSpeed, legalVy, input, env);
 
