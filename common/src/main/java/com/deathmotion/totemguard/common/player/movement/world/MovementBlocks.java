@@ -30,6 +30,8 @@ public final class MovementBlocks {
     private static final double ICE_SLIPPERINESS = 0.98;
     private static final double BLUE_ICE_SLIPPERINESS = 0.989;
     private static final double SLIME_SLIPPERINESS = 0.8;
+    private static final double SLOWING_BLOCK_SPEED_FACTOR = 0.4;
+    private static final double SOURCE_FLUID_HEIGHT = 8.0 / 9.0;
 
     private MovementBlocks() {
     }
@@ -38,6 +40,11 @@ public final class MovementBlocks {
         if (type == StateTypes.SLIME_BLOCK) return 1.0;
         if (BlockTags.BEDS.contains(type)) return 0.66;
         return 0.0;
+    }
+
+    public static double blockSpeedFactor(StateType type) {
+        if (type == StateTypes.SOUL_SAND || type == StateTypes.HONEY_BLOCK) return SLOWING_BLOCK_SPEED_FACTOR;
+        return 1.0;
     }
 
     public static double slipperiness(StateType type) {
@@ -57,6 +64,14 @@ public final class MovementBlocks {
 
     public static boolean isFluidType(StateType type) {
         return type == StateTypes.WATER || type == StateTypes.LAVA;
+    }
+
+    public static double fluidSurfaceHeight(WrappedBlockState state) {
+        StateType type = state.getType();
+        if ((type == StateTypes.WATER || type == StateTypes.LAVA) && state.getLevel() == 0) {
+            return SOURCE_FLUID_HEIGHT;
+        }
+        return 1.0;
     }
 
     public static boolean isStuck(StateType type) {

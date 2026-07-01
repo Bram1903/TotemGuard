@@ -31,6 +31,7 @@ public enum MovementCause {
     BOUNCE,
     PISTON,
     VEHICLE,
+    SLEEPING,
     GLIDE,
     FLY,
     HOVER,

@@ -28,11 +28,16 @@ public record MovementInput(
         double jumpStrength,
         double gravity,
         double stepHeight,
-        double slipperiness,
+        double slipperinessMin,
+        double slipperinessMax,
+        double blockSpeedFactor,
         int jumpBoostAmplifier,
         boolean levitation,
         int levitationAmplifier,
-        boolean slowFalling
+        boolean slowFalling,
+        double fluidFriction,
+        double fluidAccel,
+        boolean waterExitHop
 ) {
 
     public boolean sprintJump() {

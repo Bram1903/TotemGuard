@@ -32,8 +32,7 @@ public final class MovementSimulator {
     private static final double CLIMB_ASCENT = 0.2;
     private static final double CLIMB_DESCENT = -0.15;
 
-    private static final double FLUID_FRICTION = 0.96;
-    private static final double FLUID_ACCEL = 0.15;
+    private static final double FLUID_VERTICAL_DRAG = 0.8;
     private static final double FLUID_ASCENT = 0.75;
     private static final double FLUID_DESCENT = -10.0;
 
@@ -43,14 +42,14 @@ public final class MovementSimulator {
     }
 
     public static MotionArea predictMove(MotionArea carried, MovementInput in, BlockEnvironment env) {
-        if (env.fluid()) return predictFluid(carried);
+        if (env.fluid()) return predictFluid(carried, in);
         if (env.stuck()) return predictStuck(carried, in, env);
-        if (env.climbable()) return predictClimb();
+        if (env.climbable()) return predictClimb(in);
         return predictLand(carried, in);
     }
 
     public static MotionArea advance(double legalSpeed, double legalVerticalVelocity, MovementInput in, BlockEnvironment env) {
-        if (env.fluid()) return advanceFluid(legalSpeed, legalVerticalVelocity);
+        if (env.fluid()) return advanceFluid(legalSpeed, legalVerticalVelocity, in);
         if (env.stuck()) return advanceStuck();
         if (env.climbable()) return advanceClimb(legalSpeed, legalVerticalVelocity);
         return advanceLand(legalSpeed, legalVerticalVelocity, in);
@@ -69,6 +68,7 @@ public final class MovementSimulator {
 
         Range vertical = carried.vertical();
         if (in.jumpPossible()) vertical = vertical.raiseCeiling(in.jumpStrength() + in.jumpBoostPower());
+        if (in.waterExitHop()) vertical = vertical.raiseCeiling(WATER_EXIT_HOP);
         if (in.groundedStart() || in.groundedEnd()) vertical = vertical.raiseCeiling(in.stepHeight());
         if (in.groundedEnd()) vertical = vertical.raiseCeiling(0.0);
 
@@ -76,8 +76,8 @@ public final class MovementSimulator {
     }
 
     private static MotionArea advanceLand(double legalSpeed, double legalVerticalVelocity, MovementInput in) {
-        double friction = in.groundedStart() ? in.slipperiness() * AIR_FRICTION : AIR_FRICTION;
-        double nextHorizontal = legalSpeed * friction;
+        double friction = in.groundedEnd() ? in.slipperinessMax() * AIR_FRICTION : AIR_FRICTION;
+        double nextHorizontal = legalSpeed * in.blockSpeedFactor() * friction;
 
         double moveVertical = in.groundedEnd() ? 0.0 : legalVerticalVelocity;
         return MotionArea.of(Math.max(0.0, nextHorizontal), endOfTickVertical(moveVertical, in));
@@ -85,14 +85,17 @@ public final class MovementSimulator {
 
     private static double landAcceleration(MovementInput in) {
         if (in.groundedStart()) {
-            double slip = in.slipperiness();
+            double slip = in.slipperinessMin();
             return in.movementSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
         }
         return in.sprinting() ? AIR_ACCEL_SPRINTING : AIR_ACCEL;
     }
 
-    private static MotionArea predictClimb() {
-        return new MotionArea(new Range(0.0, CLIMB_HORIZONTAL_MAX), new Range(CLIMB_DESCENT, CLIMB_ASCENT));
+    private static MotionArea predictClimb(MovementInput in) {
+        double ascent = CLIMB_ASCENT;
+        if (in.jumpPossible()) ascent = Math.max(ascent, in.jumpStrength() + in.jumpBoostPower());
+        if (in.groundedStart() || in.groundedEnd()) ascent = Math.max(ascent, in.stepHeight());
+        return new MotionArea(new Range(0.0, CLIMB_HORIZONTAL_MAX), new Range(CLIMB_DESCENT, ascent));
     }
 
     private static MotionArea advanceClimb(double legalSpeed, double legalVerticalVelocity) {
@@ -117,13 +120,13 @@ public final class MovementSimulator {
         return MotionArea.resting();
     }
 
-    private static MotionArea predictFluid(MotionArea carried) {
-        double maxHorizontal = carried.horizontalSpeed().max() * FLUID_FRICTION + FLUID_ACCEL;
+    private static MotionArea predictFluid(MotionArea carried, MovementInput in) {
+        double maxHorizontal = carried.horizontalSpeed().max() + in.fluidAccel();
         return new MotionArea(new Range(0.0, maxHorizontal), new Range(FLUID_DESCENT, FLUID_ASCENT));
     }
 
-    private static MotionArea advanceFluid(double legalSpeed, double legalVerticalVelocity) {
-        return MotionArea.of(legalSpeed * FLUID_FRICTION, legalVerticalVelocity * 0.8);
+    private static MotionArea advanceFluid(double legalSpeed, double legalVerticalVelocity, MovementInput in) {
+        return MotionArea.of(legalSpeed * in.fluidFriction(), legalVerticalVelocity * FLUID_VERTICAL_DRAG);
     }
 
     private static double endOfTickVertical(double velocityY, MovementInput in) {

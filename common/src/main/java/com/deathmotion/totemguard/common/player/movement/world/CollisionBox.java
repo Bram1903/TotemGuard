@@ -18,20 +18,5 @@
 
 package com.deathmotion.totemguard.common.player.movement.world;
 
-public record BlockEnvironment(
-        boolean feetLoaded,
-        boolean fluid,
-        boolean climbable,
-        boolean stuck,
-        double stuckHorizontal,
-        double stuckVertical,
-        double bounceFactor,
-        double slipperinessMin,
-        double slipperinessMax,
-        double blockSpeedFactor,
-        double groundGap
-) {
-
-    public static final BlockEnvironment UNLOADED =
-            new BlockEnvironment(false, false, false, false, 1.0, 1.0, 0.0, 0.6, 0.6, 1.0, 0.0);
+public record CollisionBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
 }

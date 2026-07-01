@@ -18,16 +18,48 @@
 
 package com.deathmotion.totemguard.common.player.movement.world;
 
-public record CollisionShape(boolean present, double maxY) {
+public final class CollisionShape {
 
-    public static final CollisionShape EMPTY = new CollisionShape(false, 0.0);
-    public static final CollisionShape FULL = new CollisionShape(true, 1.0);
+    public static final CollisionShape EMPTY = new CollisionShape(new CollisionBox[0]);
+    public static final CollisionShape FULL = new CollisionShape(new CollisionBox[]{new CollisionBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)});
+
+    private final CollisionBox[] boxes;
+
+    private CollisionShape(CollisionBox[] boxes) {
+        this.boxes = boxes;
+    }
+
+    public static CollisionShape of(CollisionBox... boxes) {
+        return new CollisionShape(boxes);
+    }
+
+    public static CollisionShape box(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return new CollisionShape(new CollisionBox[]{new CollisionBox(minX, minY, minZ, maxX, maxY, maxZ)});
+    }
 
     public static CollisionShape top(double maxY) {
-        return new CollisionShape(true, maxY);
+        return box(0.0, 0.0, 0.0, 1.0, maxY, 1.0);
     }
 
     public boolean isEmpty() {
-        return !present;
+        return boxes.length == 0;
+    }
+
+    public double maxY() {
+        double max = 0.0;
+        for (CollisionBox box : boxes) {
+            if (box.maxY() > max) max = box.maxY();
+        }
+        return max;
+    }
+
+    public double supportTop(double feetLimit, double minX, double maxX, double minZ, double maxZ) {
+        double best = Double.NEGATIVE_INFINITY;
+        for (CollisionBox box : boxes) {
+            if (maxX <= box.minX() || minX >= box.maxX() || maxZ <= box.minZ() || minZ >= box.maxZ()) continue;
+            double top = box.maxY();
+            if (top <= feetLimit && top > best) best = top;
+        }
+        return best;
     }
 }

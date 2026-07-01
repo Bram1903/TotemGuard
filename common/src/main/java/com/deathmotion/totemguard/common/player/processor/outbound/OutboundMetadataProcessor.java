@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 
@@ -134,6 +135,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
                 data.setGliding((sharedFlags & 0x80) != 0);
             } else if (index == livingFlagsIndex && value instanceof Byte livingFlags) {
                 data.setSpinAttacking((livingFlags & 0x04) != 0);
+            } else if (value instanceof EntityPose pose) {
+                data.setSleeping(pose == EntityPose.SLEEPING);
             }
         }
     }

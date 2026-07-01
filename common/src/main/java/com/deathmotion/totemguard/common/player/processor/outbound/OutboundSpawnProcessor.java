@@ -91,6 +91,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.setSprinting(false);
                 data.resetSprintTracking();
                 data.setVehicleId(-1);
+                data.setSleeping(false);
                 if (resetSwimming) data.setSwimming(false);
                 inputData.reset();
                 data.getMovementData().reset();

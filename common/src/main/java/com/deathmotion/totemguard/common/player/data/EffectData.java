@@ -30,6 +30,7 @@ public class EffectData {
     private int jumpBoostTicks;
 
     private int slowFallingTicks;
+    private int dolphinsGraceTicks;
 
     private static int normalize(int durationTicks) {
         return durationTicks < 0 ? INFINITE : durationTicks;
@@ -63,6 +64,14 @@ public class EffectData {
         this.slowFallingTicks = 0;
     }
 
+    public void setDolphinsGrace(int durationTicks) {
+        this.dolphinsGraceTicks = normalize(durationTicks);
+    }
+
+    public void clearDolphinsGrace() {
+        this.dolphinsGraceTicks = 0;
+    }
+
     public void tick() {
         if (levitationTicks > 0 && --levitationTicks <= 0) {
             levitationAmplifier = UNSET;
@@ -72,6 +81,9 @@ public class EffectData {
         }
         if (slowFallingTicks > 0) {
             slowFallingTicks--;
+        }
+        if (dolphinsGraceTicks > 0) {
+            dolphinsGraceTicks--;
         }
     }
 
@@ -95,9 +107,14 @@ public class EffectData {
         return slowFallingTicks != 0;
     }
 
+    public boolean hasDolphinsGrace() {
+        return dolphinsGraceTicks != 0;
+    }
+
     public void reset() {
         clearLevitation();
         clearJumpBoost();
         clearSlowFalling();
+        clearDolphinsGrace();
     }
 }

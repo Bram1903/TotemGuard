@@ -47,6 +47,14 @@ public final class MovementConstants {
 
     public static final double JUMP_POWER = 0.42;
     public static final double SPRINT_JUMP_BOOST = 0.2;
+    public static final double WATER_EXIT_HOP = 0.3;
+
+    public static final double WATER_FRICTION = 0.8;
+    public static final double WATER_SPRINT_FRICTION = 0.9;
+    public static final double WATER_DOLPHIN_FRICTION = 0.96;
+    public static final double WATER_ACCEL = 0.02;
+    public static final double WATER_EFFICIENCY_FRICTION_TARGET = 0.54600006;
+    public static final double WATER_CURRENT_PUSH = 0.014;
 
     private MovementConstants() {
     }

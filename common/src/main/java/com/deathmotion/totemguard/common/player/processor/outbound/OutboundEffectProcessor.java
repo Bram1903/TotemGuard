@@ -59,6 +59,8 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, () -> effectData.setJumpBoost(amplifier, duration));
             } else if (potion == PotionTypes.SLOW_FALLING) {
                 latencyHandler.compensate(event, () -> effectData.setSlowFalling(duration));
+            } else if (potion == PotionTypes.DOLPHINS_GRACE) {
+                latencyHandler.compensate(event, () -> effectData.setDolphinsGrace(duration));
             }
         } else if (type == PacketType.Play.Server.REMOVE_ENTITY_EFFECT) {
             WrapperPlayServerRemoveEntityEffect packet = new WrapperPlayServerRemoveEntityEffect(event);
@@ -71,6 +73,8 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, effectData::clearJumpBoost);
             } else if (potion == PotionTypes.SLOW_FALLING) {
                 latencyHandler.compensate(event, effectData::clearSlowFalling);
+            } else if (potion == PotionTypes.DOLPHINS_GRACE) {
+                latencyHandler.compensate(event, effectData::clearDolphinsGrace);
             }
         }
     }
