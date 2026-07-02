@@ -18,32 +18,33 @@
 
 package com.deathmotion.totemguard.common.physics;
 
-public enum MovementCause {
-    INIT,
-    GROUND,
-    STEP,
-    AIR,
-    JUMP,
-    LEVITATION,
-    FLUID,
-    CLIMB,
-    STUCK,
-    INVENTORY_MOVE,
-    BOUNCE,
-    PISTON,
-    VEHICLE,
-    SLEEPING,
-    GLIDE,
-    FLY,
-    HOVER,
-    PHASE,
-    GROUNDSPOOF,
-    FAST,
-    FAST_FALL,
-    BORDER,
-    RESYNC,
-    TELEPORT,
-    UNLOADED,
-    WITHHELD,
-    DOUBLE_MOVE
+public enum SimulationTolerance {
+    STRICT(1.0, 2.0),
+    STANDARD(1.5, 4.0),
+    LENIENT(2.5, 8.0);
+
+    private final double padScale;
+    private final double setbackBuffer;
+
+    SimulationTolerance(double padScale, double setbackBuffer) {
+        this.padScale = padScale;
+        this.setbackBuffer = setbackBuffer;
+    }
+
+    public static SimulationTolerance parse(String raw) {
+        if (raw == null) return STRICT;
+        String normalized = raw.trim();
+        for (SimulationTolerance value : values()) {
+            if (value.name().equalsIgnoreCase(normalized)) return value;
+        }
+        return STRICT;
+    }
+
+    public double padScale() {
+        return padScale;
+    }
+
+    public double setbackBuffer() {
+        return setbackBuffer;
+    }
 }

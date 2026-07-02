@@ -34,16 +34,7 @@ import java.util.Map;
 @CheckData(description = "Impossible physics", type = CheckType.PHYSICS, experimental = true)
 public class Physics extends CheckImpl implements PacketCheck {
 
-    private static final double FLAG_THRESHOLD = 5.0;
-    private static final double BASE_GAIN = 1.0;
-    private static final double EXCESS_GAIN = 12.0;
-    private static final double DECAY_FACTOR = 0.92;
-    private static final double DECAY_SUBTRACT = 0.30;
-    private static final double RETAIN_AFTER_FLAG = 0.5;
-
     private final MovementEstimator estimator;
-
-    private double violationLevel;
 
     public Physics(TGPlayer player) {
         super(player);
@@ -79,46 +70,42 @@ public class Physics extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (!WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) return;
+        if (!estimator.mitigationTriggeredThisTick()) return;
 
         MovementResult r = estimator.getResult();
-        boolean ascending = r.ascendingThisTick();
-        boolean moved = r.movedThisTick();
-        if (!ascending && !moved) {
-            violationLevel = Math.max(0.0, violationLevel * DECAY_FACTOR - DECAY_SUBTRACT);
-            return;
-        }
-
-        double vertical = ascending ? r.verticalExcess() : 0.0;
-        double horizontal = moved ? r.horizontalExcess() : 0.0;
+        double vertical = r.ascendingThisTick() ? r.verticalExcess() : 0.0;
+        double horizontal = r.movedThisTick() ? r.horizontalExcess() : 0.0;
         double excess = Math.max(vertical, horizontal);
-
-        violationLevel += BASE_GAIN + excess * EXCESS_GAIN;
-        if (violationLevel < FLAG_THRESHOLD) return;
-
-        violationLevel = FLAG_THRESHOLD * RETAIN_AFTER_FLAG;
+        boolean setback = estimator.setbackIssuedThisTick();
 
         boolean verticalDominant = vertical >= horizontal;
         String type = classify(r.cause(), verticalDominant, estimator.isImproperSprint(),
                 player.getData().isSneaking());
         Map<String, Object> extras = Map.of("tg_physics_type", type);
+        String shownType = type;
+        if (setback) {
+            shownType = type + " (setback)";
+        } else if (estimator.setbackSkippedThisTick()) {
+            shownType = type + " (setback off)";
+        }
 
         if (r.cause() == MovementCause.GROUNDSPOOF) {
-            fail(extras, "{0} | claims onGround, vy={1} | over={2}", type, fmt(r.observed().getY()), fmt(excess));
+            fail(extras, "{0} | claims onGround, vy={1} | over={2}", shownType, fmt(r.observed().getY()), fmt(excess));
         } else if (r.cause() == MovementCause.HOVER) {
-            fail(extras, "{0} | airborne, not falling | over={1}", type, fmt(excess));
+            fail(extras, "{0} | airborne, not falling | over={1}", shownType, fmt(excess));
         } else if (r.cause() == MovementCause.FAST_FALL) {
             fail(extras, "{0} | vy={1} fell faster than gravity | over={2}",
-                    type, fmt(r.observed().getY()), fmt(excess));
+                    shownType, fmt(r.observed().getY()), fmt(excess));
         } else if (r.cause() == MovementCause.PHASE) {
             double speed = Math.hypot(r.observed().getX(), r.observed().getZ());
-            fail(extras, "{0} | moved {1} through a wall | over={2}", type, fmt(speed), fmt(excess));
+            fail(extras, "{0} | moved {1} through a wall | over={2}", shownType, fmt(speed), fmt(excess));
         } else if (verticalDominant) {
             fail(extras, "{0} | vy={1} allowed<={2} | over={3}",
-                    type, fmt(r.observed().getY()), fmt(r.predicted().vertical().max()), fmt(excess));
+                    shownType, fmt(r.observed().getY()), fmt(r.predicted().vertical().max()), fmt(excess));
         } else {
             double speed = Math.hypot(r.observed().getX(), r.observed().getZ());
             fail(extras, "{0} | speed={1} allowed<={2} | over={3}",
-                    type, fmt(speed), fmt(r.predicted().horizontalSpeed().max()), fmt(excess));
+                    shownType, fmt(speed), fmt(r.predicted().horizontalSpeed().max()), fmt(excess));
         }
     }
 }

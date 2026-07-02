@@ -112,7 +112,7 @@ public final class GrimIntegration implements Integration {
         if (player == null) return;
 
         player.getData().getTeleportData().trackTeleport(teleportId);
-        player.getData().getMovementData().trackTeleport(teleportId);
+        player.getData().getMovementData().trackTeleport(teleportId, true);
         player.getPingData().teleportSent(teleportId);
         player.getDebugOverlayManager().refresh();
     }

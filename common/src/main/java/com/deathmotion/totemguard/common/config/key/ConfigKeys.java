@@ -52,6 +52,12 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> PHYSICS_ENGINE_ENABLED = ConfigKey.bool("physics-engine.enabled");
 
+    public static final ConfigKey<String> PHYSICS_ENGINE_TOLERANCE = ConfigKey.string("physics-engine.tolerance");
+
+    public static final ConfigKey<Boolean> PHYSICS_ENGINE_SETBACK = ConfigKey.bool("physics-engine.mitigation.setback");
+
+    public static final ConfigKey<Boolean> PHYSICS_ENGINE_CLOSE_INVENTORY = ConfigKey.bool("physics-engine.mitigation.close-inventory");
+
     public static final ConfigKey<Boolean> PHYSICS_ENGINE_DEBUG = ConfigKey.bool("physics-engine.debug");
 
     public static final ConfigKey<Boolean> DEBUG_MODIFIER_KICK_ENABLED = ConfigKey.bool("debug-modifier-kick.enabled");

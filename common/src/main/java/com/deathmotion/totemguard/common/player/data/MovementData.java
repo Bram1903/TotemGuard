@@ -36,13 +36,15 @@ public class MovementData {
     private static final double DUPLICATE_THRESHOLD_LEGACY = 0.03;
     private static final double DUPLICATE_THRESHOLD_MODERN = 0.0002;
 
-    private final Set<Integer> pendingTeleports = new LinkedHashSet<>();
+    private final Map<Integer, Boolean> pendingTeleports = new LinkedHashMap<>();
     private final Deque<ExpectedRotation> pendingServerRotationSyncs = new ArrayDeque<>();
     private Location current = emptyLocation();
     private Location previous = emptyLocation();
     private boolean lastFlyingPositionChanged;
     private boolean lastFlyingRotationChanged;
     private boolean lastFlyingWasResync;
+    private boolean lastFlyingWasTeleportResync;
+    private boolean lastFlyingTeleportVelocityReset;
     private boolean lastFlyingWasDuplicate;
     private Vector3d lastRealFlyingPosition;
     private boolean lastServerPositionChanged;
@@ -50,6 +52,7 @@ public class MovementData {
     private boolean onGround;
     private boolean horizontalCollision;
     private boolean pendingTeleportResync;
+    private boolean pendingTeleportVelocityReset;
     private boolean cameraIsSelf = true;
     private boolean pendingCameraResync;
     private boolean pendingVehicleSwitchResync;
@@ -70,6 +73,9 @@ public class MovementData {
 
         boolean teleportResync = pendingTeleportResync;
         pendingTeleportResync = false;
+        lastFlyingWasTeleportResync = teleportResync;
+        lastFlyingTeleportVelocityReset = teleportResync && pendingTeleportVelocityReset;
+        if (teleportResync) pendingTeleportVelocityReset = false;
         boolean serverRotationResync = isServerRotationResync(packet, yaw, pitch);
         boolean cameraResync = !cameraIsSelf || pendingCameraResync;
         pendingCameraResync = false;
@@ -117,8 +123,8 @@ public class MovementData {
         return dx * dx + dy * dy + dz * dz < threshold * threshold;
     }
 
-    public void trackTeleport(int teleportId) {
-        pendingTeleports.add(teleportId);
+    public void trackTeleport(int teleportId, boolean velocityReset) {
+        pendingTeleports.put(teleportId, velocityReset);
     }
 
     public void markVehicleSwitchResync() {
@@ -134,8 +140,9 @@ public class MovementData {
             pendingTeleports.remove(skippedTeleportId);
         }
 
-        pendingTeleports.remove(confirmResult.teleportId());
+        Boolean velocityReset = pendingTeleports.remove(confirmResult.teleportId());
         pendingTeleportResync = true;
+        pendingTeleportVelocityReset = velocityReset == null || velocityReset;
     }
 
     public void handleServerSync(WrapperPlayServerPlayerPositionAndLook packet) {
@@ -177,6 +184,8 @@ public class MovementData {
         lastFlyingPositionChanged = false;
         lastFlyingRotationChanged = false;
         lastFlyingWasResync = false;
+        lastFlyingWasTeleportResync = false;
+        lastFlyingTeleportVelocityReset = false;
         lastFlyingWasDuplicate = false;
         lastRealFlyingPosition = null;
         lastServerPositionChanged = false;
@@ -184,6 +193,7 @@ public class MovementData {
         onGround = false;
         horizontalCollision = false;
         pendingTeleportResync = false;
+        pendingTeleportVelocityReset = false;
         pendingServerRotationSyncs.clear();
         cameraIsSelf = true;
         pendingCameraResync = false;

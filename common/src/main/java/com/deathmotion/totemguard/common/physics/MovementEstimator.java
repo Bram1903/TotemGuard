@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.physics;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.physics.area.MotionArea;
 import com.deathmotion.totemguard.common.physics.sim.MovementInput;
 import com.deathmotion.totemguard.common.physics.sim.MovementSimulator;
@@ -75,9 +76,11 @@ public class MovementEstimator {
     private final Data data;
     private final GroundTracker groundTracker = new GroundTracker();
     private final InputResolver inputResolver;
+    private final MovementMitigation mitigation;
 
     private boolean initialized;
     private MotionArea carried = MotionArea.resting();
+    private SimulationTolerance tolerance = SimulationTolerance.STRICT;
 
     private long hitWindow;
     private boolean movedSticky;
@@ -96,6 +99,7 @@ public class MovementEstimator {
     public MovementEstimator(Data data) {
         this.data = data;
         this.inputResolver = new InputResolver(data);
+        this.mitigation = new MovementMitigation(data);
     }
 
     public void onTickEnd() {
@@ -103,6 +107,7 @@ public class MovementEstimator {
     }
 
     private void disengage() {
+        mitigation.reset();
         if (!initialized) return;
         initialized = false;
         carried = MotionArea.resting();
@@ -111,10 +116,12 @@ public class MovementEstimator {
     }
 
     public void onFlying() {
-        if (!TGPlatform.getInstance().getConfigRepository().configView().physicsEngineEnabled()) {
+        ConfigView view = TGPlatform.getInstance().getConfigRepository().configView();
+        if (!view.physicsEngineEnabled()) {
             disengage();
             return;
         }
+        tolerance = view.physicsEngineTolerance();
 
         final MovementData movement = data.getMovementData();
         data.getWorldEntityData().advanceInterpolation();
@@ -138,7 +145,16 @@ public class MovementEstimator {
             }
 
             if (movement.isLastFlyingWasResync()) {
-                decline(MovementCause.RESYNC, observed);
+                if (movement.isLastFlyingWasTeleportResync() && movement.isLastFlyingTeleportVelocityReset()) {
+                    declineRested(MovementCause.RESYNC, observed);
+                } else {
+                    decline(MovementCause.RESYNC, observed);
+                }
+                return;
+            }
+
+            if (data.getTeleportData().hasPendingTeleport()) {
+                decline(MovementCause.TELEPORT, observed);
                 return;
             }
 
@@ -199,6 +215,7 @@ public class MovementEstimator {
                 carried = MovementSimulator.advanceBounce(carried, ground.bounceFloor(), env.bounceFactor(), input);
             }
         } finally {
+            mitigation.observe(result, view);
             data.getExternalVelocityData().tick();
             data.getPistonData().tick();
             data.getEffectData().tick();
@@ -216,7 +233,9 @@ public class MovementEstimator {
 
         boolean landMedium = !env.fluid() && !env.climbable() && !env.stuck();
 
-        MotionArea allowed = move.expand(HORIZONTAL_PAD, VERTICAL_PAD);
+        double horizontalPad = HORIZONTAL_PAD * tolerance.padScale();
+        double verticalPad = VERTICAL_PAD * tolerance.padScale();
+        MotionArea allowed = move.expand(horizontalPad, verticalPad);
         double horizontalExcess = allowed.horizontalExcess(observedSpeed);
         double verticalExcess = allowed.ascentExcess(observedVy);
         double wallExcess = landMedium ? phaseExcess(env.wallGaps(), observedSpeed) : 0.0;
@@ -252,7 +271,7 @@ public class MovementEstimator {
         double descentFloor = Math.min(carried.vertical().min(), MovementSimulator.restFallVelocity(input));
         boolean fellTooFast = false;
         if (landMedium && descentFloor <= 0.0) {
-            double slack = VERTICAL_PAD;
+            double slack = verticalPad;
             if (external.isActive()) slack += Math.max(0.0, -external.y()) + KNOCKBACK_PAD;
             if (input.groundedEnd()) slack += input.stepHeight();
             double descentExcess = (descentFloor - slack) - observedVy;
@@ -300,16 +319,18 @@ public class MovementEstimator {
     }
 
     private double phaseExcess(WallGaps gaps, double observedSpeed) {
-        double entry = gaps.crossing() - PHASE_ENTRY_TOLERANCE;
+        double entryTolerance = PHASE_ENTRY_TOLERANCE * tolerance.padScale();
+        double embedTolerance = PHASE_EMBED_TOLERANCE * tolerance.padScale();
+        double entry = gaps.crossing() - entryTolerance;
         boolean entering = entry > HIT_EPSILON;
         if (entering) phaseWindow = PHASE_WINDOW;
 
         double excess = Math.max(0.0, entry);
         boolean embeddedWhileMoving = phaseWindow > 0 && observedSpeed > PHASE_MOVE_EPS
-                && gaps.embedded() > PHASE_EMBED_TOLERANCE;
+                && gaps.embedded() > embedTolerance;
         if (embeddedWhileMoving) {
             phaseWindow = PHASE_WINDOW;
-            excess = Math.max(excess, gaps.embedded() - PHASE_EMBED_TOLERANCE);
+            excess = Math.max(excess, gaps.embedded() - embedTolerance);
         } else if (phaseWindow > 0) {
             phaseWindow--;
         }
@@ -416,6 +437,15 @@ public class MovementEstimator {
 
     private void decline(MovementCause cause, Vector3d observed) {
         seedCarried(observed);
+        declineCarried(cause, observed);
+    }
+
+    private void declineRested(MovementCause cause, Vector3d observed) {
+        carried = MotionArea.resting();
+        declineCarried(cause, observed);
+    }
+
+    private void declineCarried(MovementCause cause, Vector3d observed) {
         shiftWindow(false);
         movedSticky = Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
         airborneWithholdStreak = 0;
@@ -446,6 +476,18 @@ public class MovementEstimator {
 
     public boolean isImproperSprint() {
         return inputResolver.improperSprint();
+    }
+
+    public boolean mitigationTriggeredThisTick() {
+        return mitigation.triggeredThisTick();
+    }
+
+    public boolean setbackIssuedThisTick() {
+        return mitigation.setbackIssuedThisTick();
+    }
+
+    public boolean setbackSkippedThisTick() {
+        return mitigation.setbackSkippedThisTick();
     }
 
     public boolean movedHorizontally() {
@@ -486,6 +528,7 @@ public class MovementEstimator {
         flyingSinceTickEnd = 0;
         groundTracker.reset();
         clearHistory();
+        mitigation.reset();
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();
         data.getEffectData().reset();

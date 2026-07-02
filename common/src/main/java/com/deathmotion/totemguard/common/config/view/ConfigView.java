@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.config.view;
 import com.deathmotion.totemguard.api.config.Config;
 import com.deathmotion.totemguard.common.config.key.ConfigKeys;
 import com.deathmotion.totemguard.common.config.schema.*;
+import com.deathmotion.totemguard.common.physics.SimulationTolerance;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -39,6 +40,9 @@ public final class ConfigView {
     private final boolean banAnimationEnabled;
     private final boolean tickSkipKeepAliveValidation;
     private final boolean physicsEngineEnabled;
+    private final SimulationTolerance physicsEngineTolerance;
+    private final boolean physicsEngineSetback;
+    private final boolean physicsEngineCloseInventory;
     private final boolean physicsEngineDebug;
     private final boolean debugModifierKickEnabled;
     private final Set<String> developerOverrides;
@@ -87,6 +91,9 @@ public final class ConfigView {
         this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
         this.tickSkipKeepAliveValidation = config.getBoolean(ConfigKeys.TICK_SKIP_KEEP_ALIVE_VALIDATION);
         this.physicsEngineEnabled = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_ENABLED);
+        this.physicsEngineTolerance = SimulationTolerance.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_TOLERANCE));
+        this.physicsEngineSetback = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_SETBACK);
+        this.physicsEngineCloseInventory = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_CLOSE_INVENTORY);
         this.physicsEngineDebug = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_DEBUG);
         this.debugModifierKickEnabled = config.getBoolean(ConfigKeys.DEBUG_MODIFIER_KICK_ENABLED);
         List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
@@ -131,6 +138,18 @@ public final class ConfigView {
 
     public boolean physicsEngineEnabled() {
         return physicsEngineEnabled;
+    }
+
+    public @NotNull SimulationTolerance physicsEngineTolerance() {
+        return physicsEngineTolerance;
+    }
+
+    public boolean physicsEngineSetback() {
+        return physicsEngineSetback;
+    }
+
+    public boolean physicsEngineCloseInventory() {
+        return physicsEngineCloseInventory;
     }
 
     public boolean physicsEngineDebug() {

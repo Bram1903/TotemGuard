@@ -97,10 +97,37 @@ tick:
 
 # The movement prediction engine. It simulates vanilla physics each tick and powers the
 # Physics check (fly, hover, speed, and inventory-move, moving with an open inventory).
-# Disabling it stops the Physics check from flagging. This applies on reload, no restart
-# needed.
+# Disabling it stops the Physics check from flagging and turns off the mitigation below.
+# Everything in this section applies on reload, no restart needed.
 physics-engine:
   enabled: true
+
+  # How much slack the simulation grants before movement counts as impossible. This scales
+  # the Physics check and the mitigation together, they trigger as one event: a Physics
+  # flag is a setback and a setback is a Physics flag (unless disabled below).
+  # strict:   the margins the engine was tuned with. Catches the most, recommended default.
+  # standard: slightly wider margins and later triggers. Use when strict occasionally
+  #           false flags on your setup.
+  # lenient:  much wider margins, only blatant offenses trigger. False positives become
+  #           very unlikely at the cost of letting subtle cheats through.
+  # Unknown values fall back to strict.
+  tolerance: strict
+
+  # Mitigation removes the unfair advantage directly instead of only alerting. It rides
+  # the same trigger as the Physics flag, so every alert marked (setback) was corrected.
+  mitigation:
+    # Teleport the player back to their last legal position when their movement fails the
+    # simulation. This is a real server-side teleport, the server position is corrected too
+    # and the client has to accept it before its movement counts again.
+    # When disabled, the Physics flag still fires at the same moments, marked (setback off)
+    # instead of (setback), so you can test without being teleported while still seeing
+    # exactly where a setback would have landed.
+    setback: true
+
+    # Close the inventory when a player moves with it open (the inventory-move type).
+    # The setback above still applies to the illegal movement itself.
+    close-inventory: true
+
   # Logs one simulation line per movement tick to the console for every player, so movement
   # false positives can be copied and diagnosed (observed motion, the predicted caps, the
   # excess, ground state, medium, and inputs). Very spammy, intended for a dev/test server

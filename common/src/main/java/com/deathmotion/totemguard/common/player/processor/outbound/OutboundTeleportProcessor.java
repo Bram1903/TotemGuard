@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 
 public class OutboundTeleportProcessor extends ProcessorOutbound {
@@ -47,8 +48,17 @@ public class OutboundTeleportProcessor extends ProcessorOutbound {
 
         WrapperPlayServerPlayerPositionAndLook packet = new WrapperPlayServerPlayerPositionAndLook(event);
         data.getTeleportData().trackTeleport(packet.getTeleportId());
-        movementData.trackTeleport(packet.getTeleportId());
+        movementData.trackTeleport(packet.getTeleportId(), zeroesClientVelocity(packet));
         pingData.teleportSent(packet.getTeleportId());
         event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
+    }
+
+    private boolean zeroesClientVelocity(WrapperPlayServerPlayerPositionAndLook packet) {
+        return !packet.isRelativeFlag(RelativeFlag.X)
+                && !packet.isRelativeFlag(RelativeFlag.Y)
+                && !packet.isRelativeFlag(RelativeFlag.Z)
+                && !packet.isRelativeFlag(RelativeFlag.DELTA_X)
+                && !packet.isRelativeFlag(RelativeFlag.DELTA_Y)
+                && !packet.isRelativeFlag(RelativeFlag.DELTA_Z);
     }
 }
