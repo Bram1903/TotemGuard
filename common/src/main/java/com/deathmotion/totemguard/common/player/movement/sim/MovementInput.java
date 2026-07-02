@@ -37,7 +37,8 @@ public record MovementInput(
         boolean slowFalling,
         double fluidFriction,
         double fluidAccel,
-        boolean waterExitHop
+        boolean waterExitHop,
+        double bubbleAscent
 ) {
 
     public boolean sprintJump() {

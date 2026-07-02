@@ -71,6 +71,7 @@ public final class MovementSimulator {
         if (in.waterExitHop()) vertical = vertical.raiseCeiling(WATER_EXIT_HOP);
         if (in.groundedStart() || in.groundedEnd()) vertical = vertical.raiseCeiling(in.stepHeight());
         if (in.groundedEnd()) vertical = vertical.raiseCeiling(0.0);
+        if (in.bubbleAscent() > 0.0) vertical = vertical.raiseCeiling(in.bubbleAscent());
 
         return new MotionArea(horizontal, vertical);
     }
@@ -122,7 +123,9 @@ public final class MovementSimulator {
 
     private static MotionArea predictFluid(MotionArea carried, MovementInput in) {
         double maxHorizontal = carried.horizontalSpeed().max() + in.fluidAccel();
-        return new MotionArea(new Range(0.0, maxHorizontal), new Range(FLUID_DESCENT, FLUID_ASCENT));
+        Range vertical = new Range(FLUID_DESCENT, FLUID_ASCENT);
+        if (in.bubbleAscent() > 0.0) vertical = vertical.raiseCeiling(in.bubbleAscent());
+        return new MotionArea(new Range(0.0, maxHorizontal), vertical);
     }
 
     private static MotionArea advanceFluid(double legalSpeed, double legalVerticalVelocity, MovementInput in) {

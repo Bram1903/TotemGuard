@@ -58,12 +58,16 @@ public final class MovementBlocks {
 
     public static boolean isFluid(WrappedBlockState state) {
         StateType type = state.getType();
-        if (type == StateTypes.WATER || type == StateTypes.LAVA) return true;
+        if (type == StateTypes.WATER || type == StateTypes.LAVA || type == StateTypes.BUBBLE_COLUMN) return true;
         return state.hasProperty(StateValue.WATERLOGGED) && state.isWaterlogged();
     }
 
     public static boolean isFluidType(StateType type) {
         return type == StateTypes.WATER || type == StateTypes.LAVA;
+    }
+
+    public static boolean isBubbleColumn(StateType type) {
+        return type == StateTypes.BUBBLE_COLUMN;
     }
 
     public static double fluidSurfaceHeight(WrappedBlockState state) {

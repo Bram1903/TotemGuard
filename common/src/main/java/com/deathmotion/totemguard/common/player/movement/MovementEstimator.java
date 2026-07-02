@@ -74,6 +74,8 @@ public class MovementEstimator {
     private static final double BOUNCE_MIN_DESCENT = 0.4;
     private static final int BOUNCE_UNCERTAINTY_TICKS = 3;
 
+    private static final int BUBBLE_LAUNCH_TICKS = 5;
+
     private static final double SPRINT_MIN_SPEED = 0.15;
     private static final double SPRINT_BACKWARD_COS = -0.6;
     private static final int SPRINT_TURN_TOLERANCE = 8;
@@ -99,6 +101,8 @@ public class MovementEstimator {
     private double prevObservedVy;
     private int stepMoveTicks;
     private int bounceTicks;
+    private int bubbleTicks;
+    private double bubbleAscentCap;
     private double lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
     private double lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;
 
@@ -207,7 +211,15 @@ public class MovementEstimator {
             if (bounced) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
             else if (bounceTicks > 0) bounceTicks--;
 
-            MovementInput input = buildInput(movement, env, observed, groundedStart, groundedEnd, recentlyGrounded, lastSlipperinessMin, lastSlipperinessMax, wasFluid);
+            if (env.bubbleAscent() > 0.0) {
+                bubbleTicks = BUBBLE_LAUNCH_TICKS;
+                bubbleAscentCap = env.bubbleAscent();
+            } else if (bubbleTicks > 0) {
+                bubbleTicks--;
+            }
+            double bubbleAscent = bubbleTicks > 0 ? bubbleAscentCap : 0.0;
+
+            MovementInput input = buildInput(movement, env, observed, groundedStart, groundedEnd, recentlyGrounded, lastSlipperinessMin, lastSlipperinessMax, wasFluid, bubbleAscent);
             lastSlipperinessMin = env.slipperinessMin();
             lastSlipperinessMax = env.slipperinessMax();
 
@@ -333,7 +345,7 @@ public class MovementEstimator {
 
     private MovementInput buildInput(MovementData movement, BlockEnvironment env, Vector3d observed,
                                      boolean groundedStart, boolean groundedEnd, boolean recentlyGrounded,
-                                     double slipMinStart, double slipMaxStart, boolean wasFluid) {
+                                     double slipMinStart, double slipMaxStart, boolean wasFluid, double bubbleAscent) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
         boolean horizontalInput = !inventoryOpen
@@ -371,7 +383,7 @@ public class MovementEstimator {
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
                 fluidAccel(data.isSprinting(), effectiveGroundedStart),
-                waterExitHop);
+                waterExitHop, bubbleAscent);
     }
 
     private double effectiveBlockSpeedFactor(BlockEnvironment env) {
@@ -554,6 +566,7 @@ public class MovementEstimator {
         groundMoveStreak = 0;
         sneakStreak = 0;
         bounceTicks = 0;
+        bubbleTicks = 0;
     }
 
     public boolean movedHorizontally() {

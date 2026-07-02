@@ -26,6 +26,9 @@ import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 
+import static com.deathmotion.totemguard.common.player.movement.MovementConstants.BUBBLE_COLUMN_INSIDE_ASCENT;
+import static com.deathmotion.totemguard.common.player.movement.MovementConstants.BUBBLE_COLUMN_SURFACE_ASCENT;
+
 public final class BlockEnvironmentScanner {
 
     private static final double SUPPORT_BLOCK_OFFSET = 0.5000001;
@@ -41,14 +44,34 @@ public final class BlockEnvironmentScanner {
             return BlockEnvironment.UNLOADED;
         }
 
-        BoundingBox body = BoundingBox.sweptPlayer(current, previous, width, poseHeight);
-        boolean fluid = fluidReachesFeet(world, body, previous.getY());
+        BoundingBox startBody = BoundingBox.player(previous, width, poseHeight);
+        boolean fluid = fluidReachesFeet(world, startBody, previous.getY());
+        double bubbleAscent = bubbleColumnAscent(world, BoundingBox.sweptPlayer(current, previous, width, poseHeight));
 
         Stuck stuck = scanStuck(world, previous, width, poseHeight);
         boolean climbable = climbableAt(world, previous);
         Below below = scanBelow(world, entities, current, previous, width, new CollisionContext(current.getY(), sneaking));
         return new BlockEnvironment(true, fluid, climbable, stuck.active, stuck.horizontal, stuck.vertical,
-                below.bounceFactor, below.slipperinessMin, below.slipperinessMax, below.blockSpeedFactor, below.groundGap);
+                below.bounceFactor, below.slipperinessMin, below.slipperinessMax, below.blockSpeedFactor, below.groundGap,
+                bubbleAscent);
+    }
+
+    private static double bubbleColumnAscent(ClientWorld world, BoundingBox body) {
+        int x0 = floor(body.minX()), x1 = floor(body.maxX());
+        int y0 = floor(body.minY()), y1 = floor(body.maxY());
+        int z0 = floor(body.minZ()), z1 = floor(body.maxZ());
+        double cap = 0.0;
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                for (int y = y0; y <= y1; y++) {
+                    WrappedBlockState state = world.getBlockState(x, y, z);
+                    if (!MovementBlocks.isBubbleColumn(state.getType()) || state.isDrag()) continue;
+                    boolean surface = !MovementBlocks.isBubbleColumn(world.getBlockState(x, y + 1, z).getType());
+                    cap = Math.max(cap, surface ? BUBBLE_COLUMN_SURFACE_ASCENT : BUBBLE_COLUMN_INSIDE_ASCENT);
+                }
+            }
+        }
+        return cap;
     }
 
     private static boolean fluidReachesFeet(ClientWorld world, BoundingBox body, double feetY) {

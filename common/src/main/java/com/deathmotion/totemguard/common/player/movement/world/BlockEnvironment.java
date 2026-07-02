@@ -29,9 +29,10 @@ public record BlockEnvironment(
         double slipperinessMin,
         double slipperinessMax,
         double blockSpeedFactor,
-        double groundGap
+        double groundGap,
+        double bubbleAscent
 ) {
 
     public static final BlockEnvironment UNLOADED =
-            new BlockEnvironment(false, false, false, false, 1.0, 1.0, 0.0, 0.6, 0.6, 1.0, 0.0);
+            new BlockEnvironment(false, false, false, false, 1.0, 1.0, 0.0, 0.6, 0.6, 1.0, 0.0, 0.0);
 }
