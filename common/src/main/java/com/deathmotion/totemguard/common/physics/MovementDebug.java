@@ -24,6 +24,8 @@ import com.deathmotion.totemguard.common.physics.sim.MovementInput;
 import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
 import com.deathmotion.totemguard.common.physics.world.WallGaps;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.util.Vector3d;
 
 import java.util.Locale;
@@ -51,9 +53,23 @@ public final class MovementDebug {
         if (player.getData().isOpenInventory()) {
             sb.append(" inv=1");
         }
+        if (player.getData().isSneaking()) {
+            sb.append(" snk=1");
+        }
+        if (env != null && env.startEmbedded()) {
+            sb.append(" emb=1");
+        } else if (env != null && env.startOverlapping()) {
+            sb.append(" ovl=1");
+        }
         if (env != null) {
             sb.append(" med=").append(medium(env));
             sb.append(String.format(Locale.ROOT, " gap=%.3f", env.groundGap()));
+            if (env.ceilingGap() < 2.0) {
+                sb.append(String.format(Locale.ROOT, " ceil=%.3f", env.ceilingGap()));
+            }
+            if (env.groundGap() > 0.02 && env.groundGap() <= 2.0) {
+                appendSupportColumn(sb, player);
+            }
             appendWalls(sb, env.wallGaps());
         }
         sb.append(String.format(Locale.ROOT, " | H obs=%.3f", Math.hypot(observed.getX(), observed.getZ())));
@@ -66,6 +82,30 @@ public final class MovementDebug {
                     predicted.vertical().min(), predicted.vertical().max(), verticalExcess));
         }
         TGPlatform.getInstance().getLogger().info(sb.toString());
+    }
+
+    private static void appendSupportColumn(StringBuilder sb, TGPlayer player) {
+        Location current = player.getData().getMovementData().getCurrent();
+        double half = player.getData().getAttributeData().width() / 2.0;
+        double height = (player.getData().isSneaking() ? 1.5 : 1.8) * player.getData().getAttributeData().scale();
+        int feetX = (int) Math.floor(current.getX());
+        int feetCell = (int) Math.floor(current.getY());
+        int feetZ = (int) Math.floor(current.getZ());
+        sb.append(String.format(Locale.ROOT, " y=%.3f body=", current.getY()));
+        boolean first = true;
+        for (int x = (int) Math.floor(current.getX() - half); x <= (int) Math.floor(current.getX() + half); x++) {
+            for (int y = feetCell - 2; y <= (int) Math.floor(current.getY() + height); y++) {
+                for (int z = (int) Math.floor(current.getZ() - half); z <= (int) Math.floor(current.getZ() + half); z++) {
+                    var type = player.getData().getClientWorld().getBlockState(x, y, z).getType();
+                    if (type == StateTypes.AIR) continue;
+                    if (!first) sb.append(',');
+                    first = false;
+                    sb.append(type.getName()).append('@')
+                            .append(x - feetX).append(':').append(y - feetCell).append(':').append(z - feetZ);
+                }
+            }
+        }
+        if (first) sb.append("none");
     }
 
     private static void appendWalls(StringBuilder sb, WallGaps gaps) {

@@ -127,6 +127,10 @@ public class MovementData {
         pendingTeleports.put(teleportId, velocityReset);
     }
 
+    public boolean hasPendingVelocityPreservingTeleport() {
+        return pendingTeleports.containsValue(Boolean.FALSE);
+    }
+
     public void markVehicleSwitchResync() {
         pendingVehicleSwitchResync = true;
     }

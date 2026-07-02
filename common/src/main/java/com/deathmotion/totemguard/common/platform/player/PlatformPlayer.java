@@ -41,6 +41,8 @@ public interface PlatformPlayer {
 
     void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch);
 
+    boolean dealFallDamage(double amount);
+
     void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted,
                           @NotNull Runnable onDamageRefused);
 

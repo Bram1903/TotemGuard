@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.mitigation.MitigationService;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.physics.MovementEstimator;
@@ -48,10 +49,12 @@ public class Data {
     private final EffectData effectData;
     private final FoodData foodData;
     private final ClientWorld clientWorld;
+    private final MitigationService mitigationService;
     private final MovementEstimator movementEstimator;
     private GameMode gameMode;
     private boolean sprinting;
     private boolean sneaking;
+    private boolean dead;
     private boolean canFly;
     private boolean isFlying;
     private boolean swimming;
@@ -101,6 +104,7 @@ public class Data {
         this.effectData = new EffectData();
         this.foodData = new FoodData();
         this.clientWorld = new ClientWorld();
+        this.mitigationService = new MitigationService(this);
         this.movementEstimator = new MovementEstimator(this);
     }
 

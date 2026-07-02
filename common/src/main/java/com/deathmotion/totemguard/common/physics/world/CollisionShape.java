@@ -45,6 +45,16 @@ public final class CollisionShape {
         return boxes.length == 0;
     }
 
+    // Vanilla's suffocation predicate is blocksMotion plus a FULL collision shape, which is what
+    // gates the client's moveTowardsClosestSpace push. Sub-cube shapes (soul sand, slabs) never
+    // push.
+    public boolean isFullCube() {
+        if (boxes.length != 1) return false;
+        CollisionBox box = boxes[0];
+        return box.minX() <= 1.0e-7 && box.minY() <= 1.0e-7 && box.minZ() <= 1.0e-7
+                && box.maxX() >= 1.0 - 1.0e-7 && box.maxY() >= 1.0 - 1.0e-7 && box.maxZ() >= 1.0 - 1.0e-7;
+    }
+
     public CollisionBox[] boxes() {
         return boxes;
     }
@@ -55,6 +65,17 @@ public final class CollisionShape {
             if (maxX <= box.minX() || minX >= box.maxX() || maxZ <= box.minZ() || minZ >= box.maxZ()) continue;
             double top = box.maxY();
             if (top <= feetLimit && top > best) best = top;
+        }
+        return best;
+    }
+
+    public double supportTopClamped(double feetLimit, double minX, double maxX, double minZ, double maxZ) {
+        double best = Double.NEGATIVE_INFINITY;
+        for (CollisionBox box : boxes) {
+            if (maxX <= box.minX() || minX >= box.maxX() || maxZ <= box.minZ() || minZ >= box.maxZ()) continue;
+            if (box.minY() >= feetLimit) continue;
+            double top = Math.min(box.maxY(), feetLimit);
+            if (top > best) best = top;
         }
         return best;
     }

@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.physics.world;
 
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
+import com.github.retrooper.packetevents.protocol.world.states.enums.Attachment;
 import com.github.retrooper.packetevents.protocol.world.states.enums.East;
 import com.github.retrooper.packetevents.protocol.world.states.enums.Half;
 import com.github.retrooper.packetevents.protocol.world.states.enums.Hinge;
@@ -60,6 +61,11 @@ public final class BlockShapes {
     private static final double INSET_MAX = 0.9375;
     private static final double SKULL_INSET = 0.25;
     private static final double SKULL_TOP = 0.5;
+    private static final double SCULK_SENSOR_TOP = 0.5;
+    private static final double STONECUTTER_TOP = 0.5625;
+    private static final double CAMPFIRE_TOP = 0.4375;
+    private static final double CANDLE_TOP = 0.375;
+    private static final double TURTLE_EGG_TOP = 0.4375;
 
     private static final Set<StateType> FLOOR_SKULLS = Set.of(
             StateTypes.SKELETON_SKULL, StateTypes.WITHER_SKELETON_SKULL, StateTypes.ZOMBIE_HEAD,
@@ -79,26 +85,102 @@ public final class BlockShapes {
     private static final CollisionShape DOOR_WEST = CollisionShape.box(1.0 - DOOR_THICKNESS, 0.0, 0.0, 1.0, 1.0, 1.0);
     private static final CollisionShape DOOR_EAST = CollisionShape.box(0.0, 0.0, 0.0, DOOR_THICKNESS, 1.0, 1.0);
 
-    private static final int[] STAIR_QUADRANTS_BY_STATE = {12, 5, 3, 10, 14, 13, 7, 11, 13, 7, 11, 14, 8, 4, 1, 2, 4, 1, 2, 8};
+    private static final CollisionShape FLOWER_POT_SHAPE = CollisionShape.box(0.3125, 0.0, 0.3125, 0.6875, 0.375, 0.6875);
+    private static final CollisionShape SCULK_SENSOR_SHAPE = CollisionShape.top(SCULK_SENSOR_TOP);
+    private static final CollisionShape STONECUTTER_SHAPE = CollisionShape.top(STONECUTTER_TOP);
+    private static final CollisionShape CAMPFIRE_SHAPE = CollisionShape.top(CAMPFIRE_TOP);
+    private static final CollisionShape SNIFFER_EGG_SHAPE = CollisionShape.box(INSET, 0.0, 0.125, INSET_MAX, 1.0, 0.875);
+    private static final CollisionShape FULL_HEIGHT_POT_SHAPE = CollisionShape.box(INSET, 0.0, INSET, INSET_MAX, 1.0, INSET_MAX);
+    private static final CollisionShape TURTLE_EGG_ONE = CollisionShape.box(0.1875, 0.0, 0.1875, 0.75, TURTLE_EGG_TOP, 0.75);
+    private static final CollisionShape TURTLE_EGG_MANY = CollisionShape.box(0.0625, 0.0, 0.0625, 0.9375, TURTLE_EGG_TOP, 0.9375);
 
-    private static final Set<StateType> WALL_UNTRUSTED = Set.of(
-            StateTypes.POWDER_SNOW, StateTypes.SCAFFOLDING,
-            StateTypes.BAMBOO, StateTypes.CHORUS_PLANT, StateTypes.DRAGON_EGG,
-            StateTypes.TURTLE_EGG, StateTypes.SNIFFER_EGG,
-            StateTypes.SCULK_SENSOR, StateTypes.CALIBRATED_SCULK_SENSOR, StateTypes.SCULK_SHRIEKER,
-            StateTypes.HOPPER, StateTypes.COMPOSTER, StateTypes.STONECUTTER,
-            StateTypes.BELL, StateTypes.GRINDSTONE, StateTypes.LECTERN,
-            StateTypes.LANTERN, StateTypes.SOUL_LANTERN, StateTypes.CHAIN,
-            StateTypes.END_ROD, StateTypes.LIGHTNING_ROD,
-            StateTypes.FLOWER_POT, StateTypes.DECORATED_POT,
-            StateTypes.POINTED_DRIPSTONE, StateTypes.BIG_DRIPLEAF,
-            StateTypes.AZALEA, StateTypes.FLOWERING_AZALEA,
-            StateTypes.AMETHYST_CLUSTER, StateTypes.LARGE_AMETHYST_BUD,
-            StateTypes.MEDIUM_AMETHYST_BUD, StateTypes.SMALL_AMETHYST_BUD,
-            StateTypes.CONDUIT, StateTypes.PISTON_HEAD, StateTypes.MOVING_PISTON,
+    private static final CollisionShape CANDLE_ONE = CollisionShape.box(0.4375, 0.0, 0.4375, 0.5625, CANDLE_TOP, 0.5625);
+    private static final CollisionShape CANDLE_TWO = CollisionShape.box(0.3125, 0.0, 0.375, 0.6875, CANDLE_TOP, 0.5625);
+    private static final CollisionShape CANDLE_THREE = CollisionShape.box(0.3125, 0.0, 0.375, 0.625, CANDLE_TOP, 0.6875);
+    private static final CollisionShape CANDLE_FOUR = CollisionShape.box(0.3125, 0.0, 0.3125, 0.6875, CANDLE_TOP, 0.625);
+
+    private static final CollisionShape CANDLE_CAKE_SHAPE = CollisionShape.of(
+            new CollisionBox(INSET, 0.0, INSET, INSET_MAX, CAKE_TOP, INSET_MAX),
+            new CollisionBox(0.4375, CAKE_TOP, 0.4375, 0.5625, 0.875, 0.5625));
+
+    private static final CollisionShape COMPOSTER_SHAPE = CollisionShape.of(
+            new CollisionBox(0.0, 0.0, 0.0, 1.0, 0.125, 1.0),
+            new CollisionBox(0.0, 0.125, 0.0, 0.125, 1.0, 1.0),
+            new CollisionBox(0.875, 0.125, 0.0, 1.0, 1.0, 1.0),
+            new CollisionBox(0.0, 0.125, 0.0, 1.0, 1.0, 0.125),
+            new CollisionBox(0.0, 0.125, 0.875, 1.0, 1.0, 1.0));
+
+    private static final CollisionShape LECTERN_SHAPE = CollisionShape.of(
+            new CollisionBox(0.0, 0.0, 0.0, 1.0, 0.125, 1.0),
+            new CollisionBox(0.25, 0.125, 0.25, 0.75, 0.875, 0.75));
+
+    private static final CollisionBox ANVIL_BASE = new CollisionBox(0.125, 0.0, 0.125, 0.875, 0.25, 0.875);
+    private static final CollisionShape ANVIL_X_AXIS = CollisionShape.of(ANVIL_BASE,
+            new CollisionBox(0.1875, 0.25, 0.25, 0.8125, 0.3125, 0.75),
+            new CollisionBox(0.25, 0.3125, 0.375, 0.75, 0.625, 0.625),
+            new CollisionBox(0.0, 0.625, 0.1875, 1.0, 1.0, 0.8125));
+    private static final CollisionShape ANVIL_Z_AXIS = CollisionShape.of(ANVIL_BASE,
+            new CollisionBox(0.25, 0.25, 0.1875, 0.75, 0.3125, 0.8125),
+            new CollisionBox(0.375, 0.3125, 0.25, 0.625, 0.625, 0.75),
+            new CollisionBox(0.1875, 0.625, 0.0, 0.8125, 1.0, 1.0));
+
+    private static final double PISTON_ARM_MIN = 0.375;
+    private static final double PISTON_ARM_MAX = 0.625;
+
+    private static final CollisionShape MUD_SHAPE = CollisionShape.top(0.875);
+    private static final CollisionShape BELL_BODY = CollisionShape.of(
+            new CollisionBox(0.3125, 0.375, 0.3125, 0.6875, 0.8125, 0.6875),
+            new CollisionBox(0.25, 0.25, 0.25, 0.75, 0.375, 0.75));
+    private static final CollisionShape CONDUIT_SHAPE = CollisionShape.box(0.3125, 0.3125, 0.3125, 0.6875, 0.6875, 0.6875);
+    private static final CollisionShape AZALEA_SHAPE = CollisionShape.of(
+            new CollisionBox(0.0, 0.5, 0.0, 1.0, 1.0, 1.0),
+            new CollisionBox(0.375, 0.0, 0.375, 0.625, 0.5, 0.625));
+    private static final CollisionShape LANTERN_STANDING = CollisionShape.of(
+            new CollisionBox(0.3125, 0.0, 0.3125, 0.6875, 0.4375, 0.6875),
+            new CollisionBox(0.375, 0.4375, 0.375, 0.625, 0.5625, 0.625));
+    private static final CollisionShape LANTERN_HANGING = CollisionShape.of(
+            new CollisionBox(0.3125, 0.0625, 0.3125, 0.6875, 0.5, 0.6875),
+            new CollisionBox(0.375, 0.5, 0.375, 0.625, 0.625, 0.625));
+    private static final CollisionShape BELL_FLOOR_X = CollisionShape.box(0.25, 0.0, 0.0, 0.75, 1.0, 1.0);
+    private static final CollisionShape BELL_FLOOR_Z = CollisionShape.box(0.0, 0.0, 0.25, 1.0, 1.0, 0.75);
+
+    private static final CollisionShape CHAIN_Y = CollisionShape.box(0.40625, 0.0, 0.40625, 0.59375, 1.0, 0.59375);
+    private static final CollisionShape CHAIN_X = CollisionShape.box(0.0, 0.40625, 0.40625, 1.0, 0.59375, 0.59375);
+    private static final CollisionShape CHAIN_Z = CollisionShape.box(0.40625, 0.40625, 0.0, 0.59375, 0.59375, 1.0);
+    private static final CollisionShape ROD_Y = CollisionShape.box(0.375, 0.0, 0.375, 0.625, 1.0, 0.625);
+    private static final CollisionShape ROD_X = CollisionShape.box(0.0, 0.375, 0.375, 1.0, 0.625, 0.625);
+    private static final CollisionShape ROD_Z = CollisionShape.box(0.375, 0.375, 0.0, 0.625, 0.625, 1.0);
+
+    private static final CollisionShape WALL_SKULL_NORTH = CollisionShape.box(0.25, 0.25, 0.5, 0.75, 0.75, 1.0);
+    private static final CollisionShape WALL_SKULL_SOUTH = CollisionShape.box(0.25, 0.25, 0.0, 0.75, 0.75, 0.5);
+    private static final CollisionShape WALL_SKULL_WEST = CollisionShape.box(0.5, 0.25, 0.25, 1.0, 0.75, 0.75);
+    private static final CollisionShape WALL_SKULL_EAST = CollisionShape.box(0.0, 0.25, 0.25, 0.5, 0.75, 0.75);
+
+    private static final Set<StateType> WALL_SKULLS = Set.of(
             StateTypes.SKELETON_WALL_SKULL, StateTypes.WITHER_SKELETON_WALL_SKULL,
             StateTypes.ZOMBIE_WALL_HEAD, StateTypes.PLAYER_WALL_HEAD,
             StateTypes.CREEPER_WALL_HEAD, StateTypes.DRAGON_WALL_HEAD, StateTypes.PIGLIN_WALL_HEAD);
+
+    private static final CollisionShape HOPPER_BASE = hopper(null);
+    private static final CollisionShape HOPPER_DOWN = hopper(new CollisionBox(0.375, 0.0, 0.375, 0.625, 0.25, 0.625));
+    private static final CollisionShape HOPPER_NORTH = hopper(new CollisionBox(0.375, 0.25, 0.0, 0.625, 0.5, 0.25));
+    private static final CollisionShape HOPPER_SOUTH = hopper(new CollisionBox(0.375, 0.25, 0.75, 0.625, 0.5, 1.0));
+    private static final CollisionShape HOPPER_WEST = hopper(new CollisionBox(0.0, 0.25, 0.375, 0.25, 0.5, 0.625));
+    private static final CollisionShape HOPPER_EAST = hopper(new CollisionBox(0.75, 0.25, 0.375, 1.0, 0.5, 0.625));
+
+    private static final int[] STAIR_QUADRANTS_BY_STATE = {12, 5, 3, 10, 14, 13, 7, 11, 13, 7, 11, 14, 8, 4, 1, 2, 4, 1, 2, 8};
+
+    // Shapes here are modeled approximately (dynamic geometry, attach-face rotations, or the
+    // coordinate-seeded bamboo offset). They are excluded from wall judging and their support
+    // read is clamped (see supportApproximate). Anything modeled exactly must NOT be here.
+    private static final Set<StateType> WALL_UNTRUSTED = Set.of(
+            StateTypes.POWDER_SNOW, StateTypes.SCAFFOLDING,
+            StateTypes.BAMBOO, StateTypes.CHORUS_PLANT,
+            StateTypes.BELL, StateTypes.GRINDSTONE,
+            StateTypes.POINTED_DRIPSTONE, StateTypes.BIG_DRIPLEAF,
+            StateTypes.AMETHYST_CLUSTER, StateTypes.LARGE_AMETHYST_BUD,
+            StateTypes.MEDIUM_AMETHYST_BUD, StateTypes.SMALL_AMETHYST_BUD,
+            StateTypes.MOVING_PISTON);
 
     private BlockShapes() {
     }
@@ -125,10 +207,24 @@ public final class BlockShapes {
         }
         if (type == StateTypes.END_PORTAL_FRAME) return endPortalFrame(state);
         if (type == StateTypes.BREWING_STAND) return brewingStand();
-        if (type == StateTypes.CAKE) return CollisionShape.box(INSET, 0.0, INSET, INSET_MAX, CAKE_TOP, INSET_MAX);
+        if (type == StateTypes.CAKE) {
+            return CollisionShape.box(INSET + state.getBites() * 0.125, 0.0, INSET, INSET_MAX, CAKE_TOP, INSET_MAX);
+        }
         if (FLOOR_SKULLS.contains(type)) return CollisionShape.box(SKULL_INSET, 0.0, SKULL_INSET, 1.0 - SKULL_INSET, SKULL_TOP, 1.0 - SKULL_INSET);
         if (type == StateTypes.LADDER) return ladder(state);
         if (CAULDRONS.contains(type)) return cauldron();
+        if (type == StateTypes.FLOWER_POT) return FLOWER_POT_SHAPE;
+        if (type == StateTypes.TURTLE_EGG) return state.getEggs() > 1 ? TURTLE_EGG_MANY : TURTLE_EGG_ONE;
+        if (type == StateTypes.SCULK_SENSOR || type == StateTypes.CALIBRATED_SCULK_SENSOR
+                || type == StateTypes.SCULK_SHRIEKER) {
+            return SCULK_SENSOR_SHAPE;
+        }
+        if (type == StateTypes.HOPPER) return hopperByFacing(state);
+        if (type == StateTypes.COMPOSTER) return COMPOSTER_SHAPE;
+        if (type == StateTypes.STONECUTTER) return STONECUTTER_SHAPE;
+        if (type == StateTypes.LECTERN) return LECTERN_SHAPE;
+        if (type == StateTypes.DECORATED_POT || type == StateTypes.DRAGON_EGG) return FULL_HEIGHT_POT_SHAPE;
+        if (type == StateTypes.SNIFFER_EGG) return SNIFFER_EGG_SHAPE;
 
         if (BlockTags.FENCES.contains(type)) return fence(state);
         if (BlockTags.FENCE_GATES.contains(type)) return fenceGate(state);
@@ -151,17 +247,41 @@ public final class BlockShapes {
         }
         if (BlockTags.STAIRS.contains(type)) return stairs(state);
         if (BlockTags.DOORS.contains(type)) return door(state);
+        if (BlockTags.ANVIL.contains(type)) return anvil(state);
+        if (BlockTags.CANDLES.contains(type)) return candles(state);
+        if (BlockTags.CANDLE_CAKES.contains(type)) return CANDLE_CAKE_SHAPE;
+        if (BlockTags.CAMPFIRES.contains(type)) return CAMPFIRE_SHAPE;
         if (type == StateTypes.HEAVY_CORE) return CollisionShape.box(0.25, 0.0, 0.25, 0.75, 0.5, 0.75);
         if (GOLEM_STATUES.contains(type)) return CollisionShape.box(0.1875, 0.0, 0.1875, 0.8125, 0.875, 0.8125);
+
+        if (type == StateTypes.MUD) return MUD_SHAPE;
+        if (type == StateTypes.PISTON || type == StateTypes.STICKY_PISTON) return pistonBase(state);
+        if (type == StateTypes.PISTON_HEAD) return pistonHead(state);
+        if (type == StateTypes.CONDUIT) return CONDUIT_SHAPE;
+        if (type == StateTypes.AZALEA || type == StateTypes.FLOWERING_AZALEA) return AZALEA_SHAPE;
+        if (type == StateTypes.LANTERN || type == StateTypes.SOUL_LANTERN) {
+            return state.isHanging() ? LANTERN_HANGING : LANTERN_STANDING;
+        }
+        if (type == StateTypes.CHAIN) return chain(state);
+        if (type == StateTypes.END_ROD || type == StateTypes.LIGHTNING_ROD) return rod(state);
+        if (WALL_SKULLS.contains(type)) return wallSkull(state);
+        if (type == StateTypes.BELL) return bell(state);
 
         return type.isBlocking() && type.isSolid() ? CollisionShape.FULL : CollisionShape.EMPTY;
     }
 
     public static boolean wallTrusted(StateType type) {
-        if (WALL_UNTRUSTED.contains(type)) return false;
-        if (BlockTags.ANVIL.contains(type)) return false;
-        if (BlockTags.CANDLES.contains(type) || BlockTags.CANDLE_CAKES.contains(type)) return false;
-        return !BlockTags.CAMPFIRES.contains(type);
+        return !WALL_UNTRUSTED.contains(type);
+    }
+
+    public static boolean supportApproximate(StateType type) {
+        return WALL_UNTRUSTED.contains(type);
+    }
+
+    public static boolean suffocatingOverride(StateType type) {
+        return type == StateTypes.SOUL_SAND || type == StateTypes.MUD
+                || type == StateTypes.FARMLAND
+                || type == StateTypes.DIRT_PATH || type == StateTypes.GRASS_PATH;
     }
 
     private static CollisionShape snowLayers(WrappedBlockState state) {
@@ -292,6 +412,45 @@ public final class BlockShapes {
                 new CollisionBox(0.0, 0.25, 0.875, 1.0, 1.0, 1.0));
     }
 
+    private static CollisionShape hopper(CollisionBox spout) {
+        List<CollisionBox> boxes = new ArrayList<>(7);
+        boxes.add(new CollisionBox(0.25, 0.25, 0.25, 0.75, 0.625, 0.75));
+        boxes.add(new CollisionBox(0.0, 0.625, 0.0, 1.0, 0.6875, 1.0));
+        boxes.add(new CollisionBox(0.0, 0.6875, 0.0, 0.125, 1.0, 1.0));
+        boxes.add(new CollisionBox(0.875, 0.6875, 0.0, 1.0, 1.0, 1.0));
+        boxes.add(new CollisionBox(0.125, 0.6875, 0.0, 0.875, 1.0, 0.125));
+        boxes.add(new CollisionBox(0.125, 0.6875, 0.875, 0.875, 1.0, 1.0));
+        if (spout != null) boxes.add(spout);
+        return CollisionShape.of(boxes.toArray(new CollisionBox[0]));
+    }
+
+    private static CollisionShape hopperByFacing(WrappedBlockState state) {
+        return switch (state.getFacing()) {
+            case DOWN -> HOPPER_DOWN;
+            case NORTH -> HOPPER_NORTH;
+            case SOUTH -> HOPPER_SOUTH;
+            case WEST -> HOPPER_WEST;
+            case EAST -> HOPPER_EAST;
+            default -> HOPPER_BASE;
+        };
+    }
+
+    private static CollisionShape anvil(WrappedBlockState state) {
+        return switch (state.getFacing()) {
+            case WEST, EAST -> ANVIL_X_AXIS;
+            default -> ANVIL_Z_AXIS;
+        };
+    }
+
+    private static CollisionShape candles(WrappedBlockState state) {
+        return switch (state.getCandles()) {
+            case 2 -> CANDLE_TWO;
+            case 3 -> CANDLE_THREE;
+            case 4 -> CANDLE_FOUR;
+            default -> CANDLE_ONE;
+        };
+    }
+
     private static CollisionShape ladder(WrappedBlockState state) {
         double far = 1.0 - LADDER_THICKNESS;
         return switch (state.getFacing()) {
@@ -301,6 +460,77 @@ public final class BlockShapes {
             case EAST -> CollisionShape.box(0.0, 0.0, 0.0, LADDER_THICKNESS, 1.0, 1.0);
             default -> CollisionShape.EMPTY;
         };
+    }
+
+    private static CollisionShape pistonBase(WrappedBlockState state) {
+        if (!state.isExtended()) return CollisionShape.FULL;
+        return switch (state.getFacing()) {
+            case UP -> CollisionShape.box(0.0, 0.0, 0.0, 1.0, 0.75, 1.0);
+            case DOWN -> CollisionShape.box(0.0, 0.25, 0.0, 1.0, 1.0, 1.0);
+            case NORTH -> CollisionShape.box(0.0, 0.0, 0.25, 1.0, 1.0, 1.0);
+            case SOUTH -> CollisionShape.box(0.0, 0.0, 0.0, 1.0, 1.0, 0.75);
+            case WEST -> CollisionShape.box(0.25, 0.0, 0.0, 1.0, 1.0, 1.0);
+            default -> CollisionShape.box(0.0, 0.0, 0.0, 0.75, 1.0, 1.0);
+        };
+    }
+
+    private static CollisionShape pistonHead(WrappedBlockState state) {
+        double a0 = PISTON_ARM_MIN, a1 = PISTON_ARM_MAX;
+        return switch (state.getFacing()) {
+            case UP -> CollisionShape.of(
+                    new CollisionBox(0.0, 0.75, 0.0, 1.0, 1.0, 1.0),
+                    new CollisionBox(a0, 0.0, a0, a1, 0.75, a1));
+            case DOWN -> CollisionShape.of(
+                    new CollisionBox(0.0, 0.0, 0.0, 1.0, 0.25, 1.0),
+                    new CollisionBox(a0, 0.25, a0, a1, 1.0, a1));
+            case NORTH -> CollisionShape.of(
+                    new CollisionBox(0.0, 0.0, 0.0, 1.0, 1.0, 0.25),
+                    new CollisionBox(a0, a0, 0.25, a1, a1, 1.0));
+            case SOUTH -> CollisionShape.of(
+                    new CollisionBox(0.0, 0.0, 0.75, 1.0, 1.0, 1.0),
+                    new CollisionBox(a0, a0, 0.0, a1, a1, 0.75));
+            case WEST -> CollisionShape.of(
+                    new CollisionBox(0.0, 0.0, 0.0, 0.25, 1.0, 1.0),
+                    new CollisionBox(0.25, a0, a0, 1.0, a1, a1));
+            default -> CollisionShape.of(
+                    new CollisionBox(0.75, 0.0, 0.0, 1.0, 1.0, 1.0),
+                    new CollisionBox(0.0, a0, a0, 0.75, a1, a1));
+        };
+    }
+
+    private static CollisionShape chain(WrappedBlockState state) {
+        return switch (state.getAxis()) {
+            case X -> CHAIN_X;
+            case Z -> CHAIN_Z;
+            default -> CHAIN_Y;
+        };
+    }
+
+    private static CollisionShape rod(WrappedBlockState state) {
+        return switch (state.getFacing()) {
+            case NORTH, SOUTH -> ROD_Z;
+            case WEST, EAST -> ROD_X;
+            default -> ROD_Y;
+        };
+    }
+
+    private static CollisionShape wallSkull(WrappedBlockState state) {
+        return switch (state.getFacing()) {
+            case SOUTH -> WALL_SKULL_SOUTH;
+            case WEST -> WALL_SKULL_WEST;
+            case EAST -> WALL_SKULL_EAST;
+            default -> WALL_SKULL_NORTH;
+        };
+    }
+
+    private static CollisionShape bell(WrappedBlockState state) {
+        if (state.getAttachment() == Attachment.FLOOR) {
+            return switch (state.getFacing()) {
+                case WEST, EAST -> BELL_FLOOR_X;
+                default -> BELL_FLOOR_Z;
+            };
+        }
+        return BELL_BODY;
     }
 
     private static CollisionShape scaffolding(int cellY, CollisionContext ctx) {

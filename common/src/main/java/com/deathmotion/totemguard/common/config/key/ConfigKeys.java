@@ -58,6 +58,8 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> PHYSICS_ENGINE_CLOSE_INVENTORY = ConfigKey.bool("physics-engine.mitigation.close-inventory");
 
+    public static final ConfigKey<Boolean> PHYSICS_ENGINE_FALL_DAMAGE = ConfigKey.bool("physics-engine.mitigation.fall-damage");
+
     public static final ConfigKey<Boolean> PHYSICS_ENGINE_DEBUG = ConfigKey.bool("physics-engine.debug");
 
     public static final ConfigKey<Boolean> DEBUG_MODIFIER_KICK_ENABLED = ConfigKey.bool("debug-modifier-kick.enabled");

@@ -35,6 +35,7 @@ final class GroundTracker {
     private double lastGroundGap;
     private double prevObservedVy;
     private int bounceTicks;
+    private int displacedTicks;
     private double lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
     private double lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;
 
@@ -44,6 +45,15 @@ final class GroundTracker {
         lastFluid = false;
         lastGroundGap = onGround ? 0.0 : Double.MAX_VALUE;
         prevObservedVy = 0.0;
+        displacedTicks = 0;
+    }
+
+    void displaced() {
+        lastGroundedEnd = false;
+        prevGroundedEnd = false;
+        lastGroundGap = Double.MAX_VALUE;
+        prevObservedVy = 0.0;
+        displacedTicks = 1;
     }
 
     GroundState resolve(double observedVy, BlockEnvironment env, double stepHeight, double carriedFloor, boolean sneaking) {
@@ -51,11 +61,14 @@ final class GroundTracker {
         lastFluid = env.fluid();
 
         boolean groundedStart = lastGroundedEnd;
-        boolean startAmbiguous = !groundedStart && lastGroundGap <= GROUND_EPS;
+        boolean startAmbiguous = !groundedStart && (lastGroundGap <= GROUND_EPS || displacedTicks > 0);
+        if (displacedTicks > 0) displacedTicks--;
         boolean rising = observedVy > GROUND_RISE_EPS;
         boolean supportedNow = env.groundGap() <= GROUND_EPS;
         boolean arrested = supportedNow && observedVy > carriedFloor + GROUND_LANDING_EPS;
-        boolean fellFreely = carriedFloor < 0.0 && observedVy <= carriedFloor + GROUND_ARREST_EPS && !arrested;
+        boolean bounceContact = supportedNow && env.bounceFactor() > 0.0;
+        boolean fellFreely = carriedFloor < 0.0 && observedVy <= carriedFloor + GROUND_ARREST_EPS
+                && !arrested && !bounceContact;
         boolean descendedLast = prevObservedVy < -GROUND_RISE_EPS;
         boolean landingSupport = descendedLast && env.groundGap() <= stepHeight;
         boolean groundedEnd;
@@ -88,6 +101,7 @@ final class GroundTracker {
 
     void clearWindows() {
         bounceTicks = 0;
+        displacedTicks = 0;
     }
 
     void reset() {

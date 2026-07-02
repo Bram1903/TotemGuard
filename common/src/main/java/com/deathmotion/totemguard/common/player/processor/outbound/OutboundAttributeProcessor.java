@@ -111,6 +111,9 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
             } else if (self && property.getAttribute() == Attributes.SAFE_FALL_DISTANCE) {
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setSafeFallDistance(value));
+            } else if (self && property.getAttribute() == Attributes.FALL_DAMAGE_MULTIPLIER) {
+                double value = property.calcValue();
+                latencyHandler.compensate(event, () -> attributes.setFallDamageMultiplier(value));
             }
         }
     }

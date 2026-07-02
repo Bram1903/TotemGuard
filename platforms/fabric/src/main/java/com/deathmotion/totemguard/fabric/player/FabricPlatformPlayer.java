@@ -99,6 +99,18 @@ public class FabricPlatformPlayer implements PlatformPlayer {
     }
 
     @Override
+    public boolean dealFallDamage(double amount) {
+        if (amount <= 0.0) return false;
+        MinecraftServer server = resolveServer();
+        if (server == null) return false;
+        server.execute(() -> {
+            if (fabricPlayer.hasDisconnected()) return;
+            fabricPlayer.hurtServer(fabricPlayer.level(), fabricPlayer.damageSources().fall(), (float) amount);
+        });
+        return true;
+    }
+
+    @Override
     public void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted, @NotNull Runnable onDamageRefused) {
         onDamageRefused.run();
     }

@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.physics;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.physics.area.MotionArea;
+import com.deathmotion.totemguard.common.physics.area.Range;
 import com.deathmotion.totemguard.common.physics.sim.MovementInput;
 import com.deathmotion.totemguard.common.physics.sim.MovementSimulator;
 import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
@@ -35,6 +36,7 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.WorldBorderData;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.Vector3d;
@@ -74,10 +76,20 @@ public class MovementEstimator {
     private static final double KNOCKBACK_PAD = 0.05;
     private static final double ENTITY_PUSH_PER = 0.08;
     private static final double MAX_ENTITY_PUSH = 0.30;
+    private static final double EMBEDDED_PUSH = 0.1;
+    private static final double WEDGE_CARRY = 0.25;
+    private static final double CONTACT_EPS = 1.0e-7;
+    private static final double WINDOW_ACCEL = 0.2;
 
     private static final int HOVER_TOLERANCE = 4;
     private static final double HOVER_EXCESS = MovementConstants.GRAVITY;
+    private static final double HOVER_MIN_GAP = 0.9;
+    private static final int HOVER_SETBACK_LIMIT = 2;
     private static final double JUMP_LIKE_ASCENT = 0.3;
+
+    private static final int DOUBLE_MOVE_TOLERANCE = 3;
+    private static final int TELEPORT_CARRY_GRACE = 3;
+    private static final double CARRY_SLACK = 0.05;
 
     private static final int STEP_UNCERTAINTY_TICKS = 4;
     private static final double STEP_HORIZONTAL_SLACK = 0.15;
@@ -88,6 +100,7 @@ public class MovementEstimator {
     private final GroundTracker groundTracker = new GroundTracker();
     private final InputResolver inputResolver;
     private final MovementMitigation mitigation;
+    private final FallTracker fallTracker;
 
     private boolean initialized;
     private MotionArea carried = MotionArea.resting();
@@ -95,8 +108,12 @@ public class MovementEstimator {
 
     private long hitWindow;
     private boolean movedSticky;
+    private GameMode lastGameMode;
     private int flyingSinceTickEnd;
+    private int doubleMoveStreak;
     private int airborneWithholdStreak;
+    private int hoverSetbackStreak;
+    private int teleportCarryGrace;
     private int fastStreak;
     private int groundMoveStreak;
     private int stepMoveTicks;
@@ -114,14 +131,79 @@ public class MovementEstimator {
         this.data = data;
         this.inputResolver = new InputResolver(data);
         this.mitigation = new MovementMitigation(data);
+        this.fallTracker = new FallTracker(data);
     }
 
+    // A tick-end without any flying packet means the client ran a full tick and asserts, by
+    // omission, that it did not move. An airborne vanilla client always moves (gravity alone
+    // exceeds the send threshold), so judging these silent ticks is what catches a cheat that
+    // freezes in midair without sending anything. Keepalive-driven flying (once per second)
+    // is far too slow for that, and only the tick-end packet proves a client tick actually
+    // ran (a lagging client sends neither movement nor tick-ends, so it is never misjudged).
     public void onTickEnd() {
+        boolean sawFlying = flyingSinceTickEnd > 0;
         flyingSinceTickEnd = 0;
+        mitigation.clearTickFlags();
+        if (!sawFlying) onSilentTick();
+    }
+
+    private void onSilentTick() {
+        if (!initialized) return;
+        // Dead clients stop sending movement while their tick-ends keep flowing, and the death
+        // screen legitimately freezes a midair position until respawn.
+        if (data.isDead()) return;
+        ConfigView view = TGPlatform.getInstance().getConfigRepository().configView();
+        if (!view.physicsEngineEnabled()) return;
+        if (data.getTeleportData().hasPendingTeleport()) return;
+
+        MovementData movement = data.getMovementData();
+        // A client whose camera targets another entity suppresses flying packets entirely.
+        if (!movement.isCameraIsSelf()) return;
+        Location current = movement.getCurrent();
+        if (preScanBail(current) != null) return;
+
+        BlockEnvironment env = BlockEnvironmentScanner.scan(
+                data.getClientWorld(), data.getWorldEntityData(), current, current,
+                data.getAttributeData().width(), poseHeight(), data.getAttributeData().stepHeight(), data.isSneaking(),
+                phaseExemptCells);
+        if (!env.feetLoaded()) return;
+
+        GroundState ground = groundTracker.resolve(
+                0.0, env, data.getAttributeData().stepHeight(), carried.vertical().min(), data.isSneaking());
+        double bubbleAscent = bubbleTicks > 0 ? bubbleAscentCap : 0.0;
+        MovementInput input = inputResolver.build(movement, env, Vector3d.zero(), ground, bubbleAscent);
+
+        coastCarried(input, env);
+        shiftWindow(false);
+        movedSticky = Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
+
+        boolean landMedium = !env.fluid() && !env.stuck() && !env.climbable();
+        boolean airborne = landMedium && !ground.groundedEnd()
+                && env.groundGap() > HOVER_MIN_GAP && !env.startOverlapping();
+        airborneWithholdStreak = airborne ? airborneWithholdStreak + 1 : 0;
+        if (airborneWithholdStreak > HOVER_TOLERANCE && hoverSetbackStreak < HOVER_SETBACK_LIMIT) {
+            result = new MovementResult(MovementCause.HOVER, Vector3d.zero(), MotionArea.resting(),
+                    0.0, HOVER_EXCESS, false, true, false);
+        } else {
+            result = MovementResult.unpredictable(MovementCause.WITHHELD, Vector3d.zero());
+        }
+        if (airborne) {
+            MovementDebug.log(data.getPlayer(), "coast:silent", Vector3d.zero(), input, env, null, 0.0,
+                    airborneWithholdStreak > HOVER_TOLERANCE ? HOVER_EXCESS : 0.0);
+        }
+
+        mitigation.observe(result, view);
+        if (result.cause() == MovementCause.HOVER && mitigation.setbackIssuedThisTick()) {
+            hoverSetbackStreak++;
+        }
+        data.getExternalVelocityData().tick();
+        data.getPistonData().tick();
+        data.getEffectData().tick();
     }
 
     private void disengage() {
         mitigation.reset();
+        fallTracker.reset();
         if (!initialized) return;
         initialized = false;
         carried = MotionArea.resting();
@@ -146,9 +228,21 @@ public class MovementEstimator {
                 current.getX() - previous.getX(),
                 current.getY() - previous.getY(),
                 current.getZ() - previous.getZ());
-        if (flyingSinceTickEnd < 1000) flyingSinceTickEnd++;
+        if (!movement.isLastFlyingWasTeleportResync() && flyingSinceTickEnd < 1000) flyingSinceTickEnd++;
         prunePhaseExemptions(current);
 
+        GameMode gameMode = data.getGameMode();
+        if (gameMode != lastGameMode) {
+            lastGameMode = gameMode;
+            if (initialized) {
+                exemptEmbeddedCells(current);
+                phaseGrace = PHASE_GRACE_TICKS;
+                lastEmbedded = -1.0;
+            }
+        }
+
+        BlockEnvironment env = null;
+        GroundState ground = null;
         try {
             if (!initialized) {
                 initialized = true;
@@ -157,12 +251,19 @@ public class MovementEstimator {
                 result = MovementResult.INITIAL;
                 clearExcess();
                 phaseGrace = PHASE_GRACE_TICKS;
+                exemptEmbeddedCells(current);
                 return;
             }
 
             if (movement.isLastFlyingWasResync()) {
-                if (movement.isLastFlyingWasTeleportResync() && movement.isLastFlyingTeleportVelocityReset()) {
-                    declineRested(MovementCause.RESYNC, observed);
+                if (movement.isLastFlyingWasTeleportResync()) {
+                    if (movement.isLastFlyingTeleportVelocityReset()) {
+                        declineRested(MovementCause.RESYNC, observed);
+                    } else {
+                        coastFrozenMomentum();
+                        teleportCarryGrace = TELEPORT_CARRY_GRACE;
+                        declineCarried(MovementCause.RESYNC, observed);
+                    }
                 } else {
                     decline(MovementCause.RESYNC, observed);
                 }
@@ -170,7 +271,12 @@ public class MovementEstimator {
             }
 
             if (data.getTeleportData().hasPendingTeleport()) {
-                decline(MovementCause.TELEPORT, observed);
+                if (movement.hasPendingVelocityPreservingTeleport()) {
+                    coastFrozenMomentum();
+                    declineCarried(MovementCause.TELEPORT, observed);
+                } else {
+                    decline(MovementCause.TELEPORT, observed);
+                }
                 return;
             }
 
@@ -184,7 +290,7 @@ public class MovementEstimator {
 
             if (handleFast(observed)) return;
 
-            BlockEnvironment env = BlockEnvironmentScanner.scan(
+            env = BlockEnvironmentScanner.scan(
                     data.getClientWorld(), data.getWorldEntityData(), current, previous,
                     data.getAttributeData().width(), poseHeight(), data.getAttributeData().stepHeight(), data.isSneaking(),
                     phaseExemptCells);
@@ -193,7 +299,7 @@ public class MovementEstimator {
                 return;
             }
 
-            GroundState ground = groundTracker.resolve(
+            ground = groundTracker.resolve(
                     observed.getY(), env, data.getAttributeData().stepHeight(), carried.vertical().min(), data.isSneaking());
 
             if (env.bubbleAscent() > 0.0) {
@@ -207,17 +313,26 @@ public class MovementEstimator {
             MovementInput input = inputResolver.build(movement, env, observed, ground, bubbleAscent);
 
             if (trusted(movement)) {
+                doubleMoveStreak = 0;
                 judge(MovementSimulator.predictMove(carried, input, env), input, env, observed);
-            } else {
-                double coastHorizontal = MovementSimulator.predictMove(carried, input, env).horizontalSpeed().max();
-                carried = MovementSimulator.advance(coastHorizontal, carried.vertical().max(), input, env);
+            } else if (!movement.isLastFlyingPositionChanged() || ++doubleMoveStreak <= DOUBLE_MOVE_TOLERANCE) {
+                coastCarried(input, env);
                 boolean withheld = !movement.isLastFlyingPositionChanged();
-                boolean airborne = !ground.groundedEnd()
-                        && !env.fluid() && !env.stuck() && !env.climbable();
+                boolean landMedium = !env.fluid() && !env.stuck() && !env.climbable();
+                boolean airborne = landMedium && !ground.groundedEnd()
+                        && env.groundGap() > HOVER_MIN_GAP && !env.startOverlapping();
                 airborneWithholdStreak = (withheld && airborne) ? airborneWithholdStreak + 1 : 0;
-                shiftWindow(false);
+                double wallExcess = 0.0;
+                if (!withheld && landMedium) {
+                    wallExcess = phaseExcess(new WallGaps(0.0, env.wallGaps().embedded()),
+                            Math.hypot(observed.getX(), observed.getZ()), false);
+                }
+                shiftWindow(wallExcess > HIT_EPSILON);
                 movedSticky = Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
-                if (airborneWithholdStreak > HOVER_TOLERANCE) {
+                if (wallExcess > HIT_EPSILON) {
+                    result = new MovementResult(MovementCause.PHASE, observed, null,
+                            wallExcess, 0.0, true, false, false);
+                } else if (airborneWithholdStreak > HOVER_TOLERANCE && hoverSetbackStreak < HOVER_SETBACK_LIMIT) {
                     result = new MovementResult(MovementCause.HOVER, observed, MotionArea.resting(),
                             0.0, HOVER_EXCESS, false, true, false);
                 } else {
@@ -225,14 +340,20 @@ public class MovementEstimator {
                             withheld ? MovementCause.WITHHELD : MovementCause.DOUBLE_MOVE, observed);
                 }
                 MovementDebug.log(data.getPlayer(), withheld ? "coast:withheld" : "coast:double",
-                        observed, input, env, null, 0.0, 0.0);
+                        observed, input, env, null, wallExcess, 0.0);
+            } else {
+                judge(MovementSimulator.predictMove(carried, input, env), input, env, observed);
             }
 
             if (ground.bounced()) {
                 carried = MovementSimulator.advanceBounce(carried, ground.bounceFloor(), env.bounceFactor(), input);
             }
         } finally {
+            fallTracker.observe(result, movement.isOnGround(), env, ground, view);
             mitigation.observe(result, view);
+            if (result.cause() == MovementCause.HOVER && mitigation.setbackIssuedThisTick()) {
+                hoverSetbackStreak++;
+            }
             data.getExternalVelocityData().tick();
             data.getPistonData().tick();
             data.getEffectData().tick();
@@ -241,6 +362,7 @@ public class MovementEstimator {
 
     private void judge(MotionArea move, MovementInput input, BlockEnvironment env, Vector3d observed) {
         airborneWithholdStreak = 0;
+        hoverSetbackStreak = 0;
         fastStreak = 0;
         double observedSpeed = Math.hypot(observed.getX(), observed.getZ());
         double observedVy = observed.getY();
@@ -251,13 +373,14 @@ public class MovementEstimator {
         boolean landMedium = !env.fluid() && !env.climbable() && !env.stuck();
 
         double horizontalPad = HORIZONTAL_PAD * tolerance.padScale();
+        if (env.startEmbedded()) horizontalPad += EMBEDDED_PUSH;
         double verticalPad = VERTICAL_PAD * tolerance.padScale();
         MotionArea allowed = move.expand(horizontalPad, verticalPad);
         double horizontalExcess = allowed.horizontalExcess(observedSpeed);
         double verticalExcess = allowed.ascentExcess(observedVy);
         double wallExcess = 0.0;
         if (landMedium) {
-            wallExcess = phaseExcess(env.wallGaps(), observedSpeed);
+            wallExcess = phaseExcess(env.wallGaps(), observedSpeed, true);
         } else {
             lastEmbedded = -1.0;
         }
@@ -319,9 +442,12 @@ public class MovementEstimator {
         if (knockbackConsumed) external.consume();
         if (stepMoveTicks > 0) stepMoveTicks--;
 
-        double legalSpeed = steppedUp
+        boolean carryPredicted = steppedUp || teleportCarryGrace > 0;
+        if (teleportCarryGrace > 0) teleportCarryGrace--;
+        double legalSpeed = carryPredicted
                 ? move.horizontalSpeed().max()
-                : Math.min(observedSpeed, allowed.horizontalSpeed().max());
+                : Math.min(observedSpeed, allowed.horizontalSpeed().max() + CARRY_SLACK);
+        if (env.startOverlapping()) legalSpeed = Math.max(legalSpeed, WEDGE_CARRY);
         double legalVy = Math.min(observedVy, allowed.vertical().max());
         carried = MovementSimulator.advance(legalSpeed, legalVy, input, env);
 
@@ -340,7 +466,7 @@ public class MovementEstimator {
         MovementDebug.log(data.getPlayer(), "judge:" + cause, observed, input, env, move, horizontalExcess, verticalExcess);
     }
 
-    private double phaseExcess(WallGaps gaps, double observedSpeed) {
+    private double phaseExcess(WallGaps gaps, double observedSpeed, boolean countGrace) {
         double entryTolerance = PHASE_ENTRY_TOLERANCE * tolerance.padScale();
         double embedTolerance = PHASE_EMBED_TOLERANCE * tolerance.padScale();
         double entry = gaps.crossing() - entryTolerance;
@@ -349,7 +475,8 @@ public class MovementEstimator {
 
         double embedded = gaps.embedded();
         boolean moving = observedSpeed > PHASE_MOVE_EPS;
-        boolean growing = lastEmbedded >= 0.0 && embedded > lastEmbedded + PHASE_EMBED_GROWTH;
+        double growth = lastEmbedded >= 0.0 ? embedded - lastEmbedded : 0.0;
+        boolean growing = growth > PHASE_EMBED_GROWTH && growth <= observedSpeed + PHASE_EMBED_GROWTH;
         if (phaseGrace == 0 && moving && growing && embedded > embedTolerance) {
             phaseWindow = PHASE_WINDOW;
         }
@@ -363,13 +490,13 @@ public class MovementEstimator {
             phaseWindow--;
         }
 
-        if (phaseGrace > 0) phaseGrace--;
+        if (countGrace && phaseGrace > 0) phaseGrace--;
         lastEmbedded = embedded;
         return excess;
     }
 
     private boolean trusted(MovementData movement) {
-        if (!movement.isLastFlyingPositionChanged()) return false;
+        if (!movement.isLastFlyingPositionChanged()) return movement.isLastFlyingWasDuplicate();
         boolean doubleMove = data.getPlayer().supportsEndTick()
                 && flyingSinceTickEnd > 1
                 && !data.getTeleportData().lastPacketWasTeleport();
@@ -486,13 +613,37 @@ public class MovementEstimator {
         }
     }
 
+    private void exemptEmbeddedCells(Location current) {
+        double half = data.getAttributeData().width() / 2.0;
+        double minX = current.getX() - half, maxX = current.getX() + half;
+        double minY = current.getY(), maxY = current.getY() + poseHeight();
+        double minZ = current.getZ() - half, maxZ = current.getZ() + half;
+        CollisionContext ctx = new CollisionContext(current.getY(), data.isSneaking());
+        for (int x = floor(minX); x <= floor(maxX); x++) {
+            for (int y = floor(minY); y <= floor(maxY); y++) {
+                for (int z = floor(minZ); z <= floor(maxZ); z++) {
+                    WrappedBlockState state = data.getClientWorld().getBlockState(x, y, z);
+                    CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
+                    if (shape.isEmpty()) continue;
+                    for (CollisionBox box : shape.boxes()) {
+                        if (x + box.maxX() <= minX + CONTACT_EPS || x + box.minX() >= maxX - CONTACT_EPS) continue;
+                        if (y + box.maxY() <= minY + CONTACT_EPS || y + box.minY() >= maxY - CONTACT_EPS) continue;
+                        if (z + box.maxZ() <= minZ + CONTACT_EPS || z + box.minZ() >= maxZ - CONTACT_EPS) continue;
+                        phaseExemptCells.add(ClientWorld.blockKey(x, y, z));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     private void prunePhaseExemptions(Location current) {
         if (phaseExemptCells.isEmpty()) return;
         double half = data.getAttributeData().width() / 2.0;
         double height = poseHeight();
         Set<Long> bodyCells = new HashSet<>();
         for (int x = floor(current.getX() - half); x <= floor(current.getX() + half); x++) {
-            for (int y = floor(current.getY()); y <= floor(current.getY() + height); y++) {
+            for (int y = floor(current.getY()) - 2; y <= floor(current.getY() + height) + 2; y++) {
                 for (int z = floor(current.getZ() - half); z <= floor(current.getZ() + half); z++) {
                     bodyCells.add(ClientWorld.blockKey(x, y, z));
                 }
@@ -505,13 +656,38 @@ public class MovementEstimator {
         return (int) Math.floor(value);
     }
 
+    private void coastCarried(MovementInput input, BlockEnvironment env) {
+        MotionArea grown = MovementSimulator.predictMove(carried, input, env);
+        double coastHorizontal = grown.horizontalSpeed().max();
+        MotionArea ceilingAdvance = MovementSimulator.advance(coastHorizontal, grown.vertical().max(), input, env);
+        MotionArea floorAdvance = MovementSimulator.advance(coastHorizontal, carried.vertical().min(), input, env);
+        carried = new MotionArea(ceilingAdvance.horizontalSpeed(),
+                new Range(floorAdvance.vertical().min(), ceilingAdvance.vertical().max()));
+    }
+
+    private void coastFrozenMomentum() {
+        double gravity = data.getAttributeData().gravity();
+        Range horizontal = carried.horizontalSpeed().grow(0.0, WINDOW_ACCEL);
+        Range vertical = carried.vertical();
+        double floor = gravity > 0.0
+                ? (vertical.min() - gravity) * MovementConstants.VERTICAL_DRAG
+                : vertical.min();
+        double jumpCeiling = data.getAttributeData().jumpStrength()
+                + (data.getEffectData().hasJumpBoost()
+                ? 0.1 * (data.getEffectData().jumpBoostAmplifier() + 1) : 0.0);
+        carried = new MotionArea(horizontal, new Range(floor, Math.max(vertical.max(), jumpCeiling)));
+    }
+
     private void decline(MovementCause cause, Vector3d observed) {
         seedCarried(observed);
         declineCarried(cause, observed);
     }
 
     private void declineRested(MovementCause cause, Vector3d observed) {
-        carried = MotionArea.resting();
+        double jumpCeiling = data.getAttributeData().jumpStrength()
+                + (data.getEffectData().hasJumpBoost()
+                ? 0.1 * (data.getEffectData().jumpBoostAmplifier() + 1) : 0.0);
+        carried = new MotionArea(Range.ZERO, new Range(0.0, jumpCeiling));
         declineCarried(cause, observed);
     }
 
@@ -519,11 +695,18 @@ public class MovementEstimator {
         shiftWindow(false);
         movedSticky = Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
         airborneWithholdStreak = 0;
+        doubleMoveStreak = 0;
         inputResolver.onDecline();
+        if (cause != MovementCause.FAST) {
+            exemptEmbeddedCells(data.getMovementData().getCurrent());
+        }
         if (cause == MovementCause.RESYNC || cause == MovementCause.TELEPORT
                 || cause == MovementCause.PISTON || cause == MovementCause.UNLOADED) {
             phaseGrace = PHASE_GRACE_TICKS;
             lastEmbedded = -1.0;
+        }
+        if (cause == MovementCause.RESYNC || cause == MovementCause.TELEPORT) {
+            groundTracker.displaced();
         }
         result = MovementResult.unpredictable(cause, observed);
         MovementDebug.log(data.getPlayer(), "decline:" + cause, observed, null, null, null, 0.0, 0.0);
@@ -541,6 +724,9 @@ public class MovementEstimator {
         hitWindow = 0;
         movedSticky = false;
         airborneWithholdStreak = 0;
+        hoverSetbackStreak = 0;
+        teleportCarryGrace = 0;
+        doubleMoveStreak = 0;
         fastStreak = 0;
         groundMoveStreak = 0;
         bubbleTicks = 0;
@@ -566,6 +752,22 @@ public class MovementEstimator {
 
     public boolean setbackSkippedThisTick() {
         return mitigation.setbackSkippedThisTick();
+    }
+
+    public boolean fallViolationThisTick() {
+        return fallTracker.violationThisTick();
+    }
+
+    public double fallAvoidedDamage() {
+        return fallTracker.avoidedDamage();
+    }
+
+    public double fallDistance() {
+        return fallTracker.fallDistance();
+    }
+
+    public boolean fallDamageApplied() {
+        return fallTracker.damageApplied();
     }
 
     public boolean movedHorizontally() {
@@ -607,6 +809,7 @@ public class MovementEstimator {
         groundTracker.reset();
         clearHistory();
         mitigation.reset();
+        fallTracker.reset();
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();
         data.getEffectData().reset();

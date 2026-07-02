@@ -32,6 +32,7 @@ public class PlayerAttributeData {
     private double waterMovementEfficiency = MovementConstants.WATER_MOVEMENT_EFFICIENCY;
     private double flyingSpeed = MovementConstants.FLYING_SPEED;
     private double safeFallDistance = MovementConstants.SAFE_FALL_DISTANCE;
+    private double fallDamageMultiplier = 1.0;
 
     public void setScale(double scale) {
         this.scale = Math.max(0.0625, Math.min(16.0, scale));
@@ -71,6 +72,10 @@ public class PlayerAttributeData {
 
     public void setSafeFallDistance(double safeFallDistance) {
         this.safeFallDistance = Math.max(0.0, Math.min(1024.0, safeFallDistance));
+    }
+
+    public void setFallDamageMultiplier(double fallDamageMultiplier) {
+        this.fallDamageMultiplier = Math.max(0.0, Math.min(100.0, fallDamageMultiplier));
     }
 
     public double width() {
@@ -121,6 +126,10 @@ public class PlayerAttributeData {
         return safeFallDistance;
     }
 
+    public double fallDamageMultiplier() {
+        return fallDamageMultiplier;
+    }
+
     public void reset() {
         scale = 1.0;
         movementSpeed = MovementConstants.BASE_MOVEMENT_SPEED;
@@ -132,5 +141,6 @@ public class PlayerAttributeData {
         waterMovementEfficiency = MovementConstants.WATER_MOVEMENT_EFFICIENCY;
         flyingSpeed = MovementConstants.FLYING_SPEED;
         safeFallDistance = MovementConstants.SAFE_FALL_DISTANCE;
+        fallDamageMultiplier = 1.0;
     }
 }

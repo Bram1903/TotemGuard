@@ -88,6 +88,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
 
                 data.setGameMode(packet.getGameMode());
                 data.setOpenInventory(false, Issuer.SERVER);
+                data.setDead(false);
                 data.setSprinting(false);
                 data.resetSprintTracking();
                 data.setVehicleId(-1);

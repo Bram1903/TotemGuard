@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.physics.MovementCause;
 import com.deathmotion.totemguard.common.physics.MovementEstimator;
 import com.deathmotion.totemguard.common.physics.MovementResult;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 import java.util.Map;
@@ -69,7 +70,18 @@ public class Physics extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) return;
+        boolean flying = WrapperPlayClientPlayerFlying.isFlying(event.getPacketType());
+        boolean tickEnd = event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END;
+        if (!flying && !tickEnd) return;
+
+        if (flying && estimator.fallViolationThisTick()) {
+            String shownType = estimator.fallDamageApplied() ? "nofall (damaged)" : "nofall";
+            fail(Map.of("tg_physics_type", "nofall"),
+                    "{0} | fell {1} blocks, dodged {2} damage", shownType,
+                    String.format("%.1f", estimator.fallDistance()),
+                    String.format("%.1f", estimator.fallAvoidedDamage()));
+        }
+
         if (!estimator.mitigationTriggeredThisTick()) return;
 
         MovementResult r = estimator.getResult();

@@ -32,10 +32,12 @@ public record BlockEnvironment(
         double groundGap,
         double bubbleAscent,
         WallGaps wallGaps,
-        double ceilingGap
+        double ceilingGap,
+        boolean startEmbedded,
+        boolean startOverlapping
 ) {
 
     public static final BlockEnvironment UNLOADED =
             new BlockEnvironment(false, false, false, false, 1.0, 1.0, 0.0, 0.6, 0.6, 1.0, 0.0, 0.0, WallGaps.NONE,
-                    Double.POSITIVE_INFINITY);
+                    Double.POSITIVE_INFINITY, false, false);
 }

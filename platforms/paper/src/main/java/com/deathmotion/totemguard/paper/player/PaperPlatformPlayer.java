@@ -104,6 +104,16 @@ public class PaperPlatformPlayer implements PlatformPlayer {
     }
 
     @Override
+    public boolean dealFallDamage(double amount) {
+        if (amount <= 0.0) return false;
+        scheduler.runForEntity(paperPlayer, () -> {
+            if (!paperPlayer.isOnline() || paperPlayer.isDead()) return;
+            FallDamageSupport.damage(paperPlayer, amount);
+        }, null);
+        return true;
+    }
+
+    @Override
     public void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted,
                                  @NotNull Runnable onDamageRefused) {
         scheduler.runForEntity(paperPlayer, () -> {

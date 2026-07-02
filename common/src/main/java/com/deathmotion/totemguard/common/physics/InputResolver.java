@@ -47,6 +47,7 @@ final class InputResolver {
     private int sneakStreak;
     private int backwardSprintStreak;
     private boolean improperSprint;
+    private boolean lastClampedJump;
 
     InputResolver(Data data) {
         this.data = data;
@@ -70,7 +71,9 @@ final class InputResolver {
         double jumpTakeoff = attr.jumpStrength() + (jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0);
 
         boolean freshJump = observed.getY() >= jumpTakeoff - COYOTE_TAKEOFF_EPS;
-        boolean coyoteJump = !ground.groundedStart() && ground.recentlyGrounded() && jumpHeld && freshJump
+        boolean coyoteJump = !ground.groundedStart()
+                && (ground.recentlyGrounded() || ground.groundedStartAmbiguous())
+                && jumpHeld && freshJump
                 && !inventoryOpen && !ground.coyoteBlocked();
         boolean effectiveGroundedStart = ground.groundedStart() || coyoteJump;
         boolean jumpPossible = effectiveGroundedStart && jumpHeld && !inventoryOpen;
@@ -79,11 +82,15 @@ final class InputResolver {
                 && sprintForward(movement, env, state, observed, ground.groundedStart());
         improperSprint = data.isSprinting() && !sprinting && !inventoryOpen;
 
-        boolean clippedJump = env.ceilingGap() < jumpTakeoff && observed.getY() > RISE_EPS;
-        boolean sprintJump = effectiveGroundedStart && sprinting && (freshJump || clippedJump);
+        boolean ceilingBlocked = env.ceilingGap() < jumpTakeoff;
+        boolean sprintJump = effectiveGroundedStart && sprinting
+                && (freshJump || (ceilingBlocked && jumpHeld));
+        boolean clampedJumpNow = jumpPossible && ceilingBlocked;
+        boolean ceilingClampedJump = clampedJumpNow || lastClampedJump;
+        lastClampedJump = clampedJumpNow;
 
         sneakStreak = data.isSneaking() ? sneakStreak + 1 : 0;
-        boolean sneaking = sneakStreak >= SNEAK_CONFIRM;
+        boolean sneaking = sneakStreak >= SNEAK_CONFIRM && !env.startOverlapping();
         boolean diagonal = state == null
                 || ((state.forward() ^ state.backward()) && (state.left() ^ state.right()));
 
@@ -91,7 +98,8 @@ final class InputResolver {
                 && env.groundGap() <= WATER_EXIT_SUPPORT_REACH;
 
         return new MovementInput(effectiveGroundedStart, ground.groundedStartAmbiguous(), ground.groundedEnd(),
-                horizontalInput, jumpPossible,
+                env.groundGap() <= attr.stepHeight(), env.startOverlapping(),
+                horizontalInput, jumpPossible, ceilingClampedJump,
                 sprinting, sprintJump, effectiveSpeed(sprinting, sneaking, diagonal),
                 attr.jumpStrength(), attr.gravity(), attr.stepHeight(),
                 ground.startSlipperinessMin(), ground.startSlipperinessMax(),
@@ -177,5 +185,6 @@ final class InputResolver {
         sneakStreak = 0;
         backwardSprintStreak = 0;
         improperSprint = false;
+        lastClampedJump = false;
     }
 }

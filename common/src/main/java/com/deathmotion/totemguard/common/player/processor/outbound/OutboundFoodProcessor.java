@@ -46,7 +46,10 @@ public class OutboundFoodProcessor extends ProcessorOutbound {
         if (event.isCancelled()) return;
         if (event.getPacketType() != PacketType.Play.Server.UPDATE_HEALTH) return;
 
-        boolean canSprint = new WrapperPlayServerUpdateHealth(event).getFood() > SPRINT_FOOD_THRESHOLD;
+        WrapperPlayServerUpdateHealth health = new WrapperPlayServerUpdateHealth(event);
+        player.getData().setDead(health.getHealth() <= 0.0f);
+
+        boolean canSprint = health.getFood() > SPRINT_FOOD_THRESHOLD;
         if (canSprint == lastSentCanSprint) return;
         lastSentCanSprint = canSprint;
 

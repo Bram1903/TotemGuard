@@ -60,9 +60,40 @@ public final class BlockEnvironmentScanner {
         Below below = scanBelow(world, entities, current, previous, width, ctx);
         WallGaps wallGaps = scanWalls(world, current, previous, width / 2.0, stepHeight, ctx, wallExemptCells);
         double ceilingGap = scanCeilingGap(world, current, previous, width / 2.0, poseHeight, ctx, wallExemptCells);
+        int overlapState = bodyOverlapState(world, startBody, ctx);
         return new BlockEnvironment(true, fluid, climbable, stuck.active, stuck.horizontal, stuck.vertical,
                 below.bounceFactor, below.slipperinessMin, below.slipperinessMax, below.blockSpeedFactor, below.groundGap,
-                bubbleAscent, wallGaps, ceilingGap);
+                bubbleAscent, wallGaps, ceilingGap,
+                (overlapState & OVERLAP_SUFFOCATING) != 0, overlapState != 0);
+    }
+
+    static final int OVERLAP_ANY = 1;
+    static final int OVERLAP_SUFFOCATING = 2;
+
+    private static int bodyOverlapState(ClientWorld world, BoundingBox body, CollisionContext ctx) {
+        double feetY = body.minY();
+        int state = 0;
+        for (int x = floor(body.minX()); x <= floor(body.maxX()); x++) {
+            for (int y = floor(body.minY()); y <= floor(body.maxY()); y++) {
+                for (int z = floor(body.minZ()); z <= floor(body.maxZ()); z++) {
+                    WrappedBlockState blockState = world.getBlockState(x, y, z);
+                    CollisionShape shape = BlockShapes.shapeOf(blockState, y, ctx);
+                    if (shape.isEmpty()) continue;
+                    boolean suffocating = shape.isFullCube() || BlockShapes.suffocatingOverride(blockState.getType());
+                    if ((state & OVERLAP_ANY) != 0 && !suffocating) continue;
+                    for (CollisionBox box : shape.boxes()) {
+                        if (x + box.maxX() <= body.minX() + WALL_CONTACT_EPS || x + box.minX() >= body.maxX() - WALL_CONTACT_EPS) continue;
+                        if (y + box.maxY() <= body.minY() + WALL_CONTACT_EPS || y + box.minY() >= body.maxY() - WALL_CONTACT_EPS) continue;
+                        if (z + box.maxZ() <= body.minZ() + WALL_CONTACT_EPS || z + box.minZ() >= body.maxZ() - WALL_CONTACT_EPS) continue;
+                        if (y + box.maxY() - feetY <= SUPPORT_TOP_EPS) continue;
+                        state |= suffocating ? (OVERLAP_ANY | OVERLAP_SUFFOCATING) : OVERLAP_ANY;
+                        break;
+                    }
+                    if ((state & OVERLAP_SUFFOCATING) != 0) return state;
+                }
+            }
+        }
+        return state;
     }
 
     private static double scanCeilingGap(ClientWorld world, Location current, Location previous, double half,
@@ -294,9 +325,12 @@ public final class BlockEnvironmentScanner {
                     WrappedBlockState state = world.getBlockState(px, cellY, pz);
                     CollisionShape shape = BlockShapes.shapeOf(state, cellY, ctx);
                     if (shape.isEmpty()) continue;
-                    double top = shape.supportTop(feetYd - cellY + SUPPORT_TOP_EPS, minX - px, maxX - px, minZ - pz, maxZ - pz);
+                    double cap = feetYd - cellY + SUPPORT_TOP_EPS;
+                    double top = BlockShapes.supportApproximate(state.getType())
+                            ? shape.supportTopClamped(cap, minX - px, maxX - px, minZ - pz, maxZ - pz)
+                            : shape.supportTop(cap, minX - px, maxX - px, minZ - pz, maxZ - pz);
                     if (top == Double.NEGATIVE_INFINITY) continue;
-                    double topAbs = cellY + top;
+                    double topAbs = Math.min(cellY + top, feetYd);
                     if (topAbs > best) best = topAbs;
                 }
             }

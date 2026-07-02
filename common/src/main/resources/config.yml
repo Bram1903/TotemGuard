@@ -128,6 +128,13 @@ physics-engine:
     # The setback above still applies to the illegal movement itself.
     close-inventory: true
 
+    # Apply the fall damage a NoFall cheat dodged. When the engine sees a real landing
+    # after a fall whose damage the server was tricked out of (spoofed onGround flags),
+    # the missing damage is dealt through the vanilla fall-damage pipeline, so armor,
+    # feather falling, and totems behave exactly as if the landing had been honest.
+    # Legit landings credit their full damage on their own and are never touched.
+    fall-damage: true
+
   # Logs one simulation line per movement tick to the console for every player, so movement
   # false positives can be copied and diagnosed (observed motion, the predicted caps, the
   # excess, ground state, medium, and inputs). Very spammy, intended for a dev/test server
