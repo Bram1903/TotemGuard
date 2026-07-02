@@ -16,36 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.sim;
+package com.deathmotion.totemguard.common.physics;
 
-public record MovementInput(
+record GroundState(
         boolean groundedStart,
         boolean groundedEnd,
-        boolean horizontalInput,
-        boolean jumpPossible,
-        boolean sprinting,
-        double movementSpeed,
-        double jumpStrength,
-        double gravity,
-        double stepHeight,
-        double slipperinessMin,
-        double slipperinessMax,
-        double blockSpeedFactor,
-        int jumpBoostAmplifier,
-        boolean levitation,
-        int levitationAmplifier,
-        boolean slowFalling,
-        double fluidFriction,
-        double fluidAccel,
-        boolean waterExitHop,
-        double bubbleAscent
+        boolean recentlyGrounded,
+        boolean bounced,
+        double bounceFloor,
+        boolean coyoteBlocked,
+        boolean wasFluid,
+        double startSlipperinessMin,
+        double startSlipperinessMax
 ) {
-
-    public boolean sprintJump() {
-        return jumpPossible && sprinting;
-    }
-
-    public double jumpBoostPower() {
-        return jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;
-    }
 }

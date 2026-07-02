@@ -18,7 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
-import com.deathmotion.totemguard.common.player.movement.MovementConstants;
+import com.deathmotion.totemguard.common.physics.MovementConstants;
 
 public class PlayerAttributeData {
 

@@ -32,7 +32,6 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
-import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -154,14 +153,11 @@ public abstract class CheckImpl implements Check {
         }
 
         if (!data.isOpenInventory()) return;
+        if (!mitigate) return;
 
-        if (mitigate) {
-            if (data.isInventoryMitigated()) return;
-            data.setInventoryMitigated(true);
-            player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
-        } else {
-            data.setOpenInventory(false, Issuer.SERVER);
-        }
+        if (data.isInventoryMitigated()) return;
+        data.setInventoryMitigated(true);
+        player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
     }
 
     protected boolean shouldFail(@Nullable String debug) {

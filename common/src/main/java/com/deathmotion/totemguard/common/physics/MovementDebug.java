@@ -16,13 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement;
+package com.deathmotion.totemguard.common.physics;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.physics.area.MotionArea;
+import com.deathmotion.totemguard.common.physics.sim.MovementInput;
+import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
+import com.deathmotion.totemguard.common.physics.world.WallGaps;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.movement.area.MotionArea;
-import com.deathmotion.totemguard.common.player.movement.sim.MovementInput;
-import com.deathmotion.totemguard.common.player.movement.world.BlockEnvironment;
 import com.github.retrooper.packetevents.util.Vector3d;
 
 import java.util.Locale;
@@ -47,9 +48,13 @@ public final class MovementDebug {
             sb.append(" jmp=").append(in.jumpPossible() ? 1 : 0);
             sb.append(" spr=").append(in.sprinting() ? 1 : 0);
         }
+        if (player.getData().isOpenInventory()) {
+            sb.append(" inv=1");
+        }
         if (env != null) {
             sb.append(" med=").append(medium(env));
             sb.append(String.format(Locale.ROOT, " gap=%.3f", env.groundGap()));
+            appendWalls(sb, env.wallGaps());
         }
         sb.append(String.format(Locale.ROOT, " | H obs=%.3f", Math.hypot(observed.getX(), observed.getZ())));
         if (predicted != null) {
@@ -61,6 +66,11 @@ public final class MovementDebug {
                     predicted.vertical().min(), predicted.vertical().max(), verticalExcess));
         }
         TGPlatform.getInstance().getLogger().info(sb.toString());
+    }
+
+    private static void appendWalls(StringBuilder sb, WallGaps gaps) {
+        if (!gaps.any()) return;
+        sb.append(String.format(Locale.ROOT, " wall[cross=%.3f embed=%.3f]", gaps.crossing(), gaps.embedded()));
     }
 
     private static String medium(BlockEnvironment env) {

@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayFrame;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
-import com.deathmotion.totemguard.common.player.movement.MovementEstimator;
+import com.deathmotion.totemguard.common.physics.MovementEstimator;
 import com.deathmotion.totemguard.common.util.Palette;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import net.kyori.adventure.text.Component;

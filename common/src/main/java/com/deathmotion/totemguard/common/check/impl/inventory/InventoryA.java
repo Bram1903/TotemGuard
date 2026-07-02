@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.InputData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -35,13 +34,13 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 
 // Flags impossible actions while an inventory is open:
 // aiming, placing a block, using an item, changing held slot, picking an item, picking a block,
-// picking an entity, attacking, moving, interacting with an entity, digging, dropping an item (through a dig packet),
+// picking an entity, attacking, interacting with an entity, digging, dropping an item (through a dig packet),
 // swapping offhand (through a dig packet), stabbing, sneaking, leaving a bed, sprinting,
 // opening a horse inventory, and starting an elytra glide.
+// Movement itself is judged by the physics engine (inventory-move in the Physics check), which
+// works from observed displacement instead of spoofable input packets.
 @CheckData(description = "Impossible action with open inventory", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
-
-    private boolean movementFlagged;
 
     public InventoryA(TGPlayer player) {
         super(player);
@@ -57,37 +56,9 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         return null;
     }
 
-    public void validateMovement() {
-        if (!data.isOpenInventory()) {
-            movementFlagged = false;
-            return;
-        }
-        if (data.isServerOpenedInventoryThisTick()) return;
-
-        if (data.isInVehicle()) {
-            movementFlagged = false;
-            return;
-        }
-
-        boolean sprinting = data.isSprinting() && !data.isSwimming();
-        boolean hasInput = player.supportsEndTick() && data.getInputData().hasMovement();
-
-        if (!sprinting && !hasInput) {
-            movementFlagged = false;
-            return;
-        }
-        if (movementFlagged) return;
-
-        movementFlagged = true;
-        failInventory(sprinting ? "sprint" : "move");
-    }
-
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!data.isOpenInventory()) {
-            movementFlagged = false;
-            return;
-        }
+        if (!data.isOpenInventory()) return;
         if (data.isServerOpenedInventoryThisTick()) return;
 
         final PacketTypeCommon type = event.getPacketType();
@@ -109,20 +80,6 @@ public class InventoryA extends CheckImpl implements PacketCheck {
         String reason = staticReason(type);
         if (reason != null) {
             failInventory(reason);
-            return;
-        }
-
-        if (type == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            final InputData.State current = data.getInputData().current();
-
-            if (current == null || !current.hasMovement()) {
-                movementFlagged = false;
-                return;
-            }
-            if (movementFlagged) return;
-
-            failInventory("move");
-            movementFlagged = true;
             return;
         }
 

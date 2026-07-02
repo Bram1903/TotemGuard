@@ -26,7 +26,6 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.dimension.DimensionType;
@@ -37,12 +36,9 @@ import java.util.*;
 
 public class OutboundChunkProcessor extends ProcessorOutbound {
 
-    private static final int NEAR_BLOCKS = 16;
-
     private final Data data;
     private final ClientWorld clientWorld;
     private final PacketLatencyHandler latencyHandler;
-    private final Map<Long, Integer> pendingBlocks = new HashMap<>();
 
     private String currentWorld;
     private DimensionType currentDimension;
@@ -52,10 +48,6 @@ public class OutboundChunkProcessor extends ProcessorOutbound {
         this.data = player.getData();
         this.clientWorld = data.getClientWorld();
         this.latencyHandler = player.getLatencyHandler();
-    }
-
-    private static long blockKey(int x, int y, int z) {
-        return ((x & 0x3FFFFFFL) << 38) | ((z & 0x3FFFFFFL) << 12) | (y & 0xFFFL);
     }
 
     @Override
@@ -102,26 +94,17 @@ public class OutboundChunkProcessor extends ProcessorOutbound {
 
     private void resetWorld() {
         clientWorld.clear();
-        pendingBlocks.clear();
     }
 
     private void loadColumn(PacketSendEvent event, int chunkX, int chunkZ, BaseChunk[] sections, boolean fullChunk) {
         Runnable apply = fullChunk
                 ? () -> clientWorld.loadChunk(chunkX, chunkZ, sections)
                 : () -> clientWorld.mergeChunk(chunkX, chunkZ, sections);
-        if (isChunkNear(chunkX, chunkZ)) {
-            latencyHandler.compensate(event, apply);
-        } else {
-            apply.run();
-        }
+        latencyHandler.compensateLazy(event, apply);
     }
 
     private void unloadColumn(PacketSendEvent event, int chunkX, int chunkZ) {
-        if (isChunkNear(chunkX, chunkZ)) {
-            latencyHandler.compensate(event, () -> clientWorld.unloadChunk(chunkX, chunkZ));
-        } else {
-            clientWorld.unloadChunk(chunkX, chunkZ);
-        }
+        latencyHandler.compensateLazy(event, () -> clientWorld.unloadChunk(chunkX, chunkZ));
     }
 
     private boolean isWorldChange(WrapperPlayServerRespawn respawn) {
@@ -136,81 +119,44 @@ public class OutboundChunkProcessor extends ProcessorOutbound {
     }
 
     private void applyBlock(PacketSendEvent event, int x, int y, int z, int blockId) {
-        long key = blockKey(x, y, z);
-        if (blockId == effectiveId(x, y, z, key)) return;
+        if (blockId == effectiveId(x, y, z)) return;
 
-        if (isNear(x, y, z)) {
-            pendingBlocks.put(key, blockId);
-            latencyHandler.compensate(event, () -> {
-                clientWorld.updateBlock(x, y, z, blockId);
-                clearPending(key, blockId);
-            });
-        } else {
+        event.getTasksAfterSend().add(() -> {
+            if (event.isCancelled()) return;
+            clientWorld.setPendingBlock(x, y, z, blockId);
+        });
+        latencyHandler.compensateLazy(event, () -> {
             clientWorld.updateBlock(x, y, z, blockId);
-        }
+            clientWorld.confirmPendingBlock(x, y, z, blockId);
+        });
     }
 
     private void applyMultiBlock(PacketSendEvent event, WrapperPlayServerMultiBlockChange packet) {
         List<WrapperPlayServerMultiBlockChange.EncodedBlock> changed = null;
         for (WrapperPlayServerMultiBlockChange.EncodedBlock block : packet.getBlocks()) {
-            long key = blockKey(block.getX(), block.getY(), block.getZ());
-            if (block.getBlockId() == effectiveId(block.getX(), block.getY(), block.getZ(), key)) continue;
+            if (block.getBlockId() == effectiveId(block.getX(), block.getY(), block.getZ())) continue;
             if (changed == null) changed = new ArrayList<>();
             changed.add(block);
         }
         if (changed == null) return;
 
         List<WrapperPlayServerMultiBlockChange.EncodedBlock> blocks = changed;
-        Vector3i section = packet.getChunkPosition();
-        if (isSectionNear(section.getX(), section.getY(), section.getZ())) {
+        event.getTasksAfterSend().add(() -> {
+            if (event.isCancelled()) return;
             for (WrapperPlayServerMultiBlockChange.EncodedBlock block : blocks) {
-                pendingBlocks.put(blockKey(block.getX(), block.getY(), block.getZ()), block.getBlockId());
+                clientWorld.setPendingBlock(block.getX(), block.getY(), block.getZ(), block.getBlockId());
             }
-            latencyHandler.compensate(event, () -> {
-                for (WrapperPlayServerMultiBlockChange.EncodedBlock block : blocks) {
-                    clientWorld.updateBlock(block.getX(), block.getY(), block.getZ(), block.getBlockId());
-                    clearPending(blockKey(block.getX(), block.getY(), block.getZ()), block.getBlockId());
-                }
-            });
-        } else {
+        });
+        latencyHandler.compensateLazy(event, () -> {
             for (WrapperPlayServerMultiBlockChange.EncodedBlock block : blocks) {
                 clientWorld.updateBlock(block.getX(), block.getY(), block.getZ(), block.getBlockId());
+                clientWorld.confirmPendingBlock(block.getX(), block.getY(), block.getZ(), block.getBlockId());
             }
-        }
+        });
     }
 
-    private int effectiveId(int x, int y, int z, long key) {
-        Integer pending = pendingBlocks.get(key);
+    private int effectiveId(int x, int y, int z) {
+        Integer pending = clientWorld.pendingBlockId(x, y, z);
         return pending != null ? pending : clientWorld.getBlockId(x, y, z);
-    }
-
-    private void clearPending(long key, int blockId) {
-        Integer latest = pendingBlocks.get(key);
-        if (latest != null && latest == blockId) pendingBlocks.remove(key);
-    }
-
-    private boolean isChunkNear(int chunkX, int chunkZ) {
-        Location current = data.getMovementData().getCurrent();
-        double centerX = (chunkX << 4) + 8;
-        double centerZ = (chunkZ << 4) + 8;
-        return Math.abs(centerX - current.getX()) < NEAR_BLOCKS
-                && Math.abs(centerZ - current.getZ()) < NEAR_BLOCKS;
-    }
-
-    private boolean isNear(int x, int y, int z) {
-        Location current = data.getMovementData().getCurrent();
-        return Math.abs(x - current.getX()) <= NEAR_BLOCKS
-                && Math.abs(y - current.getY()) <= NEAR_BLOCKS
-                && Math.abs(z - current.getZ()) <= NEAR_BLOCKS;
-    }
-
-    private boolean isSectionNear(int sectionX, int sectionY, int sectionZ) {
-        Location current = data.getMovementData().getCurrent();
-        double cx = (sectionX << 4) + 8;
-        double cy = (sectionY << 4) + 8;
-        double cz = (sectionZ << 4) + 8;
-        return Math.abs(cx - current.getX()) <= NEAR_BLOCKS + 8
-                && Math.abs(cy - current.getY()) <= NEAR_BLOCKS + 8
-                && Math.abs(cz - current.getZ()) <= NEAR_BLOCKS + 8;
     }
 }

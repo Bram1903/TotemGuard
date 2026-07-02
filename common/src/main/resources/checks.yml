@@ -63,14 +63,6 @@ InventoryD:
   punishment-commands:
     - "%default_punishment%"
 
-InventoryE:
-  enabled: true
-  punishable: false
-  max-violations: 5
-
-  punishment-commands:
-    - "%default_punishment%"
-
 ProtocolA:
   enabled: true
   punishable: true
@@ -160,6 +152,22 @@ TickC:
     - "[KICK] kick %tg_player% Packet Manipulation"
 
 TickD:
+  enabled: true
+  punishable: false
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
+
+BalanceA:
+  enabled: true
+  punishable: false
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
+
+BalanceB:
   enabled: true
   punishable: false
   max-violations: 10

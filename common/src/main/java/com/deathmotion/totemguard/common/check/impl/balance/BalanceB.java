@@ -16,42 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.check.impl.inventory;
+package com.deathmotion.totemguard.common.check.impl.balance;
 
 import com.deathmotion.totemguard.api.check.CheckType;
-import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
-import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 
-@CheckData(description = "Estimated movement with open inventory", type = CheckType.INVENTORY, experimental = true)
-public class InventoryE extends CheckImpl implements PacketCheck {
+@CheckData(description = "Banking game ticks behind artificial latency", type = CheckType.TICK)
+public class BalanceB extends BalanceA {
 
-    private boolean movementFlagged;
+    private static final long MAX_CREDIT_NANOS = 1_000_000_000L;
 
-    public InventoryE(TGPlayer player) {
+    public BalanceB(TGPlayer player) {
         super(player);
     }
 
-    public void validateMovement() {
-        if (!data.isOpenInventory()) {
-            movementFlagged = false;
-            return;
-        }
-        if (data.isServerOpenedInventoryThisTick()) return;
+    @Override
+    protected long floorNanos(long now) {
+        long limit = now - MAX_CREDIT_NANOS - CLOCK_DRIFT_NANOS;
+        return Math.max(super.floorNanos(now), limit);
+    }
 
-        if (data.isInVehicle()) {
-            movementFlagged = false;
-            return;
-        }
-
-        if (!data.getMovementEstimator().movedHorizontally()) {
-            movementFlagged = false;
-            return;
-        }
-        if (movementFlagged) return;
-
-        movementFlagged = true;
-        fail("movement");
+    @Override
+    protected boolean shouldReport(long now) {
+        return anchorNanos < now - MAX_CREDIT_NANOS;
     }
 }

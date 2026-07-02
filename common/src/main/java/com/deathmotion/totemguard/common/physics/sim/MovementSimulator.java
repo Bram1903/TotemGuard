@@ -16,13 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.sim;
+package com.deathmotion.totemguard.common.physics.sim;
 
-import com.deathmotion.totemguard.common.player.movement.area.MotionArea;
-import com.deathmotion.totemguard.common.player.movement.area.Range;
-import com.deathmotion.totemguard.common.player.movement.world.BlockEnvironment;
+import com.deathmotion.totemguard.common.physics.area.MotionArea;
+import com.deathmotion.totemguard.common.physics.area.Range;
+import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
 
-import static com.deathmotion.totemguard.common.player.movement.MovementConstants.*;
+import static com.deathmotion.totemguard.common.physics.MovementConstants.*;
 
 public final class MovementSimulator {
 
@@ -61,6 +61,10 @@ public final class MovementSimulator {
         return MotionArea.of(advanced.horizontalSpeed().max(), endOfTickVertical(reflected, in));
     }
 
+    public static double restFallVelocity(MovementInput in) {
+        return endOfTickVertical(0.0, in);
+    }
+
     private static MotionArea predictLand(MotionArea carried, MovementInput in) {
         double accel = in.horizontalInput() ? landAcceleration(in) : 0.0;
         Range horizontal = carried.horizontalSpeed().expand(accel).clampToNonNegative();
@@ -77,7 +81,7 @@ public final class MovementSimulator {
     }
 
     private static MotionArea advanceLand(double legalSpeed, double legalVerticalVelocity, MovementInput in) {
-        double friction = in.groundedEnd() ? in.slipperinessMax() * AIR_FRICTION : AIR_FRICTION;
+        double friction = in.groundedStart() && in.groundedEnd() ? in.slipperinessMax() * AIR_FRICTION : AIR_FRICTION;
         double nextHorizontal = legalSpeed * in.blockSpeedFactor() * friction;
 
         double moveVertical = in.groundedEnd() ? 0.0 : legalVerticalVelocity;

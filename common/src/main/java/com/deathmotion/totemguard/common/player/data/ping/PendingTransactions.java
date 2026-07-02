@@ -23,15 +23,29 @@ import java.util.function.LongConsumer;
 
 final class PendingTransactions {
 
+    private static final int RECENT_ACCEPTED_CAPACITY = 128;
+
     private final Deque<PendingTransaction> pending = new ArrayDeque<>();
     private final Map<Integer, PendingTransaction> staged = new HashMap<>();
     private final Map<Integer, PendingTransaction> teleportBoundaries = new HashMap<>();
+    private final List<LongConsumer> stagedForNext = new ArrayList<>();
+    private final int[] recentAcceptedIds = new int[RECENT_ACCEPTED_CAPACITY];
+    private int recentAcceptedCursor;
+    private int recentAcceptedSize;
     private int lastPositiveTransactionId;
+    private long sendSequence;
+    private boolean movementSinceReply;
+    private volatile long gatedAnchorNanos;
     private volatile int pendingCount;
     private volatile int pendingSyntheticCount;
     private volatile int acceptedTransactions;
     private volatile int acceptedSyntheticTransactions;
     private volatile long oldestPendingSentAt;
+    private volatile long oldestPendingSyntheticSentAt;
+    private volatile long lastSentNanos;
+    private volatile long lastThirdPartySentNanos;
+    private volatile long lastAckedSentNanos;
+    private volatile long lastMatchedAckNanos;
 
     int reserveId(int maxPositiveId) {
         if (maxPositiveId < 1) {
@@ -43,8 +57,22 @@ final class PendingTransactions {
         return nextTransactionId;
     }
 
-    void addCallback(int id, LongConsumer callback) {
-        staged(id).addCallback(callback);
+    long sendSequence() {
+        return sendSequence;
+    }
+
+    void stageForNext(List<LongConsumer> callbacks) {
+        stagedForNext.addAll(callbacks);
+    }
+
+    boolean attachSince(long sequence, List<LongConsumer> callbacks) {
+        for (PendingTransaction transaction : pending) {
+            if (transaction.sequence() > sequence) {
+                transaction.addCallbacks(callbacks);
+                return true;
+            }
+        }
+        return false;
     }
 
     void sent(int id, long timestamp) {
@@ -58,10 +86,26 @@ final class PendingTransactions {
         }
 
         transaction.setSentAt(timestamp);
+        long nanos = System.nanoTime();
+        transaction.setSentAtNanos(nanos);
+        transaction.setSequence(++sendSequence);
+        lastSentNanos = nanos;
+        if (!transaction.synthetic()) {
+            lastThirdPartySentNanos = nanos;
+        }
+
+        if (!stagedForNext.isEmpty()) {
+            transaction.addCallbacks(stagedForNext);
+            stagedForNext.clear();
+        }
+
         pending.addLast(transaction);
         pendingCount++;
         if (transaction.synthetic()) {
             pendingSyntheticCount++;
+            if (oldestPendingSyntheticSentAt == 0L) {
+                oldestPendingSyntheticSentAt = timestamp;
+            }
         }
         if (oldestPendingSentAt == 0L) {
             oldestPendingSentAt = timestamp;
@@ -82,7 +126,7 @@ final class PendingTransactions {
     PingReplyResult receive(int id, long timestamp) {
         TransactionMatch match = match(id);
         if (match == null) {
-            return PingReplyResult.invalid();
+            return wasRecentlyAccepted(id) ? PingReplyResult.duplicateDelivery() : PingReplyResult.invalid();
         }
 
         List<PendingTransaction> accepted = match.accepted();
@@ -92,7 +136,8 @@ final class PendingTransactions {
                 match.skippedCount() > 0,
                 match.skippedCount(),
                 match.matched().sentAt() == null ? PingData.INVALID_PING : PingData.clampPing(timestamp - match.matched().sentAt()),
-                match.matched().synthetic()
+                match.matched().synthetic(),
+                false
         );
         runCallbacks(accepted, timestamp);
         return result;
@@ -148,6 +193,51 @@ final class PendingTransactions {
         return oldestPendingSentAt;
     }
 
+    long oldestPendingSyntheticSentAt() {
+        return oldestPendingSyntheticSentAt;
+    }
+
+    long lastSentNanos() {
+        return lastSentNanos;
+    }
+
+    long lastThirdPartySentNanos() {
+        return lastThirdPartySentNanos;
+    }
+
+    long lastAckedSentNanos() {
+        return lastAckedSentNanos;
+    }
+
+    long lastMatchedAckNanos() {
+        return lastMatchedAckNanos;
+    }
+
+    void markMovement() {
+        movementSinceReply = true;
+    }
+
+    long gatedAnchorNanos() {
+        return gatedAnchorNanos;
+    }
+
+    private boolean wasRecentlyAccepted(int id) {
+        for (int i = 0; i < recentAcceptedSize; i++) {
+            if (recentAcceptedIds[i] == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void rememberAccepted(int id) {
+        recentAcceptedIds[recentAcceptedCursor] = id;
+        recentAcceptedCursor = (recentAcceptedCursor + 1) % RECENT_ACCEPTED_CAPACITY;
+        if (recentAcceptedSize < RECENT_ACCEPTED_CAPACITY) {
+            recentAcceptedSize++;
+        }
+    }
+
     private PendingTransaction staged(int id) {
         PendingTransaction transaction = staged.get(id);
         if (transaction != null) {
@@ -193,10 +283,36 @@ final class PendingTransactions {
         for (int i = 0; i < size; i++) {
             PendingTransaction transaction = accepted.get(i);
             this.acceptedTransactions++;
+            rememberAccepted(transaction.id());
             if (transaction.synthetic()) {
                 pendingSyntheticCount--;
                 this.acceptedSyntheticTransactions++;
             }
+        }
+
+        lastMatchedAckNanos = System.nanoTime();
+
+        // The client answers transactions on its main thread, so an ack proves the client's
+        // game loop was alive at or after the moment we sent it. The newest accepted send time
+        // is therefore a safe lower bound on the client's clock (used by the Balance checks).
+        for (int i = size - 1; i >= 0; i--) {
+            long nanos = accepted.get(i).sentAtNanos();
+            if (nanos != 0L) {
+                if (nanos - lastAckedSentNanos > 0L) {
+                    lastAckedSentNanos = nanos;
+                }
+                break;
+            }
+        }
+
+        // Grim's one-shot anchor gate for the Balance checks, kept ledger-side because with a
+        // co-installed shaded anticheat the reply packets never reach our pipeline (they arrive
+        // through the API integration straight into receive). Only the FIRST reply after a
+        // counted movement advances the gate, which is what keeps low-fps reply-then-movement
+        // batches from flooring the balance above the client's real catch-up clock.
+        if (movementSinceReply) {
+            movementSinceReply = false;
+            gatedAnchorNanos = lastAckedSentNanos;
         }
 
         PendingTransaction head = pending.peekFirst();
@@ -206,6 +322,16 @@ final class PendingTransactions {
             Long sent = head.sentAt();
             oldestPendingSentAt = sent == null ? 0L : sent;
         }
+
+        long syntheticOldest = 0L;
+        for (PendingTransaction transaction : pending) {
+            if (transaction.synthetic()) {
+                Long sent = transaction.sentAt();
+                syntheticOldest = sent == null ? 0L : sent;
+                break;
+            }
+        }
+        oldestPendingSyntheticSentAt = syntheticOldest;
     }
 
     private void runCallbacks(List<PendingTransaction> accepted, long timestamp) {

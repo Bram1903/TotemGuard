@@ -16,31 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement;
+package com.deathmotion.totemguard.common.physics.world;
 
-public enum MovementCause {
-    INIT,
-    GROUND,
-    STEP,
-    AIR,
-    JUMP,
-    LEVITATION,
-    FLUID,
-    CLIMB,
-    STUCK,
-    BOUNCE,
-    PISTON,
-    VEHICLE,
-    SLEEPING,
-    GLIDE,
-    FLY,
-    HOVER,
-    GROUNDSPOOF,
-    FAST,
-    FAST_FALL,
-    BORDER,
-    RESYNC,
-    UNLOADED,
-    WITHHELD,
-    DOUBLE_MOVE
+public record CollisionContext(double feetY, boolean descending) {
 }

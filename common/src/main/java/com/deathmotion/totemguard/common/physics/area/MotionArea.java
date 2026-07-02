@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.area;
+package com.deathmotion.totemguard.common.physics.area;
 
 public record MotionArea(Range horizontalSpeed, Range vertical) {
 

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement;
+package com.deathmotion.totemguard.common.physics;
 
-import com.deathmotion.totemguard.common.player.movement.area.MotionArea;
+import com.deathmotion.totemguard.common.physics.area.MotionArea;
 import com.github.retrooper.packetevents.util.Vector3d;
 
 public record MovementResult(

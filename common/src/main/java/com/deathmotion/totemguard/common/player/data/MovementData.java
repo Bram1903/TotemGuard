@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.util.MathUtil;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
@@ -32,6 +33,9 @@ import java.util.*;
 @Getter
 public class MovementData {
 
+    private static final double DUPLICATE_THRESHOLD_LEGACY = 0.03;
+    private static final double DUPLICATE_THRESHOLD_MODERN = 0.0002;
+
     private final Set<Integer> pendingTeleports = new LinkedHashSet<>();
     private final Deque<ExpectedRotation> pendingServerRotationSyncs = new ArrayDeque<>();
     private Location current = emptyLocation();
@@ -39,6 +43,8 @@ public class MovementData {
     private boolean lastFlyingPositionChanged;
     private boolean lastFlyingRotationChanged;
     private boolean lastFlyingWasResync;
+    private boolean lastFlyingWasDuplicate;
+    private Vector3d lastRealFlyingPosition;
     private boolean lastServerPositionChanged;
     private boolean lastServerRotationChanged;
     private boolean onGround;
@@ -48,7 +54,11 @@ public class MovementData {
     private boolean pendingCameraResync;
     private boolean pendingVehicleSwitchResync;
 
-    public void handleFlying(WrapperPlayClientPlayerFlying packet) {
+    public void handleFlying(WrapperPlayClientPlayerFlying packet, boolean teleportResponse,
+                             boolean inVehicle, ClientVersion clientVersion) {
+        boolean previousOnGround = onGround;
+        lastFlyingWasDuplicate = isMojangDuplicate(packet, teleportResponse, inVehicle, clientVersion, previousOnGround);
+
         previous = copy(current);
 
         Location packetLocation = packet.getLocation();
@@ -81,6 +91,30 @@ public class MovementData {
 
         onGround = packet.isOnGround();
         horizontalCollision = packet.isHorizontalCollision();
+
+        if (!lastFlyingWasDuplicate && packet.hasPositionChanged()) {
+            lastRealFlyingPosition = new Vector3d(x, y, z);
+        }
+    }
+
+    private boolean isMojangDuplicate(WrapperPlayClientPlayerFlying packet, boolean teleportResponse,
+                                      boolean inVehicle, ClientVersion clientVersion, boolean previousOnGround) {
+        if (teleportResponse) return false;
+        if (clientVersion.isNewerThanOrEquals(ClientVersion.V_1_21)) return false;
+        if (!packet.hasPositionChanged() || !packet.hasRotationChanged()) return false;
+        if (inVehicle) return true;
+        if (clientVersion.isOlderThan(ClientVersion.V_1_17)) return false;
+        if (packet.isOnGround() != previousOnGround) return false;
+        if (lastRealFlyingPosition == null) return false;
+
+        double threshold = clientVersion.isOlderThan(ClientVersion.V_1_18_2)
+                ? DUPLICATE_THRESHOLD_LEGACY
+                : DUPLICATE_THRESHOLD_MODERN;
+        Vector3d position = packet.getLocation().getPosition();
+        double dx = position.getX() - lastRealFlyingPosition.getX();
+        double dy = position.getY() - lastRealFlyingPosition.getY();
+        double dz = position.getZ() - lastRealFlyingPosition.getZ();
+        return dx * dx + dy * dy + dz * dz < threshold * threshold;
     }
 
     public void trackTeleport(int teleportId) {
@@ -143,6 +177,8 @@ public class MovementData {
         lastFlyingPositionChanged = false;
         lastFlyingRotationChanged = false;
         lastFlyingWasResync = false;
+        lastFlyingWasDuplicate = false;
+        lastRealFlyingPosition = null;
         lastServerPositionChanged = false;
         lastServerRotationChanged = false;
         onGround = false;

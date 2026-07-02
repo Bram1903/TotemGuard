@@ -54,7 +54,7 @@ public final class TransactionTimeoutWatchdog {
         long now = System.currentTimeMillis();
         try {
             for (TGPlayer player : playerRepository.getPlayers()) {
-                long oldest = player.getPingData().getOldestPendingTransactionSentAt();
+                long oldest = player.getPingData().getOldestPendingSyntheticTransactionSentAt();
                 if (oldest == 0L) continue;
                 if (now - oldest < TIMEOUT_MILLIS) continue;
                 player.timedOut();

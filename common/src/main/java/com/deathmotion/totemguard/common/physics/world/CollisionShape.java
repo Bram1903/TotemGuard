@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.world;
+package com.deathmotion.totemguard.common.physics.world;
 
 public final class CollisionShape {
 
@@ -45,12 +45,8 @@ public final class CollisionShape {
         return boxes.length == 0;
     }
 
-    public double maxY() {
-        double max = 0.0;
-        for (CollisionBox box : boxes) {
-            if (box.maxY() > max) max = box.maxY();
-        }
-        return max;
+    public CollisionBox[] boxes() {
+        return boxes;
     }
 
     public double supportTop(double feetLimit, double minX, double maxX, double minZ, double maxZ) {

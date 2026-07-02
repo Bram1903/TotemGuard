@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
@@ -48,38 +49,56 @@ public class PacketLatencyHandler {
 
     public void compensate(PacketSendEvent event, LongConsumer callback) {
         if (event.isCancelled()) return;
+        findOrCreateTrackingTask(event, true).addCallback(callback);
+    }
 
-        findOrCreateTrackingTask(event).addCallback(callback);
+    public void compensateLazy(PacketSendEvent event, Runnable callback) {
+        compensateLazy(event, timestamp -> callback.run());
+    }
+
+    public void compensateLazy(PacketSendEvent event, LongConsumer callback) {
+        if (event.isCancelled()) return;
+        findOrCreateTrackingTask(event, false).addCallback(callback);
     }
 
     public void sendTransaction(LongConsumer callback) {
-        sendTransactionPacket(callback, null);
+        if (callback == null) return;
+        runOnEventLoop(() -> {
+            pingData.stageForNextTransaction(List.of(callback));
+            flushTransaction();
+        });
     }
 
-    private PendingPacketLatencyTask findOrCreateTrackingTask(PacketSendEvent event) {
+    public void sendHeartbeat() {
+        runOnEventLoop(this::flushTransaction);
+    }
+
+    private void runOnEventLoop(Runnable action) {
+        Object channel = player.getUser().getChannel();
+        if (channel == null || !ChannelHelper.isOpen(channel)) return;
+        ChannelHelper.runInEventLoop(channel, action);
+    }
+
+    private PendingPacketLatencyTask findOrCreateTrackingTask(PacketSendEvent event, boolean urgent) {
         for (Runnable taskAfterSend : event.getTasksAfterSend()) {
             if (taskAfterSend instanceof PendingPacketLatencyTask pendingPacketLatencyTask) {
+                if (urgent) {
+                    pendingPacketLatencyTask.urgent = true;
+                }
                 return pendingPacketLatencyTask;
             }
         }
 
-        PendingPacketLatencyTask pendingPacketLatencyTask = new PendingPacketLatencyTask();
+        PendingPacketLatencyTask pendingPacketLatencyTask =
+                new PendingPacketLatencyTask(event, pingData.getTransactionSendSequence(), urgent);
         event.getTasksAfterSend().add(pendingPacketLatencyTask);
         return pendingPacketLatencyTask;
     }
 
-    private void sendTransactionPacket(LongConsumer firstCallback, List<LongConsumer> additionalCallbacks) {
+    private void flushTransaction() {
         if (player.getUser().getEncoderState() != ConnectionState.PLAY) return;
-        if (firstCallback == null) return;
 
         int transactionId = pingData.reserveNextTransactionId(maxTransactionId());
-        pingData.addTransactionCallback(transactionId, firstCallback);
-        if (additionalCallbacks != null) {
-            for (LongConsumer callback : additionalCallbacks) {
-                pingData.addTransactionCallback(transactionId, callback);
-            }
-        }
-
         pingData.markTransactionSynthetic(transactionId);
         player.getUser().sendPacket(createTransactionPacket(transactionId));
     }
@@ -102,23 +121,30 @@ public class PacketLatencyHandler {
 
     private final class PendingPacketLatencyTask implements Runnable {
 
-        private LongConsumer firstCallback;
-        private List<LongConsumer> additionalCallbacks;
+        private final PacketSendEvent event;
+        private final long sequenceAtRegistration;
+        private final List<LongConsumer> callbacks = new ArrayList<>(2);
+        private boolean urgent;
+
+        private PendingPacketLatencyTask(PacketSendEvent event, long sequenceAtRegistration, boolean urgent) {
+            this.event = event;
+            this.sequenceAtRegistration = sequenceAtRegistration;
+            this.urgent = urgent;
+        }
 
         private void addCallback(LongConsumer callback) {
-            if (firstCallback == null) {
-                firstCallback = callback;
-                return;
-            }
-            if (additionalCallbacks == null) {
-                additionalCallbacks = new ArrayList<>(2);
-            }
-            additionalCallbacks.add(callback);
+            callbacks.add(callback);
         }
 
         @Override
         public void run() {
-            sendTransactionPacket(firstCallback, additionalCallbacks);
+            if (event.isCancelled() || callbacks.isEmpty()) return;
+            if (pingData.attachSinceTransactionSequence(sequenceAtRegistration, callbacks)) return;
+
+            pingData.stageForNextTransaction(callbacks);
+            if (urgent) {
+                flushTransaction();
+            }
         }
     }
 }

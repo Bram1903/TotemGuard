@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.world;
+package com.deathmotion.totemguard.common.physics.world;
 
 import com.deathmotion.totemguard.common.player.data.ClientWorld;
 import com.deathmotion.totemguard.common.player.data.WorldEntityData;
@@ -26,20 +26,24 @@ import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 
-import static com.deathmotion.totemguard.common.player.movement.MovementConstants.BUBBLE_COLUMN_INSIDE_ASCENT;
-import static com.deathmotion.totemguard.common.player.movement.MovementConstants.BUBBLE_COLUMN_SURFACE_ASCENT;
+import static com.deathmotion.totemguard.common.physics.MovementConstants.BUBBLE_COLUMN_INSIDE_ASCENT;
+import static com.deathmotion.totemguard.common.physics.MovementConstants.BUBBLE_COLUMN_SURFACE_ASCENT;
 
 public final class BlockEnvironmentScanner {
 
     private static final double SUPPORT_BLOCK_OFFSET = 0.5000001;
     private static final double SUPPORT_TOP_EPS = 0.001;
     private static final double UNSUPPORTED_GAP = 10.0;
-    private static final double FLUID_SURFACE_MARGIN = 0.05;
+    private static final double FLUID_SURFACE_MARGIN = 0.01;
+    private static final double CEILING_SCAN_REACH = 2.0;
+    private static final double WALL_BAND_TOP = 1.0;
+    private static final double WALL_CONTACT_EPS = 1.0e-7;
 
     private BlockEnvironmentScanner() {
     }
 
-    public static BlockEnvironment scan(ClientWorld world, WorldEntityData entities, Location current, Location previous, double width, double poseHeight, boolean sneaking) {
+    public static BlockEnvironment scan(ClientWorld world, WorldEntityData entities, Location current, Location previous,
+                                        double width, double poseHeight, double stepHeight, boolean sneaking) {
         if (!world.isLoaded(floor(current.getX()) >> 4, floor(current.getZ()) >> 4)) {
             return BlockEnvironment.UNLOADED;
         }
@@ -50,10 +54,106 @@ public final class BlockEnvironmentScanner {
 
         Stuck stuck = scanStuck(world, previous, width, poseHeight);
         boolean climbable = climbableAt(world, previous);
-        Below below = scanBelow(world, entities, current, previous, width, new CollisionContext(current.getY(), sneaking));
+        CollisionContext ctx = new CollisionContext(current.getY(), sneaking);
+        Below below = scanBelow(world, entities, current, previous, width, ctx);
+        WallGaps wallGaps = scanWalls(world, current, previous, width / 2.0, stepHeight, ctx);
+        double ceilingGap = scanCeilingGap(world, current, previous, width / 2.0, poseHeight, ctx);
         return new BlockEnvironment(true, fluid, climbable, stuck.active, stuck.horizontal, stuck.vertical,
                 below.bounceFactor, below.slipperinessMin, below.slipperinessMax, below.blockSpeedFactor, below.groundGap,
-                bubbleAscent);
+                bubbleAscent, wallGaps, ceilingGap);
+    }
+
+    private static double scanCeilingGap(ClientWorld world, Location current, Location previous, double half,
+                                         double poseHeight, CollisionContext ctx) {
+        double headY = previous.getY() + poseHeight;
+        double minX = Math.min(previous.getX(), current.getX()) - half;
+        double maxX = Math.max(previous.getX(), current.getX()) + half;
+        double minZ = Math.min(previous.getZ(), current.getZ()) - half;
+        double maxZ = Math.max(previous.getZ(), current.getZ()) + half;
+
+        double gap = Double.POSITIVE_INFINITY;
+        int y0 = floor(headY);
+        int y1 = floor(headY + CEILING_SCAN_REACH);
+        for (int x = floor(minX); x <= floor(maxX); x++) {
+            for (int z = floor(minZ); z <= floor(maxZ); z++) {
+                for (int y = y0; y <= y1; y++) {
+                    WrappedBlockState state = world.getBlockState(x, y, z);
+                    CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
+                    if (shape.isEmpty()) continue;
+                    for (CollisionBox box : shape.boxes()) {
+                        if (y + box.maxY() <= headY) continue;
+                        double bx0 = x + box.minX(), bx1 = x + box.maxX();
+                        double bz0 = z + box.minZ(), bz1 = z + box.maxZ();
+                        if (bx1 <= minX + WALL_CONTACT_EPS || bx0 >= maxX - WALL_CONTACT_EPS) continue;
+                        if (bz1 <= minZ + WALL_CONTACT_EPS || bz0 >= maxZ - WALL_CONTACT_EPS) continue;
+                        double d = Math.max(0.0, y + box.minY() - headY);
+                        if (d < gap) gap = d;
+                    }
+                }
+            }
+        }
+        return gap;
+    }
+
+    private static WallGaps scanWalls(ClientWorld world, Location current, Location previous, double half,
+                                      double stepHeight, CollisionContext ctx) {
+        double bandMin = current.getY() + stepHeight;
+        double bandMax = current.getY() + WALL_BAND_TOP;
+        if (bandMin >= bandMax) return WallGaps.NONE;
+
+        double sMinX = previous.getX() - half, sMaxX = previous.getX() + half;
+        double sMinZ = previous.getZ() - half, sMaxZ = previous.getZ() + half;
+        double eMinX = current.getX() - half, eMaxX = current.getX() + half;
+        double eMinZ = current.getZ() - half, eMaxZ = current.getZ() + half;
+
+        int x0 = floor(Math.min(sMinX, eMinX)), x1 = floor(Math.max(sMaxX, eMaxX));
+        int z0 = floor(Math.min(sMinZ, eMinZ)), z1 = floor(Math.max(sMaxZ, eMaxZ));
+        int y0 = floor(bandMin), y1 = floor(bandMax);
+
+        double crossing = 0.0;
+        double embedded = 0.0;
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                for (int y = y0; y <= y1; y++) {
+                    WrappedBlockState state = world.getBlockState(x, y, z);
+                    StateType type = state.getType();
+                    if (type == StateTypes.AIR || !BlockShapes.wallTrusted(type)) continue;
+                    CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
+                    if (shape.isEmpty()) continue;
+                    if (world.hasPendingBlock(x, y, z)) continue;
+                    for (CollisionBox box : shape.boxes()) {
+                        double bottom = y + box.minY(), top = y + box.maxY();
+                        if (top <= bandMin + WALL_CONTACT_EPS || bottom >= bandMax - WALL_CONTACT_EPS) continue;
+                        double bx0 = x + box.minX(), bx1 = x + box.maxX();
+                        double bz0 = z + box.minZ(), bz1 = z + box.maxZ();
+
+                        boolean zPathStart = overlaps(bz0, bz1, sMinZ, sMaxZ);
+                        boolean zPathEnd = overlaps(bz0, bz1, eMinZ, eMaxZ);
+                        if (zPathStart && zPathEnd) {
+                            if (sMaxX <= bx0 + WALL_CONTACT_EPS) crossing = Math.max(crossing, eMaxX - bx0);
+                            if (sMinX >= bx1 - WALL_CONTACT_EPS) crossing = Math.max(crossing, bx1 - eMinX);
+                        }
+                        boolean xPathStart = overlaps(bx0, bx1, sMinX, sMaxX);
+                        boolean xPathEnd = overlaps(bx0, bx1, eMinX, eMaxX);
+                        if (xPathStart && xPathEnd) {
+                            if (sMaxZ <= bz0 + WALL_CONTACT_EPS) crossing = Math.max(crossing, eMaxZ - bz0);
+                            if (sMinZ >= bz1 - WALL_CONTACT_EPS) crossing = Math.max(crossing, bz1 - eMinZ);
+                        }
+
+                        double overlapX = Math.min(eMaxX, bx1) - Math.max(eMinX, bx0);
+                        double overlapZ = Math.min(eMaxZ, bz1) - Math.max(eMinZ, bz0);
+                        if (overlapX > WALL_CONTACT_EPS && overlapZ > WALL_CONTACT_EPS) {
+                            embedded = Math.max(embedded, Math.min(overlapX, overlapZ));
+                        }
+                    }
+                }
+            }
+        }
+        return new WallGaps(Math.max(0.0, crossing), Math.max(0.0, embedded));
+    }
+
+    private static boolean overlaps(double min0, double max0, double min1, double max1) {
+        return max0 > min1 + WALL_CONTACT_EPS && min0 < max1 - WALL_CONTACT_EPS;
     }
 
     private static double bubbleColumnAscent(ClientWorld world, BoundingBox body) {

@@ -30,6 +30,8 @@ final class PendingTransaction {
     private final int id;
     private final List<LongConsumer> callbacks = new ArrayList<>();
     private Long sentAt;
+    private long sentAtNanos;
+    private long sequence;
     private boolean synthetic;
 
     PendingTransaction(int id) {
@@ -44,16 +46,32 @@ final class PendingTransaction {
         return sentAt;
     }
 
+    long sentAtNanos() {
+        return sentAtNanos;
+    }
+
+    long sequence() {
+        return sequence;
+    }
+
     boolean synthetic() {
         return synthetic;
     }
 
-    void addCallback(LongConsumer callback) {
-        callbacks.add(callback);
-    }
-
     void setSentAt(long timestamp) {
         this.sentAt = timestamp;
+    }
+
+    void setSentAtNanos(long nanos) {
+        this.sentAtNanos = nanos;
+    }
+
+    void setSequence(long sequence) {
+        this.sequence = sequence;
+    }
+
+    void addCallbacks(List<LongConsumer> newCallbacks) {
+        callbacks.addAll(newCallbacks);
     }
 
     void setSynthetic(boolean synthetic) {

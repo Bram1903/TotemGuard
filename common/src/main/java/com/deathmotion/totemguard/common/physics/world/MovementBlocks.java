@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.world;
+package com.deathmotion.totemguard.common.physics.world;
 
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
@@ -72,10 +72,11 @@ public final class MovementBlocks {
 
     public static double fluidSurfaceHeight(WrappedBlockState state) {
         StateType type = state.getType();
-        if ((type == StateTypes.WATER || type == StateTypes.LAVA) && state.getLevel() == 0) {
-            return SOURCE_FLUID_HEIGHT;
+        if (type == StateTypes.WATER || type == StateTypes.LAVA) {
+            int level = state.getLevel();
+            if (level >= 1 && level <= 7) return (8 - level) / 9.0;
         }
-        return 1.0;
+        return SOURCE_FLUID_HEIGHT;
     }
 
     public static boolean isStuck(StateType type) {

@@ -22,6 +22,8 @@ import com.deathmotion.totemguard.api.check.Check;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
+import com.deathmotion.totemguard.common.check.impl.balance.BalanceA;
+import com.deathmotion.totemguard.common.check.impl.balance.BalanceB;
 import com.deathmotion.totemguard.common.check.impl.inventory.*;
 import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
@@ -43,7 +45,6 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,11 +72,6 @@ public class CheckManagerImpl {
     private final EventCheck[] allEventChecks;
     private final ExtendedCheck[] allExtendedChecks;
 
-    @Getter
-    private final InventoryA inventoryA;
-    @Getter
-    private final InventoryE inventoryE;
-
     private volatile CheckDispatch dispatch;
 
     public CheckManagerImpl(TGPlayer player) {
@@ -86,13 +82,13 @@ public class CheckManagerImpl {
                 .put(AutoTotemB.class, new AutoTotemB(player))
                 .build();
 
-        this.inventoryA = new InventoryA(player);
-        this.inventoryE = new InventoryE(player);
         this.packetChecks = ImmutableClassToInstanceMap.<PacketCheck>builder()
                 .put(TickA.class, new TickA(player))
                 .put(TickB.class, new TickB(player))
                 .put(TickC.class, new TickC(player))
                 .put(TickD.class, new TickD(player))
+                .put(BalanceA.class, new BalanceA(player))
+                .put(BalanceB.class, new BalanceB(player))
                 .put(ProtocolA.class, new ProtocolA(player))
                 .put(ProtocolB.class, new ProtocolB(player))
                 .put(ProtocolC.class, new ProtocolC(player))
@@ -101,11 +97,10 @@ public class CheckManagerImpl {
                 .put(ProtocolF.class, new ProtocolF(player))
                 .put(ProtocolG.class, new ProtocolG(player))
                 .put(Physics.class, new Physics(player))
-                .put(InventoryA.class, inventoryA)
+                .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
                 .put(InventoryD.class, new InventoryD(player))
-                .put(InventoryE.class, inventoryE)
                 .build();
 
         ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = ImmutableClassToInstanceMap.<ExtendedCheck>builder()

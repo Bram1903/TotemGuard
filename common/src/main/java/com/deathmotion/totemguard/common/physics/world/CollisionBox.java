@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.world;
+package com.deathmotion.totemguard.common.physics.world;
 
-public record CollisionContext(double feetY, boolean descending) {
+public record CollisionBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
 }

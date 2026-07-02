@@ -70,10 +70,6 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
             player.getData().getMovementEstimator().onTickEnd();
         }
-        if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
-            checkManager.getInventoryA().validateMovement();
-            checkManager.getInventoryE().validateMovement();
-        }
         checkManager.onPacketReceive(event);
         player.triggerInventoryEvent();
 

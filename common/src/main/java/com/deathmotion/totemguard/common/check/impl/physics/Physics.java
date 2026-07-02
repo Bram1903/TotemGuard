@@ -23,9 +23,9 @@ import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.movement.MovementCause;
-import com.deathmotion.totemguard.common.player.movement.MovementEstimator;
-import com.deathmotion.totemguard.common.player.movement.MovementResult;
+import com.deathmotion.totemguard.common.physics.MovementCause;
+import com.deathmotion.totemguard.common.physics.MovementEstimator;
+import com.deathmotion.totemguard.common.physics.MovementResult;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
@@ -55,6 +55,8 @@ public class Physics extends CheckImpl implements PacketCheck {
         if (cause == MovementCause.GROUNDSPOOF) return "groundspoof";
         if (cause == MovementCause.HOVER) return "hover";
         if (cause == MovementCause.FAST_FALL) return "fastfall";
+        if (cause == MovementCause.PHASE) return "phase";
+        if (cause == MovementCause.INVENTORY_MOVE) return "inventory-move";
         if (verticalDominant) {
             return switch (cause) {
                 case FLUID -> "water-fly";
@@ -107,6 +109,9 @@ public class Physics extends CheckImpl implements PacketCheck {
         } else if (r.cause() == MovementCause.FAST_FALL) {
             fail(extras, "{0} | vy={1} fell faster than gravity | over={2}",
                     type, fmt(r.observed().getY()), fmt(excess));
+        } else if (r.cause() == MovementCause.PHASE) {
+            double speed = Math.hypot(r.observed().getX(), r.observed().getZ());
+            fail(extras, "{0} | moved {1} through a wall | over={2}", type, fmt(speed), fmt(excess));
         } else if (verticalDominant) {
             fail(extras, "{0} | vy={1} allowed<={2} | over={3}",
                     type, fmt(r.observed().getY()), fmt(r.predicted().vertical().max()), fmt(excess));

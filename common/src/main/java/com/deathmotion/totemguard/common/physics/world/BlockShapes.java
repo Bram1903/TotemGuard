@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.world;
+package com.deathmotion.totemguard.common.physics.world;
 
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
@@ -55,6 +55,25 @@ public final class BlockShapes {
 
     private static final Set<StateType> CAULDRONS = Set.of(
             StateTypes.CAULDRON, StateTypes.WATER_CAULDRON, StateTypes.LAVA_CAULDRON, StateTypes.POWDER_SNOW_CAULDRON);
+
+    private static final Set<StateType> WALL_UNTRUSTED = Set.of(
+            StateTypes.POWDER_SNOW, StateTypes.SCAFFOLDING,
+            StateTypes.BAMBOO, StateTypes.CHORUS_PLANT, StateTypes.DRAGON_EGG,
+            StateTypes.TURTLE_EGG, StateTypes.SNIFFER_EGG,
+            StateTypes.SCULK_SENSOR, StateTypes.CALIBRATED_SCULK_SENSOR, StateTypes.SCULK_SHRIEKER,
+            StateTypes.HOPPER, StateTypes.COMPOSTER, StateTypes.STONECUTTER,
+            StateTypes.BELL, StateTypes.GRINDSTONE, StateTypes.LECTERN,
+            StateTypes.LANTERN, StateTypes.SOUL_LANTERN, StateTypes.CHAIN,
+            StateTypes.END_ROD, StateTypes.LIGHTNING_ROD,
+            StateTypes.FLOWER_POT, StateTypes.DECORATED_POT,
+            StateTypes.POINTED_DRIPSTONE, StateTypes.BIG_DRIPLEAF,
+            StateTypes.AZALEA, StateTypes.FLOWERING_AZALEA,
+            StateTypes.AMETHYST_CLUSTER, StateTypes.LARGE_AMETHYST_BUD,
+            StateTypes.MEDIUM_AMETHYST_BUD, StateTypes.SMALL_AMETHYST_BUD,
+            StateTypes.CONDUIT, StateTypes.PISTON_HEAD, StateTypes.MOVING_PISTON,
+            StateTypes.SKELETON_WALL_SKULL, StateTypes.WITHER_SKELETON_WALL_SKULL,
+            StateTypes.ZOMBIE_WALL_HEAD, StateTypes.PLAYER_WALL_HEAD,
+            StateTypes.CREEPER_WALL_HEAD, StateTypes.DRAGON_WALL_HEAD, StateTypes.PIGLIN_WALL_HEAD);
 
     private BlockShapes() {
     }
@@ -97,7 +116,9 @@ public final class BlockShapes {
         }
         if (BlockTags.TRAPDOORS.contains(type)) {
             if (state.isOpen()) return CollisionShape.EMPTY;
-            return state.getHalf() == Half.BOTTOM ? CollisionShape.top(TRAPDOOR_THICKNESS) : CollisionShape.FULL;
+            return state.getHalf() == Half.BOTTOM
+                    ? CollisionShape.top(TRAPDOOR_THICKNESS)
+                    : CollisionShape.box(0.0, 1.0 - TRAPDOOR_THICKNESS, 0.0, 1.0, 1.0, 1.0);
         }
         if (BlockTags.GLASS_PANES.contains(type) || BlockTags.BARS.contains(type)) {
             return CollisionShape.FULL;
@@ -110,6 +131,19 @@ public final class BlockShapes {
         }
 
         return type.isBlocking() ? CollisionShape.FULL : CollisionShape.EMPTY;
+    }
+
+    public static boolean wallTrusted(StateType type) {
+        if (WALL_UNTRUSTED.contains(type)) return false;
+        if (BlockTags.STAIRS.contains(type)) return false;
+        if (BlockTags.FENCES.contains(type) || BlockTags.FENCE_GATES.contains(type) || BlockTags.WALLS.contains(type)) {
+            return false;
+        }
+        if (BlockTags.DOORS.contains(type)) return false;
+        if (BlockTags.GLASS_PANES.contains(type) || BlockTags.BARS.contains(type)) return false;
+        if (BlockTags.ANVIL.contains(type)) return false;
+        if (BlockTags.CANDLES.contains(type) || BlockTags.CANDLE_CAKES.contains(type)) return false;
+        return !BlockTags.CAMPFIRES.contains(type);
     }
 
     private static CollisionShape snowLayers(WrappedBlockState state) {

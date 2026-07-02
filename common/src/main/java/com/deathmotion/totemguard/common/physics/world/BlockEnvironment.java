@@ -16,16 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.data.ping;
+package com.deathmotion.totemguard.common.physics.world;
 
-record PingReplyResult(boolean valid, boolean skipped, int skippedCount, int ping, boolean synthetic,
-                       boolean duplicate) {
+public record BlockEnvironment(
+        boolean feetLoaded,
+        boolean fluid,
+        boolean climbable,
+        boolean stuck,
+        double stuckHorizontal,
+        double stuckVertical,
+        double bounceFactor,
+        double slipperinessMin,
+        double slipperinessMax,
+        double blockSpeedFactor,
+        double groundGap,
+        double bubbleAscent,
+        WallGaps wallGaps,
+        double ceilingGap
+) {
 
-    static PingReplyResult invalid() {
-        return new PingReplyResult(false, false, 0, PingData.INVALID_PING, false, false);
-    }
-
-    static PingReplyResult duplicateDelivery() {
-        return new PingReplyResult(false, false, 0, PingData.INVALID_PING, false, true);
-    }
+    public static final BlockEnvironment UNLOADED =
+            new BlockEnvironment(false, false, false, false, 1.0, 1.0, 0.0, 0.6, 0.6, 1.0, 0.0, 0.0, WallGaps.NONE,
+                    Double.POSITIVE_INFINITY);
 }

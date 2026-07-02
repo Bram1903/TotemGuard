@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 public class ClientWorld {
 
     private final Map<Long, BaseChunk[]> chunks = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> pendingBlocks = new ConcurrentHashMap<>();
     private final ClientVersion blockVersion = PacketEvents.getAPI().getServerManager().getVersion().toClientVersion();
     private final WrappedBlockState air = WrappedBlockState.getByGlobalId(blockVersion, 0, false);
 
@@ -43,6 +44,10 @@ public class ClientWorld {
 
     private static long key(int chunkX, int chunkZ) {
         return ((long) chunkX & 0xFFFFFFFFL) << 32 | (chunkZ & 0xFFFFFFFFL);
+    }
+
+    private static long blockKey(int x, int y, int z) {
+        return ((x & 0x3FFFFFFL) << 38) | ((z & 0x3FFFFFFL) << 12) | (y & 0xFFFL);
     }
 
     private static int floor(double value) {
@@ -72,6 +77,25 @@ public class ClientWorld {
 
     public void clear() {
         chunks.clear();
+        pendingBlocks.clear();
+    }
+
+    public void setPendingBlock(int x, int y, int z, int blockId) {
+        pendingBlocks.put(blockKey(x, y, z), blockId);
+    }
+
+    public Integer pendingBlockId(int x, int y, int z) {
+        return pendingBlocks.get(blockKey(x, y, z));
+    }
+
+    public void confirmPendingBlock(int x, int y, int z, int blockId) {
+        long key = blockKey(x, y, z);
+        Integer latest = pendingBlocks.get(key);
+        if (latest != null && latest == blockId) pendingBlocks.remove(key);
+    }
+
+    public boolean hasPendingBlock(int x, int y, int z) {
+        return !pendingBlocks.isEmpty() && pendingBlocks.containsKey(blockKey(x, y, z));
     }
 
     public boolean isLoaded(int chunkX, int chunkZ) {

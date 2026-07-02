@@ -1,0 +1,95 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.common.physics;
+
+import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
+
+final class GroundTracker {
+
+    private static final double GROUND_EPS = 0.02;
+    private static final double GROUND_RISE_EPS = 0.001;
+    private static final double GROUND_ARREST_EPS = 0.03;
+    private static final double BOUNCE_MIN_DESCENT = 0.4;
+    private static final int BOUNCE_UNCERTAINTY_TICKS = 3;
+
+    private boolean lastGroundedEnd;
+    private boolean prevGroundedEnd;
+    private boolean lastFluid;
+    private double lastGroundGap;
+    private double prevObservedVy;
+    private int bounceTicks;
+    private double lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
+    private double lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;
+
+    void seed(boolean onGround) {
+        lastGroundedEnd = onGround;
+        prevGroundedEnd = onGround;
+        lastFluid = false;
+        lastGroundGap = onGround ? 0.0 : Double.MAX_VALUE;
+        prevObservedVy = 0.0;
+    }
+
+    GroundState resolve(double observedVy, BlockEnvironment env, double stepHeight, double carriedFloor, boolean sneaking) {
+        boolean wasFluid = lastFluid;
+        lastFluid = env.fluid();
+
+        boolean groundedStart = lastGroundedEnd;
+        boolean rising = observedVy > GROUND_RISE_EPS;
+        boolean fellFreely = carriedFloor < 0.0 && observedVy <= carriedFloor + GROUND_ARREST_EPS;
+        boolean supportedNow = env.groundGap() <= GROUND_EPS;
+        boolean descendedLast = prevObservedVy < -GROUND_RISE_EPS;
+        boolean landingSupport = descendedLast && env.groundGap() <= stepHeight;
+        boolean groundedEnd;
+        if (rising) {
+            groundedEnd = supportedNow && (groundedStart || descendedLast);
+        } else if (fellFreely) {
+            groundedEnd = false;
+        } else {
+            groundedEnd = supportedNow || (groundedStart && lastGroundGap <= GROUND_EPS);
+        }
+        lastGroundGap = env.groundGap();
+        prevObservedVy = observedVy;
+
+        boolean recentlyGrounded = groundedStart || prevGroundedEnd || landingSupport;
+        prevGroundedEnd = lastGroundedEnd;
+        lastGroundedEnd = groundedEnd;
+
+        boolean bounced = env.bounceFactor() > 0.0 && groundedEnd && !sneaking && carriedFloor < -BOUNCE_MIN_DESCENT;
+        if (bounced) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
+        else if (bounceTicks > 0) bounceTicks--;
+
+        double startSlipMin = lastSlipperinessMin;
+        double startSlipMax = lastSlipperinessMax;
+        lastSlipperinessMin = env.slipperinessMin();
+        lastSlipperinessMax = env.slipperinessMax();
+
+        return new GroundState(groundedStart, groundedEnd, recentlyGrounded, bounced, carriedFloor,
+                bounceTicks > 0, wasFluid, startSlipMin, startSlipMax);
+    }
+
+    void clearWindows() {
+        bounceTicks = 0;
+    }
+
+    void reset() {
+        clearWindows();
+        lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
+        lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;
+    }
+}

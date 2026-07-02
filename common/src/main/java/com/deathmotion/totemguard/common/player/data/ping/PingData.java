@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.player.data.ping;
 
 import lombok.Getter;
 
+import java.util.List;
 import java.util.function.LongConsumer;
 
 public class PingData {
@@ -74,8 +75,16 @@ public class PingData {
         return transactions.reserveId(maxPositiveId);
     }
 
-    public void addTransactionCallback(int id, LongConsumer callback) {
-        transactions.addCallback(id, callback);
+    public long getTransactionSendSequence() {
+        return transactions.sendSequence();
+    }
+
+    public void stageForNextTransaction(List<LongConsumer> callbacks) {
+        transactions.stageForNext(callbacks);
+    }
+
+    public boolean attachSinceTransactionSequence(long sequence, List<LongConsumer> callbacks) {
+        return transactions.attachSince(sequence, callbacks);
     }
 
     public void transactionSent(int id, long timestamp) {
@@ -106,6 +115,34 @@ public class PingData {
         return transactions.oldestPendingSentAt();
     }
 
+    public long getOldestPendingSyntheticTransactionSentAt() {
+        return transactions.oldestPendingSyntheticSentAt();
+    }
+
+    public long getLastTransactionSentNanos() {
+        return transactions.lastSentNanos();
+    }
+
+    public long getLastThirdPartyTransactionSentNanos() {
+        return transactions.lastThirdPartySentNanos();
+    }
+
+    public long getLastAckedTransactionSentNanos() {
+        return transactions.lastAckedSentNanos();
+    }
+
+    public long getLastMatchedTransactionAckNanos() {
+        return transactions.lastMatchedAckNanos();
+    }
+
+    public void markMovementForTransactionAnchor() {
+        transactions.markMovement();
+    }
+
+    public long getGatedTransactionAnchorNanos() {
+        return transactions.gatedAnchorNanos();
+    }
+
     public void teleportSent(int teleportId) {
         transactions.trackTeleport(teleportId);
     }
@@ -121,6 +158,10 @@ public class PingData {
 
     public void transactionReceived(int id, long timestamp) {
         PingReplyResult result = transactions.receive(id, timestamp);
+        if (result.duplicate()) {
+            return;
+        }
+
         this.observedTransactionReply = true;
         this.transactionPing = result.ping();
         this.lastTransactionReplyValid = result.valid();

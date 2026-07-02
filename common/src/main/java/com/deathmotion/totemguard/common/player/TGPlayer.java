@@ -72,6 +72,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TGPlayer implements TGUser {
 
     private static final Duration CHECK_SNAPSHOT_TTL = Duration.ofMinutes(5);
+    private static final long TRANSACTION_HEARTBEAT_NANOS = 45_000_000L;
+    private static final long THIRD_PARTY_CADENCE_NANOS = 150_000_000L;
+    private static final long TRANSACTION_ACK_STALE_NANOS = 2_000_000_000L;
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
@@ -272,6 +275,21 @@ public class TGPlayer implements TGUser {
 
     public void onServerTick() {
         data.flushNetherPortalContact();
+        sendTransactionHeartbeat();
+    }
+
+    private void sendTransactionHeartbeat() {
+        long now = System.nanoTime();
+        long lastSent = pingData.getLastTransactionSentNanos();
+        if (lastSent != 0L && now - lastSent < TRANSACTION_HEARTBEAT_NANOS) return;
+
+        long lastThirdParty = pingData.getLastThirdPartyTransactionSentNanos();
+        boolean thirdPartyCadence = lastThirdParty != 0L && now - lastThirdParty < THIRD_PARTY_CADENCE_NANOS;
+        long lastMatched = pingData.getLastMatchedTransactionAckNanos();
+        boolean acksHealthy = lastMatched != 0L && now - lastMatched < TRANSACTION_ACK_STALE_NANOS;
+        if (thirdPartyCadence && acksHealthy) return;
+
+        latencyHandler.sendHeartbeat();
     }
 
     public void triggerInventoryEvent() {

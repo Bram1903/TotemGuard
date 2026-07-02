@@ -37,6 +37,11 @@ public class InboundMovementProcessor extends ProcessorInbound {
     public void handleInbound(PacketReceiveEvent event) {
         if (event.isCancelled()) return;
         if (!WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) return;
-        movementData.handleFlying(new WrapperPlayClientPlayerFlying(event));
+        movementData.handleFlying(
+                new WrapperPlayClientPlayerFlying(event),
+                player.getData().getTeleportData().lastPacketWasTeleport(),
+                player.getData().isInVehicle(),
+                player.getClientVersion()
+        );
     }
 }

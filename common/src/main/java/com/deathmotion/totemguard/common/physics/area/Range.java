@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement.area;
+package com.deathmotion.totemguard.common.physics.area;
 
 public record Range(double min, double max) {
 
@@ -24,14 +24,6 @@ public record Range(double min, double max) {
 
     public static Range of(double value) {
         return new Range(value, value);
-    }
-
-    public static Range between(double a, double b) {
-        return a <= b ? new Range(a, b) : new Range(b, a);
-    }
-
-    public Range scale(double factor) {
-        return new Range(min * factor, max * factor);
     }
 
     public Range expand(double amount) {

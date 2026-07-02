@@ -51,6 +51,6 @@ final class PendingKeepAlives {
         }
 
         int ping = PingData.clampPing(timestamp - sentAt);
-        return new PingReplyResult(true, skipped > 0, skipped, ping, false);
+        return new PingReplyResult(true, skipped > 0, skipped, ping, false, false);
     }
 }

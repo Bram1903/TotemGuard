@@ -16,16 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.movement;
+package com.deathmotion.totemguard.common.physics;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.player.data.*;
-import com.deathmotion.totemguard.common.player.movement.area.MotionArea;
-import com.deathmotion.totemguard.common.player.movement.sim.MovementInput;
-import com.deathmotion.totemguard.common.player.movement.sim.MovementSimulator;
-import com.deathmotion.totemguard.common.player.movement.world.BlockEnvironment;
-import com.deathmotion.totemguard.common.player.movement.world.BlockEnvironmentScanner;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.deathmotion.totemguard.common.physics.area.MotionArea;
+import com.deathmotion.totemguard.common.physics.sim.MovementInput;
+import com.deathmotion.totemguard.common.physics.sim.MovementSimulator;
+import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
+import com.deathmotion.totemguard.common.physics.world.BlockEnvironmentScanner;
+import com.deathmotion.totemguard.common.physics.world.WallGaps;
+import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
+import com.deathmotion.totemguard.common.player.data.MovementData;
+import com.deathmotion.totemguard.common.player.data.WorldBorderData;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
 import lombok.Getter;
@@ -38,6 +41,10 @@ public class MovementEstimator {
 
     private static final double HORIZONTAL_PAD = 0.010;
     private static final double VERTICAL_PAD = 0.025;
+    private static final double PHASE_ENTRY_TOLERANCE = 0.05;
+    private static final double PHASE_EMBED_TOLERANCE = 0.05;
+    private static final int PHASE_WINDOW = 6;
+    private static final double PHASE_MOVE_EPS = 0.015;
 
     private static final int WINDOW = 20;
     private static final long WINDOW_MASK = (1L << WINDOW) - 1;
@@ -50,15 +57,7 @@ public class MovementEstimator {
     private static final double GROUNDSPOOF_VERTICAL_EPS = 0.1;
     private static final int GROUNDSPOOF_TOLERANCE = 4;
 
-    private static final double GROUND_EPS = 0.02;
-    private static final double GROUND_RISE_EPS = 0.001;
-    private static final double GROUND_ARREST_EPS = 0.03;
     private static final double LANDING_REACH = 1.1;
-    private static final double COYOTE_TAKEOFF_EPS = 0.05;
-    private static final double WATER_EXIT_SUPPORT_REACH = 0.6;
-
-    private static final int SNEAK_CONFIRM = 3;
-    private static final double SNEAK_DIAGONAL_FACTOR = Math.sqrt(2.0);
 
     private static final double KNOCKBACK_PAD = 0.05;
     private static final double ENTITY_PUSH_PER = 0.08;
@@ -71,17 +70,11 @@ public class MovementEstimator {
     private static final int STEP_UNCERTAINTY_TICKS = 4;
     private static final double STEP_HORIZONTAL_SLACK = 0.15;
 
-    private static final double BOUNCE_MIN_DESCENT = 0.4;
-    private static final int BOUNCE_UNCERTAINTY_TICKS = 3;
-
     private static final int BUBBLE_LAUNCH_TICKS = 5;
 
-    private static final double SPRINT_MIN_SPEED = 0.15;
-    private static final double SPRINT_BACKWARD_COS = -0.6;
-    private static final int SPRINT_TURN_TOLERANCE = 8;
-    private static final double SPRINT_GROUND_SLIPPERINESS = 0.61;
-
     private final Data data;
+    private final GroundTracker groundTracker = new GroundTracker();
+    private final InputResolver inputResolver;
 
     private boolean initialized;
     private MotionArea carried = MotionArea.resting();
@@ -90,30 +83,19 @@ public class MovementEstimator {
     private boolean movedSticky;
     private int flyingSinceTickEnd;
     private int airborneWithholdStreak;
-    private int backwardSprintStreak;
     private int fastStreak;
     private int groundMoveStreak;
-    private int sneakStreak;
-    private boolean lastGroundedEnd;
-    private boolean prevGroundedEnd;
-    private boolean lastFluid;
-    private double lastGroundGap;
-    private double prevObservedVy;
     private int stepMoveTicks;
-    private int bounceTicks;
     private int bubbleTicks;
     private double bubbleAscentCap;
-    private double lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
-    private double lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;
-
-    @Getter
-    private boolean improperSprint;
+    private int phaseWindow;
 
     @Getter
     private MovementResult result = MovementResult.INITIAL;
 
     public MovementEstimator(Data data) {
         this.data = data;
+        this.inputResolver = new InputResolver(data);
     }
 
     public void onTickEnd() {
@@ -148,10 +130,7 @@ public class MovementEstimator {
         try {
             if (!initialized) {
                 initialized = true;
-                lastGroundedEnd = movement.isOnGround();
-                prevGroundedEnd = lastGroundedEnd;
-                lastFluid = false;
-                lastGroundGap = movement.isOnGround() ? 0.0 : Double.MAX_VALUE;
+                groundTracker.seed(movement.isOnGround());
                 seedCarried(observed);
                 result = MovementResult.INITIAL;
                 clearExcess();
@@ -163,7 +142,7 @@ public class MovementEstimator {
                 return;
             }
 
-            MovementCause bail = preScanBail(observed, current);
+            MovementCause bail = preScanBail(current);
             if (bail != null) {
                 decline(bail, observed);
                 return;
@@ -174,42 +153,15 @@ public class MovementEstimator {
             if (handleFast(observed)) return;
 
             BlockEnvironment env = BlockEnvironmentScanner.scan(
-                    data.getClientWorld(), data.getWorldEntityData(), current, previous, data.getAttributeData().width(), poseHeight(), data.isSneaking());
+                    data.getClientWorld(), data.getWorldEntityData(), current, previous,
+                    data.getAttributeData().width(), poseHeight(), data.getAttributeData().stepHeight(), data.isSneaking());
             if (!env.feetLoaded()) {
                 decline(MovementCause.UNLOADED, observed);
                 return;
             }
 
-            boolean wasFluid = lastFluid;
-            lastFluid = env.fluid();
-
-            boolean groundedStart = lastGroundedEnd;
-            double freeFall = carried.vertical().min();
-            boolean rising = observed.getY() > GROUND_RISE_EPS;
-            boolean fellFreely = freeFall < 0.0 && observed.getY() <= freeFall + GROUND_ARREST_EPS;
-            boolean supportedNow = env.groundGap() <= GROUND_EPS;
-            boolean descendedLast = prevObservedVy < -GROUND_RISE_EPS;
-            boolean landingSupport = descendedLast && env.groundGap() <= data.getAttributeData().stepHeight();
-            boolean groundedEnd;
-            if (rising) {
-                groundedEnd = supportedNow && (groundedStart || descendedLast);
-            } else if (fellFreely) {
-                groundedEnd = false;
-            } else {
-                groundedEnd = supportedNow || (groundedStart && lastGroundGap <= GROUND_EPS);
-            }
-            lastGroundGap = env.groundGap();
-            prevObservedVy = observed.getY();
-
-            boolean recentlyGrounded = groundedStart || prevGroundedEnd || landingSupport;
-            prevGroundedEnd = lastGroundedEnd;
-            lastGroundedEnd = groundedEnd;
-
-            double bounceFloor = carried.vertical().min();
-            boolean bounced = env.bounceFactor() > 0.0 && groundedEnd && !data.isSneaking()
-                    && bounceFloor < -BOUNCE_MIN_DESCENT;
-            if (bounced) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
-            else if (bounceTicks > 0) bounceTicks--;
+            GroundState ground = groundTracker.resolve(
+                    observed.getY(), env, data.getAttributeData().stepHeight(), carried.vertical().min(), data.isSneaking());
 
             if (env.bubbleAscent() > 0.0) {
                 bubbleTicks = BUBBLE_LAUNCH_TICKS;
@@ -219,9 +171,7 @@ public class MovementEstimator {
             }
             double bubbleAscent = bubbleTicks > 0 ? bubbleAscentCap : 0.0;
 
-            MovementInput input = buildInput(movement, env, observed, groundedStart, groundedEnd, recentlyGrounded, lastSlipperinessMin, lastSlipperinessMax, wasFluid, bubbleAscent);
-            lastSlipperinessMin = env.slipperinessMin();
-            lastSlipperinessMax = env.slipperinessMax();
+            MovementInput input = inputResolver.build(movement, env, observed, ground, bubbleAscent);
 
             if (trusted(movement)) {
                 judge(MovementSimulator.predictMove(carried, input, env), input, env, observed);
@@ -229,7 +179,7 @@ public class MovementEstimator {
                 double coastHorizontal = MovementSimulator.predictMove(carried, input, env).horizontalSpeed().max();
                 carried = MovementSimulator.advance(coastHorizontal, carried.vertical().max(), input, env);
                 boolean withheld = !movement.isLastFlyingPositionChanged();
-                boolean airborne = !groundedEnd
+                boolean airborne = !ground.groundedEnd()
                         && !env.fluid() && !env.stuck() && !env.climbable();
                 airborneWithholdStreak = (withheld && airborne) ? airborneWithholdStreak + 1 : 0;
                 shiftWindow(false);
@@ -245,8 +195,8 @@ public class MovementEstimator {
                         observed, input, env, null, 0.0, 0.0);
             }
 
-            if (bounced) {
-                carried = MovementSimulator.advanceBounce(carried, bounceFloor, env.bounceFactor(), input);
+            if (ground.bounced()) {
+                carried = MovementSimulator.advanceBounce(carried, ground.bounceFloor(), env.bounceFactor(), input);
             }
         } finally {
             data.getExternalVelocityData().tick();
@@ -264,9 +214,12 @@ public class MovementEstimator {
         boolean steppedUp = input.groundedEnd() && observedVy > VERTICAL_HIT_EPSILON;
         if (steppedUp) stepMoveTicks = STEP_UNCERTAINTY_TICKS;
 
+        boolean landMedium = !env.fluid() && !env.climbable() && !env.stuck();
+
         MotionArea allowed = move.expand(HORIZONTAL_PAD, VERTICAL_PAD);
         double horizontalExcess = allowed.horizontalExcess(observedSpeed);
         double verticalExcess = allowed.ascentExcess(observedVy);
+        double wallExcess = landMedium ? phaseExcess(env.wallGaps(), observedSpeed) : 0.0;
 
         boolean knockbackConsumed = false;
         ExternalVelocityData external = data.getExternalVelocityData();
@@ -296,8 +249,7 @@ public class MovementEstimator {
             horizontalExcess = Math.max(0.0, horizontalExcess - STEP_HORIZONTAL_SLACK);
         }
 
-        boolean landMedium = !env.fluid() && !env.climbable() && !env.stuck();
-        double descentFloor = carried.vertical().min();
+        double descentFloor = Math.min(carried.vertical().min(), MovementSimulator.restFallVelocity(input));
         boolean fellTooFast = false;
         if (landMedium && descentFloor <= 0.0) {
             double slack = VERTICAL_PAD;
@@ -315,6 +267,9 @@ public class MovementEstimator {
             verticalExcess = 0.0;
         }
 
+        boolean phased = wallExcess > HIT_EPSILON;
+        if (phased && wallExcess > horizontalExcess) horizontalExcess = wallExcess;
+
         boolean movedThisTick = horizontalExcess > HIT_EPSILON;
         boolean ascendingThisTick = verticalExcess > VERTICAL_HIT_EPSILON;
         shiftWindow(movedThisTick);
@@ -329,10 +284,36 @@ public class MovementEstimator {
         double legalVy = Math.min(observedVy, allowed.vertical().max());
         carried = MovementSimulator.advance(legalSpeed, legalVy, input, env);
 
-        MovementCause cause = fellTooFast ? MovementCause.FAST_FALL : describeCause(env, input, observedVy);
+        MovementCause cause;
+        if (phased && horizontalExcess >= verticalExcess) {
+            cause = MovementCause.PHASE;
+        } else if (fellTooFast) {
+            cause = MovementCause.FAST_FALL;
+        } else if (data.isOpenInventory()) {
+            cause = MovementCause.INVENTORY_MOVE;
+        } else {
+            cause = describeCause(env, input, observedVy);
+        }
         result = new MovementResult(cause, observed, move,
                 horizontalExcess, verticalExcess, movedThisTick, ascendingThisTick, knockbackConsumed);
         MovementDebug.log(data.getPlayer(), "judge:" + cause, observed, input, env, move, horizontalExcess, verticalExcess);
+    }
+
+    private double phaseExcess(WallGaps gaps, double observedSpeed) {
+        double entry = gaps.crossing() - PHASE_ENTRY_TOLERANCE;
+        boolean entering = entry > HIT_EPSILON;
+        if (entering) phaseWindow = PHASE_WINDOW;
+
+        double excess = Math.max(0.0, entry);
+        boolean embeddedWhileMoving = phaseWindow > 0 && observedSpeed > PHASE_MOVE_EPS
+                && gaps.embedded() > PHASE_EMBED_TOLERANCE;
+        if (embeddedWhileMoving) {
+            phaseWindow = PHASE_WINDOW;
+            excess = Math.max(excess, gaps.embedded() - PHASE_EMBED_TOLERANCE);
+        } else if (phaseWindow > 0) {
+            phaseWindow--;
+        }
+        return excess;
     }
 
     private boolean trusted(MovementData movement) {
@@ -343,111 +324,7 @@ public class MovementEstimator {
         return !doubleMove;
     }
 
-    private MovementInput buildInput(MovementData movement, BlockEnvironment env, Vector3d observed,
-                                     boolean groundedStart, boolean groundedEnd, boolean recentlyGrounded,
-                                     double slipMinStart, double slipMaxStart, boolean wasFluid, double bubbleAscent) {
-        InputData.State state = data.getInputData().current();
-        boolean inventoryOpen = data.isOpenInventory();
-        boolean horizontalInput = !inventoryOpen
-                && (state == null || state.forward() || state.backward() || state.left() || state.right());
-        boolean jumpHeld = state == null || state.jumping();
-
-        EffectData effects = data.getEffectData();
-        PlayerAttributeData attr = data.getAttributeData();
-        int jumpBoostAmplifier = effects.hasJumpBoost() ? effects.jumpBoostAmplifier() : -1;
-        double jumpTakeoff = attr.jumpStrength() + (jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0);
-
-        boolean freshJump = observed.getY() >= jumpTakeoff - COYOTE_TAKEOFF_EPS;
-        boolean coyoteJump = !groundedStart && recentlyGrounded && jumpHeld && freshJump && !inventoryOpen
-                && bounceTicks == 0;
-        boolean effectiveGroundedStart = groundedStart || coyoteJump;
-        boolean jumpPossible = effectiveGroundedStart && jumpHeld && !inventoryOpen;
-
-        boolean sprinting = data.isSprinting() && data.getFoodData().canSprint()
-                && sprintForward(movement, env, state, observed, groundedStart);
-        improperSprint = data.isSprinting() && !sprinting && !inventoryOpen;
-
-        sneakStreak = data.isSneaking() ? sneakStreak + 1 : 0;
-        boolean sneaking = sneakStreak >= SNEAK_CONFIRM;
-        boolean diagonal = state == null
-                || ((state.forward() ^ state.backward()) && (state.left() ^ state.right()));
-
-        boolean waterExitHop = wasFluid && !env.fluid() && observed.getY() > GROUND_RISE_EPS
-                && env.groundGap() <= WATER_EXIT_SUPPORT_REACH;
-
-        return new MovementInput(effectiveGroundedStart, groundedEnd, horizontalInput, jumpPossible,
-                sprinting, effectiveSpeed(sprinting, sneaking, diagonal),
-                attr.jumpStrength(), attr.gravity(), attr.stepHeight(), slipMinStart, slipMaxStart,
-                effectiveBlockSpeedFactor(env),
-                jumpBoostAmplifier,
-                effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
-                fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
-                fluidAccel(data.isSprinting(), effectiveGroundedStart),
-                waterExitHop, bubbleAscent);
-    }
-
-    private double effectiveBlockSpeedFactor(BlockEnvironment env) {
-        double raw = env.blockSpeedFactor();
-        if (raw >= 1.0) return 1.0;
-        if (!data.getPlayer().getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5)) return 1.0;
-        double efficiency = data.getAttributeData().movementEfficiency();
-        return raw + efficiency * (1.0 - raw);
-    }
-
-    private double waterEfficiency(boolean groundedStart) {
-        double wme = observesWaterEfficiency() ? data.getAttributeData().waterMovementEfficiency() : 1.0;
-        return groundedStart ? wme : wme * 0.5;
-    }
-
-    private boolean observesWaterEfficiency() {
-        return data.getPlayer().getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21);
-    }
-
-    private double fluidFriction(boolean sprinting, boolean groundedStart, EffectData effects) {
-        if (effects.hasDolphinsGrace()) return MovementConstants.WATER_DOLPHIN_FRICTION;
-        double friction = sprinting ? MovementConstants.WATER_SPRINT_FRICTION : MovementConstants.WATER_FRICTION;
-        if (observesWaterEfficiency()) {
-            friction += (MovementConstants.WATER_EFFICIENCY_FRICTION_TARGET - friction) * waterEfficiency(groundedStart);
-        }
-        return friction;
-    }
-
-    private double fluidAccel(boolean sprinting, boolean groundedStart) {
-        double getSpeed = data.getAttributeData().movementSpeed() * (sprinting ? MovementConstants.SPRINT_SPEED_MULTIPLIER : 1.0);
-        double accel = MovementConstants.WATER_ACCEL + (getSpeed - MovementConstants.WATER_ACCEL) * waterEfficiency(groundedStart);
-        return accel + MovementConstants.WATER_CURRENT_PUSH;
-    }
-
-    private boolean sprintForward(MovementData movement, BlockEnvironment env, InputData.State state, Vector3d observed,
-                                  boolean groundedStart) {
-        if (state != null) {
-            backwardSprintStreak = 0;
-            return state.forward();
-        }
-        double speed = Math.hypot(observed.getX(), observed.getZ());
-        boolean onNormalGround = groundedStart && env.slipperinessMax() <= SPRINT_GROUND_SLIPPERINESS;
-        boolean backward = false;
-        if (onNormalGround && speed > SPRINT_MIN_SPEED) {
-            double yaw = Math.toRadians(movement.getCurrent().getYaw());
-            double forwardComponent = observed.getX() * -Math.sin(yaw) + observed.getZ() * Math.cos(yaw);
-            backward = forwardComponent / speed < SPRINT_BACKWARD_COS;
-        }
-        backwardSprintStreak = backward ? backwardSprintStreak + 1 : 0;
-        return backwardSprintStreak <= SPRINT_TURN_TOLERANCE;
-    }
-
-    private double effectiveSpeed(boolean sprinting, boolean sneaking, boolean diagonal) {
-        double speed = data.getAttributeData().movementSpeed();
-        if (sprinting) speed *= MovementConstants.SPRINT_SPEED_MULTIPLIER;
-        if (sneaking) {
-            double sneak = data.getAttributeData().sneakingSpeed();
-            if (diagonal) sneak = Math.min(1.0, sneak * SNEAK_DIAGONAL_FACTOR);
-            speed *= sneak;
-        }
-        return speed;
-    }
-
-    private MovementCause preScanBail(Vector3d observed, Location current) {
+    private MovementCause preScanBail(Location current) {
         if (data.isCanFly()) return MovementCause.FLY;
         if (data.isInVehicle()) return MovementCause.VEHICLE;
         if (data.isSleeping()) return MovementCause.SLEEPING;
@@ -473,7 +350,7 @@ public class MovementEstimator {
 
     private void flagGroundSpoof(Vector3d observed) {
         airborneWithholdStreak = 0;
-        improperSprint = false;
+        inputResolver.suppressImproperSprint();
         double excess = Math.abs(observed.getY()) - GROUNDSPOOF_VERTICAL_EPS;
         result = new MovementResult(MovementCause.GROUNDSPOOF, observed, MotionArea.resting(),
                 0.0, excess, false, true, false);
@@ -502,7 +379,7 @@ public class MovementEstimator {
 
     private void flagFast(Vector3d observed, double horizontal) {
         airborneWithholdStreak = 0;
-        improperSprint = false;
+        inputResolver.suppressImproperSprint();
         double excess = horizontal - FAST_HORIZONTAL_CAP;
         result = new MovementResult(MovementCause.FAST, observed, MotionArea.resting(),
                 excess, 0.0, true, false, false);
@@ -542,8 +419,7 @@ public class MovementEstimator {
         shiftWindow(false);
         movedSticky = Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
         airborneWithholdStreak = 0;
-        backwardSprintStreak = 0;
-        improperSprint = false;
+        inputResolver.onDecline();
         result = MovementResult.unpredictable(cause, observed);
         MovementDebug.log(data.getPlayer(), "decline:" + cause, observed, null, null, null, 0.0, 0.0);
     }
@@ -560,13 +436,16 @@ public class MovementEstimator {
         hitWindow = 0;
         movedSticky = false;
         airborneWithholdStreak = 0;
-        backwardSprintStreak = 0;
-        improperSprint = false;
         fastStreak = 0;
         groundMoveStreak = 0;
-        sneakStreak = 0;
-        bounceTicks = 0;
         bubbleTicks = 0;
+        phaseWindow = 0;
+        groundTracker.clearWindows();
+        inputResolver.clear();
+    }
+
+    public boolean isImproperSprint() {
+        return inputResolver.improperSprint();
     }
 
     public boolean movedHorizontally() {
@@ -605,8 +484,7 @@ public class MovementEstimator {
         initialized = false;
         carried = MotionArea.resting();
         flyingSinceTickEnd = 0;
-        lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
-        lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;
+        groundTracker.reset();
         clearHistory();
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();
