@@ -77,9 +77,10 @@ public final class BlockEnvironmentScanner {
             for (int y = floor(body.minY()); y <= floor(body.maxY()); y++) {
                 for (int z = floor(body.minZ()); z <= floor(body.maxZ()); z++) {
                     WrappedBlockState blockState = world.getBlockState(x, y, z);
-                    CollisionShape shape = BlockShapes.shapeOf(blockState, y, ctx);
+                    CollisionShape shape = BlockShapes.shapeOf(blockState, x, y, z, ctx);
                     if (shape.isEmpty()) continue;
-                    boolean suffocating = shape.isFullCube() || BlockShapes.suffocatingOverride(blockState.getType());
+                    boolean suffocating = (shape.isFullCube() && !BlockShapes.suffocatingNever(blockState.getType()))
+                            || BlockShapes.suffocatingOverride(blockState.getType());
                     if ((state & OVERLAP_ANY) != 0 && !suffocating) continue;
                     for (CollisionBox box : shape.boxes()) {
                         if (x + box.maxX() <= body.minX() + WALL_CONTACT_EPS || x + box.minX() >= body.maxX() - WALL_CONTACT_EPS) continue;
@@ -112,7 +113,7 @@ public final class BlockEnvironmentScanner {
                 for (int y = y0; y <= y1; y++) {
                     if (!exemptCells.isEmpty() && exemptCells.contains(ClientWorld.blockKey(x, y, z))) continue;
                     WrappedBlockState state = world.getBlockState(x, y, z);
-                    CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
+                    CollisionShape shape = BlockShapes.shapeOf(state, x, y, z, ctx);
                     if (shape.isEmpty()) continue;
                     for (CollisionBox box : shape.boxes()) {
                         if (y + box.maxY() <= headY) continue;
@@ -150,7 +151,7 @@ public final class BlockEnvironmentScanner {
                     WrappedBlockState state = world.getBlockState(x, y, z);
                     StateType type = state.getType();
                     if (type == StateTypes.AIR || !BlockShapes.wallTrusted(type)) continue;
-                    CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
+                    CollisionShape shape = BlockShapes.shapeOf(state, x, y, z, ctx);
                     if (shape.isEmpty()) continue;
                     if (world.hasPendingBlock(x, y, z)) continue;
                     if (!exemptCells.isEmpty() && exemptCells.contains(ClientWorld.blockKey(x, y, z))) continue;
@@ -323,7 +324,7 @@ public final class BlockEnvironmentScanner {
             for (int pz = floor(minZ); pz <= floor(maxZ); pz++) {
                 for (int cellY = feetCell; cellY >= feetCell - 2; cellY--) {
                     WrappedBlockState state = world.getBlockState(px, cellY, pz);
-                    CollisionShape shape = BlockShapes.shapeOf(state, cellY, ctx);
+                    CollisionShape shape = BlockShapes.shapeOf(state, px, cellY, pz, ctx);
                     if (shape.isEmpty()) continue;
                     double cap = feetYd - cellY + SUPPORT_TOP_EPS;
                     double top = BlockShapes.supportApproximate(state.getType())

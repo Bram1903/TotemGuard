@@ -603,7 +603,7 @@ public class MovementEstimator {
         if (x + 1.0 <= minX || x >= maxX || y + 1.0 <= minY || y >= maxY || z + 1.0 <= minZ || z >= maxZ) return;
 
         WrappedBlockState state = data.getClientWorld().stateForId(blockId);
-        CollisionShape shape = BlockShapes.shapeOf(state, y, new CollisionContext(current.getY(), data.isSneaking()));
+        CollisionShape shape = BlockShapes.shapeOf(state, x, y, z, new CollisionContext(current.getY(), data.isSneaking()));
         for (CollisionBox box : shape.boxes()) {
             if (x + box.maxX() <= minX || x + box.minX() >= maxX) continue;
             if (y + box.maxY() <= minY || y + box.minY() >= maxY) continue;
@@ -623,7 +623,7 @@ public class MovementEstimator {
             for (int y = floor(minY); y <= floor(maxY); y++) {
                 for (int z = floor(minZ); z <= floor(maxZ); z++) {
                     WrappedBlockState state = data.getClientWorld().getBlockState(x, y, z);
-                    CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
+                    CollisionShape shape = BlockShapes.shapeOf(state, x, y, z, ctx);
                     if (shape.isEmpty()) continue;
                     for (CollisionBox box : shape.boxes()) {
                         if (x + box.maxX() <= minX + CONTACT_EPS || x + box.minX() >= maxX - CONTACT_EPS) continue;
