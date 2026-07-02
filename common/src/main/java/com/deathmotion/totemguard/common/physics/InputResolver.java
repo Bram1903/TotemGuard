@@ -90,7 +90,8 @@ final class InputResolver {
         boolean waterExitHop = ground.wasFluid() && !env.fluid() && observed.getY() > RISE_EPS
                 && env.groundGap() <= WATER_EXIT_SUPPORT_REACH;
 
-        return new MovementInput(effectiveGroundedStart, ground.groundedEnd(), horizontalInput, jumpPossible,
+        return new MovementInput(effectiveGroundedStart, ground.groundedStartAmbiguous(), ground.groundedEnd(),
+                horizontalInput, jumpPossible,
                 sprinting, sprintJump, effectiveSpeed(sprinting, sneaking, diagonal),
                 attr.jumpStrength(), attr.gravity(), attr.stepHeight(),
                 ground.startSlipperinessMin(), ground.startSlipperinessMax(),

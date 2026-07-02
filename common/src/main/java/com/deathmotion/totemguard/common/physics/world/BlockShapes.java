@@ -20,11 +20,18 @@ package com.deathmotion.totemguard.common.physics.world;
 
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
+import com.github.retrooper.packetevents.protocol.world.states.enums.East;
 import com.github.retrooper.packetevents.protocol.world.states.enums.Half;
+import com.github.retrooper.packetevents.protocol.world.states.enums.Hinge;
+import com.github.retrooper.packetevents.protocol.world.states.enums.North;
+import com.github.retrooper.packetevents.protocol.world.states.enums.South;
 import com.github.retrooper.packetevents.protocol.world.states.enums.Type;
+import com.github.retrooper.packetevents.protocol.world.states.enums.West;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public final class BlockShapes {
@@ -42,6 +49,11 @@ public final class BlockShapes {
     private static final double CAKE_TOP = 0.5;
     private static final double TRAPDOOR_THICKNESS = 0.1875;
     private static final double LADDER_THICKNESS = 0.1875;
+    private static final double DOOR_THICKNESS = 0.1875;
+    private static final double FENCE_ARM_HALF = 0.125;
+    private static final double PANE_ARM_HALF = 0.0625;
+    private static final double WALL_POST_HALF = 0.25;
+    private static final double WALL_ARM_HALF = 0.1875;
     private static final double SCAFFOLD_STABLE_TOP = 1.0;
     private static final double ABOVE_EPS = 1.0e-5;
     private static final double INSET = 0.0625;
@@ -55,6 +67,19 @@ public final class BlockShapes {
 
     private static final Set<StateType> CAULDRONS = Set.of(
             StateTypes.CAULDRON, StateTypes.WATER_CAULDRON, StateTypes.LAVA_CAULDRON, StateTypes.POWDER_SNOW_CAULDRON);
+
+    private static final Set<StateType> GOLEM_STATUES = Set.of(
+            StateTypes.COPPER_GOLEM_STATUE, StateTypes.EXPOSED_COPPER_GOLEM_STATUE,
+            StateTypes.WEATHERED_COPPER_GOLEM_STATUE, StateTypes.OXIDIZED_COPPER_GOLEM_STATUE,
+            StateTypes.WAXED_COPPER_GOLEM_STATUE, StateTypes.WAXED_EXPOSED_COPPER_GOLEM_STATUE,
+            StateTypes.WAXED_WEATHERED_COPPER_GOLEM_STATUE, StateTypes.WAXED_OXIDIZED_COPPER_GOLEM_STATUE);
+
+    private static final CollisionShape DOOR_NORTH = CollisionShape.box(0.0, 0.0, 1.0 - DOOR_THICKNESS, 1.0, 1.0, 1.0);
+    private static final CollisionShape DOOR_SOUTH = CollisionShape.box(0.0, 0.0, 0.0, 1.0, 1.0, DOOR_THICKNESS);
+    private static final CollisionShape DOOR_WEST = CollisionShape.box(1.0 - DOOR_THICKNESS, 0.0, 0.0, 1.0, 1.0, 1.0);
+    private static final CollisionShape DOOR_EAST = CollisionShape.box(0.0, 0.0, 0.0, DOOR_THICKNESS, 1.0, 1.0);
+
+    private static final int[] STAIR_QUADRANTS_BY_STATE = {12, 5, 3, 10, 14, 13, 7, 11, 13, 7, 11, 14, 8, 4, 1, 2, 4, 1, 2, 8};
 
     private static final Set<StateType> WALL_UNTRUSTED = Set.of(
             StateTypes.POWDER_SNOW, StateTypes.SCAFFOLDING,
@@ -105,9 +130,9 @@ public final class BlockShapes {
         if (type == StateTypes.LADDER) return ladder(state);
         if (CAULDRONS.contains(type)) return cauldron();
 
-        if (BlockTags.FENCES.contains(type) || BlockTags.FENCE_GATES.contains(type) || BlockTags.WALLS.contains(type)) {
-            return CollisionShape.top(FENCE_TOP);
-        }
+        if (BlockTags.FENCES.contains(type)) return fence(state);
+        if (BlockTags.FENCE_GATES.contains(type)) return fenceGate(state);
+        if (BlockTags.WALLS.contains(type)) return wall(state);
         if (BlockTags.SLABS.contains(type)) {
             return state.getTypeData() == Type.BOTTOM ? CollisionShape.top(SLAB_BOTTOM_TOP) : CollisionShape.FULL;
         }
@@ -115,32 +140,25 @@ public final class BlockShapes {
             return CollisionShape.top(CARPET_TOP);
         }
         if (BlockTags.TRAPDOORS.contains(type)) {
-            if (state.isOpen()) return CollisionShape.EMPTY;
+            if (state.isOpen()) return trapdoorOpen(state);
             return state.getHalf() == Half.BOTTOM
                     ? CollisionShape.top(TRAPDOOR_THICKNESS)
                     : CollisionShape.box(0.0, 1.0 - TRAPDOOR_THICKNESS, 0.0, 1.0, 1.0, 1.0);
         }
-        if (BlockTags.GLASS_PANES.contains(type) || BlockTags.BARS.contains(type)) {
-            return CollisionShape.FULL;
-        }
+        if (BlockTags.GLASS_PANES.contains(type) || BlockTags.BARS.contains(type)) return pane(state);
         if (BlockTags.BEDS.contains(type)) {
             return CollisionShape.top(BED_TOP);
         }
-        if (BlockTags.STAIRS.contains(type)) {
-            return state.getHalf() == Half.TOP ? CollisionShape.FULL : stairsBottom();
-        }
+        if (BlockTags.STAIRS.contains(type)) return stairs(state);
+        if (BlockTags.DOORS.contains(type)) return door(state);
+        if (type == StateTypes.HEAVY_CORE) return CollisionShape.box(0.25, 0.0, 0.25, 0.75, 0.5, 0.75);
+        if (GOLEM_STATUES.contains(type)) return CollisionShape.box(0.1875, 0.0, 0.1875, 0.8125, 0.875, 0.8125);
 
-        return type.isBlocking() ? CollisionShape.FULL : CollisionShape.EMPTY;
+        return type.isBlocking() && type.isSolid() ? CollisionShape.FULL : CollisionShape.EMPTY;
     }
 
     public static boolean wallTrusted(StateType type) {
         if (WALL_UNTRUSTED.contains(type)) return false;
-        if (BlockTags.STAIRS.contains(type)) return false;
-        if (BlockTags.FENCES.contains(type) || BlockTags.FENCE_GATES.contains(type) || BlockTags.WALLS.contains(type)) {
-            return false;
-        }
-        if (BlockTags.DOORS.contains(type)) return false;
-        if (BlockTags.GLASS_PANES.contains(type) || BlockTags.BARS.contains(type)) return false;
         if (BlockTags.ANVIL.contains(type)) return false;
         if (BlockTags.CANDLES.contains(type) || BlockTags.CANDLE_CAKES.contains(type)) return false;
         return !BlockTags.CAMPFIRES.contains(type);
@@ -169,10 +187,100 @@ public final class BlockShapes {
                 new CollisionBox(0.4375, 0.0, 0.4375, 0.5625, 0.875, 0.5625));
     }
 
-    private static CollisionShape stairsBottom() {
-        return CollisionShape.of(
-                new CollisionBox(0.0, 0.0, 0.0, 1.0, 0.5, 1.0),
-                new CollisionBox(0.0, 0.5, 0.0, 1.0, 1.0, 1.0));
+    private static CollisionShape cross(boolean post, double postHalf, double armHalf, double height,
+                                        boolean north, boolean south, boolean west, boolean east) {
+        List<CollisionBox> boxes = new ArrayList<>(5);
+        double p0 = 0.5 - postHalf, p1 = 0.5 + postHalf;
+        double a0 = 0.5 - armHalf, a1 = 0.5 + armHalf;
+        if (post) boxes.add(new CollisionBox(p0, 0.0, p0, p1, height, p1));
+        if (north) boxes.add(new CollisionBox(a0, 0.0, 0.0, a1, height, a1));
+        if (south) boxes.add(new CollisionBox(a0, 0.0, a0, a1, height, 1.0));
+        if (west) boxes.add(new CollisionBox(0.0, 0.0, a0, a1, height, a1));
+        if (east) boxes.add(new CollisionBox(a0, 0.0, a0, 1.0, height, a1));
+        if (boxes.isEmpty()) return CollisionShape.EMPTY;
+        return CollisionShape.of(boxes.toArray(new CollisionBox[0]));
+    }
+
+    private static CollisionShape fence(WrappedBlockState state) {
+        return cross(true, FENCE_ARM_HALF, FENCE_ARM_HALF, FENCE_TOP,
+                state.getNorth() != North.FALSE, state.getSouth() != South.FALSE,
+                state.getWest() != West.FALSE, state.getEast() != East.FALSE);
+    }
+
+    private static CollisionShape pane(WrappedBlockState state) {
+        return cross(true, PANE_ARM_HALF, PANE_ARM_HALF, 1.0,
+                state.getNorth() != North.FALSE, state.getSouth() != South.FALSE,
+                state.getWest() != West.FALSE, state.getEast() != East.FALSE);
+    }
+
+    private static CollisionShape wall(WrappedBlockState state) {
+        return cross(state.isUp(), WALL_POST_HALF, WALL_ARM_HALF, FENCE_TOP,
+                state.getNorth() != North.NONE && state.getNorth() != North.FALSE,
+                state.getSouth() != South.NONE && state.getSouth() != South.FALSE,
+                state.getWest() != West.NONE && state.getWest() != West.FALSE,
+                state.getEast() != East.NONE && state.getEast() != East.FALSE);
+    }
+
+    private static CollisionShape fenceGate(WrappedBlockState state) {
+        if (state.isOpen()) return CollisionShape.EMPTY;
+        return switch (state.getFacing()) {
+            case NORTH, SOUTH -> CollisionShape.box(0.0, 0.0, 0.5 - FENCE_ARM_HALF, 1.0, FENCE_TOP, 0.5 + FENCE_ARM_HALF);
+            default -> CollisionShape.box(0.5 - FENCE_ARM_HALF, 0.0, 0.0, 0.5 + FENCE_ARM_HALF, FENCE_TOP, 1.0);
+        };
+    }
+
+    private static CollisionShape door(WrappedBlockState state) {
+        boolean closed = !state.isOpen();
+        boolean rightHinge = state.getHinge() == Hinge.RIGHT;
+        return switch (state.getFacing()) {
+            case SOUTH -> closed ? DOOR_SOUTH : (rightHinge ? DOOR_EAST : DOOR_WEST);
+            case WEST -> closed ? DOOR_WEST : (rightHinge ? DOOR_SOUTH : DOOR_NORTH);
+            case NORTH -> closed ? DOOR_NORTH : (rightHinge ? DOOR_WEST : DOOR_EAST);
+            default -> closed ? DOOR_EAST : (rightHinge ? DOOR_NORTH : DOOR_SOUTH);
+        };
+    }
+
+    private static CollisionShape trapdoorOpen(WrappedBlockState state) {
+        double far = 1.0 - TRAPDOOR_THICKNESS;
+        return switch (state.getFacing()) {
+            case NORTH -> CollisionShape.box(0.0, 0.0, far, 1.0, 1.0, 1.0);
+            case SOUTH -> CollisionShape.box(0.0, 0.0, 0.0, 1.0, 1.0, TRAPDOOR_THICKNESS);
+            case WEST -> CollisionShape.box(far, 0.0, 0.0, 1.0, 1.0, 1.0);
+            case EAST -> CollisionShape.box(0.0, 0.0, 0.0, TRAPDOOR_THICKNESS, 1.0, 1.0);
+            default -> CollisionShape.EMPTY;
+        };
+    }
+
+    private static CollisionShape stairs(WrappedBlockState state) {
+        int facing = switch (state.getFacing()) {
+            case SOUTH -> 0;
+            case WEST -> 1;
+            case NORTH -> 2;
+            case EAST -> 3;
+            default -> -1;
+        };
+        if (facing < 0) return CollisionShape.FULL;
+        int shape = switch (state.getShape()) {
+            case INNER_LEFT -> 1;
+            case INNER_RIGHT -> 2;
+            case OUTER_LEFT -> 3;
+            case OUTER_RIGHT -> 4;
+            default -> 0;
+        };
+        boolean top = state.getHalf() == Half.TOP;
+        double stepY0 = top ? 0.0 : 0.5;
+        double stepY1 = top ? 0.5 : 1.0;
+        int quadrants = STAIR_QUADRANTS_BY_STATE[shape * 4 + facing];
+
+        List<CollisionBox> boxes = new ArrayList<>(4);
+        boxes.add(top
+                ? new CollisionBox(0.0, 0.5, 0.0, 1.0, 1.0, 1.0)
+                : new CollisionBox(0.0, 0.0, 0.0, 1.0, 0.5, 1.0));
+        if ((quadrants & 1) != 0) boxes.add(new CollisionBox(0.0, stepY0, 0.0, 0.5, stepY1, 0.5));
+        if ((quadrants & 2) != 0) boxes.add(new CollisionBox(0.5, stepY0, 0.0, 1.0, stepY1, 0.5));
+        if ((quadrants & 4) != 0) boxes.add(new CollisionBox(0.0, stepY0, 0.5, 0.5, stepY1, 1.0));
+        if ((quadrants & 8) != 0) boxes.add(new CollisionBox(0.5, stepY0, 0.5, 1.0, stepY1, 1.0));
+        return CollisionShape.of(boxes.toArray(new CollisionBox[0]));
     }
 
     private static CollisionShape cauldron() {

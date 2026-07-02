@@ -46,7 +46,7 @@ public class ClientWorld {
         return ((long) chunkX & 0xFFFFFFFFL) << 32 | (chunkZ & 0xFFFFFFFFL);
     }
 
-    private static long blockKey(int x, int y, int z) {
+    public static long blockKey(int x, int y, int z) {
         return ((x & 0x3FFFFFFL) << 38) | ((z & 0x3FFFFFFL) << 12) | (y & 0xFFFL);
     }
 
@@ -100,6 +100,10 @@ public class ClientWorld {
 
     public boolean isLoaded(int chunkX, int chunkZ) {
         return chunks.containsKey(key(chunkX, chunkZ));
+    }
+
+    public WrappedBlockState stateForId(int blockId) {
+        return WrappedBlockState.getByGlobalId(blockVersion, blockId, false);
     }
 
     public WrappedBlockState getBlockState(int x, int y, int z) {

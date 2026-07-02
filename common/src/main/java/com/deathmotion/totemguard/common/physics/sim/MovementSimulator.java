@@ -89,11 +89,11 @@ public final class MovementSimulator {
     }
 
     private static double landAcceleration(MovementInput in) {
-        if (in.groundedStart()) {
-            double slip = in.slipperinessMin();
-            return in.movementSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
-        }
-        return in.sprinting() ? AIR_ACCEL_SPRINTING : AIR_ACCEL;
+        double slip = in.slipperinessMin();
+        double ground = in.movementSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
+        if (in.groundedStart()) return ground;
+        double air = in.sprinting() ? AIR_ACCEL_SPRINTING : AIR_ACCEL;
+        return in.groundedStartAmbiguous() ? Math.max(ground, air) : air;
     }
 
     private static MotionArea predictClimb(MovementInput in) {

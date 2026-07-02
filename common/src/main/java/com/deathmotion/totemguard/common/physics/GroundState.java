@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.physics;
 
 record GroundState(
         boolean groundedStart,
+        boolean groundedStartAmbiguous,
         boolean groundedEnd,
         boolean recentlyGrounded,
         boolean bounced,

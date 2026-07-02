@@ -26,6 +26,8 @@ import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 
+import java.util.Set;
+
 import static com.deathmotion.totemguard.common.physics.MovementConstants.BUBBLE_COLUMN_INSIDE_ASCENT;
 import static com.deathmotion.totemguard.common.physics.MovementConstants.BUBBLE_COLUMN_SURFACE_ASCENT;
 
@@ -36,14 +38,14 @@ public final class BlockEnvironmentScanner {
     private static final double UNSUPPORTED_GAP = 10.0;
     private static final double FLUID_SURFACE_MARGIN = 0.01;
     private static final double CEILING_SCAN_REACH = 2.0;
-    private static final double WALL_BAND_TOP = 1.0;
     private static final double WALL_CONTACT_EPS = 1.0e-7;
 
     private BlockEnvironmentScanner() {
     }
 
     public static BlockEnvironment scan(ClientWorld world, WorldEntityData entities, Location current, Location previous,
-                                        double width, double poseHeight, double stepHeight, boolean sneaking) {
+                                        double width, double poseHeight, double stepHeight, boolean sneaking,
+                                        Set<Long> wallExemptCells) {
         if (!world.isLoaded(floor(current.getX()) >> 4, floor(current.getZ()) >> 4)) {
             return BlockEnvironment.UNLOADED;
         }
@@ -56,15 +58,15 @@ public final class BlockEnvironmentScanner {
         boolean climbable = climbableAt(world, previous);
         CollisionContext ctx = new CollisionContext(current.getY(), sneaking);
         Below below = scanBelow(world, entities, current, previous, width, ctx);
-        WallGaps wallGaps = scanWalls(world, current, previous, width / 2.0, stepHeight, ctx);
-        double ceilingGap = scanCeilingGap(world, current, previous, width / 2.0, poseHeight, ctx);
+        WallGaps wallGaps = scanWalls(world, current, previous, width / 2.0, stepHeight, ctx, wallExemptCells);
+        double ceilingGap = scanCeilingGap(world, current, previous, width / 2.0, poseHeight, ctx, wallExemptCells);
         return new BlockEnvironment(true, fluid, climbable, stuck.active, stuck.horizontal, stuck.vertical,
                 below.bounceFactor, below.slipperinessMin, below.slipperinessMax, below.blockSpeedFactor, below.groundGap,
                 bubbleAscent, wallGaps, ceilingGap);
     }
 
     private static double scanCeilingGap(ClientWorld world, Location current, Location previous, double half,
-                                         double poseHeight, CollisionContext ctx) {
+                                         double poseHeight, CollisionContext ctx, Set<Long> exemptCells) {
         double headY = previous.getY() + poseHeight;
         double minX = Math.min(previous.getX(), current.getX()) - half;
         double maxX = Math.max(previous.getX(), current.getX()) + half;
@@ -77,6 +79,7 @@ public final class BlockEnvironmentScanner {
         for (int x = floor(minX); x <= floor(maxX); x++) {
             for (int z = floor(minZ); z <= floor(maxZ); z++) {
                 for (int y = y0; y <= y1; y++) {
+                    if (!exemptCells.isEmpty() && exemptCells.contains(ClientWorld.blockKey(x, y, z))) continue;
                     WrappedBlockState state = world.getBlockState(x, y, z);
                     CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
                     if (shape.isEmpty()) continue;
@@ -96,10 +99,8 @@ public final class BlockEnvironmentScanner {
     }
 
     private static WallGaps scanWalls(ClientWorld world, Location current, Location previous, double half,
-                                      double stepHeight, CollisionContext ctx) {
+                                      double stepHeight, CollisionContext ctx, Set<Long> exemptCells) {
         double bandMin = current.getY() + stepHeight;
-        double bandMax = current.getY() + WALL_BAND_TOP;
-        if (bandMin >= bandMax) return WallGaps.NONE;
 
         double sMinX = previous.getX() - half, sMaxX = previous.getX() + half;
         double sMinZ = previous.getZ() - half, sMaxZ = previous.getZ() + half;
@@ -108,7 +109,7 @@ public final class BlockEnvironmentScanner {
 
         int x0 = floor(Math.min(sMinX, eMinX)), x1 = floor(Math.max(sMaxX, eMaxX));
         int z0 = floor(Math.min(sMinZ, eMinZ)), z1 = floor(Math.max(sMaxZ, eMaxZ));
-        int y0 = floor(bandMin), y1 = floor(bandMax);
+        int y0 = floor(bandMin) - 1, y1 = floor(bandMin);
 
         double crossing = 0.0;
         double embedded = 0.0;
@@ -121,9 +122,10 @@ public final class BlockEnvironmentScanner {
                     CollisionShape shape = BlockShapes.shapeOf(state, y, ctx);
                     if (shape.isEmpty()) continue;
                     if (world.hasPendingBlock(x, y, z)) continue;
+                    if (!exemptCells.isEmpty() && exemptCells.contains(ClientWorld.blockKey(x, y, z))) continue;
                     for (CollisionBox box : shape.boxes()) {
                         double bottom = y + box.minY(), top = y + box.maxY();
-                        if (top <= bandMin + WALL_CONTACT_EPS || bottom >= bandMax - WALL_CONTACT_EPS) continue;
+                        if (top <= bandMin + WALL_CONTACT_EPS || bottom > bandMin + WALL_CONTACT_EPS) continue;
                         double bx0 = x + box.minX(), bx1 = x + box.maxX();
                         double bz0 = z + box.minZ(), bz1 = z + box.maxZ();
 

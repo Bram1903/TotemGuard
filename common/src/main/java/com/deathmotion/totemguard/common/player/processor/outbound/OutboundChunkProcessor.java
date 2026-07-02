@@ -128,6 +128,7 @@ public class OutboundChunkProcessor extends ProcessorOutbound {
         latencyHandler.compensateLazy(event, () -> {
             clientWorld.updateBlock(x, y, z, blockId);
             clientWorld.confirmPendingBlock(x, y, z, blockId);
+            data.getMovementEstimator().onBlockChangeApplied(x, y, z, blockId);
         });
     }
 
@@ -151,6 +152,7 @@ public class OutboundChunkProcessor extends ProcessorOutbound {
             for (WrapperPlayServerMultiBlockChange.EncodedBlock block : blocks) {
                 clientWorld.updateBlock(block.getX(), block.getY(), block.getZ(), block.getBlockId());
                 clientWorld.confirmPendingBlock(block.getX(), block.getY(), block.getZ(), block.getBlockId());
+                data.getMovementEstimator().onBlockChangeApplied(block.getX(), block.getY(), block.getZ(), block.getBlockId());
             }
         });
     }

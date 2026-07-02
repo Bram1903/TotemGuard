@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.physics.sim;
 
 public record MovementInput(
         boolean groundedStart,
+        boolean groundedStartAmbiguous,
         boolean groundedEnd,
         boolean horizontalInput,
         boolean jumpPossible,

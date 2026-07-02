@@ -25,6 +25,7 @@ final class GroundTracker {
     private static final double GROUND_EPS = 0.02;
     private static final double GROUND_RISE_EPS = 0.001;
     private static final double GROUND_ARREST_EPS = 0.03;
+    private static final double GROUND_LANDING_EPS = 0.004;
     private static final double BOUNCE_MIN_DESCENT = 0.4;
     private static final int BOUNCE_UNCERTAINTY_TICKS = 3;
 
@@ -50,9 +51,11 @@ final class GroundTracker {
         lastFluid = env.fluid();
 
         boolean groundedStart = lastGroundedEnd;
+        boolean startAmbiguous = !groundedStart && lastGroundGap <= GROUND_EPS;
         boolean rising = observedVy > GROUND_RISE_EPS;
-        boolean fellFreely = carriedFloor < 0.0 && observedVy <= carriedFloor + GROUND_ARREST_EPS;
         boolean supportedNow = env.groundGap() <= GROUND_EPS;
+        boolean arrested = supportedNow && observedVy > carriedFloor + GROUND_LANDING_EPS;
+        boolean fellFreely = carriedFloor < 0.0 && observedVy <= carriedFloor + GROUND_ARREST_EPS && !arrested;
         boolean descendedLast = prevObservedVy < -GROUND_RISE_EPS;
         boolean landingSupport = descendedLast && env.groundGap() <= stepHeight;
         boolean groundedEnd;
@@ -79,7 +82,7 @@ final class GroundTracker {
         lastSlipperinessMin = env.slipperinessMin();
         lastSlipperinessMax = env.slipperinessMax();
 
-        return new GroundState(groundedStart, groundedEnd, recentlyGrounded, bounced, carriedFloor,
+        return new GroundState(groundedStart, startAmbiguous, groundedEnd, recentlyGrounded, bounced, carriedFloor,
                 bounceTicks > 0, wasFluid, startSlipMin, startSlipMax);
     }
 
