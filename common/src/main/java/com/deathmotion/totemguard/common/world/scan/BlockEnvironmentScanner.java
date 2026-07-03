@@ -35,6 +35,12 @@ public final class BlockEnvironmentScanner {
     private BlockEnvironmentScanner() {
     }
 
+    public static boolean ledgeInDirection(ClientWorld world, Location current, double width, double stepHeight,
+                                           boolean sneaking, double dx, double dz) {
+        CollisionContext ctx = new CollisionContext(current.getY(), sneaking);
+        return WallScanner.wouldFall(world, current, width / 2.0, stepHeight, ctx, dx, dz);
+    }
+
     public static BlockEnvironment scan(ClientWorld world, WorldEntityData entities, Location current, Location previous,
                                         double width, double poseHeight, double stepHeight, boolean sneaking,
                                         Set<Long> wallExemptCells) {

@@ -52,7 +52,7 @@ public class MovementEstimator {
     private static final double STRONG_SINGLE_EXCESS = 0.40;
 
     private static final double HORIZONTAL_PAD = 0.003;
-    private static final double VERTICAL_PAD = 0.006;
+    private static final double VERTICAL_PAD = 0.002;
 
     private static final double AIR_DISK_PAD = 0.003;
     private static final double AIR_DIRECTION_MIN_SPEED = 0.04;
@@ -102,6 +102,7 @@ public class MovementEstimator {
     private final PhaseTracker phaseTracker = new PhaseTracker();
     private final FastDetector fastDetector = new FastDetector();
     private final GroundSpoofDetector groundSpoofDetector = new GroundSpoofDetector();
+    private final ResidualTracker residualTracker = new ResidualTracker();
 
     private boolean initialized;
     private MotionArea carried = MotionArea.resting();
@@ -150,15 +151,12 @@ public class MovementEstimator {
 
     private void onSilentTick() {
         if (!initialized) return;
-        // Dead clients stop sending movement while their tick-ends keep flowing, and the death
-        // screen legitimately freezes a midair position until respawn.
         if (data.isDead()) return;
         ConfigView view = TGPlatform.getInstance().getConfigRepository().configView();
         if (!view.physicsEngineEnabled()) return;
         if (data.getTeleportData().hasPendingTeleport()) return;
 
         MovementData movement = data.getMovementData();
-        // A client whose camera targets another entity suppresses flying packets entirely.
         if (!movement.isCameraIsSelf()) return;
         Location current = movement.getCurrent();
         if (preScanBail(current) != null) return;
@@ -481,6 +479,10 @@ public class MovementEstimator {
             }
         }
 
+        boolean residualClean = !external.isActive() && !steppedUp && teleportCarryGrace == 0
+                && bubbleTicks == 0 && !env.startOverlapping() && !env.startEmbedded()
+                && !fluidEntry && fluidWallTicks == 0 && stuckArrestTicks == 0;
+
         boolean movedThisTick = horizontalExcess > HIT_EPSILON;
         boolean ascendingThisTick = verticalExcess > VERTICAL_HIT_EPSILON;
         shiftWindow(movedThisTick);
@@ -489,9 +491,13 @@ public class MovementEstimator {
         if (knockbackConsumed) external.consume();
         if (stepMoveTicks > 0) stepMoveTicks--;
 
+        boolean sneakEdgeClamp = data.isSneaking() && input.groundedStart() && landMedium
+                && observedVy <= 0.0
+                && observedSpeed < move.horizontalSpeed().max() - HIT_EPSILON
+                && (env.groundGap() > HIT_EPSILON || ledgeInMoveDirection(observed, observedSpeed, move));
         boolean carryPredicted = steppedUp || teleportCarryGrace > 0;
         if (teleportCarryGrace > 0) teleportCarryGrace--;
-        double legalSpeed = carryPredicted
+        double legalSpeed = carryPredicted || sneakEdgeClamp
                 ? move.horizontalSpeed().max()
                 : Math.min(observedSpeed, allowed.horizontalSpeed().max() + CARRY_SLACK * tolerance.padScale());
         if (env.startOverlapping()) legalSpeed = Math.max(legalSpeed, WEDGE_CARRY);
@@ -522,6 +528,13 @@ public class MovementEstimator {
         result = new MovementResult(cause, observed, move,
                 horizontalExcess, verticalExcess, movedThisTick, ascendingThisTick, knockbackConsumed);
         MovementDebug.log(data.getPlayer(), "judge:" + cause, observed, input, env, move, horizontalExcess, verticalExcess);
+
+        if (residualClean) {
+            double residFloor = env.fluid() ? move.vertical().min() : descentFloor;
+            residualTracker.observe(data.getPlayer(), cause, env, input, observed,
+                    observedVy - move.vertical().max(), residFloor - observedVy,
+                    observedSpeed - move.horizontalSpeed().max());
+        }
     }
 
     private boolean trusted(MovementData movement) {
@@ -602,6 +615,17 @@ public class MovementEstimator {
                 Math.max(prevX, current.getX()), Math.max(prevY, current.getY()), Math.max(prevZ, current.getZ()),
                 data.getAttributeData().width() / 2.0, poseHeight());
         return Math.min(MAX_ENTITY_PUSH, count * ENTITY_PUSH_PER);
+    }
+
+    private boolean ledgeInMoveDirection(Vector3d observed, double observedSpeed, MotionArea move) {
+        if (observedSpeed <= HIT_EPSILON) return false;
+        double width = data.getAttributeData().width();
+        double reach = Math.max(move.horizontalSpeed().max(), width);
+        double scale = reach / observedSpeed;
+        return BlockEnvironmentScanner.ledgeInDirection(
+                data.getClientWorld(), data.getMovementData().getCurrent(),
+                width, data.getAttributeData().stepHeight(), data.isSneaking(),
+                observed.getX() * scale, observed.getZ() * scale);
     }
 
     private static double outwardResidual(double observed, double center) {
@@ -780,6 +804,7 @@ public class MovementEstimator {
         clearHistory();
         mitigation.reset();
         fallTracker.reset();
+        residualTracker.reset();
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();
         data.getEffectData().reset();

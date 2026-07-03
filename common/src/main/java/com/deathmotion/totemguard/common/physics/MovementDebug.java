@@ -61,6 +61,9 @@ public final class MovementDebug {
         } else if (env != null && env.startOverlapping()) {
             sb.append(" ovl=1");
         }
+        if (env != null && env.horizontalObstacle()) {
+            sb.append(" obst=1");
+        }
         if (env != null) {
             sb.append(" med=").append(medium(env));
             sb.append(String.format(Locale.ROOT, " gap=%.3f", env.groundGap()));
