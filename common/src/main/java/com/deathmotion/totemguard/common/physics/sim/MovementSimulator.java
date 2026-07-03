@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.physics.sim;
 
 import com.deathmotion.totemguard.common.physics.area.MotionArea;
 import com.deathmotion.totemguard.common.physics.area.Range;
-import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
+import com.deathmotion.totemguard.common.world.scan.BlockEnvironment;
 
 import static com.deathmotion.totemguard.common.physics.MovementConstants.*;
 

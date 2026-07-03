@@ -16,32 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.world.scan;
 
-import lombok.Getter;
-import lombok.experimental.Accessors;
+final class Scans {
 
-@Getter
-@Accessors(fluent = true)
-public enum SimulationTolerance {
-    STRICT(1.0, 2.0),
-    STANDARD(1.5, 4.0),
-    LENIENT(2.5, 8.0);
+    static final double SUPPORT_TOP_EPS = 0.001;
 
-    private final double padScale;
-    private final double setbackBuffer;
-
-    SimulationTolerance(double padScale, double setbackBuffer) {
-        this.padScale = padScale;
-        this.setbackBuffer = setbackBuffer;
+    private Scans() {
     }
 
-    public static SimulationTolerance parse(String raw) {
-        if (raw == null) return STRICT;
-        String normalized = raw.trim();
-        for (SimulationTolerance value : values()) {
-            if (value.name().equalsIgnoreCase(normalized)) return value;
-        }
-        return STRICT;
+    static int floor(double value) {
+        return (int) Math.floor(value);
     }
 }

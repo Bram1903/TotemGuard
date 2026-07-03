@@ -16,21 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.physics.fall;
 
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.mitigation.MitigationService;
-import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
+import com.deathmotion.totemguard.common.physics.MovementCause;
+import com.deathmotion.totemguard.common.physics.MovementConstants;
+import com.deathmotion.totemguard.common.physics.MovementResult;
+import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.player.data.ClientWorld;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.world.scan.BlockEnvironment;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
 import java.util.Set;
 
+@Accessors(fluent = true)
 public class FallTracker {
 
     private static final double MIN_AVOIDED_DAMAGE = 1.0;
@@ -57,16 +64,20 @@ public class FallTracker {
     private double pendingExpected;
     private boolean pendingProven;
 
+    @Getter
     private boolean violationThisTick;
+    @Getter
     private double avoidedDamage;
+    @Getter
     private double fallDistance;
+    @Getter
     private boolean damageApplied;
 
-    FallTracker(Data data) {
+    public FallTracker(Data data) {
         this.data = data;
     }
 
-    void observe(MovementResult result, boolean claimedGround, BlockEnvironment env,
+    public void observe(MovementResult result, boolean claimedGround, BlockEnvironment env,
                  GroundState ground, ConfigView view) {
         clearLatch();
 
@@ -163,25 +174,9 @@ public class FallTracker {
         pendingProven = false;
     }
 
-    void reset() {
+    public void reset() {
         abort();
         clearLatch();
-    }
-
-    boolean violationThisTick() {
-        return violationThisTick;
-    }
-
-    double avoidedDamage() {
-        return avoidedDamage;
-    }
-
-    double fallDistance() {
-        return fallDistance;
-    }
-
-    boolean damageApplied() {
-        return damageApplied;
     }
 
     private void clearLatch() {

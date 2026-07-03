@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.world;
+package com.deathmotion.totemguard.common.world.collisions;
 
+import com.deathmotion.totemguard.common.world.block.FluidBlocks;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
 import com.github.retrooper.packetevents.protocol.world.states.enums.Attachment;
@@ -318,7 +319,7 @@ public final class BlockShapes {
 
     public static CollisionShape shapeOf(WrappedBlockState state, int x, int y, int z, CollisionContext ctx) {
         StateType type = state.getType();
-        if (type == StateTypes.AIR || MovementBlocks.isFluidType(type)) return CollisionShape.EMPTY;
+        if (type == StateTypes.AIR || FluidBlocks.isFluidType(type)) return CollisionShape.EMPTY;
         ShapeResolver resolver = RESOLVERS.get(type);
         if (resolver != null) return resolver.resolve(state, x, y, z, ctx);
         return type.isBlocking() && type.isSolid() ? CollisionShape.FULL : CollisionShape.EMPTY;

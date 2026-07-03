@@ -16,13 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.world;
+package com.deathmotion.totemguard.common.world.collisions;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
+
+@Accessors(fluent = true)
 public final class CollisionShape {
 
     public static final CollisionShape EMPTY = new CollisionShape(new CollisionBox[0]);
     public static final CollisionShape FULL = new CollisionShape(new CollisionBox[]{new CollisionBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)});
 
+    @Getter
     private final CollisionBox[] boxes;
 
     private CollisionShape(CollisionBox[] boxes) {
@@ -53,10 +58,6 @@ public final class CollisionShape {
         CollisionBox box = boxes[0];
         return box.minX() <= 1.0e-7 && box.minY() <= 1.0e-7 && box.minZ() <= 1.0e-7
                 && box.maxX() >= 1.0 - 1.0e-7 && box.maxY() >= 1.0 - 1.0e-7 && box.maxZ() >= 1.0 - 1.0e-7;
-    }
-
-    public CollisionBox[] boxes() {
-        return boxes;
     }
 
     public double supportTop(double feetLimit, double minX, double maxX, double minZ, double maxZ) {

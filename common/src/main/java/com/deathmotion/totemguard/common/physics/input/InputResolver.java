@@ -16,19 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.physics.input;
 
+import com.deathmotion.totemguard.common.physics.MovementConstants;
+import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.sim.MovementInput;
-import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.EffectData;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.PlayerAttributeData;
+import com.deathmotion.totemguard.common.world.scan.BlockEnvironment;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.util.Vector3d;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
-final class InputResolver {
+@Accessors(fluent = true)
+public final class InputResolver {
 
     private static final double RISE_EPS = 0.001;
     private static final double COYOTE_TAKEOFF_EPS = 0.05;
@@ -46,18 +52,16 @@ final class InputResolver {
 
     private int sneakStreak;
     private int backwardSprintStreak;
+    @Getter
+    @Setter
     private boolean improperSprint;
     private boolean lastClampedJump;
 
-    InputResolver(Data data) {
+    public InputResolver(Data data) {
         this.data = data;
     }
 
-    boolean improperSprint() {
-        return improperSprint;
-    }
-
-    MovementInput build(MovementData movement, BlockEnvironment env, Vector3d observed,
+    public MovementInput build(MovementData movement, BlockEnvironment env, Vector3d observed,
                         GroundState ground, double bubbleAscent) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
@@ -172,16 +176,12 @@ final class InputResolver {
         return speed;
     }
 
-    void suppressImproperSprint() {
-        improperSprint = false;
-    }
-
-    void onDecline() {
+    public void onDecline() {
         backwardSprintStreak = 0;
         improperSprint = false;
     }
 
-    void clear() {
+    public void clear() {
         sneakStreak = 0;
         backwardSprintStreak = 0;
         improperSprint = false;

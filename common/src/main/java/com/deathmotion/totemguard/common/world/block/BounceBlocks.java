@@ -16,7 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.world;
+package com.deathmotion.totemguard.common.world.block;
 
-public record CollisionContext(double feetY, boolean descending) {
+import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
+
+public final class BounceBlocks {
+
+    private static final double SLIME = 1.0;
+    private static final double BED = 0.66;
+
+    private BounceBlocks() {
+    }
+
+    public static double factor(StateType type) {
+        if (type == StateTypes.SLIME_BLOCK) return SLIME;
+        if (BlockTags.BEDS.contains(type)) return BED;
+        return 0.0;
+    }
 }

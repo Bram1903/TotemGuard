@@ -22,28 +22,28 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.physics.area.MotionArea;
 import com.deathmotion.totemguard.common.physics.area.Range;
+import com.deathmotion.totemguard.common.physics.fall.FallTracker;
+import com.deathmotion.totemguard.common.physics.ground.GroundState;
+import com.deathmotion.totemguard.common.physics.ground.GroundTracker;
+import com.deathmotion.totemguard.common.physics.input.InputResolver;
+import com.deathmotion.totemguard.common.physics.mitigation.MovementMitigation;
+import com.deathmotion.totemguard.common.physics.phase.PhaseTracker;
+import com.deathmotion.totemguard.common.physics.prescan.FastDetector;
+import com.deathmotion.totemguard.common.physics.prescan.GroundSpoofDetector;
 import com.deathmotion.totemguard.common.physics.sim.MovementInput;
 import com.deathmotion.totemguard.common.physics.sim.MovementSimulator;
-import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
-import com.deathmotion.totemguard.common.physics.world.BlockEnvironmentScanner;
-import com.deathmotion.totemguard.common.physics.world.BlockShapes;
-import com.deathmotion.totemguard.common.physics.world.CollisionBox;
-import com.deathmotion.totemguard.common.physics.world.CollisionContext;
-import com.deathmotion.totemguard.common.physics.world.CollisionShape;
-import com.deathmotion.totemguard.common.physics.world.WallGaps;
-import com.deathmotion.totemguard.common.player.data.ClientWorld;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.WorldBorderData;
+import com.deathmotion.totemguard.common.world.entity.EntityPush;
+import com.deathmotion.totemguard.common.world.scan.BlockEnvironment;
+import com.deathmotion.totemguard.common.world.scan.BlockEnvironmentScanner;
+import com.deathmotion.totemguard.common.world.scan.WallGaps;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.Vector3d;
 import lombok.Getter;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class MovementEstimator {
 
@@ -53,23 +53,12 @@ public class MovementEstimator {
 
     private static final double HORIZONTAL_PAD = 0.010;
     private static final double VERTICAL_PAD = 0.025;
-    private static final double PHASE_ENTRY_TOLERANCE = 0.03;
-    private static final double PHASE_EMBED_TOLERANCE = 0.03;
-    private static final double PHASE_EMBED_GROWTH = 0.02;
-    private static final int PHASE_WINDOW = 6;
-    private static final int PHASE_GRACE_TICKS = 10;
-    private static final double PHASE_MOVE_EPS = 0.015;
 
     private static final int WINDOW = 20;
     private static final long WINDOW_MASK = (1L << WINDOW) - 1;
     private static final int HITS_FOR_MOVED = 5;
 
-    private static final double FAST_HORIZONTAL_CAP = 10.0;
-    private static final int FAST_TOLERANCE = 1;
     private static final double BORDER_MARGIN = 2.0;
-
-    private static final double GROUNDSPOOF_VERTICAL_EPS = 0.1;
-    private static final int GROUNDSPOOF_TOLERANCE = 4;
 
     private static final double LANDING_REACH = 1.1;
 
@@ -78,7 +67,6 @@ public class MovementEstimator {
     private static final double MAX_ENTITY_PUSH = 0.30;
     private static final double EMBEDDED_PUSH = 0.1;
     private static final double WEDGE_CARRY = 0.25;
-    private static final double CONTACT_EPS = 1.0e-7;
     private static final double WINDOW_ACCEL = 0.2;
 
     private static final int HOVER_TOLERANCE = 4;
@@ -101,6 +89,9 @@ public class MovementEstimator {
     private final InputResolver inputResolver;
     private final MovementMitigation mitigation;
     private final FallTracker fallTracker;
+    private final PhaseTracker phaseTracker = new PhaseTracker();
+    private final FastDetector fastDetector = new FastDetector();
+    private final GroundSpoofDetector groundSpoofDetector = new GroundSpoofDetector();
 
     private boolean initialized;
     private MotionArea carried = MotionArea.resting();
@@ -114,15 +105,9 @@ public class MovementEstimator {
     private int airborneWithholdStreak;
     private int hoverSetbackStreak;
     private int teleportCarryGrace;
-    private int fastStreak;
-    private int groundMoveStreak;
     private int stepMoveTicks;
     private int bubbleTicks;
     private double bubbleAscentCap;
-    private int phaseWindow;
-    private int phaseGrace;
-    private double lastEmbedded = -1.0;
-    private final Set<Long> phaseExemptCells = new HashSet<>();
 
     @Getter
     private MovementResult result = MovementResult.INITIAL;
@@ -165,7 +150,7 @@ public class MovementEstimator {
         BlockEnvironment env = BlockEnvironmentScanner.scan(
                 data.getClientWorld(), data.getWorldEntityData(), current, current,
                 data.getAttributeData().width(), poseHeight(), data.getAttributeData().stepHeight(), data.isSneaking(),
-                phaseExemptCells);
+                phaseTracker.exemptCells());
         if (!env.feetLoaded()) return;
 
         GroundState ground = groundTracker.resolve(
@@ -229,15 +214,15 @@ public class MovementEstimator {
                 current.getY() - previous.getY(),
                 current.getZ() - previous.getZ());
         if (!movement.isLastFlyingWasTeleportResync() && flyingSinceTickEnd < 1000) flyingSinceTickEnd++;
-        prunePhaseExemptions(current);
+        phaseTracker.prune(current, data.getAttributeData().width() / 2.0, poseHeight());
 
         GameMode gameMode = data.getGameMode();
         if (gameMode != lastGameMode) {
             lastGameMode = gameMode;
             if (initialized) {
-                exemptEmbeddedCells(current);
-                phaseGrace = PHASE_GRACE_TICKS;
-                lastEmbedded = -1.0;
+                phaseTracker.exemptEmbeddedCells(data.getClientWorld(), current, data.getAttributeData().width() / 2.0, poseHeight(), data.isSneaking());
+                phaseTracker.seedGrace();
+                phaseTracker.invalidateEmbed();
             }
         }
 
@@ -250,8 +235,8 @@ public class MovementEstimator {
                 seedCarried(observed);
                 result = MovementResult.INITIAL;
                 clearExcess();
-                phaseGrace = PHASE_GRACE_TICKS;
-                exemptEmbeddedCells(current);
+                phaseTracker.seedGrace();
+                phaseTracker.exemptEmbeddedCells(data.getClientWorld(), current, data.getAttributeData().width() / 2.0, poseHeight(), data.isSneaking());
                 return;
             }
 
@@ -293,7 +278,7 @@ public class MovementEstimator {
             env = BlockEnvironmentScanner.scan(
                     data.getClientWorld(), data.getWorldEntityData(), current, previous,
                     data.getAttributeData().width(), poseHeight(), data.getAttributeData().stepHeight(), data.isSneaking(),
-                    phaseExemptCells);
+                    phaseTracker.exemptCells());
             if (!env.feetLoaded()) {
                 decline(MovementCause.UNLOADED, observed);
                 return;
@@ -324,8 +309,8 @@ public class MovementEstimator {
                 airborneWithholdStreak = (withheld && airborne) ? airborneWithholdStreak + 1 : 0;
                 double wallExcess = 0.0;
                 if (!withheld && landMedium) {
-                    wallExcess = phaseExcess(new WallGaps(0.0, env.wallGaps().embedded()),
-                            Math.hypot(observed.getX(), observed.getZ()), false);
+                    wallExcess = phaseTracker.excess(new WallGaps(0.0, env.wallGaps().embedded()),
+                            Math.hypot(observed.getX(), observed.getZ()), false, tolerance.padScale());
                 }
                 shiftWindow(wallExcess > HIT_EPSILON);
                 movedSticky = Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
@@ -363,7 +348,7 @@ public class MovementEstimator {
     private void judge(MotionArea move, MovementInput input, BlockEnvironment env, Vector3d observed) {
         airborneWithholdStreak = 0;
         hoverSetbackStreak = 0;
-        fastStreak = 0;
+        fastDetector.reset();
         double observedSpeed = Math.hypot(observed.getX(), observed.getZ());
         double observedVy = observed.getY();
 
@@ -380,9 +365,9 @@ public class MovementEstimator {
         double verticalExcess = allowed.ascentExcess(observedVy);
         double wallExcess = 0.0;
         if (landMedium) {
-            wallExcess = phaseExcess(env.wallGaps(), observedSpeed, true);
+            wallExcess = phaseTracker.excess(env.wallGaps(), observedSpeed, true, tolerance.padScale());
         } else {
-            lastEmbedded = -1.0;
+            phaseTracker.invalidateEmbed();
         }
 
         boolean knockbackConsumed = false;
@@ -466,35 +451,6 @@ public class MovementEstimator {
         MovementDebug.log(data.getPlayer(), "judge:" + cause, observed, input, env, move, horizontalExcess, verticalExcess);
     }
 
-    private double phaseExcess(WallGaps gaps, double observedSpeed, boolean countGrace) {
-        double entryTolerance = PHASE_ENTRY_TOLERANCE * tolerance.padScale();
-        double embedTolerance = PHASE_EMBED_TOLERANCE * tolerance.padScale();
-        double entry = gaps.crossing() - entryTolerance;
-        boolean entering = entry > HIT_EPSILON;
-        if (entering) phaseWindow = PHASE_WINDOW;
-
-        double embedded = gaps.embedded();
-        boolean moving = observedSpeed > PHASE_MOVE_EPS;
-        double growth = lastEmbedded >= 0.0 ? embedded - lastEmbedded : 0.0;
-        boolean growing = growth > PHASE_EMBED_GROWTH && growth <= observedSpeed + PHASE_EMBED_GROWTH;
-        if (phaseGrace == 0 && moving && growing && embedded > embedTolerance) {
-            phaseWindow = PHASE_WINDOW;
-        }
-
-        double excess = Math.max(0.0, entry);
-        boolean embeddedWhileMoving = phaseWindow > 0 && moving && embedded > embedTolerance;
-        if (embeddedWhileMoving) {
-            phaseWindow = PHASE_WINDOW;
-            excess = Math.max(excess, embedded - embedTolerance);
-        } else if (phaseWindow > 0) {
-            phaseWindow--;
-        }
-
-        if (countGrace && phaseGrace > 0) phaseGrace--;
-        lastEmbedded = embedded;
-        return excess;
-    }
-
     private boolean trusted(MovementData movement) {
         if (!movement.isLastFlyingPositionChanged()) return movement.isLastFlyingWasDuplicate();
         boolean doubleMove = data.getPlayer().supportsEndTick()
@@ -517,20 +473,15 @@ public class MovementEstimator {
     }
 
     private boolean handleGroundSpoof(Vector3d observed, MovementData movement) {
-        if (!movement.isOnGround() || Math.abs(observed.getY()) <= GROUNDSPOOF_VERTICAL_EPS) {
-            groundMoveStreak = 0;
-            return false;
-        }
-        groundMoveStreak++;
-        if (groundMoveStreak <= GROUNDSPOOF_TOLERANCE) return false;
+        if (!groundSpoofDetector.provoked(movement.isOnGround(), observed.getY())) return false;
         flagGroundSpoof(observed);
         return true;
     }
 
     private void flagGroundSpoof(Vector3d observed) {
         airborneWithholdStreak = 0;
-        inputResolver.suppressImproperSprint();
-        double excess = Math.abs(observed.getY()) - GROUNDSPOOF_VERTICAL_EPS;
+        inputResolver.improperSprint(false);
+        double excess = Math.abs(observed.getY()) - GroundSpoofDetector.VERTICAL_EPS;
         result = new MovementResult(MovementCause.GROUNDSPOOF, observed, MotionArea.resting(),
                 0.0, excess, false, true, false);
         seedCarried(observed);
@@ -538,28 +489,20 @@ public class MovementEstimator {
 
     private boolean handleFast(Vector3d observed) {
         double horizontal = Math.hypot(observed.getX(), observed.getZ());
-        if (horizontal <= FAST_HORIZONTAL_CAP) {
-            fastStreak = 0;
-            return false;
-        }
-        if (data.getExternalVelocityData().isActive()) {
-            fastStreak = 0;
+        FastDetector.Outcome outcome = fastDetector.evaluate(horizontal, data.getExternalVelocityData().isActive());
+        if (outcome == FastDetector.Outcome.NONE) return false;
+        if (outcome == FastDetector.Outcome.DECLINE) {
             decline(MovementCause.FAST, observed);
-            return true;
+        } else {
+            flagFast(observed, horizontal);
         }
-        fastStreak++;
-        if (fastStreak <= FAST_TOLERANCE) {
-            decline(MovementCause.FAST, observed);
-            return true;
-        }
-        flagFast(observed, horizontal);
         return true;
     }
 
     private void flagFast(Vector3d observed, double horizontal) {
         airborneWithholdStreak = 0;
-        inputResolver.suppressImproperSprint();
-        double excess = horizontal - FAST_HORIZONTAL_CAP;
+        inputResolver.improperSprint(false);
+        double excess = horizontal - FastDetector.HORIZONTAL_CAP;
         result = new MovementResult(MovementCause.FAST, observed, MotionArea.resting(),
                 excess, 0.0, true, false, false);
         seedCarried(observed);
@@ -581,7 +524,7 @@ public class MovementEstimator {
         double prevX = current.getX() - observed.getX();
         double prevY = current.getY() - observed.getY();
         double prevZ = current.getZ() - observed.getZ();
-        int count = data.getWorldEntityData().countPushableNear(
+        int count = EntityPush.countPushableNear(data.getWorldEntityData().tracked(),
                 Math.min(prevX, current.getX()), Math.min(prevY, current.getY()), Math.min(prevZ, current.getZ()),
                 Math.max(prevX, current.getX()), Math.max(prevY, current.getY()), Math.max(prevZ, current.getZ()),
                 data.getAttributeData().width() / 2.0, poseHeight());
@@ -595,65 +538,8 @@ public class MovementEstimator {
 
     public void onBlockChangeApplied(int x, int y, int z, int blockId) {
         if (!initialized) return;
-        Location current = data.getMovementData().getCurrent();
-        double half = data.getAttributeData().width() / 2.0;
-        double minX = current.getX() - half, maxX = current.getX() + half;
-        double minY = current.getY(), maxY = current.getY() + poseHeight();
-        double minZ = current.getZ() - half, maxZ = current.getZ() + half;
-        if (x + 1.0 <= minX || x >= maxX || y + 1.0 <= minY || y >= maxY || z + 1.0 <= minZ || z >= maxZ) return;
-
-        WrappedBlockState state = data.getClientWorld().stateForId(blockId);
-        CollisionShape shape = BlockShapes.shapeOf(state, x, y, z, new CollisionContext(current.getY(), data.isSneaking()));
-        for (CollisionBox box : shape.boxes()) {
-            if (x + box.maxX() <= minX || x + box.minX() >= maxX) continue;
-            if (y + box.maxY() <= minY || y + box.minY() >= maxY) continue;
-            if (z + box.maxZ() <= minZ || z + box.minZ() >= maxZ) continue;
-            phaseExemptCells.add(ClientWorld.blockKey(x, y, z));
-            return;
-        }
-    }
-
-    private void exemptEmbeddedCells(Location current) {
-        double half = data.getAttributeData().width() / 2.0;
-        double minX = current.getX() - half, maxX = current.getX() + half;
-        double minY = current.getY(), maxY = current.getY() + poseHeight();
-        double minZ = current.getZ() - half, maxZ = current.getZ() + half;
-        CollisionContext ctx = new CollisionContext(current.getY(), data.isSneaking());
-        for (int x = floor(minX); x <= floor(maxX); x++) {
-            for (int y = floor(minY); y <= floor(maxY); y++) {
-                for (int z = floor(minZ); z <= floor(maxZ); z++) {
-                    WrappedBlockState state = data.getClientWorld().getBlockState(x, y, z);
-                    CollisionShape shape = BlockShapes.shapeOf(state, x, y, z, ctx);
-                    if (shape.isEmpty()) continue;
-                    for (CollisionBox box : shape.boxes()) {
-                        if (x + box.maxX() <= minX + CONTACT_EPS || x + box.minX() >= maxX - CONTACT_EPS) continue;
-                        if (y + box.maxY() <= minY + CONTACT_EPS || y + box.minY() >= maxY - CONTACT_EPS) continue;
-                        if (z + box.maxZ() <= minZ + CONTACT_EPS || z + box.minZ() >= maxZ - CONTACT_EPS) continue;
-                        phaseExemptCells.add(ClientWorld.blockKey(x, y, z));
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    private void prunePhaseExemptions(Location current) {
-        if (phaseExemptCells.isEmpty()) return;
-        double half = data.getAttributeData().width() / 2.0;
-        double height = poseHeight();
-        Set<Long> bodyCells = new HashSet<>();
-        for (int x = floor(current.getX() - half); x <= floor(current.getX() + half); x++) {
-            for (int y = floor(current.getY()) - 2; y <= floor(current.getY() + height) + 2; y++) {
-                for (int z = floor(current.getZ() - half); z <= floor(current.getZ() + half); z++) {
-                    bodyCells.add(ClientWorld.blockKey(x, y, z));
-                }
-            }
-        }
-        phaseExemptCells.retainAll(bodyCells);
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
+        phaseTracker.onBlockChangeApplied(data.getClientWorld(), data.getMovementData().getCurrent(),
+                data.getAttributeData().width() / 2.0, poseHeight(), data.isSneaking(), x, y, z, blockId);
     }
 
     private void coastCarried(MovementInput input, BlockEnvironment env) {
@@ -698,12 +584,13 @@ public class MovementEstimator {
         doubleMoveStreak = 0;
         inputResolver.onDecline();
         if (cause != MovementCause.FAST) {
-            exemptEmbeddedCells(data.getMovementData().getCurrent());
+            phaseTracker.exemptEmbeddedCells(data.getClientWorld(), data.getMovementData().getCurrent(),
+                    data.getAttributeData().width() / 2.0, poseHeight(), data.isSneaking());
         }
         if (cause == MovementCause.RESYNC || cause == MovementCause.TELEPORT
                 || cause == MovementCause.PISTON || cause == MovementCause.UNLOADED) {
-            phaseGrace = PHASE_GRACE_TICKS;
-            lastEmbedded = -1.0;
+            phaseTracker.seedGrace();
+            phaseTracker.invalidateEmbed();
         }
         if (cause == MovementCause.RESYNC || cause == MovementCause.TELEPORT) {
             groundTracker.displaced();
@@ -727,15 +614,12 @@ public class MovementEstimator {
         hoverSetbackStreak = 0;
         teleportCarryGrace = 0;
         doubleMoveStreak = 0;
-        fastStreak = 0;
-        groundMoveStreak = 0;
         bubbleTicks = 0;
-        phaseWindow = 0;
-        phaseGrace = 0;
-        lastEmbedded = -1.0;
-        phaseExemptCells.clear();
         groundTracker.clearWindows();
         inputResolver.clear();
+        fastDetector.reset();
+        groundSpoofDetector.reset();
+        phaseTracker.clear();
     }
 
     public boolean isImproperSprint() {

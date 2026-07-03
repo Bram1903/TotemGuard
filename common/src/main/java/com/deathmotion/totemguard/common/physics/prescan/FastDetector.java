@@ -16,32 +16,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.physics.prescan;
 
-import lombok.Getter;
-import lombok.experimental.Accessors;
+public final class FastDetector {
 
-@Getter
-@Accessors(fluent = true)
-public enum SimulationTolerance {
-    STRICT(1.0, 2.0),
-    STANDARD(1.5, 4.0),
-    LENIENT(2.5, 8.0);
+    public static final double HORIZONTAL_CAP = 10.0;
 
-    private final double padScale;
-    private final double setbackBuffer;
+    private static final int TOLERANCE = 1;
 
-    SimulationTolerance(double padScale, double setbackBuffer) {
-        this.padScale = padScale;
-        this.setbackBuffer = setbackBuffer;
+    private int streak;
+
+    public enum Outcome {
+        NONE,
+        DECLINE,
+        FLAG
     }
 
-    public static SimulationTolerance parse(String raw) {
-        if (raw == null) return STRICT;
-        String normalized = raw.trim();
-        for (SimulationTolerance value : values()) {
-            if (value.name().equalsIgnoreCase(normalized)) return value;
+    public Outcome evaluate(double horizontalSpeed, boolean externalActive) {
+        if (horizontalSpeed <= HORIZONTAL_CAP) {
+            streak = 0;
+            return Outcome.NONE;
         }
-        return STRICT;
+        if (externalActive) {
+            streak = 0;
+            return Outcome.DECLINE;
+        }
+        streak++;
+        return streak <= TOLERANCE ? Outcome.DECLINE : Outcome.FLAG;
+    }
+
+    public void reset() {
+        streak = 0;
     }
 }

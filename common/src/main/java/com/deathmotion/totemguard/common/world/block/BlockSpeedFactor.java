@@ -16,13 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.world;
+package com.deathmotion.totemguard.common.world.block;
 
-public record WallGaps(double crossing, double embedded) {
+import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 
-    public static final WallGaps NONE = new WallGaps(0.0, 0.0);
+public final class BlockSpeedFactor {
 
-    public boolean any() {
-        return crossing > 0.0 || embedded > 0.0;
+    private static final double SLOWING = 0.4;
+
+    private BlockSpeedFactor() {
+    }
+
+    public static double of(StateType type) {
+        if (type == StateTypes.SOUL_SAND || type == StateTypes.HONEY_BLOCK) return SLOWING;
+        return 1.0;
     }
 }

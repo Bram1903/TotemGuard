@@ -16,11 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.physics.ground;
 
-import com.deathmotion.totemguard.common.physics.world.BlockEnvironment;
+import com.deathmotion.totemguard.common.physics.MovementConstants;
+import com.deathmotion.totemguard.common.world.scan.BlockEnvironment;
 
-final class GroundTracker {
+public final class GroundTracker {
 
     private static final double GROUND_EPS = 0.02;
     private static final double GROUND_RISE_EPS = 0.001;
@@ -39,7 +40,7 @@ final class GroundTracker {
     private double lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
     private double lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;
 
-    void seed(boolean onGround) {
+    public void seed(boolean onGround) {
         lastGroundedEnd = onGround;
         prevGroundedEnd = onGround;
         lastFluid = false;
@@ -48,7 +49,7 @@ final class GroundTracker {
         displacedTicks = 0;
     }
 
-    void displaced() {
+    public void displaced() {
         lastGroundedEnd = false;
         prevGroundedEnd = false;
         lastGroundGap = Double.MAX_VALUE;
@@ -56,7 +57,7 @@ final class GroundTracker {
         displacedTicks = 1;
     }
 
-    GroundState resolve(double observedVy, BlockEnvironment env, double stepHeight, double carriedFloor, boolean sneaking) {
+    public GroundState resolve(double observedVy, BlockEnvironment env, double stepHeight, double carriedFloor, boolean sneaking) {
         boolean wasFluid = lastFluid;
         lastFluid = env.fluid();
 
@@ -99,12 +100,12 @@ final class GroundTracker {
                 bounceTicks > 0, wasFluid, startSlipMin, startSlipMax);
     }
 
-    void clearWindows() {
+    public void clearWindows() {
         bounceTicks = 0;
         displacedTicks = 0;
     }
 
-    void reset() {
+    public void reset() {
         clearWindows();
         lastSlipperinessMin = MovementConstants.DEFAULT_SLIPPERINESS;
         lastSlipperinessMax = MovementConstants.DEFAULT_SLIPPERINESS;

@@ -16,14 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.physics.mitigation;
 
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.mitigation.MitigationService;
+import com.deathmotion.totemguard.common.physics.MovementCause;
+import com.deathmotion.totemguard.common.physics.MovementDebug;
+import com.deathmotion.totemguard.common.physics.MovementResult;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
+@Accessors(fluent = true)
 public class MovementMitigation {
 
     private static final double BASE_GAIN = 1.0;
@@ -36,18 +42,21 @@ public class MovementMitigation {
 
     private Vector3d lastLegal;
     private double buffer;
+    @Getter
     private boolean triggeredThisTick;
-    private boolean setbackThisTick;
+    @Getter
+    private boolean setbackIssuedThisTick;
+    @Getter
     private boolean setbackSkippedThisTick;
 
-    MovementMitigation(Data data) {
+    public MovementMitigation(Data data) {
         this.data = data;
         this.service = data.getMitigationService();
     }
 
-    void observe(MovementResult result, ConfigView view) {
+    public void observe(MovementResult result, ConfigView view) {
         triggeredThisTick = false;
-        setbackThisTick = false;
+        setbackIssuedThisTick = false;
         setbackSkippedThisTick = false;
 
         service.onFlying();
@@ -83,31 +92,19 @@ public class MovementMitigation {
         setback(result, setbackWanted);
     }
 
-    void clearTickFlags() {
+    public void clearTickFlags() {
         triggeredThisTick = false;
-        setbackThisTick = false;
+        setbackIssuedThisTick = false;
         setbackSkippedThisTick = false;
     }
 
-    void reset() {
+    public void reset() {
         lastLegal = null;
         buffer = 0.0;
         triggeredThisTick = false;
-        setbackThisTick = false;
+        setbackIssuedThisTick = false;
         setbackSkippedThisTick = false;
         service.reset();
-    }
-
-    boolean triggeredThisTick() {
-        return triggeredThisTick;
-    }
-
-    boolean setbackIssuedThisTick() {
-        return setbackThisTick;
-    }
-
-    boolean setbackSkippedThisTick() {
-        return setbackSkippedThisTick;
     }
 
     private boolean trustedPosition(MovementCause cause) {
@@ -127,6 +124,6 @@ public class MovementMitigation {
 
         MovementDebug.log(data.getPlayer(), "setback:" + result.cause(), result.observed(),
                 null, null, null, result.horizontalExcess(), result.verticalExcess());
-        setbackThisTick = service.setback(lastLegal);
+        setbackIssuedThisTick = service.setback(lastLegal);
     }
 }

@@ -18,12 +18,15 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
+import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.world.dimension.DimensionType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRespawn;
+import lombok.Getter;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -32,54 +35,37 @@ public class WorldEntityData {
 
     private static final double SNAP_THRESHOLD = 4.0;
 
-    private static final double SUPPORT_HORIZONTAL_PAD = 0.1;
-    private static final double SUPPORT_TOP_EPS = 0.03;
-    private static final double SUPPORT_MAX_DROP = 2.0;
+    private final Map<Integer, TrackedEntity> entities = new HashMap<>();
 
-    private final Map<Integer, Tracked> trackedEntities = new HashMap<>();
+    @Getter
     private int standableCount;
     private String worldName;
     private DimensionType dimensionType;
 
-    private static boolean isPushable(EntityType type) {
-        return EntityTypes.isTypeInstanceOf(type, EntityTypes.LIVINGENTITY)
-                || EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT)
-                || EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT);
-    }
-
-    private static boolean isStandable(EntityType type) {
-        if (type == null) return false;
-        if (EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT)) return true;
-        if (type == EntityTypes.SHULKER) return true;
-        return type.getName() != null && "happy_ghast".equals(type.getName().getKey());
-    }
-
-    private static double intervalGap(double aMin, double aMax, double bMin, double bMax) {
-        if (aMax < bMin) return bMin - aMax;
-        if (bMax < aMin) return aMin - bMax;
-        return 0.0;
+    public Collection<TrackedEntity> tracked() {
+        return entities.values();
     }
 
     public void add(int entityId, EntityType type, double x, double y, double z) {
-        Tracked tracked = new Tracked(type);
+        TrackedEntity tracked = new TrackedEntity(type);
         tracked.snapTo(x, y, z);
-        Tracked previous = trackedEntities.put(entityId, tracked);
-        if (previous != null && previous.standable) standableCount--;
-        if (tracked.standable) standableCount++;
+        TrackedEntity previous = entities.put(entityId, tracked);
+        if (previous != null && previous.isStandable()) standableCount--;
+        if (tracked.isStandable()) standableCount++;
     }
 
     public void remove(int entityId) {
-        Tracked removed = trackedEntities.remove(entityId);
-        if (removed != null && removed.standable) standableCount--;
+        TrackedEntity removed = entities.remove(entityId);
+        if (removed != null && removed.isStandable()) standableCount--;
     }
 
     public void setPosition(int entityId, double x, double y, double z) {
-        Tracked tracked = trackedEntities.get(entityId);
+        TrackedEntity tracked = entities.get(entityId);
         if (tracked == null) return;
-        if (!tracked.positioned
-                || Math.abs(x - tracked.targetX) > SNAP_THRESHOLD
-                || Math.abs(y - tracked.targetY) > SNAP_THRESHOLD
-                || Math.abs(z - tracked.targetZ) > SNAP_THRESHOLD) {
+        if (!tracked.isPositioned()
+                || Math.abs(x - tracked.getTargetX()) > SNAP_THRESHOLD
+                || Math.abs(y - tracked.getTargetY()) > SNAP_THRESHOLD
+                || Math.abs(z - tracked.getTargetZ()) > SNAP_THRESHOLD) {
             tracked.snapTo(x, y, z);
         } else {
             tracked.interpolateTo(x, y, z);
@@ -87,88 +73,41 @@ public class WorldEntityData {
     }
 
     public void move(int entityId, double dx, double dy, double dz) {
-        Tracked tracked = trackedEntities.get(entityId);
-        if (tracked == null || !tracked.positioned) return;
+        TrackedEntity tracked = entities.get(entityId);
+        if (tracked == null || !tracked.isPositioned()) return;
         tracked.addDelta(dx, dy, dz);
     }
 
     public void advanceInterpolation() {
-        for (Tracked tracked : trackedEntities.values()) {
-            if (tracked.positioned) tracked.advance();
+        for (TrackedEntity tracked : entities.values()) {
+            if (tracked.isPositioned()) tracked.advance();
         }
     }
 
     public void setScale(int entityId, double scale) {
-        Tracked tracked = trackedEntities.get(entityId);
+        TrackedEntity tracked = entities.get(entityId);
         if (tracked == null) return;
-        tracked.scale = Math.max(0.0625, Math.min(16.0, scale));
+        tracked.setScale(scale);
     }
 
     public void setSlimeSize(int entityId, int size) {
-        Tracked tracked = trackedEntities.get(entityId);
+        TrackedEntity tracked = entities.get(entityId);
         if (tracked == null) return;
-        tracked.slimeSize = Math.max(1, Math.min(127, size));
+        tracked.setSlimeSize(size);
     }
 
     public boolean isLoaded(int entityId) {
-        return trackedEntities.containsKey(entityId);
+        return entities.containsKey(entityId);
     }
 
     public boolean isPlayer(int entityId) {
-        Tracked tracked = trackedEntities.get(entityId);
-        return tracked != null && tracked.type == EntityTypes.PLAYER;
+        TrackedEntity tracked = entities.get(entityId);
+        return tracked != null && tracked.getType() == EntityTypes.PLAYER;
     }
 
     public boolean isSlimeLike(int entityId) {
-        Tracked tracked = trackedEntities.get(entityId);
-        return tracked != null && (tracked.type == EntityTypes.SLIME || tracked.type == EntityTypes.MAGMA_CUBE);
-    }
-
-    public int countPushableNear(double pMinX, double pMinY, double pMinZ,
-                                 double pMaxX, double pMaxY, double pMaxZ,
-                                 double playerHalfWidth, double playerHeight) {
-        int count = 0;
-        for (Tracked tracked : trackedEntities.values()) {
-            if (!tracked.positioned) continue;
-            if (!tracked.pushable) continue;
-
-            double eMinX = Math.min(tracked.prevRenderX, tracked.targetX);
-            double eMaxX = Math.max(tracked.prevRenderX, tracked.targetX);
-            double eMinY = Math.min(tracked.prevRenderY, tracked.targetY);
-            double eMaxY = Math.max(tracked.prevRenderY, tracked.targetY);
-            double eMinZ = Math.min(tracked.prevRenderZ, tracked.targetZ);
-            double eMaxZ = Math.max(tracked.prevRenderZ, tracked.targetZ);
-
-            double horizontalReach = playerHalfWidth + tracked.halfWidth();
-            boolean xOk = intervalGap(pMinX, pMaxX, eMinX, eMaxX) < horizontalReach;
-            boolean zOk = intervalGap(pMinZ, pMaxZ, eMinZ, eMaxZ) < horizontalReach;
-            boolean yOk = pMinY < eMaxY + tracked.height() && eMinY < pMaxY + playerHeight;
-
-            if (xOk && zOk && yOk) count++;
-        }
-        return count;
-    }
-
-    public double standableSupportTop(double pMinX, double pMinZ, double pMaxX, double pMaxZ, double feetY) {
-        if (standableCount == 0) return Double.NEGATIVE_INFINITY;
-        double best = Double.NEGATIVE_INFINITY;
-        for (Tracked tracked : trackedEntities.values()) {
-            if (!tracked.positioned || !tracked.standable) continue;
-
-            double half = tracked.halfWidth() + SUPPORT_HORIZONTAL_PAD;
-            double eMinX = Math.min(tracked.prevRenderX, tracked.targetX) - half;
-            double eMaxX = Math.max(tracked.prevRenderX, tracked.targetX) + half;
-            double eMinZ = Math.min(tracked.prevRenderZ, tracked.targetZ) - half;
-            double eMaxZ = Math.max(tracked.prevRenderZ, tracked.targetZ) + half;
-            if (pMaxX <= eMinX || pMinX >= eMaxX) continue;
-            if (pMaxZ <= eMinZ || pMinZ >= eMaxZ) continue;
-
-            double top = Math.max(tracked.prevRenderY, tracked.targetY) + tracked.height();
-            if (top > feetY + SUPPORT_TOP_EPS) continue;
-            if (top < feetY - SUPPORT_MAX_DROP) continue;
-            if (top > best) best = top;
-        }
-        return best;
+        TrackedEntity tracked = entities.get(entityId);
+        return tracked != null && (tracked.getType() == EntityTypes.SLIME || tracked.getType() == EntityTypes.MAGMA_CUBE);
     }
 
     public void handleJoinGame(WrapperPlayServerJoinGame packet) {
@@ -192,7 +131,7 @@ public class WorldEntityData {
     }
 
     private void clearAll() {
-        trackedEntities.clear();
+        entities.clear();
         standableCount = 0;
     }
 
@@ -201,81 +140,5 @@ public class WorldEntityData {
             return !Objects.equals(respawn.getWorldName().orElse(null), worldName);
         }
         return !Objects.equals(respawn.getDimensionType(), dimensionType);
-    }
-
-    private static final class Tracked {
-        private static final int INTERPOLATION_STEPS = 3;
-
-        private final EntityType type;
-        private final boolean pushable;
-        private final boolean standable;
-        private final double baseHalfWidth;
-        private final double baseHeight;
-        private double scale = 1.0;
-        private int slimeSize = 1;
-        private boolean positioned;
-
-        private double targetX;
-        private double targetY;
-        private double targetZ;
-        private double renderX;
-        private double renderY;
-        private double renderZ;
-        private double prevRenderX;
-        private double prevRenderY;
-        private double prevRenderZ;
-        private int interpSteps;
-
-        private Tracked(EntityType type) {
-            this.type = type;
-            this.pushable = isPushable(type);
-            this.standable = isStandable(type);
-            this.baseHalfWidth = EntityHitboxes.width(type) / 2.0;
-            this.baseHeight = EntityHitboxes.height(type);
-        }
-
-        private void snapTo(double x, double y, double z) {
-            targetX = renderX = prevRenderX = x;
-            targetY = renderY = prevRenderY = y;
-            targetZ = renderZ = prevRenderZ = z;
-            interpSteps = 0;
-            positioned = true;
-        }
-
-        private void interpolateTo(double x, double y, double z) {
-            targetX = x;
-            targetY = y;
-            targetZ = z;
-            interpSteps = INTERPOLATION_STEPS;
-            positioned = true;
-        }
-
-        private void addDelta(double dx, double dy, double dz) {
-            targetX += dx;
-            targetY += dy;
-            targetZ += dz;
-            interpSteps = INTERPOLATION_STEPS;
-        }
-
-        private void advance() {
-            prevRenderX = renderX;
-            prevRenderY = renderY;
-            prevRenderZ = renderZ;
-            if (interpSteps > 0) {
-                double t = 1.0 / interpSteps;
-                renderX += (targetX - renderX) * t;
-                renderY += (targetY - renderY) * t;
-                renderZ += (targetZ - renderZ) * t;
-                interpSteps--;
-            }
-        }
-
-        private double halfWidth() {
-            return baseHalfWidth * scale * slimeSize;
-        }
-
-        private double height() {
-            return baseHeight * scale * slimeSize;
-        }
     }
 }

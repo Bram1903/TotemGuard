@@ -16,32 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.world.block;
 
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 
-@Getter
-@Accessors(fluent = true)
-public enum SimulationTolerance {
-    STRICT(1.0, 2.0),
-    STANDARD(1.5, 4.0),
-    LENIENT(2.5, 8.0);
+public final class Slipperiness {
 
-    private final double padScale;
-    private final double setbackBuffer;
+    public static final double DEFAULT = 0.6;
 
-    SimulationTolerance(double padScale, double setbackBuffer) {
-        this.padScale = padScale;
-        this.setbackBuffer = setbackBuffer;
+    private static final double ICE = 0.98;
+    private static final double BLUE_ICE = 0.989;
+    private static final double SLIME = 0.8;
+
+    private Slipperiness() {
     }
 
-    public static SimulationTolerance parse(String raw) {
-        if (raw == null) return STRICT;
-        String normalized = raw.trim();
-        for (SimulationTolerance value : values()) {
-            if (value.name().equalsIgnoreCase(normalized)) return value;
+    public static double of(StateType type) {
+        if (type == StateTypes.ICE || type == StateTypes.PACKED_ICE || type == StateTypes.FROSTED_ICE) {
+            return ICE;
         }
-        return STRICT;
+        if (type == StateTypes.BLUE_ICE) return BLUE_ICE;
+        if (type == StateTypes.SLIME_BLOCK) return SLIME;
+        return DEFAULT;
     }
 }

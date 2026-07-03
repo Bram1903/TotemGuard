@@ -16,18 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.world.scan;
 
-record GroundState(
-        boolean groundedStart,
-        boolean groundedStartAmbiguous,
-        boolean groundedEnd,
-        boolean recentlyGrounded,
-        boolean bounced,
-        double bounceFloor,
-        boolean coyoteBlocked,
-        boolean wasFluid,
-        double startSlipperinessMin,
-        double startSlipperinessMax
-) {
+public record WallGaps(double crossing, double embedded) {
+
+    public static final WallGaps NONE = new WallGaps(0.0, 0.0);
+
+    public boolean any() {
+        return crossing > 0.0 || embedded > 0.0;
+    }
 }

@@ -56,9 +56,6 @@ public final class MovementConstants {
     public static final double WATER_EFFICIENCY_FRICTION_TARGET = 0.54600006;
     public static final double WATER_CURRENT_PUSH = 0.014;
 
-    public static final double BUBBLE_COLUMN_SURFACE_ASCENT = 1.8;
-    public static final double BUBBLE_COLUMN_INSIDE_ASCENT = 0.7;
-
     private MovementConstants() {
     }
 }
