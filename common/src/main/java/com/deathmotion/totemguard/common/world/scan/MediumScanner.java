@@ -95,6 +95,10 @@ final class MediumScanner {
         return new Stuck(best[0] >= 0.0, best[1], best[2]);
     }
 
+    static boolean stuckAlongPath(ClientWorld world, BoundingBox swept) {
+        return world.hasBlock(swept, state -> StuckBlocks.isStuck(state.getType()));
+    }
+
     static boolean climbableAt(ClientWorld world, Location feet) {
         int x = floor(feet.getX()), y = floor(feet.getY()), z = floor(feet.getZ());
         WrappedBlockState state = world.getBlockState(x, y, z);

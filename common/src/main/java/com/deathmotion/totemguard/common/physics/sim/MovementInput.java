@@ -43,10 +43,7 @@ public record MovementInput(
         double fluidFriction,
         double fluidAccel,
         boolean waterExitHop,
-        double bubbleAscent,
-        boolean airInputStable,
-        double airInputAccelX,
-        double airInputAccelZ
+        double bubbleAscent
 ) {
 
     public double jumpBoostPower() {

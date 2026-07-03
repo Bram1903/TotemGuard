@@ -33,8 +33,8 @@ public final class MovementSimulator {
     private static final double CLIMB_DESCENT = -0.15;
 
     private static final double FLUID_VERTICAL_DRAG = 0.8;
-    private static final double FLUID_ASCENT = 0.75;
-    private static final double FLUID_DESCENT = -10.0;
+    private static final double SWIM_VERTICAL_IMPULSE = 0.04;
+    private static final double FLUID_ASCENT_MIN = 0.1;
 
     private static final double STUCK_DESCENT = -10.0;
 
@@ -131,7 +131,13 @@ public final class MovementSimulator {
 
     private static MotionArea predictFluid(MotionArea carried, MovementInput in) {
         double maxHorizontal = carried.horizontalSpeed().max() + in.fluidAccel();
-        Range vertical = new Range(FLUID_DESCENT, FLUID_ASCENT);
+        double waterGravity = in.gravity() / 16.0;
+        double ceiling = Math.max(FLUID_ASCENT_MIN, carried.vertical().max() + SWIM_VERTICAL_IMPULSE);
+        double floor = carried.vertical().min() - waterGravity - SWIM_VERTICAL_IMPULSE;
+        Range vertical = new Range(floor, ceiling);
+        if (in.groundedStart() || in.groundedEnd() || in.supportWithinStep()) {
+            vertical = vertical.raiseCeiling(in.stepHeight());
+        }
         if (in.bubbleAscent() > 0.0) vertical = vertical.raiseCeiling(in.bubbleAscent());
         return new MotionArea(new Range(0.0, maxHorizontal), vertical);
     }

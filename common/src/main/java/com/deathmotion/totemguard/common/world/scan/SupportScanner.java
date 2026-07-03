@@ -42,7 +42,8 @@ final class SupportScanner {
     private SupportScanner() {
     }
 
-    record Support(double bounceFactor, double slipperinessMin, double slipperinessMax, double blockSpeedFactor, double groundGap) {
+    record Support(double bounceFactor, double slipperinessMin, double slipperinessMax, double blockSpeedFactor,
+                   double groundGap) {
     }
 
     static Support scan(ClientWorld world, WorldEntityData entities, Location feet, Location previous, double width, CollisionContext ctx) {
@@ -77,9 +78,9 @@ final class SupportScanner {
     }
 
     private static double feetBlockSpeedFactor(ClientWorld world, Location feet, double half) {
-        double factor = Double.NEGATIVE_INFINITY;
         int fy = floor(feet.getY());
         int by = floor(feet.getY() - SUPPORT_BLOCK_OFFSET);
+        double factor = Double.NEGATIVE_INFINITY;
         for (double[] point : footprint(feet.getX(), feet.getZ(), half)) {
             int px = floor(point[0]), pz = floor(point[1]);
             double at = BlockSpeedFactor.of(world.getBlockState(px, fy, pz).getType());

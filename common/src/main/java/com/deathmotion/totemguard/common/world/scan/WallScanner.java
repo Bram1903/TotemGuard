@@ -163,4 +163,27 @@ final class WallScanner {
     private static boolean overlaps(double min0, double max0, double min1, double max1) {
         return max0 > min1 + WALL_CONTACT_EPS && min0 < max1 - WALL_CONTACT_EPS;
     }
+
+    static boolean horizontalObstacle(ClientWorld world, Location current, double half, double poseHeight,
+                                      CollisionContext ctx, double margin) {
+        double feetY = current.getY();
+        double headY = feetY + poseHeight;
+        double minX = current.getX() - half - margin, maxX = current.getX() + half + margin;
+        double minZ = current.getZ() - half - margin, maxZ = current.getZ() + half + margin;
+        for (int x = floor(minX); x <= floor(maxX); x++) {
+            for (int z = floor(minZ); z <= floor(maxZ); z++) {
+                for (int y = floor(feetY); y <= floor(headY); y++) {
+                    CollisionShape shape = BlockShapes.shapeOf(world.getBlockState(x, y, z), x, y, z, ctx);
+                    if (shape.isEmpty()) continue;
+                    for (CollisionBox box : shape.boxes()) {
+                        if (y + box.maxY() <= feetY + WALL_CONTACT_EPS || y + box.minY() >= headY - WALL_CONTACT_EPS) continue;
+                        if (x + box.maxX() <= minX || x + box.minX() >= maxX) continue;
+                        if (z + box.maxZ() <= minZ || z + box.minZ() >= maxZ) continue;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }

@@ -30,6 +30,8 @@ import static com.deathmotion.totemguard.common.world.scan.Scans.floor;
 
 public final class BlockEnvironmentScanner {
 
+    private static final double WALL_PROBE_MARGIN = 0.15;
+
     private BlockEnvironmentScanner() {
     }
 
@@ -41,9 +43,11 @@ public final class BlockEnvironmentScanner {
         }
 
         BoundingBox startBody = BoundingBox.player(previous, width, poseHeight);
+        BoundingBox sweptBody = BoundingBox.sweptPlayer(current, previous, width, poseHeight);
         boolean fluid = MediumScanner.fluidReachesFeet(world, startBody, previous.getY());
-        double bubbleAscent = MediumScanner.bubbleColumnAscent(world, BoundingBox.sweptPlayer(current, previous, width, poseHeight));
+        double bubbleAscent = MediumScanner.bubbleColumnAscent(world, sweptBody);
         MediumScanner.Stuck stuck = MediumScanner.stuck(world, previous, width, poseHeight);
+        boolean stuckSwept = MediumScanner.stuckAlongPath(world, sweptBody);
         boolean climbable = MediumScanner.climbableAt(world, previous);
 
         CollisionContext ctx = new CollisionContext(current.getY(), sneaking);
@@ -51,10 +55,12 @@ public final class BlockEnvironmentScanner {
         WallGaps wallGaps = WallScanner.walls(world, current, previous, width / 2.0, stepHeight, ctx, wallExemptCells);
         double ceilingGap = WallScanner.ceilingGap(world, current, previous, width / 2.0, poseHeight, ctx, wallExemptCells);
         int overlapState = WallScanner.overlapState(world, startBody, ctx);
+        boolean horizontalObstacle = WallScanner.horizontalObstacle(world, current, width / 2.0, poseHeight, ctx, WALL_PROBE_MARGIN);
 
         return new BlockEnvironment(true, fluid, climbable, stuck.active(), stuck.horizontal(), stuck.vertical(),
-                below.bounceFactor(), below.slipperinessMin(), below.slipperinessMax(), below.blockSpeedFactor(), below.groundGap(),
+                stuckSwept, below.bounceFactor(), below.slipperinessMin(), below.slipperinessMax(), below.blockSpeedFactor(),
+                below.groundGap(),
                 bubbleAscent, wallGaps, ceilingGap,
-                (overlapState & WallScanner.OVERLAP_SUFFOCATING) != 0, overlapState != 0);
+                (overlapState & WallScanner.OVERLAP_SUFFOCATING) != 0, overlapState != 0, horizontalObstacle);
     }
 }

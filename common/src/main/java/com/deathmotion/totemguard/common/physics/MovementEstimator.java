@@ -51,12 +51,11 @@ public class MovementEstimator {
     private static final double VERTICAL_HIT_EPSILON = 0.003;
     private static final double STRONG_SINGLE_EXCESS = 0.40;
 
-    private static final double HORIZONTAL_PAD = 0.010;
-    private static final double VERTICAL_PAD = 0.025;
+    private static final double HORIZONTAL_PAD = 0.006;
+    private static final double VERTICAL_PAD = 0.015;
 
-    private static final double AIR_DIRECTION_PAD = 0.020;
-    private static final double AIR_INPUT_PAD = 0.008;
-    private static final double AIR_DIRECTION_MIN_SPEED = 0.08;
+    private static final double AIR_DISK_PAD = 0.003;
+    private static final double AIR_DIRECTION_MIN_SPEED = 0.04;
 
     private static final int WINDOW = 20;
     private static final long WINDOW_MASK = (1L << WINDOW) - 1;
@@ -81,12 +80,19 @@ public class MovementEstimator {
 
     private static final int DOUBLE_MOVE_TOLERANCE = 3;
     private static final int TELEPORT_CARRY_GRACE = 3;
-    private static final double CARRY_SLACK = 0.05;
+    private static final double CARRY_SLACK = 0.015;
 
     private static final int STEP_UNCERTAINTY_TICKS = 4;
     private static final double STEP_HORIZONTAL_SLACK = 0.15;
 
     private static final int BUBBLE_LAUNCH_TICKS = 5;
+
+    private static final int FLUID_ENTRY_TICKS = 4;
+    private static final double FLUID_ENTRY_ASCENT = 0.75;
+    private static final double FLUID_DESCENT_SLACK = 0.02;
+    private static final int FLUID_WALL_TICKS = 5;
+    private static final double WATER_BUMP_ASCENT = 0.34;
+    private static final int STUCK_ARREST_TICKS = 2;
 
     private final Data data;
     private final GroundTracker groundTracker = new GroundTracker();
@@ -112,6 +118,9 @@ public class MovementEstimator {
     private int stepMoveTicks;
     private int bubbleTicks;
     private double bubbleAscentCap;
+    private int fluidEntryTicks;
+    private int fluidWallTicks;
+    private int stuckArrestTicks;
     private boolean airborneLastTick;
     private double airVelocityX;
     private double airVelocityZ;
@@ -302,6 +311,15 @@ public class MovementEstimator {
             }
             double bubbleAscent = bubbleTicks > 0 ? bubbleAscentCap : 0.0;
 
+            if (env.fluid()) {
+                fluidEntryTicks = ground.wasFluid() ? Math.max(0, fluidEntryTicks - 1) : FLUID_ENTRY_TICKS;
+                fluidWallTicks = env.horizontalObstacle() ? FLUID_WALL_TICKS : Math.max(0, fluidWallTicks - 1);
+            } else {
+                fluidEntryTicks = 0;
+                fluidWallTicks = 0;
+            }
+            stuckArrestTicks = env.stuckSwept() ? STUCK_ARREST_TICKS : Math.max(0, stuckArrestTicks - 1);
+
             MovementInput input = inputResolver.build(movement, env, observed, ground, bubbleAscent);
 
             if (trusted(movement)) {
@@ -364,6 +382,16 @@ public class MovementEstimator {
 
         boolean landMedium = !env.fluid() && !env.climbable() && !env.stuck();
 
+        boolean fluidEntry = env.fluid() && fluidEntryTicks > 0;
+        if (fluidEntry) {
+            move = new MotionArea(move.horizontalSpeed(), move.vertical().raiseCeiling(FLUID_ENTRY_ASCENT));
+        } else if (env.fluid() && fluidWallTicks > 0) {
+            move = new MotionArea(move.horizontalSpeed(), move.vertical().raiseCeiling(WATER_BUMP_ASCENT));
+        }
+        if (landMedium && stuckArrestTicks > 0) {
+            move = new MotionArea(move.horizontalSpeed(), move.vertical().raiseCeiling(0.0));
+        }
+
         double horizontalPad = HORIZONTAL_PAD * tolerance.padScale();
         if (env.startEmbedded()) horizontalPad += EMBEDDED_PUSH;
         double verticalPad = VERTICAL_PAD * tolerance.padScale();
@@ -380,8 +408,11 @@ public class MovementEstimator {
         boolean knockbackConsumed = false;
         ExternalVelocityData external = data.getExternalVelocityData();
         if (external.isActive() && (horizontalExcess > HIT_EPSILON || verticalExcess > VERTICAL_HIT_EPSILON)) {
+            double knockbackAlong = observedSpeed > HIT_EPSILON
+                    ? Math.max(0.0, (external.x() * observed.getX() + external.z() * observed.getZ()) / observedSpeed)
+                    : Math.hypot(external.x(), external.z());
             MotionArea widened = allowed.expand(
-                    Math.hypot(external.x(), external.z()) + KNOCKBACK_PAD,
+                    knockbackAlong + KNOCKBACK_PAD,
                     Math.max(0.0, external.y()) + KNOCKBACK_PAD);
             double h = widened.horizontalExcess(observedSpeed);
             double v = widened.ascentExcess(observedVy);
@@ -416,6 +447,11 @@ public class MovementEstimator {
                 verticalExcess = descentExcess;
                 fellTooFast = true;
             }
+        } else if (env.fluid() && !fluidEntry) {
+            double slack = verticalPad + FLUID_DESCENT_SLACK;
+            if (external.isActive()) slack += Math.max(0.0, -external.y()) + KNOCKBACK_PAD;
+            double descentExcess = (move.vertical().min() - slack) - observedVy;
+            if (descentExcess > verticalExcess) verticalExcess = descentExcess;
         }
 
         if (!fellTooFast && verticalExcess > VERTICAL_HIT_EPSILON && observedVy <= -VERTICAL_HIT_EPSILON
@@ -430,19 +466,11 @@ public class MovementEstimator {
         boolean airStrafed = false;
         if (airborneLastTick && pureAir && !steppedUp && teleportCarryGrace == 0
                 && !external.isActive() && bubbleTicks == 0 && observedSpeed >= AIR_DIRECTION_MIN_SPEED) {
-            double centerX = MovementConstants.MAX_HORIZONTAL_FRICTION * airVelocityX;
-            double centerZ = MovementConstants.MAX_HORIZONTAL_FRICTION * airVelocityZ;
-            double reach;
-            if (input.airInputStable()) {
-                centerX += input.airInputAccelX();
-                centerZ += input.airInputAccelZ();
-                reach = AIR_INPUT_PAD * tolerance.padScale();
-            } else {
-                reach = MovementConstants.AIR_ACCEL_SPRINTING + AIR_DIRECTION_PAD * tolerance.padScale();
-            }
-            double residualX = outwardResidual(observed.getX(), centerX);
-            double residualZ = outwardResidual(observed.getZ(), centerZ);
-            double directionExcess = Math.hypot(residualX, residualZ) - reach;
+            double centerX = airVelocityX;
+            double centerZ = airVelocityZ;
+            double reach = MovementConstants.AIR_ACCEL_SPRINTING + AIR_DISK_PAD * tolerance.padScale();
+            double deviation = Math.hypot(outwardResidual(observed.getX(), centerX), outwardResidual(observed.getZ(), centerZ));
+            double directionExcess = deviation - reach;
             if (directionExcess > HIT_EPSILON) {
                 directionExcess -= nearbyEntityPush(observed);
                 if (directionExcess > HIT_EPSILON && directionExcess > horizontalExcess) {
@@ -464,15 +492,15 @@ public class MovementEstimator {
         if (teleportCarryGrace > 0) teleportCarryGrace--;
         double legalSpeed = carryPredicted
                 ? move.horizontalSpeed().max()
-                : Math.min(observedSpeed, allowed.horizontalSpeed().max() + CARRY_SLACK);
+                : Math.min(observedSpeed, allowed.horizontalSpeed().max() + CARRY_SLACK * tolerance.padScale());
         if (env.startOverlapping()) legalSpeed = Math.max(legalSpeed, WEDGE_CARRY);
         double legalVy = Math.min(observedVy, allowed.vertical().max());
         carried = MovementSimulator.advance(legalSpeed, legalVy, input, env);
 
         if (pureAir && !carryPredicted && observedSpeed >= AIR_DIRECTION_MIN_SPEED) {
-            double clamp = legalSpeed / observedSpeed;
-            airVelocityX = observed.getX() * clamp;
-            airVelocityZ = observed.getZ() * clamp;
+            double advancedScale = carried.horizontalSpeed().max() / observedSpeed;
+            airVelocityX = observed.getX() * advancedScale;
+            airVelocityZ = observed.getZ() * advancedScale;
             airborneLastTick = true;
         } else {
             airborneLastTick = false;
@@ -668,6 +696,9 @@ public class MovementEstimator {
         teleportCarryGrace = 0;
         doubleMoveStreak = 0;
         bubbleTicks = 0;
+        fluidEntryTicks = 0;
+        fluidWallTicks = 0;
+        stuckArrestTicks = 0;
         airborneLastTick = false;
         groundTracker.clearWindows();
         inputResolver.clear();

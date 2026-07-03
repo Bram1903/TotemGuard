@@ -25,6 +25,7 @@ public record BlockEnvironment(
         boolean stuck,
         double stuckHorizontal,
         double stuckVertical,
+        boolean stuckSwept,
         double bounceFactor,
         double slipperinessMin,
         double slipperinessMax,
@@ -34,10 +35,11 @@ public record BlockEnvironment(
         WallGaps wallGaps,
         double ceilingGap,
         boolean startEmbedded,
-        boolean startOverlapping
+        boolean startOverlapping,
+        boolean horizontalObstacle
 ) {
 
     public static final BlockEnvironment UNLOADED =
-            new BlockEnvironment(false, false, false, false, 1.0, 1.0, 0.0, 0.6, 0.6, 1.0, 0.0, 0.0, WallGaps.NONE,
-                    Double.POSITIVE_INFINITY, false, false);
+            new BlockEnvironment(false, false, false, false, 1.0, 1.0, false, 0.0, 0.6, 0.6, 1.0, 0.0, 0.0, WallGaps.NONE,
+                    Double.POSITIVE_INFINITY, false, false, true);
 }

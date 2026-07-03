@@ -101,31 +101,6 @@ public final class InputResolver {
         boolean waterExitHop = ground.wasFluid() && !env.fluid() && observed.getY() > RISE_EPS
                 && env.groundGap() <= WATER_EXIT_SUPPORT_REACH;
 
-        InputData.State prevState = data.getInputData().previous();
-        boolean airInputStable = !inventoryOpen && state != null && prevState != null
-                && state.forward() == prevState.forward() && state.backward() == prevState.backward()
-                && state.left() == prevState.left() && state.right() == prevState.right();
-        double airInputAccelX = 0.0;
-        double airInputAccelZ = 0.0;
-        if (airInputStable) {
-            double forwardImpulse = (state.forward() ? 1.0 : 0.0) - (state.backward() ? 1.0 : 0.0);
-            double strafeImpulse = (state.left() ? 1.0 : 0.0) - (state.right() ? 1.0 : 0.0);
-            if (forwardImpulse != 0.0 || strafeImpulse != 0.0) {
-                double lenSq = forwardImpulse * forwardImpulse + strafeImpulse * strafeImpulse;
-                if (lenSq > 1.0) {
-                    double inv = 1.0 / Math.sqrt(lenSq);
-                    forwardImpulse *= inv;
-                    strafeImpulse *= inv;
-                }
-                double accel = data.isSprinting() ? MovementConstants.AIR_ACCEL_SPRINTING : MovementConstants.AIR_ACCEL;
-                double yaw = Math.toRadians(movement.getCurrent().getYaw());
-                double sin = Math.sin(yaw);
-                double cos = Math.cos(yaw);
-                airInputAccelX = accel * (strafeImpulse * cos - forwardImpulse * sin);
-                airInputAccelZ = accel * (forwardImpulse * cos + strafeImpulse * sin);
-            }
-        }
-
         return new MovementInput(effectiveGroundedStart, ground.groundedStartAmbiguous(), ground.groundedEnd(),
                 env.groundGap() <= attr.stepHeight(), env.startOverlapping(),
                 horizontalInput, jumpPossible, ceilingClampedJump,
@@ -137,8 +112,7 @@ public final class InputResolver {
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
                 fluidAccel(data.isSprinting(), effectiveGroundedStart),
-                waterExitHop, bubbleAscent,
-                airInputStable, airInputAccelX, airInputAccelZ);
+                waterExitHop, bubbleAscent);
     }
 
     private double effectiveBlockSpeedFactor(BlockEnvironment env) {

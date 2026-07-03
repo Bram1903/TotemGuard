@@ -72,7 +72,8 @@ public final class MovementDebug {
             }
             appendWalls(sb, env.wallGaps());
         }
-        sb.append(String.format(Locale.ROOT, " | H obs=%.3f", Math.hypot(observed.getX(), observed.getZ())));
+        sb.append(String.format(Locale.ROOT, " | H obs=%.3f xz=%+.3f,%+.3f",
+                Math.hypot(observed.getX(), observed.getZ()), observed.getX(), observed.getZ()));
         if (predicted != null) {
             sb.append(String.format(Locale.ROOT, " cap<=%.3f ex=%.3f", predicted.horizontalSpeed().max(), horizontalExcess));
         }
