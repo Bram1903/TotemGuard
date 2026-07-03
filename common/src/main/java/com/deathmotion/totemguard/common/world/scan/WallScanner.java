@@ -186,4 +186,29 @@ final class WallScanner {
         }
         return false;
     }
+
+    static boolean steppableRiser(ClientWorld world, Location current, Location previous, double half,
+                                  double stepHeight, CollisionContext ctx, double margin) {
+        double feetY = previous.getY();
+        double minX = Math.min(current.getX(), previous.getX()) - half - margin;
+        double maxX = Math.max(current.getX(), previous.getX()) + half + margin;
+        double minZ = Math.min(current.getZ(), previous.getZ()) - half - margin;
+        double maxZ = Math.max(current.getZ(), previous.getZ()) + half + margin;
+        for (int x = floor(minX); x <= floor(maxX); x++) {
+            for (int z = floor(minZ); z <= floor(maxZ); z++) {
+                for (int y = floor(feetY); y <= floor(feetY + stepHeight); y++) {
+                    CollisionShape shape = BlockShapes.shapeOf(world.getBlockState(x, y, z), x, y, z, ctx);
+                    if (shape.isEmpty()) continue;
+                    for (CollisionBox box : shape.boxes()) {
+                        double top = y + box.maxY();
+                        if (top <= feetY + WALL_CONTACT_EPS || top > feetY + stepHeight + WALL_CONTACT_EPS) continue;
+                        if (x + box.maxX() <= minX || x + box.minX() >= maxX) continue;
+                        if (z + box.maxZ() <= minZ || z + box.minZ() >= maxZ) continue;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }

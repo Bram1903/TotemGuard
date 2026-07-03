@@ -51,7 +51,7 @@ public class MovementEstimator {
     private static final double VERTICAL_HIT_EPSILON = 0.003;
     private static final double STRONG_SINGLE_EXCESS = 0.40;
 
-    private static final double HORIZONTAL_PAD = 0.006;
+    private static final double HORIZONTAL_PAD = 0.003;
     private static final double VERTICAL_PAD = 0.006;
 
     private static final double AIR_DISK_PAD = 0.003;
@@ -377,7 +377,7 @@ public class MovementEstimator {
         double observedSpeed = Math.hypot(observed.getX(), observed.getZ());
         double observedVy = observed.getY();
 
-        boolean steppedUp = input.groundedEnd() && observedVy > VERTICAL_HIT_EPSILON;
+        boolean steppedUp = observedVy > VERTICAL_HIT_EPSILON && (input.groundedEnd() || input.supportWithinStep());
         if (steppedUp) stepMoveTicks = STEP_UNCERTAINTY_TICKS;
 
         boolean landMedium = !env.fluid() && !env.climbable() && !env.stuck();
@@ -462,7 +462,8 @@ public class MovementEstimator {
         boolean phased = wallExcess > HIT_EPSILON;
         if (phased && wallExcess > horizontalExcess) horizontalExcess = wallExcess;
 
-        boolean pureAir = landMedium && !input.groundedStart() && !input.groundedEnd() && !env.startOverlapping();
+        boolean pureAir = landMedium && !input.groundedStart() && !input.groundedEnd()
+                && !input.groundedStartAmbiguous() && !env.startOverlapping();
         boolean airStrafed = false;
         if (airborneLastTick && pureAir && !steppedUp && teleportCarryGrace == 0
                 && !external.isActive() && bubbleTicks == 0 && observedSpeed >= AIR_DIRECTION_MIN_SPEED) {
@@ -604,9 +605,9 @@ public class MovementEstimator {
     }
 
     private static double outwardResidual(double observed, double center) {
-        if (observed > 0.0) return Math.max(0.0, observed - center);
-        if (observed < 0.0) return Math.max(0.0, center - observed);
-        return 0.0;
+        if (center > 0.0) return observed < 0.0 ? -observed : Math.max(0.0, observed - center);
+        if (center < 0.0) return observed > 0.0 ? observed : Math.max(0.0, center - observed);
+        return Math.abs(observed);
     }
 
     private double poseHeight() {

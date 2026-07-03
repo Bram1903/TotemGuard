@@ -96,8 +96,8 @@ public final class GroundTracker {
         lastSlipperinessMin = env.slipperinessMin();
         lastSlipperinessMax = env.slipperinessMax();
 
-        return new GroundState(groundedStart, startAmbiguous, groundedEnd, recentlyGrounded, bounced, carriedFloor,
-                bounceTicks > 0, wasFluid, startSlipMin, startSlipMax);
+        return new GroundState(groundedStart, startAmbiguous, groundedEnd, recentlyGrounded, landingSupport, bounced,
+                carriedFloor, bounceTicks > 0, wasFluid, startSlipMin, startSlipMax);
     }
 
     public void clearWindows() {

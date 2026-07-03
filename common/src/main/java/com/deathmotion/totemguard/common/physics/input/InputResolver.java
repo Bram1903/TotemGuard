@@ -75,10 +75,11 @@ public final class InputResolver {
         double jumpTakeoff = attr.jumpStrength() + (jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0);
 
         boolean freshJump = observed.getY() >= jumpTakeoff - COYOTE_TAKEOFF_EPS;
+        boolean landingJump = ground.landingSupport()
+                && observed.getY() > RISE_EPS && observed.getY() <= jumpTakeoff + COYOTE_TAKEOFF_EPS;
         boolean coyoteJump = !ground.groundedStart()
-                && (ground.recentlyGrounded() || ground.groundedStartAmbiguous())
-                && jumpHeld && freshJump
-                && !inventoryOpen && !ground.coyoteBlocked();
+                && jumpHeld && !inventoryOpen && !ground.coyoteBlocked()
+                && (((ground.recentlyGrounded() || ground.groundedStartAmbiguous()) && freshJump) || landingJump);
         boolean effectiveGroundedStart = ground.groundedStart() || coyoteJump;
         boolean jumpPossible = effectiveGroundedStart && jumpHeld && !inventoryOpen;
 
@@ -101,8 +102,7 @@ public final class InputResolver {
         boolean waterExitHop = ground.wasFluid() && !env.fluid() && observed.getY() > RISE_EPS
                 && env.groundGap() <= WATER_EXIT_SUPPORT_REACH;
 
-        boolean supportWithinStep = env.groundGap() <= attr.stepHeight()
-                && (env.horizontalObstacle() || env.startOverlapping());
+        boolean supportWithinStep = env.steppableRiser() || env.startOverlapping();
 
         return new MovementInput(effectiveGroundedStart, ground.groundedStartAmbiguous(), ground.groundedEnd(),
                 supportWithinStep, env.startOverlapping(),

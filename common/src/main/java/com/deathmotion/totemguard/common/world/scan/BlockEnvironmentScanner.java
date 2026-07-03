@@ -56,11 +56,12 @@ public final class BlockEnvironmentScanner {
         double ceilingGap = WallScanner.ceilingGap(world, current, previous, width / 2.0, poseHeight, ctx, wallExemptCells);
         int overlapState = WallScanner.overlapState(world, startBody, ctx);
         boolean horizontalObstacle = WallScanner.horizontalObstacle(world, current, width / 2.0, poseHeight, ctx, WALL_PROBE_MARGIN);
+        boolean steppableRiser = WallScanner.steppableRiser(world, current, previous, width / 2.0, stepHeight, ctx, WALL_PROBE_MARGIN);
 
         return new BlockEnvironment(true, fluid, climbable, stuck.active(), stuck.horizontal(), stuck.vertical(),
                 stuckSwept, below.bounceFactor(), below.slipperinessMin(), below.slipperinessMax(), below.blockSpeedFactor(),
                 below.groundGap(),
                 bubbleAscent, wallGaps, ceilingGap,
-                (overlapState & WallScanner.OVERLAP_SUFFOCATING) != 0, overlapState != 0, horizontalObstacle);
+                (overlapState & WallScanner.OVERLAP_SUFFOCATING) != 0, overlapState != 0, horizontalObstacle, steppableRiser);
     }
 }

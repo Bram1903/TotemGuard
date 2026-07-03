@@ -23,6 +23,7 @@ public record GroundState(
         boolean groundedStartAmbiguous,
         boolean groundedEnd,
         boolean recentlyGrounded,
+        boolean landingSupport,
         boolean bounced,
         double bounceFloor,
         boolean coyoteBlocked,
