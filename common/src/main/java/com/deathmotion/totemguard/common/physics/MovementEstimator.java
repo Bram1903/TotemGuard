@@ -54,6 +54,10 @@ public class MovementEstimator {
     private static final double HORIZONTAL_PAD = 0.010;
     private static final double VERTICAL_PAD = 0.025;
 
+    private static final double AIR_DIRECTION_PAD = 0.020;
+    private static final double AIR_INPUT_PAD = 0.008;
+    private static final double AIR_DIRECTION_MIN_SPEED = 0.08;
+
     private static final int WINDOW = 20;
     private static final long WINDOW_MASK = (1L << WINDOW) - 1;
     private static final int HITS_FOR_MOVED = 5;
@@ -108,6 +112,9 @@ public class MovementEstimator {
     private int stepMoveTicks;
     private int bubbleTicks;
     private double bubbleAscentCap;
+    private boolean airborneLastTick;
+    private double airVelocityX;
+    private double airVelocityZ;
 
     @Getter
     private MovementResult result = MovementResult.INITIAL;
@@ -419,6 +426,32 @@ public class MovementEstimator {
         boolean phased = wallExcess > HIT_EPSILON;
         if (phased && wallExcess > horizontalExcess) horizontalExcess = wallExcess;
 
+        boolean pureAir = landMedium && !input.groundedStart() && !input.groundedEnd() && !env.startOverlapping();
+        boolean airStrafed = false;
+        if (airborneLastTick && pureAir && !steppedUp && teleportCarryGrace == 0
+                && !external.isActive() && bubbleTicks == 0 && observedSpeed >= AIR_DIRECTION_MIN_SPEED) {
+            double centerX = MovementConstants.MAX_HORIZONTAL_FRICTION * airVelocityX;
+            double centerZ = MovementConstants.MAX_HORIZONTAL_FRICTION * airVelocityZ;
+            double reach;
+            if (input.airInputStable()) {
+                centerX += input.airInputAccelX();
+                centerZ += input.airInputAccelZ();
+                reach = AIR_INPUT_PAD * tolerance.padScale();
+            } else {
+                reach = MovementConstants.AIR_ACCEL_SPRINTING + AIR_DIRECTION_PAD * tolerance.padScale();
+            }
+            double residualX = outwardResidual(observed.getX(), centerX);
+            double residualZ = outwardResidual(observed.getZ(), centerZ);
+            double directionExcess = Math.hypot(residualX, residualZ) - reach;
+            if (directionExcess > HIT_EPSILON) {
+                directionExcess -= nearbyEntityPush(observed);
+                if (directionExcess > HIT_EPSILON && directionExcess > horizontalExcess) {
+                    horizontalExcess = directionExcess;
+                    airStrafed = true;
+                }
+            }
+        }
+
         boolean movedThisTick = horizontalExcess > HIT_EPSILON;
         boolean ascendingThisTick = verticalExcess > VERTICAL_HIT_EPSILON;
         shiftWindow(movedThisTick);
@@ -436,6 +469,15 @@ public class MovementEstimator {
         double legalVy = Math.min(observedVy, allowed.vertical().max());
         carried = MovementSimulator.advance(legalSpeed, legalVy, input, env);
 
+        if (pureAir && !carryPredicted && observedSpeed >= AIR_DIRECTION_MIN_SPEED) {
+            double clamp = legalSpeed / observedSpeed;
+            airVelocityX = observed.getX() * clamp;
+            airVelocityZ = observed.getZ() * clamp;
+            airborneLastTick = true;
+        } else {
+            airborneLastTick = false;
+        }
+
         MovementCause cause;
         if (phased && horizontalExcess >= verticalExcess) {
             cause = MovementCause.PHASE;
@@ -443,6 +485,8 @@ public class MovementEstimator {
             cause = MovementCause.FAST_FALL;
         } else if (data.isOpenInventory()) {
             cause = MovementCause.INVENTORY_MOVE;
+        } else if (airStrafed && horizontalExcess >= verticalExcess) {
+            cause = MovementCause.AIR_STRAFE;
         } else {
             cause = describeCause(env, input, observedVy);
         }
@@ -531,6 +575,12 @@ public class MovementEstimator {
         return Math.min(MAX_ENTITY_PUSH, count * ENTITY_PUSH_PER);
     }
 
+    private static double outwardResidual(double observed, double center) {
+        if (observed > 0.0) return Math.max(0.0, observed - center);
+        if (observed < 0.0) return Math.max(0.0, center - observed);
+        return 0.0;
+    }
+
     private double poseHeight() {
         double base = data.isSneaking() ? MovementConstants.SNEAKING_HEIGHT : MovementConstants.STANDING_HEIGHT;
         return base * data.getAttributeData().scale();
@@ -549,6 +599,7 @@ public class MovementEstimator {
         MotionArea floorAdvance = MovementSimulator.advance(coastHorizontal, carried.vertical().min(), input, env);
         carried = new MotionArea(ceilingAdvance.horizontalSpeed(),
                 new Range(floorAdvance.vertical().min(), ceilingAdvance.vertical().max()));
+        airborneLastTick = false;
     }
 
     private void coastFrozenMomentum() {
@@ -581,6 +632,7 @@ public class MovementEstimator {
         shiftWindow(false);
         movedSticky = Long.bitCount(hitWindow) >= HITS_FOR_MOVED;
         airborneWithholdStreak = 0;
+        airborneLastTick = false;
         doubleMoveStreak = 0;
         inputResolver.onDecline();
         if (cause != MovementCause.FAST) {
@@ -601,6 +653,7 @@ public class MovementEstimator {
 
     private void seedCarried(Vector3d observed) {
         carried = MotionArea.of(Math.hypot(observed.getX(), observed.getZ()), observed.getY());
+        airborneLastTick = false;
     }
 
     private void shiftWindow(boolean hit) {
@@ -615,6 +668,7 @@ public class MovementEstimator {
         teleportCarryGrace = 0;
         doubleMoveStreak = 0;
         bubbleTicks = 0;
+        airborneLastTick = false;
         groundTracker.clearWindows();
         inputResolver.clear();
         fastDetector.reset();

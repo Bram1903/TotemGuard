@@ -48,6 +48,7 @@ public class Physics extends CheckImpl implements PacketCheck {
         if (cause == MovementCause.HOVER) return "hover";
         if (cause == MovementCause.FAST_FALL) return "fastfall";
         if (cause == MovementCause.PHASE) return "phase";
+        if (cause == MovementCause.AIR_STRAFE) return "strafe";
         if (cause == MovementCause.INVENTORY_MOVE) return "inventory-move";
         if (verticalDominant) {
             return switch (cause) {
@@ -111,6 +112,9 @@ public class Physics extends CheckImpl implements PacketCheck {
         } else if (r.cause() == MovementCause.PHASE) {
             double speed = Math.hypot(r.observed().getX(), r.observed().getZ());
             fail(extras, "{0} | moved {1} through a wall | over={2}", shownType, fmt(speed), fmt(excess));
+        } else if (r.cause() == MovementCause.AIR_STRAFE) {
+            double speed = Math.hypot(r.observed().getX(), r.observed().getZ());
+            fail(extras, "{0} | redirected midair, speed={1} | over={2}", shownType, fmt(speed), fmt(excess));
         } else if (verticalDominant) {
             fail(extras, "{0} | vy={1} allowed<={2} | over={3}",
                     shownType, fmt(r.observed().getY()), fmt(r.predicted().vertical().max()), fmt(excess));

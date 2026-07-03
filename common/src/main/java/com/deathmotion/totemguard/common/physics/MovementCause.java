@@ -23,6 +23,7 @@ public enum MovementCause {
     GROUND,
     STEP,
     AIR,
+    AIR_STRAFE,
     JUMP,
     LEVITATION,
     FLUID,
