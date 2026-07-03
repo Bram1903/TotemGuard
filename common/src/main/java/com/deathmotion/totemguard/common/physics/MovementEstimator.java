@@ -26,7 +26,6 @@ import com.deathmotion.totemguard.common.physics.fall.FallTracker;
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.ground.GroundTracker;
 import com.deathmotion.totemguard.common.physics.input.InputResolver;
-import com.deathmotion.totemguard.common.mitigation.SetbackController;
 import com.deathmotion.totemguard.common.physics.mitigation.MovementMitigation;
 import com.deathmotion.totemguard.common.physics.phase.PhaseTracker;
 import com.deathmotion.totemguard.common.physics.prescan.FastDetector;
@@ -82,6 +81,7 @@ public class MovementEstimator {
     private static final int DOUBLE_MOVE_TOLERANCE = 3;
     private static final int TELEPORT_CARRY_GRACE = 3;
     private static final double CARRY_SLACK = 0.015;
+    private static final double OFFSET_LENIENCE_CAP = 0.1;
 
     private static final int STEP_UNCERTAINTY_TICKS = 4;
     private static final double STEP_HORIZONTAL_SLACK = 0.15;
@@ -99,12 +99,12 @@ public class MovementEstimator {
     private final GroundTracker groundTracker = new GroundTracker();
     private final InputResolver inputResolver;
     private final MovementMitigation mitigation;
-    private final SetbackController setbackController;
     private final FallTracker fallTracker;
     private final PhaseTracker phaseTracker = new PhaseTracker();
     private final FastDetector fastDetector = new FastDetector();
     private final GroundSpoofDetector groundSpoofDetector = new GroundSpoofDetector();
     private final ResidualTracker residualTracker = new ResidualTracker();
+    private final WorldLoadTracker worldLoad = new WorldLoadTracker();
 
     private boolean initialized;
     private MotionArea carried = MotionArea.resting();
@@ -127,6 +127,8 @@ public class MovementEstimator {
     private boolean airborneLastTick;
     private double airVelocityX;
     private double airVelocityZ;
+    private double carriedHorizontalLenience;
+    private double carriedVerticalLenience;
 
     @Getter
     private MovementResult result = MovementResult.INITIAL;
@@ -135,7 +137,6 @@ public class MovementEstimator {
         this.data = data;
         this.inputResolver = new InputResolver(data);
         this.mitigation = new MovementMitigation(data);
-        this.setbackController = data.getSetbackController();
         this.fallTracker = new FallTracker(data);
     }
 
@@ -149,6 +150,7 @@ public class MovementEstimator {
     private void onSilentTick() {
         if (!initialized) return;
         if (data.isDead()) return;
+        if (!worldLoad.ready()) return;
         ConfigView view = TGPlatform.getInstance().getConfigRepository().configView();
         if (!view.physicsEngineEnabled()) return;
         if (data.getTeleportData().hasPendingTeleport()) return;
@@ -200,6 +202,7 @@ public class MovementEstimator {
     private void disengage() {
         mitigation.reset();
         fallTracker.reset();
+        worldLoad.reset();
         if (!initialized) return;
         initialized = false;
         carried = MotionArea.resting();
@@ -277,6 +280,16 @@ public class MovementEstimator {
                 } else {
                     decline(MovementCause.TELEPORT, observed);
                 }
+                return;
+            }
+
+            if (!worldLoad.ready()) {
+                int feetChunkX = ((int) Math.floor(current.getX())) >> 4;
+                int feetChunkZ = ((int) Math.floor(current.getZ())) >> 4;
+                if (data.getClientWorld().isLoaded(feetChunkX, feetChunkZ)) {
+                    worldLoad.requestReadiness(data.getPlayer().getLatencyHandler());
+                }
+                decline(MovementCause.LOADING, observed);
                 return;
             }
 
@@ -379,10 +392,6 @@ public class MovementEstimator {
     }
 
     private void judge(MotionArea move, MovementInput input, BlockEnvironment env, Vector3d observed) {
-        if (setbackController.postSetbackGuardActive()) {
-            input = input.withNoJumpStep();
-            move = MovementSimulator.predictMove(carried, input, env);
-        }
         airborneWithholdStreak = 0;
         hoverSetbackStreak = 0;
         fastDetector.reset();
@@ -408,6 +417,13 @@ public class MovementEstimator {
         if (env.startEmbedded()) horizontalPad += EMBEDDED_PUSH;
         double verticalPad = VERTICAL_PAD * tolerance.padScale();
         MotionArea allowed = move.expand(horizontalPad, verticalPad);
+        // Carry the previous tick's residual miss into this tick's ceiling so a small model
+        // desync re-syncs (legalSpeed/legalVy below settle to observed) instead of re-flagging
+        // every re-acceleration. Capped below the single-tick instant-setback excess, so a
+        // blatant offset can never be absorbed here.
+        if (carriedHorizontalLenience > 0.0 || carriedVerticalLenience > 0.0) {
+            allowed = allowed.expand(carriedHorizontalLenience, carriedVerticalLenience);
+        }
         double horizontalExcess = allowed.horizontalExcess(observedSpeed);
         double verticalExcess = allowed.ascentExcess(observedVy);
         double wallExcess = 0.0;
@@ -539,6 +555,12 @@ public class MovementEstimator {
         } else {
             cause = describeCause(env, input, observedVy);
         }
+
+        double missH = (phased || airStrafed) ? 0.0 : horizontalExcess;
+        double missV = fellTooFast ? 0.0 : verticalExcess;
+        carriedHorizontalLenience = Math.min(OFFSET_LENIENCE_CAP, Math.max(0.0, missH));
+        carriedVerticalLenience = Math.min(OFFSET_LENIENCE_CAP, Math.max(0.0, missV));
+
         result = new MovementResult(cause, observed, move,
                 horizontalExcess, verticalExcess, movedThisTick, ascendingThisTick, knockbackConsumed);
         MovementDebug.log(data.getPlayer(), "judge:" + cause, observed, input, env, move, horizontalExcess, verticalExcess);
@@ -667,6 +689,7 @@ public class MovementEstimator {
         carried = new MotionArea(ceilingAdvance.horizontalSpeed(),
                 new Range(floorAdvance.vertical().min(), ceilingAdvance.vertical().max()));
         airborneLastTick = false;
+        clearCarryLenience();
     }
 
     private void coastFrozenMomentum() {
@@ -712,13 +735,15 @@ public class MovementEstimator {
                     data.getAttributeData().width() / 2.0, poseHeight(), data.isSneaking());
         }
         if (cause == MovementCause.RESYNC || cause == MovementCause.TELEPORT
-                || cause == MovementCause.PISTON || cause == MovementCause.UNLOADED) {
+                || cause == MovementCause.PISTON || cause == MovementCause.UNLOADED
+                || cause == MovementCause.LOADING) {
             phaseTracker.seedGrace();
             phaseTracker.invalidateEmbed();
         }
         if (cause == MovementCause.RESYNC || cause == MovementCause.TELEPORT) {
             groundTracker.displaced();
         }
+        clearCarryLenience();
         result = MovementResult.unpredictable(cause, observed);
         MovementDebug.log(data.getPlayer(), "decline:" + cause, observed, null, null, null, 0.0, 0.0);
     }
@@ -726,6 +751,12 @@ public class MovementEstimator {
     private void seedCarried(Vector3d observed) {
         carried = MotionArea.of(Math.hypot(observed.getX(), observed.getZ()), observed.getY());
         airborneLastTick = false;
+        clearCarryLenience();
+    }
+
+    private void clearCarryLenience() {
+        carriedHorizontalLenience = 0.0;
+        carriedVerticalLenience = 0.0;
     }
 
     private void shiftWindow(boolean hit) {
@@ -744,6 +775,7 @@ public class MovementEstimator {
         fluidWallTicks = 0;
         stuckArrestTicks = 0;
         airborneLastTick = false;
+        clearCarryLenience();
         groundTracker.clearWindows();
         inputResolver.clear();
         fastDetector.reset();
@@ -824,9 +856,18 @@ public class MovementEstimator {
         mitigation.reset();
         fallTracker.reset();
         residualTracker.reset();
+        worldLoad.reset();
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();
         data.getEffectData().reset();
+    }
+
+    public void onWorldReset() {
+        worldLoad.reset();
+    }
+
+    public void onWorldChunkLoaded() {
+        worldLoad.onChunkLoaded();
     }
 
     public void clearHistory() {

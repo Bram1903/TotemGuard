@@ -49,12 +49,4 @@ public record MovementInput(
     public double jumpBoostPower() {
         return jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;
     }
-
-    public MovementInput withNoJumpStep() {
-        return new MovementInput(groundedStart, groundedStartAmbiguous, groundedEnd,
-                false, startOverlapping, horizontalInput, false, ceilingClampedJump, sprinting,
-                sprintJump, movementSpeed, jumpStrength, gravity, 0.0, slipperinessMin, slipperinessMax,
-                blockSpeedFactor, jumpBoostAmplifier, levitation, levitationAmplifier, slowFalling,
-                fluidFriction, fluidAccel, false, bubbleAscent);
-    }
 }

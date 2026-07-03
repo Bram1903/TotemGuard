@@ -107,7 +107,7 @@ public class Data {
         this.foodData = new FoodData();
         this.clientWorld = new ClientWorld();
         this.mitigationService = new MitigationService(this);
-        this.setbackController = new SetbackController(mitigationService);
+        this.setbackController = new SetbackController(mitigationService, externalVelocityData);
         this.movementEstimator = new MovementEstimator(this);
     }
 

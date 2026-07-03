@@ -135,6 +135,14 @@ physics-engine:
     # Legit landings credit their full damage on their own and are never touched.
     fall-damage: true
 
+    # Drop a positive-timer player's surplus movement packets at the network
+    # layer before the server processes them, so a timer is throttled at its source instead
+    # of only being rubber-banded after the fact. Only ever acts on a player whose game clock
+    # is genuinely ahead of real time (BalanceA, the ping-proof timer check, with its mitigate
+    # flag on), so a legit player is never touched. The setback above still does the actual
+    # position correction, this makes the server-side movement drift-free between corrections.
+    timer-packet-cancel: true
+
   # Logs one simulation line per movement tick to the console for every player, so movement
   # false positives can be copied and diagnosed (observed motion, the predicted caps, the
   # excess, ground state, medium, and inputs). Very spammy, intended for a dev/test server

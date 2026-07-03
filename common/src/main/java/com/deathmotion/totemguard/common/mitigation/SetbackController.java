@@ -19,16 +19,18 @@
 package com.deathmotion.totemguard.common.mitigation;
 
 import com.deathmotion.totemguard.common.physics.MovementConstants;
+import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.github.retrooper.packetevents.util.Vector3d;
 
 public class SetbackController {
 
     private static final double MIN_PULL_DOWN = MovementConstants.GRAVITY;
+    private static final double TERMINAL_PULL_DOWN = 3.0;
     private static final double GROUND_GAP_MARGIN = 0.001;
-    private static final int POST_SETBACK_GUARD_TICKS = 1;
     private static final int ANCHOR_FREEZE_TICKS = 3;
 
     private final MitigationService service;
+    private final ExternalVelocityData externalVelocity;
 
     private boolean hasSafe;
     private double safeX;
@@ -39,10 +41,10 @@ public class SetbackController {
     private boolean safeAirborne;
 
     private int anchorFreeze;
-    private int postSetbackGuard;
 
-    public SetbackController(MitigationService service) {
+    public SetbackController(MitigationService service, ExternalVelocityData externalVelocity) {
         this.service = service;
+        this.externalVelocity = externalVelocity;
     }
 
     public void markSafe(double x, double y, double z, double velY, double groundGap, boolean airborne) {
@@ -68,41 +70,35 @@ public class SetbackController {
         return hasSafe;
     }
 
-    public void onConfirm() {
-        postSetbackGuard = POST_SETBACK_GUARD_TICKS;
-    }
-
-    public boolean postSetbackGuardActive() {
-        return postSetbackGuard > 0;
-    }
-
-    public void tickPostSetbackGuard() {
-        if (postSetbackGuard > 0) postSetbackGuard--;
-    }
-
     public boolean requestSetback() {
         if (!hasSafe) return false;
         if (service.setbackPending()) return false;
         if (!service.setbackIssuable()) return false;
 
-        double drop = 0.0;
-        if (safeAirborne) {
-            drop = Math.min(safeVelY, 0.0) - MIN_PULL_DOWN;
-            double maxDrop = -Math.max(0.0, safeGroundGap - GROUND_GAP_MARGIN);
-            if (drop < maxDrop) drop = maxDrop;
-        }
-        boolean issued = service.setback(new Vector3d(safeX, safeY + drop, safeZ));
-        if (issued && drop < 0.0) {
+        boolean foldKnockback = externalVelocity.isActive();
+        double kbX = foldKnockback ? externalVelocity.x() : 0.0;
+        double kbY = foldKnockback ? externalVelocity.y() : 0.0;
+        double kbZ = foldKnockback ? externalVelocity.z() : 0.0;
+
+        double drop = safeAirborne ? Math.min(safeVelY, 0.0) - MIN_PULL_DOWN : 0.0;
+        drop += kbY;
+        double maxDrop = -Math.max(0.0, safeGroundGap - GROUND_GAP_MARGIN);
+        if (drop < maxDrop) drop = maxDrop;
+
+        boolean issued = service.setback(new Vector3d(safeX + kbX, safeY + drop, safeZ + kbZ));
+        if (!issued) return false;
+
+        if (foldKnockback) externalVelocity.consume();
+        if (drop < 0.0) {
             safeY += drop;
             safeGroundGap = Math.max(0.0, safeGroundGap + drop);
-            safeVelY = 0.0;
+            safeVelY = Math.max(drop, -TERMINAL_PULL_DOWN);
         }
-        return issued;
+        return true;
     }
 
     public void reset() {
         hasSafe = false;
         anchorFreeze = 0;
-        postSetbackGuard = 0;
     }
 }

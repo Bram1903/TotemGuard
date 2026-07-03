@@ -28,4 +28,7 @@ public interface PacketCheck extends Check {
 
     default void onPacketSend(final PacketSendEvent event) {
     }
+
+    default void onPreFlying(final PacketReceiveEvent event) {
+    }
 }

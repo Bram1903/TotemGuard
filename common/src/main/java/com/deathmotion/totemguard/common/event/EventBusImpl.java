@@ -50,6 +50,8 @@ public final class EventBusImpl implements EventBus {
     @Getter
     private final TGTeleportChannel teleport = new TGTeleportChannel();
     @Getter
+    private final TGSetbackChannel setback = new TGSetbackChannel();
+    @Getter
     private final TGMonitorOpenChannel monitorOpen = new TGMonitorOpenChannel();
     @Getter
     private final TGFollowChannel follow = new TGFollowChannel();
@@ -71,6 +73,7 @@ public final class EventBusImpl implements EventBus {
         concrete.put(userInventoryClose.eventType(), userInventoryClose);
         concrete.put(modDetectionResolved.eventType(), modDetectionResolved);
         concrete.put(teleport.eventType(), teleport);
+        concrete.put(setback.eventType(), setback);
         concrete.put(monitorOpen.eventType(), monitorOpen);
         concrete.put(follow.eventType(), follow);
         concrete.put(focus.eventType(), focus);

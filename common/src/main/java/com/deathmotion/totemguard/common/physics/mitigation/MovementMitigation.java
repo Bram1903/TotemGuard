@@ -62,11 +62,9 @@ public class MovementMitigation {
         setbackSkippedThisTick = false;
 
         controller.tickAnchorFreeze();
-        controller.tickPostSetbackGuard();
         service.onFlying();
         if (service.setbackConfirmedThisTick()) {
             buffer = 0.0;
-            controller.onConfirm();
         }
 
         boolean offense = result.movedThisTick() || result.ascendingThisTick();

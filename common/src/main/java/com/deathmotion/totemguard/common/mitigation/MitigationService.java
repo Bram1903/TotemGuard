@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.mitigation;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.MovementData;
@@ -96,9 +97,16 @@ public class MitigationService {
         double dx = target.getX() - current.getX();
         double dy = target.getY() - current.getY();
         double dz = target.getZ() - current.getZ();
-        pendingSetbackDy = dy;
+        boolean packet = dx * dx + dy * dy + dz * dz <= PACKET_SETBACK_MAX * PACKET_SETBACK_MAX;
 
-        pendingIsPacket = dx * dx + dy * dy + dz * dz <= PACKET_SETBACK_MAX * PACKET_SETBACK_MAX;
+        if (TGPlatform.getInstance().getEventBus().getSetback().fire(
+                data.getPlayer(), current.getX(), current.getY(), current.getZ(),
+                target.getX(), target.getY(), target.getZ(), packet)) {
+            return false;
+        }
+
+        pendingSetbackDy = dy;
+        pendingIsPacket = packet;
         if (pendingIsPacket) {
             lastTargetX = target.getX();
             lastTargetY = target.getY();

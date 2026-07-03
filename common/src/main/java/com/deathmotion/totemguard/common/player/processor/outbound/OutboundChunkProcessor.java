@@ -94,12 +94,19 @@ public class OutboundChunkProcessor extends ProcessorOutbound {
 
     private void resetWorld() {
         clientWorld.clear();
+        data.getMovementEstimator().onWorldReset();
     }
 
     private void loadColumn(PacketSendEvent event, int chunkX, int chunkZ, BaseChunk[] sections, boolean fullChunk) {
         Runnable apply = fullChunk
-                ? () -> clientWorld.loadChunk(chunkX, chunkZ, sections)
-                : () -> clientWorld.mergeChunk(chunkX, chunkZ, sections);
+                ? () -> {
+                    clientWorld.loadChunk(chunkX, chunkZ, sections);
+                    data.getMovementEstimator().onWorldChunkLoaded();
+                }
+                : () -> {
+                    clientWorld.mergeChunk(chunkX, chunkZ, sections);
+                    data.getMovementEstimator().onWorldChunkLoaded();
+                };
         latencyHandler.compensateLazy(event, apply);
     }
 

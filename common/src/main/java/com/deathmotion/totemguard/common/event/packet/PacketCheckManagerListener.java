@@ -57,16 +57,24 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
             return;
         }
 
+        final CheckManagerImpl checkManager = player.getCheckManager();
+        final PacketTypeCommon packetType = event.getPacketType();
+        final boolean flying = WrapperPlayClientPlayerFlying.isFlying(packetType);
+
+        if (flying) {
+            checkManager.onPreFlying(event);
+        }
+
         for (ProcessorInbound processor : inbounds) {
             processor.handleInbound(event);
         }
 
-        final CheckManagerImpl checkManager = player.getCheckManager();
-        final PacketTypeCommon packetType = event.getPacketType();
-        if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
-            player.getData().getMovementEstimator().onFlying();
-            player.getData().updateNetherPortalContact();
-            player.getDebugOverlayManager().refresh();
+        if (flying) {
+            if (!event.isCancelled()) {
+                player.getData().getMovementEstimator().onFlying();
+                player.getData().updateNetherPortalContact();
+                player.getDebugOverlayManager().refresh();
+            }
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
             player.getData().getMovementEstimator().onTickEnd();
         }

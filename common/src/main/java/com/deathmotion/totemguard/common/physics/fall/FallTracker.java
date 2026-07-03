@@ -92,7 +92,7 @@ public class FallTracker {
                     onSetbackConfirm(service.pendingSetbackDy());
                 }
             }
-            case INIT, FLY, VEHICLE, SLEEPING, GLIDE, PISTON, BORDER, UNLOADED -> abort();
+            case INIT, FLY, VEHICLE, SLEEPING, GLIDE, PISTON, BORDER, UNLOADED, LOADING -> abort();
             default -> {
                 if (env == null || ground == null) {
                     abort();

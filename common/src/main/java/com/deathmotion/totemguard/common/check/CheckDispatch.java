@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 record CheckDispatch(
         CheckSlot<PacketCheck> packetReceive,
         CheckSlot<PacketCheck> packetSend,
+        CheckSlot<PacketCheck> preFlying,
         CheckSlot<EventCheck> event,
         CheckSlot<ExtendedCheck> extendedReceive,
         CheckSlot<ExtendedCheck> extendedSend,

@@ -44,6 +44,7 @@ public final class ConfigView {
     private final boolean physicsEngineSetback;
     private final boolean physicsEngineCloseInventory;
     private final boolean physicsEngineFallDamage;
+    private final boolean physicsEngineTimerPacketCancel;
     private final boolean physicsEngineDebug;
     private final boolean debugModifierKickEnabled;
     private final Set<String> developerOverrides;
@@ -96,6 +97,7 @@ public final class ConfigView {
         this.physicsEngineSetback = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_SETBACK);
         this.physicsEngineCloseInventory = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_CLOSE_INVENTORY);
         this.physicsEngineFallDamage = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_FALL_DAMAGE);
+        this.physicsEngineTimerPacketCancel = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_TIMER_PACKET_CANCEL);
         this.physicsEngineDebug = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_DEBUG);
         this.debugModifierKickEnabled = config.getBoolean(ConfigKeys.DEBUG_MODIFIER_KICK_ENABLED);
         List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
@@ -156,6 +158,10 @@ public final class ConfigView {
 
     public boolean physicsEngineFallDamage() {
         return physicsEngineFallDamage;
+    }
+
+    public boolean physicsEngineTimerPacketCancel() {
+        return physicsEngineTimerPacketCancel;
     }
 
     public boolean physicsEngineDebug() {

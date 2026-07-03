@@ -45,6 +45,7 @@ public enum MovementCause {
     RESYNC,
     TELEPORT,
     UNLOADED,
+    LOADING,
     WITHHELD,
     DOUBLE_MOVE
 }

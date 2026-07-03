@@ -181,6 +181,10 @@ public class CheckManagerImpl {
         }
     }
 
+    public void onPreFlying(final PacketReceiveEvent packet) {
+        for (PacketCheck c : this.dispatch.preFlying().always()) c.onPreFlying(packet);
+    }
+
     public void onPacketSend(final PacketSendEvent packet) {
         CheckDispatch d = this.dispatch;
         CheckSlot<PacketCheck> pkt = d.packetSend();
@@ -274,6 +278,7 @@ public class CheckManagerImpl {
         return new CheckDispatch(
                 buildSlot(allPacketChecks, PacketCheck[]::new, c -> overrides(c, "onPacketReceive", PacketReceiveEvent.class)),
                 buildSlot(allPacketChecks, PacketCheck[]::new, c -> overrides(c, "onPacketSend", PacketSendEvent.class)),
+                buildSlot(allPacketChecks, PacketCheck[]::new, c -> overrides(c, "onPreFlying", PacketReceiveEvent.class)),
                 buildSlot(allEventChecks, EventCheck[]::new, c -> true),
                 buildSlot(allExtendedChecks, ExtendedCheck[]::new, c -> overrides(c, "onPacketReceive", PacketReceiveEvent.class)),
                 buildSlot(allExtendedChecks, ExtendedCheck[]::new, c -> overrides(c, "onPacketSend", PacketSendEvent.class)),

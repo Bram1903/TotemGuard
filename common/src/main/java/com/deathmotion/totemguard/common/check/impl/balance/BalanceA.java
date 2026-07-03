@@ -46,6 +46,7 @@ public class BalanceA extends CheckImpl implements PacketCheck {
     private final SetbackController setbackController;
     private long balance;
     private boolean flyingThisTick;
+    private boolean overBudget;
 
     public BalanceA(TGPlayer player) {
         super(player);
@@ -68,7 +69,8 @@ public class BalanceA extends CheckImpl implements PacketCheck {
         balance += TICK_NANOS;
 
         long now = System.nanoTime();
-        if (balance > now) {
+        overBudget = balance > now;
+        if (overBudget) {
             long aheadMillis = (balance - now) / 1_000_000L;
             balance -= TICK_NANOS;
             if (mitigate) setbackController.requestAnchorFreeze();
@@ -85,6 +87,15 @@ public class BalanceA extends CheckImpl implements PacketCheck {
         if (balance < floor) {
             balance = floor;
         }
+    }
+
+    @Override
+    public void onPreFlying(PacketReceiveEvent event) {
+        if (!mitigate || !overBudget) return;
+        if (data.getMitigationService().setbackPending()) return;
+        if (data.getTeleportData().lastPacketWasTeleport()) return;
+        if (!platform.getConfigRepository().configView().physicsEngineTimerPacketCancel()) return;
+        event.setCancelled(true);
     }
 
     protected long floorNanos(long now) {
