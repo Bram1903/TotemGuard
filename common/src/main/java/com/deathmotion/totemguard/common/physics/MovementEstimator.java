@@ -52,7 +52,7 @@ public class MovementEstimator {
     private static final double STRONG_SINGLE_EXCESS = 0.40;
 
     private static final double HORIZONTAL_PAD = 0.006;
-    private static final double VERTICAL_PAD = 0.015;
+    private static final double VERTICAL_PAD = 0.006;
 
     private static final double AIR_DISK_PAD = 0.003;
     private static final double AIR_DIRECTION_MIN_SPEED = 0.04;

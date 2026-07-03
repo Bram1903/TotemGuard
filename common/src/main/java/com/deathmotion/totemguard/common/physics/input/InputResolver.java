@@ -101,8 +101,11 @@ public final class InputResolver {
         boolean waterExitHop = ground.wasFluid() && !env.fluid() && observed.getY() > RISE_EPS
                 && env.groundGap() <= WATER_EXIT_SUPPORT_REACH;
 
+        boolean supportWithinStep = env.groundGap() <= attr.stepHeight()
+                && (env.horizontalObstacle() || env.startOverlapping());
+
         return new MovementInput(effectiveGroundedStart, ground.groundedStartAmbiguous(), ground.groundedEnd(),
-                env.groundGap() <= attr.stepHeight(), env.startOverlapping(),
+                supportWithinStep, env.startOverlapping(),
                 horizontalInput, jumpPossible, ceilingClampedJump,
                 sprinting, sprintJump, effectiveSpeed(sprinting, sneaking, diagonal),
                 attr.jumpStrength(), attr.gravity(), attr.stepHeight(),
