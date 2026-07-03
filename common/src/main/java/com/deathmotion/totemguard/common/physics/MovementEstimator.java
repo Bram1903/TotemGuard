@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.physics.fall.FallTracker;
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.ground.GroundTracker;
 import com.deathmotion.totemguard.common.physics.input.InputResolver;
+import com.deathmotion.totemguard.common.mitigation.SetbackController;
 import com.deathmotion.totemguard.common.physics.mitigation.MovementMitigation;
 import com.deathmotion.totemguard.common.physics.phase.PhaseTracker;
 import com.deathmotion.totemguard.common.physics.prescan.FastDetector;
@@ -98,6 +99,7 @@ public class MovementEstimator {
     private final GroundTracker groundTracker = new GroundTracker();
     private final InputResolver inputResolver;
     private final MovementMitigation mitigation;
+    private final SetbackController setbackController;
     private final FallTracker fallTracker;
     private final PhaseTracker phaseTracker = new PhaseTracker();
     private final FastDetector fastDetector = new FastDetector();
@@ -133,15 +135,10 @@ public class MovementEstimator {
         this.data = data;
         this.inputResolver = new InputResolver(data);
         this.mitigation = new MovementMitigation(data);
+        this.setbackController = data.getSetbackController();
         this.fallTracker = new FallTracker(data);
     }
 
-    // A tick-end without any flying packet means the client ran a full tick and asserts, by
-    // omission, that it did not move. An airborne vanilla client always moves (gravity alone
-    // exceeds the send threshold), so judging these silent ticks is what catches a cheat that
-    // freezes in midair without sending anything. Keepalive-driven flying (once per second)
-    // is far too slow for that, and only the tick-end packet proves a client tick actually
-    // ran (a lagging client sends neither movement nor tick-ends, so it is never misjudged).
     public void onTickEnd() {
         boolean sawFlying = flyingSinceTickEnd > 0;
         flyingSinceTickEnd = 0;
@@ -191,7 +188,7 @@ public class MovementEstimator {
                     airborneWithholdStreak > HOVER_TOLERANCE ? HOVER_EXCESS : 0.0);
         }
 
-        mitigation.observe(result, view);
+        mitigation.observe(result, view, 0.0, 0.0, false);
         if (result.cause() == MovementCause.HOVER && mitigation.setbackIssuedThisTick()) {
             hoverSetbackStreak++;
         }
@@ -257,7 +254,11 @@ public class MovementEstimator {
             if (movement.isLastFlyingWasResync()) {
                 if (movement.isLastFlyingWasTeleportResync()) {
                     if (movement.isLastFlyingTeleportVelocityReset()) {
-                        declineRested(MovementCause.RESYNC, observed);
+                        if (data.getMitigationService().setbackPending()) {
+                            declineToRest(MovementCause.RESYNC, observed);
+                        } else {
+                            declineRested(MovementCause.RESYNC, observed);
+                        }
                     } else {
                         coastFrozenMomentum();
                         teleportCarryGrace = TELEPORT_CARRY_GRACE;
@@ -358,7 +359,16 @@ public class MovementEstimator {
             }
         } finally {
             fallTracker.observe(result, movement.isOnGround(), env, ground, view);
-            mitigation.observe(result, view);
+            double safeVelY = observed.getY();
+            double safeGroundGap = 0.0;
+            boolean safeAirborne = false;
+            if (env != null && ground != null) {
+                boolean landMedium = !env.fluid() && !env.stuck() && !env.climbable();
+                safeGroundGap = env.groundGap();
+                safeAirborne = landMedium && !ground.groundedEnd()
+                        && env.groundGap() > HOVER_MIN_GAP && !env.startOverlapping();
+            }
+            mitigation.observe(result, view, safeVelY, safeGroundGap, safeAirborne);
             if (result.cause() == MovementCause.HOVER && mitigation.setbackIssuedThisTick()) {
                 hoverSetbackStreak++;
             }
@@ -369,6 +379,10 @@ public class MovementEstimator {
     }
 
     private void judge(MotionArea move, MovementInput input, BlockEnvironment env, Vector3d observed) {
+        if (setbackController.postSetbackGuardActive()) {
+            input = input.withNoJumpStep();
+            move = MovementSimulator.predictMove(carried, input, env);
+        }
         airborneWithholdStreak = 0;
         hoverSetbackStreak = 0;
         fastDetector.reset();
@@ -678,6 +692,11 @@ public class MovementEstimator {
                 + (data.getEffectData().hasJumpBoost()
                 ? 0.1 * (data.getEffectData().jumpBoostAmplifier() + 1) : 0.0);
         carried = new MotionArea(Range.ZERO, new Range(0.0, jumpCeiling));
+        declineCarried(cause, observed);
+    }
+
+    private void declineToRest(MovementCause cause, Vector3d observed) {
+        carried = MotionArea.resting();
         declineCarried(cause, observed);
     }
 

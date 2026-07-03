@@ -24,9 +24,9 @@ import lombok.experimental.Accessors;
 @Getter
 @Accessors(fluent = true)
 public enum SimulationTolerance {
-    STRICT(1.0, 2.0),
-    STANDARD(1.5, 4.0),
-    LENIENT(2.5, 8.0);
+    STRICT(1.0, 1.0),
+    STANDARD(1.5, 2.0),
+    LENIENT(2.5, 4.0);
 
     private final double padScale;
     private final double setbackBuffer;

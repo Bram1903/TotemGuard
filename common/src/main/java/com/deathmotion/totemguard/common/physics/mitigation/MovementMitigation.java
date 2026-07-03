@@ -20,12 +20,12 @@ package com.deathmotion.totemguard.common.physics.mitigation;
 
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.mitigation.MitigationService;
+import com.deathmotion.totemguard.common.mitigation.SetbackController;
 import com.deathmotion.totemguard.common.physics.MovementCause;
 import com.deathmotion.totemguard.common.physics.MovementDebug;
 import com.deathmotion.totemguard.common.physics.MovementResult;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.util.Vector3d;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
@@ -39,8 +39,8 @@ public class MovementMitigation {
 
     private final Data data;
     private final MitigationService service;
+    private final SetbackController controller;
 
-    private Vector3d lastLegal;
     private double buffer;
     @Getter
     private boolean triggeredThisTick;
@@ -52,22 +52,30 @@ public class MovementMitigation {
     public MovementMitigation(Data data) {
         this.data = data;
         this.service = data.getMitigationService();
+        this.controller = data.getSetbackController();
     }
 
-    public void observe(MovementResult result, ConfigView view) {
+    public void observe(MovementResult result, ConfigView view,
+                        double safeVelY, double safeGroundGap, boolean safeAirborne) {
         triggeredThisTick = false;
         setbackIssuedThisTick = false;
         setbackSkippedThisTick = false;
 
+        controller.tickAnchorFreeze();
+        controller.tickPostSetbackGuard();
         service.onFlying();
-        if (service.setbackConfirmedThisTick()) buffer = 0.0;
+        if (service.setbackConfirmedThisTick()) {
+            buffer = 0.0;
+            controller.onConfirm();
+        }
 
         boolean offense = result.movedThisTick() || result.ascendingThisTick();
         if (!offense) {
             buffer = Math.max(0.0, buffer * DECAY_FACTOR - DECAY_SUBTRACT);
-            if (trustedPosition(result.cause())) {
+            if (trustedPosition(result.cause()) && !service.setbackConfirmedThisTick()) {
                 Location current = data.getMovementData().getCurrent();
-                lastLegal = new Vector3d(current.getX(), current.getY(), current.getZ());
+                controller.markSafe(current.getX(), current.getY(), current.getZ(),
+                        safeVelY, safeGroundGap, safeAirborne);
             }
             return;
         }
@@ -99,12 +107,12 @@ public class MovementMitigation {
     }
 
     public void reset() {
-        lastLegal = null;
         buffer = 0.0;
         triggeredThisTick = false;
         setbackIssuedThisTick = false;
         setbackSkippedThisTick = false;
         service.reset();
+        controller.reset();
     }
 
     private boolean trustedPosition(MovementCause cause) {
@@ -114,8 +122,7 @@ public class MovementMitigation {
     }
 
     private void setback(MovementResult result, boolean issue) {
-        if (service.setbackPending() || lastLegal == null) return;
-        if (!service.setbackIssuable()) return;
+        if (service.setbackPending() || !controller.hasSafe() || !service.setbackIssuable()) return;
 
         if (!issue) {
             setbackSkippedThisTick = true;
@@ -124,6 +131,6 @@ public class MovementMitigation {
 
         MovementDebug.log(data.getPlayer(), "setback:" + result.cause(), result.observed(),
                 null, null, null, result.horizontalExcess(), result.verticalExcess());
-        setbackIssuedThisTick = service.setback(lastLegal);
+        setbackIssuedThisTick = controller.requestSetback();
     }
 }

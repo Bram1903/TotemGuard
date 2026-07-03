@@ -104,6 +104,14 @@ public class PaperPlatformPlayer implements PlatformPlayer {
     }
 
     @Override
+    public void resetFallDistance() {
+        scheduler.runForEntity(paperPlayer, () -> {
+            if (!paperPlayer.isOnline()) return;
+            paperPlayer.setFallDistance(0.0F);
+        }, null);
+    }
+
+    @Override
     public boolean dealFallDamage(double amount) {
         if (amount <= 0.0) return false;
         scheduler.runForEntity(paperPlayer, () -> {

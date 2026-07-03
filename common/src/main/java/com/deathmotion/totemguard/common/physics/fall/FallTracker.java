@@ -160,7 +160,11 @@ public class FallTracker {
 
     private void onSetbackConfirm(double teleportDy) {
         serverFall = 0.0;
-        engineFall = Math.min(MAX_FALL_DISTANCE, Math.max(0.0, engineFall - teleportDy));
+        if (teleportDy < 0.0) {
+            engineFall = 0.0;
+        } else {
+            engineFall = Math.min(MAX_FALL_DISTANCE, Math.max(0.0, engineFall - teleportDy));
+        }
         provenSpoof = true;
     }
 

@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.api.check.CheckType;
 import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
+import com.deathmotion.totemguard.common.mitigation.SetbackController;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -42,11 +43,13 @@ public class BalanceA extends CheckImpl implements PacketCheck {
 
     protected long anchorNanos;
 
+    private final SetbackController setbackController;
     private long balance;
     private boolean flyingThisTick;
 
     public BalanceA(TGPlayer player) {
         super(player);
+        this.setbackController = player.getData().getSetbackController();
         long start = System.nanoTime() - JOIN_GRACE_NANOS;
         this.balance = start;
         this.anchorNanos = start;
@@ -68,9 +71,11 @@ public class BalanceA extends CheckImpl implements PacketCheck {
         if (balance > now) {
             long aheadMillis = (balance - now) / 1_000_000L;
             balance -= TICK_NANOS;
+            if (mitigate) setbackController.requestAnchorFreeze();
             if (shouldReport(now) && buffer.increase(BUFFER_GAIN) >= BUFFER_THRESHOLD) {
                 buffer.set(BUFFER_RETAIN);
                 fail("ahead={0}ms,ping={1}ms", aheadMillis, player.getPingData().getTransactionPing());
+                if (mitigate) setbackController.requestSetback();
             }
         } else {
             buffer.decrease(BUFFER_DECAY);

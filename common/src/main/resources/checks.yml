@@ -162,6 +162,7 @@ TickD:
 BalanceA:
   enabled: true
   punishable: false
+  mitigate: true
   max-violations: 10
 
   punishment-commands:
@@ -170,6 +171,7 @@ BalanceA:
 BalanceB:
   enabled: true
   punishable: false
+  mitigate: false
   max-violations: 10
 
   punishment-commands:

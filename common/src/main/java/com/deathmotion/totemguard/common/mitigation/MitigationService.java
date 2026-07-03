@@ -22,19 +22,29 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 
 public class MitigationService {
 
     private static final int PENDING_TIMEOUT_TICKS = 100;
+    private static final int RESEND_INTERVAL = 10;
+    private static final double PACKET_SETBACK_MAX = 7.0;
+    private static final byte ROTATION_RELATIVE = RelativeFlag.YAW.or(RelativeFlag.PITCH).getMask();
 
     private final Data data;
 
     private boolean pendingSetback;
+    private boolean pendingIsPacket;
     private int pendingTicks;
     private double pendingSetbackDy;
     private boolean setbackConfirmedThisTick;
+    private int teleportId = -1;
+    private double lastTargetX;
+    private double lastTargetY;
+    private double lastTargetZ;
 
     public MitigationService(Data data) {
         this.data = data;
@@ -48,9 +58,13 @@ public class MitigationService {
             pendingSetback = false;
             pendingTicks = 0;
             setbackConfirmedThisTick = true;
-        } else if (++pendingTicks > PENDING_TIMEOUT_TICKS) {
+            return;
+        }
+        if (++pendingTicks > PENDING_TIMEOUT_TICKS) {
             pendingSetback = false;
             pendingTicks = 0;
+        } else if (pendingIsPacket && pendingTicks % RESEND_INTERVAL == 0) {
+            sendCorrection(lastTargetX, lastTargetY, lastTargetZ);
         }
     }
 
@@ -78,13 +92,34 @@ public class MitigationService {
         String worldName = platformPlayer.getWorldName();
         if (worldName == null) return false;
 
+        Location current = data.getMovementData().getCurrent();
+        double dx = target.getX() - current.getX();
+        double dy = target.getY() - current.getY();
+        double dz = target.getZ() - current.getZ();
+        pendingSetbackDy = dy;
+
+        pendingIsPacket = dx * dx + dy * dy + dz * dz <= PACKET_SETBACK_MAX * PACKET_SETBACK_MAX;
+        if (pendingIsPacket) {
+            lastTargetX = target.getX();
+            lastTargetY = target.getY();
+            lastTargetZ = target.getZ();
+            sendCorrection(target.getX(), target.getY(), target.getZ());
+            platformPlayer.resetFallDistance();
+        } else {
+            platformPlayer.teleport(worldName, target.getX(), target.getY(), target.getZ(),
+                    current.getYaw(), current.getPitch());
+        }
+
         pendingSetback = true;
         pendingTicks = 0;
-        Location current = data.getMovementData().getCurrent();
-        pendingSetbackDy = target.getY() - current.getY();
-        platformPlayer.teleport(worldName, target.getX(), target.getY(), target.getZ(),
-                current.getYaw(), current.getPitch());
         return true;
+    }
+
+    private void sendCorrection(double x, double y, double z) {
+        int id = teleportId;
+        teleportId = teleportId <= Integer.MIN_VALUE + 1 ? -1 : teleportId - 1;
+        data.getPlayer().getUser().sendPacket(new WrapperPlayServerPlayerPositionAndLook(
+                x, y, z, 0.0F, 0.0F, ROTATION_RELATIVE, id, false));
     }
 
     public boolean closeInventory() {
@@ -104,6 +139,7 @@ public class MitigationService {
 
     public void reset() {
         pendingSetback = false;
+        pendingIsPacket = false;
         pendingTicks = 0;
         pendingSetbackDy = 0.0;
         setbackConfirmedThisTick = false;
