@@ -36,6 +36,7 @@ public final class ConfigView {
     private final RedisOptions redis;
     private final DatabaseOptions database;
     private final UpdateCheckerOptions updateChecker;
+    private final boolean unsupportedClientKick;
     private final EntitySpoofingOptions entitySpoofing;
     private final boolean banAnimationEnabled;
     private final boolean tickSkipKeepAliveValidation;
@@ -86,6 +87,7 @@ public final class ConfigView {
                 config.getBoolean(ConfigKeys.UPDATE_CHECKER_ENABLED),
                 config.getBoolean(ConfigKeys.UPDATE_CHECKER_NOTIFY_ON_JOIN)
         );
+        this.unsupportedClientKick = config.getBoolean(ConfigKeys.UNSUPPORTED_CLIENT_KICK);
         this.entitySpoofing = new EntitySpoofingOptions(
                 config.getBoolean(ConfigKeys.ENTITY_SPOOFING_HEALTH),
                 config.getBoolean(ConfigKeys.ENTITY_SPOOFING_ABSORPTION)
@@ -126,6 +128,10 @@ public final class ConfigView {
 
     public @NotNull UpdateCheckerOptions updateChecker() {
         return updateChecker;
+    }
+
+    public boolean unsupportedClientKick() {
+        return unsupportedClientKick;
     }
 
     public @NotNull EntitySpoofingOptions entitySpoofing() {

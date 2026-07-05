@@ -43,6 +43,8 @@ public final class ConfigKeys {
     public static final ConfigKey<Boolean> UPDATE_CHECKER_ENABLED = ConfigKey.bool("update-checker.enabled");
     public static final ConfigKey<Boolean> UPDATE_CHECKER_NOTIFY_ON_JOIN = ConfigKey.bool("update-checker.notify-on-join");
 
+    public static final ConfigKey<Boolean> UNSUPPORTED_CLIENT_KICK = ConfigKey.bool("unsupported-client.kick");
+
     public static final ConfigKey<Boolean> ENTITY_SPOOFING_HEALTH = ConfigKey.bool("entity-spoofing.health");
     public static final ConfigKey<Boolean> ENTITY_SPOOFING_ABSORPTION = ConfigKey.bool("entity-spoofing.absorption");
 

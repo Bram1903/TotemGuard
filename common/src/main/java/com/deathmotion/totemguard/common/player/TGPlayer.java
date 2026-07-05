@@ -75,6 +75,7 @@ public class TGPlayer implements TGUser {
     private static final long TRANSACTION_HEARTBEAT_NANOS = 45_000_000L;
     private static final long THIRD_PARTY_CADENCE_NANOS = 150_000_000L;
     private static final long TRANSACTION_ACK_STALE_NANOS = 2_000_000_000L;
+    private static final ClientVersion MIN_CLIENT_VERSION = ClientVersion.V_1_17;
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
@@ -195,6 +196,15 @@ public class TGPlayer implements TGUser {
             return;
         }
 
+        if (getClientVersion().isOlderThan(MIN_CLIENT_VERSION)) {
+            boolean kick = platform.getConfigRepository().configView().unsupportedClientKick();
+            playerRepository.removeUser(user);
+            if (kick) {
+                disconnect(unsupportedClientScreen(), "unsupported client version " + getClientVersion().name());
+            }
+            return;
+        }
+
         supportsEndTickCache = computeSupportsEndTick();
 
         platform.getEventBus().getUserJoin().fire(this);
@@ -249,6 +259,13 @@ public class TGPlayer implements TGUser {
         } catch (Exception ignored) {
         }
         user.closeConnection();
+    }
+
+    private Component unsupportedClientScreen() {
+        return Component.text("TotemGuard: unsupported Minecraft version.")
+                .append(Component.newline())
+                .append(Component.newline())
+                .append(Component.text("This server requires Minecraft 1.17 or newer to play."));
     }
 
     void resolveDatabaseProfile() {

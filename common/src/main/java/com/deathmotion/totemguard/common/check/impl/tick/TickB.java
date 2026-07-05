@@ -40,7 +40,7 @@ public class TickB extends CheckImpl implements PacketCheck {
         PacketTypeCommon packetType = event.getPacketType();
         PingData pingData = player.getPingData();
 
-        if (packetType == PacketType.Play.Client.WINDOW_CONFIRMATION || packetType == PacketType.Play.Client.PONG) {
+        if (packetType == PacketType.Play.Client.PONG) {
             if (!pingData.isLastTransactionReplyValid()) {
                 fail("type=transaction,invalid");
                 return;

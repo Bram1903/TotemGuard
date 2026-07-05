@@ -21,9 +21,7 @@ package com.deathmotion.totemguard.common.player.processor.inbound;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.util.ChatUtil;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
@@ -34,7 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class InboundClientProcessor extends ProcessorInbound {
 
-    private static final String BRAND_CHANNEL = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_13) ? "minecraft:brand" : "MC|Brand";
+    private static final String BRAND_CHANNEL = "minecraft:brand";
 
     private static final String MARLOW_VERSION_CHANNEL = "marlowcrystal:version";
     private static final String MARLOW_CHALLENGE_CHANNEL = "marlowcrystal:challenge";

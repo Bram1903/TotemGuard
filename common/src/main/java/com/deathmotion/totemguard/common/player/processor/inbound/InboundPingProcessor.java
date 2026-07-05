@@ -26,7 +26,6 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientKeepAlive;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPong;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientWindowConfirmation;
 
 public class InboundPingProcessor extends ProcessorInbound {
 
@@ -41,11 +40,7 @@ public class InboundPingProcessor extends ProcessorInbound {
     public void handleInbound(PacketReceiveEvent event) {
         final PacketTypeCommon packetType = event.getPacketType();
 
-        if (packetType == PacketType.Play.Client.WINDOW_CONFIRMATION) {
-            WrapperPlayClientWindowConfirmation packet = new WrapperPlayClientWindowConfirmation(event);
-            pingData.transactionReceived(packet.getActionId(), event.getTimestamp());
-            player.getDebugOverlayManager().refresh();
-        } else if (packetType == PacketType.Play.Client.PONG) {
+        if (packetType == PacketType.Play.Client.PONG) {
             WrapperPlayClientPong packet = new WrapperPlayClientPong(event);
             pingData.transactionReceived(packet.getId(), event.getTimestamp());
             player.getDebugOverlayManager().refresh();

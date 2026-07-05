@@ -17,8 +17,7 @@ commands:
   aliases:
     - tg
 
-# MySQL 8+ or MariaDB. Shared across servers; each row is tagged with
-# the server name above.
+# MySQL 8+ or MariaDB. Shared across servers, each row tagged with the server name above.
 database:
   enabled: false
 
@@ -35,8 +34,7 @@ database:
     # 0 = keep forever.
     alerts-days: 0
 
-# In a multiserver setup, enabling Redis is highly recommended.
-# Redis will make TotemGuard much more powerful by syncing data, alerts and more across servers.
+# Recommended for multiserver setups. Syncs data, alerts, and more across servers.
 redis:
   enabled: false
   host: localhost
@@ -46,27 +44,31 @@ redis:
   username: default
   password: yourPassword
 
-  # Turn off when this server runs alone, but you still want Redis for caching
-  # (violation buffers, db query results, etc.). Disabling this skips presence
-  # heartbeats, cross-server alerts/monitor/follow/focus, proxy bridge wiring,
-  # and the offline-grace window. Leave true on multi-server setups.
+  # Turn off when this server runs alone but still wants Redis for caching
+  # (violation buffers, db query results). Disabling skips presence heartbeats,
+  # cross-server alerts/monitor/follow/focus, proxy bridge wiring, and offline-grace.
+  # Leave true on multiserver setups.
   cluster: true
 
-  # When a player switches backends, the source server's quit
-  # fires before the destination's join lands. This grace window swallows that
-  # gap so transfers stay silent: no alert flicker, focus targets survive.
-  # Ignored when cluster is false.
+  # When a player switches backends, the source server's quit fires before the
+  # destination's join lands. This window swallows that gap so transfers stay silent:
+  # no alert flicker, focus targets survive. Ignored when cluster is false.
   offline-grace-millis: 4000
 
-  # All channels are namespaced under "totemguard:". Override `alerts.channel`
-  # to scope alerts to a cluster (e.g. "events" → "totemguard:events");
-  # leave blank for the default "totemguard:alerts".
-  # Multiple message types can use the same channel (handled by the packet id)
+  # All channels are namespaced under "totemguard:". Override `alerts.channel` to scope
+  # alerts to a cluster (e.g. "events" becomes "totemguard:events"), or leave blank for
+  # the default "totemguard:alerts". Types can share a channel (routed by packet id).
   messaging:
     alerts:
       channel: ""
       send: true
       receive: true
+
+# Clients older than Minecraft 1.17 cannot be tracked reliably: their container
+# clicks carry no slot or cursor data, so inventory tracking desyncs.
+# true = kick on join, false = let them play but run no checks.
+unsupported-client:
+  kick: true
 
 # Hides sensitive information about other players from clients so cheaters can't
 # exploit it. None of these affect the receiving player's own data.
@@ -88,11 +90,10 @@ teleport:
   command: "/tg teleport %tg_player%"
 
 tick:
-  # Skip the keep-alive ordering/validation branch of TickB. Transaction and
-  # teleport-confirm ordering remain checked.
-  # Enable this if your server (or a plugin/proxy) modifies vanilla keep-alive
-  # handling, or if TickB is flagging legitimate players on the "keepalive"
-  # branch. Leave false on a stock setup.
+  # Skip the keep-alive ordering branch of TickB (transaction and teleport-confirm
+  # ordering stay checked). Enable if your server, a plugin, or a proxy alters vanilla
+  # keep-alive handling, or if TickB flags legit players on the "keepalive" branch.
+  # Leave false on a stock setup.
   skip-keep-alive-validation: false
 
 # The movement prediction engine. It simulates vanilla physics each tick and powers the
@@ -116,31 +117,26 @@ physics-engine:
   # Mitigation removes the unfair advantage directly instead of only alerting. It rides
   # the same trigger as the Physics flag, so every alert marked (setback) was corrected.
   mitigation:
-    # Teleport the player back to their last legal position when their movement fails the
-    # simulation. This is a real server-side teleport, the server position is corrected too
-    # and the client has to accept it before its movement counts again.
-    # When disabled, the Physics flag still fires at the same moments, marked (setback off)
-    # instead of (setback), so you can test without being teleported while still seeing
-    # exactly where a setback would have landed.
+    # Teleport the player back to their last legal position when movement fails the
+    # simulation. A real server-side teleport: the client must accept it before its
+    # movement counts again. When disabled, the Physics flag still fires (marked
+    # (setback off) instead of (setback)) so you can test without being teleported.
     setback: true
 
     # Close the inventory when a player moves with it open (the inventory-move type).
     # The setback above still applies to the illegal movement itself.
     close-inventory: true
 
-    # Apply the fall damage a NoFall cheat dodged. When the engine sees a real landing
-    # after a fall whose damage the server was tricked out of (spoofed onGround flags),
-    # the missing damage is dealt through the vanilla fall-damage pipeline, so armor,
-    # feather falling, and totems behave exactly as if the landing had been honest.
-    # Legit landings credit their full damage on their own and are never touched.
+    # Apply the fall damage a NoFall cheat dodged (spoofed onGround flags). The missing
+    # damage runs through the vanilla pipeline, so armor, feather falling, and totems
+    # behave exactly as on an honest landing. Legit landings are never touched.
     fall-damage: true
 
-    # Drop a positive-timer player's surplus movement packets at the network
-    # layer before the server processes them, so a timer is throttled at its source instead
-    # of only being rubber-banded after the fact. Only ever acts on a player whose game clock
-    # is genuinely ahead of real time (BalanceA, the ping-proof timer check, with its mitigate
-    # flag on), so a legit player is never touched. The setback above still does the actual
-    # position correction, this makes the server-side movement drift-free between corrections.
+    # Drop a timer player's surplus movement packets at the network layer before the
+    # server processes them, throttling the timer at its source instead of only
+    # rubber-banding after the fact. Only acts when BalanceA (the ping-proof timer
+    # check, mitigate flag on) confirms the clock is genuinely ahead, so legit players
+    # are never touched.
     timer-packet-cancel: true
 
   # Logs one simulation line per movement tick to the console for every player, so movement
@@ -149,18 +145,17 @@ physics-engine:
   # with a single player. Applies on reload, no restart needed.
   debug: false
 
-# A vanilla client bug lets you keep moving while an inventory is open when the Debug
-# Modifier Key (F3) is bound to the same key as a movement key. When enabled, TotemGuard
-# reads the client's keybinds on join and disconnects players whose Debug Modifier Key
-# shares a key with forward, back, left, right, or jump, asking them to rebind it. This
-# only catches honest clients that report their keybinds. The inventory checks
-#  catch packet-level inventory cheating regardless.
+# A vanilla client bug lets you keep moving with an inventory open when the Debug Modifier
+# Key (F3) shares a key with a movement bind. When enabled, TotemGuard reads keybinds on
+# join and disconnects players whose Debug Modifier Key collides with forward, back, left,
+# right, or jump, asking them to rebind. Only catches honest clients that report keybinds,
+# the inventory checks catch packet-level cheating regardless.
 debug-modifier-kick:
   enabled: true
 
 # Just before a player is kicked or banned, show them a fake totem-pop animation
-# using a player head with a hacker skin. The head is sent via packets only
-# the real inventory is never touched, so nothing is lost on re-join.
+# using a player head with a hacker skin. The head is packet-only, the real inventory
+# is never touched, so nothing is lost on re-join.
 ban-animation:
   enabled: true
 

@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 @UtilityClass
 public final class PaperCompatibility {
 
-    private final TGVersion MIN_PAPER_VERSION = TGVersion.fromString("1.16.5");
+    private final TGVersion MIN_PAPER_VERSION = TGVersion.fromString("1.17");
 
     private final boolean PAPER_DETECTED =
             hasClass("com.destroystokyo.paper.PaperConfig") || hasClass("io.papermc.paper.configuration.Configuration");

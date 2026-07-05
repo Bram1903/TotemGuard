@@ -29,6 +29,19 @@ via an optional bridge plugin. Spigot and CraftBukkit are not supported (the plu
 non-Paper). Packet interception is done through PacketEvents. Commands use the Incendo Cloud framework. The
 public API artifact is published to `https://maven.pvphub.me/bram` as `totemguard-api`.
 
+Version support has two independent axes and conflating them causes false positives. The floor is 1.17 on
+BOTH axes: the Paper server floor is 1.17 (`PaperCompatibility`), and the client floor is 1.17 (`TGPlayer`,
+clients older than 1.17 are kicked by default or, with `unsupported-client.kick: false`, left unchecked).
+The SERVER version governs packet structure and world representation. The CLIENT version
+(`player.getClientVersion()`, from the handshake, not the packet stream) governs physics and which packets
+the client actually sends (for example a pre-1.21.2 client never sends `ClientTickEnd` even on a 26.x
+server). A 1.17-through-server-version client is fully supported through ViaVersion, and the simulation
+engine reads the world through its eyes: `ClientWorld` remaps every block to what that client sees via
+`ViaBlockTranslator` (Via's own block mappings), so a newer-than-client block collides as its client-visible
+substitute, not the server block. Gate packet or world or server-emitted logic on the server version, gate
+physics and client-sent behavior on the client version, and never assume a modern server implies a modern
+client.
+
 ## Build & run
 
 Gradle wrapper, Java 21 toolchain for most modules. The Fabric platform requires JDK 25 because

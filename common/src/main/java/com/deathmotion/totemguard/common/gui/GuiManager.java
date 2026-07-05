@@ -28,7 +28,6 @@ import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -707,22 +706,8 @@ public final class GuiManager {
     }
 
     private void sendOpenWindow(GuiSession session, GuiRenderResult render) {
-        ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
-        WrapperPlayServerOpenWindow openWindow;
-
-        if (version.isNewerThanOrEquals(ServerVersion.V_1_14)) {
-            openWindow = new WrapperPlayServerOpenWindow(session.windowId(), render.rows() - 1, render.title());
-        } else {
-            openWindow = new WrapperPlayServerOpenWindow(
-                    session.windowId(),
-                    "minecraft:chest",
-                    render.title(),
-                    render.size(),
-                    0
-            );
-        }
-
-        session.user().sendPacket(openWindow);
+        session.user().sendPacket(
+                new WrapperPlayServerOpenWindow(session.windowId(), render.rows() - 1, render.title()));
     }
 
     private void sendWindowItems(GuiSession session, int stateId, GuiRenderResult render, ItemStack fallbackCursor) {

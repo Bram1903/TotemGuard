@@ -26,7 +26,6 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowConfirmation;
 
 public class OutboundPingProcessor extends ProcessorOutbound {
 
@@ -42,11 +41,7 @@ public class OutboundPingProcessor extends ProcessorOutbound {
         if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
-        if (packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) {
-            WrapperPlayServerWindowConfirmation packet = new WrapperPlayServerWindowConfirmation(event);
-            pingData.transactionSent(packet.getActionId(), event.getTimestamp());
-            event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
-        } else if (packetType == PacketType.Play.Server.PING) {
+        if (packetType == PacketType.Play.Server.PING) {
             WrapperPlayServerPing packet = new WrapperPlayServerPing(event);
             pingData.transactionSent(packet.getId(), event.getTimestamp());
             event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());

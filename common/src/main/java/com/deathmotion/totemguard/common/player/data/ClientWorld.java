@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.player.data;
 
 import com.deathmotion.totemguard.common.util.BoundingBox;
+import com.deathmotion.totemguard.common.util.ViaBlockTranslator;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -40,7 +41,19 @@ public class ClientWorld {
     private final ClientVersion blockVersion = PacketEvents.getAPI().getServerManager().getVersion().toClientVersion();
     private final WrappedBlockState air = WrappedBlockState.getByGlobalId(blockVersion, 0, false);
 
+    private final ClientVersion clientVersion;
+    private final int clientProtocol;
+    private final int serverProtocol;
+    private final boolean translateBlocks;
+
     private int minHeight = 0;
+
+    public ClientWorld(ClientVersion clientVersion) {
+        this.clientVersion = clientVersion;
+        this.clientProtocol = clientVersion.getProtocolVersion();
+        this.serverProtocol = blockVersion.getProtocolVersion();
+        this.translateBlocks = ViaBlockTranslator.isAvailable() && clientProtocol < serverProtocol;
+    }
 
     private static long key(int chunkX, int chunkZ) {
         return ((long) chunkX & 0xFFFFFFFFL) << 32 | (chunkZ & 0xFFFFFFFFL);
@@ -103,7 +116,11 @@ public class ClientWorld {
     }
 
     public WrappedBlockState stateForId(int blockId) {
-        return WrappedBlockState.getByGlobalId(blockVersion, blockId, false);
+        if (!translateBlocks) {
+            return WrappedBlockState.getByGlobalId(blockVersion, blockId, false);
+        }
+        int clientId = ViaBlockTranslator.toClientBlockId(clientProtocol, serverProtocol, blockId);
+        return WrappedBlockState.getByGlobalId(clientVersion, clientId, false);
     }
 
     public WrappedBlockState getBlockState(int x, int y, int z) {
@@ -117,7 +134,12 @@ public class ClientWorld {
         BaseChunk chunk = sections[section];
         if (chunk == null) return air;
 
-        return chunk.get(blockVersion, x & 0xF, offsetY & 0xF, z & 0xF);
+        WrappedBlockState serverState = chunk.get(blockVersion, x & 0xF, offsetY & 0xF, z & 0xF);
+        if (!translateBlocks) {
+            return serverState;
+        }
+        int clientId = ViaBlockTranslator.toClientBlockId(clientProtocol, serverProtocol, serverState.getGlobalId());
+        return WrappedBlockState.getByGlobalId(clientVersion, clientId, false);
     }
 
     public boolean hasBlock(BoundingBox box, Predicate<WrappedBlockState> test) {
@@ -178,10 +200,7 @@ public class ClientWorld {
         if (version.isNewerThanOrEquals(ServerVersion.V_1_18)) {
             return new Chunk_v1_18(blockVersion);
         }
-        if (version.isNewerThanOrEquals(ServerVersion.V_1_9)) {
-            return new Chunk_v1_9(0, PaletteType.CHUNK.create());
-        }
-        return null;
+        return new Chunk_v1_9(0, PaletteType.CHUNK.create());
     }
 
     @FunctionalInterface

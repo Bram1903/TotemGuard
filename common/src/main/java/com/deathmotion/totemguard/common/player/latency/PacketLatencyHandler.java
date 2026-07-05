@@ -20,14 +20,10 @@ package com.deathmotion.totemguard.common.player.latency;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.ping.PingData;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowConfirmation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,25 +94,9 @@ public class PacketLatencyHandler {
     private void flushTransaction() {
         if (player.getUser().getEncoderState() != ConnectionState.PLAY) return;
 
-        int transactionId = pingData.reserveNextTransactionId(maxTransactionId());
+        int transactionId = pingData.reserveNextTransactionId(Integer.MAX_VALUE);
         pingData.markTransactionSynthetic(transactionId);
-        player.getUser().sendPacket(createTransactionPacket(transactionId));
-    }
-
-    private PacketWrapper<?> createTransactionPacket(int transactionId) {
-        if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_17)) {
-            return new WrapperPlayServerPing(transactionId);
-        }
-
-        return new WrapperPlayServerWindowConfirmation(0, (short) transactionId, false);
-    }
-
-    private int maxTransactionId() {
-        if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_17)) {
-            return Integer.MAX_VALUE;
-        }
-
-        return Short.MAX_VALUE;
+        player.getUser().sendPacket(new WrapperPlayServerPing(transactionId));
     }
 
     private final class PendingPacketLatencyTask implements Runnable {

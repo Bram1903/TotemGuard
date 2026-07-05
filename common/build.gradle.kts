@@ -24,4 +24,5 @@ dependencies {
     compileOnly(libs.snakeyaml)
     compileOnly(libs.cloud.core)
     compileOnly(libs.grim.api)
+    compileOnly(libs.viaversion.api)
 }

@@ -105,7 +105,7 @@ public class Data {
         this.pistonData = new PistonData();
         this.effectData = new EffectData();
         this.foodData = new FoodData();
-        this.clientWorld = new ClientWorld();
+        this.clientWorld = new ClientWorld(player.getClientVersion());
         this.mitigationService = new MitigationService(this);
         this.setbackController = new SetbackController(mitigationService, externalVelocityData);
         this.movementEstimator = new MovementEstimator(this);

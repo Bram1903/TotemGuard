@@ -14,6 +14,7 @@ dependencyResolutionManagement {
         maven("https://maven.fabricmc.net/")
         maven("https://repo.codemc.io/repository/maven-releases/")
         maven("https://repo.grim.ac/snapshots")
+        maven("https://repo.viaversion.com")
         maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
         maven("https://oss.sonatype.org/content/groups/public/")
         maven("https://repo.codemc.io/repository/maven-snapshots/")
