@@ -73,7 +73,7 @@ public final class MovementSimulator {
         Range vertical = carried.vertical();
         if (in.jumpPossible()) vertical = vertical.raiseCeiling(in.jumpStrength() + in.jumpBoostPower());
         if (in.waterExitHop()) vertical = vertical.raiseCeiling(WATER_EXIT_HOP);
-        if (in.groundedStart() || in.groundedEnd() || in.supportWithinStep()) {
+        if (((in.groundedStart() || in.groundedEnd()) && in.supportWithinStep()) || in.startOverlapping()) {
             vertical = vertical.raiseCeiling(in.stepHeight());
         }
         if (in.groundedEnd()) vertical = vertical.raiseCeiling(0.0);
@@ -84,7 +84,7 @@ public final class MovementSimulator {
     }
 
     private static MotionArea advanceLand(double legalSpeed, double legalVerticalVelocity, MovementInput in) {
-        boolean groundDrag = in.groundedStart() && in.groundedEnd() && !in.ceilingClampedJump();
+        boolean groundDrag = in.groundedStart() && !in.ceilingClampedJump();
         double friction = groundDrag ? in.slipperinessMax() * AIR_FRICTION : AIR_FRICTION;
         double nextHorizontal = legalSpeed * in.blockSpeedFactor() * friction;
 

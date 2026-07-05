@@ -36,8 +36,8 @@ import java.util.Set;
 public final class PhaseTracker {
 
     private static final double HIT_EPSILON = 0.002;
-    private static final double ENTRY_TOLERANCE = 0.03;
-    private static final double EMBED_TOLERANCE = 0.03;
+    private static final double ENTRY_TOLERANCE = 0.02;
+    private static final double EMBED_TOLERANCE = 0.02;
     private static final double EMBED_GROWTH = 0.02;
     private static final int WINDOW = 6;
     private static final int GRACE_TICKS = 10;

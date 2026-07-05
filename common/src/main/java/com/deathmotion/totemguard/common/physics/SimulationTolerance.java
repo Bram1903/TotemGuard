@@ -24,16 +24,23 @@ import lombok.experimental.Accessors;
 @Getter
 @Accessors(fluent = true)
 public enum SimulationTolerance {
-    STRICT(1.0, 2.0),
-    STANDARD(1.5, 4.0),
-    LENIENT(2.5, 8.0);
+    STRICT(1.0, 1.5, 0.0, 0.0, 0.03),
+    STANDARD(1.5, 4.0, 0.05, 0.015, 0.06),
+    LENIENT(2.5, 8.0, 0.1, 0.03, 0.10);
 
     private final double padScale;
     private final double setbackBuffer;
+    private final double residualCarryCap;
+    private final double modelDriftSlack;
+    private final double stepHorizontalSlack;
 
-    SimulationTolerance(double padScale, double setbackBuffer) {
+    SimulationTolerance(double padScale, double setbackBuffer, double residualCarryCap,
+                        double modelDriftSlack, double stepHorizontalSlack) {
         this.padScale = padScale;
         this.setbackBuffer = setbackBuffer;
+        this.residualCarryCap = residualCarryCap;
+        this.modelDriftSlack = modelDriftSlack;
+        this.stepHorizontalSlack = stepHorizontalSlack;
     }
 
     public static SimulationTolerance parse(String raw) {

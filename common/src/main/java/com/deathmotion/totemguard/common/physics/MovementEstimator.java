@@ -51,10 +51,10 @@ public class MovementEstimator {
     private static final double VERTICAL_HIT_EPSILON = 0.003;
     private static final double STRONG_SINGLE_EXCESS = 0.40;
 
-    private static final double HORIZONTAL_PAD = 0.003;
-    private static final double VERTICAL_PAD = 0.002;
+    private static final double HORIZONTAL_PAD = 0.001;
+    private static final double VERTICAL_PAD = 0.001;
 
-    private static final double AIR_DISK_PAD = 0.003;
+    private static final double AIR_DISK_PAD = 0.001;
     private static final double AIR_DIRECTION_MIN_SPEED = 0.04;
 
     private static final int WINDOW = 20;
@@ -63,9 +63,7 @@ public class MovementEstimator {
 
     private static final double BORDER_MARGIN = 2.0;
 
-    private static final double LANDING_REACH = 1.1;
-
-    private static final double KNOCKBACK_PAD = 0.05;
+    private static final double KNOCKBACK_PAD = 0.02;
     private static final double ENTITY_PUSH_PER = 0.08;
     private static final double MAX_ENTITY_PUSH = 0.30;
     private static final double EMBEDDED_PUSH = 0.1;
@@ -80,11 +78,8 @@ public class MovementEstimator {
 
     private static final int DOUBLE_MOVE_TOLERANCE = 3;
     private static final int TELEPORT_CARRY_GRACE = 3;
-    private static final double CARRY_SLACK = 0.015;
-    private static final double OFFSET_LENIENCE_CAP = 0.1;
 
-    private static final int STEP_UNCERTAINTY_TICKS = 4;
-    private static final double STEP_HORIZONTAL_SLACK = 0.15;
+    private static final int STEP_UNCERTAINTY_TICKS = 2;
 
     private static final int BUBBLE_LAUNCH_TICKS = 5;
 
@@ -416,6 +411,7 @@ public class MovementEstimator {
         double horizontalPad = HORIZONTAL_PAD * tolerance.padScale();
         if (env.startEmbedded()) horizontalPad += EMBEDDED_PUSH;
         double verticalPad = VERTICAL_PAD * tolerance.padScale();
+        double knockbackPad = KNOCKBACK_PAD * tolerance.padScale();
         MotionArea allowed = move.expand(horizontalPad, verticalPad);
         // Carry the previous tick's residual miss into this tick's ceiling so a small model
         // desync re-syncs (legalSpeed/legalVy below settle to observed) instead of re-flagging
@@ -440,8 +436,8 @@ public class MovementEstimator {
                     ? Math.max(0.0, (external.x() * observed.getX() + external.z() * observed.getZ()) / observedSpeed)
                     : Math.hypot(external.x(), external.z());
             MotionArea widened = allowed.expand(
-                    knockbackAlong + KNOCKBACK_PAD,
-                    Math.max(0.0, external.y()) + KNOCKBACK_PAD);
+                    knockbackAlong + knockbackPad,
+                    Math.max(0.0, external.y()) + knockbackPad);
             double h = widened.horizontalExcess(observedSpeed);
             double v = widened.ascentExcess(observedVy);
             if (h < horizontalExcess || v < verticalExcess) {
@@ -461,14 +457,14 @@ public class MovementEstimator {
         }
 
         if (stepMoveTicks > 0 && horizontalExcess > 0.0) {
-            horizontalExcess = Math.max(0.0, horizontalExcess - STEP_HORIZONTAL_SLACK);
+            horizontalExcess = Math.max(0.0, horizontalExcess - tolerance.stepHorizontalSlack());
         }
 
         double descentFloor = Math.min(carried.vertical().min(), MovementSimulator.restFallVelocity(input));
         boolean fellTooFast = false;
         if (landMedium && descentFloor <= 0.0) {
             double slack = verticalPad;
-            if (external.isActive()) slack += Math.max(0.0, -external.y()) + KNOCKBACK_PAD;
+            if (external.isActive()) slack += Math.max(0.0, -external.y()) + knockbackPad;
             if (input.groundedEnd()) slack += input.stepHeight();
             double descentExcess = (descentFloor - slack) - observedVy;
             if (descentExcess > verticalExcess) {
@@ -477,14 +473,15 @@ public class MovementEstimator {
             }
         } else if (env.fluid() && !fluidEntry) {
             double slack = verticalPad + FLUID_DESCENT_SLACK;
-            if (external.isActive()) slack += Math.max(0.0, -external.y()) + KNOCKBACK_PAD;
+            if (external.isActive()) slack += Math.max(0.0, -external.y()) + knockbackPad;
             double descentExcess = (move.vertical().min() - slack) - observedVy;
             if (descentExcess > verticalExcess) verticalExcess = descentExcess;
         }
 
         if (!fellTooFast && verticalExcess > VERTICAL_HIT_EPSILON && observedVy <= -VERTICAL_HIT_EPSILON
-                && landMedium && env.groundGap() <= LANDING_REACH) {
-            verticalExcess = 0.0;
+                && landMedium) {
+            double arrestExcess = Math.max(0.0, env.groundGap() - verticalPad);
+            verticalExcess = Math.min(verticalExcess, arrestExcess);
         }
 
         boolean phased = wallExcess > HIT_EPSILON;
@@ -498,7 +495,7 @@ public class MovementEstimator {
             double centerX = airVelocityX;
             double centerZ = airVelocityZ;
             double reach = MovementConstants.AIR_ACCEL_SPRINTING + AIR_DISK_PAD * tolerance.padScale();
-            double deviation = Math.hypot(outwardResidual(observed.getX(), centerX), outwardResidual(observed.getZ(), centerZ));
+            double deviation = Math.hypot(observed.getX() - centerX, observed.getZ() - centerZ);
             double directionExcess = deviation - reach;
             if (directionExcess > HIT_EPSILON) {
                 directionExcess -= nearbyEntityPush(observed);
@@ -529,12 +526,15 @@ public class MovementEstimator {
         if (teleportCarryGrace > 0) teleportCarryGrace--;
         double legalSpeed = carryPredicted || sneakEdgeClamp
                 ? move.horizontalSpeed().max()
-                : Math.min(observedSpeed, allowed.horizontalSpeed().max() + CARRY_SLACK * tolerance.padScale());
+                : Math.min(observedSpeed, allowed.horizontalSpeed().max() + tolerance.modelDriftSlack());
         if (env.startOverlapping()) legalSpeed = Math.max(legalSpeed, WEDGE_CARRY);
         double legalVy = Math.min(observedVy, allowed.vertical().max());
         carried = MovementSimulator.advance(legalSpeed, legalVy, input, env);
 
-        if (pureAir && !carryPredicted && observedSpeed >= AIR_DIRECTION_MIN_SPEED) {
+        boolean leavingGround = landMedium && input.groundedStart() && !input.groundedEnd()
+                && !carryPredicted && !external.isActive() && bubbleTicks == 0
+                && env.bounceFactor() <= 0.0;
+        if ((pureAir || leavingGround) && !carryPredicted && observedSpeed >= AIR_DIRECTION_MIN_SPEED) {
             double advancedScale = carried.horizontalSpeed().max() / observedSpeed;
             airVelocityX = observed.getX() * advancedScale;
             airVelocityZ = observed.getZ() * advancedScale;
@@ -558,8 +558,9 @@ public class MovementEstimator {
 
         double missH = (phased || airStrafed) ? 0.0 : horizontalExcess;
         double missV = fellTooFast ? 0.0 : verticalExcess;
-        carriedHorizontalLenience = Math.min(OFFSET_LENIENCE_CAP, Math.max(0.0, missH));
-        carriedVerticalLenience = Math.min(OFFSET_LENIENCE_CAP, Math.max(0.0, missV));
+        double residualCap = tolerance.residualCarryCap();
+        carriedHorizontalLenience = Math.min(residualCap, Math.max(0.0, missH));
+        carriedVerticalLenience = Math.min(residualCap, Math.max(0.0, missV));
 
         result = new MovementResult(cause, observed, move,
                 horizontalExcess, verticalExcess, movedThisTick, ascendingThisTick, knockbackConsumed);
@@ -662,12 +663,6 @@ public class MovementEstimator {
                 data.getClientWorld(), data.getMovementData().getCurrent(),
                 width, data.getAttributeData().stepHeight(), data.isSneaking(),
                 observed.getX() * scale, observed.getZ() * scale);
-    }
-
-    private static double outwardResidual(double observed, double center) {
-        if (center > 0.0) return observed < 0.0 ? -observed : Math.max(0.0, observed - center);
-        if (center < 0.0) return observed > 0.0 ? observed : Math.max(0.0, center - observed);
-        return Math.abs(observed);
     }
 
     private double poseHeight() {
