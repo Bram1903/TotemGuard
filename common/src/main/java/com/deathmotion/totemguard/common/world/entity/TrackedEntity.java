@@ -18,11 +18,12 @@
 
 package com.deathmotion.totemguard.common.world.entity;
 
-import com.deathmotion.totemguard.common.world.collisions.EntityHitboxes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import lombok.Getter;
+import lombok.experimental.Accessors;
 
 @Getter
+@Accessors(fluent = true)
 public final class TrackedEntity {
 
     private static final int INTERPOLATION_STEPS = 3;
@@ -48,15 +49,15 @@ public final class TrackedEntity {
     private double prevRenderZ;
     private int interpSteps;
 
-    public TrackedEntity(EntityType type) {
+    TrackedEntity(EntityType type) {
         this.type = type;
-        this.pushable = EntityCollisionTypes.isPushable(type);
-        this.standable = EntityCollisionTypes.isStandable(type);
-        this.baseHalfWidth = EntityHitboxes.width(type) / 2.0;
-        this.baseHeight = EntityHitboxes.height(type);
+        this.pushable = EntityRoles.pushable(type);
+        this.standable = EntityRoles.standable(type);
+        this.baseHalfWidth = EntityDims.width(type) / 2.0;
+        this.baseHeight = EntityDims.height(type);
     }
 
-    public void snapTo(double x, double y, double z) {
+    void snapTo(double x, double y, double z) {
         targetX = renderX = prevRenderX = x;
         targetY = renderY = prevRenderY = y;
         targetZ = renderZ = prevRenderZ = z;
@@ -64,7 +65,7 @@ public final class TrackedEntity {
         positioned = true;
     }
 
-    public void interpolateTo(double x, double y, double z) {
+    void interpolateTo(double x, double y, double z) {
         targetX = x;
         targetY = y;
         targetZ = z;
@@ -72,14 +73,14 @@ public final class TrackedEntity {
         positioned = true;
     }
 
-    public void addDelta(double dx, double dy, double dz) {
+    void addDelta(double dx, double dy, double dz) {
         targetX += dx;
         targetY += dy;
         targetZ += dz;
         interpSteps = INTERPOLATION_STEPS;
     }
 
-    public void advance() {
+    void advance() {
         prevRenderX = renderX;
         prevRenderY = renderY;
         prevRenderZ = renderZ;
@@ -92,11 +93,11 @@ public final class TrackedEntity {
         }
     }
 
-    public void setScale(double scale) {
+    void scale(double scale) {
         this.scale = Math.max(0.0625, Math.min(16.0, scale));
     }
 
-    public void setSlimeSize(int size) {
+    void slimeSize(int size) {
         this.slimeSize = Math.max(1, Math.min(127, size));
     }
 
@@ -106,5 +107,29 @@ public final class TrackedEntity {
 
     public double height() {
         return baseHeight * scale * slimeSize;
+    }
+
+    public double spanMinX() {
+        return Math.min(Math.min(prevRenderX, renderX), targetX);
+    }
+
+    public double spanMaxX() {
+        return Math.max(Math.max(prevRenderX, renderX), targetX);
+    }
+
+    public double spanMinY() {
+        return Math.min(Math.min(prevRenderY, renderY), targetY);
+    }
+
+    public double spanMaxY() {
+        return Math.max(Math.max(prevRenderY, renderY), targetY);
+    }
+
+    public double spanMinZ() {
+        return Math.min(Math.min(prevRenderZ, renderZ), targetZ);
+    }
+
+    public double spanMaxZ() {
+        return Math.max(Math.max(prevRenderZ, renderZ), targetZ);
     }
 }

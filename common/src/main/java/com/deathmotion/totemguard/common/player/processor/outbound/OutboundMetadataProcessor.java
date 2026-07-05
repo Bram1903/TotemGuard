@@ -23,7 +23,8 @@ import com.deathmotion.totemguard.common.config.ConfigRepositoryImpl;
 import com.deathmotion.totemguard.common.config.schema.EntitySpoofingOptions;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.player.data.WorldEntityData;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
+import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -45,7 +46,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     private static final boolean COMPETING_PLUGIN_ACTIVE = detectCompetingPlugin();
 
     private final Data data;
-    private final WorldEntityData worldEntityData;
+    private final EntityTracker entities;
+    private final PacketLatencyHandler latencyHandler;
     private final ConfigRepositoryImpl configRepository;
     private final int healthIndex;
     private final int absorptionIndex;
@@ -55,7 +57,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     public OutboundMetadataProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
-        this.worldEntityData = player.getData().getWorldEntityData();
+        this.entities = player.getWorldMirror().entities();
+        this.latencyHandler = player.getLatencyHandler();
         this.configRepository = TGPlatform.getInstance().getConfigRepository();
         MetadataIndex metadataIndex = player.getMetadataIndex();
         this.healthIndex = metadataIndex.health();
@@ -86,17 +89,17 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         int entityId = packet.getEntityId();
 
         if (entityId == player.getUser().getEntityId()) {
-            trackOwnMetadata(packet);
+            trackOwnMetadata(event, packet);
             return;
         }
 
-        trackSlimeSize(entityId, packet);
+        trackSlimeSize(event, entityId, packet);
 
         if (COMPETING_PLUGIN_ACTIVE) return;
 
         EntitySpoofingOptions options = configRepository.configView().entitySpoofing();
         if (!options.health() && !options.absorption()) return;
-        if (!worldEntityData.isPlayer(entityId)) return;
+        if (!entities.isPlayer(entityId)) return;
 
         boolean modified = false;
         for (EntityData<?> meta : packet.getEntityMetadata()) {
@@ -111,32 +114,37 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         if (modified) event.markForReEncode(true);
     }
 
-    private void trackSlimeSize(int entityId, WrapperPlayServerEntityMetadata packet) {
+    private void trackSlimeSize(PacketSendEvent event, int entityId, WrapperPlayServerEntityMetadata packet) {
         if (slimeSizeIndex < 0) return;
-        if (!worldEntityData.isSlimeLike(entityId)) return;
+        if (!entities.isSlimeLike(entityId)) return;
         for (EntityData<?> meta : packet.getEntityMetadata()) {
             if (meta.getIndex() != slimeSizeIndex) continue;
             if (meta.getValue() instanceof Integer size) {
-                worldEntityData.setSlimeSize(entityId, size);
+                latencyHandler.compensateLazy(event, () -> entities.setSlimeSize(entityId, size));
             }
             return;
         }
     }
 
-    private void trackOwnMetadata(WrapperPlayServerEntityMetadata packet) {
-        // Applied without latency compensation. Server-derived from inbound state (sprint
-        // and water), so the client is already in the new state locally by the time this
-        // outbound metadata is sent. Compensating would delay our view by another RTT.
+    // Server-forced flips (glide cancel, pose) only apply when the packet arrives, so applying
+    // them a round trip early was a false-excess source.
+    private void trackOwnMetadata(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {
         for (EntityData<?> meta : packet.getEntityMetadata()) {
             int index = meta.getIndex();
             Object value = meta.getValue();
             if (index == 0 && value instanceof Byte sharedFlags) {
-                data.setSwimming((sharedFlags & 0x10) != 0);
-                data.setGliding((sharedFlags & 0x80) != 0);
+                final boolean swimming = (sharedFlags & 0x10) != 0;
+                final boolean gliding = (sharedFlags & 0x80) != 0;
+                latencyHandler.compensateLazy(event, () -> {
+                    data.setSwimming(swimming);
+                    data.setGliding(gliding);
+                });
             } else if (index == livingFlagsIndex && value instanceof Byte livingFlags) {
-                data.setSpinAttacking((livingFlags & 0x04) != 0);
+                final boolean spinAttacking = (livingFlags & 0x04) != 0;
+                latencyHandler.compensateLazy(event, () -> data.setSpinAttacking(spinAttacking));
             } else if (value instanceof EntityPose pose) {
-                data.setSleeping(pose == EntityPose.SLEEPING);
+                final boolean sleeping = pose == EntityPose.SLEEPING;
+                latencyHandler.compensateLazy(event, () -> data.setSleeping(sleeping));
             }
         }
     }

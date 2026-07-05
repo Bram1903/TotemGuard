@@ -18,13 +18,13 @@
 
 package com.deathmotion.totemguard.common.mitigation;
 
-import com.deathmotion.totemguard.common.physics.MovementConstants;
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.github.retrooper.packetevents.util.Vector3d;
 
 public class SetbackController {
 
-    private static final double MIN_PULL_DOWN = MovementConstants.GRAVITY;
+    private static final double MIN_PULL_DOWN = MotionDefaults.GRAVITY;
     private static final double TERMINAL_PULL_DOWN = 3.0;
     private static final double GROUND_GAP_MARGIN = 0.001;
     private static final int ANCHOR_FREEZE_TICKS = 3;

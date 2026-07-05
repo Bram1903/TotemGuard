@@ -34,11 +34,13 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
-import com.deathmotion.totemguard.common.player.debug.provider.MovementDebugProvider;
+import com.deathmotion.totemguard.common.player.debug.provider.PhysicsDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.WorldDebugProvider;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.physics.PhysicsEngine;
+import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
@@ -83,7 +85,9 @@ public class TGPlayer implements TGUser {
     private final Instant sessionStart = Instant.now();
     private final PacketInventory inventory;
     private final CheckManagerImpl checkManager;
+    private final WorldMirror worldMirror;
     private final Data data;
+    private final PhysicsEngine physics;
     private final TotemData totemData;
     private final ClickData clickData;
     private final TickData tickData;
@@ -136,7 +140,9 @@ public class TGPlayer implements TGUser {
         this.metadataIndex = new MetadataIndex(getClientVersion());
 
         this.inventory = new PacketInventory();
+        this.worldMirror = new WorldMirror(getClientVersion());
         this.data = new Data(this);
+        this.physics = new PhysicsEngine(this, data, worldMirror);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
@@ -145,7 +151,7 @@ public class TGPlayer implements TGUser {
         this.debugOverlayManager = new DebugOverlayManager(this);
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());
-        this.debugOverlayManager.register(new MovementDebugProvider());
+        this.debugOverlayManager.register(new PhysicsDebugProvider());
         this.debugOverlayManager.register(new WorldDebugProvider());
         this.latencyHandler = new PacketLatencyHandler(this);
         this.banAnimation = new BanAnimationImpl(this);
@@ -173,7 +179,7 @@ public class TGPlayer implements TGUser {
                 new OutboundPistonProcessor(this),
                 new OutboundEffectProcessor(this),
                 new OutboundFoodProcessor(this),
-                new OutboundChunkProcessor(this),
+                new OutboundWorldProcessor(this),
                 new OutboundAttributeProcessor(this),
                 new OutboundWorldBorderProcessor(this),
                 new OutboundCameraProcessor(this),

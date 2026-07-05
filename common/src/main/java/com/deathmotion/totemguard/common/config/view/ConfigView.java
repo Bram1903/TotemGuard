@@ -21,7 +21,8 @@ package com.deathmotion.totemguard.common.config.view;
 import com.deathmotion.totemguard.api.config.Config;
 import com.deathmotion.totemguard.common.config.key.ConfigKeys;
 import com.deathmotion.totemguard.common.config.schema.*;
-import com.deathmotion.totemguard.common.physics.SimulationTolerance;
+import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
+import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -41,12 +42,12 @@ public final class ConfigView {
     private final boolean banAnimationEnabled;
     private final boolean tickSkipKeepAliveValidation;
     private final boolean physicsEngineEnabled;
-    private final SimulationTolerance physicsEngineTolerance;
+    private final PhysicsPreset physicsPreset;
+    private final PhysicsDebugLevel physicsDebugLevel;
     private final boolean physicsEngineSetback;
     private final boolean physicsEngineCloseInventory;
     private final boolean physicsEngineFallDamage;
     private final boolean physicsEngineTimerPacketCancel;
-    private final boolean physicsEngineDebug;
     private final boolean debugModifierKickEnabled;
     private final Set<String> developerOverrides;
 
@@ -95,12 +96,12 @@ public final class ConfigView {
         this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
         this.tickSkipKeepAliveValidation = config.getBoolean(ConfigKeys.TICK_SKIP_KEEP_ALIVE_VALIDATION);
         this.physicsEngineEnabled = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_ENABLED);
-        this.physicsEngineTolerance = SimulationTolerance.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_TOLERANCE));
+        this.physicsPreset = PhysicsPreset.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_PRESET));
+        this.physicsDebugLevel = PhysicsDebugLevel.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_DEBUG_LEVEL));
         this.physicsEngineSetback = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_SETBACK);
         this.physicsEngineCloseInventory = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_CLOSE_INVENTORY);
         this.physicsEngineFallDamage = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_FALL_DAMAGE);
         this.physicsEngineTimerPacketCancel = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_TIMER_PACKET_CANCEL);
-        this.physicsEngineDebug = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_DEBUG);
         this.debugModifierKickEnabled = config.getBoolean(ConfigKeys.DEBUG_MODIFIER_KICK_ENABLED);
         List<String> overrides = config.getStringList(ConfigKeys.DEVELOPER_OVERRIDES);
         this.developerOverrides = overrides.isEmpty() ? Set.of() : Set.copyOf(new HashSet<>(overrides));
@@ -150,8 +151,12 @@ public final class ConfigView {
         return physicsEngineEnabled;
     }
 
-    public @NotNull SimulationTolerance physicsEngineTolerance() {
-        return physicsEngineTolerance;
+    public @NotNull PhysicsPreset physicsPreset() {
+        return physicsPreset;
+    }
+
+    public @NotNull PhysicsDebugLevel physicsDebugLevel() {
+        return physicsDebugLevel;
     }
 
     public boolean physicsEngineSetback() {
@@ -168,10 +173,6 @@ public final class ConfigView {
 
     public boolean physicsEngineTimerPacketCancel() {
         return physicsEngineTimerPacketCancel;
-    }
-
-    public boolean physicsEngineDebug() {
-        return physicsEngineDebug;
     }
 
     public boolean debugModifierKickEnabled() {

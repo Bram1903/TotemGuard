@@ -20,13 +20,16 @@ package com.deathmotion.totemguard.common.physics.fall;
 
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.mitigation.MitigationService;
-import com.deathmotion.totemguard.common.physics.MovementCause;
-import com.deathmotion.totemguard.common.physics.MovementConstants;
-import com.deathmotion.totemguard.common.physics.MovementResult;
-import com.deathmotion.totemguard.common.physics.ground.GroundState;
-import com.deathmotion.totemguard.common.player.data.ClientWorld;
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.physics.medium.MediumSample;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
+import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
+import com.deathmotion.totemguard.common.physics.verdict.FallFinding;
+import com.deathmotion.totemguard.common.physics.verdict.TickOutcome;
 import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.world.scan.BlockEnvironment;
+import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.defaulttags.BlockTags;
@@ -38,7 +41,7 @@ import lombok.experimental.Accessors;
 import java.util.Set;
 
 @Accessors(fluent = true)
-public class FallTracker {
+public final class FallTracker {
 
     private static final double MIN_AVOIDED_DAMAGE = 1.0;
     private static final double MIDAIR_CLAIM_GAP = 1.0;
@@ -55,7 +58,9 @@ public class FallTracker {
             StateTypes.LAVA_CAULDRON, StateTypes.POWDER_SNOW_CAULDRON);
 
     private final Data data;
+    private final BlockReader reader;
 
+    @Getter
     private double engineFall;
     private double serverFall;
     private double creditedDamage;
@@ -73,38 +78,59 @@ public class FallTracker {
     @Getter
     private boolean damageApplied;
 
-    public FallTracker(Data data) {
+    public FallTracker(Data data, BlockReader reader) {
         this.data = data;
+        this.reader = reader;
     }
 
-    public void observe(MovementResult result, boolean claimedGround, BlockEnvironment env,
-                 GroundState ground, ConfigView view) {
+    public void observe(TickOutcome outcome, DeclineReason reason, BoundBreach breach,
+                        double dy, boolean claimedGround,
+                        MediumSample sample, GroundFacts ground, ContactReport contact,
+                        ConfigView view) {
         clearLatch();
 
-        switch (result.cause()) {
-            case GROUNDSPOOF, FAST -> onUnscannedTick(result.observed().getY(), claimedGround, true, view);
-            case RESYNC, TELEPORT -> {
+        if (breach == BoundBreach.GROUNDSPOOF || breach == BoundBreach.FAST
+                || reason == DeclineReason.FAST) {
+            onUnscannedTick(dy, claimedGround, view);
+            return;
+        }
+        if (outcome == TickOutcome.SEEDED) {
+            abort();
+            return;
+        }
+        if (outcome == TickOutcome.DECLINED) {
+            if (reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT) {
                 MitigationService service = data.getMitigationService();
                 if (!service.setbackPending()) {
                     abort();
-                } else if (result.cause() == MovementCause.RESYNC
+                } else if (reason == DeclineReason.RESYNC
                         && data.getMovementData().isLastFlyingWasTeleportResync()) {
                     onSetbackConfirm(service.pendingSetbackDy());
                 }
+            } else if (reason != DeclineReason.WITHHELD && reason != DeclineReason.DOUBLE_MOVE) {
+                abort();
             }
-            case INIT, FLY, VEHICLE, SLEEPING, GLIDE, PISTON, BORDER, UNLOADED, LOADING -> abort();
-            default -> {
-                if (env == null || ground == null) {
-                    abort();
-                } else {
-                    onTick(result.observed().getY(), claimedGround, ground.groundedEnd(), env, view);
-                }
-            }
+            return;
         }
+        if (sample == null || ground == null || contact == null) {
+            abort();
+            return;
+        }
+        onTick(dy, claimedGround, ground.groundedEnd(), sample, contact, view);
     }
 
-    private void onTick(double dy, boolean claimedGround, boolean groundedEnd, BlockEnvironment env, ConfigView view) {
-        if (bailed(env)) {
+    public FallFinding finding() {
+        return new FallFinding(violationThisTick, fallDistance, avoidedDamage, damageApplied);
+    }
+
+    public void reset() {
+        abort();
+        clearLatch();
+    }
+
+    private void onTick(double dy, boolean claimedGround, boolean groundedEnd,
+                        MediumSample sample, ContactReport contact, ConfigView view) {
+        if (bailed(sample, contact)) {
             abort();
             return;
         }
@@ -112,7 +138,7 @@ public class FallTracker {
         if (claimedGround) {
             creditedDamage += fallDamage(serverFall);
             serverFall = 0.0;
-            if (env.groundGap() > MIDAIR_CLAIM_GAP && !groundedEnd) provenSpoof = true;
+            if (contact.nearestSupportGap() > MIDAIR_CLAIM_GAP && !groundedEnd) provenSpoof = true;
             resolvePending(view);
         } else if (dy < 0.0) {
             serverFall = accumulate(serverFall, dy);
@@ -145,11 +171,11 @@ public class FallTracker {
         tickLateClaim(view);
     }
 
-    private void onUnscannedTick(double dy, boolean claimedGround, boolean spoofProof, ConfigView view) {
+    private void onUnscannedTick(double dy, boolean claimedGround, ConfigView view) {
         if (claimedGround) {
             creditedDamage += fallDamage(serverFall);
             serverFall = 0.0;
-            if (spoofProof) provenSpoof = true;
+            provenSpoof = true;
             resolvePending(view);
         } else if (dy < 0.0) {
             serverFall = accumulate(serverFall, dy);
@@ -168,7 +194,7 @@ public class FallTracker {
         provenSpoof = true;
     }
 
-    void abort() {
+    private void abort() {
         engineFall = 0.0;
         serverFall = 0.0;
         creditedDamage = 0.0;
@@ -176,11 +202,6 @@ public class FallTracker {
         lateClaimTicks = 0;
         pendingExpected = 0.0;
         pendingProven = false;
-    }
-
-    public void reset() {
-        abort();
-        clearLatch();
     }
 
     private void clearLatch() {
@@ -221,9 +242,9 @@ public class FallTracker {
         }
     }
 
-    private boolean bailed(BlockEnvironment env) {
-        if (env.fluid() || env.climbable() || env.stuck()) return true;
-        if (env.bounceFactor() > 0.0) return true;
+    private boolean bailed(MediumSample sample, ContactReport contact) {
+        if (sample.fluid() || sample.climbable() || sample.stuck()) return true;
+        if (contact.supportBounce() > 0.0) return true;
         if (data.getEffectData().hasSlowFalling() || data.getEffectData().hasLevitation()) return true;
         GameMode gameMode = data.getGameMode();
         return gameMode == GameMode.CREATIVE || gameMode == GameMode.SPECTATOR;
@@ -235,22 +256,21 @@ public class FallTracker {
                 ? data.getEffectData().jumpBoostAmplifier() + 1
                 : 0.0;
         double safe = Math.max(data.getAttributeData().safeFallDistance(),
-                MovementConstants.SAFE_FALL_DISTANCE + jumpBoost);
+                MotionDefaults.SAFE_FALL_DISTANCE + jumpBoost);
         double over = distance - safe;
         if (over <= 0.0) return 0.0;
         return Math.ceil(over * data.getAttributeData().fallDamageMultiplier());
     }
 
     private boolean lenientLandingBlock() {
-        ClientWorld world = data.getClientWorld();
         Location current = data.getMovementData().getCurrent();
         double half = data.getAttributeData().width() / 2.0;
         int feetY = floor(current.getY());
         int belowY = floor(current.getY() - SUPPORT_BLOCK_OFFSET);
         for (int px = floor(current.getX() - half); px <= floor(current.getX() + half); px++) {
             for (int pz = floor(current.getZ() - half); pz <= floor(current.getZ() + half); pz++) {
-                if (lenientType(world.getBlockState(px, feetY, pz).getType())) return true;
-                if (belowY != feetY && lenientType(world.getBlockState(px, belowY, pz).getType())) return true;
+                if (lenientType(reader.state(px, feetY, pz).getType())) return true;
+                if (belowY != feetY && lenientType(reader.state(px, belowY, pz).getType())) return true;
             }
         }
         return false;

@@ -20,10 +20,11 @@ package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.player.data.WorldEntityData;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
+import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -33,14 +34,14 @@ import com.github.retrooper.packetevents.wrapper.play.server.*;
 public class OutboundEntityProcessor extends ProcessorOutbound {
 
     private final Data data;
-    private final WorldEntityData worldEntityData;
+    private final EntityTracker entities;
     private final PacketLatencyHandler latencyHandler;
     private int serverVehicleId = -1;
 
     public OutboundEntityProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
-        this.worldEntityData = player.getData().getWorldEntityData();
+        this.entities = player.getWorldMirror().entities();
         this.latencyHandler = player.getLatencyHandler();
     }
 
@@ -51,50 +52,60 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
 
         if (type == PacketType.Play.Server.SPAWN_ENTITY) {
             WrapperPlayServerSpawnEntity packet = new WrapperPlayServerSpawnEntity(event);
-            Vector3d pos = packet.getPosition();
-            worldEntityData.add(packet.getEntityId(), packet.getEntityType(), pos.getX(), pos.getY(), pos.getZ());
+            spawn(event, packet.getEntityId(), packet.getEntityType(), packet.getPosition());
         } else if (type == PacketType.Play.Server.SPAWN_LIVING_ENTITY) {
             WrapperPlayServerSpawnLivingEntity packet = new WrapperPlayServerSpawnLivingEntity(event);
-            Vector3d pos = packet.getPosition();
-            worldEntityData.add(packet.getEntityId(), packet.getEntityType(), pos.getX(), pos.getY(), pos.getZ());
+            spawn(event, packet.getEntityId(), packet.getEntityType(), packet.getPosition());
         } else if (type == PacketType.Play.Server.SPAWN_PLAYER) {
             WrapperPlayServerSpawnPlayer packet = new WrapperPlayServerSpawnPlayer(event);
-            Vector3d pos = packet.getPosition();
-            worldEntityData.add(packet.getEntityId(), EntityTypes.PLAYER, pos.getX(), pos.getY(), pos.getZ());
+            spawn(event, packet.getEntityId(), EntityTypes.PLAYER, packet.getPosition());
         } else if (type == PacketType.Play.Server.ENTITY_RELATIVE_MOVE) {
             WrapperPlayServerEntityRelativeMove packet = new WrapperPlayServerEntityRelativeMove(event);
-            worldEntityData.move(packet.getEntityId(), packet.getDeltaX(), packet.getDeltaY(), packet.getDeltaZ());
+            final int id = packet.getEntityId();
+            final double dx = packet.getDeltaX(), dy = packet.getDeltaY(), dz = packet.getDeltaZ();
+            latencyHandler.compensateLazy(event, () -> entities.nudge(id, dx, dy, dz));
         } else if (type == PacketType.Play.Server.ENTITY_RELATIVE_MOVE_AND_ROTATION) {
             WrapperPlayServerEntityRelativeMoveAndRotation packet = new WrapperPlayServerEntityRelativeMoveAndRotation(event);
-            worldEntityData.move(packet.getEntityId(), packet.getDeltaX(), packet.getDeltaY(), packet.getDeltaZ());
+            final int id = packet.getEntityId();
+            final double dx = packet.getDeltaX(), dy = packet.getDeltaY(), dz = packet.getDeltaZ();
+            latencyHandler.compensateLazy(event, () -> entities.nudge(id, dx, dy, dz));
         } else if (type == PacketType.Play.Server.ENTITY_TELEPORT) {
             WrapperPlayServerEntityTeleport packet = new WrapperPlayServerEntityTeleport(event);
-            Vector3d pos = packet.getPosition();
-            worldEntityData.setPosition(packet.getEntityId(), pos.getX(), pos.getY(), pos.getZ());
+            place(event, packet.getEntityId(), packet.getPosition());
         } else if (type == PacketType.Play.Server.ENTITY_POSITION_SYNC) {
             WrapperPlayServerEntityPositionSync packet = new WrapperPlayServerEntityPositionSync(event);
-            Vector3d pos = packet.getValues().getPosition();
-            worldEntityData.setPosition(packet.getId(), pos.getX(), pos.getY(), pos.getZ());
+            place(event, packet.getId(), packet.getValues().getPosition());
         } else if (type == PacketType.Play.Server.DESTROY_ENTITIES) {
             handleDestroyEntities(event);
         } else if (type == PacketType.Play.Server.SET_PASSENGERS) {
             handleSetPassengers(event);
-        } else if (type == PacketType.Play.Server.JOIN_GAME) {
-            worldEntityData.handleJoinGame(new WrapperPlayServerJoinGame(event));
         } else if (type == PacketType.Play.Server.RESPAWN) {
-            worldEntityData.handleRespawn(new WrapperPlayServerRespawn(event));
             serverVehicleId = -1;
-        } else if (type == PacketType.Play.Server.CONFIGURATION_START) {
-            worldEntityData.handleConfigurationStart();
         }
+    }
+
+    private void spawn(PacketSendEvent event, int entityId, EntityType entityType, Vector3d pos) {
+        entities.announce(entityId, entityType);
+        final double x = pos.getX(), y = pos.getY(), z = pos.getZ();
+        latencyHandler.compensateLazy(event, () -> entities.spawn(entityId, entityType, x, y, z));
+    }
+
+    private void place(PacketSendEvent event, int entityId, Vector3d pos) {
+        final double x = pos.getX(), y = pos.getY(), z = pos.getZ();
+        latencyHandler.compensateLazy(event, () -> entities.place(entityId, x, y, z));
     }
 
     private void handleDestroyEntities(PacketSendEvent event) {
         WrapperPlayServerDestroyEntities packet = new WrapperPlayServerDestroyEntities(event);
-        int[] entityIds = packet.getEntityIds();
+        final int[] entityIds = packet.getEntityIds();
         for (int entityId : entityIds) {
-            worldEntityData.remove(entityId);
+            entities.retract(entityId);
         }
+        latencyHandler.compensateLazy(event, () -> {
+            for (int entityId : entityIds) {
+                entities.destroy(entityId);
+            }
+        });
 
         if (serverVehicleId == -1) return;
         for (int entityId : entityIds) {

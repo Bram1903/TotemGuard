@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.prescan;
 
+// Horizontal only: a blanket too-fast-to-judge vertical bail is exactly how a fly would hide.
 public final class FastDetector {
 
     public static final double HORIZONTAL_CAP = 10.0;

@@ -54,6 +54,7 @@ public class CommandManagerImpl {
         // Only register on development builds
         if (TGVersions.CURRENT.snapshot()) {
             new DebugOverlayCommand().register(commandManager);
+            new PhysicsDumpCommand().register(commandManager);
             new InventoryCommand().register(commandManager);
             new PlaceholderCommand().register(commandManager);
             new TesterCommand().register(commandManager);

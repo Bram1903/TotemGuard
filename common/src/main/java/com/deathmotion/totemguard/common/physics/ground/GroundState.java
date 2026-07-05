@@ -18,17 +18,8 @@
 
 package com.deathmotion.totemguard.common.physics.ground;
 
-public record GroundState(
-        boolean groundedStart,
-        boolean groundedStartAmbiguous,
-        boolean groundedEnd,
-        boolean recentlyGrounded,
-        boolean landingSupport,
-        boolean bounced,
-        double bounceFloor,
-        boolean coyoteBlocked,
-        boolean wasFluid,
-        double startSlipperinessMin,
-        double startSlipperinessMax
-) {
+public enum GroundState {
+    SUPPORTED,
+    AIRBORNE,
+    AMBIGUOUS
 }

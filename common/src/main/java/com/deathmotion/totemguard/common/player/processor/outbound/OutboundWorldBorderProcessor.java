@@ -19,23 +19,27 @@
 package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.WorldBorderData;
+import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
+import com.deathmotion.totemguard.common.world.border.BorderMirror;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerInitializeWorldBorder;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorder;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorderCenter;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayWorldBorderLerpSize;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorderSize;
 
 public class OutboundWorldBorderProcessor extends ProcessorOutbound {
 
-    private final WorldBorderData worldBorder;
+    private final BorderMirror border;
+    private final PacketLatencyHandler latencyHandler;
 
     public OutboundWorldBorderProcessor(TGPlayer player) {
         super(player);
-        this.worldBorder = player.getData().getWorldBorderData();
+        this.border = player.getWorldMirror().border();
+        this.latencyHandler = player.getLatencyHandler();
     }
 
     @Override
@@ -45,23 +49,61 @@ public class OutboundWorldBorderProcessor extends ProcessorOutbound {
 
         if (type == PacketType.Play.Server.INITIALIZE_WORLD_BORDER) {
             WrapperPlayServerInitializeWorldBorder packet = new WrapperPlayServerInitializeWorldBorder(event);
-            worldBorder.initialize(packet.getX(), packet.getZ(), packet.getNewDiameter());
+            final double x = packet.getX();
+            final double z = packet.getZ();
+            final double oldDiameter = packet.getOldDiameter();
+            final double newDiameter = packet.getNewDiameter();
+            final long speed = packet.getSpeed();
+            latencyHandler.compensateLazy(event, () -> {
+                border.initialize(x, z, oldDiameter);
+                if (speed > 0 && oldDiameter != newDiameter) {
+                    border.lerpDiameter(oldDiameter, newDiameter, speed);
+                } else {
+                    border.setDiameter(newDiameter);
+                }
+            });
         } else if (type == PacketType.Play.Server.WORLD_BORDER_SIZE) {
-            worldBorder.setDiameter(new WrapperPlayServerWorldBorderSize(event).getDiameter());
+            final double diameter = new WrapperPlayServerWorldBorderSize(event).getDiameter();
+            latencyHandler.compensateLazy(event, () -> border.setDiameter(diameter));
+        } else if (type == PacketType.Play.Server.WORLD_BORDER_LERP_SIZE) {
+            WrapperPlayWorldBorderLerpSize packet = new WrapperPlayWorldBorderLerpSize(event);
+            final double oldDiameter = packet.getOldDiameter();
+            final double newDiameter = packet.getNewDiameter();
+            final long speed = packet.getSpeed();
+            latencyHandler.compensateLazy(event, () -> border.lerpDiameter(oldDiameter, newDiameter, speed));
         } else if (type == PacketType.Play.Server.WORLD_BORDER_CENTER) {
             WrapperPlayServerWorldBorderCenter packet = new WrapperPlayServerWorldBorderCenter(event);
-            worldBorder.setCenter(packet.getX(), packet.getZ());
+            final double x = packet.getX();
+            final double z = packet.getZ();
+            latencyHandler.compensateLazy(event, () -> border.setCenter(x, z));
         } else if (type == PacketType.Play.Server.WORLD_BORDER) {
-            handleLegacy(new WrapperPlayServerWorldBorder(event));
+            handleLegacy(event, new WrapperPlayServerWorldBorder(event));
         }
     }
 
-    private void handleLegacy(WrapperPlayServerWorldBorder packet) {
+    private void handleLegacy(PacketSendEvent event, WrapperPlayServerWorldBorder packet) {
         switch (packet.getAction()) {
-            case INITIALIZE -> worldBorder.initialize(packet.getCenterX(), packet.getCenterZ(), packet.getRadius());
-            case SET_SIZE -> worldBorder.setDiameter(packet.getRadius());
-            case LERP_SIZE -> worldBorder.setDiameter(packet.getNewRadius());
-            case SET_CENTER -> worldBorder.setCenter(packet.getCenterX(), packet.getCenterZ());
+            case INITIALIZE -> {
+                final double x = packet.getCenterX();
+                final double z = packet.getCenterZ();
+                final double radius = packet.getRadius();
+                latencyHandler.compensateLazy(event, () -> border.initialize(x, z, radius));
+            }
+            case SET_SIZE -> {
+                final double radius = packet.getRadius();
+                latencyHandler.compensateLazy(event, () -> border.setDiameter(radius));
+            }
+            case LERP_SIZE -> {
+                final double oldRadius = packet.getOldRadius();
+                final double newRadius = packet.getNewRadius();
+                final long speed = packet.getSpeed();
+                latencyHandler.compensateLazy(event, () -> border.lerpDiameter(oldRadius, newRadius, speed));
+            }
+            case SET_CENTER -> {
+                final double x = packet.getCenterX();
+                final double z = packet.getCenterZ();
+                latencyHandler.compensateLazy(event, () -> border.setCenter(x, z));
+            }
             default -> {
             }
         }

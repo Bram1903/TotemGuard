@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.common.player.debug.provider;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.ClientWorld;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayFrame;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
 import com.deathmotion.totemguard.common.util.Palette;
@@ -74,16 +74,16 @@ public final class WorldDebugProvider implements DebugOverlayProvider {
     @Override
     public DebugOverlayFrame buildFrame(TGPlayer player) {
         Data data = player.getData();
-        ClientWorld world = data.getClientWorld();
+        BlockReader reader = player.getWorldMirror().reader();
         Location current = data.getMovementData().getCurrent();
 
         int x = floor(current.getX());
         int y = floor(current.getY());
         int z = floor(current.getZ());
 
-        boolean loaded = world.isLoaded(x >> 4, z >> 4);
-        WrappedBlockState feet = world.getBlockState(x, y, z);
-        WrappedBlockState below = world.getBlockState(x, y - 1, z);
+        boolean loaded = reader.columnLoaded(x >> 4, z >> 4);
+        WrappedBlockState feet = reader.state(x, y, z);
+        WrappedBlockState below = reader.state(x, y - 1, z);
 
         Component line = Component.empty()
                 .append(label("Chunk "))
@@ -97,6 +97,10 @@ public final class WorldDebugProvider implements DebugOverlayProvider {
                 .append(separator())
                 .append(label("wet "))
                 .append(Component.text(waterlogged(feet) ? "yes" : "no", waterlogged(feet) ? Palette.WARN : Palette.SUCCESS))
+                .append(separator())
+                .append(label("pend "))
+                .append(Component.text(reader.uncertain(x, y, z) || reader.uncertain(x, y - 1, z) ? "yes" : "no",
+                        Palette.CAPTION))
                 .append(separator())
                 .append(label("below "))
                 .append(value(below.getType().getName()))

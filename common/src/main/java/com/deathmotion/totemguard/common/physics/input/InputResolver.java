@@ -18,17 +18,14 @@
 
 package com.deathmotion.totemguard.common.physics.input;
 
-import com.deathmotion.totemguard.common.physics.MovementConstants;
-import com.deathmotion.totemguard.common.physics.ground.GroundState;
-import com.deathmotion.totemguard.common.physics.sim.MovementInput;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.EffectData;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.PlayerAttributeData;
-import com.deathmotion.totemguard.common.world.scan.BlockEnvironment;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import com.github.retrooper.packetevents.util.Vector3d;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -39,6 +36,7 @@ public final class InputResolver {
     private static final double RISE_EPS = 0.001;
     private static final double COYOTE_TAKEOFF_EPS = 0.05;
     private static final double WATER_EXIT_SUPPORT_REACH = 0.6;
+    private static final double WATER_EXIT_HOP = 0.3;
 
     private static final int SNEAK_CONFIRM = 3;
     private static final double SNEAK_DIAGONAL_FACTOR = Math.sqrt(2.0);
@@ -47,6 +45,14 @@ public final class InputResolver {
     private static final double SPRINT_BACKWARD_COS = -0.6;
     private static final int SPRINT_TURN_TOLERANCE = 8;
     private static final double SPRINT_GROUND_SLIPPERINESS = 0.61;
+
+    private static final double SPRINT_SPEED_MULTIPLIER = 1.3;
+    private static final double WATER_FRICTION = 0.8;
+    private static final double WATER_SPRINT_FRICTION = 0.9;
+    private static final double WATER_DOLPHIN_FRICTION = 0.96;
+    private static final double WATER_ACCEL = 0.02;
+    private static final double WATER_EFFICIENCY_FRICTION_TARGET = 0.54600006;
+    private static final double WATER_CURRENT_PUSH = 0.014;
 
     private final Data data;
 
@@ -61,8 +67,8 @@ public final class InputResolver {
         this.data = data;
     }
 
-    public MovementInput build(MovementData movement, BlockEnvironment env, Vector3d observed,
-                        GroundState ground, double bubbleAscent) {
+    public PlayerInput build(MovementData movement, ContactReport contact, GroundFacts ground,
+                              boolean fluidNow, double observedX, double observedY, double observedZ) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
         boolean horizontalInput = !inventoryOpen
@@ -74,20 +80,21 @@ public final class InputResolver {
         int jumpBoostAmplifier = effects.hasJumpBoost() ? effects.jumpBoostAmplifier() : -1;
         double jumpTakeoff = attr.jumpStrength() + (jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0);
 
-        boolean freshJump = observed.getY() >= jumpTakeoff - COYOTE_TAKEOFF_EPS;
+        boolean freshJump = observedY >= jumpTakeoff - COYOTE_TAKEOFF_EPS;
         boolean landingJump = ground.landingSupport()
-                && observed.getY() > RISE_EPS && observed.getY() <= jumpTakeoff + COYOTE_TAKEOFF_EPS;
+                && observedY > RISE_EPS && observedY <= jumpTakeoff + COYOTE_TAKEOFF_EPS;
         boolean coyoteJump = !ground.groundedStart()
                 && jumpHeld && !inventoryOpen && !ground.coyoteBlocked()
-                && (((ground.recentlyGrounded() || ground.groundedStartAmbiguous()) && freshJump) || landingJump);
+                && (((ground.recentlyGrounded() || ground.startAmbiguous()) && freshJump) || landingJump);
         boolean effectiveGroundedStart = ground.groundedStart() || coyoteJump;
         boolean jumpPossible = effectiveGroundedStart && jumpHeld && !inventoryOpen;
 
+        double observedSpeed = Math.hypot(observedX, observedZ);
         boolean sprinting = !inventoryOpen && data.isSprinting() && data.getFoodData().canSprint()
-                && sprintForward(movement, env, state, observed, ground.groundedStart());
+                && sprintForward(movement, contact, state, observedX, observedZ, observedSpeed, ground.groundedStart());
         improperSprint = data.isSprinting() && !sprinting && !inventoryOpen;
 
-        boolean ceilingBlocked = env.ceilingGap() < jumpTakeoff;
+        boolean ceilingBlocked = contact.ceilingClearance() < jumpTakeoff;
         boolean sprintJump = effectiveGroundedStart && sprinting
                 && (freshJump || (ceilingBlocked && jumpHeld));
         boolean clampedJumpNow = jumpPossible && ceilingBlocked;
@@ -95,35 +102,25 @@ public final class InputResolver {
         lastClampedJump = clampedJumpNow;
 
         sneakStreak = data.isSneaking() ? sneakStreak + 1 : 0;
-        boolean sneaking = sneakStreak >= SNEAK_CONFIRM && !env.startOverlapping();
+        boolean sneaking = sneakStreak >= SNEAK_CONFIRM && !contact.startOverlapping();
         boolean diagonal = state == null
                 || ((state.forward() ^ state.backward()) && (state.left() ^ state.right()));
 
-        boolean waterExitHop = ground.wasFluid() && !env.fluid() && observed.getY() > RISE_EPS
-                && env.groundGap() <= WATER_EXIT_SUPPORT_REACH;
+        boolean waterExitHop = ground.wasFluid() && !fluidNow && observedY > RISE_EPS
+                && contact.nearestSupportGap() <= WATER_EXIT_SUPPORT_REACH;
 
-        boolean supportWithinStep = env.steppableRiser() || env.startOverlapping();
-
-        return new MovementInput(effectiveGroundedStart, ground.groundedStartAmbiguous(), ground.groundedEnd(),
-                supportWithinStep, env.startOverlapping(),
-                horizontalInput, jumpPossible, ceilingClampedJump,
-                sprinting, sprintJump, effectiveSpeed(sprinting, sneaking, diagonal),
+        return new PlayerInput(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
+                jumpPossible, ceilingClampedJump, waterExitHop,
+                effectiveSpeed(sprinting, sneaking, diagonal),
                 attr.jumpStrength(), attr.gravity(), attr.stepHeight(),
-                ground.startSlipperinessMin(), ground.startSlipperinessMax(),
-                effectiveBlockSpeedFactor(env),
                 jumpBoostAmplifier,
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
-                fluidAccel(data.isSprinting(), effectiveGroundedStart),
-                waterExitHop, bubbleAscent);
+                fluidAccel(data.isSprinting(), effectiveGroundedStart));
     }
 
-    private double effectiveBlockSpeedFactor(BlockEnvironment env) {
-        double raw = env.blockSpeedFactor();
-        if (raw >= 1.0) return 1.0;
-        if (!data.getPlayer().getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5)) return 1.0;
-        double efficiency = data.getAttributeData().movementEfficiency();
-        return raw + efficiency * (1.0 - raw);
+    public static double waterExitHop() {
+        return WATER_EXIT_HOP;
     }
 
     private double waterEfficiency(boolean groundedStart) {
@@ -136,33 +133,32 @@ public final class InputResolver {
     }
 
     private double fluidFriction(boolean sprinting, boolean groundedStart, EffectData effects) {
-        if (effects.hasDolphinsGrace()) return MovementConstants.WATER_DOLPHIN_FRICTION;
-        double friction = sprinting ? MovementConstants.WATER_SPRINT_FRICTION : MovementConstants.WATER_FRICTION;
+        if (effects.hasDolphinsGrace()) return WATER_DOLPHIN_FRICTION;
+        double friction = sprinting ? WATER_SPRINT_FRICTION : WATER_FRICTION;
         if (observesWaterEfficiency()) {
-            friction += (MovementConstants.WATER_EFFICIENCY_FRICTION_TARGET - friction) * waterEfficiency(groundedStart);
+            friction += (WATER_EFFICIENCY_FRICTION_TARGET - friction) * waterEfficiency(groundedStart);
         }
         return friction;
     }
 
     private double fluidAccel(boolean sprinting, boolean groundedStart) {
-        double getSpeed = data.getAttributeData().movementSpeed() * (sprinting ? MovementConstants.SPRINT_SPEED_MULTIPLIER : 1.0);
-        double accel = MovementConstants.WATER_ACCEL + (getSpeed - MovementConstants.WATER_ACCEL) * waterEfficiency(groundedStart);
-        return accel + MovementConstants.WATER_CURRENT_PUSH;
+        double getSpeed = data.getAttributeData().movementSpeed() * (sprinting ? SPRINT_SPEED_MULTIPLIER : 1.0);
+        double accel = WATER_ACCEL + (getSpeed - WATER_ACCEL) * waterEfficiency(groundedStart);
+        return accel + WATER_CURRENT_PUSH;
     }
 
-    private boolean sprintForward(MovementData movement, BlockEnvironment env, InputData.State state, Vector3d observed,
-                                  boolean groundedStart) {
+    private boolean sprintForward(MovementData movement, ContactReport contact, InputData.State state,
+                                  double observedX, double observedZ, double observedSpeed, boolean groundedStart) {
         if (state != null) {
             backwardSprintStreak = 0;
             return state.forward();
         }
-        double speed = Math.hypot(observed.getX(), observed.getZ());
-        boolean onNormalGround = groundedStart && env.slipperinessMax() <= SPRINT_GROUND_SLIPPERINESS;
+        boolean onNormalGround = groundedStart && contact.supportSlipMax() <= SPRINT_GROUND_SLIPPERINESS;
         boolean backward = false;
-        if (onNormalGround && speed > SPRINT_MIN_SPEED) {
+        if (onNormalGround && observedSpeed > SPRINT_MIN_SPEED) {
             double yaw = Math.toRadians(movement.getCurrent().getYaw());
-            double forwardComponent = observed.getX() * -Math.sin(yaw) + observed.getZ() * Math.cos(yaw);
-            backward = forwardComponent / speed < SPRINT_BACKWARD_COS;
+            double forwardComponent = observedX * -Math.sin(yaw) + observedZ * Math.cos(yaw);
+            backward = forwardComponent / observedSpeed < SPRINT_BACKWARD_COS;
         }
         backwardSprintStreak = backward ? backwardSprintStreak + 1 : 0;
         return backwardSprintStreak <= SPRINT_TURN_TOLERANCE;
@@ -170,7 +166,7 @@ public final class InputResolver {
 
     private double effectiveSpeed(boolean sprinting, boolean sneaking, boolean diagonal) {
         double speed = data.getAttributeData().movementSpeed();
-        if (sprinting) speed *= MovementConstants.SPRINT_SPEED_MULTIPLIER;
+        if (sprinting) speed *= SPRINT_SPEED_MULTIPLIER;
         if (sneaking) {
             double sneak = data.getAttributeData().sneakingSpeed();
             if (diagonal) sneak = Math.min(1.0, sneak * SNEAK_DIAGONAL_FACTOR);

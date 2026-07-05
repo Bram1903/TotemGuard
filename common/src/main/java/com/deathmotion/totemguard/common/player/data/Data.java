@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.common.mitigation.MitigationService;
 import com.deathmotion.totemguard.common.mitigation.SetbackController;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
-import com.deathmotion.totemguard.common.physics.MovementEstimator;
 import com.deathmotion.totemguard.common.util.BoundingBox;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import lombok.AccessLevel;
@@ -42,17 +41,13 @@ public class Data {
     private final TeleportData teleportData;
     private final InputData inputData;
     private final MovementData movementData;
-    private final WorldEntityData worldEntityData;
     private final PlayerAttributeData attributeData;
     private final ExternalVelocityData externalVelocityData;
-    private final WorldBorderData worldBorderData;
     private final PistonData pistonData;
     private final EffectData effectData;
     private final FoodData foodData;
-    private final ClientWorld clientWorld;
     private final MitigationService mitigationService;
     private final SetbackController setbackController;
-    private final MovementEstimator movementEstimator;
     private GameMode gameMode;
     private boolean sprinting;
     private boolean sneaking;
@@ -98,17 +93,13 @@ public class Data {
         this.teleportData = new TeleportData();
         this.inputData = new InputData();
         this.movementData = new MovementData();
-        this.worldEntityData = new WorldEntityData();
         this.attributeData = new PlayerAttributeData();
         this.externalVelocityData = new ExternalVelocityData();
-        this.worldBorderData = new WorldBorderData();
         this.pistonData = new PistonData();
         this.effectData = new EffectData();
         this.foodData = new FoodData();
-        this.clientWorld = new ClientWorld(player.getClientVersion());
         this.mitigationService = new MitigationService(this);
         this.setbackController = new SetbackController(mitigationService, externalVelocityData);
-        this.movementEstimator = new MovementEstimator(this);
     }
 
     public void setOpenInventory(boolean openInventory, Issuer issuer) {
@@ -118,7 +109,7 @@ public class Data {
 
         if (!changed) return;
 
-        movementEstimator.clearHistory();
+        player.getPhysics().onInventoryToggled();
 
         if (openInventory) {
             this.inventoryOpenedAt = System.currentTimeMillis();
@@ -156,7 +147,8 @@ public class Data {
         BoundingBox box = BoundingBox.sweptPlayer(
                 movementData.getCurrent(), movementData.getPrevious(),
                 attributeData.width(), attributeData.height());
-        if (clientWorld.containsNetherPortal(box)) {
+        if (player.getWorldMirror().reader().containsPortal(
+                box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
             markNetherPortalContact();
         }
     }

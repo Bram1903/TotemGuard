@@ -26,8 +26,8 @@ public final class GroundSpoofDetector {
 
     private int streak;
 
-    public boolean provoked(boolean onGround, double observedVy) {
-        if (!onGround || Math.abs(observedVy) <= VERTICAL_EPS) {
+    public boolean provoked(boolean claimedGround, double observedVy) {
+        if (!claimedGround || Math.abs(observedVy) <= VERTICAL_EPS) {
             streak = 0;
             return false;
         }

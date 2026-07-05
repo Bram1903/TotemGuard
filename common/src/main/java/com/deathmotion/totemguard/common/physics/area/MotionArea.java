@@ -18,25 +18,17 @@
 
 package com.deathmotion.totemguard.common.physics.area;
 
-public record MotionArea(Range horizontalSpeed, Range vertical) {
+public record MotionArea(double centerX, double centerZ, double slack, double floorVy, double ceilVy) {
 
-    public static MotionArea resting() {
-        return new MotionArea(Range.ZERO, Range.ZERO);
+    public static MotionArea rest() {
+        return new MotionArea(0.0, 0.0, 0.0, 0.0, 0.0);
     }
 
-    public static MotionArea of(double horizontalSpeed, double verticalMotion) {
-        return new MotionArea(Range.of(horizontalSpeed), Range.of(verticalMotion));
+    public static MotionArea seeded(double dx, double dz, double dy) {
+        return new MotionArea(dx, dz, 0.0, dy, dy);
     }
 
-    public double horizontalExcess(double observedSpeed) {
-        return horizontalSpeed.excessAbove(observedSpeed);
-    }
-
-    public double ascentExcess(double observedVerticalMotion) {
-        return vertical.excessAbove(observedVerticalMotion);
-    }
-
-    public MotionArea expand(double horizontal, double ascent) {
-        return new MotionArea(horizontalSpeed.grow(0.0, horizontal), vertical.grow(0.0, ascent));
+    public double speedCap() {
+        return Math.hypot(centerX, centerZ) + slack;
     }
 }

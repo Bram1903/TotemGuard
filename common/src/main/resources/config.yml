@@ -106,13 +106,12 @@ physics-engine:
   # How much slack the simulation grants before movement counts as impossible. This scales
   # the Physics check and the mitigation together, they trigger as one event: a Physics
   # flag is a setback and a setback is a Physics flag (unless disabled below).
-  # strict:   the margins the engine was tuned with. Catches the most, recommended default.
-  # standard: slightly wider margins and later triggers. Use when strict occasionally
-  #           false flags on your setup.
-  # lenient:  much wider margins, only blatant offenses trigger. False positives become
-  #           very unlikely at the cost of letting subtle cheats through.
+  # strict:  the margins the engine was tuned with, tight to vanilla. Catches the most,
+  #          recommended default. A false positive on strict is an engine bug, report it.
+  # lenient: much wider margins and later triggers, only blatant offenses fire. False
+  #          positives become very unlikely at the cost of letting subtle cheats through.
   # Unknown values fall back to strict.
-  tolerance: strict
+  preset: strict
 
   # Mitigation removes the unfair advantage directly instead of only alerting. It rides
   # the same trigger as the Physics flag, so every alert marked (setback) was corrected.
@@ -139,11 +138,16 @@ physics-engine:
     # are never touched.
     timer-packet-cancel: true
 
-  # Logs one simulation line per movement tick to the console for every player, so movement
-  # false positives can be copied and diagnosed (observed motion, the predicted caps, the
-  # excess, ground state, medium, and inputs). Very spammy, intended for a dev/test server
-  # with a single player. Applies on reload, no restart needed.
-  debug: false
+  # Built-in diagnosis. Applies on reload, no restart needed.
+  # off:     no recording, zero overhead. The production default.
+  # summary: keeps a rolling per-tick evidence ring per player (observed motion, the area
+  #          bounds, excesses, contacts, footing, world reads) and dumps the last seconds
+  #          to the console automatically whenever a violation triggers, so false
+  #          positives can be diagnosed after the fact without reproducing them.
+  # trace:   summary plus one console line per movement tick per player. Very spammy,
+  #          intended for a dev/test server with a single player.
+  debug:
+    level: off
 
 # A vanilla client bug lets you keep moving with an inventory open when the Debug Modifier
 # Key (F3) shares a key with a movement bind. When enabled, TotemGuard reads keybinds on

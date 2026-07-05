@@ -71,12 +71,12 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
 
         if (flying) {
             if (!event.isCancelled()) {
-                player.getData().getMovementEstimator().onFlying();
+                player.getPhysics().onFlying();
                 player.getData().updateNetherPortalContact();
                 player.getDebugOverlayManager().refresh();
             }
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
-            player.getData().getMovementEstimator().onTickEnd();
+            player.getPhysics().onTickEnd();
         }
         checkManager.onPacketReceive(event);
         player.triggerInventoryEvent();

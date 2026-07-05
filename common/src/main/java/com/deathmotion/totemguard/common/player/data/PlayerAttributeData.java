@@ -18,20 +18,20 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
-import com.deathmotion.totemguard.common.physics.MovementConstants;
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 
 public class PlayerAttributeData {
 
     private double scale = 1.0;
-    private double movementSpeed = MovementConstants.BASE_MOVEMENT_SPEED;
-    private double jumpStrength = MovementConstants.JUMP_POWER;
-    private double gravity = MovementConstants.GRAVITY;
-    private double stepHeight = MovementConstants.STEP_HEIGHT;
-    private double sneakingSpeed = MovementConstants.SNEAKING_SPEED;
-    private double movementEfficiency = MovementConstants.MOVEMENT_EFFICIENCY;
-    private double waterMovementEfficiency = MovementConstants.WATER_MOVEMENT_EFFICIENCY;
-    private double flyingSpeed = MovementConstants.FLYING_SPEED;
-    private double safeFallDistance = MovementConstants.SAFE_FALL_DISTANCE;
+    private double movementSpeed = MotionDefaults.BASE_MOVEMENT_SPEED;
+    private double jumpStrength = MotionDefaults.JUMP_POWER;
+    private double gravity = MotionDefaults.GRAVITY;
+    private double stepHeight = MotionDefaults.STEP_HEIGHT;
+    private double sneakingSpeed = MotionDefaults.SNEAKING_SPEED;
+    private double movementEfficiency = MotionDefaults.MOVEMENT_EFFICIENCY;
+    private double waterMovementEfficiency = MotionDefaults.WATER_MOVEMENT_EFFICIENCY;
+    private double flyingSpeed = MotionDefaults.FLYING_SPEED;
+    private double safeFallDistance = MotionDefaults.SAFE_FALL_DISTANCE;
     private double fallDamageMultiplier = 1.0;
 
     public void setScale(double scale) {
@@ -79,11 +79,11 @@ public class PlayerAttributeData {
     }
 
     public double width() {
-        return MovementConstants.BASE_WIDTH * scale;
+        return MotionDefaults.BASE_WIDTH * scale;
     }
 
     public double height() {
-        return MovementConstants.STANDING_HEIGHT * scale;
+        return MotionDefaults.STANDING_HEIGHT * scale;
     }
 
     public double scale() {
@@ -132,15 +132,15 @@ public class PlayerAttributeData {
 
     public void reset() {
         scale = 1.0;
-        movementSpeed = MovementConstants.BASE_MOVEMENT_SPEED;
-        jumpStrength = MovementConstants.JUMP_POWER;
-        gravity = MovementConstants.GRAVITY;
-        stepHeight = MovementConstants.STEP_HEIGHT;
-        sneakingSpeed = MovementConstants.SNEAKING_SPEED;
-        movementEfficiency = MovementConstants.MOVEMENT_EFFICIENCY;
-        waterMovementEfficiency = MovementConstants.WATER_MOVEMENT_EFFICIENCY;
-        flyingSpeed = MovementConstants.FLYING_SPEED;
-        safeFallDistance = MovementConstants.SAFE_FALL_DISTANCE;
+        movementSpeed = MotionDefaults.BASE_MOVEMENT_SPEED;
+        jumpStrength = MotionDefaults.JUMP_POWER;
+        gravity = MotionDefaults.GRAVITY;
+        stepHeight = MotionDefaults.STEP_HEIGHT;
+        sneakingSpeed = MotionDefaults.SNEAKING_SPEED;
+        movementEfficiency = MotionDefaults.MOVEMENT_EFFICIENCY;
+        waterMovementEfficiency = MotionDefaults.WATER_MOVEMENT_EFFICIENCY;
+        flyingSpeed = MotionDefaults.FLYING_SPEED;
+        safeFallDistance = MotionDefaults.SAFE_FALL_DISTANCE;
         fallDamageMultiplier = 1.0;
     }
 }

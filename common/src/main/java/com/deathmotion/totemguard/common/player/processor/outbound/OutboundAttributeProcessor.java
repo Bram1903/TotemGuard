@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.PlayerAttributeData;
-import com.deathmotion.totemguard.common.player.data.WorldEntityData;
+import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -37,13 +37,13 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
     private static final UUID LEGACY_SPRINT_MODIFIER_ID = UUID.fromString("662a6b8d-da3e-4c1c-8813-96ea6097278d");
 
     private final PlayerAttributeData attributes;
-    private final WorldEntityData worldEntityData;
+    private final EntityTracker entities;
     private final PacketLatencyHandler latencyHandler;
 
     public OutboundAttributeProcessor(TGPlayer player) {
         super(player);
         this.attributes = player.getData().getAttributeData();
-        this.worldEntityData = player.getData().getWorldEntityData();
+        this.entities = player.getWorldMirror().entities();
         this.latencyHandler = player.getLatencyHandler();
     }
 
@@ -82,7 +82,7 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
                 if (self) {
                     latencyHandler.compensate(event, () -> attributes.setScale(value));
                 } else {
-                    worldEntityData.setScale(entityId, value);
+                    latencyHandler.compensateLazy(event, () -> entities.setScale(entityId, value));
                 }
             } else if (self && property.getAttribute() == Attributes.MOVEMENT_SPEED) {
                 double value = movementSpeedWithoutSprint(property);

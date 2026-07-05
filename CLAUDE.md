@@ -35,10 +35,10 @@ clients older than 1.17 are kicked by default or, with `unsupported-client.kick:
 The SERVER version governs packet structure and world representation. The CLIENT version
 (`player.getClientVersion()`, from the handshake, not the packet stream) governs physics and which packets
 the client actually sends (for example a pre-1.21.2 client never sends `ClientTickEnd` even on a 26.x
-server). A 1.17-through-server-version client is fully supported through ViaVersion, and the simulation
-engine reads the world through its eyes: `ClientWorld` remaps every block to what that client sees via
-`ViaBlockTranslator` (Via's own block mappings), so a newer-than-client block collides as its client-visible
-substitute, not the server block. Gate packet or world or server-emitted logic on the server version, gate
+server). A 1.17-through-server-version client is fully supported through ViaVersion, and the physics
+engine reads the world through its eyes: `WorldMirror`/`BlockReader` remap every block to what that client
+sees via `ClientStateMap` (Via's own block mappings), so a newer-than-client block collides as its
+client-visible substitute, not the server block. Gate packet or world or server-emitted logic on the server version, gate
 physics and client-sent behavior on the client version, and never assume a modern server implies a modern
 client.
 

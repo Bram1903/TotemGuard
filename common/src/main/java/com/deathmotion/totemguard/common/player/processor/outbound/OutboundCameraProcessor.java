@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.player.processor.outbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.MovementData;
-import com.deathmotion.totemguard.common.player.data.WorldEntityData;
+import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -30,13 +30,13 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCa
 public class OutboundCameraProcessor extends ProcessorOutbound {
 
     private final MovementData movementData;
-    private final WorldEntityData worldEntityData;
+    private final EntityTracker entities;
     private final PacketLatencyHandler latencyHandler;
 
     public OutboundCameraProcessor(TGPlayer player) {
         super(player);
         this.movementData = player.getData().getMovementData();
-        this.worldEntityData = player.getData().getWorldEntityData();
+        this.entities = player.getWorldMirror().entities();
         this.latencyHandler = player.getLatencyHandler();
     }
 
@@ -51,7 +51,7 @@ public class OutboundCameraProcessor extends ProcessorOutbound {
         // Per protocol: "If the given entity is not loaded by the player, this packet is ignored."
         // The tracker reflects the client's loaded-entity set at this packet's send time, so a
         // miss here means the client will silently drop the CAMERA and we must not flip state.
-        if (!isSelf && !worldEntityData.isLoaded(cameraId)) return;
+        if (!isSelf && !entities.isTracked(cameraId)) return;
 
         latencyHandler.compensate(event, () -> movementData.handleCameraChange(isSelf));
     }
