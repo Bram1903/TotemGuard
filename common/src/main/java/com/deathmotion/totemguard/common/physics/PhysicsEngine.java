@@ -91,6 +91,7 @@ public final class PhysicsEngine {
     private static final double PRESERVED_WARP_ACCEL = 0.2;
     private static final double HOVER_EXCESS = MotionDefaults.GRAVITY;
     private static final int HOVER_SETBACK_LIMIT = 2;
+    private static final double CEILING_FLUSH_EPS = 1.0e-6;
 
     private final TGPlayer player;
     private final Data data;
@@ -438,8 +439,8 @@ public final class PhysicsEngine {
                 half, height, dx, dy, dz,
                 data.getAttributeData().stepHeight(), groundResolver.lastGroundedEnd());
         MediumScan.sample(reader, sample,
-                current.getX() - half, current.getY(), current.getZ() - half,
-                current.getX() + half, current.getY() + height, current.getZ() + half,
+                previous.getX() - half, previous.getY(), previous.getZ() - half,
+                previous.getX() + half, previous.getY() + height, previous.getZ() + half,
                 Math.min(previous.getX(), current.getX()) - half, Math.min(previous.getY(), current.getY()),
                 Math.min(previous.getZ(), current.getZ()) - half,
                 Math.max(previous.getX(), current.getX()) + half,
@@ -553,14 +554,18 @@ public final class PhysicsEngine {
         AreaAdvancer.clampObserved(bounds, dx, dy, dz, excess.altCenterUsed(), preset.modelDriftSlack());
         double anchor = ground.groundedEnd() ? 0.0 : bounds.legalVy();
         double advancedVy = medium.advanceVertical(anchor, input);
+        double advancedFloorVy = advancedVy;
+        if (anchor > 0.0 && contact.ceilingClearance() <= CEILING_FLUSH_EPS) {
+            advancedFloorVy = medium.advanceVertical(0.0, input);
+        }
 
         if (carryPredicted) {
             double accel = medium.accelBound(input, ground);
             carried = new MotionArea(carried.centerX() * frictionMax, carried.centerZ() * frictionMax,
-                    (carried.slack() + accel) * frictionMax, advancedVy, advancedVy);
+                    (carried.slack() + accel) * frictionMax, advancedFloorVy, advancedVy);
         } else {
             carried = AreaAdvancer.next(bounds.legalX(), bounds.legalZ(), frictionMax,
-                    effectiveSpeedFactor(), advancedVy);
+                    effectiveSpeedFactor(), advancedFloorVy, advancedVy);
         }
 
         if (ground.bounced() && carriedFloorAtStart < 0.0 && contact.supportBounce() > 0.0) {

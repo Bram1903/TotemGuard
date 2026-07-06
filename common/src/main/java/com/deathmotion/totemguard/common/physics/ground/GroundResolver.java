@@ -39,6 +39,8 @@ public final class GroundResolver {
     private int displacedTicks;
     private double lastSlipMin = BlockTraits.DEFAULT_SLIPPERINESS;
     private double lastSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
+    private double lastJumpMin = 1.0;
+    private double lastJumpMax = 1.0;
 
     public void seed(boolean onGround) {
         lastGroundedEnd = onGround;
@@ -98,14 +100,18 @@ public final class GroundResolver {
 
         double startSlipMin = lastSlipMin;
         double startSlipMax = lastSlipMax;
+        double startJumpMin = lastJumpMin;
+        double startJumpMax = lastJumpMax;
         lastSlipMin = contact.supportSlipMin();
         lastSlipMax = contact.supportSlipMax();
+        lastJumpMin = contact.supportJumpMin();
+        lastJumpMax = contact.supportJumpMax();
 
         GroundState start = groundedStart ? GroundState.SUPPORTED
                 : startAmbiguous ? GroundState.AMBIGUOUS
                 : GroundState.AIRBORNE;
         return new GroundFacts(start, groundedEnd, arrested, recentlyGrounded, landingSupport, bounced,
-                bounceTicks > 0, wasFluid, startSlipMin, startSlipMax, gap);
+                bounceTicks > 0, wasFluid, startSlipMin, startSlipMax, startJumpMin, startJumpMax, gap);
     }
 
     public double lastGroundGap() {
@@ -125,5 +131,7 @@ public final class GroundResolver {
         clearWindows();
         lastSlipMin = BlockTraits.DEFAULT_SLIPPERINESS;
         lastSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
+        lastJumpMin = 1.0;
+        lastJumpMax = 1.0;
     }
 }

@@ -45,6 +45,7 @@ public final class LavaModel implements MediumModel {
         double lavaGravity = input.gravity() / 4.0;
         bounds.ceiling(Math.max(ASCENT_MIN, bounds.ceiling() + SWIM_IMPULSE));
         bounds.floor(bounds.floor() - lavaGravity - SWIM_IMPULSE);
+        if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
         if (ground.groundedStart() || ground.groundedEnd()
                 || contact.nearestSupportGap() <= input.stepHeight()) {
             bounds.raiseCeiling(input.stepHeight());

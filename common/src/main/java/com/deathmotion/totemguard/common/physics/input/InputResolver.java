@@ -35,8 +35,6 @@ public final class InputResolver {
 
     private static final double RISE_EPS = 0.001;
     private static final double COYOTE_TAKEOFF_EPS = 0.05;
-    private static final double WATER_EXIT_SUPPORT_REACH = 0.6;
-    private static final double WATER_EXIT_HOP = 0.3;
 
     private static final int SNEAK_CONFIRM = 3;
     private static final double SNEAK_DIAGONAL_FACTOR = Math.sqrt(2.0);
@@ -62,6 +60,7 @@ public final class InputResolver {
     @Setter
     private boolean improperSprint;
     private boolean lastClampedJump;
+    private boolean lastWallContact = true;
 
     public InputResolver(Data data) {
         this.data = data;
@@ -78,11 +77,13 @@ public final class InputResolver {
         EffectData effects = data.getEffectData();
         PlayerAttributeData attr = data.getAttributeData();
         int jumpBoostAmplifier = effects.hasJumpBoost() ? effects.jumpBoostAmplifier() : -1;
-        double jumpTakeoff = attr.jumpStrength() + (jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0);
+        double jumpBoost = jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;
+        double takeoffMin = attr.jumpStrength() * ground.startJumpMin() + jumpBoost;
+        double takeoffMax = attr.jumpStrength() * ground.startJumpMax() + jumpBoost;
 
-        boolean freshJump = observedY >= jumpTakeoff - COYOTE_TAKEOFF_EPS;
+        boolean freshJump = observedY >= takeoffMin - COYOTE_TAKEOFF_EPS;
         boolean landingJump = ground.landingSupport()
-                && observedY > RISE_EPS && observedY <= jumpTakeoff + COYOTE_TAKEOFF_EPS;
+                && observedY > RISE_EPS && observedY <= takeoffMax + COYOTE_TAKEOFF_EPS;
         boolean coyoteJump = !ground.groundedStart()
                 && jumpHeld && !inventoryOpen && !ground.coyoteBlocked()
                 && (((ground.recentlyGrounded() || ground.startAmbiguous()) && freshJump) || landingJump);
@@ -94,7 +95,7 @@ public final class InputResolver {
                 && sprintForward(movement, contact, state, observedX, observedZ, observedSpeed, ground.groundedStart());
         improperSprint = data.isSprinting() && !sprinting && !inventoryOpen;
 
-        boolean ceilingBlocked = contact.ceilingClearance() < jumpTakeoff;
+        boolean ceilingBlocked = contact.ceilingClearance() < takeoffMax;
         boolean sprintJump = effectiveGroundedStart && sprinting
                 && (freshJump || (ceilingBlocked && jumpHeld));
         boolean clampedJumpNow = jumpPossible && ceilingBlocked;
@@ -106,21 +107,18 @@ public final class InputResolver {
         boolean diagonal = state == null
                 || ((state.forward() ^ state.backward()) && (state.left() ^ state.right()));
 
-        boolean waterExitHop = ground.wasFluid() && !fluidNow && observedY > RISE_EPS
-                && contact.nearestSupportGap() <= WATER_EXIT_SUPPORT_REACH;
+        boolean fluidExitHop = ground.wasFluid() && !fluidNow && observedY > RISE_EPS
+                && lastWallContact;
+        lastWallContact = contact.collidedX() || contact.collidedZ() || contact.wallNear();
 
         return new PlayerInput(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
-                jumpPossible, ceilingClampedJump, waterExitHop,
+                jumpPossible, ceilingClampedJump, fluidExitHop,
                 effectiveSpeed(sprinting, sneaking, diagonal),
-                attr.jumpStrength(), attr.gravity(), attr.stepHeight(),
+                attr.jumpStrength() * ground.startJumpMax(), attr.gravity(), attr.stepHeight(),
                 jumpBoostAmplifier,
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
                 fluidAccel(data.isSprinting(), effectiveGroundedStart));
-    }
-
-    public static double waterExitHop() {
-        return WATER_EXIT_HOP;
     }
 
     private double waterEfficiency(boolean groundedStart) {
@@ -178,6 +176,7 @@ public final class InputResolver {
     public void onDecline() {
         backwardSprintStreak = 0;
         improperSprint = false;
+        lastWallContact = true;
     }
 
     public void clear() {
@@ -185,5 +184,6 @@ public final class InputResolver {
         backwardSprintStreak = 0;
         improperSprint = false;
         lastClampedJump = false;
+        lastWallContact = true;
     }
 }

@@ -49,6 +49,7 @@ public final class WaterModel implements MediumModel {
         double waterGravity = input.gravity() / 16.0;
         bounds.ceiling(Math.max(ASCENT_MIN, bounds.ceiling() + SWIM_IMPULSE));
         bounds.floor(bounds.floor() - waterGravity - SWIM_IMPULSE);
+        if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
         if (ground.groundedStart() || ground.groundedEnd()
                 || contact.nearestSupportGap() <= input.stepHeight()) {
             bounds.raiseCeiling(input.stepHeight());

@@ -25,12 +25,15 @@ import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public interface MediumModel {
 
+    double SPRINT_JUMP_BOOST = 0.2;
+
     MediumKind kind();
 
     double accelBound(PlayerInput input, GroundFacts ground);
 
     default void horizontalOptions(PlayerInput input, GroundFacts ground, AreaBounds bounds) {
         if (input.horizontalInput()) bounds.expandRadius(accelBound(input, ground));
+        if (input.sprintJump()) bounds.expandRadius(SPRINT_JUMP_BOOST);
     }
 
     void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds);

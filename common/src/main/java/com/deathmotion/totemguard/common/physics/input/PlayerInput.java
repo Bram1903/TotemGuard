@@ -26,7 +26,7 @@ public record PlayerInput(
         boolean sprintJump,
         boolean jumpPossible,
         boolean ceilingClampedJump,
-        boolean waterExitHop,
+        boolean fluidExitHop,
         double moveSpeed,
         double jumpStrength,
         double gravity,

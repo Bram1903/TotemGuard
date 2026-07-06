@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
@@ -53,6 +54,7 @@ public final class ClimbModel implements MediumModel {
         double ascent = ASCENT;
         if (input.jumpPossible()) ascent = Math.max(ascent, input.jumpTakeoff());
         if (ground.groundedStart() || ground.groundedEnd()) ascent = Math.max(ascent, input.stepHeight());
+        if (input.fluidExitHop()) ascent = Math.max(ascent, MotionDefaults.FLUID_EXIT_HOP);
         bounds.raiseCeiling(ascent);
         bounds.lowerFloor(DESCENT);
         bounds.enforceDescentFloor(false);

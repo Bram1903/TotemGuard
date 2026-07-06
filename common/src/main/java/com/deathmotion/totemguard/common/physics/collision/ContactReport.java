@@ -56,7 +56,8 @@ public final class ContactReport {
     private double supportSlipMax;
     private double supportBounce;
     private double supportSpeedFactor;
-    private double supportJumpFactor;
+    private double supportJumpMin;
+    private double supportJumpMax;
 
     private double ceilingClearance;
     private boolean wallNear;
@@ -86,7 +87,8 @@ public final class ContactReport {
         supportSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
         supportBounce = 0.0;
         supportSpeedFactor = 1.0;
-        supportJumpFactor = 1.0;
+        supportJumpMin = 1.0;
+        supportJumpMax = 1.0;
         ceilingClearance = Double.MAX_VALUE;
         wallNear = false;
     }

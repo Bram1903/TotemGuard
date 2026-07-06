@@ -75,14 +75,17 @@ final class SupportScanner {
             if (first) {
                 report.supportSlipMin(slip);
                 report.supportSlipMax(slip);
+                report.supportJumpMin(jump);
+                report.supportJumpMax(jump);
                 first = false;
             } else {
                 report.supportSlipMin(Math.min(report.supportSlipMin(), slip));
                 report.supportSlipMax(Math.max(report.supportSlipMax(), slip));
+                report.supportJumpMin(Math.min(report.supportJumpMin(), jump));
+                report.supportJumpMax(Math.max(report.supportJumpMax(), jump));
             }
             report.supportBounce(Math.max(report.supportBounce(), bounce));
             report.supportSpeedFactor(Math.min(report.supportSpeedFactor(), speed));
-            report.supportJumpFactor(Math.min(report.supportJumpFactor(), jump));
             if (StateFacts.is(tag, StateFacts.SUPPORT_APPROXIMATE)) report.supportApproximate(true);
         }
     }

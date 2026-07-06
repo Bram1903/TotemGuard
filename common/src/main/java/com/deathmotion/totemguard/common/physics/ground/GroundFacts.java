@@ -29,6 +29,8 @@ public record GroundFacts(
         boolean wasFluid,
         double startSlipMin,
         double startSlipMax,
+        double startJumpMin,
+        double startJumpMax,
         double supportGap) {
 
     public boolean groundedStart() {

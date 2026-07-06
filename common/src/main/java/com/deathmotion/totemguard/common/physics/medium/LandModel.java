@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
@@ -29,7 +30,6 @@ public final class LandModel implements MediumModel {
     private static final double GROUND_ACCEL_NUMERATOR = 0.21600002;
     // Always the sprint value: a sprint-flag desync must never turn into a false positive.
     private static final double AIR_ACCEL = 0.026;
-    private static final double SPRINT_JUMP_BOOST = 0.2;
     private static final double LEVITATION_PER_LEVEL = 0.05;
     private static final double LEVITATION_RATE = 0.2;
     private static final double VERTICAL_DRAG = 0.98;
@@ -51,15 +51,9 @@ public final class LandModel implements MediumModel {
     }
 
     @Override
-    public void horizontalOptions(PlayerInput input, GroundFacts ground, AreaBounds bounds) {
-        if (input.horizontalInput()) bounds.expandRadius(accelBound(input, ground));
-        if (input.sprintJump()) bounds.expandRadius(SPRINT_JUMP_BOOST);
-    }
-
-    @Override
     public void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
-        if (input.waterExitHop()) bounds.raiseCeiling(0.3);
+        if (input.fluidExitHop()) bounds.raiseCeiling(MotionDefaults.FLUID_EXIT_HOP);
         if (ground.groundedEnd() || contact.startOverlapping()) {
             bounds.raiseCeiling(input.stepHeight());
         }
