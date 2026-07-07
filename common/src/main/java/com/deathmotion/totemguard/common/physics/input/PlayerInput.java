@@ -36,7 +36,8 @@ public record PlayerInput(
         int levitationAmplifier,
         boolean slowFalling,
         double fluidFriction,
-        double fluidAccel) {
+        double fluidAccel,
+        double sprintJumpResidual) {
 
     public double jumpBoostPower() {
         return jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;

@@ -24,6 +24,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class MediumSelect {
 
+    @Getter
     private final LandModel land = new LandModel();
     @Getter
     private final WaterModel water = new WaterModel();

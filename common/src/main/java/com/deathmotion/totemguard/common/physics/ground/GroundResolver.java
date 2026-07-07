@@ -39,6 +39,8 @@ public final class GroundResolver {
     private int displacedTicks;
     private double lastSlipMin = BlockTraits.DEFAULT_SLIPPERINESS;
     private double lastSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
+    private double prevSlipMin = BlockTraits.DEFAULT_SLIPPERINESS;
+    private double prevSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
     private double lastJumpMin = 1.0;
     private double lastJumpMax = 1.0;
 
@@ -66,6 +68,7 @@ public final class GroundResolver {
         lastFluid = fluidNow;
 
         boolean groundedStart = lastGroundedEnd;
+        boolean supportedStart = groundedStart && lastGroundGap <= GROUND_EPS;
         boolean startAmbiguous = !groundedStart && (lastGroundGap <= GROUND_EPS || displacedTicks > 0);
         if (displacedTicks > 0) displacedTicks--;
 
@@ -98,11 +101,13 @@ public final class GroundResolver {
         if (bounced) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
         else if (bounceTicks > 0) bounceTicks--;
 
-        double startSlipMin = lastSlipMin;
-        double startSlipMax = lastSlipMax;
+        double startSlipMin = Math.min(lastSlipMin, prevSlipMin);
+        double startSlipMax = Math.max(lastSlipMax, prevSlipMax);
         double startJumpMin = lastJumpMin;
         double startJumpMax = lastJumpMax;
+        prevSlipMin = lastSlipMin;
         lastSlipMin = contact.supportSlipMin();
+        prevSlipMax = lastSlipMax;
         lastSlipMax = contact.supportSlipMax();
         lastJumpMin = contact.supportJumpMin();
         lastJumpMax = contact.supportJumpMax();
@@ -110,7 +115,7 @@ public final class GroundResolver {
         GroundState start = groundedStart ? GroundState.SUPPORTED
                 : startAmbiguous ? GroundState.AMBIGUOUS
                 : GroundState.AIRBORNE;
-        return new GroundFacts(start, groundedEnd, arrested, recentlyGrounded, landingSupport, bounced,
+        return new GroundFacts(start, groundedEnd, supportedStart, arrested, recentlyGrounded, landingSupport, bounced,
                 bounceTicks > 0, wasFluid, startSlipMin, startSlipMax, startJumpMin, startJumpMax, gap);
     }
 
@@ -131,6 +136,8 @@ public final class GroundResolver {
         clearWindows();
         lastSlipMin = BlockTraits.DEFAULT_SLIPPERINESS;
         lastSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
+        prevSlipMin = BlockTraits.DEFAULT_SLIPPERINESS;
+        prevSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
         lastJumpMin = 1.0;
         lastJumpMax = 1.0;
     }

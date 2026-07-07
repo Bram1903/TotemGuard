@@ -44,6 +44,10 @@ public final class InputResolver {
     private static final int SPRINT_TURN_TOLERANCE = 8;
     private static final double SPRINT_GROUND_SLIPPERINESS = 0.61;
 
+    private static final double SPRINT_JUMP_BOOST = 0.2;
+    private static final int SPRINT_JUMP_BOOST_WINDOW = 2;
+    private static final double SPRINT_JUMP_BOOST_DECAY = 0.75;
+
     private static final double SPRINT_SPEED_MULTIPLIER = 1.3;
     private static final double WATER_FRICTION = 0.8;
     private static final double WATER_SPRINT_FRICTION = 0.9;
@@ -61,6 +65,8 @@ public final class InputResolver {
     private boolean improperSprint;
     private boolean lastClampedJump;
     private boolean lastWallContact = true;
+    private double lastCeilingClearance = Double.MAX_VALUE;
+    private int sprintJumpBoostWindow;
 
     public InputResolver(Data data) {
         this.data = data;
@@ -96,11 +102,13 @@ public final class InputResolver {
         improperSprint = data.isSprinting() && !sprinting && !inventoryOpen;
 
         boolean ceilingBlocked = contact.ceilingClearance() < takeoffMax;
+        boolean ceilingBlockedAtTakeoff = ceilingBlocked || lastCeilingClearance < takeoffMax;
         boolean sprintJump = effectiveGroundedStart && sprinting
-                && (freshJump || (ceilingBlocked && jumpHeld));
+                && (freshJump || (ceilingBlockedAtTakeoff && jumpHeld));
         boolean clampedJumpNow = jumpPossible && ceilingBlocked;
         boolean ceilingClampedJump = clampedJumpNow || lastClampedJump;
         lastClampedJump = clampedJumpNow;
+        lastCeilingClearance = contact.ceilingClearance();
 
         sneakStreak = data.isSneaking() ? sneakStreak + 1 : 0;
         boolean sneaking = sneakStreak >= SNEAK_CONFIRM && !contact.startOverlapping();
@@ -111,6 +119,15 @@ public final class InputResolver {
                 && lastWallContact;
         lastWallContact = contact.collidedX() || contact.collidedZ() || contact.wallNear();
 
+        double sprintJumpResidual = 0.0;
+        if (sprintJump) {
+            sprintJumpBoostWindow = SPRINT_JUMP_BOOST_WINDOW;
+        } else if (sprintJumpBoostWindow > 0) {
+            sprintJumpResidual = SPRINT_JUMP_BOOST
+                    * Math.pow(SPRINT_JUMP_BOOST_DECAY, SPRINT_JUMP_BOOST_WINDOW - sprintJumpBoostWindow + 1);
+            sprintJumpBoostWindow--;
+        }
+
         return new PlayerInput(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
                 jumpPossible, ceilingClampedJump, fluidExitHop,
                 effectiveSpeed(sprinting, sneaking, diagonal),
@@ -118,7 +135,8 @@ public final class InputResolver {
                 jumpBoostAmplifier,
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
-                fluidAccel(data.isSprinting(), effectiveGroundedStart));
+                fluidAccel(data.isSprinting(), effectiveGroundedStart),
+                sprintJumpResidual);
     }
 
     private double waterEfficiency(boolean groundedStart) {
@@ -177,6 +195,8 @@ public final class InputResolver {
         backwardSprintStreak = 0;
         improperSprint = false;
         lastWallContact = true;
+        lastCeilingClearance = Double.MAX_VALUE;
+        sprintJumpBoostWindow = 0;
     }
 
     public void clear() {
@@ -185,5 +205,7 @@ public final class InputResolver {
         improperSprint = false;
         lastClampedJump = false;
         lastWallContact = true;
+        lastCeilingClearance = Double.MAX_VALUE;
+        sprintJumpBoostWindow = 0;
     }
 }

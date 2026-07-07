@@ -34,6 +34,7 @@ public interface MediumModel {
     default void horizontalOptions(PlayerInput input, GroundFacts ground, AreaBounds bounds) {
         if (input.horizontalInput()) bounds.expandRadius(accelBound(input, ground));
         if (input.sprintJump()) bounds.expandRadius(SPRINT_JUMP_BOOST);
+        bounds.expandRadius(input.sprintJumpResidual());
     }
 
     void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds);

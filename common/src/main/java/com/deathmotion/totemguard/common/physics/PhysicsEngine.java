@@ -45,6 +45,7 @@ import com.deathmotion.totemguard.common.physics.input.InputResolver;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
 import com.deathmotion.totemguard.common.physics.medium.BubbleLift;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
+import com.deathmotion.totemguard.common.physics.medium.LandModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.medium.MediumScan;
@@ -57,6 +58,7 @@ import com.deathmotion.totemguard.common.physics.collision.ColliderBuffer;
 import com.deathmotion.totemguard.common.physics.collision.ColliderCollector;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.collision.CollisionSweep;
+import com.deathmotion.totemguard.common.physics.collision.TraitSampler;
 import com.deathmotion.totemguard.common.physics.trace.TickRecorder;
 import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
 import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
@@ -92,6 +94,8 @@ public final class PhysicsEngine {
     private static final double HOVER_EXCESS = MotionDefaults.GRAVITY;
     private static final int HOVER_SETBACK_LIMIT = 2;
     private static final double CEILING_FLUSH_EPS = 1.0e-6;
+    private static final double SUPPORT_CONTACT_EPS = 0.02;
+    private static final int BOUNCE_WINDOW = 4;
 
     private final TGPlayer player;
     private final Data data;
@@ -128,6 +132,11 @@ public final class PhysicsEngine {
     private boolean scannedThisTick;
     private GroundFacts groundThisTick;
     private PlayerInput inputThisTick;
+    private double bounceAltCenterX;
+    private double bounceAltCenterZ;
+    private int bounceWindow;
+    private boolean bounceAltValid;
+    private boolean bounceAltUsedLast;
 
     @Getter
     private PhysicsVerdict verdict = PhysicsVerdict.INITIAL;
@@ -337,6 +346,9 @@ public final class PhysicsEngine {
         groundSpoofDetector.reset();
         phase.clear();
         exemptions.clear();
+        bounceAltValid = false;
+        bounceAltUsedLast = false;
+        bounceWindow = 0;
         verdict = PhysicsVerdict.INITIAL;
     }
 
@@ -438,6 +450,7 @@ public final class PhysicsEngine {
                 previous.getX(), previous.getY(), previous.getZ(),
                 half, height, dx, dy, dz,
                 data.getAttributeData().stepHeight(), groundResolver.lastGroundedEnd());
+        TraitSampler.sample(reader, contact, current.getX(), current.getY(), current.getZ(), half);
         MediumScan.sample(reader, sample,
                 previous.getX() - half, previous.getY(), previous.getZ() - half,
                 previous.getX() + half, previous.getY() + height, previous.getZ() + half,
@@ -469,10 +482,17 @@ public final class PhysicsEngine {
                 Math.max(current.getZ() - dz, current.getZ()) + half,
                 half, height);
 
+        boolean offerBounceAlt = landMedium && bounceAltValid && !bounceAltUsedLast
+                && !bounds.hasAltCenter();
+        if (offerBounceAlt) {
+            bounds.altCenter(bounceAltCenterX, bounceAltCenterZ);
+        }
+
         double arrestCap = landMedium && dy <= -preset.verticalFlagEpsilon()
                 ? Math.max(0.0, contact.nearestSupportGap() - preset.verticalNoisePad())
                 : -1.0;
         JudgedExcess excess = AreaJudge.judge(bounds, dx, dy, dz, arrestCap);
+        bounceAltUsedLast = offerBounceAlt && excess.altCenterUsed();
 
         double horizontalExcess = excess.horizontal();
         boolean stepped = contact.stepUsedHeight() > 0.0
@@ -557,12 +577,26 @@ public final class PhysicsEngine {
         double advancedFloorVy = advancedVy;
         if (anchor > 0.0 && contact.ceilingClearance() <= CEILING_FLUSH_EPS) {
             advancedFloorVy = medium.advanceVertical(0.0, input);
+        } else if (bounds.legalVy() < anchor && contact.nearestSupportGap() > SUPPORT_CONTACT_EPS) {
+            advancedFloorVy = Math.min(advancedFloorVy, medium.advanceVertical(bounds.legalVy(), input));
+        }
+        if (medium.kind() == MediumKind.CLIMB && bounds.legalVy() < 0.0) {
+            advancedFloorVy = Math.min(advancedFloorVy, mediums.land().advanceVertical(bounds.legalVy(), input));
         }
 
         if (carryPredicted) {
             double accel = medium.accelBound(input, ground);
-            carried = new MotionArea(carried.centerX() * frictionMax, carried.centerZ() * frictionMax,
-                    (carried.slack() + accel) * frictionMax, advancedFloorVy, advancedVy);
+            double coastX = carried.centerX() * frictionMax;
+            double coastZ = carried.centerZ() * frictionMax;
+            double track = frictionMax * effectiveSpeedFactor();
+            double trackX = bounds.legalX() * track;
+            double trackZ = bounds.legalZ() * track;
+            if (Math.hypot(trackX, trackZ) > Math.hypot(coastX, coastZ)) {
+                carried = new MotionArea(trackX, trackZ, 0.0, advancedFloorVy, advancedVy);
+            } else {
+                carried = new MotionArea(coastX, coastZ,
+                        (carried.slack() + accel) * frictionMax, advancedFloorVy, advancedVy);
+            }
         } else {
             carried = AreaAdvancer.next(bounds.legalX(), bounds.legalZ(), frictionMax,
                     effectiveSpeedFactor(), advancedFloorVy, advancedVy);
@@ -573,6 +607,19 @@ public final class PhysicsEngine {
             double advanced = medium.advanceVertical(reflected, input);
             carried = new MotionArea(carried.centerX(), carried.centerZ(), carried.slack(),
                     advanced, advanced);
+        }
+
+        if (contact.supportBounce() > 0.0) {
+            bounceWindow = BOUNCE_WINDOW;
+        } else if (bounceWindow > 0) {
+            bounceWindow--;
+        }
+        if (bounceWindow > 0) {
+            bounceAltCenterX = bounds.legalX() * LandModel.AIR_FRICTION;
+            bounceAltCenterZ = bounds.legalZ() * LandModel.AIR_FRICTION;
+            bounceAltValid = true;
+        } else {
+            bounceAltValid = false;
         }
     }
 
@@ -592,6 +639,9 @@ public final class PhysicsEngine {
                 medium.advanceVertical(floorSource, input),
                 medium.advanceVertical(ceilSource, input));
         carry.clear();
+        bounceAltValid = false;
+        bounceAltUsedLast = false;
+        bounceWindow = 0;
     }
 
     private void coastFrozenMomentum() {
@@ -621,6 +671,9 @@ public final class PhysicsEngine {
             groundResolver.displaced();
         }
         carry.clear();
+        bounceAltValid = false;
+        bounceAltUsedLast = false;
+        bounceWindow = 0;
         verdict = buildVerdict(TickOutcome.DECLINED, reason, null,
                 dx, dy, dz, 0.0, 0.0, 0.0, 0.0, 0.0, null, null);
     }
@@ -631,6 +684,9 @@ public final class PhysicsEngine {
         inputResolver.improperSprint(false);
         carried = MotionArea.seeded(dx, dz, dy);
         carry.clear();
+        bounceAltValid = false;
+        bounceAltUsedLast = false;
+        bounceWindow = 0;
         verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
                 dx, dy, dz, Math.max(0.0, horizontalExcess), Math.max(0.0, verticalExcess), 0.0, 0.0,
                 0.0, null, null);

@@ -60,7 +60,7 @@ public final class BlockTraits {
     }
 
     public static double jumpFactor(StateType type) {
-        if (type == StateTypes.SOUL_SAND || type == StateTypes.HONEY_BLOCK) return HALF_JUMP_FACTOR;
+        if (type == StateTypes.HONEY_BLOCK) return HALF_JUMP_FACTOR;
         return 1.0;
     }
 
@@ -73,6 +73,10 @@ public final class BlockTraits {
     public static boolean isFluid(WrappedBlockState state) {
         StateType type = state.getType();
         if (type == StateTypes.WATER || type == StateTypes.LAVA || type == StateTypes.BUBBLE_COLUMN) return true;
+        if (type == StateTypes.KELP || type == StateTypes.KELP_PLANT
+                || type == StateTypes.SEAGRASS || type == StateTypes.TALL_SEAGRASS) {
+            return true;
+        }
         return state.hasProperty(StateValue.WATERLOGGED) && state.isWaterlogged();
     }
 

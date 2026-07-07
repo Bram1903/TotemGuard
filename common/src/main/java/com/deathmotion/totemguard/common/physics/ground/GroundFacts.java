@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.physics.ground;
 public record GroundFacts(
         GroundState start,
         boolean groundedEnd,
+        boolean supportedStart,
         boolean arrested,
         boolean recentlyGrounded,
         boolean landingSupport,

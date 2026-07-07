@@ -26,10 +26,10 @@ import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class LandModel implements MediumModel {
 
-    private static final double AIR_FRICTION = 0.91;
+    public static final double AIR_FRICTION = 0.91;
     private static final double GROUND_ACCEL_NUMERATOR = 0.21600002;
     // Always the sprint value: a sprint-flag desync must never turn into a false positive.
-    private static final double AIR_ACCEL = 0.026;
+    public static final double AIR_ACCEL = 0.026;
     private static final double LEVITATION_PER_LEVEL = 0.05;
     private static final double LEVITATION_RATE = 0.2;
     private static final double VERTICAL_DRAG = 0.98;
@@ -54,7 +54,7 @@ public final class LandModel implements MediumModel {
     public void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
         if (input.fluidExitHop()) bounds.raiseCeiling(MotionDefaults.FLUID_EXIT_HOP);
-        if (ground.groundedEnd() || contact.startOverlapping()) {
+        if (ground.groundedStart() || ground.groundedEnd() || contact.startOverlapping()) {
             bounds.raiseCeiling(input.stepHeight());
         }
         bounds.lowerFloor(advanceVertical(0.0, input));
@@ -63,7 +63,7 @@ public final class LandModel implements MediumModel {
 
     @Override
     public double frictionMax(PlayerInput input, GroundFacts ground) {
-        boolean groundDrag = ground.groundedStart() && !input.ceilingClampedJump();
+        boolean groundDrag = ground.supportedStart() && !input.ceilingClampedJump();
         return groundDrag ? ground.startSlipMax() * AIR_FRICTION : AIR_FRICTION;
     }
 

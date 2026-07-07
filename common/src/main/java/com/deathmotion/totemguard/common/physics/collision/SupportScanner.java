@@ -58,7 +58,6 @@ final class SupportScanner {
         report.supportTop(bestTop);
         if (!aggregate) return;
 
-        boolean first = true;
         for (int i = 0; i < count; i++) {
             double top = supportTopOf(buffer, i, minX, feetY, minZ, maxX, maxZ);
             if (top < bestTop - TOP_BAND) continue;
@@ -68,24 +67,7 @@ final class SupportScanner {
                 report.supportApproximate(true);
                 continue;
             }
-            double slip = StateFacts.slipperiness(tag);
-            double bounce = StateFacts.bounceFactor(tag);
-            double speed = StateFacts.speedFactor(tag);
-            double jump = StateFacts.jumpFactor(tag);
-            if (first) {
-                report.supportSlipMin(slip);
-                report.supportSlipMax(slip);
-                report.supportJumpMin(jump);
-                report.supportJumpMax(jump);
-                first = false;
-            } else {
-                report.supportSlipMin(Math.min(report.supportSlipMin(), slip));
-                report.supportSlipMax(Math.max(report.supportSlipMax(), slip));
-                report.supportJumpMin(Math.min(report.supportJumpMin(), jump));
-                report.supportJumpMax(Math.max(report.supportJumpMax(), jump));
-            }
-            report.supportBounce(Math.max(report.supportBounce(), bounce));
-            report.supportSpeedFactor(Math.min(report.supportSpeedFactor(), speed));
+            report.supportBounce(Math.max(report.supportBounce(), StateFacts.bounceFactor(tag)));
             if (StateFacts.is(tag, StateFacts.SUPPORT_APPROXIMATE)) report.supportApproximate(true);
         }
     }
