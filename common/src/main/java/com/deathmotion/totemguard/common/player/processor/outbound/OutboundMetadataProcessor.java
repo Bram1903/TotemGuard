@@ -28,11 +28,16 @@ import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
+import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemFireworks;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class OutboundMetadataProcessor extends ProcessorOutbound {
@@ -53,6 +58,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     private final int absorptionIndex;
     private final int slimeSizeIndex;
     private final int livingFlagsIndex;
+    private final int fireworkAttachedIndex;
+    private final int fireworkItemIndex;
 
     public OutboundMetadataProcessor(TGPlayer player) {
         super(player);
@@ -65,6 +72,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         this.absorptionIndex = metadataIndex.absorption();
         this.slimeSizeIndex = metadataIndex.slimeSize();
         this.livingFlagsIndex = metadataIndex.livingEntityFlags();
+        this.fireworkAttachedIndex = metadataIndex.fireworkAttached();
+        this.fireworkItemIndex = metadataIndex.fireworkItem();
     }
 
     private static boolean detectCompetingPlugin() {
@@ -94,6 +103,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         }
 
         trackSlimeSize(event, entityId, packet);
+        trackFireworkAttachment(event, entityId, packet);
 
         if (COMPETING_PLUGIN_ACTIVE) return;
 
@@ -126,8 +136,57 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         }
     }
 
-    // Server-forced flips (glide cancel, pose) only apply when the packet arrives, so applying
-    // them a round trip early was a false-excess source.
+    private void trackFireworkAttachment(PacketSendEvent event, int entityId,
+                                         WrapperPlayServerEntityMetadata packet) {
+        if (fireworkAttachedIndex < 0) return;
+        if (!data.getFireworkData().isCandidate(entityId)) return;
+
+        Integer attached = null;
+        boolean sawAttach = false;
+        for (EntityData<?> meta : packet.getEntityMetadata()) {
+            int index = meta.getIndex();
+            if (index == fireworkAttachedIndex) {
+                sawAttach = true;
+                attached = decodeAttachedTarget(meta.getValue());
+            } else if (index == fireworkItemIndex && meta.getValue() instanceof ItemStack item) {
+                data.getFireworkData().setCandidateFlight(entityId, readFlightDuration(item));
+            }
+        }
+
+        if (!sawAttach) return;
+        if (attached != null && attached == player.getUser().getEntityId()) {
+            latencyHandler.compensateLazy(event, () -> data.getFireworkData().attach(entityId));
+        }
+    }
+
+    private static Integer decodeAttachedTarget(Object value) {
+        if (value instanceof Optional<?> optional
+                && optional.isPresent() && optional.get() instanceof Integer boxed) {
+            return boxed;
+        }
+        if (value instanceof java.util.OptionalInt optionalInt && optionalInt.isPresent()) {
+            return optionalInt.getAsInt();
+        }
+        if (value instanceof Integer boxed) {
+            return boxed;
+        }
+        return null;
+    }
+
+    private static int readFlightDuration(ItemStack item) {
+        Optional<ItemFireworks> fireworks = item.getComponent(ComponentTypes.FIREWORKS);
+        if (fireworks.isPresent()) return fireworks.get().getFlightDuration();
+        NBTCompound nbt = item.getNBT();
+        if (nbt != null) {
+            NBTCompound tag = nbt.getCompoundTagOrNull("Fireworks");
+            if (tag != null) {
+                Number flight = tag.getNumberTagValueOrNull("Flight");
+                if (flight != null) return flight.intValue();
+            }
+        }
+        return -1;
+    }
+
     private void trackOwnMetadata(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {
         for (EntityData<?> meta : packet.getEntityMetadata()) {
             int index = meta.getIndex();
@@ -135,16 +194,17 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
             if (index == 0 && value instanceof Byte sharedFlags) {
                 final boolean swimming = (sharedFlags & 0x10) != 0;
                 final boolean gliding = (sharedFlags & 0x80) != 0;
-                latencyHandler.compensateLazy(event, () -> {
+                latencyHandler.compensate(event, () -> {
                     data.setSwimming(swimming);
                     data.setGliding(gliding);
+                    data.getGlideData().answerClaim();
                 });
             } else if (index == livingFlagsIndex && value instanceof Byte livingFlags) {
                 final boolean spinAttacking = (livingFlags & 0x04) != 0;
-                latencyHandler.compensateLazy(event, () -> data.setSpinAttacking(spinAttacking));
+                latencyHandler.compensate(event, () -> data.setSpinAttacking(spinAttacking));
             } else if (value instanceof EntityPose pose) {
                 final boolean sleeping = pose == EntityPose.SLEEPING;
-                latencyHandler.compensateLazy(event, () -> data.setSleeping(sleeping));
+                latencyHandler.compensate(event, () -> data.setSleeping(sleeping));
             }
         }
     }

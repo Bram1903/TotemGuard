@@ -34,7 +34,6 @@ public final class DeclineCheck {
         if (data.isCanFly()) return DeclineReason.FLY;
         if (data.isInVehicle()) return DeclineReason.VEHICLE;
         if (data.isSleeping()) return DeclineReason.SLEEPING;
-        if (data.isSwimming() || data.isGliding() || data.isSpinAttacking()) return DeclineReason.GLIDE;
         if (border.isActive() && border.distanceToEdge(x, z) < BORDER_MARGIN) return DeclineReason.BORDER;
         return null;
     }

@@ -24,7 +24,6 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.physics.PhysicsEngine;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -101,12 +100,14 @@ public class Physics extends CheckImpl implements PacketCheck {
             case ASCENT -> switch (verdict.medium()) {
                 case WATER, LAVA -> "water-fly";
                 case CLIMB -> "climb-fly";
+                case GLIDE -> "glide-fly";
                 default -> "fly";
             };
             case HORIZONTAL_DISK -> {
                 if (verdict.inventoryOpen()) yield "inventory-move";
                 if (verdict.improperSprint()) yield "sprint";
                 if (verdict.medium() == MediumKind.WATER || verdict.medium() == MediumKind.LAVA) yield "water-speed";
+                if (verdict.medium() == MediumKind.GLIDE) yield "glide-speed";
                 yield player.getData().isSneaking() ? "nosneak" : "speed";
             }
         };

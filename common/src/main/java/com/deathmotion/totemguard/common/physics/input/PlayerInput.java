@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.physics.input;
 
+import com.deathmotion.totemguard.common.util.ClientMath;
+
 public record PlayerInput(
         boolean inventoryOpen,
         boolean horizontalInput,
@@ -37,7 +39,15 @@ public record PlayerInput(
         boolean slowFalling,
         double fluidFriction,
         double fluidAccel,
-        double sprintJumpResidual) {
+        double sprintJumpResidual,
+        double lookX,
+        double lookY,
+        double lookZ,
+        double pitchDegrees,
+        boolean swimming,
+        double prevLookX,
+        double prevLookY,
+        double prevLookZ) {
 
     public double jumpBoostPower() {
         return jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;
@@ -45,5 +55,9 @@ public record PlayerInput(
 
     public double jumpTakeoff() {
         return jumpStrength + jumpBoostPower();
+    }
+
+    public double lookHorizontal() {
+        return ClientMath.horizontalDistance(lookX, lookZ);
     }
 }

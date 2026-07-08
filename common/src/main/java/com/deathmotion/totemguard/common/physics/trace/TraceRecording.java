@@ -61,7 +61,8 @@ public final class TraceRecording {
                        @Nullable ContactReport contact, @Nullable MediumSample sample,
                        @Nullable GroundFacts ground, @Nullable PlayerInput input,
                        AreaBounds bounds, PhysicsVerdict verdict,
-                       BlockReader reader, double buffer, double engineFall) {
+                       BlockReader reader, double buffer, double engineFall,
+                       double preCarriedX, double preCarriedZ, double preCarriedFloor, double preCarriedCeil) {
         tickCounter++;
         PhysicsDebugLevel level = view.physicsDebugLevel();
         if (!level.recording()) return;
@@ -71,6 +72,21 @@ public final class TraceRecording {
         frame.obsX = verdict.observedX();
         frame.obsY = verdict.observedY();
         frame.obsZ = verdict.observedZ();
+        if (input != null) {
+            frame.yaw = Math.toDegrees(Math.atan2(-input.lookX(), input.lookZ()));
+            frame.pitch = input.pitchDegrees();
+            frame.prevYaw = Math.toDegrees(Math.atan2(-input.prevLookX(), input.prevLookZ()));
+            frame.prevPitch = Math.toDegrees(Math.asin(Math.max(-1.0, Math.min(1.0, -input.prevLookY()))));
+        } else {
+            frame.yaw = 0.0;
+            frame.pitch = 0.0;
+            frame.prevYaw = 0.0;
+            frame.prevPitch = 0.0;
+        }
+        frame.preCarriedX = preCarriedX;
+        frame.preCarriedZ = preCarriedZ;
+        frame.preCarriedFloor = preCarriedFloor;
+        frame.preCarriedCeil = preCarriedCeil;
         frame.centerX = bounds.centerX();
         frame.centerZ = bounds.centerZ();
         frame.radius = bounds.radius();

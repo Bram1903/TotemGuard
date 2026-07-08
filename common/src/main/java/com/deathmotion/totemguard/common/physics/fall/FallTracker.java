@@ -99,17 +99,7 @@ public final class FallTracker {
             return;
         }
         if (outcome == TickOutcome.DECLINED) {
-            if (reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT) {
-                MitigationService service = data.getMitigationService();
-                if (!service.setbackPending()) {
-                    abort();
-                } else if (reason == DeclineReason.RESYNC
-                        && data.getMovementData().isLastFlyingWasTeleportResync()) {
-                    onSetbackConfirm(service.pendingSetbackDy());
-                }
-            } else if (reason != DeclineReason.WITHHELD && reason != DeclineReason.DOUBLE_MOVE) {
-                abort();
-            }
+            onDeclined(reason);
             return;
         }
         if (sample == null || ground == null || contact == null) {
@@ -128,6 +118,23 @@ public final class FallTracker {
         clearLatch();
     }
 
+    private void onDeclined(DeclineReason reason) {
+        switch (reason) {
+            case WITHHELD, DOUBLE_MOVE -> {
+            }
+            case RESYNC, TELEPORT -> {
+                MitigationService service = data.getMitigationService();
+                if (!service.setbackPending()) {
+                    abort();
+                } else if (reason == DeclineReason.RESYNC
+                        && data.getMovementData().isLastFlyingWasTeleportResync()) {
+                    onSetbackConfirm(service.pendingSetbackDy());
+                }
+            }
+            default -> abort();
+        }
+    }
+
     private void onTick(double dy, boolean claimedGround, boolean groundedEnd,
                         MediumSample sample, ContactReport contact, ConfigView view) {
         if (bailed(sample, contact)) {
@@ -142,6 +149,11 @@ public final class FallTracker {
             resolvePending(view);
         } else if (dy < 0.0) {
             serverFall = accumulate(serverFall, dy);
+        }
+
+        if (data.isGliding() && dy > -0.5) {
+            engineFall = Math.min(engineFall, 1.0);
+            serverFall = Math.min(serverFall, 1.0);
         }
 
         if (groundedEnd) {

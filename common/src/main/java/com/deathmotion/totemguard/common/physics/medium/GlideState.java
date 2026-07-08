@@ -18,10 +18,8 @@
 
 package com.deathmotion.totemguard.common.physics.medium;
 
-public enum MediumKind {
-    LAND,
-    WATER,
-    LAVA,
-    CLIMB,
-    GLIDE
+public enum GlideState {
+    NONE,
+    FLAG,
+    CLAIM
 }

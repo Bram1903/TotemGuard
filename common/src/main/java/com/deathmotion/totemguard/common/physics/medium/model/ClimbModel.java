@@ -16,50 +16,59 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.medium;
+package com.deathmotion.totemguard.common.physics.medium.model;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
+import com.deathmotion.totemguard.common.physics.medium.MediumKind;
+import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
-public final class LavaModel implements MediumModel {
+public final class ClimbModel implements MediumModel {
 
-    private static final double HORIZONTAL_DRAG = 0.5;
-    private static final double VERTICAL_DRAG = 0.8;
-    private static final double SWIM_IMPULSE = 0.04;
-    private static final double ASCENT_MIN = 0.1;
+    private static final double HORIZONTAL_MAX = 0.15 * Math.sqrt(2.0);
+    private static final double ASCENT = 0.2;
+    private static final double DESCENT = -0.15;
+    private static final double AIR_FRICTION = 0.91;
 
     @Override
     public MediumKind kind() {
-        return MediumKind.LAVA;
+        return MediumKind.CLIMB;
     }
 
     @Override
     public double accelBound(PlayerInput input, GroundFacts ground) {
-        return input.fluidAccel();
+        return HORIZONTAL_MAX;
     }
 
     @Override
+    public void horizontalOptions(PlayerInput input, GroundFacts ground, AreaBounds bounds) {
+        bounds.centerX(0.0);
+        bounds.centerZ(0.0);
+        bounds.radius(HORIZONTAL_MAX);
+    }
+
+    // Falling past a ladder without climbing it must not flag, so the descent clamp is no floor.
+    @Override
     public void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
-        double lavaGravity = input.gravity() / 4.0;
-        bounds.ceiling(Math.max(ASCENT_MIN, bounds.ceiling() + SWIM_IMPULSE));
-        bounds.floor(bounds.floor() - lavaGravity - SWIM_IMPULSE);
-        if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
-        if (ground.groundedStart() || ground.groundedEnd()
-                || contact.nearestSupportGap() <= input.stepHeight()) {
-            bounds.raiseCeiling(input.stepHeight());
-        }
-        bounds.enforceDescentFloor(true);
+        double ascent = ASCENT;
+        if (input.jumpPossible()) ascent = Math.max(ascent, input.jumpTakeoff());
+        if (ground.groundedStart() || ground.groundedEnd()) ascent = Math.max(ascent, input.stepHeight());
+        if (input.fluidExitHop()) ascent = Math.max(ascent, MotionDefaults.FLUID_EXIT_HOP);
+        bounds.raiseCeiling(ascent);
+        bounds.lowerFloor(DESCENT);
+        bounds.enforceDescentFloor(false);
     }
 
     @Override
     public double frictionMax(PlayerInput input, GroundFacts ground) {
-        return HORIZONTAL_DRAG;
+        return AIR_FRICTION;
     }
 
     @Override
     public double advanceVertical(double verticalVelocity, PlayerInput input) {
-        return verticalVelocity * VERTICAL_DRAG;
+        return verticalVelocity;
     }
 }

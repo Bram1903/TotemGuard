@@ -16,9 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.medium;
+package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
+import com.deathmotion.totemguard.common.physics.medium.MediumKind;
+import com.deathmotion.totemguard.common.physics.medium.MediumModel;
+import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
@@ -31,8 +34,12 @@ public final class WaterModel implements MediumModel {
     private static final int ENTRY_TICKS = 4;
     private static final double ENTRY_ASCENT = 0.75;
     private static final double WALL_BUMP_ASCENT = 0.34;
+    private static final double STEER_RATE_STEEP = 0.085;
+    private static final double STEER_RATE = 0.06;
+    private static final double STEER_STEEP_LOOK = -0.2;
 
     private int entryTicks;
+    private boolean steerWater;
 
     @Override
     public MediumKind kind() {
@@ -59,7 +66,26 @@ public final class WaterModel implements MediumModel {
         } else if (contact.wallNear()) {
             bounds.raiseCeiling(WALL_BUMP_ASCENT);
         }
+        applySwimSteer(input, bounds);
         bounds.enforceDescentFloor(true);
+    }
+
+    private void applySwimSteer(PlayerInput input, AreaBounds bounds) {
+        if (!input.swimming()) return;
+        double rate = input.lookY() < STEER_STEEP_LOOK ? STEER_RATE_STEEP : STEER_RATE;
+        double steeredCeiling = bounds.ceiling() + (input.lookY() - bounds.ceiling()) * rate;
+        double steeredFloor = bounds.floor() + (input.lookY() - bounds.floor()) * rate;
+        if (input.lookY() <= 0.0 || steerWater) {
+            bounds.ceiling(steeredCeiling);
+            bounds.floor(steeredFloor);
+        } else {
+            bounds.ceiling(Math.max(bounds.ceiling(), steeredCeiling));
+            bounds.floor(Math.min(bounds.floor(), steeredFloor));
+        }
+    }
+
+    public void observe(MediumSample sample) {
+        steerWater = sample.swimSteerWater();
     }
 
     @Override
@@ -78,10 +104,6 @@ public final class WaterModel implements MediumModel {
             return;
         }
         entryTicks = wasFluid ? Math.max(0, entryTicks - 1) : ENTRY_TICKS;
-    }
-
-    public boolean entering() {
-        return entryTicks > 0;
     }
 
     public void reset() {

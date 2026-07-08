@@ -55,6 +55,13 @@ public final class StateFacts {
     private static final long STUCK_MASK = 3L << STUCK_SHIFT;
     private static final long BED_BOUNCE = 1L << 22;
 
+    private static final int FLUID_AMOUNT_SHIFT = 23;
+    private static final long FLUID_AMOUNT_MASK = 15L << FLUID_AMOUNT_SHIFT;
+    public static final long FLUID_FALLING = 1L << 27;
+    public static final long FLUID_SOURCE = 1L << 28;
+    public static final long FLOW_STURDY = 1L << 29;
+    public static final long BLOCKS_MOTION = 1L << 30;
+
     private static final int TABLE_SIZE = 1 << 16;
 
     private static final Map<ClientVersion, StateFacts> TABLES = new ConcurrentHashMap<>();
@@ -124,6 +131,10 @@ public final class StateFacts {
         };
     }
 
+    public static int fluidAmount(long facts) {
+        return (int) ((facts & FLUID_AMOUNT_MASK) >> FLUID_AMOUNT_SHIFT);
+    }
+
     private long classify(int stateId) {
         WrappedBlockState state = WrappedBlockState.getByGlobalId(stateVersion, stateId, false);
         StateType type = state.getType();
@@ -134,9 +145,14 @@ public final class StateFacts {
             return facts;
         }
         if (type == StateTypes.LAVA) {
-            facts |= LAVA;
+            facts |= LAVA | fluidLevelFacts(state);
         } else if (BlockTraits.isFluid(state)) {
             facts |= WATER;
+            if (type == StateTypes.WATER) {
+                facts |= fluidLevelFacts(state);
+            } else {
+                facts |= (8L << FLUID_AMOUNT_SHIFT) | FLUID_SOURCE;
+            }
         }
         if (BlockTraits.isBubbleColumn(type)) facts |= BUBBLE_COLUMN;
         if (BlockTraits.isClimbable(type)) facts |= CLIMBABLE;
@@ -164,7 +180,22 @@ public final class StateFacts {
         if (ShapeRegistry.wallTrusted(type)) facts |= WALL_TRUSTED;
         if (suffocating(state, type, facts)) facts |= SUFFOCATING;
         if (type == StateTypes.NETHER_PORTAL) facts |= NETHER_PORTAL;
+        if ((facts & FULL_CUBE) != 0
+                && type != StateTypes.ICE && type != StateTypes.FROSTED_ICE) {
+            facts |= FLOW_STURDY;
+        }
+        if ((facts & HAS_SHAPE) != 0
+                && type != StateTypes.SNOW && type != StateTypes.LILY_PAD) {
+            facts |= BLOCKS_MOTION;
+        }
         return facts;
+    }
+
+    private static long fluidLevelFacts(WrappedBlockState state) {
+        int level = state.getLevel();
+        if (level == 0) return (8L << FLUID_AMOUNT_SHIFT) | FLUID_SOURCE;
+        if (level >= 8) return (8L << FLUID_AMOUNT_SHIFT) | FLUID_FALLING;
+        return (long) (8 - level) << FLUID_AMOUNT_SHIFT;
     }
 
     private static boolean suffocating(WrappedBlockState state, StateType type, long facts) {

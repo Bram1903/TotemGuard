@@ -16,12 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.medium;
+package com.deathmotion.totemguard.common.physics.vehicle;
 
-public enum MediumKind {
-    LAND,
-    WATER,
-    LAVA,
-    CLIMB,
-    GLIDE
+public record VehicleVerdict(boolean breach, String label, double observed, double bound, double excess) {
+
+    public static final VehicleVerdict NONE = new VehicleVerdict(false, "", 0.0, 0.0, 0.0);
 }

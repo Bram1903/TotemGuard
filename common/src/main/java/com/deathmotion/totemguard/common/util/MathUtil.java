@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.common.util;
 
 import com.deathmotion.totemguard.common.util.datastructure.Pair;
-import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3f;
 import lombok.experimental.UtilityClass;
 
@@ -267,16 +266,6 @@ public class MathUtil {
         return Math.abs(closeTest - a) < Math.abs(closeTest - b) ? a : b;
     }
 
-    public Vector3f getRotation(Location one, Location two) {
-        double dx = two.getX() - one.getX();
-        double dy = two.getY() - one.getY();
-        double dz = two.getZ() - one.getZ();
-        double distanceXZ = Math.sqrt(dx * dx + dz * dz);
-        float yaw = (float) (Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F;
-        float pitch = (float) -(Math.atan2(dy, distanceXZ) * 180.0D / Math.PI);
-        return new Vector3f(yaw, pitch, 0.0F);
-    }
-
     public double clamp180(double theta) {
         theta %= 360.0D;
         if (theta >= 180.0D) {
@@ -290,16 +279,6 @@ public class MathUtil {
 
     public boolean isScientificNotation(double d) {
         return String.valueOf(d).contains("E");
-    }
-
-    public Vector3f getDirection(float yaw, float pitch) {
-        float rotX = (float) Math.toRadians(yaw);
-        float rotY = (float) Math.toRadians(pitch);
-        float y = (float) -Math.sin(rotY);
-        float xz = (float) Math.cos(rotY);
-        float x = (float) (-xz * Math.sin(rotX));
-        float z = (float) (xz * Math.cos(rotX));
-        return new Vector3f(x, y, z);
     }
 
     public double angle(Vector3f a, Vector3f b) {

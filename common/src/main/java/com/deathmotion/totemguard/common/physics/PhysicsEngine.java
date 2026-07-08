@@ -41,14 +41,16 @@ import com.deathmotion.totemguard.common.physics.hover.HoverDetector;
 import com.deathmotion.totemguard.common.physics.push.KnockbackTracker;
 import com.deathmotion.totemguard.common.physics.push.PistonWindow;
 import com.deathmotion.totemguard.common.physics.push.EntityPushTracker;
+import com.deathmotion.totemguard.common.physics.push.RiptideWindow;
 import com.deathmotion.totemguard.common.physics.input.InputResolver;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
 import com.deathmotion.totemguard.common.physics.medium.BubbleLift;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.medium.LandModel;
+import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.medium.MediumScan;
+import com.deathmotion.totemguard.common.physics.medium.GlideState;
 import com.deathmotion.totemguard.common.physics.medium.MediumSelect;
 import com.deathmotion.totemguard.common.physics.medium.StuckFactor;
 import com.deathmotion.totemguard.common.physics.phase.EmbedExemptions;
@@ -96,6 +98,7 @@ public final class PhysicsEngine {
     private static final double CEILING_FLUSH_EPS = 1.0e-6;
     private static final double SUPPORT_CONTACT_EPS = 0.02;
     private static final int BOUNCE_WINDOW = 4;
+    private static final double POSE_FIT_EPS = 1.0e-7;
 
     private final TGPlayer player;
     private final Data data;
@@ -115,6 +118,7 @@ public final class PhysicsEngine {
     private final BubbleLift bubble = new BubbleLift();
     private final KnockbackTracker knockback;
     private final PistonWindow pistons;
+    private final RiptideWindow riptide;
     private final PhaseTracker phase = new PhaseTracker();
     private final EmbedExemptions exemptions = new EmbedExemptions();
     private final TrustTracker trust = new TrustTracker();
@@ -132,11 +136,17 @@ public final class PhysicsEngine {
     private boolean scannedThisTick;
     private GroundFacts groundThisTick;
     private PlayerInput inputThisTick;
+    private MediumModel mediumThisTick;
     private double bounceAltCenterX;
     private double bounceAltCenterZ;
     private int bounceWindow;
     private boolean bounceAltValid;
     private boolean bounceAltUsedLast;
+    private boolean glideMediumLastTick;
+    private double preStepCarriedX, preStepCarriedZ, preStepCarriedFloor, preStepCarriedCeil;
+    private double lastPoseHeight = MotionDefaults.STANDING_HEIGHT;
+    private double lastPoseBase = MotionDefaults.STANDING_HEIGHT;
+    private double lastFeetClearance = Double.MAX_VALUE;
 
     @Getter
     private PhysicsVerdict verdict = PhysicsVerdict.INITIAL;
@@ -149,6 +159,7 @@ public final class PhysicsEngine {
         this.inputResolver = new InputResolver(data);
         this.knockback = new KnockbackTracker(data.getExternalVelocityData());
         this.pistons = new PistonWindow(data.getPistonData());
+        this.riptide = new RiptideWindow(data);
         this.mitigation = new MitigationTracker(data);
         this.fall = new FallTracker(data, reader);
         this.trace = new TraceRecording(player);
@@ -190,6 +201,7 @@ public final class PhysicsEngine {
         scannedThisTick = false;
         groundThisTick = null;
         inputThisTick = null;
+        mediumThisTick = null;
         try {
             if (!initialized) {
                 initialized = true;
@@ -290,7 +302,7 @@ public final class PhysicsEngine {
 
             PlayerInput input = inputResolver.build(movement, contact, ground, sample.fluid(), dx, dy, dz);
             inputThisTick = input;
-            MediumModel medium = mediums.select(sample);
+            MediumModel medium = selectMedium(false);
 
             switch (trust.classify(movement.isLastFlyingPositionChanged(), movement.isLastFlyingWasDuplicate(),
                     player.supportsEndTick(), data.getTeleportData().lastPacketWasTeleport(),
@@ -349,6 +361,8 @@ public final class PhysicsEngine {
         bounceAltValid = false;
         bounceAltUsedLast = false;
         bounceWindow = 0;
+        lastFeetClearance = Double.MAX_VALUE;
+        lastPoseBase = MotionDefaults.STANDING_HEIGHT;
         verdict = PhysicsVerdict.INITIAL;
     }
 
@@ -364,6 +378,10 @@ public final class PhysicsEngine {
         data.getExternalVelocityData().reset();
         data.getPistonData().reset();
         data.getEffectData().reset();
+        data.getGlideData().reset();
+        data.getFireworkData().reset();
+        data.getVehicleData().reset();
+        player.getVehicleEngine().reset();
     }
 
     public @Nullable TickRecorder recorder() {
@@ -409,6 +427,7 @@ public final class PhysicsEngine {
         scannedThisTick = false;
         groundThisTick = null;
         inputThisTick = null;
+        mediumThisTick = null;
         scanTick(current, current, half, height, 0.0, 0.0, 0.0);
         if (contact.supportGap() == ContactReport.NO_SUPPORT
                 && !reader.columnLoaded(floor(current.getX()) >> 4, floor(current.getZ()) >> 4)) {
@@ -419,7 +438,7 @@ public final class PhysicsEngine {
         groundThisTick = ground;
         PlayerInput input = inputResolver.build(movement, contact, ground, sample.fluid(), 0.0, 0.0, 0.0);
         inputThisTick = input;
-        MediumModel medium = mediums.select(sample);
+        MediumModel medium = selectMedium(true);
 
         coastArea(medium, input, ground, preset);
 
@@ -445,13 +464,17 @@ public final class PhysicsEngine {
         double minZ = Math.min(previous.getZ(), current.getZ()) - half - HARVEST_HORIZONTAL_MARGIN;
         double maxZ = Math.max(previous.getZ(), current.getZ()) + half + HARVEST_HORIZONTAL_MARGIN;
         ColliderCollector.fill(colliders, reader, world.entities(), query, exemptions,
+                data.getPistonData(),
                 minX, minY, minZ, maxX, maxY, maxZ);
+        pistons.setPlayerBox(minX, minY, minZ, maxX, maxY, maxZ);
         sweep.resolve(colliders, contact,
                 previous.getX(), previous.getY(), previous.getZ(),
                 half, height, dx, dy, dz,
                 data.getAttributeData().stepHeight(), groundResolver.lastGroundedEnd());
         TraitSampler.sample(reader, contact, current.getX(), current.getY(), current.getZ(), half);
         MediumScan.sample(reader, sample,
+                !data.isFlying(), world.dimension().dimensionType() != null
+                        && world.dimension().dimensionType().isUltraWarm(),
                 previous.getX() - half, previous.getY(), previous.getZ() - half,
                 previous.getX() + half, previous.getY() + height, previous.getZ() + half,
                 Math.min(previous.getX(), current.getX()) - half, Math.min(previous.getY(), current.getY()),
@@ -465,12 +488,16 @@ public final class PhysicsEngine {
     private void judgeTick(double dx, double dy, double dz, MediumModel medium, PlayerInput input,
                            GroundFacts ground, PhysicsPreset preset) {
         hover.onJudged();
+        preStepCarriedX = carried.centerX();
+        preStepCarriedZ = carried.centerZ();
+        preStepCarriedFloor = carried.floorVy();
+        preStepCarriedCeil = carried.ceilVy();
         double carriedFloorAtStart = carried.floorVy();
         boolean landMedium = sample.landMedium();
         double observedSpeed = Math.hypot(dx, dz);
 
         AreaExpander.grow(carried, medium, sample, input, ground, contact,
-                stuckFactor, bubble, knockback, pistons, carry, preset, bounds);
+                stuckFactor, bubble, knockback, pistons, riptide, carry, preset, bounds);
         Location current = data.getMovementData().getCurrent();
         double half = data.getAttributeData().width() / 2.0;
         double height = poseHeight();
@@ -602,6 +629,24 @@ public final class PhysicsEngine {
                     effectiveSpeedFactor(), advancedFloorVy, advancedVy);
         }
 
+        if (medium == mediums.land() && data.getGlideData().exitActive()) {
+            double groundDecay = frictionMax * effectiveSpeedFactor();
+            double airDecay = LandModel.AIR_FRICTION * effectiveSpeedFactor();
+            if (airDecay > groundDecay) {
+                double span = Math.hypot(bounds.legalX(), bounds.legalZ()) * (airDecay - groundDecay);
+                carried = new MotionArea(carried.centerX(), carried.centerZ(),
+                        carried.slack() + span, carried.floorVy(), carried.ceilVy());
+            }
+        }
+
+        if (medium == mediums.glide() && mediums.glide().dualActive()) {
+            double glideX = bounds.legalX() * effectiveSpeedFactor();
+            double glideZ = bounds.legalZ() * effectiveSpeedFactor();
+            double freeFallShrink = Math.hypot(glideX, glideZ) * (1.0 - frictionMax);
+            carried = new MotionArea(glideX, glideZ, carried.slack() + freeFallShrink,
+                    mediums.land().advanceVertical(bounds.legalVy(), input), bounds.legalVy());
+        }
+
         if (ground.bounced() && carriedFloorAtStart < 0.0 && contact.supportBounce() > 0.0) {
             double reflected = -carriedFloorAtStart * contact.supportBounce();
             double advanced = medium.advanceVertical(reflected, input);
@@ -630,9 +675,18 @@ public final class PhysicsEngine {
             return;
         }
         AreaExpander.grow(carried, medium, sample, input, ground, contact,
-                stuckFactor, bubble, knockback, pistons, carry, preset, bounds);
+                stuckFactor, bubble, knockback, pistons, riptide, carry, preset, bounds);
         double accel = medium.accelBound(input, ground);
         double frictionMax = medium.frictionMax(input, ground);
+        if (medium.kind() == MediumKind.GLIDE) {
+            carried = new MotionArea(bounds.centerX(), bounds.centerZ(),
+                    (carried.slack() + accel), bounds.floor(), bounds.ceiling());
+            carry.clear();
+            bounceAltValid = false;
+            bounceAltUsedLast = false;
+            bounceWindow = 0;
+            return;
+        }
         double floorSource = ground.groundedEnd() ? 0.0 : carried.floorVy();
         double ceilSource = ground.groundedEnd() ? 0.0 : bounds.ceiling();
         carried = AreaAdvancer.coast(carried, accel, frictionMax,
@@ -705,7 +759,10 @@ public final class PhysicsEngine {
         DeclineReason reason = verdict.declineReason();
         boolean trustedPosition = reason != DeclineReason.WITHHELD
                 && reason != DeclineReason.DOUBLE_MOVE
-                && reason != DeclineReason.TELEPORT;
+                && reason != DeclineReason.TELEPORT
+                && reason != DeclineReason.VEHICLE
+                && reason != DeclineReason.GLIDE
+                && reason != DeclineReason.SLEEPING;
         double safeGap = scannedThisTick ? Math.min(contact.nearestSupportGap(), 99.0) : 0.0;
         boolean safeAirborne = scannedThisTick && groundThisTick != null
                 && airborneNow(groundThisTick, preset);
@@ -716,12 +773,22 @@ public final class PhysicsEngine {
         }
         verdict = verdict.withOutcome(mitigation.outcome(), fall.finding(), inputResolver.improperSprint());
 
+        if (scannedThisTick) {
+            Location poseAt = data.getMovementData().getCurrent();
+            double poseHalf = data.getAttributeData().width() / 2.0;
+            lastFeetClearance = poseHeadroom(poseAt.getX() - poseHalf, poseAt.getY(),
+                    poseAt.getZ() - poseHalf, poseAt.getX() + poseHalf, poseAt.getZ() + poseHalf);
+        }
+
         data.getExternalVelocityData().tick();
         data.getPistonData().tick();
         data.getEffectData().tick();
+        data.getGlideData().tick();
+        data.getFireworkData().tick();
 
         trace.record(view, scannedThisTick ? contact : null, scannedThisTick ? sample : null,
-                groundThisTick, inputThisTick, bounds, verdict, reader, mitigation.buffer(), fall.engineFall());
+                groundThisTick, inputThisTick, bounds, verdict, reader, mitigation.buffer(), fall.engineFall(),
+                preStepCarriedX, preStepCarriedZ, preStepCarriedFloor, preStepCarriedCeil);
     }
 
     private BoundBreach classify(double horizontalExcess, double ascentExcess, double descentExcess,
@@ -746,7 +813,7 @@ public final class PhysicsEngine {
                 horizontalExcess, ascentExcess, descentExcess, phaseExcess,
                 bounds.centerX(), bounds.centerZ(), bounds.radius(),
                 bounds.ceiling(), bounds.floor() - bounds.descentSlack(),
-                scannedThisTick ? mediums.select(sample).kind() : MediumKind.LAND,
+                scannedThisTick && mediumThisTick != null ? mediumThisTick.kind() : MediumKind.LAND,
                 ground != null ? ground.start() : GroundState.AMBIGUOUS,
                 data.isOpenInventory(),
                 impulseUsed > 0.0,
@@ -765,6 +832,22 @@ public final class PhysicsEngine {
         exemptions.seedBodyOverlaps(reader, shapeQuery(current.getY()),
                 current.getX() - half, current.getY(), current.getZ() - half,
                 current.getX() + half, current.getY() + height, current.getZ() + half);
+    }
+
+    private MediumModel selectMedium(boolean silent) {
+        GlideState glideState = data.isGliding()
+                ? GlideState.FLAG
+                : data.getGlideData().claimActive() ? GlideState.CLAIM : GlideState.NONE;
+        MediumModel medium = mediums.select(sample, glideState);
+        boolean glideNow = medium == mediums.glide();
+        if (glideNow) {
+            mediums.glide().prepare(glideState == GlideState.CLAIM, silent, data.getFireworkData());
+        } else if (glideMediumLastTick) {
+            data.getGlideData().armExit();
+        }
+        glideMediumLastTick = glideNow;
+        mediumThisTick = medium;
+        return medium;
     }
 
     private ShapeQuery shapeQuery(double feetY) {
@@ -792,8 +875,44 @@ public final class PhysicsEngine {
     }
 
     private double poseHeight() {
-        double base = data.isSneaking() ? MotionDefaults.SNEAKING_HEIGHT : MotionDefaults.STANDING_HEIGHT;
-        return base * data.getAttributeData().scale();
+        double scale = data.getAttributeData().scale();
+        double base;
+        if (data.isSwimming() || data.isGliding() || data.isSpinAttacking()) {
+            base = MotionDefaults.COMPACT_HEIGHT;
+        } else {
+            double want = data.isSneaking() ? MotionDefaults.SNEAKING_HEIGHT : MotionDefaults.STANDING_HEIGHT;
+            if (poseFits(want * scale)) base = want;
+            else if (poseFits(MotionDefaults.SNEAKING_HEIGHT * scale)) base = MotionDefaults.SNEAKING_HEIGHT;
+            else if (poseFits(MotionDefaults.COMPACT_HEIGHT * scale)) base = MotionDefaults.COMPACT_HEIGHT;
+            else base = lastPoseBase;
+        }
+        lastPoseBase = base;
+        lastPoseHeight = base * scale;
+        return lastPoseHeight;
+    }
+
+    private boolean poseFits(double height) {
+        return lastFeetClearance >= height - POSE_FIT_EPS;
+    }
+
+    private double poseHeadroom(double minX, double feetY, double minZ, double maxX, double maxZ) {
+        double headroom = Double.MAX_VALUE;
+        int count = colliders.count();
+        for (int i = 0; i < count; i++) {
+            if (!ColliderBuffer.clipEligible(colliders.tagOf(i))) continue;
+            if (!poseOverlaps(minX, maxX, colliders.minX(i), colliders.maxX(i))) continue;
+            if (!poseOverlaps(minZ, maxZ, colliders.minZ(i), colliders.maxZ(i))) continue;
+            if (colliders.maxY(i) <= feetY + POSE_FIT_EPS) continue;
+            double bottom = colliders.minY(i);
+            if (bottom <= feetY + POSE_FIT_EPS) return -1.0;
+            double room = bottom - feetY;
+            if (room < headroom) headroom = room;
+        }
+        return headroom;
+    }
+
+    private static boolean poseOverlaps(double movingMin, double movingMax, double boxMin, double boxMax) {
+        return movingMin + POSE_FIT_EPS < boxMax && movingMax - POSE_FIT_EPS > boxMin;
     }
 
     private void disengage() {

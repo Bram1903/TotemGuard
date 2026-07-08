@@ -18,23 +18,88 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
-public class PistonData {
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
-    private int activeTicks;
+public final class PistonData {
 
-    public void arm(int ticks) {
-        if (ticks > activeTicks) activeTicks = ticks;
+    public static final double PUSH_STEP = 0.51;
+    public static final double SLIME_LAUNCH = 1.0;
+
+    private static final int MAX_SCENES = 4;
+    private static final int SCENE_TICKS = 4;
+
+    private final Scene[] scenes = new Scene[MAX_SCENES];
+    private int count;
+
+    public PistonData() {
+        for (int i = 0; i < MAX_SCENES; i++) scenes[i] = new Scene();
     }
 
-    public void tick() {
-        if (activeTicks > 0) activeTicks--;
+    public void arm(int dirX, int dirY, int dirZ, boolean slimeFront, boolean honeyFront,
+                    int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        if (count >= MAX_SCENES) return;
+        Scene scene = scenes[count++];
+        scene.set(dirX, dirY, dirZ, slimeFront, honeyFront, minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     public boolean isActive() {
-        return activeTicks > 0;
+        return count > 0;
+    }
+
+    public int sceneCount() {
+        return count;
+    }
+
+    public Scene scene(int index) {
+        return scenes[index];
+    }
+
+    public void tick() {
+        int write = 0;
+        for (int i = 0; i < count; i++) {
+            Scene scene = scenes[i];
+            if (--scene.ticks > 0) {
+                if (write != i) {
+                    Scene tmp = scenes[write];
+                    scenes[write] = scene;
+                    scenes[i] = tmp;
+                }
+                write++;
+            }
+        }
+        count = write;
     }
 
     public void reset() {
-        activeTicks = 0;
+        count = 0;
+    }
+
+    @Getter
+    @Accessors(fluent = true)
+    public static final class Scene {
+        private int dirX, dirY, dirZ;
+        private boolean slimeFront;
+        private boolean honeyFront;
+        private int minX, minY, minZ, maxX, maxY, maxZ;
+        @Getter(AccessLevel.NONE)
+        private int ticks;
+
+        private void set(int dirX, int dirY, int dirZ, boolean slimeFront, boolean honeyFront,
+                         int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+            this.dirX = dirX;
+            this.dirY = dirY;
+            this.dirZ = dirZ;
+            this.slimeFront = slimeFront;
+            this.honeyFront = honeyFront;
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+            this.ticks = SCENE_TICKS;
+        }
     }
 }

@@ -31,11 +31,15 @@ public final class MediumScan {
     }
 
     public static void sample(BlockReader reader, MediumSample out,
+                              boolean pushedByFluid, boolean lavaFast,
                               double minX, double feetY, double minZ,
                               double maxX, double headY, double maxZ,
                               double sweptMinX, double sweptMinY, double sweptMinZ,
                               double sweptMaxX, double sweptMaxY, double sweptMaxZ) {
         out.reset();
+        if (pushedByFluid) {
+            FlowSolver.solve(reader, out, lavaFast, minX, feetY, minZ, maxX, headY, maxZ);
+        }
         int x0 = floor(minX), x1 = floor(maxX);
         int y0 = floor(feetY), y1 = floor(headY);
         int z0 = floor(minZ), z1 = floor(maxZ);
@@ -84,6 +88,8 @@ public final class MediumScan {
         int feetBlockX = floor((minX + maxX) / 2.0);
         int feetBlockY = floor(feetY);
         int feetBlockZ = floor((minZ + maxZ) / 2.0);
+        out.swimSteerWater(StateFacts.is(
+                reader.facts(feetBlockX, floor(feetY + 0.9), feetBlockZ), StateFacts.ANY_FLUID));
         long feetFacts = reader.facts(feetBlockX, feetBlockY, feetBlockZ);
         if (StateFacts.is(feetFacts, StateFacts.CLIMBABLE)) {
             out.climbable(true);

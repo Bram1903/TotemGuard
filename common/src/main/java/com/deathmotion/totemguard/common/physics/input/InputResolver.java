@@ -25,6 +25,10 @@ import com.deathmotion.totemguard.common.player.data.EffectData;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.PlayerAttributeData;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.util.ClientMath;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import lombok.Getter;
 import lombok.Setter;
@@ -54,7 +58,6 @@ public final class InputResolver {
     private static final double WATER_DOLPHIN_FRICTION = 0.96;
     private static final double WATER_ACCEL = 0.02;
     private static final double WATER_EFFICIENCY_FRICTION_TARGET = 0.54600006;
-    private static final double WATER_CURRENT_PUSH = 0.014;
 
     private final Data data;
 
@@ -128,6 +131,12 @@ public final class InputResolver {
             sprintJumpBoostWindow--;
         }
 
+        float yaw = movement.getCurrent().getYaw();
+        float pitch = movement.getCurrent().getPitch();
+        float prevYaw = movement.getPrevious().getYaw();
+        float prevPitch = movement.getPrevious().getPitch();
+        boolean modernTrig = modernTrig();
+
         return new PlayerInput(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
                 jumpPossible, ceilingClampedJump, fluidExitHop,
                 effectiveSpeed(sprinting, sneaking, diagonal),
@@ -136,12 +145,28 @@ public final class InputResolver {
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
                 fluidAccel(data.isSprinting(), effectiveGroundedStart),
-                sprintJumpResidual);
+                sprintJumpResidual,
+                ClientMath.lookX(yaw, pitch, modernTrig),
+                ClientMath.lookY(pitch, modernTrig),
+                ClientMath.lookZ(yaw, pitch, modernTrig),
+                pitch,
+                data.isSwimming(),
+                ClientMath.lookX(prevYaw, prevPitch, modernTrig),
+                ClientMath.lookY(prevPitch, modernTrig),
+                ClientMath.lookZ(prevYaw, prevPitch, modernTrig));
     }
 
     private double waterEfficiency(boolean groundedStart) {
-        double wme = observesWaterEfficiency() ? data.getAttributeData().waterMovementEfficiency() : 1.0;
+        double wme = observesWaterEfficiency()
+                ? data.getAttributeData().waterMovementEfficiency()
+                : depthStriderEfficiency();
         return groundedStart ? wme : wme * 0.5;
+    }
+
+    private double depthStriderEfficiency() {
+        ItemStack boots = data.getPlayer().getInventory().getItem(InventoryConstants.SLOT_BOOTS);
+        if (boots == null) return 0.0;
+        return Math.min(3, boots.getEnchantmentLevel(EnchantmentTypes.DEPTH_STRIDER)) / 3.0;
     }
 
     private boolean observesWaterEfficiency() {
@@ -159,8 +184,7 @@ public final class InputResolver {
 
     private double fluidAccel(boolean sprinting, boolean groundedStart) {
         double getSpeed = data.getAttributeData().movementSpeed() * (sprinting ? SPRINT_SPEED_MULTIPLIER : 1.0);
-        double accel = WATER_ACCEL + (getSpeed - WATER_ACCEL) * waterEfficiency(groundedStart);
-        return accel + WATER_CURRENT_PUSH;
+        return WATER_ACCEL + (getSpeed - WATER_ACCEL) * waterEfficiency(groundedStart);
     }
 
     private boolean sprintForward(MovementData movement, ContactReport contact, InputData.State state,
@@ -172,12 +196,18 @@ public final class InputResolver {
         boolean onNormalGround = groundedStart && contact.supportSlipMax() <= SPRINT_GROUND_SLIPPERINESS;
         boolean backward = false;
         if (onNormalGround && observedSpeed > SPRINT_MIN_SPEED) {
-            double yaw = Math.toRadians(movement.getCurrent().getYaw());
-            double forwardComponent = observedX * -Math.sin(yaw) + observedZ * Math.cos(yaw);
+            float yaw = movement.getCurrent().getYaw();
+            boolean modern = modernTrig();
+            double forwardComponent = observedX * ClientMath.lookX(yaw, 0.0f, modern)
+                    + observedZ * ClientMath.lookZ(yaw, 0.0f, modern);
             backward = forwardComponent / observedSpeed < SPRINT_BACKWARD_COS;
         }
         backwardSprintStreak = backward ? backwardSprintStreak + 1 : 0;
         return backwardSprintStreak <= SPRINT_TURN_TOLERANCE;
+    }
+
+    private boolean modernTrig() {
+        return data.getPlayer().getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_11);
     }
 
     private double effectiveSpeed(boolean sprinting, boolean sneaking, boolean diagonal) {

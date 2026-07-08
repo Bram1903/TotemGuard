@@ -21,8 +21,10 @@ package com.deathmotion.totemguard.common.physics.area;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.push.KnockbackTracker;
 import com.deathmotion.totemguard.common.physics.push.PistonWindow;
+import com.deathmotion.totemguard.common.physics.push.RiptideWindow;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
 import com.deathmotion.totemguard.common.physics.medium.BubbleLift;
+import com.deathmotion.totemguard.common.physics.medium.FlowSolver;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
@@ -40,11 +42,12 @@ public final class AreaExpander {
     public static void grow(MotionArea area, MediumModel medium, MediumSample sample,
                             PlayerInput input, GroundFacts ground, ContactReport contact,
                             StuckFactor stuckFactor, BubbleLift bubble,
-                            KnockbackTracker knockback, PistonWindow pistons,
+                            KnockbackTracker knockback, PistonWindow pistons, RiptideWindow riptide,
                             ResidualCarry carry, PhysicsPreset preset, AreaBounds bounds) {
         bounds.reset(area);
         medium.horizontalOptions(input, ground, bounds);
         medium.verticalOptions(input, ground, contact, bounds);
+        applyFluidPush(area, sample, bounds);
 
         if (sample.stuck() && !sample.fluid()) stuckFactor.apply(bounds, sample);
         if (medium.kind() == MediumKind.LAND) stuckFactor.applyArrestWindow(bounds);
@@ -60,6 +63,28 @@ public final class AreaExpander {
         if (contact.startOverlapping()) bounds.expandRadius(OVERLAP_SHOVE);
 
         knockback.apply(bounds, preset.knockbackPad());
+        riptide.apply(bounds, input);
         pistons.apply(bounds);
+    }
+
+    private static void applyFluidPush(MotionArea area, MediumSample sample, AreaBounds bounds) {
+        if (!sample.pushed()) return;
+        double px = sample.pushX();
+        double py = sample.pushY();
+        double pz = sample.pushZ();
+        double length = Math.sqrt(px * px + py * py + pz * pz);
+        double kick = FlowSolver.minKickScale(length, area.centerX(), area.centerZ());
+        if (kick != 1.0) {
+            px *= kick;
+            py *= kick;
+            pz *= kick;
+        }
+        if (length < FlowSolver.MIN_PUSH) {
+            bounds.expandRadius(FlowSolver.MIN_PUSH - length);
+        }
+        bounds.centerX(bounds.centerX() + px);
+        bounds.centerZ(bounds.centerZ() + pz);
+        if (py < 0.0) bounds.floor(bounds.floor() + py);
+        else if (py > 0.0) bounds.ceiling(bounds.ceiling() + py);
     }
 }

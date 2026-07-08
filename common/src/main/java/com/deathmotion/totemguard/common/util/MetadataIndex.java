@@ -19,19 +19,27 @@
 package com.deathmotion.totemguard.common.util;
 
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
+@Getter
+@Accessors(fluent = true)
 public final class MetadataIndex {
 
     private final int health;
     private final int absorption;
     private final int slimeSize;
     private final int livingEntityFlags;
+    private final int fireworkAttached;
+    private final int fireworkItem;
 
     public MetadataIndex(ClientVersion version) {
         this.health = resolveHealth(version);
         this.absorption = resolveAbsorption(version);
         this.slimeSize = resolveSlimeSize(version);
         this.livingEntityFlags = resolveLivingEntityFlags(version);
+        this.fireworkAttached = resolveFireworkAttached(version);
+        this.fireworkItem = resolveFireworkItem(version);
     }
 
     private static int resolveHealth(ClientVersion version) {
@@ -66,19 +74,13 @@ public final class MetadataIndex {
         return -1;
     }
 
-    public int health() {
-        return health;
+    private static int resolveFireworkAttached(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 9;
+        return -1;
     }
 
-    public int absorption() {
-        return absorption;
-    }
-
-    public int slimeSize() {
-        return slimeSize;
-    }
-
-    public int livingEntityFlags() {
-        return livingEntityFlags;
+    private static int resolveFireworkItem(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 8;
+        return -1;
     }
 }

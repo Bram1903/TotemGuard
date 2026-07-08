@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.collision;
 
+import com.deathmotion.totemguard.common.player.data.PistonData;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.world.block.PendingBlocks;
 import com.deathmotion.totemguard.common.world.block.StateFacts;
@@ -31,7 +32,7 @@ public final class ColliderCollector {
     }
 
     public static void fill(ColliderBuffer buffer, BlockReader reader, EntityTracker entities,
-                            ShapeQuery query, ExemptCells exempt,
+                            ShapeQuery query, ExemptCells exempt, PistonData pistons,
                             double minX, double minY, double minZ,
                             double maxX, double maxY, double maxZ) {
         buffer.reset();
@@ -71,6 +72,29 @@ public final class ColliderCollector {
         // charging a crossing against a box the client may render elsewhere would be a false phase.
         buffer.tag(ColliderBuffer.KIND_ENTITY | ColliderBuffer.TAG_UNCERTAIN);
         entities.collectStandable(minX, minY, minZ, maxX, maxY, maxZ, buffer);
+
+        collectMovingPistons(buffer, pistons, minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    private static void collectMovingPistons(ColliderBuffer buffer, PistonData pistons,
+                                             double minX, double minY, double minZ,
+                                             double maxX, double maxY, double maxZ) {
+        if (!pistons.isActive()) return;
+        buffer.tag(ColliderBuffer.KIND_BLOCK | ColliderBuffer.TAG_UNCERTAIN | StateFacts.SUPPORT_APPROXIMATE);
+        for (int i = 0; i < pistons.sceneCount(); i++) {
+            PistonData.Scene scene = pistons.scene(i);
+            double bMinX = Math.min(scene.minX(), scene.minX() + scene.dirX());
+            double bMinY = Math.min(scene.minY(), scene.minY() + scene.dirY());
+            double bMinZ = Math.min(scene.minZ(), scene.minZ() + scene.dirZ());
+            double bMaxX = Math.max(scene.maxX(), scene.maxX() + scene.dirX()) + 1.0;
+            double bMaxY = Math.max(scene.maxY(), scene.maxY() + scene.dirY()) + 1.0;
+            double bMaxZ = Math.max(scene.maxZ(), scene.maxZ() + scene.dirZ()) + 1.0;
+            if (bMaxX < minX || bMinX > maxX || bMaxY < minY || bMinY > maxY
+                    || bMaxZ < minZ || bMinZ > maxZ) {
+                continue;
+            }
+            buffer.accept(bMinX, bMinY, bMinZ, bMaxX, bMaxY, bMaxZ);
+        }
     }
 
     private static int floor(double value) {

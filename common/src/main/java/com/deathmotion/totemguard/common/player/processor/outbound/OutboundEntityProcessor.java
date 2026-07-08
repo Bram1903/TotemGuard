@@ -86,6 +86,9 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
 
     private void spawn(PacketSendEvent event, int entityId, EntityType entityType, Vector3d pos) {
         entities.announce(entityId, entityType);
+        if (entityType == EntityTypes.FIREWORK_ROCKET) {
+            data.getFireworkData().candidate(entityId);
+        }
         final double x = pos.getX(), y = pos.getY(), z = pos.getZ();
         latencyHandler.compensateLazy(event, () -> entities.spawn(entityId, entityType, x, y, z));
     }
@@ -104,6 +107,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
         latencyHandler.compensateLazy(event, () -> {
             for (int entityId : entityIds) {
                 entities.destroy(entityId);
+                data.getFireworkData().onRemove(entityId);
             }
         });
 
@@ -138,12 +142,16 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
 
         if (playerInThisVehicle && !wasInThisVehicle) {
             serverVehicleId = vehicleId;
-            latencyHandler.compensate(event, () -> data.setVehicleId(vehicleId));
+            latencyHandler.compensate(event, () -> {
+                data.setVehicleId(vehicleId);
+                data.getVehicleData().onMount();
+            });
         } else if (!playerInThisVehicle && wasInThisVehicle) {
             serverVehicleId = -1;
             latencyHandler.compensate(event, () -> {
                 if (data.getVehicleId() == vehicleId) data.setVehicleId(-1);
                 data.getMovementData().markVehicleSwitchResync();
+                data.getVehicleData().onMount();
             });
         }
     }

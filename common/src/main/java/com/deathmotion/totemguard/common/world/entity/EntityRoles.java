@@ -39,4 +39,13 @@ public final class EntityRoles {
         if (type == EntityTypes.SHULKER) return true;
         return type.getName() != null && "happy_ghast".equals(type.getName().getKey());
     }
+
+    public static boolean boat(EntityType type) {
+        return EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT);
+    }
+
+    public static boolean clientAuthoritativeVehicle(EntityType type) {
+        if (type == null) return false;
+        return !EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT);
+    }
 }

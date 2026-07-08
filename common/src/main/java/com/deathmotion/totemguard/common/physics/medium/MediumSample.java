@@ -35,6 +35,10 @@ public final class MediumSample {
     private double stuckHorizontal;
     private double stuckVertical;
     private double bubbleAscent;
+    private double pushX;
+    private double pushY;
+    private double pushZ;
+    private boolean swimSteerWater;
 
     public void reset() {
         water = false;
@@ -45,6 +49,14 @@ public final class MediumSample {
         stuckHorizontal = 1.0;
         stuckVertical = 1.0;
         bubbleAscent = 0.0;
+        pushX = 0.0;
+        pushY = 0.0;
+        pushZ = 0.0;
+        swimSteerWater = false;
+    }
+
+    public boolean pushed() {
+        return pushX != 0.0 || pushY != 0.0 || pushZ != 0.0;
     }
 
     public boolean fluid() {

@@ -36,6 +36,8 @@ public final class TraceFrame {
 
     public long tick;
     public double obsX, obsY, obsZ;
+    public double yaw, pitch, prevYaw, prevPitch;
+    public double preCarriedX, preCarriedZ, preCarriedFloor, preCarriedCeil;
     public double centerX, centerZ, radius, ceiling, floor;
     public double horizontalExcess, ascentExcess, descentExcess, phaseExcess;
     public byte outcome, reason, breach, medium, ground;
@@ -50,6 +52,14 @@ public final class TraceFrame {
         obsX = other.obsX;
         obsY = other.obsY;
         obsZ = other.obsZ;
+        yaw = other.yaw;
+        pitch = other.pitch;
+        prevYaw = other.prevYaw;
+        prevPitch = other.prevPitch;
+        preCarriedX = other.preCarriedX;
+        preCarriedZ = other.preCarriedZ;
+        preCarriedFloor = other.preCarriedFloor;
+        preCarriedCeil = other.preCarriedCeil;
         centerX = other.centerX;
         centerZ = other.centerZ;
         radius = other.radius;

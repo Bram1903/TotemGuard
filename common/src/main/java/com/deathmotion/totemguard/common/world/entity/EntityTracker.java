@@ -48,6 +48,10 @@ public final class EntityTracker {
         return entities.values();
     }
 
+    public TrackedEntity resolve(int entityId) {
+        return entities.get(entityId);
+    }
+
     public void announce(int entityId, EntityType type) {
         announced.put(entityId, type);
     }

@@ -40,6 +40,7 @@ import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugP
 import com.deathmotion.totemguard.common.player.debug.provider.WorldDebugProvider;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.physics.PhysicsEngine;
+import com.deathmotion.totemguard.common.physics.vehicle.VehicleEngine;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
@@ -88,6 +89,7 @@ public class TGPlayer implements TGUser {
     private final WorldMirror worldMirror;
     private final Data data;
     private final PhysicsEngine physics;
+    private final VehicleEngine vehicleEngine;
     private final TotemData totemData;
     private final ClickData clickData;
     private final TickData tickData;
@@ -143,6 +145,7 @@ public class TGPlayer implements TGUser {
         this.worldMirror = new WorldMirror(getClientVersion());
         this.data = new Data(this);
         this.physics = new PhysicsEngine(this, data, worldMirror);
+        this.vehicleEngine = new VehicleEngine(this);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
@@ -164,6 +167,7 @@ public class TGPlayer implements TGUser {
                 new InboundActionProcessor(this),
                 new InboundTeleportProcessor(this),
                 new InboundMovementProcessor(this),
+                new InboundVehicleProcessor(this),
         };
 
         this.processorOutbounds = new ProcessorOutbound[]{

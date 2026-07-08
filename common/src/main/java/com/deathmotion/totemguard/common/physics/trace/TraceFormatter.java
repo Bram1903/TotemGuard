@@ -43,6 +43,10 @@ public final class TraceFormatter {
         sb.append(String.format(Locale.ROOT, " | obs %+.4f %+.4f %+.4f", f.obsX, f.obsY, f.obsZ));
         sb.append(String.format(Locale.ROOT, " | disk c(%+.3f,%+.3f) r%.3f v[%.3f,%.3f]",
                 f.centerX, f.centerZ, f.radius, f.floor, f.ceiling));
+        sb.append(String.format(Locale.ROOT, " | rot y%+.2f p%+.2f (prev y%+.2f p%+.2f)",
+                f.yaw, f.pitch, f.prevYaw, f.prevPitch));
+        sb.append(String.format(Locale.ROOT, " | pre c(%+.3f,%+.3f) v[%.3f,%.3f]",
+                f.preCarriedX, f.preCarriedZ, f.preCarriedFloor, f.preCarriedCeil));
         sb.append(String.format(Locale.ROOT, " | ex h%.3f a%.3f d%.3f p%.3f",
                 f.horizontalExcess, f.ascentExcess, f.descentExcess, f.phaseExcess));
         sb.append(" | ").append(name(OUTCOMES, f.outcome));

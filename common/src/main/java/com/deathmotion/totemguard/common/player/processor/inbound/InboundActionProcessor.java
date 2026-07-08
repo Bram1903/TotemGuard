@@ -20,8 +20,12 @@ package com.deathmotion.totemguard.common.player.processor.inbound;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.*;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.world.BlockFace;
@@ -100,7 +104,10 @@ public class InboundActionProcessor extends ProcessorInbound {
                 }
                 case LEAVE_BED -> tickData.setLeavingBed(true);
                 case START_JUMPING_WITH_HORSE, STOP_JUMPING_WITH_HORSE -> tickData.setJumpingWithMount(true);
-                case START_FLYING_WITH_ELYTRA -> tickData.setStartingToGlide(true);
+                case START_FLYING_WITH_ELYTRA -> {
+                    tickData.setStartingToGlide(true);
+                    if (glideClaimLegal()) data.getGlideData().armClaim();
+                }
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_DIGGING) {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
@@ -108,7 +115,10 @@ public class InboundActionProcessor extends ProcessorInbound {
             switch (packet.getAction()) {
                 case SWAP_ITEM_WITH_OFFHAND -> tickData.setSwapping(true);
                 case DROP_ITEM, DROP_ITEM_STACK -> tickData.setDropping(true);
-                case RELEASE_USE_ITEM -> tickData.setReleasing(true);
+                case RELEASE_USE_ITEM -> {
+                    tickData.setReleasing(true);
+                    armRiptideIfHeld();
+                }
                 case FINISHED_DIGGING, CANCELLED_DIGGING, START_DIGGING -> tickData.setDigging(true);
                 case STAB -> {
                     tickData.setStabbing(true);
@@ -151,5 +161,25 @@ public class InboundActionProcessor extends ProcessorInbound {
         if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
             tickData.reset();
         }
+    }
+
+    private void armRiptideIfHeld() {
+        int level = riptideLevel(player.getInventory().getMainHandItem());
+        if (level <= 0) level = riptideLevel(player.getInventory().getOffhandItem());
+        if (level <= 0) return;
+        data.getGlideData().armRiptide(0.75 * (level + 1), data.getMovementData().isOnGround());
+    }
+
+    private static int riptideLevel(ItemStack stack) {
+        if (stack == null || stack.getType() != ItemTypes.TRIDENT) return 0;
+        return stack.getEnchantmentLevel(EnchantmentTypes.RIPTIDE);
+    }
+
+    private boolean glideClaimLegal() {
+        if (data.isGliding()) return false;
+        if (data.isInVehicle() || data.getEffectData().hasLevitation()) return false;
+        ItemStack chest = player.getInventory().getItem(InventoryConstants.SLOT_CHESTPLATE);
+        if (chest == null || chest.getType() != ItemTypes.ELYTRA) return false;
+        return chest.getMaxDamage() <= 0 || chest.getDamageValue() < chest.getMaxDamage() - 1;
     }
 }

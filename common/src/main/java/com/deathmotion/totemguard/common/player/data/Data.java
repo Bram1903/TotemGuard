@@ -45,6 +45,9 @@ public class Data {
     private final ExternalVelocityData externalVelocityData;
     private final PistonData pistonData;
     private final EffectData effectData;
+    private final GlideData glideData;
+    private final FireworkData fireworkData;
+    private final VehicleData vehicleData;
     private final FoodData foodData;
     private final MitigationService mitigationService;
     private final SetbackController setbackController;
@@ -97,6 +100,9 @@ public class Data {
         this.externalVelocityData = new ExternalVelocityData();
         this.pistonData = new PistonData();
         this.effectData = new EffectData();
+        this.glideData = new GlideData();
+        this.fireworkData = new FireworkData();
+        this.vehicleData = new VehicleData();
         this.foodData = new FoodData();
         this.mitigationService = new MitigationService(this);
         this.setbackController = new SetbackController(mitigationService, externalVelocityData);
