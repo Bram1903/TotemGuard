@@ -20,20 +20,16 @@ package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
-public final class WaterModel implements MediumModel {
+public final class WaterModel extends FluidModel {
 
-    private static final double VERTICAL_DRAG = 0.8;
-    private static final double SWIM_IMPULSE = 0.04;
-    private static final double ASCENT_MIN = 0.1;
+    private static final double GRAVITY_DIVISOR = 16.0;
     private static final int ENTRY_TICKS = 4;
     private static final double ENTRY_ASCENT = 0.75;
-    private static final double WALL_BUMP_ASCENT = 0.34;
     private static final double STEER_RATE_STEEP = 0.085;
     private static final double STEER_RATE = 0.06;
     private static final double STEER_STEEP_LOOK = -0.2;
@@ -47,27 +43,18 @@ public final class WaterModel implements MediumModel {
     }
 
     @Override
-    public double accelBound(PlayerInput input, GroundFacts ground) {
-        return input.fluidAccel();
+    protected double gravityDivisor() {
+        return GRAVITY_DIVISOR;
     }
 
     @Override
-    public void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
-        double waterGravity = input.gravity() / 16.0;
-        bounds.ceiling(Math.max(ASCENT_MIN, bounds.ceiling() + SWIM_IMPULSE));
-        bounds.floor(bounds.floor() - waterGravity - SWIM_IMPULSE);
-        if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
-        if (ground.groundedStart() || ground.groundedEnd()
-                || contact.nearestSupportGap() <= input.stepHeight()) {
-            bounds.raiseCeiling(input.stepHeight());
-        }
+    protected void ascentOptions(PlayerInput input, ContactReport contact, AreaBounds bounds) {
         if (entryTicks > 0) {
             bounds.raiseCeiling(ENTRY_ASCENT);
         } else if (contact.wallNear()) {
             bounds.raiseCeiling(WALL_BUMP_ASCENT);
         }
         applySwimSteer(input, bounds);
-        bounds.enforceDescentFloor(true);
     }
 
     private void applySwimSteer(PlayerInput input, AreaBounds bounds) {
@@ -91,11 +78,6 @@ public final class WaterModel implements MediumModel {
     @Override
     public double frictionMax(PlayerInput input, GroundFacts ground) {
         return input.fluidFriction();
-    }
-
-    @Override
-    public double advanceVertical(double verticalVelocity, PlayerInput input) {
-        return verticalVelocity * VERTICAL_DRAG;
     }
 
     public void advanceEntryWindow(boolean inFluidNow, boolean wasFluid) {
