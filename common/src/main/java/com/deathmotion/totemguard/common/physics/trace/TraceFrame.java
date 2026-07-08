@@ -33,6 +33,13 @@ public final class TraceFrame {
     public static final int FLAG_ARRESTED = 1 << 11;
     public static final int FLAG_STEP_USED = 1 << 12;
     public static final int FLAG_ALT_CENTER = 1 << 13;
+    public static final int FLAG_SWIMMING = 1 << 14;
+    public static final int FLAG_SWIM_STEER = 1 << 15;
+    public static final int FLAG_CLIMBABLE = 1 << 16;
+    public static final int FLAG_FLUID_HOP = 1 << 17;
+    public static final int FLAG_GLIDE_CLAIM = 1 << 18;
+    public static final int FLAG_GLIDE_RIPTIDE = 1 << 19;
+    public static final int FLAG_GLIDE_EXIT = 1 << 20;
 
     public long tick;
     public double obsX, obsY, obsZ;
@@ -46,6 +53,13 @@ public final class TraceFrame {
     public int reads, misses, uncertainHits;
     public double buffer, engineFall;
     public byte mitigation;
+
+    public double pushX, pushY, pushZ, bubbleAscent;
+    public double stuckHorizontal, stuckVertical;
+    public double fluidFriction, fluidAccel;
+    public double moveSpeed, jumpStrength, stepHeight, sprintJumpResidual;
+    public double riptideStrength;
+    public int fireworkMin, fireworkMax;
 
     public void copyFrom(TraceFrame other) {
         tick = other.tick;
@@ -83,6 +97,21 @@ public final class TraceFrame {
         buffer = other.buffer;
         engineFall = other.engineFall;
         mitigation = other.mitigation;
+        pushX = other.pushX;
+        pushY = other.pushY;
+        pushZ = other.pushZ;
+        bubbleAscent = other.bubbleAscent;
+        stuckHorizontal = other.stuckHorizontal;
+        stuckVertical = other.stuckVertical;
+        fluidFriction = other.fluidFriction;
+        fluidAccel = other.fluidAccel;
+        moveSpeed = other.moveSpeed;
+        jumpStrength = other.jumpStrength;
+        stepHeight = other.stepHeight;
+        sprintJumpResidual = other.sprintJumpResidual;
+        riptideStrength = other.riptideStrength;
+        fireworkMin = other.fireworkMin;
+        fireworkMax = other.fireworkMax;
     }
 
     public boolean has(int flag) {

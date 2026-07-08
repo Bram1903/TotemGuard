@@ -19,7 +19,10 @@
 package com.deathmotion.totemguard.common.physics.trace;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+
+import java.util.Set;
 
 public final class TraceDump {
 
@@ -28,7 +31,7 @@ public final class TraceDump {
 
     private long lastDumpNanos;
 
-    public boolean dump(TGPlayer player, TickRecorder recorder, String cause) {
+    public boolean dump(TGPlayer player, TickRecorder recorder, String cause, Set<PhysicsDebugContext> contexts) {
         long now = System.nanoTime();
         if (now - lastDumpNanos < RATE_LIMIT_NANOS) return false;
         lastDumpNanos = now;
@@ -39,7 +42,7 @@ public final class TraceDump {
                 + " client=" + player.getClientVersion().getReleaseName()
                 + " ticks=" + recorder.size());
         recorder.forEachRecent(DUMP_ROWS, frame ->
-                platform.getLogger().info("[PhysicsTrace] " + TraceFormatter.format(frame)));
+                platform.getLogger().info("[PhysicsTrace] " + TraceFormatter.format(frame, contexts)));
         return true;
     }
 }

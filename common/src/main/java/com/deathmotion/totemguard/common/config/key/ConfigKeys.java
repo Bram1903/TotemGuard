@@ -66,6 +66,8 @@ public final class ConfigKeys {
 
     public static final ConfigKey<String> PHYSICS_ENGINE_DEBUG_LEVEL = ConfigKey.string("physics-engine.debug.level");
 
+    public static final ConfigKey<List<String>> PHYSICS_ENGINE_DEBUG_CONTEXT = ConfigKey.stringList("physics-engine.debug.context");
+
     public static final ConfigKey<Boolean> DEBUG_MODIFIER_KICK_ENABLED = ConfigKey.bool("debug-modifier-kick.enabled");
 
     public static final ConfigKey<String> TELEPORT_COMMAND = ConfigKey.string("teleport.command");

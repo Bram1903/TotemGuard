@@ -5,22 +5,21 @@
 #      |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
 #                             \/      \/        \/           \/           \/
 
-# The version of the config file. DO NOT TOUCH!!!
+# DO NOT TOUCH.
 config_version: 1
 
-# The name of the server for alerts, webhooks, and more. (%tg_server% placeholder)
+# Server name for alerts and webhooks (%tg_server% placeholder).
 server: Default
 
-# The name of the root command for TotemGuard. (This requires a server restart to take effect)
+# Root command name (requires restart).
 commands:
   base: totemguard
   aliases:
     - tg
 
-# MySQL 8+ or MariaDB. Shared across servers, each row tagged with the server name above.
+# MySQL 8+ or MariaDB, shared across servers and tagged with the server name above.
 database:
   enabled: false
-
   host: localhost
   port: 3306
   database: TotemGuard
@@ -28,151 +27,96 @@ database:
   password: password
   # Extra JDBC parameters, e.g. useSSL=false&serverTimezone=UTC
   parameters: ""
-
-  # Only alerts are swept. Players, sessions, and punishments are kept forever.
   retention:
-    # 0 = keep forever.
+    # Days to keep alerts. 0 = forever. Only alerts are swept.
     alerts-days: 0
 
-# Recommended for multiserver setups. Syncs data, alerts, and more across servers.
+# Recommended for multiserver: syncs data, alerts, and more across servers.
 redis:
   enabled: false
   host: localhost
   port: 6379
-
-  # Can be left empty if no auth is required.
+  # Leave empty if no auth is required.
   username: default
   password: yourPassword
-
-  # Turn off when this server runs alone but still wants Redis for caching
-  # (violation buffers, db query results). Disabling skips presence heartbeats,
-  # cross-server alerts/monitor/follow/focus, proxy bridge wiring, and offline-grace.
-  # Leave true on multiserver setups.
+  # false = single server (Redis for caching only, skips presence, cross-server
+  # alerts/monitor/follow, proxy bridge, offline-grace). Leave true on multiserver.
   cluster: true
-
-  # When a player switches backends, the source server's quit fires before the
-  # destination's join lands. This window swallows that gap so transfers stay silent:
-  # no alert flicker, focus targets survive. Ignored when cluster is false.
+  # Swallows the quit/join gap during a backend switch so transfers stay quiet.
+  # Ignored when cluster is false.
   offline-grace-millis: 4000
-
-  # All channels are namespaced under "totemguard:". Override `alerts.channel` to scope
-  # alerts to a cluster (e.g. "events" becomes "totemguard:events"), or leave blank for
-  # the default "totemguard:alerts". Types can share a channel (routed by packet id).
+  # Channels are namespaced under "totemguard:". Blank channel = "totemguard:alerts".
   messaging:
     alerts:
       channel: ""
       send: true
       receive: true
 
-# Clients older than Minecraft 1.17 cannot be tracked reliably: their container
-# clicks carry no slot or cursor data, so inventory tracking desyncs.
-# true = kick on join, false = let them play but run no checks.
+# Clients older than 1.17 cannot be tracked reliably (inventory desyncs).
+# true = kick on join, false = let them play unchecked.
 unsupported-client:
   kick: true
 
-# Hides sensitive information about other players from clients so cheaters can't
-# exploit it. None of these affect the receiving player's own data.
+# Hides other players' sensitive data from cheat clients. Never affects your own data.
 entity-spoofing:
-  # Replaces the health metadata of other players with a random value in
-  # [0.5, max-health] so attack-priority cheats can't read true HP. Max-health
-  # is taken from the player's max-health attribute, capped at 20.
+  # Randomizes other players' health metadata so attack-priority cheats cannot read HP.
   health: true
-
-  # Hides absorption hearts of other players by setting the absorption
-  # metadata to 0.
+  # Hides other players' absorption hearts.
   absorption: true
 
-# Command run for "teleport to flagged player" actions (GUI, alert click, /tg follow).
-# %tg_player% is the target. %tg_silent% appends "--silent" on internal dispatches
-# (e.g. /tg follow) and is empty otherwise, only useful if your custom command
-# wants to detect follow-driven calls. Example: "n tp %tg_player% %tg_silent%".
+# Command for "teleport to flagged player" (GUI, alert click, /tg follow).
+# %tg_player% = target, %tg_silent% = "--silent" on internal dispatches else empty.
 teleport:
   command: "/tg teleport %tg_player%"
 
 tick:
-  # Skip the keep-alive ordering branch of TickB (transaction and teleport-confirm
-  # ordering stay checked). Enable if your server, a plugin, or a proxy alters vanilla
-  # keep-alive handling, or if TickB flags legit players on the "keepalive" branch.
-  # Leave false on a stock setup.
+  # Skip TickB's keep-alive ordering branch (transaction/teleport ordering still checked).
+  # Enable only if a plugin or proxy alters keep-alive handling.
   skip-keep-alive-validation: false
 
-# The movement prediction engine. It simulates vanilla physics each tick and powers the
-# Physics check (fly, hover, speed, and inventory-move, moving with an open inventory).
-# Disabling it stops the Physics check from flagging and turns off the mitigation below.
-# Everything in this section applies on reload, no restart needed.
+# Movement prediction engine powering the Physics check (fly, hover, speed, inventory-move).
+# Everything here applies on reload, no restart needed.
 physics-engine:
   enabled: true
 
-  # How much slack the simulation grants before movement counts as impossible. This scales
-  # the Physics check and the mitigation together, they trigger as one event: a Physics
-  # flag is a setback and a setback is a Physics flag (unless disabled below).
-  # strict:  the margins the engine was tuned with, tight to vanilla. Catches the most,
-  #          recommended default. A false positive on strict is an engine bug, report it.
-  # lenient: much wider margins and later triggers, only blatant offenses fire. False
-  #          positives become very unlikely at the cost of letting subtle cheats through.
-  # Unknown values fall back to strict.
+  # strict = tight to vanilla, recommended (a false positive is a bug, report it).
+  # lenient = wider margins, only blatant cheats fire. Unknown = strict.
   preset: strict
 
-  # Mitigation removes the unfair advantage directly instead of only alerting. It rides
-  # the same trigger as the Physics flag, so every alert marked (setback) was corrected.
+  # Removes the advantage directly, riding the same trigger as the Physics flag.
   mitigation:
-    # Teleport the player back to their last legal position when movement fails the
-    # simulation. A real server-side teleport: the client must accept it before its
-    # movement counts again. When disabled, the Physics flag still fires (marked
-    # (setback off) instead of (setback)) so you can test without being teleported.
+    # Teleport back to the last legal position. Off = flag only, no teleport.
     setback: true
-
-    # Close the inventory when a player moves with it open (the inventory-move type).
-    # The setback above still applies to the illegal movement itself.
+    # Close the inventory on an inventory-move.
     close-inventory: true
-
-    # Apply the fall damage a NoFall cheat dodged (spoofed onGround flags). The missing
-    # damage runs through the vanilla pipeline, so armor, feather falling, and totems
-    # behave exactly as on an honest landing. Legit landings are never touched.
+    # Apply the fall damage a NoFall cheat dodged, through the vanilla pipeline.
     fall-damage: true
-
-    # Drop a timer player's surplus movement packets at the network layer before the
-    # server processes them, throttling the timer at its source instead of only
-    # rubber-banding after the fact. Only acts when BalanceA (the ping-proof timer
-    # check, mitigate flag on) confirms the clock is genuinely ahead, so legit players
-    # are never touched.
+    # Drop a timer player's surplus packets at the network layer. Only when BalanceA confirms.
     timer-packet-cancel: true
 
-  # Built-in diagnosis. Applies on reload, no restart needed.
-  # off:     no recording, zero overhead. The production default.
-  # summary: keeps a rolling per-tick evidence ring per player (observed motion, the area
-  #          bounds, excesses, contacts, footing, world reads) and dumps the last seconds
-  #          to the console automatically whenever a violation triggers, so false
-  #          positives can be diagnosed after the fact without reproducing them.
-  # trace:   summary plus one console line per movement tick per player. Very spammy,
-  #          intended for a dev/test server with a single player.
+  # Built-in diagnosis, applies on reload.
+  # level: off = none, summary = evidence ring dumped on violation, trace = a line per tick.
+  # context: extra detail blocks appended to each row, opt in only what you are debugging
+  #          (e.g. [glide, water] for a glide into water). Any of land, water, lava, climb,
+  #          glide, vehicle. Empty = plain rows.
   debug:
     level: off
+    context: [ ]
 
-# A vanilla client bug lets you keep moving with an inventory open when the Debug Modifier
-# Key (F3) shares a key with a movement bind. When enabled, TotemGuard reads keybinds on
-# join and disconnects players whose Debug Modifier Key collides with forward, back, left,
-# right, or jump, asking them to rebind. Only catches honest clients that report keybinds,
-# the inventory checks catch packet-level cheating regardless.
+# Kicks honest clients whose F3 Debug Modifier key collides with a movement bind
+# (a vanilla bug that allows inventory-move). Packet-level cheats are caught regardless.
 debug-modifier-kick:
   enabled: true
 
-# Just before a player is kicked or banned, show them a fake totem-pop animation
-# using a player head with a hacker skin. The head is packet-only, the real inventory
-# is never touched, so nothing is lost on re-join.
+# Fake totem-pop animation before a kick or ban. Packet-only, the real inventory is untouched.
 ban-animation:
   enabled: true
 
-# Periodically checks GitHub for new TotemGuard releases (every 6h).
-# When Redis is enabled, results are shared across the fleet via cache + pub/sub
-# so a rolling-restart fleet typically reuses the first server's fetch instead
-# of all hitting GitHub.
+# Checks GitHub for new releases every 6h. Shared across the fleet when Redis is on.
 update-checker:
   enabled: true
-
-  # Notify players holding `TotemGuard.UpdateNotify` (defaults to ops)
-  # on join when an update is available.
+  # Notify players with `TotemGuard.UpdateNotify` (ops by default) on join.
   notify-on-join: true
 
-# Do not modify this list unless you know what you're doing.
+# Do not modify unless you know what you're doing.
 developer-overrides: [ ]

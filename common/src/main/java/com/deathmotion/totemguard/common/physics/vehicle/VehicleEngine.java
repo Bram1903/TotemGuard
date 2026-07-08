@@ -18,9 +18,13 @@
 
 package com.deathmotion.totemguard.common.physics.vehicle;
 
+import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.physics.area.OutwardResidual;
 import com.deathmotion.totemguard.common.physics.medium.FlowSolver;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
+import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
+import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.VehicleData;
@@ -37,6 +41,7 @@ public final class VehicleEngine {
     private static final double HORIZONTAL_PAD = 0.05;
     private static final double MOUNT_PAD = 1.5;
 
+    private final TGPlayer player;
     private final Data data;
     private final WorldMirror world;
     private final BoatModel boat = new BoatModel();
@@ -49,6 +54,7 @@ public final class VehicleEngine {
     private VehicleVerdict verdict = VehicleVerdict.NONE;
 
     public VehicleEngine(TGPlayer player) {
+        this.player = player;
         this.data = player.getData();
         this.world = player.getWorldMirror();
     }
@@ -141,6 +147,31 @@ public final class VehicleEngine {
             verdict = new VehicleVerdict(true, "boat-speed", Math.hypot(obsX, obsZ),
                     Math.hypot(centerX, centerZ) + radius, horizontal);
         }
+
+        emitTrace(obsX, obsY, obsZ, centerX, centerZ, radius, floor, ceiling);
+    }
+
+    private void emitTrace(double obsX, double obsY, double obsZ,
+                           double centerX, double centerZ, double radius,
+                           double floor, double ceiling) {
+        ConfigView view = TGPlatform.getInstance().getConfigRepository().configView();
+        PhysicsDebugLevel level = view.physicsDebugLevel();
+        if (!level.recording() || !view.physicsDebugContexts().contains(PhysicsDebugContext.VEHICLE)) return;
+        boolean breach = verdict.breach();
+        if (level != PhysicsDebugLevel.TRACE && !breach) return;
+
+        String outcome = breach ? verdict.label() + " over=" + fmt(verdict.excess()) : "ok";
+        TGPlatform.getInstance().getLogger().info(
+                "[PhysicsTrace] " + player.getUser().getName() + " VEHICLE"
+                        + " obs=(" + fmt(obsX) + "," + fmt(obsY) + "," + fmt(obsZ) + ")"
+                        + " c=(" + fmt(centerX) + "," + fmt(centerZ) + ")"
+                        + " r=" + fmt(radius)
+                        + " vy=[" + fmt(floor) + "," + fmt(ceiling) + "]"
+                        + " -> " + outcome);
+    }
+
+    private static String fmt(double value) {
+        return String.format("%.4f", value);
     }
 
     private void applyFlowShift(BlockReader reader, double startX, double startY, double startZ, double half) {

@@ -24,12 +24,17 @@ import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.input.PlayerInput;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
+import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.player.data.FireworkData;
+import com.deathmotion.totemguard.common.player.data.GlideData;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
 
 public final class TraceRecording {
 
@@ -54,7 +59,8 @@ public final class TraceRecording {
 
     public boolean dumpNow(String cause) {
         if (recorder == null) return false;
-        return dumper.dump(player, recorder, cause);
+        Set<PhysicsDebugContext> contexts = TGPlatform.getInstance().getConfigRepository().configView().physicsDebugContexts();
+        return dumper.dump(player, recorder, cause, contexts);
     }
 
     public void record(ConfigView view,
@@ -102,6 +108,7 @@ public final class TraceRecording {
         frame.medium = (byte) verdict.medium().ordinal();
         frame.ground = (byte) verdict.ground().ordinal();
         frame.flags = flags(contact, sample, ground, input, verdict);
+        populateContext(sample, input);
         frame.supportGap = contact != null ? Math.min(contact.nearestSupportGap(), 9.999) : 0.0;
         frame.ceilingClearance = contact != null ? contact.ceilingClearance() : 0.0;
         frame.reads = reader.readsThisTick();
@@ -115,13 +122,56 @@ public final class TraceRecording {
                 | (verdict.mitigation().inventoryClosed() ? 8 : 0));
         recorder.record(frame);
 
+        Set<PhysicsDebugContext> contexts = view.physicsDebugContexts();
         if (level == PhysicsDebugLevel.TRACE) {
             TGPlatform.getInstance().getLogger().info(
-                    "[PhysicsTrace] " + player.getUser().getName() + " " + TraceFormatter.format(frame));
+                    "[PhysicsTrace] " + player.getUser().getName() + " " + TraceFormatter.format(frame, contexts));
         }
         if (verdict.mitigation().triggered() || verdict.fall().violation()) {
-            dumper.dump(player, recorder, verdict.breach() != null ? verdict.breach().name() : "fall");
+            dumper.dump(player, recorder, verdict.breach() != null ? verdict.breach().name() : "fall", contexts);
         }
+    }
+
+    private void populateContext(@Nullable MediumSample sample, @Nullable PlayerInput input) {
+        frame.pushX = frame.pushY = frame.pushZ = 0.0;
+        frame.bubbleAscent = 0.0;
+        frame.stuckHorizontal = frame.stuckVertical = 1.0;
+        frame.fluidFriction = frame.fluidAccel = 0.0;
+        frame.moveSpeed = frame.jumpStrength = frame.stepHeight = frame.sprintJumpResidual = 0.0;
+        frame.riptideStrength = 0.0;
+        frame.fireworkMin = frame.fireworkMax = 0;
+
+        if (sample != null) {
+            frame.pushX = sample.pushX();
+            frame.pushY = sample.pushY();
+            frame.pushZ = sample.pushZ();
+            frame.bubbleAscent = sample.bubbleAscent();
+            frame.stuckHorizontal = sample.stuckHorizontal();
+            frame.stuckVertical = sample.stuckVertical();
+            if (sample.swimSteerWater()) frame.flags |= TraceFrame.FLAG_SWIM_STEER;
+            if (sample.climbable()) frame.flags |= TraceFrame.FLAG_CLIMBABLE;
+        }
+        if (input != null) {
+            frame.fluidFriction = input.fluidFriction();
+            frame.fluidAccel = input.fluidAccel();
+            frame.moveSpeed = input.moveSpeed();
+            frame.jumpStrength = input.jumpStrength();
+            frame.stepHeight = input.stepHeight();
+            frame.sprintJumpResidual = input.sprintJumpResidual();
+            if (input.swimming()) frame.flags |= TraceFrame.FLAG_SWIMMING;
+            if (input.fluidExitHop()) frame.flags |= TraceFrame.FLAG_FLUID_HOP;
+        }
+
+        GlideData glide = player.getData().getGlideData();
+        if (glide.claimActive()) frame.flags |= TraceFrame.FLAG_GLIDE_CLAIM;
+        if (glide.riptideActive()) {
+            frame.flags |= TraceFrame.FLAG_GLIDE_RIPTIDE;
+            frame.riptideStrength = glide.riptideStrength();
+        }
+        if (glide.exitActive()) frame.flags |= TraceFrame.FLAG_GLIDE_EXIT;
+        FireworkData firework = player.getData().getFireworkData();
+        frame.fireworkMin = firework.boostCountMin();
+        frame.fireworkMax = firework.boostCountMax();
     }
 
     private static int flags(@Nullable ContactReport contact, @Nullable MediumSample sample,

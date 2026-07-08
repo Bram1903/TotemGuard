@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.config.view;
 import com.deathmotion.totemguard.api.config.Config;
 import com.deathmotion.totemguard.common.config.key.ConfigKeys;
 import com.deathmotion.totemguard.common.config.schema.*;
+import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +45,7 @@ public final class ConfigView {
     private final boolean physicsEngineEnabled;
     private final PhysicsPreset physicsPreset;
     private final PhysicsDebugLevel physicsDebugLevel;
+    private final Set<PhysicsDebugContext> physicsDebugContexts;
     private final boolean physicsEngineSetback;
     private final boolean physicsEngineCloseInventory;
     private final boolean physicsEngineFallDamage;
@@ -98,6 +100,7 @@ public final class ConfigView {
         this.physicsEngineEnabled = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_ENABLED);
         this.physicsPreset = PhysicsPreset.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_PRESET));
         this.physicsDebugLevel = PhysicsDebugLevel.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_DEBUG_LEVEL));
+        this.physicsDebugContexts = PhysicsDebugContext.parse(config.getStringList(ConfigKeys.PHYSICS_ENGINE_DEBUG_CONTEXT));
         this.physicsEngineSetback = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_SETBACK);
         this.physicsEngineCloseInventory = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_CLOSE_INVENTORY);
         this.physicsEngineFallDamage = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_FALL_DAMAGE);
@@ -157,6 +160,10 @@ public final class ConfigView {
 
     public @NotNull PhysicsDebugLevel physicsDebugLevel() {
         return physicsDebugLevel;
+    }
+
+    public @NotNull Set<PhysicsDebugContext> physicsDebugContexts() {
+        return physicsDebugContexts;
     }
 
     public boolean physicsEngineSetback() {
