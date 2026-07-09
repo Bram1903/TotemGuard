@@ -48,6 +48,7 @@ public final class TrackedEntity {
     private double prevRenderY;
     private double prevRenderZ;
     private int interpSteps;
+    private boolean queuedForAdvance;
 
     TrackedEntity(EntityType type) {
         this.type = type;
@@ -80,7 +81,7 @@ public final class TrackedEntity {
         interpSteps = INTERPOLATION_STEPS;
     }
 
-    void advance() {
+    boolean advance() {
         prevRenderX = renderX;
         prevRenderY = renderY;
         prevRenderZ = renderZ;
@@ -90,7 +91,13 @@ public final class TrackedEntity {
             renderY += (targetY - renderY) * t;
             renderZ += (targetZ - renderZ) * t;
             interpSteps--;
+            return false;
         }
+        return true;
+    }
+
+    void queuedForAdvance(boolean queued) {
+        this.queuedForAdvance = queued;
     }
 
     void scale(double scale) {

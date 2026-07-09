@@ -74,15 +74,15 @@ public final class EmbedExemptions implements ExemptCells {
 
     public void prune(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         if (cells.isEmpty()) return;
-        Set<Long> bodyCells = new HashSet<>();
-        for (int x = floor(minX); x <= floor(maxX); x++) {
-            for (int y = floor(minY) - PRUNE_VERTICAL_SLACK; y <= floor(maxY) + PRUNE_VERTICAL_SLACK; y++) {
-                for (int z = floor(minZ); z <= floor(maxZ); z++) {
-                    bodyCells.add(PendingBlocks.blockKey(x, y, z));
-                }
-            }
-        }
-        cells.retainAll(bodyCells);
+        int x0 = floor(minX), x1 = floor(maxX);
+        int y0 = floor(minY) - PRUNE_VERTICAL_SLACK, y1 = floor(maxY) + PRUNE_VERTICAL_SLACK;
+        int z0 = floor(minZ), z1 = floor(maxZ);
+        cells.removeIf(key -> {
+            int x = (int) (key >> 38);
+            int z = (int) (key << 26 >> 38);
+            int y = (int) (key << 52 >> 52);
+            return x < x0 || x > x1 || y < y0 || y > y1 || z < z0 || z > z1;
+        });
     }
 
     public void clear() {

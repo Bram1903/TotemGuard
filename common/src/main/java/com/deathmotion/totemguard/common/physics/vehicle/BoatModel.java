@@ -19,7 +19,6 @@
 package com.deathmotion.totemguard.common.physics.vehicle;
 
 import com.deathmotion.totemguard.common.world.block.BlockReader;
-import com.deathmotion.totemguard.common.world.block.BlockTraits;
 import com.deathmotion.totemguard.common.world.block.StateFacts;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
@@ -118,7 +117,7 @@ public final class BoatModel {
                 if (!StateFacts.is(facts, StateFacts.WATER)) continue;
                 double height = StateFacts.is(reader.facts(x, y + 1, z), StateFacts.WATER)
                         ? 1.0
-                        : BlockTraits.fluidSurfaceHeight(reader.state(x, y, z));
+                        : StateFacts.fluidHeight(facts);
                 if (probeY < y + height) {
                     anyWater = true;
                     if (!StateFacts.is(facts, StateFacts.FLUID_SOURCE)) flowing = true;
@@ -141,7 +140,7 @@ public final class BoatModel {
                 if (!StateFacts.is(facts, StateFacts.WATER)) continue;
                 double height = StateFacts.is(reader.facts(x, y + 1, z), StateFacts.WATER)
                         ? 1.0
-                        : BlockTraits.fluidSurfaceHeight(reader.state(x, y, z));
+                        : StateFacts.fluidHeight(facts);
                 level = Math.max(level, y + height);
             }
         }

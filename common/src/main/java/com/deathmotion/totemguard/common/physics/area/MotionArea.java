@@ -27,8 +27,4 @@ public record MotionArea(double centerX, double centerZ, double slack, double fl
     public static MotionArea seeded(double dx, double dz, double dy) {
         return new MotionArea(dx, dz, 0.0, dy, dy);
     }
-
-    public double speedCap() {
-        return Math.hypot(centerX, centerZ) + slack;
-    }
 }

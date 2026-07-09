@@ -51,6 +51,7 @@ public final class InputResolver {
     private static final double SPRINT_JUMP_BOOST = 0.2;
     private static final int SPRINT_JUMP_BOOST_WINDOW = 2;
     private static final double SPRINT_JUMP_BOOST_DECAY = 0.75;
+    private static final double[] SPRINT_JUMP_BOOST_RESIDUALS = boostResiduals();
 
     private static final double SPRINT_SPEED_MULTIPLIER = 1.3;
     private static final double WATER_FRICTION = 0.8;
@@ -73,6 +74,14 @@ public final class InputResolver {
 
     public InputResolver(Data data) {
         this.data = data;
+    }
+
+    private static double[] boostResiduals() {
+        double[] residuals = new double[SPRINT_JUMP_BOOST_WINDOW];
+        for (int i = 0; i < residuals.length; i++) {
+            residuals[i] = SPRINT_JUMP_BOOST * Math.pow(SPRINT_JUMP_BOOST_DECAY, i + 1);
+        }
+        return residuals;
     }
 
     public PlayerInput build(MovementData movement, ContactReport contact, GroundFacts ground,
@@ -99,7 +108,7 @@ public final class InputResolver {
         boolean effectiveGroundedStart = ground.groundedStart() || coyoteJump;
         boolean jumpPossible = effectiveGroundedStart && jumpHeld && !inventoryOpen;
 
-        double observedSpeed = Math.hypot(observedX, observedZ);
+        double observedSpeed = ClientMath.horizontalDistance(observedX, observedZ);
         boolean sprinting = !inventoryOpen && data.isSprinting() && data.getFoodData().canSprint()
                 && sprintForward(movement, contact, state, observedX, observedZ, observedSpeed, ground.groundedStart());
         improperSprint = data.isSprinting() && !sprinting && !inventoryOpen;
@@ -126,8 +135,7 @@ public final class InputResolver {
         if (sprintJump) {
             sprintJumpBoostWindow = SPRINT_JUMP_BOOST_WINDOW;
         } else if (sprintJumpBoostWindow > 0) {
-            sprintJumpResidual = SPRINT_JUMP_BOOST
-                    * Math.pow(SPRINT_JUMP_BOOST_DECAY, SPRINT_JUMP_BOOST_WINDOW - sprintJumpBoostWindow + 1);
+            sprintJumpResidual = SPRINT_JUMP_BOOST_RESIDUALS[SPRINT_JUMP_BOOST_WINDOW - sprintJumpBoostWindow];
             sprintJumpBoostWindow--;
         }
 

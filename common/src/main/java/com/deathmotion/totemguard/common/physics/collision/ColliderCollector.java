@@ -52,7 +52,7 @@ public final class ColliderCollector {
                             | (exempt.contains(x, y, z) ? ColliderBuffer.TAG_EXEMPT : 0L);
                     if (collectible) {
                         buffer.tag(facts | ColliderBuffer.KIND_BLOCK | trust);
-                        ShapeRegistry.collect(reader.stateForClientId(clientId), x, y, z, query, buffer);
+                        collectShape(buffer, reader, query, clientId, facts, x, y, z);
                     }
                     if (uncertain) {
                         int pendingId = reader.pendingStateId(x, y, z);
@@ -60,7 +60,7 @@ public final class ColliderCollector {
                             long pendingFacts = reader.factsForClientId(pendingId);
                             if (StateFacts.is(pendingFacts, StateFacts.HAS_SHAPE | StateFacts.SUPPORT_APPROXIMATE)) {
                                 buffer.tag(pendingFacts | ColliderBuffer.KIND_BLOCK | trust);
-                                ShapeRegistry.collect(reader.stateForClientId(pendingId), x, y, z, query, buffer);
+                                collectShape(buffer, reader, query, pendingId, pendingFacts, x, y, z);
                             }
                         }
                     }
@@ -74,6 +74,15 @@ public final class ColliderCollector {
         entities.collectStandable(minX, minY, minZ, maxX, maxY, maxZ, buffer);
 
         collectMovingPistons(buffer, pistons, minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    private static void collectShape(ColliderBuffer buffer, BlockReader reader, ShapeQuery query,
+                                     int clientId, long facts, int x, int y, int z) {
+        if ((facts & (StateFacts.FULL_CUBE | StateFacts.SUPPORT_APPROXIMATE)) == StateFacts.FULL_CUBE) {
+            buffer.accept(x, y, z, x + 1.0, y + 1.0, z + 1.0);
+            return;
+        }
+        ShapeRegistry.collect(reader.stateForClientId(clientId), x, y, z, query, buffer);
     }
 
     private static void collectMovingPistons(ColliderBuffer buffer, PistonData pistons,

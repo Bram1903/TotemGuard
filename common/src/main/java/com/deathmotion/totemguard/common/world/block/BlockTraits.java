@@ -40,8 +40,6 @@ public final class BlockTraits {
     public static final double BUBBLE_COLUMN_SURFACE_ASCENT = 1.8;
     public static final double BUBBLE_COLUMN_INSIDE_ASCENT = 0.7;
 
-    private static final double SOURCE_FLUID_HEIGHT = 8.0 / 9.0;
-
     private BlockTraits() {
     }
 
@@ -86,15 +84,6 @@ public final class BlockTraits {
 
     public static boolean isBubbleColumn(StateType type) {
         return type == StateTypes.BUBBLE_COLUMN;
-    }
-
-    public static double fluidSurfaceHeight(WrappedBlockState state) {
-        StateType type = state.getType();
-        if (type == StateTypes.WATER || type == StateTypes.LAVA) {
-            int level = state.getLevel();
-            if (level >= 1 && level <= 7) return (8 - level) / 9.0;
-        }
-        return SOURCE_FLUID_HEIGHT;
     }
 
     public static boolean isStuck(StateType type) {

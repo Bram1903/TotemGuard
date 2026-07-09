@@ -40,50 +40,63 @@ public final class MediumScan {
         if (pushedByFluid) {
             FlowSolver.solve(reader, out, lavaFast, minX, feetY, minZ, maxX, headY, maxZ);
         }
-        int x0 = floor(minX), x1 = floor(maxX);
-        int y0 = floor(feetY), y1 = floor(headY);
-        int z0 = floor(minZ), z1 = floor(maxZ);
+        int sx0 = floor(minX), sx1 = floor(maxX);
+        int sy0 = floor(feetY), sy1 = floor(headY);
+        int sz0 = floor(minZ), sz1 = floor(maxZ);
+        int wx0 = floor(sweptMinX), wx1 = floor(sweptMaxX);
+        int wy0 = floor(sweptMinY), wy1 = floor(sweptMaxY);
+        int wz0 = floor(sweptMinZ), wz1 = floor(sweptMaxZ);
         double fluidThreshold = feetY - FLUID_SURFACE_MARGIN;
         double bestStuckHorizontal = -1.0;
+        boolean sweptStuck = false;
 
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0; z <= z1; z++) {
-                for (int y = y0; y <= y1; y++) {
+        for (int x = wx0; x <= wx1; x++) {
+            for (int z = wz0; z <= wz1; z++) {
+                boolean inStartColumn = x >= sx0 && x <= sx1 && z >= sz0 && z <= sz1;
+                long factsAbove = 0L;
+                boolean aboveValid = false;
+                for (int y = wy1; y >= wy0; y--) {
                     long facts = reader.facts(x, y, z);
-                    if (StateFacts.is(facts, StateFacts.ANY_FLUID)) {
+                    boolean inStart = inStartColumn && y >= sy0 && y <= sy1;
+                    if (StateFacts.is(facts, StateFacts.STUCK)) {
+                        sweptStuck = true;
+                        if (inStart) {
+                            double horizontal = StateFacts.stuckHorizontal(facts);
+                            if (horizontal > bestStuckHorizontal) {
+                                bestStuckHorizontal = horizontal;
+                                out.stuck(true);
+                                out.stuckHorizontal(horizontal);
+                                out.stuckVertical(StateFacts.stuckVertical(facts));
+                            }
+                        }
+                    }
+                    if (inStart && StateFacts.is(facts, StateFacts.ANY_FLUID)) {
+                        long above = aboveValid ? factsAbove : reader.facts(x, y + 1, z);
                         boolean lava = StateFacts.is(facts, StateFacts.LAVA);
                         if (!(lava ? out.lava() : out.water())) {
-                            double height = StateFacts.is(reader.facts(x, y + 1, z), StateFacts.ANY_FLUID)
+                            double height = StateFacts.is(above, StateFacts.ANY_FLUID)
                                     ? 1.0
-                                    : BlockTraits.fluidSurfaceHeight(reader.state(x, y, z));
+                                    : StateFacts.fluidHeight(facts);
                             if (y + height >= fluidThreshold) {
                                 if (lava) out.lava(true);
                                 else out.water(true);
                             }
                         }
-                        if (StateFacts.is(facts, StateFacts.BUBBLE_COLUMN)) {
-                            WrappedBlockState state = reader.state(x, y, z);
-                            if (!state.isDrag()) {
-                                boolean surface = !StateFacts.is(reader.facts(x, y + 1, z), StateFacts.BUBBLE_COLUMN);
-                                double cap = surface
-                                        ? BlockTraits.BUBBLE_COLUMN_SURFACE_ASCENT
-                                        : BlockTraits.BUBBLE_COLUMN_INSIDE_ASCENT;
-                                if (cap > out.bubbleAscent()) out.bubbleAscent(cap);
-                            }
+                        if (StateFacts.is(facts, StateFacts.BUBBLE_COLUMN)
+                                && !StateFacts.is(facts, StateFacts.BUBBLE_DRAG)) {
+                            boolean surface = !StateFacts.is(above, StateFacts.BUBBLE_COLUMN);
+                            double cap = surface
+                                    ? BlockTraits.BUBBLE_COLUMN_SURFACE_ASCENT
+                                    : BlockTraits.BUBBLE_COLUMN_INSIDE_ASCENT;
+                            if (cap > out.bubbleAscent()) out.bubbleAscent(cap);
                         }
                     }
-                    if (StateFacts.is(facts, StateFacts.STUCK)) {
-                        double horizontal = StateFacts.stuckHorizontal(facts);
-                        if (horizontal > bestStuckHorizontal) {
-                            bestStuckHorizontal = horizontal;
-                            out.stuck(true);
-                            out.stuckHorizontal(horizontal);
-                            out.stuckVertical(StateFacts.stuckVertical(facts));
-                        }
-                    }
+                    factsAbove = facts;
+                    aboveValid = true;
                 }
             }
         }
+        out.stuckAlongPath(sweptStuck);
 
         int feetBlockX = floor((minX + maxX) / 2.0);
         int feetBlockY = floor(feetY);
@@ -99,25 +112,6 @@ public final class MediumScan {
                 out.climbable(true);
             }
         }
-
-        out.stuckAlongPath(out.stuck() || sweptHasStuck(reader,
-                sweptMinX, sweptMinY, sweptMinZ, sweptMaxX, sweptMaxY, sweptMaxZ));
-    }
-
-    private static boolean sweptHasStuck(BlockReader reader,
-                                         double minX, double minY, double minZ,
-                                         double maxX, double maxY, double maxZ) {
-        int x0 = floor(minX), x1 = floor(maxX);
-        int y0 = floor(minY), y1 = floor(maxY);
-        int z0 = floor(minZ), z1 = floor(maxZ);
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0; z <= z1; z++) {
-                for (int y = y0; y <= y1; y++) {
-                    if (StateFacts.is(reader.facts(x, y, z), StateFacts.STUCK)) return true;
-                }
-            }
-        }
-        return false;
     }
 
     private static int floor(double value) {

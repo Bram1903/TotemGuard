@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.attribute.Attributes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.resources.ResourceLocation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUpdateAttributes;
 
@@ -78,6 +79,7 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
 
         for (WrapperPlayServerUpdateAttributes.Property property : packet.getProperties()) {
             if (property.getAttribute() == Attributes.SCALE) {
+                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();
                 if (self) {
                     latencyHandler.compensate(event, () -> attributes.setScale(value));
@@ -88,21 +90,27 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
                 double value = movementSpeedWithoutSprint(property);
                 latencyHandler.compensate(event, () -> attributes.setMovementSpeed(value));
             } else if (self && property.getAttribute() == Attributes.JUMP_STRENGTH) {
+                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setJumpStrength(value));
             } else if (self && property.getAttribute() == Attributes.GRAVITY) {
+                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setGravity(value));
             } else if (self && property.getAttribute() == Attributes.STEP_HEIGHT) {
+                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setStepHeight(value));
             } else if (self && property.getAttribute() == Attributes.SNEAKING_SPEED) {
+                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setSneakingSpeed(value));
             } else if (self && property.getAttribute() == Attributes.MOVEMENT_EFFICIENCY) {
+                if (!clientObserves(ClientVersion.V_1_21)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setMovementEfficiency(value));
             } else if (self && property.getAttribute() == Attributes.WATER_MOVEMENT_EFFICIENCY) {
+                if (!clientObserves(ClientVersion.V_1_21)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setWaterMovementEfficiency(value));
             } else if (self && property.getAttribute() == Attributes.FLYING_SPEED) {
@@ -116,5 +124,9 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, () -> attributes.setFallDamageMultiplier(value));
             }
         }
+    }
+
+    private boolean clientObserves(ClientVersion introduced) {
+        return player.getClientVersion().isNewerThanOrEquals(introduced);
     }
 }

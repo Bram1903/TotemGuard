@@ -32,8 +32,8 @@ public final class BlockReader {
     private final StateFacts factsTable;
     private final WrappedBlockState air;
 
-    private long memoKey = Long.MIN_VALUE;
-    private BaseChunk[] memoColumn;
+    private final long[] memoKeys = {Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE};
+    private final BaseChunk[][] memoColumns = new BaseChunk[4][];
     private int memoRevision = -1;
 
     @Getter
@@ -115,13 +115,25 @@ public final class BlockReader {
 
     private int serverStateId(int x, int y, int z) {
         readsThisTick++;
-        long key = BlockStore.chunkKey(x >> 4, z >> 4);
-        if (key != memoKey || memoRevision != store.revision()) {
-            memoColumn = store.columnOrNull(x >> 4, z >> 4);
-            memoKey = key;
+        int chunkX = x >> 4;
+        int chunkZ = z >> 4;
+        long key = BlockStore.chunkKey(chunkX, chunkZ);
+        if (memoRevision != store.revision()) {
+            memoKeys[0] = Long.MIN_VALUE;
+            memoKeys[1] = Long.MIN_VALUE;
+            memoKeys[2] = Long.MIN_VALUE;
+            memoKeys[3] = Long.MIN_VALUE;
             memoRevision = store.revision();
         }
-        BaseChunk[] sections = memoColumn;
+        int slot = ((chunkX & 1) << 1) | (chunkZ & 1);
+        BaseChunk[] sections;
+        if (memoKeys[slot] == key) {
+            sections = memoColumns[slot];
+        } else {
+            sections = store.columnOrNull(chunkX, chunkZ);
+            memoKeys[slot] = key;
+            memoColumns[slot] = sections;
+        }
         if (sections == null) {
             missesThisTick++;
             return 0;

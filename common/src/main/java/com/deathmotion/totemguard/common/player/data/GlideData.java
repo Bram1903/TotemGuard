@@ -66,6 +66,10 @@ public final class GlideData {
         return exitTicks > 0;
     }
 
+    public boolean justExited() {
+        return exitTicks == EXIT_WINDOW_TICKS;
+    }
+
     public void tick() {
         if (claimTicks > 0) claimTicks--;
         if (riptideTicks > 0) riptideTicks--;

@@ -73,6 +73,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.util.ClientMath;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.world.shape.ShapeQuery;
@@ -99,6 +100,7 @@ public final class PhysicsEngine {
     private static final double SUPPORT_CONTACT_EPS = 0.02;
     private static final int BOUNCE_WINDOW = 4;
     private static final double POSE_FIT_EPS = 1.0e-7;
+    private static final double GLIDE_PRESERVE_GAP = 0.1;
 
     private final TGPlayer player;
     private final Data data;
@@ -106,6 +108,7 @@ public final class PhysicsEngine {
     private final BlockReader reader;
 
     private final AreaBounds bounds = new AreaBounds();
+    private final AreaBounds glideProbe = new AreaBounds();
     private final ResidualCarry carry = new ResidualCarry();
     private final ColliderBuffer colliders = new ColliderBuffer();
     private final CollisionSweep sweep = new CollisionSweep();
@@ -272,7 +275,7 @@ public final class PhysicsEngine {
                         0.0, Math.abs(dy) - GroundSpoofDetector.VERTICAL_EPS);
                 return;
             }
-            double observedSpeed = Math.hypot(dx, dz);
+            double observedSpeed = ClientMath.horizontalDistance(dx, dz);
             switch (fastDetector.evaluate(observedSpeed, data.getExternalVelocityData().isActive())) {
                 case DECLINE -> {
                     decline(DeclineReason.FAST, dx, dy, dz, true, current, half, height);
@@ -308,7 +311,7 @@ public final class PhysicsEngine {
                     player.supportsEndTick(), data.getTeleportData().lastPacketWasTeleport(),
                     preset.doubleMoveGraceTicks())) {
                 case TRUSTED, TRUSTED_ZERO, JUDGED_DOUBLE ->
-                        judgeTick(dx, dy, dz, medium, input, ground, preset);
+                        judgeTick(dx, dy, dz, observedSpeed, medium, input, ground, preset);
                 case WITHHELD -> coastTick(true, dx, dy, dz, medium, input, ground, preset);
                 case COAST_DOUBLE -> coastTick(false, dx, dy, dz, medium, input, ground, preset);
             }
@@ -485,7 +488,8 @@ public final class PhysicsEngine {
         scannedThisTick = true;
     }
 
-    private void judgeTick(double dx, double dy, double dz, MediumModel medium, PlayerInput input,
+    private void judgeTick(double dx, double dy, double dz, double observedSpeed,
+                           MediumModel medium, PlayerInput input,
                            GroundFacts ground, PhysicsPreset preset) {
         hover.onJudged();
         preStepCarriedX = carried.centerX();
@@ -494,13 +498,35 @@ public final class PhysicsEngine {
         preStepCarriedCeil = carried.ceilVy();
         double carriedFloorAtStart = carried.floorVy();
         boolean landMedium = sample.landMedium();
-        double observedSpeed = Math.hypot(dx, dz);
 
         AreaExpander.grow(carried, medium, sample, input, ground, contact,
                 stuckFactor, bubble, knockback, pistons, riptide, carry, preset, bounds);
+        if (medium.kind() == MediumKind.LAND && data.getGlideData().justExited()) {
+            glideProbe.reset(carried);
+            mediums.glide().prepare(false, false, data.getFireworkData());
+            mediums.glide().horizontalOptions(input, ground, glideProbe);
+            double reachX = glideProbe.centerX() - bounds.centerX();
+            double reachZ = glideProbe.centerZ() - bounds.centerZ();
+            bounds.expandRadius(ClientMath.horizontalDistance(reachX, reachZ) + glideProbe.radius());
+        }
+        if (medium.kind() == MediumKind.GLIDE && data.getGlideData().riptideActive()) {
+            double strength = data.getGlideData().riptideStrength();
+            double impulseY = input.lookY() * strength;
+            glideProbe.reset(carried);
+            glideProbe.centerX(carried.centerX() + input.lookX() * strength);
+            glideProbe.centerZ(carried.centerZ() + input.lookZ() * strength);
+            glideProbe.floor(carried.floorVy() + impulseY);
+            glideProbe.ceiling(carried.ceilVy() + impulseY);
+            mediums.glide().horizontalOptions(input, ground, glideProbe);
+            mediums.glide().verticalOptions(input, ground, contact, glideProbe);
+            bounds.altCenter(glideProbe.centerX(), glideProbe.centerZ());
+            bounds.expandRadius(glideProbe.radius());
+            bounds.raiseCeiling(glideProbe.ceiling());
+            if (impulseY < 0.0) bounds.lowerFloor(glideProbe.floor());
+        }
         Location current = data.getMovementData().getCurrent();
         double half = data.getAttributeData().width() / 2.0;
-        double height = poseHeight();
+        double height = lastPoseHeight;
         EntityPushTracker.apply(bounds, world.entities(),
                 Math.min(current.getX() - dx, current.getX()) - half, Math.min(current.getY() - dy, current.getY()),
                 Math.min(current.getZ() - dz, current.getZ()) - half,
@@ -543,8 +569,8 @@ public final class PhysicsEngine {
 
         boolean sneakEdge = input.sneaking() && ground.groundedStart() && landMedium
                 && dy <= 0.0
-                && observedSpeed < Math.hypot(bounds.centerX(), bounds.centerZ()) + bounds.radius()
-                - preset.horizontalFlagEpsilon()
+                && observedSpeed < ClientMath.horizontalDistance(bounds.centerX(), bounds.centerZ())
+                + bounds.radius() - preset.horizontalFlagEpsilon()
                 && contact.supportGap() > preset.horizontalFlagEpsilon();
         boolean carryPredicted = stepped || teleportFilter.inPreserveGrace() || sneakEdge;
         teleportFilter.tickPreserveGrace();
@@ -569,7 +595,7 @@ public final class PhysicsEngine {
         double phaseExcess = 0.0;
         if (!withheld && sample.landMedium()) {
             phaseExcess = phase.excess(contact.horizontalCrossingDepth(), contact.embedDepth(),
-                    Math.hypot(dx, dz), false, preset);
+                    ClientMath.horizontalDistance(dx, dz), false, preset);
         }
         boolean airborne = withheld && airborneNow(ground, preset);
         boolean hovering = hover.observe(airborne, preset.hoverGraceTicks(), HOVER_SETBACK_LIMIT);
@@ -598,6 +624,7 @@ public final class PhysicsEngine {
             return;
         }
         double frictionMax = medium.frictionMax(input, ground);
+        double speedFactor = effectiveSpeedFactor();
         AreaAdvancer.clampObserved(bounds, dx, dy, dz, excess.altCenterUsed(), preset.modelDriftSlack());
         double anchor = ground.groundedEnd() ? 0.0 : bounds.legalVy();
         double advancedVy = medium.advanceVertical(anchor, input);
@@ -615,10 +642,10 @@ public final class PhysicsEngine {
             double accel = medium.accelBound(input, ground);
             double coastX = carried.centerX() * frictionMax;
             double coastZ = carried.centerZ() * frictionMax;
-            double track = frictionMax * effectiveSpeedFactor();
+            double track = frictionMax * speedFactor;
             double trackX = bounds.legalX() * track;
             double trackZ = bounds.legalZ() * track;
-            if (Math.hypot(trackX, trackZ) > Math.hypot(coastX, coastZ)) {
+            if (trackX * trackX + trackZ * trackZ > coastX * coastX + coastZ * coastZ) {
                 carried = new MotionArea(trackX, trackZ, 0.0, advancedFloorVy, advancedVy);
             } else {
                 carried = new MotionArea(coastX, coastZ,
@@ -626,25 +653,34 @@ public final class PhysicsEngine {
             }
         } else {
             carried = AreaAdvancer.next(bounds.legalX(), bounds.legalZ(), frictionMax,
-                    effectiveSpeedFactor(), advancedFloorVy, advancedVy);
+                    speedFactor, advancedFloorVy, advancedVy);
         }
 
         if (medium == mediums.land() && data.getGlideData().exitActive()) {
-            double groundDecay = frictionMax * effectiveSpeedFactor();
-            double airDecay = LandModel.AIR_FRICTION * effectiveSpeedFactor();
+            double groundDecay = frictionMax * speedFactor;
+            double airDecay = LandModel.AIR_FRICTION * speedFactor;
             if (airDecay > groundDecay) {
-                double span = Math.hypot(bounds.legalX(), bounds.legalZ()) * (airDecay - groundDecay);
+                double span = ClientMath.horizontalDistance(bounds.legalX(), bounds.legalZ())
+                        * (airDecay - groundDecay);
                 carried = new MotionArea(carried.centerX(), carried.centerZ(),
                         carried.slack() + span, carried.floorVy(), carried.ceilVy());
             }
         }
 
         if (medium == mediums.glide() && mediums.glide().dualActive()) {
-            double glideX = bounds.legalX() * effectiveSpeedFactor();
-            double glideZ = bounds.legalZ() * effectiveSpeedFactor();
-            double freeFallShrink = Math.hypot(glideX, glideZ) * (1.0 - frictionMax);
+            double glideX = bounds.legalX() * speedFactor;
+            double glideZ = bounds.legalZ() * speedFactor;
+            double freeFallShrink = ClientMath.horizontalDistance(glideX, glideZ) * (1.0 - frictionMax);
             carried = new MotionArea(glideX, glideZ, carried.slack() + freeFallShrink,
                     mediums.land().advanceVertical(bounds.legalVy(), input), bounds.legalVy());
+        }
+
+        if (medium == mediums.glide() && contact.nearestSupportGap() <= GLIDE_PRESERVE_GAP) {
+            double exitFloor = mediums.land().advanceVertical(bounds.floor(), input);
+            if (exitFloor < carried.floorVy()) {
+                carried = new MotionArea(carried.centerX(), carried.centerZ(), carried.slack(),
+                        exitFloor, carried.ceilVy());
+            }
         }
 
         if (ground.bounced() && carriedFloorAtStart < 0.0 && contact.supportBounce() > 0.0) {

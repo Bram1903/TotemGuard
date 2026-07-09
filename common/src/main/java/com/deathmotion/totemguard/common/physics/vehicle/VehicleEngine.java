@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.VehicleData;
+import com.deathmotion.totemguard.common.util.ClientMath;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.world.entity.EntityRoles;
@@ -144,8 +145,8 @@ public final class VehicleEngine {
         } else if (ascent > VERTICAL_PAD) {
             verdict = new VehicleVerdict(true, "boat-ascend", obsY, ceiling, ascent);
         } else if (horizontal > HORIZONTAL_PAD) {
-            verdict = new VehicleVerdict(true, "boat-speed", Math.hypot(obsX, obsZ),
-                    Math.hypot(centerX, centerZ) + radius, horizontal);
+            verdict = new VehicleVerdict(true, "boat-speed", ClientMath.horizontalDistance(obsX, obsZ),
+                    ClientMath.horizontalDistance(centerX, centerZ) + radius, horizontal);
         }
 
         emitTrace(obsX, obsY, obsZ, centerX, centerZ, radius, floor, ceiling);

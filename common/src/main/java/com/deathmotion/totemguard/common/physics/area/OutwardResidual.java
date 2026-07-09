@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.physics.area;
 
+import com.deathmotion.totemguard.common.util.ClientMath;
+
 public final class OutwardResidual {
 
     private OutwardResidual() {
@@ -34,7 +36,7 @@ public final class OutwardResidual {
     }
 
     public static double deviation(double obsX, double obsZ, double centerX, double centerZ) {
-        return Math.hypot(outward(obsX, centerX), outward(obsZ, centerZ));
+        return ClientMath.horizontalDistance(outward(obsX, centerX), outward(obsZ, centerZ));
     }
 
     public static double excess(double obsX, double obsZ, double centerX, double centerZ, double radius) {

@@ -194,8 +194,8 @@ public final class GlideModel implements MediumModel {
 
         stepX = hiOutX;
         stepZ = hiOutZ;
-        double countSpread = Math.hypot(hiOutX - loOutX, hiOutZ - loOutZ);
-        double lookSpread = Math.hypot(hiOutX - pvOutX, hiOutZ - pvOutZ);
+        double countSpread = ClientMath.horizontalDistance(hiOutX - loOutX, hiOutZ - loOutZ);
+        double lookSpread = ClientMath.horizontalDistance(hiOutX - pvOutX, hiOutZ - pvOutZ);
         stepRadius = countSpread + lookSpread;
 
         double minFloor = Math.min(loFloor, Math.min(hiFloor, pvFloor));

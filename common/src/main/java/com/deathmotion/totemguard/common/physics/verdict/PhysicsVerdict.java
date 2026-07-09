@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.physics.verdict;
 
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
+import com.deathmotion.totemguard.common.util.ClientMath;
 
 public record PhysicsVerdict(
         TickOutcome outcome,
@@ -52,7 +53,7 @@ public record PhysicsVerdict(
     }
 
     public double observedSpeed() {
-        return Math.hypot(observedX, observedZ);
+        return ClientMath.horizontalDistance(observedX, observedZ);
     }
 
     public PhysicsVerdict withOutcome(MitigationOutcome mitigation, FallFinding fall, boolean improperSprint) {

@@ -45,6 +45,7 @@ public final class StateFacts {
     public static final long SUFFOCATING = 1L << 11;
     public static final long NETHER_PORTAL = 1L << 12;
     public static final long WALL_TRUSTED = 1L << 13;
+    public static final long BUBBLE_DRAG = 1L << 14;
     public static final long ANY_FLUID = WATER | LAVA;
 
     private static final int SLIP_SHIFT = 16;
@@ -135,6 +136,10 @@ public final class StateFacts {
         return (int) ((facts & FLUID_AMOUNT_MASK) >> FLUID_AMOUNT_SHIFT);
     }
 
+    public static double fluidHeight(long facts) {
+        return fluidAmount(facts) / 9.0;
+    }
+
     private long classify(int stateId) {
         WrappedBlockState state = WrappedBlockState.getByGlobalId(stateVersion, stateId, false);
         StateType type = state.getType();
@@ -154,7 +159,10 @@ public final class StateFacts {
                 facts |= (8L << FLUID_AMOUNT_SHIFT) | FLUID_SOURCE;
             }
         }
-        if (BlockTraits.isBubbleColumn(type)) facts |= BUBBLE_COLUMN;
+        if (BlockTraits.isBubbleColumn(type)) {
+            facts |= BUBBLE_COLUMN;
+            if (state.isDrag()) facts |= BUBBLE_DRAG;
+        }
         if (BlockTraits.isClimbable(type)) facts |= CLIMBABLE;
         if (BlockTraits.isStuck(type)) {
             facts |= STUCK;

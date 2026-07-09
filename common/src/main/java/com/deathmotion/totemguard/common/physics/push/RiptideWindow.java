@@ -45,11 +45,13 @@ public final class RiptideWindow {
             } else {
                 bounds.expandRadius(strength);
             }
-            double vertical = input.lookY() * strength;
-            if (vertical > 0.0) {
-                bounds.ceiling(bounds.ceiling() + vertical);
-            } else if (vertical < 0.0) {
-                bounds.lowerFloor(bounds.floor() + vertical);
+            if (!data.isGliding()) {
+                double vertical = input.lookY() * strength;
+                if (vertical > 0.0) {
+                    bounds.ceiling(bounds.ceiling() + vertical);
+                } else if (vertical < 0.0) {
+                    bounds.lowerFloor(bounds.floor() + vertical);
+                }
             }
             if (glide.riptideGrounded()) {
                 bounds.ceiling(bounds.ceiling() + GROUND_HOP);

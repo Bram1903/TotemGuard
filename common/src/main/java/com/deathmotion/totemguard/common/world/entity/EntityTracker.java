@@ -24,8 +24,10 @@ import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Accessors(fluent = true)
@@ -40,9 +42,12 @@ public final class EntityTracker {
     // Identity follows packet SEND order, positions follow acks: a CAMERA or METADATA sent right
     // after a SPAWN is valid before either is acked.
     private final Map<Integer, EntityType> announced = new HashMap<>();
+    private final List<TrackedEntity> settling = new ArrayList<>();
 
     @Getter
     private int standableCount;
+    @Getter
+    private int pushableCount;
 
     public Collection<TrackedEntity> tracked() {
         return entities.values();
@@ -64,13 +69,20 @@ public final class EntityTracker {
         TrackedEntity entity = new TrackedEntity(type);
         entity.snapTo(x, y, z);
         TrackedEntity previous = entities.put(entityId, entity);
-        if (previous != null && previous.standable()) standableCount--;
+        if (previous != null) {
+            if (previous.standable()) standableCount--;
+            if (previous.pushable()) pushableCount--;
+        }
         if (entity.standable()) standableCount++;
+        if (entity.pushable()) pushableCount++;
     }
 
     public void destroy(int entityId) {
         TrackedEntity removed = entities.remove(entityId);
-        if (removed != null && removed.standable()) standableCount--;
+        if (removed != null) {
+            if (removed.standable()) standableCount--;
+            if (removed.pushable()) pushableCount--;
+        }
     }
 
     public void place(int entityId, double x, double y, double z) {
@@ -83,6 +95,7 @@ public final class EntityTracker {
             entity.snapTo(x, y, z);
         } else {
             entity.interpolateTo(x, y, z);
+            enqueueSettling(entity);
         }
     }
 
@@ -90,6 +103,7 @@ public final class EntityTracker {
         TrackedEntity entity = entities.get(entityId);
         if (entity == null || !entity.positioned()) return;
         entity.addDelta(dx, dy, dz);
+        enqueueSettling(entity);
     }
 
     public void setScale(int entityId, double scale) {
@@ -105,15 +119,29 @@ public final class EntityTracker {
     }
 
     public void advance() {
-        for (TrackedEntity entity : entities.values()) {
-            if (entity.positioned()) entity.advance();
+        for (int i = settling.size() - 1; i >= 0; i--) {
+            TrackedEntity entity = settling.get(i);
+            if (entity.advance()) {
+                entity.queuedForAdvance(false);
+                int last = settling.size() - 1;
+                settling.set(i, settling.get(last));
+                settling.remove(last);
+            }
         }
     }
 
     public void clear() {
         entities.clear();
         announced.clear();
+        settling.clear();
         standableCount = 0;
+        pushableCount = 0;
+    }
+
+    private void enqueueSettling(TrackedEntity entity) {
+        if (entity.queuedForAdvance()) return;
+        entity.queuedForAdvance(true);
+        settling.add(entity);
     }
 
     public boolean isTracked(int entityId) {
@@ -176,6 +204,7 @@ public final class EntityTracker {
     public int countPushableNear(double pMinX, double pMinY, double pMinZ,
                                  double pMaxX, double pMaxY, double pMaxZ,
                                  double playerHalfWidth, double playerHeight) {
+        if (pushableCount == 0) return 0;
         int count = 0;
         for (TrackedEntity entity : entities.values()) {
             if (!entity.positioned() || !entity.pushable()) continue;
