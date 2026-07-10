@@ -140,6 +140,13 @@ final class SupportScanner {
                         || (gapNorth >= -AxisClip.EPS && gapNorth < WALL_PROBE)) {
                     return true;
                 }
+            } else if (!xOverlap && !zOverlap) {
+                double gapX = Math.max(buffer.minX(i) - maxX, minX - buffer.maxX(i));
+                double gapZ = Math.max(buffer.minZ(i) - maxZ, minZ - buffer.maxZ(i));
+                if (gapX >= -AxisClip.EPS && gapX < WALL_PROBE
+                        && gapZ >= -AxisClip.EPS && gapZ < WALL_PROBE) {
+                    return true;
+                }
             }
         }
         return false;

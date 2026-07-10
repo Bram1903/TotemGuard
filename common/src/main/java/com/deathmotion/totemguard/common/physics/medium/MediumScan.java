@@ -31,14 +31,15 @@ public final class MediumScan {
     }
 
     public static void sample(BlockReader reader, MediumSample out,
-                              boolean pushedByFluid, boolean lavaFast,
+                              boolean pushedByFluid, boolean lavaFast, boolean modernFluidPush,
                               double minX, double feetY, double minZ,
                               double maxX, double headY, double maxZ,
                               double sweptMinX, double sweptMinY, double sweptMinZ,
                               double sweptMaxX, double sweptMaxY, double sweptMaxZ) {
         out.reset();
         if (pushedByFluid) {
-            FlowSolver.solve(reader, out, lavaFast, minX, feetY, minZ, maxX, headY, maxZ);
+            FlowSolver.solve(reader, out, lavaFast, false, modernFluidPush,
+                    minX, feetY, minZ, maxX, headY, maxZ);
         }
         int sx0 = floor(minX), sx1 = floor(maxX);
         int sy0 = floor(feetY), sy1 = floor(headY);

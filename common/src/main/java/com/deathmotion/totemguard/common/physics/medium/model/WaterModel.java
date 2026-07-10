@@ -33,9 +33,11 @@ public final class WaterModel extends FluidModel {
     private static final double STEER_RATE_STEEP = 0.085;
     private static final double STEER_RATE = 0.06;
     private static final double STEER_STEEP_LOOK = -0.2;
+    private static final double CLIMB_RISE = 0.2 * VERTICAL_DRAG;
 
     private int entryTicks;
     private boolean steerWater;
+    private boolean climbable;
 
     @Override
     public MediumKind kind() {
@@ -51,8 +53,11 @@ public final class WaterModel extends FluidModel {
     protected void ascentOptions(PlayerInput input, ContactReport contact, AreaBounds bounds) {
         if (entryTicks > 0) {
             bounds.raiseCeiling(ENTRY_ASCENT);
-        } else if (contact.wallNear()) {
+        } else if (wallEvidence(input, contact)) {
             bounds.raiseCeiling(WALL_BUMP_ASCENT);
+        }
+        if (climbable) {
+            bounds.raiseCeiling(CLIMB_RISE);
         }
         applySwimSteer(input, bounds);
     }
@@ -73,6 +78,7 @@ public final class WaterModel extends FluidModel {
 
     public void observe(MediumSample sample) {
         steerWater = sample.swimSteerWater();
+        climbable = sample.climbable();
     }
 
     @Override
@@ -90,5 +96,6 @@ public final class WaterModel extends FluidModel {
 
     public void reset() {
         entryTicks = 0;
+        climbable = false;
     }
 }

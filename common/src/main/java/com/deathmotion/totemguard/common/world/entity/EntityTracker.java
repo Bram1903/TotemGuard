@@ -118,6 +118,30 @@ public final class EntityTracker {
         entity.slimeSize(size);
     }
 
+    public void setMovementSpeed(int entityId, double value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.movementSpeed(value);
+    }
+
+    public void setJumpStrength(int entityId, double value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.jumpStrength(value);
+    }
+
+    public void setGravity(int entityId, double value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.gravity(value);
+    }
+
+    public void setFlyingSpeed(int entityId, double value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.flyingSpeed(value);
+    }
+
     public void advance() {
         for (int i = settling.size() - 1; i >= 0; i--) {
             TrackedEntity entity = settling.get(i);

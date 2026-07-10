@@ -47,8 +47,23 @@ public class OutboundVelocityProcessor extends ProcessorOutbound {
 
         if (type == PacketType.Play.Server.ENTITY_VELOCITY) {
             WrapperPlayServerEntityVelocity packet = new WrapperPlayServerEntityVelocity(event);
-            if (packet.getEntityId() != player.getUser().getEntityId()) return;
-            pushOnClientAck(event, packet.getVelocity());
+            int entityId = packet.getEntityId();
+            if (entityId == player.getUser().getEntityId()) {
+                pushOnClientAck(event, packet.getVelocity());
+                return;
+            }
+            if (entityId == player.getData().getVehicleId()) {
+                Vector3d velocity = packet.getVelocity();
+                if (velocity == null) return;
+                final double vx = velocity.getX();
+                final double vy = velocity.getY();
+                final double vz = velocity.getZ();
+                latencyHandler.compensate(event, () -> {
+                    if (entityId == player.getData().getVehicleId()) {
+                        player.getData().getVehicleData().addImpulse(vx, vy, vz);
+                    }
+                });
+            }
         } else if (type == PacketType.Play.Server.EXPLOSION) {
             WrapperPlayServerExplosion packet = new WrapperPlayServerExplosion(event);
             pushOnClientAck(event, packet.getKnockback());

@@ -129,6 +129,7 @@ public final class InputResolver {
 
         boolean fluidExitHop = ground.wasFluid() && !fluidNow && observedY > RISE_EPS
                 && lastWallContact;
+        boolean priorWallContact = lastWallContact;
         lastWallContact = contact.collidedX() || contact.collidedZ() || contact.wallNear();
 
         double sprintJumpResidual = 0.0;
@@ -146,7 +147,7 @@ public final class InputResolver {
         boolean modernTrig = modernTrig();
 
         return new PlayerInput(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
-                jumpPossible, ceilingClampedJump, fluidExitHop,
+                jumpPossible, ceilingClampedJump, fluidExitHop, priorWallContact,
                 effectiveSpeed(sprinting, sneaking, diagonal),
                 attr.jumpStrength() * ground.startJumpMax(), attr.gravity(), attr.stepHeight(),
                 jumpBoostAmplifier,

@@ -52,8 +52,12 @@ public abstract class FluidModel implements MediumModel {
         bounds.enforceDescentFloor(true);
     }
 
+    protected static boolean wallEvidence(PlayerInput input, ContactReport contact) {
+        return contact.wallNear() || input.priorWallContact();
+    }
+
     protected void ascentOptions(PlayerInput input, ContactReport contact, AreaBounds bounds) {
-        if (contact.wallNear()) bounds.raiseCeiling(WALL_BUMP_ASCENT);
+        if (wallEvidence(input, contact)) bounds.raiseCeiling(WALL_BUMP_ASCENT);
     }
 
     @Override

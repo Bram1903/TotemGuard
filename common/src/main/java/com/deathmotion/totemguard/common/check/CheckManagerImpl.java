@@ -28,7 +28,6 @@ import com.deathmotion.totemguard.common.check.impl.inventory.*;
 import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.physics.Physics;
-import com.deathmotion.totemguard.common.check.impl.physics.VehiclePhysics;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.impl.tick.TickA;
 import com.deathmotion.totemguard.common.check.impl.tick.TickB;
@@ -98,7 +97,6 @@ public class CheckManagerImpl {
                 .put(ProtocolF.class, new ProtocolF(player))
                 .put(ProtocolG.class, new ProtocolG(player))
                 .put(Physics.class, new Physics(player))
-                .put(VehiclePhysics.class, new VehiclePhysics(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))

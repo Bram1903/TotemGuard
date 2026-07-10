@@ -127,14 +127,6 @@ Physics:
   punishment-commands:
     - "%default_punishment%"
 
-VehiclePhysics:
-  enabled: true
-  punishable: false
-  max-violations: 10
-
-  punishment-commands:
-    - "%default_punishment%"
-
 TickA:
   enabled: true
   punishable: true

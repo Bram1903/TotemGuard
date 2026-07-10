@@ -76,8 +76,8 @@ public final class ColliderCollector {
         collectMovingPistons(buffer, pistons, minX, minY, minZ, maxX, maxY, maxZ);
     }
 
-    private static void collectShape(ColliderBuffer buffer, BlockReader reader, ShapeQuery query,
-                                     int clientId, long facts, int x, int y, int z) {
+    public static void collectShape(ColliderBuffer buffer, BlockReader reader, ShapeQuery query,
+                                    int clientId, long facts, int x, int y, int z) {
         if ((facts & (StateFacts.FULL_CUBE | StateFacts.SUPPORT_APPROXIMATE)) == StateFacts.FULL_CUBE) {
             buffer.accept(x, y, z, x + 1.0, y + 1.0, z + 1.0);
             return;

@@ -18,9 +18,12 @@
 
 package com.deathmotion.totemguard.common.physics.vehicle;
 
+import com.deathmotion.totemguard.common.physics.collision.ColliderBuffer;
+import com.deathmotion.totemguard.common.physics.collision.ColliderCollector;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.world.block.StateFacts;
-import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
+import com.deathmotion.totemguard.common.world.shape.ShapeQuery;
+import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -29,6 +32,7 @@ public final class BoatModel {
 
     public static final double BOAT_WIDTH = 1.375;
     public static final double BOAT_HEIGHT = 0.5625;
+    public static final double SNAP_RISE = 0.101;
 
     private static final double GRAVITY = 0.04;
     private static final double UNDER_FLOWING_GRAVITY = 7.0E-4;
@@ -40,34 +44,40 @@ public final class BoatModel {
     private static final double FRICTION_UNDER_WATER = 0.45;
     private static final double FRICTION_AIR = 0.9;
 
-    private static final double ACCEL_FORWARD = 0.04;
-    private static final double ACCEL_BACKWARD = 0.005;
-    private static final double ACCEL_PADDLE = 0.005;
+    public static final double CONTROL_MIN = -0.005;
+    public static final double CONTROL_MAX = 0.04;
+
+    private static final double FRICTION_SLAB = 0.001;
+    private static final double SURFACE_PROBE = 0.001;
 
     public enum Status {IN_WATER, UNDER_WATER, UNDER_FLOWING_WATER, ON_LAND, IN_AIR}
+
+    private final ColliderBuffer frictionScratch = new ColliderBuffer();
 
     @Getter
     @Accessors(fluent = true)
     private Status status = Status.IN_AIR;
+    @Getter
+    @Accessors(fluent = true)
+    private Status oldStatus = Status.IN_AIR;
+    private boolean known;
+    private boolean oldStatusKnown;
     private double waterLevel;
     private double landFriction;
 
-    public void resolve(BlockReader reader, double minX, double minY, double minZ,
+    public void resolve(BlockReader reader, ShapeQuery query,
+                        double minX, double minY, double minZ,
                         double maxX, double maxY, double maxZ) {
-        if (isUnderwater(reader, minX, minY, minZ, maxX, maxY, maxZ)) {
-            return;
-        }
-        if (checkInWater(reader, minX, minY, minZ, maxX, maxZ)) {
-            status = Status.IN_WATER;
-            return;
-        }
-        double friction = groundFriction(reader, minX, minY, minZ, maxX, maxZ);
-        if (friction > 0.0) {
-            landFriction = friction;
-            status = Status.ON_LAND;
-            return;
-        }
-        status = Status.IN_AIR;
+        Status previous = status;
+        boolean hadStatus = known;
+        status = resolveStatus(reader, query, minX, minY, minZ, maxX, maxY, maxZ);
+        oldStatus = previous;
+        oldStatusKnown = hadStatus;
+        known = true;
+    }
+
+    public boolean snapEligible() {
+        return watery(status) && (!oldStatusKnown || oldStatus == Status.IN_AIR);
     }
 
     public double advanceVertical(double vy, double boatY) {
@@ -87,89 +97,174 @@ public final class BoatModel {
         return advanced;
     }
 
-    public double horizontalFriction(boolean playerControlled) {
+    public double horizontalFriction() {
         return switch (status) {
             case UNDER_WATER -> FRICTION_UNDER_WATER;
-            case ON_LAND -> playerControlled ? landFriction / 2.0 : landFriction;
+            case ON_LAND -> landFriction;
             default -> FRICTION_AIR;
         };
     }
 
-    public double controlAccel() {
-        return ACCEL_FORWARD + ACCEL_PADDLE;
+    public double waterLevelAbove(BlockReader reader,
+                                  double minX, double minZ, double maxX, double maxY, double maxZ,
+                                  double lastDy) {
+        int x0 = floor(minX), x1 = ceil(maxX);
+        int y0 = floor(maxY), y1 = ceil(maxY - lastDy);
+        int z0 = floor(minZ), z1 = ceil(maxZ);
+        layers:
+        for (int y = y0; y < y1; y++) {
+            float level = 0.0F;
+            for (int x = x0; x < x1; x++) {
+                for (int z = z0; z < z1; z++) {
+                    long facts = reader.facts(x, y, z);
+                    if (StateFacts.is(facts, StateFacts.WATER)) {
+                        level = Math.max(level, fluidHeight(reader, facts, x, y, z));
+                    }
+                    if (level >= 1.0F) continue layers;
+                }
+            }
+            return y + level;
+        }
+        return y1 + 1;
     }
 
     public void reset() {
         status = Status.IN_AIR;
+        oldStatus = Status.IN_AIR;
+        known = false;
+        oldStatusKnown = false;
         waterLevel = 0.0;
         landFriction = 0.0;
     }
 
-    private boolean isUnderwater(BlockReader reader, double minX, double minY, double minZ,
+    private static boolean watery(Status status) {
+        return status == Status.IN_WATER || status == Status.UNDER_WATER
+                || status == Status.UNDER_FLOWING_WATER;
+    }
+
+    private Status resolveStatus(BlockReader reader, ShapeQuery query,
+                                 double minX, double minY, double minZ,
                                  double maxX, double maxY, double maxZ) {
-        double probeY = maxY + 0.001;
-        int y = floor(probeY);
-        boolean flowing = false;
-        boolean anyWater = false;
-        for (int x = floor(minX); x <= floor(maxX); x++) {
-            for (int z = floor(minZ); z <= floor(maxZ); z++) {
-                long facts = reader.facts(x, y, z);
-                if (!StateFacts.is(facts, StateFacts.WATER)) continue;
-                double height = StateFacts.is(reader.facts(x, y + 1, z), StateFacts.WATER)
-                        ? 1.0
-                        : StateFacts.fluidHeight(facts);
-                if (probeY < y + height) {
-                    anyWater = true;
-                    if (!StateFacts.is(facts, StateFacts.FLUID_SOURCE)) flowing = true;
+        Status underwater = underwaterStatus(reader, minX, minZ, maxX, maxY, maxZ);
+        if (underwater != null) {
+            waterLevel = maxY;
+            return underwater;
+        }
+        if (checkInWater(reader, minX, minY, minZ, maxX, maxZ)) {
+            return Status.IN_WATER;
+        }
+        double friction = groundFriction(reader, query, minX, minY, minZ, maxX, maxZ);
+        if (friction > 0.0) {
+            landFriction = friction;
+            return Status.ON_LAND;
+        }
+        return Status.IN_AIR;
+    }
+
+    private Status underwaterStatus(BlockReader reader,
+                                    double minX, double minZ, double maxX, double maxY, double maxZ) {
+        double probeY = maxY + SURFACE_PROBE;
+        int x0 = floor(minX), x1 = ceil(maxX);
+        int y0 = floor(maxY), y1 = ceil(probeY);
+        int z0 = floor(minZ), z1 = ceil(maxZ);
+        boolean under = false;
+        for (int x = x0; x < x1; x++) {
+            for (int y = y0; y < y1; y++) {
+                for (int z = z0; z < z1; z++) {
+                    long facts = reader.facts(x, y, z);
+                    if (!StateFacts.is(facts, StateFacts.WATER)) continue;
+                    if (probeY < y + fluidHeight(reader, facts, x, y, z)) {
+                        if (!StateFacts.is(facts, StateFacts.FLUID_SOURCE)) {
+                            return Status.UNDER_FLOWING_WATER;
+                        }
+                        under = true;
+                    }
                 }
             }
         }
-        if (!anyWater) return false;
-        waterLevel = maxY;
-        status = flowing ? Status.UNDER_FLOWING_WATER : Status.UNDER_WATER;
-        return true;
+        return under ? Status.UNDER_WATER : null;
     }
 
-    private boolean checkInWater(BlockReader reader, double minX, double minY, double minZ,
+    private boolean checkInWater(BlockReader reader,
+                                 double minX, double minY, double minZ,
                                  double maxX, double maxZ) {
-        int y = floor(minY);
-        double level = Double.NEGATIVE_INFINITY;
-        for (int x = floor(minX); x <= floor(maxX); x++) {
-            for (int z = floor(minZ); z <= floor(maxZ); z++) {
-                long facts = reader.facts(x, y, z);
-                if (!StateFacts.is(facts, StateFacts.WATER)) continue;
-                double height = StateFacts.is(reader.facts(x, y + 1, z), StateFacts.WATER)
-                        ? 1.0
-                        : StateFacts.fluidHeight(facts);
-                level = Math.max(level, y + height);
+        int x0 = floor(minX), x1 = ceil(maxX);
+        int y0 = floor(minY), y1 = ceil(minY + SURFACE_PROBE);
+        int z0 = floor(minZ), z1 = ceil(maxZ);
+        boolean in = false;
+        waterLevel = -Double.MAX_VALUE;
+        for (int x = x0; x < x1; x++) {
+            for (int y = y0; y < y1; y++) {
+                for (int z = z0; z < z1; z++) {
+                    long facts = reader.facts(x, y, z);
+                    if (!StateFacts.is(facts, StateFacts.WATER)) continue;
+                    float surface = y + fluidHeight(reader, facts, x, y, z);
+                    waterLevel = Math.max(surface, waterLevel);
+                    in |= minY < surface;
+                }
             }
         }
-        if (minY < level) {
-            waterLevel = level;
-            return true;
+        return in;
+    }
+
+    private double groundFriction(BlockReader reader, ShapeQuery query,
+                                  double minX, double minY, double minZ,
+                                  double maxX, double maxZ) {
+        double slabMinY = minY - FRICTION_SLAB;
+        int x0 = floor(minX), x1 = ceil(maxX);
+        int y0 = floor(slabMinY), y1 = ceil(minY);
+        int z0 = floor(minZ), z1 = ceil(maxZ);
+        float sum = 0.0F;
+        int count = 0;
+        for (int x = x0; x < x1; x++) {
+            for (int z = z0; z < z1; z++) {
+                for (int y = y0; y < y1; y++) {
+                    int clientId = reader.stateId(x, y, z);
+                    long facts = reader.factsForClientId(clientId);
+                    if (!StateFacts.is(facts, StateFacts.HAS_SHAPE)) continue;
+                    WrappedBlockState state = reader.stateForClientId(clientId);
+                    if (state.getType() == StateTypes.LILY_PAD) continue;
+                    if (!shapeIntersectsSlab(reader, query, clientId, facts, x, y, z,
+                            minX, slabMinY, minZ, maxX, minY, maxZ)) {
+                        continue;
+                    }
+                    sum += (float) StateFacts.slipperiness(facts);
+                    count++;
+                }
+            }
+        }
+        return count == 0 ? 0.0 : sum / (float) count;
+    }
+
+    private boolean shapeIntersectsSlab(BlockReader reader, ShapeQuery query,
+                                        int clientId, long facts, int x, int y, int z,
+                                        double minX, double minY, double minZ,
+                                        double maxX, double maxY, double maxZ) {
+        frictionScratch.reset();
+        frictionScratch.tag(facts | ColliderBuffer.KIND_BLOCK);
+        ColliderCollector.collectShape(frictionScratch, reader, query, clientId, facts, x, y, z);
+        int boxes = frictionScratch.count();
+        for (int i = 0; i < boxes; i++) {
+            if (frictionScratch.minX(i) < maxX && frictionScratch.maxX(i) > minX
+                    && frictionScratch.minY(i) < maxY && frictionScratch.maxY(i) > minY
+                    && frictionScratch.minZ(i) < maxZ && frictionScratch.maxZ(i) > minZ) {
+                return true;
+            }
         }
         return false;
     }
 
-    private double groundFriction(BlockReader reader, double minX, double minY, double minZ,
-                                  double maxX, double maxZ) {
-        double sum = 0.0;
-        int count = 0;
-        int y = floor(minY - 0.001);
-        for (int x = floor(minX); x <= floor(maxX); x++) {
-            for (int z = floor(minZ); z <= floor(maxZ); z++) {
-                long facts = reader.facts(x, y, z);
-                if (!StateFacts.is(facts, StateFacts.HAS_SHAPE)) continue;
-                StateType type = reader.state(x, y, z).getType();
-                if (type == StateTypes.LILY_PAD) continue;
-                sum += StateFacts.slipperiness(facts);
-                count++;
-            }
-        }
-        return count == 0 ? 0.0 : sum / count;
+    private static float fluidHeight(BlockReader reader, long facts, int x, int y, int z) {
+        return StateFacts.is(reader.facts(x, y + 1, z), StateFacts.WATER)
+                ? 1.0F
+                : StateFacts.fluidAmount(facts) / 9.0F;
     }
 
     private static int floor(double value) {
         return (int) Math.floor(value);
+    }
+
+    private static int ceil(double value) {
+        return (int) Math.ceil(value);
     }
 }

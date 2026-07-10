@@ -478,6 +478,7 @@ public final class PhysicsEngine {
         MediumScan.sample(reader, sample,
                 !data.isFlying(), world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
+                player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_1),
                 previous.getX() - half, previous.getY(), previous.getZ() - half,
                 previous.getX() + half, previous.getY() + height, previous.getZ() + half,
                 Math.min(previous.getX(), current.getX()) - half, Math.min(previous.getY(), current.getY()),

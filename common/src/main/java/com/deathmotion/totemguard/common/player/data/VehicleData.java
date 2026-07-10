@@ -27,10 +27,20 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = false)
 public final class VehicleData {
 
+    private static final int IMPULSE_WINDOW = 3;
+
     private boolean hasPosition;
     private double prevX, prevY, prevZ;
     private double curX, curY, curZ;
     private float yaw, pitch;
+
+    private double impulseX, impulseY, impulseZ;
+    private int impulseTicks;
+
+    private static final int JUMP_CLAIM_GROUNDED_MOVES = 3;
+
+    private double jumpClaimScale;
+    private int jumpClaimBudget;
 
     private boolean seedFromMount = true;
 
@@ -69,8 +79,47 @@ public final class VehicleData {
         seedFromMount = true;
     }
 
+    public void addImpulse(double x, double y, double z) {
+        impulseX = x;
+        impulseY = y;
+        impulseZ = z;
+        impulseTicks = IMPULSE_WINDOW;
+    }
+
+    public boolean impulseActive() {
+        return impulseTicks > 0;
+    }
+
+    public void tickImpulse() {
+        if (impulseTicks > 0) impulseTicks--;
+    }
+
+    public void consumeImpulse() {
+        impulseTicks = 0;
+    }
+
+    public void onJumpClaim(int power) {
+        int clamped = Math.max(0, Math.min(100, power));
+        jumpClaimScale = clamped >= 90 ? 1.0 : 0.4F + 0.4F * clamped / 90.0F;
+        jumpClaimBudget = JUMP_CLAIM_GROUNDED_MOVES;
+    }
+
+    public boolean hasJumpClaim() {
+        return jumpClaimBudget > 0;
+    }
+
+    public double jumpClaimScale() {
+        return jumpClaimScale;
+    }
+
+    public void tickJumpClaimGrounded() {
+        if (jumpClaimBudget > 0) jumpClaimBudget--;
+    }
+
     public void reset() {
         hasPosition = false;
         seedFromMount = true;
+        impulseTicks = 0;
+        jumpClaimBudget = 0;
     }
 }

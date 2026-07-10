@@ -44,6 +44,28 @@ public final class EntityRoles {
         return EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT);
     }
 
+    public static boolean horseFamily(EntityType type) {
+        return EntityTypes.isTypeInstanceOf(type, EntityTypes.ABSTRACT_HORSE) || camel(type);
+    }
+
+    public static boolean camel(EntityType type) {
+        return type == EntityTypes.CAMEL || type == EntityTypes.CAMEL_HUSK;
+    }
+
+    public static boolean steerableMob(EntityType type) {
+        return type == EntityTypes.PIG || type == EntityTypes.STRIDER;
+    }
+
+    public static boolean happyGhast(EntityType type) {
+        return type == EntityTypes.HAPPY_GHAST;
+    }
+
+    public static boolean floatsWhileRidden(EntityType type) {
+        return type == EntityTypes.HORSE || type == EntityTypes.ZOMBIE_HORSE
+                || type == EntityTypes.MULE || type == EntityTypes.DONKEY
+                || camel(type);
+    }
+
     public static boolean clientAuthoritativeVehicle(EntityType type) {
         if (type == null) return false;
         return !EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT);

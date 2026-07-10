@@ -38,7 +38,8 @@ public class InboundVehicleProcessor extends ProcessorInbound {
 
         WrapperPlayClientVehicleMove packet = new WrapperPlayClientVehicleMove(event);
         Vector3d pos = packet.getPosition();
-        player.getVehicleEngine().onVehicleMove(
+        boolean cancel = player.getVehicleEngine().onVehicleMove(
                 pos.getX(), pos.getY(), pos.getZ(), packet.getYaw(), packet.getPitch());
+        if (cancel) event.setCancelled(true);
     }
 }

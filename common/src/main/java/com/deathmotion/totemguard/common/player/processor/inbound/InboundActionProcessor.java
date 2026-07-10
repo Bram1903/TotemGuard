@@ -103,7 +103,11 @@ public class InboundActionProcessor extends ProcessorInbound {
                     tickData.setSprinting(true);
                 }
                 case LEAVE_BED -> tickData.setLeavingBed(true);
-                case START_JUMPING_WITH_HORSE, STOP_JUMPING_WITH_HORSE -> tickData.setJumpingWithMount(true);
+                case START_JUMPING_WITH_HORSE -> {
+                    tickData.setJumpingWithMount(true);
+                    data.getVehicleData().onJumpClaim(packet.getJumpBoost());
+                }
+                case STOP_JUMPING_WITH_HORSE -> tickData.setJumpingWithMount(true);
                 case START_FLYING_WITH_ELYTRA -> {
                     tickData.setStartingToGlide(true);
                     if (glideClaimLegal()) data.getGlideData().armClaim();

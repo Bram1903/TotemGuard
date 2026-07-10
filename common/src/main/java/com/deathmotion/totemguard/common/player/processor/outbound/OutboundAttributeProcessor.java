@@ -86,17 +86,35 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
                 } else {
                     latencyHandler.compensateLazy(event, () -> entities.setScale(entityId, value));
                 }
-            } else if (self && property.getAttribute() == Attributes.MOVEMENT_SPEED) {
-                double value = movementSpeedWithoutSprint(property);
-                latencyHandler.compensate(event, () -> attributes.setMovementSpeed(value));
-            } else if (self && property.getAttribute() == Attributes.JUMP_STRENGTH) {
+            } else if (property.getAttribute() == Attributes.MOVEMENT_SPEED) {
+                if (self) {
+                    double value = movementSpeedWithoutSprint(property);
+                    latencyHandler.compensate(event, () -> attributes.setMovementSpeed(value));
+                } else {
+                    double value = property.calcValue();
+                    latencyHandler.compensateLazy(event, () -> entities.setMovementSpeed(entityId, value));
+                }
+            } else if (property.getAttribute() == Attributes.JUMP_STRENGTH
+                    || property.getAttribute() == Attributes.HORSE_JUMP_STRENGTH) {
+                if (self) {
+                    if (!clientObserves(ClientVersion.V_1_20_5)) continue;
+                    double value = property.calcValue();
+                    latencyHandler.compensate(event, () -> attributes.setJumpStrength(value));
+                } else {
+                    double value = property.calcValue();
+                    latencyHandler.compensateLazy(event, () -> entities.setJumpStrength(entityId, value));
+                }
+            } else if (property.getAttribute() == Attributes.GRAVITY) {
                 if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();
-                latencyHandler.compensate(event, () -> attributes.setJumpStrength(value));
-            } else if (self && property.getAttribute() == Attributes.GRAVITY) {
-                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
+                if (self) {
+                    latencyHandler.compensate(event, () -> attributes.setGravity(value));
+                } else {
+                    latencyHandler.compensateLazy(event, () -> entities.setGravity(entityId, value));
+                }
+            } else if (!self && property.getAttribute() == Attributes.FLYING_SPEED) {
                 double value = property.calcValue();
-                latencyHandler.compensate(event, () -> attributes.setGravity(value));
+                latencyHandler.compensateLazy(event, () -> entities.setFlyingSpeed(entityId, value));
             } else if (self && property.getAttribute() == Attributes.STEP_HEIGHT) {
                 if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();

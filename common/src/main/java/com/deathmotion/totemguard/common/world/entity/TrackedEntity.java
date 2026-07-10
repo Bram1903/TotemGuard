@@ -38,6 +38,11 @@ public final class TrackedEntity {
     private int slimeSize = 1;
     private boolean positioned;
 
+    private double movementSpeed = Double.NaN;
+    private double jumpStrength = Double.NaN;
+    private double gravity = Double.NaN;
+    private double flyingSpeed = Double.NaN;
+
     private double targetX;
     private double targetY;
     private double targetZ;
@@ -102,6 +107,38 @@ public final class TrackedEntity {
 
     void scale(double scale) {
         this.scale = Math.max(0.0625, Math.min(16.0, scale));
+    }
+
+    void movementSpeed(double value) {
+        this.movementSpeed = value;
+    }
+
+    void jumpStrength(double value) {
+        this.jumpStrength = value;
+    }
+
+    void gravity(double value) {
+        this.gravity = value;
+    }
+
+    void flyingSpeed(double value) {
+        this.flyingSpeed = value;
+    }
+
+    public double movementSpeed() {
+        return movementSpeed;
+    }
+
+    public double jumpStrength() {
+        return jumpStrength;
+    }
+
+    public double gravity() {
+        return gravity;
+    }
+
+    public double flyingSpeed() {
+        return flyingSpeed;
     }
 
     void slimeSize(int size) {

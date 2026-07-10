@@ -29,6 +29,7 @@ public record PlayerInput(
         boolean jumpPossible,
         boolean ceilingClampedJump,
         boolean fluidExitHop,
+        boolean priorWallContact,
         double moveSpeed,
         double jumpStrength,
         double gravity,

@@ -38,6 +38,7 @@ public final class FlowSolver {
     }
 
     public static void solve(BlockReader reader, MediumSample out, boolean lavaFast,
+                             boolean normalizePush, boolean modernDeadZone,
                              double minX, double minY, double minZ,
                              double maxX, double maxY, double maxZ) {
         double boxMinX = minX + BOX_DEFLATE;
@@ -154,15 +155,19 @@ public final class FlowSolver {
         }
 
         double pushX = 0.0, pushY = 0.0, pushZ = 0.0;
-        if (waterCount > 0 && lengthSquared(waterX, waterY, waterZ) >= 1.0E-5F) {
-            double inv = WATER_SCALE / waterCount;
+        if (waterCount > 0 && pushGate(waterX, waterY, waterZ, modernDeadZone)) {
+            double inv = normalizePush
+                    ? WATER_SCALE / Math.sqrt(lengthSquared(waterX, waterY, waterZ))
+                    : WATER_SCALE / waterCount;
             pushX += waterX * inv;
             pushY += waterY * inv;
             pushZ += waterZ * inv;
         }
-        if (lavaCount > 0 && lengthSquared(lavaX, lavaY, lavaZ) >= 1.0E-5F) {
+        if (lavaCount > 0 && pushGate(lavaX, lavaY, lavaZ, modernDeadZone)) {
             double scale = lavaFast ? LAVA_SCALE_ULTRAWARM : LAVA_SCALE;
-            double inv = scale / lavaCount;
+            double inv = normalizePush
+                    ? scale / Math.sqrt(lengthSquared(lavaX, lavaY, lavaZ))
+                    : scale / lavaCount;
             pushX += lavaX * inv;
             pushY += lavaY * inv;
             pushZ += lavaZ * inv;
@@ -170,6 +175,11 @@ public final class FlowSolver {
         out.pushX(pushX);
         out.pushY(pushY);
         out.pushZ(pushZ);
+    }
+
+    private static boolean pushGate(double x, double y, double z, boolean modernDeadZone) {
+        double lengthSq = lengthSquared(x, y, z);
+        return modernDeadZone ? lengthSq >= 1.0E-5F : lengthSq > 0.0;
     }
 
     public static double minKickScale(double pushLength, double centerX, double centerZ) {
