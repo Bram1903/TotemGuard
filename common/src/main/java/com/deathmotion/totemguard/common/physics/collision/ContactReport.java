@@ -97,10 +97,6 @@ public final class ContactReport {
         return Math.min(supportGap, trailingSupportGap);
     }
 
-    public double crossingDepth() {
-        return Math.max(Math.abs(crossX), Math.max(Math.abs(crossY), Math.abs(crossZ)));
-    }
-
     public double horizontalCrossingDepth() {
         return Math.max(Math.abs(crossX), Math.abs(crossZ));
     }

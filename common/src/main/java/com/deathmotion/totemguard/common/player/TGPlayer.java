@@ -39,12 +39,15 @@ import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvide
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.WorldDebugProvider;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.physics.EngineActor;
+import com.deathmotion.totemguard.common.physics.EngineContext;
 import com.deathmotion.totemguard.common.physics.PhysicsEngine;
-import com.deathmotion.totemguard.common.physics.vehicle.VehicleEngine;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
+import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.*;
@@ -72,7 +75,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Getter
-public class TGPlayer implements TGUser {
+public class TGPlayer implements TGUser, EngineActor {
 
     private static final Duration CHECK_SNAPSHOT_TTL = Duration.ofMinutes(5);
     private static final long TRANSACTION_HEARTBEAT_NANOS = 45_000_000L;
@@ -89,7 +92,6 @@ public class TGPlayer implements TGUser {
     private final WorldMirror worldMirror;
     private final Data data;
     private final PhysicsEngine physics;
-    private final VehicleEngine vehicleEngine;
     private final TotemData totemData;
     private final ClickData clickData;
     private final TickData tickData;
@@ -144,8 +146,9 @@ public class TGPlayer implements TGUser {
         this.inventory = new PacketInventory();
         this.worldMirror = new WorldMirror(getClientVersion());
         this.data = new Data(this);
-        this.physics = new PhysicsEngine(this, data, worldMirror);
-        this.vehicleEngine = new VehicleEngine(this);
+        EngineContext engineContext = new EngineContext(
+                () -> platform.getConfigRepository().configView(), platform.getLogger());
+        this.physics = new PhysicsEngine(this, data, worldMirror, engineContext);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
@@ -374,10 +377,31 @@ public class TGPlayer implements TGUser {
         return Objects.requireNonNullElseGet(user.getClientVersion(), () -> PacketEvents.getAPI().getServerManager().getVersion().toClientVersion());
     }
 
+    @Override
     public boolean supportsEndTick() {
         Boolean cached = supportsEndTickCache;
         if (cached != null) return cached;
         return computeSupportsEndTick();
+    }
+
+    @Override
+    public ClientVersion clientVersion() {
+        return getClientVersion();
+    }
+
+    @Override
+    public PacketLatencyHandler latencyHandler() {
+        return latencyHandler;
+    }
+
+    @Override
+    public ItemStack bootsItem() {
+        return inventory.getItem(InventoryConstants.SLOT_BOOTS);
+    }
+
+    @Override
+    public String name() {
+        return user.getName();
     }
 
     private boolean computeSupportsEndTick() {

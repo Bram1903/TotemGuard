@@ -22,7 +22,7 @@ import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class WaterModel extends FluidModel {
@@ -50,7 +50,7 @@ public final class WaterModel extends FluidModel {
     }
 
     @Override
-    protected void ascentOptions(PlayerInput input, ContactReport contact, AreaBounds bounds) {
+    protected void ascentOptions(ControlEnvelope input, ContactReport contact, AreaBounds bounds) {
         if (entryTicks > 0) {
             bounds.raiseCeiling(ENTRY_ASCENT);
         } else if (wallEvidence(input, contact)) {
@@ -62,7 +62,7 @@ public final class WaterModel extends FluidModel {
         applySwimSteer(input, bounds);
     }
 
-    private void applySwimSteer(PlayerInput input, AreaBounds bounds) {
+    private void applySwimSteer(ControlEnvelope input, AreaBounds bounds) {
         if (!input.swimming()) return;
         double rate = input.lookY() < STEER_STEEP_LOOK ? STEER_RATE_STEEP : STEER_RATE;
         double steeredCeiling = bounds.ceiling() + (input.lookY() - bounds.ceiling()) * rate;
@@ -82,7 +82,7 @@ public final class WaterModel extends FluidModel {
     }
 
     @Override
-    public double frictionMax(PlayerInput input, GroundFacts ground) {
+    public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         return input.fluidFriction();
     }
 

@@ -23,15 +23,13 @@ import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class LandModel implements MediumModel {
 
     public static final double AIR_FRICTION = 0.91;
     private static final double GROUND_ACCEL_NUMERATOR = 0.21600002;
-    // Always the sprint value: a sprint-flag desync must never turn into a false positive.
-    public static final double AIR_ACCEL = 0.026;
     private static final double LEVITATION_PER_LEVEL = 0.05;
     private static final double LEVITATION_RATE = 0.2;
     private static final double VERTICAL_DRAG = 0.98;
@@ -43,17 +41,17 @@ public final class LandModel implements MediumModel {
     }
 
     @Override
-    public double accelBound(PlayerInput input, GroundFacts ground) {
+    public double accelBound(ControlEnvelope input, GroundFacts ground) {
         double groundBound = groundAccel(input, ground);
         return switch (ground.start()) {
             case SUPPORTED -> groundBound;
-            case AMBIGUOUS -> Math.max(groundBound, AIR_ACCEL);
-            case AIRBORNE -> AIR_ACCEL;
+            case AMBIGUOUS -> Math.max(groundBound, input.airAccel());
+            case AIRBORNE -> input.airAccel();
         };
     }
 
     @Override
-    public void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
+    public void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
         if (input.fluidExitHop()) bounds.raiseCeiling(MotionDefaults.FLUID_EXIT_HOP);
         if (ground.groundedStart() || ground.groundedEnd() || contact.startOverlapping()) {
@@ -64,13 +62,13 @@ public final class LandModel implements MediumModel {
     }
 
     @Override
-    public double frictionMax(PlayerInput input, GroundFacts ground) {
+    public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         boolean groundDrag = ground.supportedStart() && !input.ceilingClampedJump();
         return groundDrag ? ground.startSlipMax() * AIR_FRICTION : AIR_FRICTION;
     }
 
     @Override
-    public double advanceVertical(double verticalVelocity, PlayerInput input) {
+    public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
         if (input.levitation()) {
             double target = LEVITATION_PER_LEVEL * (input.levitationAmplifier() + 1);
             return (verticalVelocity + (target - verticalVelocity) * LEVITATION_RATE) * VERTICAL_DRAG;
@@ -81,7 +79,7 @@ public final class LandModel implements MediumModel {
         return (verticalVelocity - gravity) * VERTICAL_DRAG;
     }
 
-    private static double groundAccel(PlayerInput input, GroundFacts ground) {
+    private static double groundAccel(ControlEnvelope input, GroundFacts ground) {
         double slip = ground.startSlipMin();
         return input.moveSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
     }

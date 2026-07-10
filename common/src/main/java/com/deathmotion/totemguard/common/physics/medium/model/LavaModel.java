@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 
 public final class LavaModel extends FluidModel {
 
@@ -38,7 +38,7 @@ public final class LavaModel extends FluidModel {
     }
 
     @Override
-    public double frictionMax(PlayerInput input, GroundFacts ground) {
+    public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         return HORIZONTAL_DRAG;
     }
 }

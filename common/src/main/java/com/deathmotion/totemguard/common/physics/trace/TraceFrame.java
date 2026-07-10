@@ -42,6 +42,8 @@ public final class TraceFrame {
     public static final int FLAG_GLIDE_EXIT = 1 << 20;
 
     public long tick;
+    public byte stream;
+    public byte body;
     public double obsX, obsY, obsZ;
     public double yaw, pitch, prevYaw, prevPitch;
     public double preCarriedX, preCarriedZ, preCarriedFloor, preCarriedCeil;
@@ -63,6 +65,8 @@ public final class TraceFrame {
 
     public void copyFrom(TraceFrame other) {
         tick = other.tick;
+        stream = other.stream;
+        body = other.body;
         obsX = other.obsX;
         obsY = other.obsY;
         obsZ = other.obsZ;

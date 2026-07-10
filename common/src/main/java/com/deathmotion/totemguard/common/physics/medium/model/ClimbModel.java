@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class ClimbModel implements MediumModel {
@@ -39,12 +39,12 @@ public final class ClimbModel implements MediumModel {
     }
 
     @Override
-    public double accelBound(PlayerInput input, GroundFacts ground) {
+    public double accelBound(ControlEnvelope input, GroundFacts ground) {
         return HORIZONTAL_MAX;
     }
 
     @Override
-    public void horizontalOptions(PlayerInput input, GroundFacts ground, AreaBounds bounds) {
+    public void horizontalOptions(ControlEnvelope input, GroundFacts ground, AreaBounds bounds) {
         bounds.centerX(0.0);
         bounds.centerZ(0.0);
         bounds.radius(HORIZONTAL_MAX);
@@ -52,7 +52,7 @@ public final class ClimbModel implements MediumModel {
 
     // Falling past a ladder without climbing it must not flag, so the descent clamp is no floor.
     @Override
-    public void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
+    public void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         double ascent = ASCENT;
         if (input.jumpPossible()) ascent = Math.max(ascent, input.jumpTakeoff());
         if (ground.groundedStart() || ground.groundedEnd()) ascent = Math.max(ascent, input.stepHeight());
@@ -63,12 +63,12 @@ public final class ClimbModel implements MediumModel {
     }
 
     @Override
-    public double frictionMax(PlayerInput input, GroundFacts ground) {
+    public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         return AIR_FRICTION;
     }
 
     @Override
-    public double advanceVertical(double verticalVelocity, PlayerInput input) {
+    public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
         return verticalVelocity;
     }
 }

@@ -16,8 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.input;
+package com.deathmotion.totemguard.common.physics.control;
 
+import com.deathmotion.totemguard.common.physics.EngineActor;
+import com.deathmotion.totemguard.common.physics.VersionGates;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.player.data.Data;
@@ -25,17 +27,15 @@ import com.deathmotion.totemguard.common.player.data.EffectData;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.PlayerAttributeData;
-import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 @Accessors(fluent = true)
-public final class InputResolver {
+public final class PlayerControlResolver {
 
     private static final double RISE_EPS = 0.001;
     private static final double COYOTE_TAKEOFF_EPS = 0.05;
@@ -61,6 +61,8 @@ public final class InputResolver {
     private static final double WATER_EFFICIENCY_FRICTION_TARGET = 0.54600006;
 
     private final Data data;
+    private final EngineActor actor;
+    private final VersionGates gates;
 
     private int sneakStreak;
     private int backwardSprintStreak;
@@ -72,8 +74,10 @@ public final class InputResolver {
     private double lastCeilingClearance = Double.MAX_VALUE;
     private int sprintJumpBoostWindow;
 
-    public InputResolver(Data data) {
+    public PlayerControlResolver(Data data, EngineActor actor, VersionGates gates) {
         this.data = data;
+        this.actor = actor;
+        this.gates = gates;
     }
 
     private static double[] boostResiduals() {
@@ -84,7 +88,7 @@ public final class InputResolver {
         return residuals;
     }
 
-    public PlayerInput build(MovementData movement, ContactReport contact, GroundFacts ground,
+    public PlayerControl build(MovementData movement, ContactReport contact, GroundFacts ground,
                               boolean fluidNow, double observedX, double observedY, double observedZ) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
@@ -146,7 +150,7 @@ public final class InputResolver {
         float prevPitch = movement.getPrevious().getPitch();
         boolean modernTrig = modernTrig();
 
-        return new PlayerInput(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
+        return new PlayerControl(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
                 jumpPossible, ceilingClampedJump, fluidExitHop, priorWallContact,
                 effectiveSpeed(sprinting, sneaking, diagonal),
                 attr.jumpStrength() * ground.startJumpMax(), attr.gravity(), attr.stepHeight(),
@@ -173,13 +177,13 @@ public final class InputResolver {
     }
 
     private double depthStriderEfficiency() {
-        ItemStack boots = data.getPlayer().getInventory().getItem(InventoryConstants.SLOT_BOOTS);
+        ItemStack boots = actor.bootsItem();
         if (boots == null) return 0.0;
         return Math.min(3, boots.getEnchantmentLevel(EnchantmentTypes.DEPTH_STRIDER)) / 3.0;
     }
 
     private boolean observesWaterEfficiency() {
-        return data.getPlayer().getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21);
+        return gates.waterEfficiencyAttribute();
     }
 
     private double fluidFriction(boolean sprinting, boolean groundedStart, EffectData effects) {
@@ -216,7 +220,7 @@ public final class InputResolver {
     }
 
     private boolean modernTrig() {
-        return data.getPlayer().getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_11);
+        return gates.modernTrig();
     }
 
     private double effectiveSpeed(boolean sprinting, boolean sneaking, boolean diagonal) {

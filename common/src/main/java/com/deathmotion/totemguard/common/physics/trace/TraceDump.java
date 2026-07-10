@@ -18,31 +18,35 @@
 
 package com.deathmotion.totemguard.common.physics.trace;
 
-import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
-import com.deathmotion.totemguard.common.player.TGPlayer;
 
 import java.util.Set;
+import java.util.logging.Logger;
 
 public final class TraceDump {
 
     private static final int DUMP_ROWS = 40;
     private static final long RATE_LIMIT_NANOS = 5_000_000_000L;
 
+    private final Logger logger;
     private long lastDumpNanos;
 
-    public boolean dump(TGPlayer player, TickRecorder recorder, String cause, Set<PhysicsDebugContext> contexts) {
+    public TraceDump(Logger logger) {
+        this.logger = logger;
+    }
+
+    public boolean dump(EngineActor actor, TickRecorder recorder, String cause, Set<PhysicsDebugContext> contexts) {
         long now = System.nanoTime();
         if (now - lastDumpNanos < RATE_LIMIT_NANOS) return false;
         lastDumpNanos = now;
 
-        TGPlatform platform = TGPlatform.getInstance();
-        platform.getLogger().info("[PhysicsTrace] " + player.getUser().getName()
+        logger.info("[PhysicsTrace] " + actor.name()
                 + " cause=" + cause
-                + " client=" + player.getClientVersion().getReleaseName()
+                + " client=" + actor.clientVersion().getReleaseName()
                 + " ticks=" + recorder.size());
         recorder.forEachRecent(DUMP_ROWS, frame ->
-                platform.getLogger().info("[PhysicsTrace] " + TraceFormatter.format(frame, contexts)));
+                logger.info("[PhysicsTrace] " + TraceFormatter.format(frame, contexts)));
         return true;
     }
 }

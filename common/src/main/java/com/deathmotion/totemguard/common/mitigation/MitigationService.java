@@ -26,6 +26,8 @@ import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerInput;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSteerVehicle;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 
 public class MitigationService {
@@ -120,6 +122,17 @@ public class MitigationService {
 
         pendingSetback = true;
         pendingTicks = 0;
+        return true;
+    }
+
+    public boolean bootRider(double x, double y, double z, boolean supportsEndTick) {
+        if (!setback(new Vector3d(x, y, z))) return false;
+        if (supportsEndTick) {
+            data.getPlayer().getUser().receivePacket(
+                    new WrapperPlayClientPlayerInput(false, false, false, false, false, true, false));
+        } else {
+            data.getPlayer().getUser().receivePacket(new WrapperPlayClientSteerVehicle(0.0f, 0.0f, (byte) 0x02));
+        }
         return true;
     }
 

@@ -40,10 +40,6 @@ public final class BubbleLift {
         if (ticks > 0) bounds.raiseCeiling(ascentCap);
     }
 
-    public boolean active() {
-        return ticks > 0;
-    }
-
     public void reset() {
         ticks = 0;
         ascentCap = 0.0;

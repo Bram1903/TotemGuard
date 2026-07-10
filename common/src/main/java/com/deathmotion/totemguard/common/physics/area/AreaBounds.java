@@ -33,6 +33,13 @@ public final class AreaBounds {
     private boolean hasAltCenter;
     private double altCenterX;
     private double altCenterZ;
+    private boolean hasSegment;
+    private double segDirX;
+    private double segDirZ;
+    private double segMin;
+    private double segMax;
+    private double segClosestX;
+    private double segClosestZ;
     private double ceiling;
     private double floor;
     private double descentSlack;
@@ -49,6 +56,13 @@ public final class AreaBounds {
         hasAltCenter = false;
         altCenterX = 0.0;
         altCenterZ = 0.0;
+        hasSegment = false;
+        segDirX = 0.0;
+        segDirZ = 0.0;
+        segMin = 0.0;
+        segMax = 0.0;
+        segClosestX = 0.0;
+        segClosestZ = 0.0;
         ceiling = area.ceilVy();
         floor = area.floorVy();
         descentSlack = 0.0;
@@ -78,5 +92,13 @@ public final class AreaBounds {
         hasAltCenter = true;
         altCenterX = x;
         altCenterZ = z;
+    }
+
+    public void controlSegment(double dirX, double dirZ, double min, double max) {
+        hasSegment = true;
+        segDirX = dirX;
+        segDirZ = dirZ;
+        segMin = min;
+        segMax = max;
     }
 }

@@ -18,17 +18,19 @@
 
 package com.deathmotion.totemguard.common.physics.trace;
 
-import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.config.view.ConfigView;
+import com.deathmotion.totemguard.common.physics.EngineContext;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.verdict.MotionStream;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
-import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.physics.EngineActor;
+import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.FireworkData;
 import com.deathmotion.totemguard.common.player.data.GlideData;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
@@ -38,14 +40,19 @@ import java.util.Set;
 
 public final class TraceRecording {
 
-    private final TGPlayer player;
+    private final EngineActor actor;
+    private final Data data;
+    private final EngineContext context;
     private final TraceFrame frame = new TraceFrame();
-    private final TraceDump dumper = new TraceDump();
+    private final TraceDump dumper;
     private TickRecorder recorder;
     private long tickCounter;
 
-    public TraceRecording(TGPlayer player) {
-        this.player = player;
+    public TraceRecording(EngineActor actor, Data data, EngineContext context) {
+        this.actor = actor;
+        this.data = data;
+        this.context = context;
+        this.dumper = new TraceDump(context.logger());
     }
 
     public @Nullable TickRecorder recorder() {
@@ -59,13 +66,13 @@ public final class TraceRecording {
 
     public boolean dumpNow(String cause) {
         if (recorder == null) return false;
-        Set<PhysicsDebugContext> contexts = TGPlatform.getInstance().getConfigRepository().configView().physicsDebugContexts();
-        return dumper.dump(player, recorder, cause, contexts);
+        Set<PhysicsDebugContext> contexts = context.view().physicsDebugContexts();
+        return dumper.dump(actor, recorder, cause, contexts);
     }
 
     public void record(ConfigView view,
                        @Nullable ContactReport contact, @Nullable MediumSample sample,
-                       @Nullable GroundFacts ground, @Nullable PlayerInput input,
+                       @Nullable GroundFacts ground, @Nullable ControlEnvelope input,
                        AreaBounds bounds, PhysicsVerdict verdict,
                        BlockReader reader, double buffer, double engineFall,
                        double preCarriedX, double preCarriedZ, double preCarriedFloor, double preCarriedCeil) {
@@ -75,6 +82,8 @@ public final class TraceRecording {
         if (recorder == null) recorder = new TickRecorder();
 
         frame.tick = tickCounter;
+        frame.stream = (byte) verdict.stream().ordinal();
+        frame.body = (byte) verdict.body().ordinal();
         frame.obsX = verdict.observedX();
         frame.obsY = verdict.observedY();
         frame.obsZ = verdict.observedZ();
@@ -124,15 +133,16 @@ public final class TraceRecording {
 
         Set<PhysicsDebugContext> contexts = view.physicsDebugContexts();
         if (level == PhysicsDebugLevel.TRACE) {
-            TGPlatform.getInstance().getLogger().info(
-                    "[PhysicsTrace] " + player.getUser().getName() + " " + TraceFormatter.format(frame, contexts));
+            context.logger().info(
+                    "[PhysicsTrace] " + actor.name() + " " + TraceFormatter.format(frame, contexts));
         }
-        if (verdict.mitigation().triggered() || verdict.fall().violation()) {
-            dumper.dump(player, recorder, verdict.breach() != null ? verdict.breach().name() : "fall", contexts);
+        if (verdict.mitigation().triggered() || verdict.fall().violation()
+                || (verdict.stream() == MotionStream.VEHICLE && verdict.breach() != null)) {
+            dumper.dump(actor, recorder, verdict.breach() != null ? verdict.breach().name() : "fall", contexts);
         }
     }
 
-    private void populateContext(@Nullable MediumSample sample, @Nullable PlayerInput input) {
+    private void populateContext(@Nullable MediumSample sample, @Nullable ControlEnvelope input) {
         frame.pushX = frame.pushY = frame.pushZ = 0.0;
         frame.bubbleAscent = 0.0;
         frame.stuckHorizontal = frame.stuckVertical = 1.0;
@@ -162,20 +172,20 @@ public final class TraceRecording {
             if (input.fluidExitHop()) frame.flags |= TraceFrame.FLAG_FLUID_HOP;
         }
 
-        GlideData glide = player.getData().getGlideData();
+        GlideData glide = data.getGlideData();
         if (glide.claimActive()) frame.flags |= TraceFrame.FLAG_GLIDE_CLAIM;
         if (glide.riptideActive()) {
             frame.flags |= TraceFrame.FLAG_GLIDE_RIPTIDE;
             frame.riptideStrength = glide.riptideStrength();
         }
         if (glide.exitActive()) frame.flags |= TraceFrame.FLAG_GLIDE_EXIT;
-        FireworkData firework = player.getData().getFireworkData();
+        FireworkData firework = data.getFireworkData();
         frame.fireworkMin = firework.boostCountMin();
         frame.fireworkMax = firework.boostCountMax();
     }
 
     private static int flags(@Nullable ContactReport contact, @Nullable MediumSample sample,
-                             @Nullable GroundFacts ground, @Nullable PlayerInput input,
+                             @Nullable GroundFacts ground, @Nullable ControlEnvelope input,
                              PhysicsVerdict verdict) {
         int flags = 0;
         if (input != null) {

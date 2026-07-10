@@ -18,12 +18,15 @@
 
 package com.deathmotion.totemguard.common.physics.prescan;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
+import com.deathmotion.totemguard.common.physics.area.MotionArea;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.TeleportData;
 
 public final class TeleportFilter {
 
     private static final int PRESERVE_GRACE_TICKS = 3;
+    private static final double PRESERVED_WARP_ACCEL = 0.2;
 
     public enum Outcome {
         NONE,
@@ -51,6 +54,14 @@ public final class TeleportFilter {
             return movement.hasPendingVelocityPreservingTeleport() ? Outcome.TELEPORT_PRESERVED : Outcome.TELEPORT;
         }
         return Outcome.NONE;
+    }
+
+    public MotionArea frozen(MotionArea area, double gravity, double jumpCeiling) {
+        double floor = area.floorVy();
+        double advancedFloor = gravity > 0.0 ? (floor - gravity) * MotionDefaults.VERTICAL_DRAG : floor;
+        return new MotionArea(area.centerX(), area.centerZ(),
+                area.slack() + PRESERVED_WARP_ACCEL,
+                advancedFloor, Math.max(area.ceilVy(), jumpCeiling));
     }
 
     public void startPreserveGrace() {

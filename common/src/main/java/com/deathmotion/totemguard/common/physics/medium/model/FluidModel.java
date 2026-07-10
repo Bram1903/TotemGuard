@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.common.physics.medium.model;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public abstract class FluidModel implements MediumModel {
@@ -34,12 +34,12 @@ public abstract class FluidModel implements MediumModel {
     protected abstract double gravityDivisor();
 
     @Override
-    public double accelBound(PlayerInput input, GroundFacts ground) {
+    public double accelBound(ControlEnvelope input, GroundFacts ground) {
         return input.fluidAccel();
     }
 
     @Override
-    public final void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
+    public final void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         double gravity = input.gravity() / gravityDivisor();
         bounds.ceiling(Math.max(ASCENT_MIN, bounds.ceiling() + SWIM_IMPULSE));
         bounds.floor(bounds.floor() - gravity - SWIM_IMPULSE);
@@ -52,16 +52,16 @@ public abstract class FluidModel implements MediumModel {
         bounds.enforceDescentFloor(true);
     }
 
-    protected static boolean wallEvidence(PlayerInput input, ContactReport contact) {
+    protected static boolean wallEvidence(ControlEnvelope input, ContactReport contact) {
         return contact.wallNear() || input.priorWallContact();
     }
 
-    protected void ascentOptions(PlayerInput input, ContactReport contact, AreaBounds bounds) {
+    protected void ascentOptions(ControlEnvelope input, ContactReport contact, AreaBounds bounds) {
         if (wallEvidence(input, contact)) bounds.raiseCeiling(WALL_BUMP_ASCENT);
     }
 
     @Override
-    public double advanceVertical(double verticalVelocity, PlayerInput input) {
+    public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
         return verticalVelocity * VERTICAL_DRAG;
     }
 }

@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.player.data.FireworkData;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
@@ -72,12 +72,12 @@ public final class GlideModel implements MediumModel {
     }
 
     @Override
-    public double accelBound(PlayerInput input, GroundFacts ground) {
+    public double accelBound(ControlEnvelope input, GroundFacts ground) {
         return coastAccel;
     }
 
     @Override
-    public void horizontalOptions(PlayerInput input, GroundFacts ground, AreaBounds bounds) {
+    public void horizontalOptions(ControlEnvelope input, GroundFacts ground, AreaBounds bounds) {
         computeStep(input, bounds);
         if (dual) {
             land.horizontalOptions(input, ground, bounds);
@@ -95,7 +95,7 @@ public final class GlideModel implements MediumModel {
     }
 
     @Override
-    public void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
+    public void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         if (dual) {
             land.verticalOptions(input, ground, contact, bounds);
             bounds.ceiling(Math.max(bounds.ceiling(), stepCeil + TRIG_PAD));
@@ -111,12 +111,12 @@ public final class GlideModel implements MediumModel {
     }
 
     @Override
-    public double frictionMax(PlayerInput input, GroundFacts ground) {
+    public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         return dual ? land.frictionMax(input, ground) : 1.0;
     }
 
     @Override
-    public double advanceVertical(double verticalVelocity, PlayerInput input) {
+    public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
         return dual ? land.advanceVertical(verticalVelocity, input) : verticalVelocity;
     }
 
@@ -132,7 +132,7 @@ public final class GlideModel implements MediumModel {
         coastAccel = 0.0;
     }
 
-    private void computeStep(PlayerInput input, AreaBounds bounds) {
+    private void computeStep(ControlEnvelope input, AreaBounds bounds) {
         double vx = bounds.centerX();
         double vz = bounds.centerZ();
         double floor = bounds.floor();
@@ -215,7 +215,7 @@ public final class GlideModel implements MediumModel {
     }
 
     private double stepHorizontal(double axis, double lookAxis, double vx, double vz, double vy,
-                                  double lookY, double d0, PlayerInput input) {
+                                  double lookY, double d0, ControlEnvelope input) {
         double d1 = ClientMath.horizontalDistance(vx, vz);
         double d3 = d0 * d0;
         double v = axis;
@@ -234,7 +234,7 @@ public final class GlideModel implements MediumModel {
         return v * DRAG_H;
     }
 
-    private double glideStepY(double vx, double vz, double vy, double lookY, double d0, PlayerInput input) {
+    private double glideStepY(double vx, double vz, double vy, double lookY, double d0, ControlEnvelope input) {
         double d1 = ClientMath.horizontalDistance(vx, vz);
         double d3 = d0 * d0;
         double v = vy + effectiveGravity(vy, input) * (-1.0 + d3 * LIFT_FACTOR);
@@ -247,7 +247,7 @@ public final class GlideModel implements MediumModel {
         return v * DRAG_V;
     }
 
-    private static double effectiveGravity(double vy, PlayerInput input) {
+    private static double effectiveGravity(double vy, ControlEnvelope input) {
         return input.slowFalling() && vy <= 0.0
                 ? Math.min(input.gravity(), SLOW_FALLING_GRAVITY)
                 : input.gravity();

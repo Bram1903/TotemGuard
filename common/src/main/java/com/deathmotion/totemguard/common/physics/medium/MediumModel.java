@@ -20,7 +20,7 @@ package com.deathmotion.totemguard.common.physics.medium;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public interface MediumModel {
@@ -29,17 +29,17 @@ public interface MediumModel {
 
     MediumKind kind();
 
-    double accelBound(PlayerInput input, GroundFacts ground);
+    double accelBound(ControlEnvelope input, GroundFacts ground);
 
-    default void horizontalOptions(PlayerInput input, GroundFacts ground, AreaBounds bounds) {
+    default void horizontalOptions(ControlEnvelope input, GroundFacts ground, AreaBounds bounds) {
         if (input.horizontalInput()) bounds.expandRadius(accelBound(input, ground));
         if (input.sprintJump()) bounds.expandRadius(SPRINT_JUMP_BOOST);
         bounds.expandRadius(input.sprintJumpResidual());
     }
 
-    void verticalOptions(PlayerInput input, GroundFacts ground, ContactReport contact, AreaBounds bounds);
+    void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds);
 
-    double frictionMax(PlayerInput input, GroundFacts ground);
+    double frictionMax(ControlEnvelope input, GroundFacts ground);
 
-    double advanceVertical(double verticalVelocity, PlayerInput input);
+    double advanceVertical(double verticalVelocity, ControlEnvelope input);
 }

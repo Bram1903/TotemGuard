@@ -26,7 +26,6 @@ import com.deathmotion.totemguard.common.check.impl.physics.report.MovementRepor
 import com.deathmotion.totemguard.common.check.impl.physics.report.VehicleReporter;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.physics.PhysicsEngine;
-import com.deathmotion.totemguard.common.physics.vehicle.VehicleEngine;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
@@ -37,7 +36,6 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 public class Physics extends CheckImpl implements PacketCheck {
 
     private final PhysicsEngine physics;
-    private final VehicleEngine vehicle;
 
     private final FallReporter fallReporter;
     private final MovementReporter movementReporter;
@@ -46,16 +44,15 @@ public class Physics extends CheckImpl implements PacketCheck {
     public Physics(TGPlayer player) {
         super(player);
         this.physics = player.getPhysics();
-        this.vehicle = player.getVehicleEngine();
         this.fallReporter = new FallReporter(this::fail);
         this.movementReporter = new MovementReporter(this::fail, data);
-        this.vehicleReporter = new VehicleReporter(this::fail, vehicle, platform);
+        this.vehicleReporter = new VehicleReporter(this::fail, physics, platform);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() == PacketType.Play.Client.VEHICLE_MOVE) {
-            vehicleReporter.report(vehicle.getVerdict());
+            vehicleReporter.report(physics.vehicleVerdict());
             return;
         }
 

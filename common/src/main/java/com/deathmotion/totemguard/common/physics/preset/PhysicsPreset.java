@@ -23,6 +23,8 @@ public record PhysicsPreset(
         String name,
         double horizontalNoisePad,
         double verticalNoisePad,
+        double vehicleHorizontalPad,
+        double vehicleVerticalPad,
         double horizontalFlagEpsilon,
         double verticalFlagEpsilon,
         double phaseCrossTolerance,
@@ -40,6 +42,7 @@ public record PhysicsPreset(
     public static final PhysicsPreset STRICT = new PhysicsPreset(
             "strict",
             0.001, 0.001,
+            0.05, 0.02,
             0.002, 0.003,
             0.02, 0.02,
             0.02,
@@ -51,6 +54,7 @@ public record PhysicsPreset(
     public static final PhysicsPreset LENIENT = new PhysicsPreset(
             "lenient",
             0.0025, 0.0025,
+            0.05, 0.02,
             0.002, 0.003,
             0.05, 0.05,
             0.05,

@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.physics.push;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.GlideData;
 
@@ -36,7 +36,7 @@ public final class RiptideWindow {
         this.glide = data.getGlideData();
     }
 
-    public void apply(AreaBounds bounds, PlayerInput input) {
+    public void apply(AreaBounds bounds, ControlEnvelope input) {
         if (glide.riptideActive()) {
             double strength = glide.riptideStrength();
             if (!bounds.hasAltCenter()) {

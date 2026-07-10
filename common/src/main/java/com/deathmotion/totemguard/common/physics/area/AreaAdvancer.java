@@ -25,6 +25,13 @@ public final class AreaAdvancer {
 
     public static void clampObserved(AreaBounds bounds, double obsX, double obsY, double obsZ,
                                      boolean altCenterUsed, double driftSlack) {
+        if (bounds.hasSegment()) {
+            OutwardResidual.segmentClosest(bounds, obsX, obsZ);
+            OutwardResidual.segmentCollapse(bounds, obsX, obsZ, bounds.radius() + driftSlack);
+            double segFloor = bounds.floor() - bounds.descentSlack();
+            bounds.legalVy(Math.min(Math.max(obsY, segFloor), bounds.ceiling()));
+            return;
+        }
         double centerX = altCenterUsed ? bounds.altCenterX() : bounds.centerX();
         double centerZ = altCenterUsed ? bounds.altCenterZ() : bounds.centerZ();
         double reach = bounds.radius() + driftSlack;

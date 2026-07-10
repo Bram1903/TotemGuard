@@ -23,5 +23,7 @@ public enum MediumKind {
     WATER,
     LAVA,
     CLIMB,
-    GLIDE
+    GLIDE,
+    FLYING,
+    BOAT
 }

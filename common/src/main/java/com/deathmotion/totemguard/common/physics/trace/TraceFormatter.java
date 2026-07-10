@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.physics.trace;
 
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
+import com.deathmotion.totemguard.common.physics.body.BodyKind;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
 import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
@@ -31,6 +32,7 @@ import java.util.Set;
 public final class TraceFormatter {
 
     private static final TickOutcome[] OUTCOMES = TickOutcome.values();
+    private static final BodyKind[] BODIES = BodyKind.values();
     private static final DeclineReason[] REASONS = DeclineReason.values();
     private static final BoundBreach[] BREACHES = BoundBreach.values();
     private static final MediumKind[] MEDIUMS = MediumKind.values();
@@ -42,6 +44,7 @@ public final class TraceFormatter {
     public static String format(TraceFrame f, Set<PhysicsDebugContext> contexts) {
         StringBuilder sb = new StringBuilder(220);
         sb.append("t").append(f.tick);
+        if (f.stream == 1) sb.append(" VEH:").append(name(BODIES, f.body));
         sb.append(String.format(Locale.ROOT, " | obs %+.4f %+.4f %+.4f", f.obsX, f.obsY, f.obsZ));
         sb.append(String.format(Locale.ROOT, " | disk c(%+.3f,%+.3f) r%.3f v[%.3f,%.3f]",
                 f.centerX, f.centerZ, f.radius, f.floor, f.ceiling));

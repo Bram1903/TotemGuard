@@ -19,32 +19,75 @@
 package com.deathmotion.totemguard.common.check.impl.physics.report;
 
 import com.deathmotion.totemguard.common.TGPlatform;
-import com.deathmotion.totemguard.common.physics.vehicle.VehicleEngine;
-import com.deathmotion.totemguard.common.physics.vehicle.VehicleVerdict;
+import com.deathmotion.totemguard.common.physics.PhysicsEngine;
+import com.deathmotion.totemguard.common.physics.body.BodyKind;
+import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
+import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
+import com.deathmotion.totemguard.common.util.ClientMath;
 
 import java.util.Map;
 
 public final class VehicleReporter {
 
     private final Flagger flagger;
-    private final VehicleEngine engine;
+    private final PhysicsEngine physics;
     private final TGPlatform platform;
 
-    public VehicleReporter(Flagger flagger, VehicleEngine engine, TGPlatform platform) {
+    public VehicleReporter(Flagger flagger, PhysicsEngine physics, TGPlatform platform) {
         this.flagger = flagger;
-        this.engine = engine;
+        this.physics = physics;
         this.platform = platform;
     }
 
-    public void report(VehicleVerdict verdict) {
-        if (!verdict.breach()) return;
+    public void report(PhysicsVerdict verdict) {
+        BoundBreach breach = verdict.breach();
+        if (breach == null) return;
 
-        boolean flagged = flagger.flag(Map.of("tg_physics_type", verdict.label()),
-                "{0} | observed={1} allowed={2} | over={3}",
-                verdict.label(), PhysicsFormat.d(verdict.observed()),
-                PhysicsFormat.d(verdict.bound()), PhysicsFormat.d(verdict.excess()));
-        if (flagged && platform.getConfigRepository().configView().physicsEngineSetback()) {
-            engine.requestSetback();
+        String label = label(verdict.body(), breach);
+        double observed;
+        double bound;
+        double excess;
+        switch (breach) {
+            case DESCENT_FLOOR -> {
+                observed = verdict.observedY();
+                bound = verdict.boundFloor();
+                excess = verdict.descentExcess();
+            }
+            case ASCENT -> {
+                observed = verdict.observedY();
+                bound = verdict.boundCeiling();
+                excess = verdict.ascentExcess();
+            }
+            default -> {
+                observed = verdict.observedSpeed();
+                bound = ClientMath.horizontalDistance(verdict.boundCenterX(), verdict.boundCenterZ())
+                        + verdict.boundRadius();
+                excess = verdict.horizontalExcess();
+            }
         }
+
+        boolean flagged = flagger.flag(Map.of("tg_physics_type", label),
+                "{0} | observed={1} allowed={2} | over={3}",
+                label, PhysicsFormat.d(observed), PhysicsFormat.d(bound), PhysicsFormat.d(excess));
+        if (flagged && platform.getConfigRepository().configView().physicsEngineSetback()) {
+            physics.requestVehicleSetback();
+        }
+    }
+
+    private static String label(BodyKind body, BoundBreach breach) {
+        String kind = switch (body) {
+            case BOAT -> "boat";
+            case GHAST -> "ghast";
+            case CAMEL -> "camel";
+            case PIG -> "pig";
+            case STRIDER -> "strider";
+            default -> "horse";
+        };
+        String suffix = switch (breach) {
+            case DESCENT_FLOOR -> "fly";
+            case ASCENT -> "ascend";
+            default -> "speed";
+        };
+        return kind + "-" + suffix;
     }
 }

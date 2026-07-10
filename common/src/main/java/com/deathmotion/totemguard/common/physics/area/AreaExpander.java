@@ -19,10 +19,7 @@
 package com.deathmotion.totemguard.common.physics.area;
 
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.push.KnockbackTracker;
-import com.deathmotion.totemguard.common.physics.push.PistonWindow;
-import com.deathmotion.totemguard.common.physics.push.RiptideWindow;
-import com.deathmotion.totemguard.common.physics.input.PlayerInput;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.medium.BubbleLift;
 import com.deathmotion.totemguard.common.physics.medium.FlowSolver;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
@@ -30,6 +27,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.medium.StuckFactor;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
+import com.deathmotion.totemguard.common.physics.simulation.TickContext;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class AreaExpander {
@@ -39,11 +37,15 @@ public final class AreaExpander {
     private AreaExpander() {
     }
 
-    public static void grow(MotionArea area, MediumModel medium, MediumSample sample,
-                            PlayerInput input, GroundFacts ground, ContactReport contact,
-                            StuckFactor stuckFactor, BubbleLift bubble,
-                            KnockbackTracker knockback, PistonWindow pistons, RiptideWindow riptide,
-                            ResidualCarry carry, PhysicsPreset preset, AreaBounds bounds) {
+    public static void grow(MotionArea area, TickContext ctx,
+                            StuckFactor stuckFactor, BubbleLift bubble, ResidualCarry carry) {
+        MediumModel medium = ctx.medium;
+        MediumSample sample = ctx.sample;
+        ControlEnvelope input = ctx.input;
+        GroundFacts ground = ctx.ground;
+        ContactReport contact = ctx.contact;
+        PhysicsPreset preset = ctx.preset;
+        AreaBounds bounds = ctx.bounds;
         bounds.reset(area);
         medium.horizontalOptions(input, ground, bounds);
         medium.verticalOptions(input, ground, contact, bounds);
@@ -62,12 +64,9 @@ public final class AreaExpander {
         if (ground.groundedEnd()) bounds.addDescentSlack(input.stepHeight());
         if (contact.startOverlapping()) bounds.expandRadius(OVERLAP_SHOVE);
 
-        knockback.apply(bounds, preset.knockbackPad());
-        riptide.apply(bounds, input);
-        pistons.apply(bounds);
     }
 
-    private static void applyFluidPush(MotionArea area, MediumSample sample, AreaBounds bounds) {
+    public static void applyFluidPush(MotionArea area, MediumSample sample, AreaBounds bounds) {
         if (!sample.pushed()) return;
         double px = sample.pushX();
         double py = sample.pushY();

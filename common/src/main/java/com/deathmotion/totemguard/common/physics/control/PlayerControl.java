@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.input;
+package com.deathmotion.totemguard.common.physics.control;
 
 import com.deathmotion.totemguard.common.util.ClientMath;
 
-public record PlayerInput(
+public record PlayerControl(
         boolean inventoryOpen,
         boolean horizontalInput,
         boolean sneaking,
@@ -48,7 +48,14 @@ public record PlayerInput(
         boolean swimming,
         double prevLookX,
         double prevLookY,
-        double prevLookZ) {
+        double prevLookZ) implements ControlEnvelope {
+
+    public static final double AIR_ACCEL = 0.026;
+
+    @Override
+    public double airAccel() {
+        return AIR_ACCEL;
+    }
 
     public double jumpBoostPower() {
         return jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;

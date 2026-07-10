@@ -119,10 +119,6 @@ public final class GroundResolver {
                 bounceTicks > 0, wasFluid, startSlipMin, startSlipMax, startJumpMin, startJumpMax, gap);
     }
 
-    public double lastGroundGap() {
-        return lastGroundGap;
-    }
-
     public boolean lastGroundedEnd() {
         return lastGroundedEnd;
     }

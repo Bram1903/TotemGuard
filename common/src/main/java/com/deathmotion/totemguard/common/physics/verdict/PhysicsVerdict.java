@@ -18,11 +18,14 @@
 
 package com.deathmotion.totemguard.common.physics.verdict;
 
+import com.deathmotion.totemguard.common.physics.body.BodyKind;
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
 public record PhysicsVerdict(
+        MotionStream stream,
+        BodyKind body,
         TickOutcome outcome,
         DeclineReason declineReason,
         BoundBreach breach,
@@ -39,6 +42,7 @@ public record PhysicsVerdict(
         FallFinding fall) {
 
     public static final PhysicsVerdict INITIAL = new PhysicsVerdict(
+            MotionStream.SELF, BodyKind.PLAYER,
             TickOutcome.SEEDED, null, null,
             0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0,
@@ -57,7 +61,7 @@ public record PhysicsVerdict(
     }
 
     public PhysicsVerdict withOutcome(MitigationOutcome mitigation, FallFinding fall, boolean improperSprint) {
-        return new PhysicsVerdict(outcome, declineReason, breach,
+        return new PhysicsVerdict(stream, body, outcome, declineReason, breach,
                 observedX, observedY, observedZ,
                 horizontalExcess, ascentExcess, descentExcess, phaseExcess,
                 boundCenterX, boundCenterZ, boundRadius,

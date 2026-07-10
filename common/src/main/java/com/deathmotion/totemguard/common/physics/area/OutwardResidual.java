@@ -56,4 +56,40 @@ public final class OutwardResidual {
         }
         return observed * s;
     }
+
+    public static double segmentExcess(double obsX, double obsZ, double centerX, double centerZ,
+                                       double dirX, double dirZ, double reachMin, double reachMax,
+                                       double radius) {
+        double along = segmentAlong(obsX, obsZ, centerX, centerZ, dirX, dirZ, reachMin, reachMax);
+        double closestX = centerX + dirX * along;
+        double closestZ = centerZ + dirZ * along;
+        return ClientMath.horizontalDistance(obsX - closestX, obsZ - closestZ) - radius;
+    }
+
+    public static void segmentClosest(AreaBounds bounds, double obsX, double obsZ) {
+        double along = segmentAlong(obsX, obsZ, bounds.centerX(), bounds.centerZ(),
+                bounds.segDirX(), bounds.segDirZ(), bounds.segMin(), bounds.segMax());
+        bounds.segClosestX(bounds.centerX() + bounds.segDirX() * along);
+        bounds.segClosestZ(bounds.centerZ() + bounds.segDirZ() * along);
+    }
+
+    public static void segmentCollapse(AreaBounds bounds, double obsX, double obsZ, double reach) {
+        double closestX = bounds.segClosestX();
+        double closestZ = bounds.segClosestZ();
+        double deviation = deviation(obsX, obsZ, closestX, closestZ);
+        if (deviation <= reach || deviation <= 0.0) {
+            bounds.legalX(obsX);
+            bounds.legalZ(obsZ);
+            return;
+        }
+        double s = reach / deviation;
+        bounds.legalX(collapseAxis(obsX, closestX, s));
+        bounds.legalZ(collapseAxis(obsZ, closestZ, s));
+    }
+
+    private static double segmentAlong(double obsX, double obsZ, double centerX, double centerZ,
+                                       double dirX, double dirZ, double reachMin, double reachMax) {
+        double along = (obsX - centerX) * dirX + (obsZ - centerZ) * dirZ;
+        return Math.max(reachMin, Math.min(reachMax, along));
+    }
 }

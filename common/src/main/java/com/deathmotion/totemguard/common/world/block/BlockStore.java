@@ -111,9 +111,10 @@ public final class BlockStore {
 
     private BaseChunk createSection() {
         ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
-        if (version.isNewerThanOrEquals(ServerVersion.V_1_18)) {
-            return new Chunk_v1_18(serverBlockVersion);
-        }
-        return new Chunk_v1_9(0, PaletteType.CHUNK.create());
+        BaseChunk chunk = version.isNewerThanOrEquals(ServerVersion.V_1_18)
+                ? new Chunk_v1_18(serverBlockVersion)
+                : new Chunk_v1_9(0, PaletteType.CHUNK.create());
+        chunk.set(0, 0, 0, 0);
+        return chunk;
     }
 }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.vehicle;
+package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.collision.ColliderBuffer;
 import com.deathmotion.totemguard.common.physics.collision.ColliderCollector;
@@ -28,7 +28,7 @@ import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-public final class BoatModel {
+public final class BoatFloatModel {
 
     public static final double BOAT_WIDTH = 1.375;
     public static final double BOAT_HEIGHT = 0.5625;
