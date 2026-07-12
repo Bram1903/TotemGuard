@@ -124,6 +124,24 @@ public final class EntityTracker {
         entity.movementSpeed(value);
     }
 
+    public void setStepHeight(int entityId, double value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.stepHeight(value);
+    }
+
+    public void setBoostTime(int entityId, int total) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.startBoost(total);
+    }
+
+    public void setSuffocating(int entityId, boolean value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.suffocating(value);
+    }
+
     public void setJumpStrength(int entityId, double value) {
         TrackedEntity entity = entities.get(entityId);
         if (entity == null) return;

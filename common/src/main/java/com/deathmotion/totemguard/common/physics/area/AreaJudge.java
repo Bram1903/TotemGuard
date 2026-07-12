@@ -30,14 +30,13 @@ public final class AreaJudge {
             horizontal = OutwardResidual.segmentExcess(obsX, obsZ, bounds.centerX(), bounds.centerZ(),
                     bounds.segDirX(), bounds.segDirZ(), bounds.segMin(), bounds.segMax(), bounds.radius());
         } else {
-            double mainExcess = OutwardResidual.excess(obsX, obsZ, bounds.centerX(), bounds.centerZ(), bounds.radius());
-            horizontal = mainExcess;
-            if (bounds.hasAltCenter() && mainExcess > 0.0) {
-                double altExcess = OutwardResidual.excess(obsX, obsZ, bounds.altCenterX(), bounds.altCenterZ(), bounds.radius());
-                if (altExcess < mainExcess) {
-                    horizontal = altExcess;
-                    altUsed = true;
-                }
+            horizontal = OutwardResidual.excess(obsX, obsZ, bounds.centerX(), bounds.centerZ(), bounds.radius());
+        }
+        if (bounds.hasAltCenter() && horizontal > 0.0) {
+            double altExcess = OutwardResidual.excess(obsX, obsZ, bounds.altCenterX(), bounds.altCenterZ(), bounds.radius());
+            if (altExcess < horizontal) {
+                horizontal = altExcess;
+                altUsed = true;
             }
         }
         horizontal = Math.max(0.0, horizontal);

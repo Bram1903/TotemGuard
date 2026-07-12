@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
+import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -32,6 +33,7 @@ import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemFireworks;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
+import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -60,6 +62,11 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     private final int livingFlagsIndex;
     private final int fireworkAttachedIndex;
     private final int fireworkItemIndex;
+    private final int ticksFrozenIndex;
+    private final int hookedEntityIndex;
+    private final int pigBoostTimeIndex;
+    private final int striderBoostTimeIndex;
+    private final int striderSuffocatingIndex;
 
     public OutboundMetadataProcessor(TGPlayer player) {
         super(player);
@@ -74,6 +81,11 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         this.livingFlagsIndex = metadataIndex.livingEntityFlags();
         this.fireworkAttachedIndex = metadataIndex.fireworkAttached();
         this.fireworkItemIndex = metadataIndex.fireworkItem();
+        this.ticksFrozenIndex = metadataIndex.ticksFrozen();
+        this.hookedEntityIndex = metadataIndex.hookedEntity();
+        this.pigBoostTimeIndex = metadataIndex.pigBoostTime();
+        this.striderBoostTimeIndex = metadataIndex.striderBoostTime();
+        this.striderSuffocatingIndex = metadataIndex.striderSuffocating();
     }
 
     private static boolean detectCompetingPlugin() {
@@ -104,6 +116,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
 
         trackSlimeSize(event, entityId, packet);
         trackFireworkAttachment(event, entityId, packet);
+        trackFishingHook(event, entityId, packet);
+        trackSteerable(event, entityId, packet);
 
         if (COMPETING_PLUGIN_ACTIVE) return;
 
@@ -133,6 +147,39 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
                 latencyHandler.compensateLazy(event, () -> entities.setSlimeSize(entityId, size));
             }
             return;
+        }
+    }
+
+    private void trackFishingHook(PacketSendEvent event, int entityId,
+                                  WrapperPlayServerEntityMetadata packet) {
+        if (hookedEntityIndex < 0) return;
+        if (!data.getFishingData().isHook(entityId)) return;
+        for (EntityData<?> meta : packet.getEntityMetadata()) {
+            if (meta.getIndex() != hookedEntityIndex) continue;
+            if (meta.getValue() instanceof Integer hooked) {
+                latencyHandler.compensate(event,
+                        () -> data.getFishingData().setHooked(entityId, hooked - 1));
+            }
+            return;
+        }
+    }
+
+    private void trackSteerable(PacketSendEvent event, int entityId,
+                                WrapperPlayServerEntityMetadata packet) {
+        TrackedEntity entity = entities.resolve(entityId);
+        if (entity == null) return;
+        boolean pig = entity.type() == EntityTypes.PIG;
+        boolean strider = entity.type() == EntityTypes.STRIDER;
+        if (!pig && !strider) return;
+        int boostIndex = pig ? pigBoostTimeIndex : striderBoostTimeIndex;
+        for (EntityData<?> meta : packet.getEntityMetadata()) {
+            int index = meta.getIndex();
+            if (index == boostIndex && meta.getValue() instanceof Integer total) {
+                latencyHandler.compensate(event, () -> entities.setBoostTime(entityId, total));
+            } else if (strider && index == striderSuffocatingIndex
+                    && meta.getValue() instanceof Boolean suffocating) {
+                latencyHandler.compensate(event, () -> entities.setSuffocating(entityId, suffocating));
+            }
         }
     }
 
@@ -201,7 +248,13 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
                 });
             } else if (index == livingFlagsIndex && value instanceof Byte livingFlags) {
                 final boolean spinAttacking = (livingFlags & 0x04) != 0;
-                latencyHandler.compensate(event, () -> data.setSpinAttacking(spinAttacking));
+                final boolean usingItem = (livingFlags & 0x01) != 0;
+                latencyHandler.compensate(event, () -> {
+                    data.setSpinAttacking(spinAttacking);
+                    data.getUseItemData().onFlagsAck(usingItem);
+                });
+            } else if (index == ticksFrozenIndex && value instanceof Integer frozen) {
+                latencyHandler.compensate(event, () -> data.setTicksFrozen(frozen));
             } else if (value instanceof EntityPose pose) {
                 final boolean sleeping = pose == EntityPose.SLEEPING;
                 latencyHandler.compensate(event, () -> data.setSleeping(sleeping));

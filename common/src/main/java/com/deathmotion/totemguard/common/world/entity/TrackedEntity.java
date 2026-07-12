@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.world.entity;
 
+import com.deathmotion.totemguard.common.util.ClientMath;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -27,6 +28,7 @@ import lombok.experimental.Accessors;
 public final class TrackedEntity {
 
     private static final int INTERPOLATION_STEPS = 3;
+    private static final double BOOST_AMPLITUDE = 1.15F;
 
     private final EntityType type;
     private final boolean pushable;
@@ -42,6 +44,13 @@ public final class TrackedEntity {
     private double jumpStrength = Double.NaN;
     private double gravity = Double.NaN;
     private double flyingSpeed = Double.NaN;
+    private double stepHeight = Double.NaN;
+
+    private boolean boosting;
+    private int boostTicks;
+    private int boostTotal;
+    private int boostLagSlack;
+    private boolean suffocating;
 
     private double targetX;
     private double targetY;
@@ -125,8 +134,54 @@ public final class TrackedEntity {
         this.flyingSpeed = value;
     }
 
+    void stepHeight(double value) {
+        this.stepHeight = value;
+    }
+
+    void startBoost(int total) {
+        this.boosting = true;
+        this.boostTicks = 0;
+        this.boostTotal = Math.max(1, total);
+        this.boostLagSlack = 0;
+    }
+
+    void suffocating(boolean value) {
+        this.suffocating = value;
+    }
+
+    public void tickBoost() {
+        if (boosting && boostTicks++ > boostTotal) {
+            boosting = false;
+        }
+    }
+
+    public void addBoostLag() {
+        if (boosting) boostLagSlack++;
+    }
+
+    public double boostFactorCeiling(boolean modernTrig) {
+        if (!boosting) return 1.0;
+        int from = Math.min(boostTicks, boostTotal + 1);
+        int to = Math.min(boostTicks + boostLagSlack, boostTotal + 1);
+        int lowPeak = Math.max(from, Math.min(to, boostTotal / 2));
+        int highPeak = Math.max(from, Math.min(to, boostTotal / 2 + 1));
+        double ceiling = Math.max(
+                Math.max(boostCurve(from, modernTrig), boostCurve(to, modernTrig)),
+                Math.max(boostCurve(lowPeak, modernTrig), boostCurve(highPeak, modernTrig)));
+        return Math.max(1.0, ceiling);
+    }
+
+    private double boostCurve(int tick, boolean modernTrig) {
+        float angle = (float) tick / boostTotal * (float) Math.PI;
+        return 1.0 + BOOST_AMPLITUDE * ClientMath.sin(angle, modernTrig);
+    }
+
     public double movementSpeed() {
         return movementSpeed;
+    }
+
+    public double stepHeight() {
+        return stepHeight;
     }
 
     public double jumpStrength() {

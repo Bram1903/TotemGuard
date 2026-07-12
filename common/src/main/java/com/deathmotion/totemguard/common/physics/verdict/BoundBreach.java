@@ -26,5 +26,6 @@ public enum BoundBreach {
     PHASE_EMBED,
     HOVER,
     FAST,
-    GROUNDSPOOF
+    GROUNDSPOOF,
+    KNOCKBACK
 }

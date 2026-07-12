@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.physics.control;
 
 import com.deathmotion.totemguard.common.physics.EngineActor;
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.VersionGates;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
@@ -27,6 +28,7 @@ import com.deathmotion.totemguard.common.player.data.EffectData;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.data.PlayerAttributeData;
+import com.deathmotion.totemguard.common.player.data.UseItemData;
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
@@ -54,6 +56,9 @@ public final class PlayerControlResolver {
     private static final double[] SPRINT_JUMP_BOOST_RESIDUALS = boostResiduals();
 
     private static final double SPRINT_SPEED_MULTIPLIER = 1.3;
+    private static final double SWIFT_SNEAK_PER_LEVEL = 0.15;
+    private static final double FROST_SPEED_PENALTY = 0.05;
+    private static final int FROST_FULL_TICKS = 140;
     private static final double WATER_FRICTION = 0.8;
     private static final double WATER_SPRINT_FRICTION = 0.9;
     private static final double WATER_DOLPHIN_FRICTION = 0.96;
@@ -134,7 +139,10 @@ public final class PlayerControlResolver {
         boolean fluidExitHop = ground.wasFluid() && !fluidNow && observedY > RISE_EPS
                 && lastWallContact;
         boolean priorWallContact = lastWallContact;
-        lastWallContact = contact.collidedX() || contact.collidedZ() || contact.wallNear();
+        boolean geometricWall = contact.collidedX() || contact.collidedZ() || contact.wallNear();
+        lastWallContact = gates.endTick()
+                ? geometricWall && movement.isHorizontalCollision()
+                : geometricWall;
 
         double sprintJumpResidual = 0.0;
         if (sprintJump) {
@@ -149,15 +157,27 @@ public final class PlayerControlResolver {
         float prevYaw = movement.getPrevious().getYaw();
         float prevPitch = movement.getPrevious().getPitch();
         boolean modernTrig = modernTrig();
+        double useMultiplier = useSlowdownMultiplier();
+
+        double boostDirX = 0.0;
+        double boostDirZ = 0.0;
+        double boostSpread = 0.0;
+        if (sprintJump) {
+            boostDirX = ClientMath.lookX(yaw, 0.0f, modernTrig);
+            boostDirZ = ClientMath.lookZ(yaw, 0.0f, modernTrig);
+            boostSpread = ClientMath.horizontalDistance(
+                    boostDirX - ClientMath.lookXFast(yaw, 0.0f),
+                    boostDirZ - ClientMath.lookZFast(yaw, 0.0f)) * SPRINT_JUMP_BOOST;
+        }
 
         return new PlayerControl(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
                 jumpPossible, ceilingClampedJump, fluidExitHop, priorWallContact,
-                effectiveSpeed(sprinting, sneaking, diagonal),
+                effectiveSpeed(sprinting, sneaking, diagonal, ground) * useMultiplier,
                 attr.jumpStrength() * ground.startJumpMax(), attr.gravity(), attr.stepHeight(),
                 jumpBoostAmplifier,
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
-                fluidAccel(data.isSprinting(), effectiveGroundedStart),
+                fluidAccel(data.isSprinting(), effectiveGroundedStart) * useMultiplier,
                 sprintJumpResidual,
                 ClientMath.lookX(yaw, pitch, modernTrig),
                 ClientMath.lookY(pitch, modernTrig),
@@ -166,7 +186,27 @@ public final class PlayerControlResolver {
                 data.isSwimming(),
                 ClientMath.lookX(prevYaw, prevPitch, modernTrig),
                 ClientMath.lookY(prevPitch, modernTrig),
-                ClientMath.lookZ(prevYaw, prevPitch, modernTrig));
+                ClientMath.lookZ(prevYaw, prevPitch, modernTrig),
+                ClientMath.lookXFast(yaw, pitch),
+                ClientMath.lookYFast(pitch),
+                ClientMath.lookZFast(yaw, pitch),
+                ClientMath.lookXFast(prevYaw, prevPitch),
+                ClientMath.lookYFast(prevPitch),
+                ClientMath.lookZFast(prevYaw, prevPitch),
+                data.getAbilitiesFlyingSpeed() * (data.isSprinting() ? 2.0 : 1.0) * useMultiplier,
+                data.getAbilitiesFlyingSpeed() * 3.0,
+                attr.airDragModifier(),
+                attr.frictionModifier(),
+                useMultiplier,
+                boostDirX,
+                boostDirZ,
+                boostSpread);
+    }
+
+    private double useSlowdownMultiplier() {
+        UseItemData use = data.getUseItemData();
+        if (!use.slowdownCertain()) return 1.0;
+        return Math.min(1.0, use.slowdownMultiplier());
     }
 
     private double waterEfficiency(boolean groundedStart) {
@@ -223,15 +263,35 @@ public final class PlayerControlResolver {
         return gates.modernTrig();
     }
 
-    private double effectiveSpeed(boolean sprinting, boolean sneaking, boolean diagonal) {
+    private double effectiveSpeed(boolean sprinting, boolean sneaking, boolean diagonal, GroundFacts ground) {
         double speed = data.getAttributeData().movementSpeed();
+        speed = Math.max(0.0, speed - frostPenalty(ground, speed));
         if (sprinting) speed *= SPRINT_SPEED_MULTIPLIER;
         if (sneaking) {
-            double sneak = data.getAttributeData().sneakingSpeed();
+            double sneak = sneakMultiplier();
             if (diagonal) sneak = Math.min(1.0, sneak * SNEAK_DIAGONAL_FACTOR);
             speed *= sneak;
         }
         return speed;
+    }
+
+    private double frostPenalty(GroundFacts ground, double speed) {
+        int frozen = data.getTicksFrozen();
+        if (frozen <= 0 || !ground.supportedStart()) return 0.0;
+        double percent = Math.min(1.0, frozen / (double) FROST_FULL_TICKS);
+        return FROST_SPEED_PENALTY * percent
+                * Math.min(1.0, speed / MotionDefaults.BASE_MOVEMENT_SPEED);
+    }
+
+    private double sneakMultiplier() {
+        if (gates.sneakingSpeedAttribute()) return data.getAttributeData().sneakingSpeed();
+        if (gates.swiftSneakInput()) {
+            ItemStack leggings = actor.leggingsItem();
+            int level = leggings == null ? 0
+                    : leggings.getEnchantmentLevel(EnchantmentTypes.SWIFT_SNEAK);
+            return Math.min(1.0, MotionDefaults.SNEAKING_SPEED + SWIFT_SNEAK_PER_LEVEL * level);
+        }
+        return MotionDefaults.SNEAKING_SPEED;
     }
 
     public void onDecline() {

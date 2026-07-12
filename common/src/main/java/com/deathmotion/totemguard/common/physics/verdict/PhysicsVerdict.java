@@ -70,4 +70,15 @@ public record PhysicsVerdict(
                 inventoryOpen, knockbackConsumed, improperSprint,
                 mitigation, fall);
     }
+
+    public PhysicsVerdict withKnockbackBreach(double ignoredExcess) {
+        return new PhysicsVerdict(stream, body, outcome, declineReason, BoundBreach.KNOCKBACK,
+                observedX, observedY, observedZ,
+                ignoredExcess, ascentExcess, descentExcess, phaseExcess,
+                boundCenterX, boundCenterZ, boundRadius,
+                boundCeiling, boundFloor,
+                medium, ground,
+                inventoryOpen, knockbackConsumed, improperSprint,
+                mitigation, fall);
+    }
 }

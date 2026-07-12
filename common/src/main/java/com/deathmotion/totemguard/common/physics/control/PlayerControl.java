@@ -48,13 +48,27 @@ public record PlayerControl(
         boolean swimming,
         double prevLookX,
         double prevLookY,
-        double prevLookZ) implements ControlEnvelope {
+        double prevLookZ,
+        double lookXAlt,
+        double lookYAlt,
+        double lookZAlt,
+        double prevLookXAlt,
+        double prevLookYAlt,
+        double prevLookZAlt,
+        double flyAccel,
+        double flyVertical,
+        double airDragModifier,
+        double frictionModifier,
+        double inputMultiplier,
+        double boostDirX,
+        double boostDirZ,
+        double boostSpread) implements ControlEnvelope {
 
     public static final double AIR_ACCEL = 0.026;
 
     @Override
     public double airAccel() {
-        return AIR_ACCEL;
+        return AIR_ACCEL * inputMultiplier;
     }
 
     public double jumpBoostPower() {

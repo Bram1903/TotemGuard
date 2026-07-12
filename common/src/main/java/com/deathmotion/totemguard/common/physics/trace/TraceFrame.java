@@ -41,6 +41,35 @@ public final class TraceFrame {
     public static final int FLAG_GLIDE_RIPTIDE = 1 << 19;
     public static final int FLAG_GLIDE_EXIT = 1 << 20;
 
+    public static final long WIDENED_KNOCKBACK = 1L;
+    public static final long WIDENED_RIPTIDE = 1L << 1;
+    public static final long WIDENED_PISTON = 1L << 2;
+    public static final long WIDENED_ENTITY_PUSH = 1L << 3;
+    public static final long WIDENED_STUCK = 1L << 4;
+    public static final long WIDENED_BUBBLE = 1L << 5;
+    public static final long WIDENED_BED_BOUNCE = 1L << 6;
+    public static final long WIDENED_HONEY_SLIDE = 1L << 7;
+    public static final long WIDENED_BOOST_SEGMENT = 1L << 8;
+    public static final long WIDENED_STEP_CARRY = 1L << 9;
+    public static final long WIDENED_SNEAK_EDGE = 1L << 10;
+    public static final long WIDENED_RESIDUAL_CARRY = 1L << 11;
+
+    private static final String[] WIDENING_NAMES = {
+            "knockback", "riptide", "piston", "push", "stuck", "bubble",
+            "bed", "honey", "boost", "step", "sneak", "carry"
+    };
+
+    public static String describeWidenings(long contributors) {
+        if (contributors == 0L) return "";
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < WIDENING_NAMES.length; i++) {
+            if ((contributors & (1L << i)) == 0L) continue;
+            if (out.length() > 0) out.append('|');
+            out.append(WIDENING_NAMES[i]);
+        }
+        return out.toString();
+    }
+
     public long tick;
     public byte stream;
     public byte body;
@@ -51,6 +80,7 @@ public final class TraceFrame {
     public double horizontalExcess, ascentExcess, descentExcess, phaseExcess;
     public byte outcome, reason, breach, medium, ground;
     public int flags;
+    public long contributors;
     public double supportGap, ceilingClearance;
     public int reads, misses, uncertainHits;
     public double buffer, engineFall;
@@ -93,6 +123,7 @@ public final class TraceFrame {
         medium = other.medium;
         ground = other.ground;
         flags = other.flags;
+        contributors = other.contributors;
         supportGap = other.supportGap;
         ceilingClearance = other.ceilingClearance;
         reads = other.reads;

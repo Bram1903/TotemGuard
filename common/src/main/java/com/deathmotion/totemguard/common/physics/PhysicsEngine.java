@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.world.WorldMirror;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import org.jetbrains.annotations.Nullable;
 
 public final class PhysicsEngine {
@@ -55,6 +56,10 @@ public final class PhysicsEngine {
 
     public void onFlying() {
         self.onFlying();
+    }
+
+    public void rewriteGroundClaim(PacketReceiveEvent event) {
+        self.rewriteGroundClaim(event);
     }
 
     public void onTickEnd() {

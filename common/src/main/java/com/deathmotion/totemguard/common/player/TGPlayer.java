@@ -400,6 +400,11 @@ public class TGPlayer implements TGUser, EngineActor {
     }
 
     @Override
+    public ItemStack leggingsItem() {
+        return inventory.getItem(InventoryConstants.SLOT_LEGGINGS);
+    }
+
+    @Override
     public String name() {
         return user.getName();
     }

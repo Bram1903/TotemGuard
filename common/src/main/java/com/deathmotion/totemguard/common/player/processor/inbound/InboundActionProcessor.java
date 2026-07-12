@@ -23,15 +23,24 @@ import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
+import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemUseEffects;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
+import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.protocol.world.BlockFace;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 
+import java.util.Optional;
+
 public class InboundActionProcessor extends ProcessorInbound {
+
+    private static final double DEFAULT_USE_SLOWDOWN = 0.2F;
 
     private final Data data;
     private final ClickData clickData;
@@ -79,6 +88,12 @@ public class InboundActionProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.USE_ITEM) {
             tickData.setUsing(true);
             clickData.recordRightClick();
+            WrapperPlayClientUseItem packet = new WrapperPlayClientUseItem(event);
+            boolean mainHand = packet.getHand() == InteractionHand.MAIN_HAND;
+            ItemStack used = mainHand
+                    ? player.getInventory().getMainHandItem()
+                    : player.getInventory().getOffhandItem();
+            data.getUseItemData().onUseItem(mainHand, useSlowdownMultiplier(used));
         } else if (packetType == PacketType.Play.Client.ENTITY_ACTION) {
             WrapperPlayClientEntityAction packet = new WrapperPlayClientEntityAction(event);
             if (packet.getEntityId() != player.getUser().getEntityId()) return;
@@ -117,10 +132,14 @@ public class InboundActionProcessor extends ProcessorInbound {
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
 
             switch (packet.getAction()) {
-                case SWAP_ITEM_WITH_OFFHAND -> tickData.setSwapping(true);
+                case SWAP_ITEM_WITH_OFFHAND -> {
+                    tickData.setSwapping(true);
+                    data.getUseItemData().onSwap();
+                }
                 case DROP_ITEM, DROP_ITEM_STACK -> tickData.setDropping(true);
                 case RELEASE_USE_ITEM -> {
                     tickData.setReleasing(true);
+                    data.getUseItemData().onRelease();
                     armRiptideIfHeld();
                 }
                 case FINISHED_DIGGING, CANCELLED_DIGGING, START_DIGGING -> tickData.setDigging(true);
@@ -182,8 +201,37 @@ public class InboundActionProcessor extends ProcessorInbound {
     private boolean glideClaimLegal() {
         if (data.isGliding()) return false;
         if (data.isInVehicle() || data.getEffectData().hasLevitation()) return false;
-        ItemStack chest = player.getInventory().getItem(InventoryConstants.SLOT_CHESTPLATE);
-        if (chest == null || chest.getType() != ItemTypes.ELYTRA) return false;
-        return chest.getMaxDamage() <= 0 || chest.getDamageValue() < chest.getMaxDamage() - 1;
+        if (usableGlider(player.getInventory().getItem(InventoryConstants.SLOT_CHESTPLATE))) return true;
+        if (!player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_2)) return false;
+        return usableGlider(player.getInventory().getItem(InventoryConstants.SLOT_HELMET))
+                || usableGlider(player.getInventory().getItem(InventoryConstants.SLOT_LEGGINGS))
+                || usableGlider(player.getInventory().getItem(InventoryConstants.SLOT_BOOTS));
+    }
+
+    private static boolean usableGlider(ItemStack stack) {
+        if (stack == null) return false;
+        if (stack.getType() != ItemTypes.ELYTRA && stack.getComponent(ComponentTypes.GLIDER).isEmpty()) {
+            return false;
+        }
+        return stack.getMaxDamage() <= 0 || stack.getDamageValue() < stack.getMaxDamage() - 1;
+    }
+
+    private double useSlowdownMultiplier(ItemStack used) {
+        boolean componentEra = player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_11);
+        if (!componentEra) return DEFAULT_USE_SLOWDOWN;
+        if (used == null) return 1.0;
+        Optional<ItemUseEffects> effects = used.getComponent(ComponentTypes.USE_EFFECTS);
+        if (effects.isPresent()) return effects.get().getSpeedMultiplier();
+        return spear(used.getType()) ? 1.0 : DEFAULT_USE_SLOWDOWN;
+    }
+
+    private static boolean spear(ItemType type) {
+        return type == ItemTypes.WOODEN_SPEAR
+                || type == ItemTypes.STONE_SPEAR
+                || type == ItemTypes.COPPER_SPEAR
+                || type == ItemTypes.IRON_SPEAR
+                || type == ItemTypes.GOLDEN_SPEAR
+                || type == ItemTypes.DIAMOND_SPEAR
+                || type == ItemTypes.NETHERITE_SPEAR;
     }
 }

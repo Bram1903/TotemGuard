@@ -18,14 +18,18 @@
 
 package com.deathmotion.totemguard.common.physics.area;
 
+import com.deathmotion.totemguard.common.util.ClientMath;
+
 public final class AreaAdvancer {
+
+    private static final double ZERO_THRESHOLD = 0.003;
 
     private AreaAdvancer() {
     }
 
     public static void clampObserved(AreaBounds bounds, double obsX, double obsY, double obsZ,
                                      boolean altCenterUsed, double driftSlack) {
-        if (bounds.hasSegment()) {
+        if (bounds.hasSegment() && !altCenterUsed) {
             OutwardResidual.segmentClosest(bounds, obsX, obsZ);
             OutwardResidual.segmentCollapse(bounds, obsX, obsZ, bounds.radius() + driftSlack);
             double segFloor = bounds.floor() - bounds.descentSlack();
@@ -62,5 +66,36 @@ public final class AreaAdvancer {
                 (area.slack() + accelBound) * frictionMax,
                 advancedFloor,
                 advancedCeil);
+    }
+
+    public static MotionArea zeroClamp(MotionArea area, boolean jointHorizontal) {
+        double centerX = area.centerX();
+        double centerZ = area.centerZ();
+        double slack = area.slack();
+        if (jointHorizontal) {
+            double horizontal = ClientMath.horizontalDistance(centerX, centerZ);
+            if (horizontal > 0.0 && horizontal < ZERO_THRESHOLD) {
+                slack += horizontal;
+                centerX = 0.0;
+                centerZ = 0.0;
+            }
+        } else {
+            double zeroedX = Math.abs(centerX) < ZERO_THRESHOLD ? centerX : 0.0;
+            double zeroedZ = Math.abs(centerZ) < ZERO_THRESHOLD ? centerZ : 0.0;
+            if (zeroedX != 0.0 || zeroedZ != 0.0) {
+                slack += ClientMath.horizontalDistance(zeroedX, zeroedZ);
+                if (zeroedX != 0.0) centerX = 0.0;
+                if (zeroedZ != 0.0) centerZ = 0.0;
+            }
+        }
+        double floor = area.floorVy();
+        double ceiling = area.ceilVy();
+        if (floor > 0.0 && floor < ZERO_THRESHOLD) floor = 0.0;
+        if (ceiling < 0.0 && ceiling > -ZERO_THRESHOLD) ceiling = 0.0;
+        if (centerX == area.centerX() && centerZ == area.centerZ()
+                && floor == area.floorVy() && ceiling == area.ceilVy()) {
+            return area;
+        }
+        return new MotionArea(centerX, centerZ, slack, floor, ceiling);
     }
 }

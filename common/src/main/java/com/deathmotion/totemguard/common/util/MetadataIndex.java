@@ -32,6 +32,11 @@ public final class MetadataIndex {
     private final int livingEntityFlags;
     private final int fireworkAttached;
     private final int fireworkItem;
+    private final int ticksFrozen;
+    private final int hookedEntity;
+    private final int pigBoostTime;
+    private final int striderBoostTime;
+    private final int striderSuffocating;
 
     public MetadataIndex(ClientVersion version) {
         this.health = resolveHealth(version);
@@ -40,6 +45,11 @@ public final class MetadataIndex {
         this.livingEntityFlags = resolveLivingEntityFlags(version);
         this.fireworkAttached = resolveFireworkAttached(version);
         this.fireworkItem = resolveFireworkItem(version);
+        this.ticksFrozen = resolveTicksFrozen(version);
+        this.hookedEntity = resolveHookedEntity(version);
+        this.pigBoostTime = resolvePigBoostTime(version);
+        this.striderBoostTime = resolveStriderBoostTime(version);
+        this.striderSuffocating = resolveStriderSuffocating(version);
     }
 
     private static int resolveHealth(ClientVersion version) {
@@ -79,8 +89,37 @@ public final class MetadataIndex {
         return -1;
     }
 
+    private static int resolveTicksFrozen(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 7;
+        return -1;
+    }
+
+    private static int resolveHookedEntity(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 8;
+        return -1;
+    }
+
     private static int resolveFireworkItem(ClientVersion version) {
         if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 8;
+        return -1;
+    }
+
+    private static int resolvePigBoostTime(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_26_1)) return 18;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_21_5)) return 17;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 18;
+        return -1;
+    }
+
+    private static int resolveStriderBoostTime(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_26_1)) return 18;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 17;
+        return -1;
+    }
+
+    private static int resolveStriderSuffocating(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_26_1)) return 19;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 18;
         return -1;
     }
 }

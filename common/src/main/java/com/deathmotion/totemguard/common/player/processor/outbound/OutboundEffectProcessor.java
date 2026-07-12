@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.potion.PotionType;
 import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
@@ -61,6 +62,8 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, () -> effectData.setSlowFalling(duration));
             } else if (potion == PotionTypes.DOLPHINS_GRACE) {
                 latencyHandler.compensate(event, () -> effectData.setDolphinsGrace(duration));
+            } else if (potion == PotionTypes.WEAVING && observesWeaving()) {
+                latencyHandler.compensate(event, () -> effectData.setWeaving(duration));
             }
         } else if (type == PacketType.Play.Server.REMOVE_ENTITY_EFFECT) {
             WrapperPlayServerRemoveEntityEffect packet = new WrapperPlayServerRemoveEntityEffect(event);
@@ -75,7 +78,13 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, effectData::clearSlowFalling);
             } else if (potion == PotionTypes.DOLPHINS_GRACE) {
                 latencyHandler.compensate(event, effectData::clearDolphinsGrace);
+            } else if (potion == PotionTypes.WEAVING) {
+                latencyHandler.compensate(event, effectData::clearWeaving);
             }
         }
+    }
+
+    private boolean observesWeaving() {
+        return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5);
     }
 }

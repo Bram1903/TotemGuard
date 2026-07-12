@@ -84,7 +84,7 @@ public final class FallTracker {
     }
 
     public void observe(TickOutcome outcome, DeclineReason reason, BoundBreach breach,
-                        double dy, boolean claimedGround,
+                        double dy, boolean claimedGround, boolean honeySlide,
                         MediumSample sample, GroundFacts ground, ContactReport contact,
                         ConfigView view) {
         clearLatch();
@@ -103,6 +103,10 @@ public final class FallTracker {
             return;
         }
         if (sample == null || ground == null || contact == null) {
+            abort();
+            return;
+        }
+        if (honeySlide) {
             abort();
             return;
         }
@@ -258,6 +262,7 @@ public final class FallTracker {
         if (sample.fluid() || sample.climbable() || sample.stuck()) return true;
         if (contact.supportBounce() > 0.0) return true;
         if (data.getEffectData().hasSlowFalling() || data.getEffectData().hasLevitation()) return true;
+        if (data.isFlying()) return true;
         GameMode gameMode = data.getGameMode();
         return gameMode == GameMode.CREATIVE || gameMode == GameMode.SPECTATOR;
     }

@@ -36,6 +36,7 @@ public final class BlockTraits {
 
     public static final double SLIME_BOUNCE = 1.0;
     public static final double BED_BOUNCE = 0.66;
+    public static final double BED_RESTITUTION = 0.75;
 
     public static final double BUBBLE_COLUMN_SURFACE_ASCENT = 1.8;
     public static final double BUBBLE_COLUMN_INSIDE_ASCENT = 0.7;

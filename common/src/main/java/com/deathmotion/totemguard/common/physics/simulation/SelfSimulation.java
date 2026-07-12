@@ -46,6 +46,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.medium.MediumScan;
 import com.deathmotion.totemguard.common.physics.medium.StuckFactor;
+import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 import com.deathmotion.totemguard.common.physics.phase.EmbedExemptions;
 import com.deathmotion.totemguard.common.physics.phase.PhaseTracker;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
@@ -54,17 +55,21 @@ import com.deathmotion.totemguard.common.physics.EngineContext;
 import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.VersionGates;
 import com.deathmotion.totemguard.common.physics.rules.BedBounceRule;
+import com.deathmotion.totemguard.common.physics.rules.BounceRule;
 import com.deathmotion.totemguard.common.physics.rules.CeilingFlushRule;
 import com.deathmotion.totemguard.common.physics.rules.ClimbExitRule;
 import com.deathmotion.totemguard.common.physics.rules.GlideExitRule;
+import com.deathmotion.totemguard.common.physics.rules.HoneySlideRule;
 import com.deathmotion.totemguard.common.physics.rules.RiptideGlideRule;
 import com.deathmotion.totemguard.common.physics.rules.SneakEdgeRule;
 import com.deathmotion.totemguard.common.physics.collision.ColliderBuffer;
 import com.deathmotion.totemguard.common.physics.collision.ColliderCollector;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.collision.CollisionSweep;
+import com.deathmotion.totemguard.common.physics.collision.SupportingBlockTracker;
 import com.deathmotion.totemguard.common.physics.collision.TraitSampler;
 import com.deathmotion.totemguard.common.physics.trace.TickRecorder;
+import com.deathmotion.totemguard.common.physics.trace.TraceFrame;
 import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
 import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
 import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
@@ -74,13 +79,16 @@ import com.deathmotion.totemguard.common.physics.verdict.MotionStream;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
 import com.deathmotion.totemguard.common.physics.verdict.TickOutcome;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.world.shape.ShapeQuery;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Nullable;
@@ -95,6 +103,7 @@ public final class SelfSimulation {
     private static final double HOVER_EXCESS = MotionDefaults.GRAVITY;
     private static final int HOVER_SETBACK_LIMIT = 2;
     private static final double GLIDE_PRESERVE_GAP = 0.1;
+    private static final double GROUND_CLAIM_FALSE_GAP = 0.02;
 
     private final EngineActor actor;
     private final Data data;
@@ -109,6 +118,7 @@ public final class SelfSimulation {
     private final CollisionSweep sweep = new CollisionSweep();
     private final ContactReport contact = new ContactReport();
     private final GroundResolver groundResolver = new GroundResolver();
+    private final SupportingBlockTracker supportTracker;
     private final MediumSample sample = new MediumSample();
     private final StuckFactor stuckFactor = new StuckFactor();
     private final BubbleLift bubble = new BubbleLift();
@@ -133,6 +143,7 @@ public final class SelfSimulation {
     private MotionArea carried = MotionArea.rest();
     private GameMode lastGameMode;
     private boolean scannedThisTick;
+    private boolean honeySlideActive;
     private GroundFacts groundThisTick;
     private ControlEnvelope inputThisTick;
     private MediumModel mediumThisTick;
@@ -149,6 +160,7 @@ public final class SelfSimulation {
         this.reader = world.reader();
         this.context = context;
         this.gates = new VersionGates(actor.clientVersion(), actor.supportsEndTick());
+        this.supportTracker = new SupportingBlockTracker(gates.supportingBlock());
         this.body = new PlayerBody(data, actor, gates);
         this.knockback = new KnockbackTracker(data.getExternalVelocityData());
         this.pistons = new PistonWindow(data.getPistonData());
@@ -192,6 +204,7 @@ public final class SelfSimulation {
         }
 
         scannedThisTick = false;
+        honeySlideActive = false;
         groundThisTick = null;
         inputThisTick = null;
         mediumThisTick = null;
@@ -199,6 +212,7 @@ public final class SelfSimulation {
             if (!initialized) {
                 initialized = true;
                 groundResolver.seed(movement.isOnGround());
+                groundResolver.displaced();
                 carried = MotionArea.seeded(dx, dz, dy);
                 verdict = PhysicsVerdict.INITIAL;
                 phase.seedGrace();
@@ -231,7 +245,8 @@ public final class SelfSimulation {
                 return;
             }
             GroundFacts ground = groundResolver.resolve(dy, contact, sample.fluid(),
-                    data.getAttributeData().stepHeight(), carried.floorVy(), data.isSneaking());
+                    data.getAttributeData().stepHeight(), carried.floorVy(), data.isSneaking(),
+                    supportTracker);
             groundThisTick = ground;
             bubble.observe(sample.bubbleAscent());
             body.mediums().water().advanceEntryWindow(sample.fluid(), ground.wasFluid());
@@ -253,6 +268,25 @@ public final class SelfSimulation {
         } finally {
             observeTail(view, preset, dy);
         }
+    }
+
+    public void rewriteGroundClaim(PacketReceiveEvent event) {
+        if (!scannedThisTick || groundThisTick == null) return;
+        if (verdict.outcome() != TickOutcome.JUDGED) return;
+        boolean claimed = data.getMovementData().isOnGround();
+        double gap = contact.nearestSupportGap();
+        boolean rewriteTo;
+        if (claimed && !groundThisTick.groundedEnd() && gap > GROUND_CLAIM_FALSE_GAP) {
+            rewriteTo = false;
+        } else if (!claimed && groundThisTick.groundedEnd()
+                && gap <= SupportingBlockTracker.SLAB_DEPTH && !contact.supportApproximate()) {
+            rewriteTo = true;
+        } else {
+            return;
+        }
+        WrapperPlayClientPlayerFlying packet = new WrapperPlayClientPlayerFlying(event);
+        packet.setOnGround(rewriteTo);
+        event.markForReEncode(true);
     }
 
     public void onTickEnd() {
@@ -284,6 +318,7 @@ public final class SelfSimulation {
 
     public void clearHistory() {
         gate.clearHistory();
+        supportTracker.invalidate();
         hover.reset();
         bubble.reset();
         stuckFactor.reset();
@@ -303,6 +338,7 @@ public final class SelfSimulation {
         carried = MotionArea.rest();
         trust.reset();
         groundResolver.reset();
+        supportTracker.reset();
         clearHistory();
         mitigation.reset();
         fall.reset();
@@ -313,6 +349,7 @@ public final class SelfSimulation {
         data.getGlideData().reset();
         data.getFireworkData().reset();
         data.getVehicleData().reset();
+        data.getUseItemData().reset();
     }
 
     public @Nullable TickRecorder recorder() {
@@ -348,19 +385,23 @@ public final class SelfSimulation {
         double half = body.halfWidth();
         double height = body.height();
         scannedThisTick = false;
+        honeySlideActive = false;
         groundThisTick = null;
         inputThisTick = null;
         mediumThisTick = null;
         scanTick(current, current, half, height, 0.0, 0.0, 0.0);
         if (reader.missesThisTick() > 0) return;
         GroundFacts ground = groundResolver.resolve(0.0, contact, sample.fluid(),
-                data.getAttributeData().stepHeight(), carried.floorVy(), data.isSneaking());
+                data.getAttributeData().stepHeight(), carried.floorVy(), data.isSneaking(),
+                supportTracker);
         groundThisTick = ground;
+        supportTracker.invalidate();
         ControlEnvelope input = body.control().build(movement, contact, ground, sample.fluid(), 0.0, 0.0, 0.0);
         inputThisTick = input;
         MediumModel medium = body.medium(sample, true);
         mediumThisTick = medium;
 
+        observeAbsentKnockback(medium, input, ground, preset);
         coastArea(medium, input, ground, preset);
 
         boolean airborne = airborneNow(ground, preset);
@@ -396,7 +437,7 @@ public final class SelfSimulation {
         MediumScan.sample(reader, sample,
                 !data.isFlying(), world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
-                gates.modernFluidPush(),
+                gates.modernFluidPush(), data.getEffectData().hasWeaving(),
                 previous.getX() - half, previous.getY(), previous.getZ() - half,
                 previous.getX() + half, previous.getY() + height, previous.getZ() + half,
                 Math.min(previous.getX(), current.getX()) - half, Math.min(previous.getY(), current.getY()),
@@ -411,6 +452,13 @@ public final class SelfSimulation {
                            MediumModel medium, ControlEnvelope input,
                            GroundFacts ground, PhysicsPreset preset) {
         hover.onJudged();
+        Location end = data.getMovementData().getCurrent();
+        double trackHalf = body.halfWidth();
+        supportTracker.update(colliders, reader, ground.groundedEnd(), contact.nearestSupportGap(),
+                contact.supportApproximate(),
+                end.getX() - trackHalf, end.getZ() - trackHalf,
+                end.getX() + trackHalf, end.getZ() + trackHalf,
+                end.getX(), end.getY(), end.getZ(), dx, dz);
         preStepCarriedX = carried.centerX();
         preStepCarriedZ = carried.centerZ();
         preStepCarriedFloor = carried.floorVy();
@@ -419,16 +467,19 @@ public final class SelfSimulation {
         boolean landMedium = sample.landMedium();
 
         ctx.fill(preset, sample, input, ground, contact, medium, bounds);
+        boolean residualCarryWidened = carry.horizontal() > 0.0;
         AreaExpander.grow(carried, ctx, stuckFactor, bubble, carry);
         knockback.apply(bounds, preset.knockbackPad());
+        boolean knockbackWidened = bounds.hasAltCenter();
         riptide.apply(bounds, input);
-        pistons.apply(bounds);
+        boolean riptideWidened = bounds.hasAltCenter() && !knockbackWidened;
+        boolean pistonInfluence = pistons.apply(bounds);
         glideExit.widenForExit(medium, data, body.mediums(), input, ground, carried, bounds);
         riptideGlide.offer(medium, data, body.mediums(), input, ground, contact, carried, bounds);
         Location current = data.getMovementData().getCurrent();
         double half = body.halfWidth();
         double height = body.lastHeight();
-        EntityPushTracker.apply(bounds, world.entities(),
+        double entityPushInfluence = EntityPushTracker.apply(bounds, world.entities(),
                 Math.min(current.getX() - dx, current.getX()) - half, Math.min(current.getY() - dy, current.getY()),
                 Math.min(current.getZ() - dz, current.getZ()) - half,
                 Math.max(current.getX() - dx, current.getX()) + half,
@@ -461,6 +512,15 @@ public final class SelfSimulation {
         }
 
         knockback.consumeIfExplained(excess, preset.horizontalFlagEpsilon(), preset.verticalFlagEpsilon());
+        boolean knockbackTainted = contact.collidedX() || contact.collidedZ() || contact.wallNear()
+                || contact.startOverlapping() || contact.stepUsedHeight() > 0.0
+                || sample.stuck() || !landMedium || data.isFlying()
+                || pistonInfluence
+                || data.getGlideData().riptideActive() || data.isSpinAttacking()
+                || offerBounceAlt
+                || data.getMitigationService().setbackPending();
+        knockback.observeRequirement(dx, dz, bounds.radius(), knockbackTainted,
+                preset.horizontalFlagEpsilon());
 
         BoundBreach breach = classify(horizontalExcess, excess.ascent(), excess.descent(), phaseExcess, preset);
 
@@ -468,7 +528,26 @@ public final class SelfSimulation {
         boolean carryPredicted = stepped || gate.inPreserveGrace() || sneakEdge;
         gate.tickPreserveGrace();
 
+        honeySlideActive = landMedium && HoneySlideRule.slidePossible(reader,
+                gates.modernBlockEffects(), dy, ground.groundedEnd(), input.gravity(),
+                current.getX(), current.getY(), current.getZ(), half, height);
+
         advanceArea(dx, dy, dz, medium, input, ground, preset, excess, carryPredicted, carriedFloorAtStart);
+
+        long widenings = 0L;
+        if (knockbackWidened) widenings |= TraceFrame.WIDENED_KNOCKBACK;
+        if (riptideWidened) widenings |= TraceFrame.WIDENED_RIPTIDE;
+        if (pistonInfluence) widenings |= TraceFrame.WIDENED_PISTON;
+        if (entityPushInfluence > 0.0) widenings |= TraceFrame.WIDENED_ENTITY_PUSH;
+        if (sample.stuck() && !sample.fluid()) widenings |= TraceFrame.WIDENED_STUCK;
+        if (sample.bubbleAscent() > 0.0) widenings |= TraceFrame.WIDENED_BUBBLE;
+        if (offerBounceAlt) widenings |= TraceFrame.WIDENED_BED_BOUNCE;
+        if (honeySlideActive) widenings |= TraceFrame.WIDENED_HONEY_SLIDE;
+        if (bounds.hasSegment()) widenings |= TraceFrame.WIDENED_BOOST_SEGMENT;
+        if (carryPredicted) widenings |= TraceFrame.WIDENED_STEP_CARRY;
+        if (sneakEdge) widenings |= TraceFrame.WIDENED_SNEAK_EDGE;
+        if (residualCarryWidened) widenings |= TraceFrame.WIDENED_RESIDUAL_CARRY;
+        trace.contributors(widenings);
 
         boolean phaseBreach = breach == BoundBreach.PHASE_CROSS || breach == BoundBreach.PHASE_EMBED;
         carry.store(phaseBreach ? 0.0 : horizontalExcess,
@@ -482,6 +561,8 @@ public final class SelfSimulation {
 
     private void coastTick(boolean withheld, double dx, double dy, double dz,
                            MediumModel medium, ControlEnvelope input, GroundFacts ground, PhysicsPreset preset) {
+        supportTracker.invalidate();
+        if (withheld) observeAbsentKnockback(medium, input, ground, preset);
         coastArea(medium, input, ground, preset);
         gate.tickPreserveGrace();
 
@@ -523,6 +604,10 @@ public final class SelfSimulation {
         double advancedVy = medium.advanceVertical(anchor, input);
         double advancedFloorVy = CeilingFlushRule.advanceFloor(anchor, advancedVy, medium, input, bounds, contact);
         advancedFloorVy = ClimbExitRule.carryFloor(advancedFloorVy, medium, body.mediums(), bounds, input);
+        if (honeySlideActive) {
+            advancedVy = Math.max(advancedVy,
+                    HoneySlideRule.carriedVy(gates.modernBlockEffects(), input.gravity()));
+        }
 
         if (carryPredicted) {
             double accel = medium.accelBound(input, ground);
@@ -561,11 +646,14 @@ public final class SelfSimulation {
         }
 
         if (ground.bounced() && carriedFloorAtStart < 0.0 && contact.supportBounce() > 0.0) {
-            double reflected = -carriedFloorAtStart * contact.supportBounce();
+            double reflected = BounceRule.reflect(gates.restitutionBounce(), contact,
+                    carriedFloorAtStart, input.gravity(), LandModel.verticalDrag(input));
             double advanced = medium.advanceVertical(reflected, input);
             carried = new MotionArea(carried.centerX(), carried.centerZ(), carried.slack(),
                     advanced, advanced);
         }
+
+        carried = AreaAdvancer.zeroClamp(carried, gates.jointHorizontalZeroing());
 
         bedBounce.arm(contact, bounds);
     }
@@ -592,9 +680,9 @@ public final class SelfSimulation {
         }
         double floorSource = ground.groundedEnd() ? 0.0 : carried.floorVy();
         double ceilSource = ground.groundedEnd() ? 0.0 : bounds.ceiling();
-        carried = AreaAdvancer.coast(carried, accel, frictionMax,
+        carried = AreaAdvancer.zeroClamp(AreaAdvancer.coast(carried, accel, frictionMax,
                 medium.advanceVertical(floorSource, input),
-                medium.advanceVertical(ceilSource, input));
+                medium.advanceVertical(ceilSource, input)), gates.jointHorizontalZeroing());
         carry.clear();
         bedBounce.reset();
     }
@@ -603,6 +691,7 @@ public final class SelfSimulation {
     private void decline(DeclineReason reason, double dx, double dy, double dz, boolean reseed,
                          Location current, double half, double height) {
         if (reseed) carried = MotionArea.seeded(dx, dz, dy);
+        supportTracker.invalidate();
         trust.clearDoubleMoveStreak();
         hover.onDeclined();
         body.control().onDecline();
@@ -614,7 +703,7 @@ public final class SelfSimulation {
             phase.seedGrace();
             phase.invalidateEmbed();
         }
-        if (reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT) {
+        if (reseed || reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT) {
             groundResolver.displaced();
         }
         carry.clear();
@@ -626,6 +715,7 @@ public final class SelfSimulation {
     private void flagDetection(BoundBreach breach, double dx, double dy, double dz,
                             double horizontalExcess, double verticalExcess) {
         hover.onDeclined();
+        supportTracker.invalidate();
         body.control().improperSprint(false);
         carried = MotionArea.seeded(dx, dz, dy);
         carry.clear();
@@ -635,9 +725,45 @@ public final class SelfSimulation {
                 0.0, null, null);
     }
 
+    private void observeAbsentKnockback(MediumModel medium, ControlEnvelope input,
+                                        GroundFacts ground, PhysicsPreset preset) {
+        ExternalVelocityData external = data.getExternalVelocityData();
+        if (!external.isActive() || !external.hasSet()) return;
+        Location at = data.getMovementData().getCurrent();
+        double half = body.halfWidth();
+        double height = body.height();
+        int pushers = world.entities().countPushableNear(
+                at.getX() - half, at.getY(), at.getZ() - half,
+                at.getX() + half, at.getY() + height, at.getZ() + half,
+                half, height);
+        boolean tainted = sample.stuck() || !sample.landMedium() || data.isFlying()
+                || contact.wallNear() || contact.startOverlapping()
+                || pushers > 0
+                || data.getPistonData().isActive()
+                || data.getGlideData().riptideActive() || data.isSpinAttacking()
+                || data.getMitigationService().setbackPending();
+        double threshold = gates.modernMovementThreshold()
+                ? MovementData.DUPLICATE_THRESHOLD_MODERN
+                : MovementData.DUPLICATE_THRESHOLD_LEGACY;
+        double reach = medium.accelBound(input, ground)
+                + ClientMath.horizontalDistance(carried.centerX(), carried.centerZ())
+                + carried.slack()
+                + external.slack() + preset.knockbackPad() + threshold;
+        knockback.observeRequirement(0.0, 0.0, reach, tainted, preset.horizontalFlagEpsilon());
+    }
+
     private void observeTail(ConfigView view, PhysicsPreset preset, double dy) {
+        double ignoredKnockback = knockback.pollIgnored();
+        if (ignoredKnockback > preset.horizontalFlagEpsilon()
+                && verdict.breach() == null
+                && (verdict.outcome() == TickOutcome.JUDGED
+                || verdict.outcome() == TickOutcome.COASTED)) {
+            verdict = verdict.withKnockbackBreach(ignoredKnockback);
+        }
+        knockback.finishTick();
+
         fall.observe(verdict.outcome(), verdict.declineReason(), verdict.breach(),
-                dy, data.getMovementData().isOnGround(),
+                dy, data.getMovementData().isOnGround(), honeySlideActive,
                 scannedThisTick ? sample : null, groundThisTick, scannedThisTick ? contact : null, view);
 
         boolean offense = verdict.breach() != null;
@@ -674,6 +800,7 @@ public final class SelfSimulation {
         data.getEffectData().tick();
         data.getGlideData().tick();
         data.getFireworkData().tick();
+        data.getUseItemData().tick();
 
         trace.record(view, scannedThisTick ? contact : null, scannedThisTick ? sample : null,
                 groundThisTick, inputThisTick, bounds, verdict, reader, mitigation.buffer(), fall.engineFall(),
@@ -713,6 +840,7 @@ public final class SelfSimulation {
 
     private boolean airborneNow(GroundFacts ground, PhysicsPreset preset) {
         return sample.landMedium() && !ground.groundedEnd()
+                && !data.isFlying()
                 && contact.nearestSupportGap() > preset.hoverMinGap()
                 && !contact.startOverlapping();
     }
@@ -730,7 +858,9 @@ public final class SelfSimulation {
 
 
     private double effectiveSpeedFactor() {
-        double raw = contact.supportSpeedFactor();
+        double raw = supportTracker.speedCertain()
+                ? supportTracker.speedFactor()
+                : contact.supportSpeedFactor();
         if (raw >= 1.0) return 1.0;
         if (!gates.speedFactorOnCenter()) return 1.0;
         double efficiency = data.getAttributeData().movementEfficiency();

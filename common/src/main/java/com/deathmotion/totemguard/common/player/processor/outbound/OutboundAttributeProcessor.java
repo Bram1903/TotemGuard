@@ -36,6 +36,7 @@ import java.util.UUID;
 public class OutboundAttributeProcessor extends ProcessorOutbound {
 
     private static final UUID LEGACY_SPRINT_MODIFIER_ID = UUID.fromString("662a6b8d-da3e-4c1c-8813-96ea6097278d");
+    private static final UUID LEGACY_FROST_MODIFIER_ID = UUID.fromString("1eaf83ff-7207-4596-b37a-d7a07b3ec4ce");
 
     private final PlayerAttributeData attributes;
     private final EntityTracker entities;
@@ -48,24 +49,26 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
         this.latencyHandler = player.getLatencyHandler();
     }
 
-    private static double movementSpeedWithoutSprint(WrapperPlayServerUpdateAttributes.Property property) {
+    private static double movementSpeedWithoutClientTransients(WrapperPlayServerUpdateAttributes.Property property) {
         List<WrapperPlayServerUpdateAttributes.PropertyModifier> modifiers = property.getModifiers();
-        if (modifiers.stream().noneMatch(OutboundAttributeProcessor::isSprintModifier)) {
+        if (modifiers.stream().noneMatch(OutboundAttributeProcessor::isClientTransientModifier)) {
             return property.calcValue();
         }
         List<WrapperPlayServerUpdateAttributes.PropertyModifier> stripped = modifiers.stream()
-                .filter(modifier -> !isSprintModifier(modifier))
+                .filter(modifier -> !isClientTransientModifier(modifier))
                 .toList();
         return new WrapperPlayServerUpdateAttributes.Property(property.getAttribute(), property.getValue(), stripped)
                 .calcValue();
     }
 
-    private static boolean isSprintModifier(WrapperPlayServerUpdateAttributes.PropertyModifier modifier) {
+    private static boolean isClientTransientModifier(WrapperPlayServerUpdateAttributes.PropertyModifier modifier) {
         ResourceLocation name = modifier.getName();
-        if (name != null && "minecraft".equals(name.getNamespace()) && "sprinting".equals(name.getKey())) {
+        if (name != null && "minecraft".equals(name.getNamespace())
+                && ("sprinting".equals(name.getKey()) || "powder_snow".equals(name.getKey()))) {
             return true;
         }
-        return LEGACY_SPRINT_MODIFIER_ID.equals(modifier.getUUID());
+        return LEGACY_SPRINT_MODIFIER_ID.equals(modifier.getUUID())
+                || LEGACY_FROST_MODIFIER_ID.equals(modifier.getUUID());
     }
 
     @Override
@@ -88,7 +91,7 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
                 }
             } else if (property.getAttribute() == Attributes.MOVEMENT_SPEED) {
                 if (self) {
-                    double value = movementSpeedWithoutSprint(property);
+                    double value = movementSpeedWithoutClientTransients(property);
                     latencyHandler.compensate(event, () -> attributes.setMovementSpeed(value));
                 } else {
                     double value = property.calcValue();
@@ -115,12 +118,16 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
             } else if (!self && property.getAttribute() == Attributes.FLYING_SPEED) {
                 double value = property.calcValue();
                 latencyHandler.compensateLazy(event, () -> entities.setFlyingSpeed(entityId, value));
-            } else if (self && property.getAttribute() == Attributes.STEP_HEIGHT) {
+            } else if (property.getAttribute() == Attributes.STEP_HEIGHT) {
                 if (!clientObserves(ClientVersion.V_1_20_5)) continue;
                 double value = property.calcValue();
-                latencyHandler.compensate(event, () -> attributes.setStepHeight(value));
+                if (self) {
+                    latencyHandler.compensate(event, () -> attributes.setStepHeight(value));
+                } else {
+                    latencyHandler.compensateLazy(event, () -> entities.setStepHeight(entityId, value));
+                }
             } else if (self && property.getAttribute() == Attributes.SNEAKING_SPEED) {
-                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
+                if (!clientObserves(ClientVersion.V_1_21)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setSneakingSpeed(value));
             } else if (self && property.getAttribute() == Attributes.MOVEMENT_EFFICIENCY) {
@@ -140,6 +147,14 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
             } else if (self && property.getAttribute() == Attributes.FALL_DAMAGE_MULTIPLIER) {
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setFallDamageMultiplier(value));
+            } else if (self && property.getAttribute() == Attributes.AIR_DRAG_MODIFIER) {
+                if (!clientObserves(ClientVersion.V_26_2)) continue;
+                double value = property.calcValue();
+                latencyHandler.compensate(event, () -> attributes.setAirDragModifier(value));
+            } else if (self && property.getAttribute() == Attributes.FRICTION_MODIFIER) {
+                if (!clientObserves(ClientVersion.V_26_2)) continue;
+                double value = property.calcValue();
+                latencyHandler.compensate(event, () -> attributes.setFrictionModifier(value));
             }
         }
     }

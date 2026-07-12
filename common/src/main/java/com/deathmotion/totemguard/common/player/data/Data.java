@@ -49,6 +49,8 @@ public class Data {
     private final FireworkData fireworkData;
     private final VehicleData vehicleData;
     private final FoodData foodData;
+    private final FishingData fishingData;
+    private final UseItemData useItemData;
     private final MitigationService mitigationService;
     private final SetbackController setbackController;
     private GameMode gameMode;
@@ -62,6 +64,8 @@ public class Data {
     private boolean spinAttacking;
     private boolean sleeping;
     private int vehicleId = -1;
+    private int ticksFrozen;
+    private double abilitiesFlyingSpeed = 0.05;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -104,6 +108,8 @@ public class Data {
         this.fireworkData = new FireworkData();
         this.vehicleData = new VehicleData();
         this.foodData = new FoodData();
+        this.fishingData = new FishingData();
+        this.useItemData = new UseItemData();
         this.mitigationService = new MitigationService(this);
         this.setbackController = new SetbackController(mitigationService, externalVelocityData);
     }

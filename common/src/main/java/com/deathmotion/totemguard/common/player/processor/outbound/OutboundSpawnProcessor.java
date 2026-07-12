@@ -73,9 +73,11 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
             WrapperPlayServerPlayerAbilities packet = new WrapperPlayServerPlayerAbilities(event);
             boolean flightAllowed = packet.isFlightAllowed();
             boolean flying = packet.isFlying();
+            float flySpeed = packet.getFlySpeed();
             latencyHandler.compensate(event, () -> {
                 data.setCanFly(flightAllowed);
                 data.setFlying(flying);
+                data.setAbilitiesFlyingSpeed(flySpeed);
             });
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
@@ -93,7 +95,12 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.resetSprintTracking();
                 data.setVehicleId(-1);
                 data.setSleeping(false);
-                if (resetSwimming) data.setSwimming(false);
+                if (resetSwimming) {
+                    data.setSwimming(false);
+                    data.setTicksFrozen(0);
+                }
+                data.getFishingData().reset();
+                data.getUseItemData().reset();
                 inputData.reset();
                 data.getMovementData().reset();
                 player.getPhysics().reset();

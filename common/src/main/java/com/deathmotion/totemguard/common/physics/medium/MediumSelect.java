@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.physics.medium;
 
 import com.deathmotion.totemguard.common.physics.medium.model.ClimbModel;
+import com.deathmotion.totemguard.common.physics.medium.model.FlyModel;
 import com.deathmotion.totemguard.common.physics.medium.model.GlideModel;
 import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 import com.deathmotion.totemguard.common.physics.medium.model.LavaModel;
@@ -35,16 +36,21 @@ public final class MediumSelect {
     private final WaterModel water = new WaterModel();
     @Getter
     private final GlideModel glide = new GlideModel(land);
+    @Getter
+    private final FlyModel fly = new FlyModel(land);
     private final LavaModel lava = new LavaModel();
     private final ClimbModel climb = new ClimbModel();
 
-    public MediumModel select(MediumSample sample, GlideState glideState) {
+    public MediumModel select(MediumSample sample, GlideState glideState,
+                              boolean glideYieldsToClimb, boolean flying) {
+        if (flying) return fly;
         if (sample.water()) {
             water.observe(sample);
             return water;
         }
         if (sample.lava()) return lava;
-        if (sample.climbable() && !sample.stuck()) return climb;
+        boolean glidesPastClimbable = glideState == GlideState.FLAG && !glideYieldsToClimb;
+        if (sample.climbable() && !sample.stuck() && !glidesPastClimbable) return climb;
         if (glideState != GlideState.NONE) return glide;
         return land;
     }

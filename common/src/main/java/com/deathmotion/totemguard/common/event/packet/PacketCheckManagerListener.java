@@ -72,6 +72,7 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
         if (flying) {
             if (!event.isCancelled()) {
                 player.getPhysics().onFlying();
+                player.getPhysics().rewriteGroundClaim(event);
                 player.getData().updateNetherPortalContact();
                 player.getDebugOverlayManager().refresh();
             }

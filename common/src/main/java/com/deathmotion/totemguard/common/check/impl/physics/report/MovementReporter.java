@@ -64,6 +64,8 @@ public final class MovementReporter {
                     shownType, PhysicsFormat.d(verdict.observedSpeed()),
                     PhysicsFormat.d(Math.hypot(verdict.boundCenterX(), verdict.boundCenterZ()) + verdict.boundRadius()),
                     PhysicsFormat.d(excess));
+            case KNOCKBACK -> flagger.flag(extras, "{0} | ignored knockback | off={1}",
+                    shownType, PhysicsFormat.d(excess));
         }
     }
 
@@ -87,6 +89,7 @@ public final class MovementReporter {
                 if (verdict.medium() == MediumKind.GLIDE) yield "glide-speed";
                 yield data.isSneaking() ? "nosneak" : "speed";
             }
+            case KNOCKBACK -> "velocity";
         };
     }
 }

@@ -39,7 +39,8 @@ public final class RiderControlResolver {
     private static final double CAMEL_DASH_VERTICAL = 1.4285;
     private static final double PIG_SPEED_FACTOR = 0.225;
     private static final double STRIDER_SPEED_FACTOR = 0.55;
-    private static final double BOOST_FACTOR_MAX = 2.15;
+    private static final double STRIDER_SUFFOCATING_FACTOR = 0.35;
+    private static final double STRIDER_SUFFOCATING_FACTOR_LEGACY = 0.23;
 
     private RiderControlResolver() {
     }
@@ -51,8 +52,14 @@ public final class RiderControlResolver {
         boolean camel = EntityRoles.camel(type);
         boolean strider = type == EntityTypes.STRIDER;
 
+        double steeringFactor = strider
+                ? (ridden.suffocating()
+                        ? (gates.modernStriderSuffocation()
+                                ? STRIDER_SUFFOCATING_FACTOR : STRIDER_SUFFOCATING_FACTOR_LEGACY)
+                        : STRIDER_SPEED_FACTOR)
+                : PIG_SPEED_FACTOR;
         double riddenSpeed = steerable
-                ? speed * (strider ? STRIDER_SPEED_FACTOR : PIG_SPEED_FACTOR) * BOOST_FACTOR_MAX
+                ? speed * steeringFactor * ridden.boostFactorCeiling(gates.modernTrig())
                 : speed + (camel && data.isSprinting() ? CAMEL_SPRINT_BONUS : 0.0);
         double gravity = Double.isNaN(ridden.gravity()) ? MotionDefaults.GRAVITY : ridden.gravity();
         double jumpStrength = ridden.jumpStrength();
@@ -75,7 +82,10 @@ public final class RiderControlResolver {
             }
         }
 
-        double stepHeight = camel ? STEP_HEIGHT_CAMEL : STEP_HEIGHT_HORSE;
+        double defaultStep = camel ? STEP_HEIGHT_CAMEL : STEP_HEIGHT_HORSE;
+        double stepHeight = Math.max(
+                Double.isNaN(ridden.stepHeight()) ? defaultStep : ridden.stepHeight(),
+                STEP_HEIGHT_HORSE);
         boolean canFloatInWater = EntityRoles.floatsWhileRidden(type) && gates.floatWhileRidden();
         boolean modernTrig = gates.modernTrig();
         return new RiderControl(riddenSpeed, gravity, stepHeight, jumpStrength, jumpTakeoff,

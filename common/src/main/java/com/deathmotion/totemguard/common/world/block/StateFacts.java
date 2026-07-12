@@ -46,6 +46,7 @@ public final class StateFacts {
     public static final long NETHER_PORTAL = 1L << 12;
     public static final long WALL_TRUSTED = 1L << 13;
     public static final long BUBBLE_DRAG = 1L << 14;
+    public static final long HONEY = 1L << 15;
     public static final long ANY_FLUID = WATER | LAVA;
 
     private static final int SLIP_SHIFT = 16;
@@ -114,18 +115,22 @@ public final class StateFacts {
         return (facts & BED_BOUNCE) != 0 ? BlockTraits.BED_BOUNCE : BlockTraits.SLIME_BOUNCE;
     }
 
-    public static double stuckHorizontal(long facts) {
+    public static boolean bedBounce(long facts) {
+        return (facts & BED_BOUNCE) != 0;
+    }
+
+    public static double stuckHorizontal(long facts, boolean weavingCobweb) {
         return switch ((int) ((facts & STUCK_MASK) >> STUCK_SHIFT)) {
-            case 1 -> 0.25;
+            case 1 -> weavingCobweb ? 0.5 : 0.25;
             case 2 -> 0.8;
             case 3 -> 0.9;
             default -> 1.0;
         };
     }
 
-    public static double stuckVertical(long facts) {
+    public static double stuckVertical(long facts, boolean weavingCobweb) {
         return switch ((int) ((facts & STUCK_MASK) >> STUCK_SHIFT)) {
-            case 1 -> 0.05;
+            case 1 -> weavingCobweb ? 0.25 : 0.05;
             case 2 -> 0.75;
             case 3 -> 1.5;
             default -> 1.0;
@@ -181,6 +186,7 @@ public final class StateFacts {
         else if (slip == BlockTraits.BLUE_ICE_SLIPPERINESS) facts |= 3L << SLIP_SHIFT;
         if (BlockTraits.speedFactor(type) != 1.0) facts |= SLOW_SPEED_FACTOR;
         if (BlockTraits.jumpFactor(type) != 1.0) facts |= HALF_JUMP_FACTOR;
+        if (type == StateTypes.HONEY_BLOCK) facts |= HONEY;
 
         if (ShapeRegistry.hasShape(state)) facts |= HAS_SHAPE;
         if (ShapeRegistry.fullCubeDefault(state)) facts |= FULL_CUBE;

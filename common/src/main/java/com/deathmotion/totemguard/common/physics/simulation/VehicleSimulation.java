@@ -57,6 +57,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumScan;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.medium.StuckFactor;
 import com.deathmotion.totemguard.common.physics.medium.model.BoatFloatModel;
+import com.deathmotion.totemguard.common.physics.rules.BounceRule;
 import com.deathmotion.totemguard.common.physics.medium.model.FlyingModel;
 import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 import com.deathmotion.totemguard.common.physics.medium.model.RiderWaterModel;
@@ -148,11 +149,15 @@ public final class VehicleSimulation {
         VehicleData vehicle = data.getVehicleData();
         int vehicleId = data.getVehicleId();
 
-        if (data.getMitigationService().setbackPending()) return;
+        if (data.getMitigationService().setbackPending()) {
+            markBoostLag(vehicleId);
+            return;
+        }
         long now = System.currentTimeMillis();
         if (vehicleId >= 0 && mounts.reentryBlocked(vehicleId, now)
                 && data.getMitigationService().bootRider(mounts.reentryX(), mounts.reentryY(), mounts.reentryZ(),
                 gates.endTick())) {
+            markBoostLag(vehicleId);
             return;
         }
 
@@ -173,6 +178,7 @@ public final class VehicleSimulation {
             disengage();
             return;
         }
+        if (EntityRoles.steerableMob(type)) ridden.tickBoost();
         if (!world.readiness().ready() || seedRequested) {
             seedFrom(vehicle, BodyKind.HORSE);
             vehicle.tickImpulse();
@@ -259,7 +265,7 @@ public final class VehicleSimulation {
         }
 
         GroundFacts ground = groundResolver.resolve(obsY, contact, sample.fluid(),
-                livingBody.stepHeight(), carried.floorVy(), false);
+                livingBody.stepHeight(), carried.floorVy(), false, null);
         boolean grounded = ground.groundedStart() || (strider && lava);
         RiderControl control = RiderControlResolver.build(ridden, type, vehicle, data, gates,
                 vehicle.getYaw(), grounded, water);
@@ -345,10 +351,10 @@ public final class VehicleSimulation {
         double vyHi;
         if (landed) {
             boolean unclippedPossible = obsY >= chosenBandLo - CLIP_EPS && obsY <= chosenBandHi + CLIP_EPS;
-            double bounce = contact.supportBounce();
             double restingCarry = -gravity * MotionDefaults.VERTICAL_DRAG;
             vyLo = Math.min(unclippedPossible ? Math.min(obsY, 0.0) : 0.0, restingCarry);
-            vyHi = bounce > 0.0 ? Math.max(0.0, -chosenBandLo * bounce) : 0.0;
+            vyHi = Math.max(0.0, BounceRule.reflect(gates.restitutionBounce(), contact,
+                    chosenBandLo, gravity));
         } else {
             double clamped = Math.min(Math.max(obsY, chosenBounds.floor() - chosenBounds.descentSlack()),
                     chosenBounds.ceiling());
@@ -375,7 +381,8 @@ public final class VehicleSimulation {
         lastDy = vyLo;
         AreaAdvancer.clampObserved(chosenBounds, obsX, obsY, obsZ, false, 0.0);
         double drag = water ? RiderControl.WATER_FRICTION : land.frictionMax(control, ground);
-        carried = new MotionArea(chosenBounds.legalX() * drag, chosenBounds.legalZ() * drag, 0.0, vyLo, vyHi);
+        carried = AreaAdvancer.zeroClamp(new MotionArea(chosenBounds.legalX() * drag,
+                chosenBounds.legalZ() * drag, 0.0, vyLo, vyHi), false);
 
         verdict = judged(livingBody.kind(), medium.kind(), ground.start(),
                 obsX, obsY, obsZ, excess, breach, chosenBounds);
@@ -487,9 +494,9 @@ public final class VehicleSimulation {
             boolean landed = chosenClipLo != chosenAdvLo && obsY <= chosenClipLo + CLIP_EPS;
             if (landed) {
                 boolean unclippedPossible = obsY >= chosenAdvLo - CLIP_EPS && obsY <= chosenAdvHi + CLIP_EPS;
-                double bounce = contact.supportBounce();
                 vyLo = unclippedPossible ? Math.min(obsY, 0.0) : 0.0;
-                vyHi = bounce > 0.0 ? Math.max(0.0, -chosenAdvLo * bounce * NON_LIVING_BOUNCE) : 0.0;
+                vyHi = Math.max(0.0, BounceRule.reflect(gates.restitutionBounce(), contact,
+                        chosenAdvLo, BoatFloatModel.GRAVITY) * NON_LIVING_BOUNCE);
                 lastDy = 0.0;
             } else {
                 double clamped = Math.min(Math.max(obsY, chosenBounds.floor() - chosenBounds.descentSlack()),
@@ -500,7 +507,8 @@ public final class VehicleSimulation {
             }
         }
         AreaAdvancer.clampObserved(chosenBounds, obsX, obsY, obsZ, false, 0.0);
-        carried = new MotionArea(chosenBounds.legalX(), chosenBounds.legalZ(), 0.0, vyLo, vyHi);
+        carried = AreaAdvancer.zeroClamp(new MotionArea(chosenBounds.legalX(),
+                chosenBounds.legalZ(), 0.0, vyLo, vyHi), false);
 
         verdict = judged(BodyKind.BOAT, MediumKind.BOAT, GroundState.AMBIGUOUS,
                 obsX, obsY, obsZ, excess, breach, chosenBounds);
@@ -587,12 +595,19 @@ public final class VehicleSimulation {
         }
         lastDy = vyLo;
         AreaAdvancer.clampObserved(chosenBounds, obsX, obsY, obsZ, false, 0.0);
-        carried = new MotionArea(chosenBounds.legalX() * drag, chosenBounds.legalZ() * drag, 0.0, vyLo, vyHi);
+        carried = AreaAdvancer.zeroClamp(new MotionArea(chosenBounds.legalX() * drag,
+                chosenBounds.legalZ() * drag, 0.0, vyLo, vyHi), false);
 
         verdict = judged(BodyKind.GHAST, MediumKind.FLYING, GroundState.AMBIGUOUS,
                 obsX, obsY, obsZ, excess, breach, chosenBounds);
         trace.record(context.view(), contact, sample, null, control,
                 chosenBounds, verdict, reader, 0.0, 0.0, preX, preZ, preFloor, preCeil);
+    }
+
+    private void markBoostLag(int vehicleId) {
+        if (vehicleId < 0) return;
+        TrackedEntity ridden = world.entities().resolve(vehicleId);
+        if (ridden != null && EntityRoles.steerableMob(ridden.type())) ridden.addBoostLag();
     }
 
     private void scan(ShapeQuery query, double startX, double startY, double startZ,
@@ -617,7 +632,7 @@ public final class VehicleSimulation {
         MediumScan.sample(reader, sample,
                 true, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
-                gates.modernFluidPush(),
+                gates.modernFluidPush(), false,
                 startX - half, startY, startZ - half,
                 startX + half, startY + height, startZ + half,
                 Math.min(startX, endX) - half, Math.min(startY, endY),

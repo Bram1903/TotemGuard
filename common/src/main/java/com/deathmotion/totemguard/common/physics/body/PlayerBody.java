@@ -34,6 +34,7 @@ public final class PlayerBody implements SimulationBody {
 
     private final Data data;
     private final EngineActor actor;
+    private final VersionGates gates;
     private final PoseTracker pose = new PoseTracker();
     private final MediumSelect mediums = new MediumSelect();
     private final PlayerControlResolver control;
@@ -43,6 +44,7 @@ public final class PlayerBody implements SimulationBody {
     public PlayerBody(Data data, EngineActor actor, VersionGates gates) {
         this.data = data;
         this.actor = actor;
+        this.gates = gates;
         this.control = new PlayerControlResolver(data, actor, gates);
     }
 
@@ -91,7 +93,8 @@ public final class PlayerBody implements SimulationBody {
         GlideState glideState = data.isGliding()
                 ? GlideState.FLAG
                 : data.getGlideData().claimActive() ? GlideState.CLAIM : GlideState.NONE;
-        MediumModel medium = mediums.select(sample, glideState);
+        MediumModel medium = mediums.select(sample, glideState, gates.glideForceExitOnClimbable(),
+                data.isFlying() && data.isCanFly());
         boolean glideNow = medium == mediums.glide();
         if (glideNow) {
             mediums.glide().prepare(glideState == GlideState.CLAIM, silent, data.getFireworkData());

@@ -192,20 +192,36 @@ public final class GlideModel implements MediumModel {
         double pvOutX = stepHorizontal(pvX, prvX, pvX, pvZ, pvVy, prvY, prvD0, input);
         double pvOutZ = stepHorizontal(pvZ, prvZ, pvX, pvZ, pvVy, prvY, prvD0, input);
 
+        double afX = input.lookXAlt(), afY = input.lookYAlt(), afZ = input.lookZAlt();
+        double afD0 = ClientMath.horizontalDistance(afX, afZ);
+        double ftX = vx, ftZ = vz, ftFloor = floor, ftCeil = ceil;
+        for (int i = 0; i < boostMax; i++) {
+            ftX = BOOST_KEEP * ftX + BOOST_ADD * afX;
+            ftZ = BOOST_KEEP * ftZ + BOOST_ADD * afZ;
+            ftFloor = BOOST_KEEP * ftFloor + BOOST_ADD * afY;
+            ftCeil = BOOST_KEEP * ftCeil + BOOST_ADD * afY;
+        }
+        double ftVy = Math.min(ftFloor, ftCeil);
+        double ftOutX = stepHorizontal(ftX, afX, ftX, ftZ, ftVy, afY, afD0, input);
+        double ftOutZ = stepHorizontal(ftZ, afZ, ftX, ftZ, ftVy, afY, afD0, input);
+
         stepX = hiOutX;
         stepZ = hiOutZ;
         double countSpread = ClientMath.horizontalDistance(hiOutX - loOutX, hiOutZ - loOutZ);
         double lookSpread = ClientMath.horizontalDistance(hiOutX - pvOutX, hiOutZ - pvOutZ);
-        stepRadius = countSpread + lookSpread;
+        double trigSpread = ClientMath.horizontalDistance(hiOutX - ftOutX, hiOutZ - ftOutZ);
+        stepRadius = countSpread + lookSpread + trigSpread;
 
-        double minFloor = Math.min(loFloor, Math.min(hiFloor, pvFloor));
-        double maxCeil = Math.max(loCeil, Math.max(hiCeil, pvCeil));
-        stepFloor = Math.min(glideStepY(loX, loZ, minFloor, curY, curD0, input),
-                Math.min(glideStepY(hiX, hiZ, minFloor, curY, curD0, input),
-                        glideStepY(pvX, pvZ, minFloor, prvY, prvD0, input)));
-        stepCeil = Math.max(glideStepY(loX, loZ, maxCeil, curY, curD0, input),
-                Math.max(glideStepY(hiX, hiZ, maxCeil, curY, curD0, input),
-                        glideStepY(pvX, pvZ, maxCeil, prvY, prvD0, input)));
+        double minFloor = Math.min(Math.min(loFloor, ftFloor), Math.min(hiFloor, pvFloor));
+        double maxCeil = Math.max(Math.max(loCeil, ftCeil), Math.max(hiCeil, pvCeil));
+        stepFloor = Math.min(glideStepY(ftX, ftZ, minFloor, afY, afD0, input),
+                Math.min(glideStepY(loX, loZ, minFloor, curY, curD0, input),
+                        Math.min(glideStepY(hiX, hiZ, minFloor, curY, curD0, input),
+                                glideStepY(pvX, pvZ, minFloor, prvY, prvD0, input))));
+        stepCeil = Math.max(glideStepY(ftX, ftZ, maxCeil, afY, afD0, input),
+                Math.max(glideStepY(loX, loZ, maxCeil, curY, curD0, input),
+                        Math.max(glideStepY(hiX, hiZ, maxCeil, curY, curD0, input),
+                                glideStepY(pvX, pvZ, maxCeil, prvY, prvD0, input))));
 
         double diveVy = floor;
         for (int i = 0; i < boostMax; i++) {

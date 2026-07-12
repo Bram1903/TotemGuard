@@ -34,21 +34,30 @@ public final class ColliderBuffer implements ShapeSink {
     public static final long KIND_ENTITY = 1L << KIND_SHIFT;
     private static final long KIND_MASK = 3L << KIND_SHIFT;
 
+    public static final long NO_CELL = Long.MIN_VALUE;
+
     private double[] boxes = new double[STRIDE * 64];
     private long[] tags = new long[64];
+    private long[] cells = new long[64];
 
     @Getter
     private int count;
 
     private long currentTag;
+    private long currentCell = NO_CELL;
 
     public void reset() {
         count = 0;
         currentTag = 0L;
+        currentCell = NO_CELL;
     }
 
     public void tag(long tag) {
         this.currentTag = tag;
+    }
+
+    public void cell(long cellKey) {
+        this.currentCell = cellKey;
     }
 
     @Override
@@ -64,6 +73,7 @@ public final class ColliderBuffer implements ShapeSink {
         boxes[base + 4] = maxY;
         boxes[base + 5] = maxZ;
         tags[count] = currentTag;
+        cells[count] = currentCell;
         count++;
     }
 
@@ -95,6 +105,10 @@ public final class ColliderBuffer implements ShapeSink {
         return tags[i];
     }
 
+    public long cellOf(int i) {
+        return cells[i];
+    }
+
     public static boolean isBlock(long tag) {
         return (tag & KIND_MASK) == KIND_BLOCK;
     }
@@ -107,12 +121,31 @@ public final class ColliderBuffer implements ShapeSink {
         return (tag & (TAG_UNCERTAIN | TAG_EXEMPT)) == 0;
     }
 
+    public static long packCell(int x, int y, int z) {
+        return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFFL);
+    }
+
+    public static int cellX(long cellKey) {
+        return (int) (cellKey >> 38);
+    }
+
+    public static int cellZ(long cellKey) {
+        return (int) (cellKey << 26 >> 38);
+    }
+
+    public static int cellY(long cellKey) {
+        return (int) (cellKey << 52 >> 52);
+    }
+
     private void grow() {
         double[] newBoxes = new double[boxes.length * 2];
         long[] newTags = new long[tags.length * 2];
+        long[] newCells = new long[cells.length * 2];
         System.arraycopy(boxes, 0, newBoxes, 0, count * STRIDE);
         System.arraycopy(tags, 0, newTags, 0, count);
+        System.arraycopy(cells, 0, newCells, 0, count);
         boxes = newBoxes;
         tags = newTags;
+        cells = newCells;
     }
 }

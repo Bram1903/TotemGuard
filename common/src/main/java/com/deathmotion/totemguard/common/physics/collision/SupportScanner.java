@@ -67,7 +67,11 @@ final class SupportScanner {
                 report.supportApproximate(true);
                 continue;
             }
-            report.supportBounce(Math.max(report.supportBounce(), StateFacts.bounceFactor(tag)));
+            double bounceFactor = StateFacts.bounceFactor(tag);
+            if (bounceFactor > report.supportBounce()) {
+                report.supportBounce(bounceFactor);
+                report.supportBounceBed(StateFacts.bedBounce(tag));
+            }
             if (StateFacts.is(tag, StateFacts.SUPPORT_APPROXIMATE)) report.supportApproximate(true);
         }
     }

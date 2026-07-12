@@ -81,4 +81,60 @@ public interface ControlEnvelope {
     double jumpTakeoff();
 
     double lookHorizontal();
+
+    default double lookXAlt() {
+        return lookX();
+    }
+
+    default double lookYAlt() {
+        return lookY();
+    }
+
+    default double lookZAlt() {
+        return lookZ();
+    }
+
+    default double prevLookXAlt() {
+        return prevLookX();
+    }
+
+    default double flyAccel() {
+        return 0.0;
+    }
+
+    default double flyVertical() {
+        return 0.0;
+    }
+
+    default double airDragModifier() {
+        return 1.0;
+    }
+
+    default double inputMultiplier() {
+        return 1.0;
+    }
+
+    default double boostDirX() {
+        return 0.0;
+    }
+
+    default double boostDirZ() {
+        return 0.0;
+    }
+
+    default double boostSpread() {
+        return 0.0;
+    }
+
+    default double frictionModifier() {
+        return 1.0;
+    }
+
+    default double prevLookYAlt() {
+        return prevLookY();
+    }
+
+    default double prevLookZAlt() {
+        return prevLookZ();
+    }
 }

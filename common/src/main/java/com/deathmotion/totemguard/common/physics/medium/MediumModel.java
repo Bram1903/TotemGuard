@@ -33,7 +33,14 @@ public interface MediumModel {
 
     default void horizontalOptions(ControlEnvelope input, GroundFacts ground, AreaBounds bounds) {
         if (input.horizontalInput()) bounds.expandRadius(accelBound(input, ground));
-        if (input.sprintJump()) bounds.expandRadius(SPRINT_JUMP_BOOST);
+        if (input.sprintJump()) {
+            if (bounds.hasSegment() || (input.boostDirX() == 0.0 && input.boostDirZ() == 0.0)) {
+                bounds.expandRadius(SPRINT_JUMP_BOOST);
+            } else {
+                bounds.controlSegment(input.boostDirX(), input.boostDirZ(), 0.0, SPRINT_JUMP_BOOST);
+                bounds.expandRadius(input.boostSpread());
+            }
+        }
         bounds.expandRadius(input.sprintJumpResidual());
     }
 

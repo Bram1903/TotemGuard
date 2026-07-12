@@ -52,6 +52,7 @@ public final class ColliderCollector {
                             | (exempt.contains(x, y, z) ? ColliderBuffer.TAG_EXEMPT : 0L);
                     if (collectible) {
                         buffer.tag(facts | ColliderBuffer.KIND_BLOCK | trust);
+                        buffer.cell(ColliderBuffer.packCell(x, y, z));
                         collectShape(buffer, reader, query, clientId, facts, x, y, z);
                     }
                     if (uncertain) {
@@ -60,6 +61,7 @@ public final class ColliderCollector {
                             long pendingFacts = reader.factsForClientId(pendingId);
                             if (StateFacts.is(pendingFacts, StateFacts.HAS_SHAPE | StateFacts.SUPPORT_APPROXIMATE)) {
                                 buffer.tag(pendingFacts | ColliderBuffer.KIND_BLOCK | trust);
+                                buffer.cell(ColliderBuffer.packCell(x, y, z));
                                 collectShape(buffer, reader, query, pendingId, pendingFacts, x, y, z);
                             }
                         }
@@ -71,6 +73,7 @@ public final class ColliderCollector {
         // Entity positions carry interpolation uncertainty, so their boxes support but never clip:
         // charging a crossing against a box the client may render elsewhere would be a false phase.
         buffer.tag(ColliderBuffer.KIND_ENTITY | ColliderBuffer.TAG_UNCERTAIN);
+        buffer.cell(ColliderBuffer.NO_CELL);
         entities.collectStandable(minX, minY, minZ, maxX, maxY, maxZ, buffer);
 
         collectMovingPistons(buffer, pistons, minX, minY, minZ, maxX, maxY, maxZ);
@@ -90,6 +93,7 @@ public final class ColliderCollector {
                                              double maxX, double maxY, double maxZ) {
         if (!pistons.isActive()) return;
         buffer.tag(ColliderBuffer.KIND_BLOCK | ColliderBuffer.TAG_UNCERTAIN | StateFacts.SUPPORT_APPROXIMATE);
+        buffer.cell(ColliderBuffer.NO_CELL);
         for (int i = 0; i < pistons.sceneCount(); i++) {
             PistonData.Scene scene = pistons.scene(i);
             double bMinX = Math.min(scene.minX(), scene.minX() + scene.dirX());

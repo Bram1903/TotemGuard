@@ -102,6 +102,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         if (inventory.getSelectedHotbarIndex() == slot) return;
 
         inventory.setSelectedHotbarIndex(slot);
+        data.getUseItemData().onHeldSlotChange();
         guiManager.refreshMonitor(player.getUuid());
     }
 

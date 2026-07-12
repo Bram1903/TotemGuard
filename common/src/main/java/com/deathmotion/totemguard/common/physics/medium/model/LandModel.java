@@ -64,23 +64,36 @@ public final class LandModel implements MediumModel {
     @Override
     public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         boolean groundDrag = ground.supportedStart() && !input.ceilingClampedJump();
-        return groundDrag ? ground.startSlipMax() * AIR_FRICTION : AIR_FRICTION;
+        double airDrag = computeModifiedFriction(AIR_FRICTION, input.airDragModifier());
+        if (!groundDrag) return airDrag;
+        return computeModifiedFriction(ground.startSlipMax(), input.frictionModifier()) * airDrag;
     }
 
     @Override
     public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
+        double verticalDrag = verticalDrag(input);
         if (input.levitation()) {
             double target = LEVITATION_PER_LEVEL * (input.levitationAmplifier() + 1);
-            return (verticalVelocity + (target - verticalVelocity) * LEVITATION_RATE) * VERTICAL_DRAG;
+            return (verticalVelocity + (target - verticalVelocity) * LEVITATION_RATE) * verticalDrag;
         }
         double gravity = (input.slowFalling() && verticalVelocity <= 0.0)
                 ? Math.min(input.gravity(), SLOW_FALLING_GRAVITY)
                 : input.gravity();
-        return (verticalVelocity - gravity) * VERTICAL_DRAG;
+        return (verticalVelocity - gravity) * verticalDrag;
     }
 
-    private static double groundAccel(ControlEnvelope input, GroundFacts ground) {
-        double slip = ground.startSlipMin();
+    static double groundAccel(ControlEnvelope input, GroundFacts ground) {
+        double slip = computeModifiedFriction(ground.startSlipMin(), input.frictionModifier());
+        if (slip <= 0.6) return input.moveSpeed();
         return input.moveSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
+    }
+
+    public static double verticalDrag(ControlEnvelope input) {
+        return computeModifiedFriction(VERTICAL_DRAG, input.airDragModifier());
+    }
+
+    public static double computeModifiedFriction(double friction, double modifier) {
+        if (modifier == 1.0) return friction;
+        return Math.max(0.0, Math.min(1.0, 1.0 - (1.0 - friction) * modifier));
     }
 }

@@ -22,45 +22,93 @@ public class ExternalVelocityData {
 
     private static final int WINDOW_TICKS = 3;
 
-    private double x;
-    private double y;
-    private double z;
+    private double setX;
+    private double setY;
+    private double setZ;
+    private boolean hasSet;
+    private double addX;
+    private double addY;
+    private double addZ;
+    private double slack;
     private int ticks;
     private boolean active;
+    private int setSequence;
+    private boolean expiredSet;
+
+    public void setVelocity(double vx, double vy, double vz) {
+        setX = vx;
+        setY = vy;
+        setZ = vz;
+        hasSet = true;
+        addX = 0.0;
+        addY = 0.0;
+        addZ = 0.0;
+        slack = 0.0;
+        active = true;
+        ticks = WINDOW_TICKS;
+        setSequence++;
+    }
 
     public void addPush(double px, double py, double pz) {
-        if (active) {
-            x += px;
-            y += py;
-            z += pz;
-        } else {
-            x = px;
-            y = py;
-            z = pz;
+        addPush(px, py, pz, 0.0);
+    }
+
+    public void addPush(double px, double py, double pz, double pushSlack) {
+        if (!active) {
+            addX = 0.0;
+            addY = 0.0;
+            addZ = 0.0;
+            slack = 0.0;
+            hasSet = false;
         }
+        addX += px;
+        addY += py;
+        addZ += pz;
+        slack += pushSlack;
         active = true;
         ticks = WINDOW_TICKS;
     }
 
     public void tick() {
         if (!active) return;
-        if (--ticks <= 0) clear();
+        if (--ticks <= 0) {
+            if (hasSet) expiredSet = true;
+            clear();
+        }
     }
 
     public void consume() {
         clear();
     }
 
+    public boolean pollExpiredSet() {
+        boolean expired = expiredSet;
+        expiredSet = false;
+        return expired;
+    }
+
     public double x() {
-        return x;
+        return hasSet ? setX + addX : addX;
     }
 
     public double y() {
-        return y;
+        return hasSet ? setY + addY : addY;
     }
 
     public double z() {
-        return z;
+        return hasSet ? setZ + addZ : addZ;
+    }
+
+    public double slack() {
+        return slack;
+    }
+
+    public boolean hasSet() {
+        return hasSet;
+    }
+
+    public int setSequence() {
+        return setSequence;
     }
 
     public boolean isActive() {
@@ -69,12 +117,18 @@ public class ExternalVelocityData {
 
     public void reset() {
         clear();
+        expiredSet = false;
     }
 
     private void clear() {
-        x = 0.0;
-        y = 0.0;
-        z = 0.0;
+        setX = 0.0;
+        setY = 0.0;
+        setZ = 0.0;
+        hasSet = false;
+        addX = 0.0;
+        addY = 0.0;
+        addZ = 0.0;
+        slack = 0.0;
         ticks = 0;
         active = false;
     }

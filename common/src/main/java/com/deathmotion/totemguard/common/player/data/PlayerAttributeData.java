@@ -33,6 +33,8 @@ public class PlayerAttributeData {
     private double flyingSpeed = MotionDefaults.FLYING_SPEED;
     private double safeFallDistance = MotionDefaults.SAFE_FALL_DISTANCE;
     private double fallDamageMultiplier = 1.0;
+    private double airDragModifier = 1.0;
+    private double frictionModifier = 1.0;
 
     public void setScale(double scale) {
         this.scale = Math.max(0.0625, Math.min(16.0, scale));
@@ -76,6 +78,14 @@ public class PlayerAttributeData {
 
     public void setFallDamageMultiplier(double fallDamageMultiplier) {
         this.fallDamageMultiplier = Math.max(0.0, Math.min(100.0, fallDamageMultiplier));
+    }
+
+    public void setAirDragModifier(double airDragModifier) {
+        this.airDragModifier = Math.max(0.0, Math.min(2048.0, airDragModifier));
+    }
+
+    public void setFrictionModifier(double frictionModifier) {
+        this.frictionModifier = Math.max(0.0, Math.min(2048.0, frictionModifier));
     }
 
     public double width() {
@@ -130,6 +140,14 @@ public class PlayerAttributeData {
         return fallDamageMultiplier;
     }
 
+    public double airDragModifier() {
+        return airDragModifier;
+    }
+
+    public double frictionModifier() {
+        return frictionModifier;
+    }
+
     public void reset() {
         scale = 1.0;
         movementSpeed = MotionDefaults.BASE_MOVEMENT_SPEED;
@@ -142,5 +160,7 @@ public class PlayerAttributeData {
         flyingSpeed = MotionDefaults.FLYING_SPEED;
         safeFallDistance = MotionDefaults.SAFE_FALL_DISTANCE;
         fallDamageMultiplier = 1.0;
+        airDragModifier = 1.0;
+        frictionModifier = 1.0;
     }
 }

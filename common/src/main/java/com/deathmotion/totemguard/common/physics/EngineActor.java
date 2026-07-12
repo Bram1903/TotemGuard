@@ -32,6 +32,9 @@ public interface EngineActor {
     @Nullable
     ItemStack bootsItem();
 
+    @Nullable
+    ItemStack leggingsItem();
+
     boolean supportsEndTick();
 
     String name();

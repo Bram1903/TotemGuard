@@ -55,6 +55,7 @@ public final class ContactReport {
     private double supportSlipMin;
     private double supportSlipMax;
     private double supportBounce;
+    private boolean supportBounceBed;
     private double supportSpeedFactor;
     private double supportJumpMin;
     private double supportJumpMax;
@@ -86,6 +87,7 @@ public final class ContactReport {
         supportSlipMin = BlockTraits.DEFAULT_SLIPPERINESS;
         supportSlipMax = BlockTraits.DEFAULT_SLIPPERINESS;
         supportBounce = 0.0;
+        supportBounceBed = false;
         supportSpeedFactor = 1.0;
         supportJumpMin = 1.0;
         supportJumpMax = 1.0;

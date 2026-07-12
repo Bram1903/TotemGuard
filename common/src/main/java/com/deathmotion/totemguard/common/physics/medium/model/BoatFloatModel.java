@@ -34,7 +34,7 @@ public final class BoatFloatModel {
     public static final double BOAT_HEIGHT = 0.5625;
     public static final double SNAP_RISE = 0.101;
 
-    private static final double GRAVITY = 0.04;
+    public static final double GRAVITY = 0.04;
     private static final double UNDER_FLOWING_GRAVITY = 7.0E-4;
     private static final double UNDER_WATER_BUOYANCY = 0.01;
     private static final double BUOYANCY_SCALE = GRAVITY / 0.65;
@@ -212,7 +212,7 @@ public final class BoatFloatModel {
                                   double maxX, double maxZ) {
         double slabMinY = minY - FRICTION_SLAB;
         int x0 = floor(minX), x1 = ceil(maxX);
-        int y0 = floor(slabMinY), y1 = ceil(minY);
+        int y0 = floor(slabMinY) - 1, y1 = ceil(minY);
         int z0 = floor(minZ), z1 = ceil(maxZ);
         float sum = 0.0F;
         int count = 0;

@@ -32,6 +32,7 @@ public final class MediumScan {
 
     public static void sample(BlockReader reader, MediumSample out,
                               boolean pushedByFluid, boolean lavaFast, boolean modernFluidPush,
+                              boolean weavingCobweb,
                               double minX, double feetY, double minZ,
                               double maxX, double headY, double maxZ,
                               double sweptMinX, double sweptMinY, double sweptMinZ,
@@ -62,12 +63,12 @@ public final class MediumScan {
                     if (StateFacts.is(facts, StateFacts.STUCK)) {
                         sweptStuck = true;
                         if (inStart) {
-                            double horizontal = StateFacts.stuckHorizontal(facts);
+                            double horizontal = StateFacts.stuckHorizontal(facts, weavingCobweb);
                             if (horizontal > bestStuckHorizontal) {
                                 bestStuckHorizontal = horizontal;
                                 out.stuck(true);
                                 out.stuckHorizontal(horizontal);
-                                out.stuckVertical(StateFacts.stuckVertical(facts));
+                                out.stuckVertical(StateFacts.stuckVertical(facts, weavingCobweb));
                             }
                         }
                     }

@@ -33,8 +33,8 @@ import java.util.*;
 @Getter
 public class MovementData {
 
-    private static final double DUPLICATE_THRESHOLD_LEGACY = 0.03;
-    private static final double DUPLICATE_THRESHOLD_MODERN = 0.0002;
+    public static final double DUPLICATE_THRESHOLD_LEGACY = 0.03;
+    public static final double DUPLICATE_THRESHOLD_MODERN = 0.0002;
 
     private final Map<Integer, Boolean> pendingTeleports = new LinkedHashMap<>();
     private final Deque<ExpectedRotation> pendingServerRotationSyncs = new ArrayDeque<>();

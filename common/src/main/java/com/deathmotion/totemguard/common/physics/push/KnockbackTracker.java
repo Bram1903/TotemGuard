@@ -21,10 +21,16 @@ package com.deathmotion.totemguard.common.physics.push;
 import com.deathmotion.totemguard.common.physics.area.JudgedExcess;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
+import com.deathmotion.totemguard.common.util.ClientMath;
 
 public final class KnockbackTracker {
 
     private final ExternalVelocityData external;
+
+    private double minRequiredMiss = Double.MAX_VALUE;
+    private boolean windowTainted;
+    private boolean requirementObservedThisTick;
+    private int trackedSetSequence = -1;
 
     public KnockbackTracker(ExternalVelocityData external) {
         this.external = external;
@@ -32,11 +38,16 @@ public final class KnockbackTracker {
 
     public void apply(AreaBounds bounds, double knockbackPad) {
         if (!external.isActive()) return;
-        bounds.altCenter(bounds.centerX() + external.x(), bounds.centerZ() + external.z());
-        bounds.expandRadius(knockbackPad);
-        double up = Math.max(0.0, external.y());
+        double slack = external.slack();
+        if (external.hasSet()) {
+            bounds.altCenter(external.x(), external.z());
+        } else {
+            bounds.altCenter(bounds.centerX() + external.x(), bounds.centerZ() + external.z());
+        }
+        bounds.expandRadius(knockbackPad + slack);
+        double up = Math.max(0.0, external.y() + slack);
         if (up > 0.0) bounds.ceiling(bounds.ceiling() + up + knockbackPad);
-        double down = Math.max(0.0, -external.y());
+        double down = Math.max(0.0, -(external.y() - slack));
         if (down > 0.0) bounds.addDescentSlack(down + knockbackPad);
     }
 
@@ -45,10 +56,53 @@ public final class KnockbackTracker {
         if (excess.altCenterUsed() && excess.horizontal() <= horizontalEpsilon
                 && excess.ascent() <= verticalEpsilon) {
             external.consume();
+            resetRequirement();
         }
+    }
+
+    public void observeRequirement(double obsX, double obsZ, double reach,
+                                   boolean taintedTick, double consumeEpsilon) {
+        requirementObservedThisTick = true;
+        if (!external.isActive() || !external.hasSet()) return;
+        if (trackedSetSequence != external.setSequence()) {
+            trackedSetSequence = external.setSequence();
+            minRequiredMiss = Double.MAX_VALUE;
+            windowTainted = false;
+        }
+        if (taintedTick) {
+            windowTainted = true;
+            return;
+        }
+        double miss = Math.max(0.0,
+                ClientMath.horizontalDistance(obsX - external.x(), obsZ - external.z()) - reach);
+        if (miss < minRequiredMiss) minRequiredMiss = miss;
+        if (miss <= consumeEpsilon) {
+            external.consume();
+            resetRequirement();
+        }
+    }
+
+    public void finishTick() {
+        if (external.isActive() && external.hasSet() && !requirementObservedThisTick) {
+            windowTainted = true;
+        }
+        requirementObservedThisTick = false;
+    }
+
+    public double pollIgnored() {
+        if (!external.pollExpiredSet()) return 0.0;
+        double result = windowTainted || minRequiredMiss == Double.MAX_VALUE ? 0.0 : minRequiredMiss;
+        resetRequirement();
+        return result;
     }
 
     public boolean active() {
         return external.isActive();
+    }
+
+    private void resetRequirement() {
+        minRequiredMiss = Double.MAX_VALUE;
+        windowTainted = false;
+        trackedSetSequence = -1;
     }
 }

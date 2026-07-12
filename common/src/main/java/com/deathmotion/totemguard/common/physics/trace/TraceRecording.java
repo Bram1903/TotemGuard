@@ -44,6 +44,7 @@ public final class TraceRecording {
     private final Data data;
     private final EngineContext context;
     private final TraceFrame frame = new TraceFrame();
+    private long stagedContributors;
     private final TraceDump dumper;
     private TickRecorder recorder;
     private long tickCounter;
@@ -68,6 +69,10 @@ public final class TraceRecording {
         if (recorder == null) return false;
         Set<PhysicsDebugContext> contexts = context.view().physicsDebugContexts();
         return dumper.dump(actor, recorder, cause, contexts);
+    }
+
+    public void contributors(long bits) {
+        this.stagedContributors = bits;
     }
 
     public void record(ConfigView view,
@@ -117,6 +122,8 @@ public final class TraceRecording {
         frame.medium = (byte) verdict.medium().ordinal();
         frame.ground = (byte) verdict.ground().ordinal();
         frame.flags = flags(contact, sample, ground, input, verdict);
+        frame.contributors = stagedContributors;
+        stagedContributors = 0L;
         populateContext(sample, input);
         frame.supportGap = contact != null ? Math.min(contact.nearestSupportGap(), 9.999) : 0.0;
         frame.ceilingClearance = contact != null ? contact.ceilingClearance() : 0.0;

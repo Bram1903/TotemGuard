@@ -64,9 +64,10 @@ public final class WaterModel extends FluidModel {
 
     private void applySwimSteer(ControlEnvelope input, AreaBounds bounds) {
         if (!input.swimming()) return;
-        double rate = input.lookY() < STEER_STEEP_LOOK ? STEER_RATE_STEEP : STEER_RATE;
-        double steeredCeiling = bounds.ceiling() + (input.lookY() - bounds.ceiling()) * rate;
-        double steeredFloor = bounds.floor() + (input.lookY() - bounds.floor()) * rate;
+        double steeredCeiling = Math.max(steered(bounds.ceiling(), input.lookY()),
+                steered(bounds.ceiling(), input.lookYAlt()));
+        double steeredFloor = Math.min(steered(bounds.floor(), input.lookY()),
+                steered(bounds.floor(), input.lookYAlt()));
         if (input.lookY() <= 0.0 || steerWater) {
             bounds.ceiling(steeredCeiling);
             bounds.floor(steeredFloor);
@@ -74,6 +75,11 @@ public final class WaterModel extends FluidModel {
             bounds.ceiling(Math.max(bounds.ceiling(), steeredCeiling));
             bounds.floor(Math.min(bounds.floor(), steeredFloor));
         }
+    }
+
+    private static double steered(double bound, double lookY) {
+        double rate = lookY < STEER_STEEP_LOOK ? STEER_RATE_STEEP : STEER_RATE;
+        return bound + (lookY - bound) * rate;
     }
 
     public void observe(MediumSample sample) {

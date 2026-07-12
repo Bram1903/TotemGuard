@@ -159,6 +159,22 @@ TickD:
   punishment-commands:
     - "%default_punishment%"
 
+TickE:
+  enabled: true
+  punishable: false
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
+
+TickF:
+  enabled: true
+  punishable: false
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
+
 BalanceA:
   enabled: true
   punishable: false
@@ -169,6 +185,14 @@ BalanceA:
     - "%default_punishment%"
 
 BalanceB:
+  enabled: true
+  punishable: false
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
+
+BalanceC:
   enabled: true
   punishable: false
   mitigate: false

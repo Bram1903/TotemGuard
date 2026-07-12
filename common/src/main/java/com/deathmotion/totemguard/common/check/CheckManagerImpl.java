@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemA;
 import com.deathmotion.totemguard.common.check.impl.autototem.AutoTotemB;
 import com.deathmotion.totemguard.common.check.impl.balance.BalanceA;
 import com.deathmotion.totemguard.common.check.impl.balance.BalanceB;
+import com.deathmotion.totemguard.common.check.impl.balance.BalanceC;
 import com.deathmotion.totemguard.common.check.impl.inventory.*;
 import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
@@ -33,6 +34,8 @@ import com.deathmotion.totemguard.common.check.impl.tick.TickA;
 import com.deathmotion.totemguard.common.check.impl.tick.TickB;
 import com.deathmotion.totemguard.common.check.impl.tick.TickC;
 import com.deathmotion.totemguard.common.check.impl.tick.TickD;
+import com.deathmotion.totemguard.common.check.impl.tick.TickE;
+import com.deathmotion.totemguard.common.check.impl.tick.TickF;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
 import com.deathmotion.totemguard.common.check.type.ManualCheck;
@@ -87,8 +90,11 @@ public class CheckManagerImpl {
                 .put(TickB.class, new TickB(player))
                 .put(TickC.class, new TickC(player))
                 .put(TickD.class, new TickD(player))
+                .put(TickE.class, new TickE(player))
+                .put(TickF.class, new TickF(player))
                 .put(BalanceA.class, new BalanceA(player))
                 .put(BalanceB.class, new BalanceB(player))
+                .put(BalanceC.class, new BalanceC(player))
                 .put(ProtocolA.class, new ProtocolA(player))
                 .put(ProtocolB.class, new ProtocolB(player))
                 .put(ProtocolC.class, new ProtocolC(player))

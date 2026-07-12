@@ -19,7 +19,9 @@
 package com.deathmotion.totemguard.common.physics.ground;
 
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.collision.SupportingBlockTracker;
 import com.deathmotion.totemguard.common.world.block.BlockTraits;
+import org.jetbrains.annotations.Nullable;
 
 public final class GroundResolver {
 
@@ -62,7 +64,8 @@ public final class GroundResolver {
     }
 
     public GroundFacts resolve(double observedVy, ContactReport contact, boolean fluidNow,
-                                double stepHeight, double carriedFloor, boolean sneaking) {
+                                double stepHeight, double carriedFloor, boolean sneaking,
+                                @Nullable SupportingBlockTracker support) {
         double gap = contact.nearestSupportGap();
         boolean wasFluid = lastFluid;
         lastFluid = fluidNow;
@@ -101,10 +104,24 @@ public final class GroundResolver {
         if (bounced) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
         else if (bounceTicks > 0) bounceTicks--;
 
-        double startSlipMin = Math.min(lastSlipMin, prevSlipMin);
-        double startSlipMax = Math.max(lastSlipMax, prevSlipMax);
-        double startJumpMin = lastJumpMin;
-        double startJumpMax = lastJumpMax;
+        double startSlipMin;
+        double startSlipMax;
+        if (support != null && support.slipCertain()) {
+            startSlipMin = support.slip();
+            startSlipMax = support.slip();
+        } else {
+            startSlipMin = Math.min(lastSlipMin, prevSlipMin);
+            startSlipMax = Math.max(lastSlipMax, prevSlipMax);
+        }
+        double startJumpMin;
+        double startJumpMax;
+        if (support != null && support.jumpCertain()) {
+            startJumpMin = support.jumpFactor();
+            startJumpMax = support.jumpFactor();
+        } else {
+            startJumpMin = lastJumpMin;
+            startJumpMax = lastJumpMax;
+        }
         prevSlipMin = lastSlipMin;
         lastSlipMin = contact.supportSlipMin();
         prevSlipMax = lastSlipMax;

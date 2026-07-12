@@ -31,6 +31,7 @@ public class EffectData {
 
     private int slowFallingTicks;
     private int dolphinsGraceTicks;
+    private int weavingTicks;
 
     private static int normalize(int durationTicks) {
         return durationTicks < 0 ? INFINITE : durationTicks;
@@ -72,6 +73,14 @@ public class EffectData {
         this.dolphinsGraceTicks = 0;
     }
 
+    public void setWeaving(int durationTicks) {
+        this.weavingTicks = normalize(durationTicks);
+    }
+
+    public void clearWeaving() {
+        this.weavingTicks = 0;
+    }
+
     public void tick() {
         if (levitationTicks > 0 && --levitationTicks <= 0) {
             levitationAmplifier = UNSET;
@@ -84,6 +93,9 @@ public class EffectData {
         }
         if (dolphinsGraceTicks > 0) {
             dolphinsGraceTicks--;
+        }
+        if (weavingTicks > 0) {
+            weavingTicks--;
         }
     }
 
@@ -111,10 +123,15 @@ public class EffectData {
         return dolphinsGraceTicks != 0;
     }
 
+    public boolean hasWeaving() {
+        return weavingTicks != 0;
+    }
+
     public void reset() {
         clearLevitation();
         clearJumpBoost();
         clearSlowFalling();
         clearDolphinsGrace();
+        clearWeaving();
     }
 }

@@ -27,11 +27,15 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 public class OutboundEntityProcessor extends ProcessorOutbound {
+
+    private static final int FISHING_ROD_PULL_STATUS = 31;
+    private static final double FISHING_PULL_SCALE = 0.1;
 
     private final Data data;
     private final EntityTracker entities;
@@ -52,6 +56,9 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
 
         if (type == PacketType.Play.Server.SPAWN_ENTITY) {
             WrapperPlayServerSpawnEntity packet = new WrapperPlayServerSpawnEntity(event);
+            if (packet.getEntityType() == EntityTypes.FISHING_BOBBER) {
+                data.getFishingData().onHookSpawn(packet.getEntityId(), packet.getData());
+            }
             spawn(event, packet.getEntityId(), packet.getEntityType(), packet.getPosition());
         } else if (type == PacketType.Play.Server.SPAWN_LIVING_ENTITY) {
             WrapperPlayServerSpawnLivingEntity packet = new WrapperPlayServerSpawnLivingEntity(event);
@@ -75,6 +82,12 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
         } else if (type == PacketType.Play.Server.ENTITY_POSITION_SYNC) {
             WrapperPlayServerEntityPositionSync packet = new WrapperPlayServerEntityPositionSync(event);
             place(event, packet.getId(), packet.getValues().getPosition());
+        } else if (type == PacketType.Play.Server.ENTITY_STATUS) {
+            WrapperPlayServerEntityStatus packet = new WrapperPlayServerEntityStatus(event);
+            if (packet.getStatus() == FISHING_ROD_PULL_STATUS
+                    && data.getFishingData().isHook(packet.getEntityId())) {
+                handleFishingPull(event, packet.getEntityId());
+            }
         } else if (type == PacketType.Play.Server.DESTROY_ENTITIES) {
             handleDestroyEntities(event);
         } else if (type == PacketType.Play.Server.SET_PASSENGERS) {
@@ -82,6 +95,29 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
         } else if (type == PacketType.Play.Server.RESPAWN) {
             serverVehicleId = -1;
         }
+    }
+
+    private void handleFishingPull(PacketSendEvent event, int hookId) {
+        latencyHandler.compensate(event, () -> {
+            if (data.getFishingData().hookedOf(hookId) != player.getUser().getEntityId()) return;
+            TrackedEntity hook = entities.resolve(hookId);
+            TrackedEntity owner = entities.resolve(data.getFishingData().ownerOf(hookId));
+            if (hook == null || owner == null || !hook.positioned() || !owner.positioned()) return;
+            double px = (owner.renderX() - hook.renderX()) * FISHING_PULL_SCALE;
+            double py = (owner.renderY() - hook.renderY()) * FISHING_PULL_SCALE;
+            double pz = (owner.renderZ() - hook.renderZ()) * FISHING_PULL_SCALE;
+            double slack = (interpolationSpread(hook) + interpolationSpread(owner)) * FISHING_PULL_SCALE;
+            data.getExternalVelocityData().addPush(px, py, pz, slack);
+        });
+    }
+
+    private static double interpolationSpread(TrackedEntity entity) {
+        double spread = Math.max(Math.abs(entity.targetX() - entity.renderX()),
+                Math.abs(entity.renderX() - entity.prevRenderX()));
+        spread = Math.max(spread, Math.max(Math.abs(entity.targetY() - entity.renderY()),
+                Math.abs(entity.renderY() - entity.prevRenderY())));
+        return Math.max(spread, Math.max(Math.abs(entity.targetZ() - entity.renderZ()),
+                Math.abs(entity.renderZ() - entity.prevRenderZ())));
     }
 
     private void spawn(PacketSendEvent event, int entityId, EntityType entityType, Vector3d pos) {
@@ -108,6 +144,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             for (int entityId : entityIds) {
                 entities.destroy(entityId);
                 data.getFireworkData().onRemove(entityId);
+                data.getFishingData().onRemove(entityId);
             }
         });
 

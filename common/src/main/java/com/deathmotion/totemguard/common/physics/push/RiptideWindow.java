@@ -22,6 +22,7 @@ import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.GlideData;
+import com.deathmotion.totemguard.common.util.ClientMath;
 
 public final class RiptideWindow {
 
@@ -42,15 +43,19 @@ public final class RiptideWindow {
             if (!bounds.hasAltCenter()) {
                 bounds.altCenter(bounds.centerX() + input.lookX() * strength,
                         bounds.centerZ() + input.lookZ() * strength);
+                bounds.expandRadius(ClientMath.horizontalDistance(
+                        input.lookX() - input.lookXAlt(), input.lookZ() - input.lookZAlt()) * strength);
             } else {
                 bounds.expandRadius(strength);
             }
             if (!data.isGliding()) {
-                double vertical = input.lookY() * strength;
-                if (vertical > 0.0) {
-                    bounds.ceiling(bounds.ceiling() + vertical);
-                } else if (vertical < 0.0) {
-                    bounds.lowerFloor(bounds.floor() + vertical);
+                double verticalHigh = Math.max(input.lookY(), input.lookYAlt()) * strength;
+                double verticalLow = Math.min(input.lookY(), input.lookYAlt()) * strength;
+                if (verticalHigh > 0.0) {
+                    bounds.ceiling(bounds.ceiling() + verticalHigh);
+                }
+                if (verticalLow < 0.0) {
+                    bounds.lowerFloor(bounds.floor() + verticalLow);
                 }
             }
             if (glide.riptideGrounded()) {
