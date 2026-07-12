@@ -114,6 +114,10 @@ public final class CheckCommand extends AbstractCommand {
             return;
         }
 
+        FoliaScheduler.getEntityScheduler().run(target, plugin, (o) -> performCheck(sender, target, totemPlayer, checkDuration), null);
+    }
+
+    private void performCheck(CommandSender sender, Player target, TotemPlayer totemPlayer, int checkDuration) {
         // Ensure the target is in a valid state (survival/adventure, not invulnerable, has totem).
         if (!isTargetInValidGameState(sender, target)) {
             return;
