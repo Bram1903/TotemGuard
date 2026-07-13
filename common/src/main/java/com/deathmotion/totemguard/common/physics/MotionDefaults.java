@@ -33,6 +33,7 @@ public final class MotionDefaults {
 
     public static final double BASE_MOVEMENT_SPEED = 0.1;
     public static final double SNEAKING_SPEED = 0.3;
+    public static final double INPUT_SCALE = 0.98f;
     public static final double MOVEMENT_EFFICIENCY = 0.0;
     public static final double WATER_MOVEMENT_EFFICIENCY = 0.0;
     public static final double FLYING_SPEED = 0.4;

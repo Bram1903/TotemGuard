@@ -24,8 +24,60 @@ import com.deathmotion.totemguard.common.world.block.StateFacts;
 // synthetic rise must not read as vertical tunneling.
 public final class CollisionSweep {
 
+    private static final double FLUSH_TOP_EPS = 1.0e-4;
+
     private final StepUpResolver stepUp = new StepUpResolver();
     private final double[] stepResult = new double[3];
+
+    private static double embedDepth(ColliderBuffer buffer,
+                                     double minX, double minY, double minZ,
+                                     double maxX, double maxY, double maxZ) {
+        double depth = 0.0;
+        int count = buffer.count();
+        for (int i = 0; i < count; i++) {
+            if (!ColliderBuffer.clipEligible(buffer.tagOf(i))) continue;
+            double overlapX = Math.min(maxX, buffer.maxX(i)) - Math.max(minX, buffer.minX(i));
+            if (overlapX <= AxisClip.EPS) continue;
+            double overlapY = Math.min(maxY, buffer.maxY(i)) - Math.max(minY, buffer.minY(i));
+            if (overlapY <= AxisClip.EPS) continue;
+            double overlapZ = Math.min(maxZ, buffer.maxZ(i)) - Math.max(minZ, buffer.minZ(i));
+            if (overlapZ <= AxisClip.EPS) continue;
+            double boxDepth = Math.min(overlapX, Math.min(overlapY, overlapZ));
+            if (boxDepth > depth) depth = boxDepth;
+        }
+        return depth;
+    }
+
+    private static void checkStartOverlap(ColliderBuffer buffer, ContactReport report,
+                                          double minX, double minY, double minZ,
+                                          double maxX, double maxY, double maxZ) {
+        int count = buffer.count();
+        for (int i = 0; i < count; i++) {
+            long tag = buffer.tagOf(i);
+            if ((tag & ColliderBuffer.TAG_EXEMPT) != 0) continue;
+            if (!AxisClip.overlaps(minX, maxX, buffer.minX(i), buffer.maxX(i))) continue;
+            if (!AxisClip.overlaps(minY, maxY, buffer.minY(i), buffer.maxY(i))) continue;
+            if (!AxisClip.overlaps(minZ, maxZ, buffer.minZ(i), buffer.maxZ(i))) continue;
+            report.startOverlapping(true);
+            if (ColliderBuffer.isBlock(tag) && StateFacts.is(tag, StateFacts.SUFFOCATING)) {
+                report.startSuffocating(true);
+                return;
+            }
+        }
+    }
+
+    public boolean flushTopAt(ColliderBuffer buffer, double feetY,
+                              double minX, double minZ, double maxX, double maxZ) {
+        int count = buffer.count();
+        for (int i = 0; i < count; i++) {
+            if (!ColliderBuffer.clipEligible(buffer.tagOf(i))) continue;
+            if (Math.abs(buffer.maxY(i) - feetY) > FLUSH_TOP_EPS) continue;
+            if (!AxisClip.overlaps(minX, maxX, buffer.minX(i), buffer.maxX(i))) continue;
+            if (!AxisClip.overlaps(minZ, maxZ, buffer.minZ(i), buffer.maxZ(i))) continue;
+            return true;
+        }
+        return false;
+    }
 
     public void resolve(ColliderBuffer buffer, ContactReport report,
                         double startX, double startY, double startZ,
@@ -96,42 +148,5 @@ public final class CollisionSweep {
                 minX + dx, minY + dy, minZ + dz,
                 maxX + dx, maxY + dy, maxZ + dz,
                 dx, dz);
-    }
-
-    private static double embedDepth(ColliderBuffer buffer,
-                                     double minX, double minY, double minZ,
-                                     double maxX, double maxY, double maxZ) {
-        double depth = 0.0;
-        int count = buffer.count();
-        for (int i = 0; i < count; i++) {
-            if (!ColliderBuffer.clipEligible(buffer.tagOf(i))) continue;
-            double overlapX = Math.min(maxX, buffer.maxX(i)) - Math.max(minX, buffer.minX(i));
-            if (overlapX <= AxisClip.EPS) continue;
-            double overlapY = Math.min(maxY, buffer.maxY(i)) - Math.max(minY, buffer.minY(i));
-            if (overlapY <= AxisClip.EPS) continue;
-            double overlapZ = Math.min(maxZ, buffer.maxZ(i)) - Math.max(minZ, buffer.minZ(i));
-            if (overlapZ <= AxisClip.EPS) continue;
-            double boxDepth = Math.min(overlapX, Math.min(overlapY, overlapZ));
-            if (boxDepth > depth) depth = boxDepth;
-        }
-        return depth;
-    }
-
-    private static void checkStartOverlap(ColliderBuffer buffer, ContactReport report,
-                                          double minX, double minY, double minZ,
-                                          double maxX, double maxY, double maxZ) {
-        int count = buffer.count();
-        for (int i = 0; i < count; i++) {
-            long tag = buffer.tagOf(i);
-            if ((tag & ColliderBuffer.TAG_EXEMPT) != 0) continue;
-            if (!AxisClip.overlaps(minX, maxX, buffer.minX(i), buffer.maxX(i))) continue;
-            if (!AxisClip.overlaps(minY, maxY, buffer.minY(i), buffer.maxY(i))) continue;
-            if (!AxisClip.overlaps(minZ, maxZ, buffer.minZ(i), buffer.maxZ(i))) continue;
-            report.startOverlapping(true);
-            if (ColliderBuffer.isBlock(tag) && StateFacts.is(tag, StateFacts.SUFFOCATING)) {
-                report.startSuffocating(true);
-                return;
-            }
-        }
     }
 }

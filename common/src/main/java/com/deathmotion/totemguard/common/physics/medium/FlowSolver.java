@@ -33,6 +33,8 @@ public final class FlowSolver {
     private static final float SOURCE_DROP = 0.8888889F;
     private static final double NORMALIZE_EPS = 1.0E-4;
     private static final double SHALLOW_SCALE_LIMIT = 0.4;
+    private static final int[] STEP_X = {0, 0, -1, 1};
+    private static final int[] STEP_Z = {-1, 1, 0, 0};
 
     private FlowSolver() {
     }
@@ -189,9 +191,6 @@ public final class FlowSolver {
         }
         return 1.0;
     }
-
-    private static final int[] STEP_X = {0, 0, -1, 1};
-    private static final int[] STEP_Z = {-1, 1, 0, 0};
 
     private static boolean solidFace(long facts, long fluidKind) {
         return !StateFacts.is(facts, fluidKind) && StateFacts.is(facts, StateFacts.FLOW_STURDY);

@@ -48,7 +48,10 @@ public final class StateFacts {
     public static final long BUBBLE_DRAG = 1L << 14;
     public static final long HONEY = 1L << 15;
     public static final long ANY_FLUID = WATER | LAVA;
-
+    public static final long FLUID_FALLING = 1L << 27;
+    public static final long FLUID_SOURCE = 1L << 28;
+    public static final long FLOW_STURDY = 1L << 29;
+    public static final long BLOCKS_MOTION = 1L << 30;
     private static final int SLIP_SHIFT = 16;
     private static final long SLIP_MASK = 3L << SLIP_SHIFT;
     private static final long SLOW_SPEED_FACTOR = 1L << 18;
@@ -56,14 +59,8 @@ public final class StateFacts {
     private static final int STUCK_SHIFT = 20;
     private static final long STUCK_MASK = 3L << STUCK_SHIFT;
     private static final long BED_BOUNCE = 1L << 22;
-
     private static final int FLUID_AMOUNT_SHIFT = 23;
     private static final long FLUID_AMOUNT_MASK = 15L << FLUID_AMOUNT_SHIFT;
-    public static final long FLUID_FALLING = 1L << 27;
-    public static final long FLUID_SOURCE = 1L << 28;
-    public static final long FLOW_STURDY = 1L << 29;
-    public static final long BLOCKS_MOTION = 1L << 30;
-
     private static final int TABLE_SIZE = 1 << 16;
 
     private static final Map<ClientVersion, StateFacts> TABLES = new ConcurrentHashMap<>();
@@ -77,16 +74,6 @@ public final class StateFacts {
 
     public static StateFacts tableFor(ClientVersion stateVersion) {
         return TABLES.computeIfAbsent(stateVersion, StateFacts::new);
-    }
-
-    public long of(int stateId) {
-        if (stateId < 0 || stateId >= TABLE_SIZE) return classify(stateId);
-        long facts = table[stateId];
-        if ((facts & CLASSIFIED) == 0) {
-            facts = classify(stateId);
-            table[stateId] = facts;
-        }
-        return facts;
     }
 
     public static boolean is(long facts, long flag) {
@@ -143,6 +130,29 @@ public final class StateFacts {
 
     public static double fluidHeight(long facts) {
         return fluidAmount(facts) / 9.0;
+    }
+
+    private static long fluidLevelFacts(WrappedBlockState state) {
+        int level = state.getLevel();
+        if (level == 0) return (8L << FLUID_AMOUNT_SHIFT) | FLUID_SOURCE;
+        if (level >= 8) return (8L << FLUID_AMOUNT_SHIFT) | FLUID_FALLING;
+        return (long) (8 - level) << FLUID_AMOUNT_SHIFT;
+    }
+
+    private static boolean suffocating(WrappedBlockState state, StateType type, long facts) {
+        if (ShapeRegistry.suffocatingOverride(type)) return true;
+        if (ShapeRegistry.suffocatingNever(type)) return false;
+        return type.isBlocking() && (facts & FULL_CUBE) != 0;
+    }
+
+    public long of(int stateId) {
+        if (stateId < 0 || stateId >= TABLE_SIZE) return classify(stateId);
+        long facts = table[stateId];
+        if ((facts & CLASSIFIED) == 0) {
+            facts = classify(stateId);
+            table[stateId] = facts;
+        }
+        return facts;
     }
 
     private long classify(int stateId) {
@@ -203,18 +213,5 @@ public final class StateFacts {
             facts |= BLOCKS_MOTION;
         }
         return facts;
-    }
-
-    private static long fluidLevelFacts(WrappedBlockState state) {
-        int level = state.getLevel();
-        if (level == 0) return (8L << FLUID_AMOUNT_SHIFT) | FLUID_SOURCE;
-        if (level >= 8) return (8L << FLUID_AMOUNT_SHIFT) | FLUID_FALLING;
-        return (long) (8 - level) << FLUID_AMOUNT_SHIFT;
-    }
-
-    private static boolean suffocating(WrappedBlockState state, StateType type, long facts) {
-        if (ShapeRegistry.suffocatingOverride(type)) return true;
-        if (ShapeRegistry.suffocatingNever(type)) return false;
-        return type.isBlocking() && (facts & FULL_CUBE) != 0;
     }
 }

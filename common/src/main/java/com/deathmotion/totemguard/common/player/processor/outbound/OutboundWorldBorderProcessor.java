@@ -25,11 +25,7 @@ import com.deathmotion.totemguard.common.world.border.BorderMirror;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerInitializeWorldBorder;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorder;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorderCenter;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayWorldBorderLerpSize;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorderSize;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 public class OutboundWorldBorderProcessor extends ProcessorOutbound {
 

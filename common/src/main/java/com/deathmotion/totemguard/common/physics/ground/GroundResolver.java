@@ -64,8 +64,8 @@ public final class GroundResolver {
     }
 
     public GroundFacts resolve(double observedVy, ContactReport contact, boolean fluidNow,
-                                double stepHeight, double carriedFloor, boolean sneaking,
-                                @Nullable SupportingBlockTracker support) {
+                               double stepHeight, double carriedFloor, boolean sneaking,
+                               @Nullable SupportingBlockTracker support) {
         double gap = contact.nearestSupportGap();
         boolean wasFluid = lastFluid;
         lastFluid = fluidNow;
@@ -131,7 +131,7 @@ public final class GroundResolver {
 
         GroundState start = groundedStart ? GroundState.SUPPORTED
                 : startAmbiguous ? GroundState.AMBIGUOUS
-                : GroundState.AIRBORNE;
+                  : GroundState.AIRBORNE;
         return new GroundFacts(start, groundedEnd, supportedStart, arrested, recentlyGrounded, landingSupport, bounced,
                 bounceTicks > 0, wasFluid, startSlipMin, startSlipMax, startJumpMin, startJumpMax, gap);
     }

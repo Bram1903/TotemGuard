@@ -20,11 +20,11 @@ package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class LandModel implements MediumModel {
 
@@ -34,6 +34,27 @@ public final class LandModel implements MediumModel {
     private static final double LEVITATION_RATE = 0.2;
     private static final double VERTICAL_DRAG = 0.98;
     private static final double SLOW_FALLING_GRAVITY = 0.01;
+
+    static double groundAccel(ControlEnvelope input, GroundFacts ground) {
+        double slip = computeModifiedFriction(ground.startSlipMin(), input.frictionModifier());
+        if (slip <= 0.6) return input.moveSpeed();
+        return input.moveSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
+    }
+
+    static double groundAccelBase(ControlEnvelope input, GroundFacts ground) {
+        double slip = computeModifiedFriction(ground.startSlipMin(), input.frictionModifier());
+        if (slip <= 0.6) return input.moveSpeedBase();
+        return input.moveSpeedBase() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
+    }
+
+    public static double verticalDrag(ControlEnvelope input) {
+        return computeModifiedFriction(VERTICAL_DRAG, input.airDragModifier());
+    }
+
+    public static double computeModifiedFriction(double friction, double modifier) {
+        if (modifier == 1.0) return friction;
+        return Math.max(0.0, Math.min(1.0, 1.0 - (1.0 - friction) * modifier));
+    }
 
     @Override
     public MediumKind kind() {
@@ -47,6 +68,26 @@ public final class LandModel implements MediumModel {
             case SUPPORTED -> groundBound;
             case AMBIGUOUS -> Math.max(groundBound, input.airAccel());
             case AIRBORNE -> input.airAccel();
+        };
+    }
+
+    @Override
+    public double accelBoundBase(ControlEnvelope input, GroundFacts ground) {
+        double groundBound = groundAccelBase(input, ground);
+        return switch (ground.start()) {
+            case SUPPORTED -> groundBound;
+            case AMBIGUOUS -> Math.max(groundBound, input.airAccelBase());
+            case AIRBORNE -> input.airAccelBase();
+        };
+    }
+
+    @Override
+    public double accelBoundBaseMin(ControlEnvelope input, GroundFacts ground) {
+        double groundBound = groundAccelBase(input, ground);
+        return switch (ground.start()) {
+            case SUPPORTED -> groundBound;
+            case AMBIGUOUS -> Math.min(groundBound, input.airAccelBaseMin());
+            case AIRBORNE -> input.airAccelBaseMin();
         };
     }
 
@@ -80,20 +121,5 @@ public final class LandModel implements MediumModel {
                 ? Math.min(input.gravity(), SLOW_FALLING_GRAVITY)
                 : input.gravity();
         return (verticalVelocity - gravity) * verticalDrag;
-    }
-
-    static double groundAccel(ControlEnvelope input, GroundFacts ground) {
-        double slip = computeModifiedFriction(ground.startSlipMin(), input.frictionModifier());
-        if (slip <= 0.6) return input.moveSpeed();
-        return input.moveSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
-    }
-
-    public static double verticalDrag(ControlEnvelope input) {
-        return computeModifiedFriction(VERTICAL_DRAG, input.airDragModifier());
-    }
-
-    public static double computeModifiedFriction(double friction, double modifier) {
-        if (modifier == 1.0) return friction;
-        return Math.max(0.0, Math.min(1.0, 1.0 - (1.0 - friction) * modifier));
     }
 }

@@ -39,6 +39,23 @@ public final class VehicleReporter {
         this.platform = platform;
     }
 
+    private static String label(BodyKind body, BoundBreach breach) {
+        String kind = switch (body) {
+            case BOAT -> "boat";
+            case GHAST -> "ghast";
+            case CAMEL -> "camel";
+            case PIG -> "pig";
+            case STRIDER -> "strider";
+            default -> "horse";
+        };
+        String suffix = switch (breach) {
+            case DESCENT_FLOOR -> "fly";
+            case ASCENT -> "ascend";
+            default -> "speed";
+        };
+        return kind + "-" + suffix;
+    }
+
     public void report(PhysicsVerdict verdict) {
         BoundBreach breach = verdict.breach();
         if (breach == null) return;
@@ -72,22 +89,5 @@ public final class VehicleReporter {
         if (flagged && platform.getConfigRepository().configView().physicsEngineSetback()) {
             physics.requestVehicleSetback();
         }
-    }
-
-    private static String label(BodyKind body, BoundBreach breach) {
-        String kind = switch (body) {
-            case BOAT -> "boat";
-            case GHAST -> "ghast";
-            case CAMEL -> "camel";
-            case PIG -> "pig";
-            case STRIDER -> "strider";
-            default -> "horse";
-        };
-        String suffix = switch (breach) {
-            case DESCENT_FLOOR -> "fly";
-            case ASCENT -> "ascend";
-            default -> "speed";
-        };
-        return kind + "-" + suffix;
     }
 }

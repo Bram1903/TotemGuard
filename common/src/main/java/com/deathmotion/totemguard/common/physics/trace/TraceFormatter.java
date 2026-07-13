@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.physics.trace;
 
+import com.deathmotion.totemguard.common.physics.body.BodyKind;
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.body.BodyKind;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
 import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
@@ -48,6 +48,9 @@ public final class TraceFormatter {
         sb.append(String.format(Locale.ROOT, " | obs %+.4f %+.4f %+.4f", f.obsX, f.obsY, f.obsZ));
         sb.append(String.format(Locale.ROOT, " | disk c(%+.3f,%+.3f) r%.3f v[%.3f,%.3f]",
                 f.centerX, f.centerZ, f.radius, f.floor, f.ceiling));
+        if (f.altPresent) {
+            sb.append(String.format(Locale.ROOT, " alt(%+.3f,%+.3f)", f.altCenterX, f.altCenterZ));
+        }
         sb.append(String.format(Locale.ROOT, " | rot y%+.2f p%+.2f (prev y%+.2f p%+.2f)",
                 f.yaw, f.pitch, f.prevYaw, f.prevPitch));
         sb.append(String.format(Locale.ROOT, " | pre c(%+.3f,%+.3f) v[%.3f,%.3f]",
@@ -58,8 +61,12 @@ public final class TraceFormatter {
         if (f.reason >= 0) sb.append(':').append(name(REASONS, f.reason));
         if (f.breach >= 0) sb.append(" BREACH:").append(name(BREACHES, f.breach));
         sb.append(' ').append(name(MEDIUMS, f.medium)).append('/').append(name(GROUND_STATES, f.ground));
+        if (f.liveCount > 1) sb.append(" hyp=").append(f.chosenSlot).append('/').append(f.liveCount);
         sb.append(f.has(TraceFrame.FLAG_GROUNDED_END) ? " gnd" : " air");
         sb.append(String.format(Locale.ROOT, " gap%.3f ceil%.2f", cap(f.supportGap), cap(f.ceilingClearance)));
+        if (f.stuckHorizontal != 1.0 || f.stuckVertical != 1.0) {
+            sb.append(String.format(Locale.ROOT, " stk(%.2f,%.2f)", f.stuckHorizontal, f.stuckVertical));
+        }
         sb.append(" | in ");
         appendFlags(sb, f);
         sb.append(String.format(Locale.ROOT, " | rd %d/%d/%d | buf %.1f", f.reads, f.misses, f.uncertainHits, f.buffer));
@@ -72,8 +79,8 @@ public final class TraceFormatter {
 
     private static void appendContexts(StringBuilder sb, TraceFrame f, Set<PhysicsDebugContext> contexts) {
         if (contexts.contains(PhysicsDebugContext.LAND)) {
-            sb.append(String.format(Locale.ROOT, " | land move%.3f jmp%.3f step%.2f sjr%.3f stk(%.2f,%.2f)",
-                    f.moveSpeed, f.jumpStrength, f.stepHeight, f.sprintJumpResidual,
+            sb.append(String.format(Locale.ROOT, " | land move%.3f jmp%.3f step%.2f stk(%.2f,%.2f)",
+                    f.moveSpeed, f.jumpStrength, f.stepHeight,
                     f.stuckHorizontal, f.stuckVertical));
         }
         if (contexts.contains(PhysicsDebugContext.WATER)) {
@@ -98,7 +105,8 @@ public final class TraceFormatter {
         if (contexts.contains(PhysicsDebugContext.GLIDE)) {
             sb.append(String.format(Locale.ROOT, " | glide pitch%+.2f fw%d/%d", f.pitch, f.fireworkMin, f.fireworkMax));
             if (f.has(TraceFrame.FLAG_GLIDE_CLAIM)) sb.append(" claim");
-            if (f.has(TraceFrame.FLAG_GLIDE_RIPTIDE)) sb.append(String.format(Locale.ROOT, " rip%.2f", f.riptideStrength));
+            if (f.has(TraceFrame.FLAG_GLIDE_RIPTIDE))
+                sb.append(String.format(Locale.ROOT, " rip%.2f", f.riptideStrength));
             if (f.has(TraceFrame.FLAG_GLIDE_EXIT)) sb.append(" exit");
         }
     }

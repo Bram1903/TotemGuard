@@ -54,9 +54,9 @@ public final class RiderControlResolver {
 
         double steeringFactor = strider
                 ? (ridden.suffocating()
-                        ? (gates.modernStriderSuffocation()
-                                ? STRIDER_SUFFOCATING_FACTOR : STRIDER_SUFFOCATING_FACTOR_LEGACY)
-                        : STRIDER_SPEED_FACTOR)
+                   ? (gates.modernStriderSuffocation()
+                      ? STRIDER_SUFFOCATING_FACTOR : STRIDER_SUFFOCATING_FACTOR_LEGACY)
+                   : STRIDER_SPEED_FACTOR)
                 : PIG_SPEED_FACTOR;
         double riddenSpeed = steerable
                 ? speed * steeringFactor * ridden.boostFactorCeiling(gates.modernTrig())

@@ -72,6 +72,15 @@ public final class ClientStateMap {
         return CACHE.computeIfAbsent(clientVersion.getProtocolVersion(), p -> new ClientStateMap(clientVersion));
     }
 
+    private static boolean hasClass(String name) {
+        try {
+            Class.forName(name);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public int toClientId(int serverStateId) {
         if (identity || serverStateId < 0) return serverStateId;
         if (serverStateId >= MAX_CACHED_STATE_ID) return translate(serverStateId);
@@ -98,15 +107,6 @@ public final class ClientStateMap {
             return id;
         } catch (Throwable t) {
             return serverStateId;
-        }
-    }
-
-    private static boolean hasClass(String name) {
-        try {
-            Class.forName(name);
-            return true;
-        } catch (Throwable t) {
-            return false;
         }
     }
 }

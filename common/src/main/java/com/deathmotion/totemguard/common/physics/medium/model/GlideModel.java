@@ -19,11 +19,11 @@
 package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.player.data.FireworkData;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
@@ -59,6 +59,12 @@ public final class GlideModel implements MediumModel {
         this.land = land;
     }
 
+    private static double effectiveGravity(double vy, ControlEnvelope input) {
+        return input.slowFalling() && vy <= 0.0
+                ? Math.min(input.gravity(), SLOW_FALLING_GRAVITY)
+                : input.gravity();
+    }
+
     @Override
     public MediumKind kind() {
         return MediumKind.GLIDE;
@@ -91,7 +97,6 @@ public final class GlideModel implements MediumModel {
         bounds.centerZ(stepZ);
         bounds.expandRadius(stepRadius + TRIG_PAD);
         if (input.jumpPossible() && input.sprinting()) bounds.expandRadius(MediumModel.SPRINT_JUMP_BOOST);
-        bounds.expandRadius(input.sprintJumpResidual());
     }
 
     @Override
@@ -261,11 +266,5 @@ public final class GlideModel implements MediumModel {
             v += d1 * lookY * PITCH_UP_COST * PITCH_UP_LIFT;
         }
         return v * DRAG_V;
-    }
-
-    private static double effectiveGravity(double vy, ControlEnvelope input) {
-        return input.slowFalling() && vy <= 0.0
-                ? Math.min(input.gravity(), SLOW_FALLING_GRAVITY)
-                : input.gravity();
     }
 }

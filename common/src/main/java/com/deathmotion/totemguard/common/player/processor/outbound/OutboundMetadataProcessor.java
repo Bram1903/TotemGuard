@@ -24,10 +24,10 @@ import com.deathmotion.totemguard.common.config.schema.EntitySpoofingOptions;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
-import com.deathmotion.totemguard.common.world.entity.EntityTracker;
-import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
+import com.deathmotion.totemguard.common.world.entity.EntityTracker;
+import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemFireworks;
@@ -99,6 +99,34 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
             }
         }
         return false;
+    }
+
+    private static Integer decodeAttachedTarget(Object value) {
+        if (value instanceof Optional<?> optional
+                && optional.isPresent() && optional.get() instanceof Integer boxed) {
+            return boxed;
+        }
+        if (value instanceof java.util.OptionalInt optionalInt && optionalInt.isPresent()) {
+            return optionalInt.getAsInt();
+        }
+        if (value instanceof Integer boxed) {
+            return boxed;
+        }
+        return null;
+    }
+
+    private static int readFlightDuration(ItemStack item) {
+        Optional<ItemFireworks> fireworks = item.getComponent(ComponentTypes.FIREWORKS);
+        if (fireworks.isPresent()) return fireworks.get().getFlightDuration();
+        NBTCompound nbt = item.getNBT();
+        if (nbt != null) {
+            NBTCompound tag = nbt.getCompoundTagOrNull("Fireworks");
+            if (tag != null) {
+                Number flight = tag.getNumberTagValueOrNull("Flight");
+                if (flight != null) return flight.intValue();
+            }
+        }
+        return -1;
     }
 
     @Override
@@ -204,34 +232,6 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         if (attached != null && attached == player.getUser().getEntityId()) {
             latencyHandler.compensateLazy(event, () -> data.getFireworkData().attach(entityId));
         }
-    }
-
-    private static Integer decodeAttachedTarget(Object value) {
-        if (value instanceof Optional<?> optional
-                && optional.isPresent() && optional.get() instanceof Integer boxed) {
-            return boxed;
-        }
-        if (value instanceof java.util.OptionalInt optionalInt && optionalInt.isPresent()) {
-            return optionalInt.getAsInt();
-        }
-        if (value instanceof Integer boxed) {
-            return boxed;
-        }
-        return null;
-    }
-
-    private static int readFlightDuration(ItemStack item) {
-        Optional<ItemFireworks> fireworks = item.getComponent(ComponentTypes.FIREWORKS);
-        if (fireworks.isPresent()) return fireworks.get().getFlightDuration();
-        NBTCompound nbt = item.getNBT();
-        if (nbt != null) {
-            NBTCompound tag = nbt.getCompoundTagOrNull("Fireworks");
-            if (tag != null) {
-                Number flight = tag.getNumberTagValueOrNull("Flight");
-                if (flight != null) return flight.intValue();
-            }
-        }
-        return -1;
     }
 
     private void trackOwnMetadata(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {

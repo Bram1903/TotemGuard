@@ -58,8 +58,6 @@ public interface ControlEnvelope {
 
     double fluidAccel();
 
-    double sprintJumpResidual();
-
     double lookX();
 
     double lookY();
@@ -136,5 +134,41 @@ public interface ControlEnvelope {
 
     default double prevLookZAlt() {
         return prevLookZ();
+    }
+
+    default boolean claimedInputExact() {
+        return false;
+    }
+
+    default double claimedWorldX() {
+        return 0.0;
+    }
+
+    default double claimedWorldZ() {
+        return 0.0;
+    }
+
+    default double claimedSpread() {
+        return 0.0;
+    }
+
+    default double moveSpeedBase() {
+        return moveSpeed();
+    }
+
+    default double airAccelBase() {
+        return airAccel();
+    }
+
+    default double airAccelBaseMin() {
+        return airAccelBase();
+    }
+
+    default double fluidAccelBase() {
+        return fluidAccel();
+    }
+
+    default double flyAccelBase() {
+        return flyAccel();
     }
 }

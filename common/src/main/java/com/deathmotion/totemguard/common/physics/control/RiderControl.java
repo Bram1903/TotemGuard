@@ -115,11 +115,6 @@ public record RiderControl(
     }
 
     @Override
-    public double sprintJumpResidual() {
-        return 0.0;
-    }
-
-    @Override
     public double lookY() {
         return 0.0;
     }

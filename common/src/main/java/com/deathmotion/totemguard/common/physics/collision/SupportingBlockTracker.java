@@ -32,25 +32,46 @@ public final class SupportingBlockTracker {
     private static final double MODERN_COLUMN_DEPTH = 0.500001F;
     private static final long EMPTY = Long.MAX_VALUE;
     private static final long TAINTED = Long.MAX_VALUE - 1;
-
-    private enum Presence {ABSENT, PRESENT, DUAL, UNKNOWN}
-
     private final boolean supportingBlockClient;
-
     private Presence support = Presence.ABSENT;
     private long supportCell;
     private long dualCell;
     private Presence noBlocks = Presence.ABSENT;
-
     private boolean slipCertain;
     private double slip = BlockTraits.DEFAULT_SLIPPERINESS;
     private boolean jumpCertain;
     private double jumpFactor = 1.0;
     private boolean speedCertain;
     private double speedFactor = 1.0;
-
     public SupportingBlockTracker(boolean supportingBlockClient) {
         this.supportingBlockClient = supportingBlockClient;
+    }
+
+    private static boolean cellKnown(BlockReader reader, long pos) {
+        return !reader.uncertain(ColliderBuffer.cellX(pos), ColliderBuffer.cellY(pos), ColliderBuffer.cellZ(pos));
+    }
+
+    private static long facts(BlockReader reader, long pos) {
+        return reader.facts(ColliderBuffer.cellX(pos), ColliderBuffer.cellY(pos), ColliderBuffer.cellZ(pos));
+    }
+
+    private static double distToCenterSqr(long cell, double posX, double posY, double posZ) {
+        double dx = ColliderBuffer.cellX(cell) + 0.5 - posX;
+        double dy = ColliderBuffer.cellY(cell) + 0.5 - posY;
+        double dz = ColliderBuffer.cellZ(cell) + 0.5 - posZ;
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    private static int comparePos(long left, long right) {
+        int leftY = ColliderBuffer.cellY(left), rightY = ColliderBuffer.cellY(right);
+        if (leftY != rightY) return leftY - rightY;
+        int leftZ = ColliderBuffer.cellZ(left), rightZ = ColliderBuffer.cellZ(right);
+        if (leftZ != rightZ) return leftZ - rightZ;
+        return ColliderBuffer.cellX(left) - ColliderBuffer.cellX(right);
+    }
+
+    private static int floor(double value) {
+        return (int) Math.floor(value);
     }
 
     public boolean slipCertain() {
@@ -282,7 +303,7 @@ public final class SupportingBlockTracker {
 
     private long affectsMovementPos(BlockReader reader, long cell, int belowY) {
         StateType type = reader.stateForClientId(
-                reader.stateId(ColliderBuffer.cellX(cell), ColliderBuffer.cellY(cell), ColliderBuffer.cellZ(cell)))
+                        reader.stateId(ColliderBuffer.cellX(cell), ColliderBuffer.cellY(cell), ColliderBuffer.cellZ(cell)))
                 .getType();
         if (BlockTags.WALLS.contains(type) || BlockTags.FENCE_GATES.contains(type)) {
             return cell;
@@ -290,30 +311,5 @@ public final class SupportingBlockTracker {
         return ColliderBuffer.packCell(ColliderBuffer.cellX(cell), belowY, ColliderBuffer.cellZ(cell));
     }
 
-    private static boolean cellKnown(BlockReader reader, long pos) {
-        return !reader.uncertain(ColliderBuffer.cellX(pos), ColliderBuffer.cellY(pos), ColliderBuffer.cellZ(pos));
-    }
-
-    private static long facts(BlockReader reader, long pos) {
-        return reader.facts(ColliderBuffer.cellX(pos), ColliderBuffer.cellY(pos), ColliderBuffer.cellZ(pos));
-    }
-
-    private static double distToCenterSqr(long cell, double posX, double posY, double posZ) {
-        double dx = ColliderBuffer.cellX(cell) + 0.5 - posX;
-        double dy = ColliderBuffer.cellY(cell) + 0.5 - posY;
-        double dz = ColliderBuffer.cellZ(cell) + 0.5 - posZ;
-        return dx * dx + dy * dy + dz * dz;
-    }
-
-    private static int comparePos(long left, long right) {
-        int leftY = ColliderBuffer.cellY(left), rightY = ColliderBuffer.cellY(right);
-        if (leftY != rightY) return leftY - rightY;
-        int leftZ = ColliderBuffer.cellZ(left), rightZ = ColliderBuffer.cellZ(right);
-        if (leftZ != rightZ) return leftZ - rightZ;
-        return ColliderBuffer.cellX(left) - ColliderBuffer.cellX(right);
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
-    }
+    private enum Presence {ABSENT, PRESENT, DUAL, UNKNOWN}
 }

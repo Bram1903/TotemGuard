@@ -27,17 +27,6 @@ public final class TeleportFilter {
 
     private static final int PRESERVE_GRACE_TICKS = 3;
     private static final double PRESERVED_WARP_ACCEL = 0.2;
-
-    public enum Outcome {
-        NONE,
-        RESYNC_REST_PENDING_SETBACK,
-        RESYNC_REST,
-        RESYNC_PRESERVED,
-        RESYNC_OTHER,
-        TELEPORT_PRESERVED,
-        TELEPORT
-    }
-
     private int preserveGrace;
 
     public Outcome classify(MovementData movement, TeleportData teleports, boolean setbackPending) {
@@ -78,5 +67,15 @@ public final class TeleportFilter {
 
     public void reset() {
         preserveGrace = 0;
+    }
+
+    public enum Outcome {
+        NONE,
+        RESYNC_REST_PENDING_SETBACK,
+        RESYNC_REST,
+        RESYNC_PRESERVED,
+        RESYNC_OTHER,
+        TELEPORT_PRESERVED,
+        TELEPORT
     }
 }

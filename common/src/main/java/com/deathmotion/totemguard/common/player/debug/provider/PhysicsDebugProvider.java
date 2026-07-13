@@ -61,8 +61,8 @@ public final class PhysicsDebugProvider implements DebugOverlayProvider {
         String state = verdict.breach() != null
                 ? verdict.breach().name().toLowerCase()
                 : verdict.declineReason() != null
-                ? verdict.declineReason().name().toLowerCase()
-                : verdict.outcome().name().toLowerCase();
+                  ? verdict.declineReason().name().toLowerCase()
+                  : verdict.outcome().name().toLowerCase();
         Component vertical = Component.empty()
                 .append(field("V ", vOffense ? "over" : "ok", vOffense ? Palette.DANGER : Palette.SUCCESS))
                 .append(field("vy", String.format("%.3f", verdict.observedY()), Palette.BRAND))

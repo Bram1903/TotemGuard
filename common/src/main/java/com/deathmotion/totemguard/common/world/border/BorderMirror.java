@@ -31,6 +31,10 @@ public final class BorderMirror {
     private long lerpStartNanos;
     private long lerpDurationNanos;
 
+    private static double clampHalfExtent(double diameter) {
+        return Math.max(1.0, diameter / 2.0);
+    }
+
     public void initialize(double centerX, double centerZ, double diameter) {
         this.centerX = centerX;
         this.centerZ = centerZ;
@@ -86,9 +90,5 @@ public final class BorderMirror {
         }
         double t = (double) elapsed / lerpDurationNanos;
         return lerpFromHalfExtent + (lerpToHalfExtent - lerpFromHalfExtent) * t;
-    }
-
-    private static double clampHalfExtent(double diameter) {
-        return Math.max(1.0, diameter / 2.0);
     }
 }

@@ -19,9 +19,10 @@
 package com.deathmotion.totemguard.common.physics.medium;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.util.ClientMath;
 
 public interface MediumModel {
 
@@ -31,17 +32,29 @@ public interface MediumModel {
 
     double accelBound(ControlEnvelope input, GroundFacts ground);
 
+    default double accelBoundBase(ControlEnvelope input, GroundFacts ground) {
+        return accelBound(input, ground);
+    }
+
+    default double accelBoundBaseMin(ControlEnvelope input, GroundFacts ground) {
+        return accelBoundBase(input, ground);
+    }
+
     default void horizontalOptions(ControlEnvelope input, GroundFacts ground, AreaBounds bounds) {
-        if (input.horizontalInput()) bounds.expandRadius(accelBound(input, ground));
-        if (input.sprintJump()) {
-            if (bounds.hasSegment() || (input.boostDirX() == 0.0 && input.boostDirZ() == 0.0)) {
-                bounds.expandRadius(SPRINT_JUMP_BOOST);
+        if (input.horizontalInput()) {
+            if (input.claimedInputExact()) {
+                double maxAccel = accelBoundBase(input, ground);
+                double minAccel = accelBoundBaseMin(input, ground);
+                double mid = (maxAccel + minAccel) * 0.5;
+                bounds.centerX(bounds.centerX() + input.claimedWorldX() * mid);
+                bounds.centerZ(bounds.centerZ() + input.claimedWorldZ() * mid);
+                double magnitude = ClientMath.horizontalDistance(input.claimedWorldX(), input.claimedWorldZ());
+                bounds.expandRadius((maxAccel - minAccel) * 0.5 * magnitude
+                        + input.claimedSpread() * maxAccel);
             } else {
-                bounds.controlSegment(input.boostDirX(), input.boostDirZ(), 0.0, SPRINT_JUMP_BOOST);
-                bounds.expandRadius(input.boostSpread());
+                bounds.expandRadius(accelBound(input, ground));
             }
         }
-        bounds.expandRadius(input.sprintJumpResidual());
     }
 
     void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds);

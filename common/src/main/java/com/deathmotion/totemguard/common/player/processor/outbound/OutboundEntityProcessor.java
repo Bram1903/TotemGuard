@@ -23,11 +23,11 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
+import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -47,6 +47,15 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
         this.data = player.getData();
         this.entities = player.getWorldMirror().entities();
         this.latencyHandler = player.getLatencyHandler();
+    }
+
+    private static double interpolationSpread(TrackedEntity entity) {
+        double spread = Math.max(Math.abs(entity.targetX() - entity.renderX()),
+                Math.abs(entity.renderX() - entity.prevRenderX()));
+        spread = Math.max(spread, Math.max(Math.abs(entity.targetY() - entity.renderY()),
+                Math.abs(entity.renderY() - entity.prevRenderY())));
+        return Math.max(spread, Math.max(Math.abs(entity.targetZ() - entity.renderZ()),
+                Math.abs(entity.renderZ() - entity.prevRenderZ())));
     }
 
     @Override
@@ -109,15 +118,6 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             double slack = (interpolationSpread(hook) + interpolationSpread(owner)) * FISHING_PULL_SCALE;
             data.getExternalVelocityData().addPush(px, py, pz, slack);
         });
-    }
-
-    private static double interpolationSpread(TrackedEntity entity) {
-        double spread = Math.max(Math.abs(entity.targetX() - entity.renderX()),
-                Math.abs(entity.renderX() - entity.prevRenderX()));
-        spread = Math.max(spread, Math.max(Math.abs(entity.targetY() - entity.renderY()),
-                Math.abs(entity.renderY() - entity.prevRenderY())));
-        return Math.max(spread, Math.max(Math.abs(entity.targetZ() - entity.renderZ()),
-                Math.abs(entity.renderZ() - entity.prevRenderZ())));
     }
 
     private void spawn(PacketSendEvent event, int entityId, EntityType entityType, Vector3d pos) {

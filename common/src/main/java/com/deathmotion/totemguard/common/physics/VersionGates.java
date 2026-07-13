@@ -41,6 +41,8 @@ public final class VersionGates {
     private final boolean modernStriderSuffocation;
     private final boolean supportingBlock;
     private final boolean useEffectsComponent;
+    private final boolean claimedInput;
+    private final boolean squareInputRescale;
     private final boolean endTick;
 
     public VersionGates(ClientVersion client, boolean supportsEndTick) {
@@ -60,6 +62,8 @@ public final class VersionGates {
         this.modernStriderSuffocation = client.isNewerThanOrEquals(ClientVersion.V_1_19_4);
         this.supportingBlock = client.isNewerThanOrEquals(ClientVersion.V_1_20);
         this.useEffectsComponent = client.isNewerThanOrEquals(ClientVersion.V_1_21_11);
+        this.claimedInput = client.isNewerThanOrEquals(ClientVersion.V_1_21_2);
+        this.squareInputRescale = client.isNewerThanOrEquals(ClientVersion.V_1_21_5);
         this.endTick = supportsEndTick;
     }
 }

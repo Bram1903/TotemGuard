@@ -19,10 +19,10 @@
 package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
-import com.deathmotion.totemguard.common.physics.medium.MediumModel;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 
 public abstract class FluidModel implements MediumModel {
 
@@ -31,11 +31,20 @@ public abstract class FluidModel implements MediumModel {
     protected static final double ASCENT_MIN = 0.1;
     protected static final double WALL_BUMP_ASCENT = 0.34;
 
+    protected static boolean wallEvidence(ControlEnvelope input, ContactReport contact) {
+        return contact.wallNear() || input.priorWallContact();
+    }
+
     protected abstract double gravityDivisor();
 
     @Override
     public double accelBound(ControlEnvelope input, GroundFacts ground) {
         return input.fluidAccel();
+    }
+
+    @Override
+    public double accelBoundBase(ControlEnvelope input, GroundFacts ground) {
+        return input.fluidAccelBase();
     }
 
     @Override
@@ -50,10 +59,6 @@ public abstract class FluidModel implements MediumModel {
         }
         ascentOptions(input, contact, bounds);
         bounds.enforceDescentFloor(true);
-    }
-
-    protected static boolean wallEvidence(ControlEnvelope input, ContactReport contact) {
-        return contact.wallNear() || input.priorWallContact();
     }
 
     protected void ascentOptions(ControlEnvelope input, ContactReport contact, AreaBounds bounds) {

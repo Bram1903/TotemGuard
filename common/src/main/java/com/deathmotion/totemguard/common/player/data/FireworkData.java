@@ -28,13 +28,18 @@ public final class FireworkData {
 
     private final int[] candidateIds = new int[MAX_TRACKED];
     private final int[] candidateFlight = new int[MAX_TRACKED];
-    private int candidateCount;
     private final int[] ids = new int[MAX_TRACKED];
     private final int[] ages = new int[MAX_TRACKED];
     private final int[] maxLife = new int[MAX_TRACKED];
+    private int candidateCount;
     private int count;
     private int lingerTicks;
     private int boundaryTicks;
+
+    private static int boostWindow(int flightDuration) {
+        if (flightDuration < 0) return UNKNOWN_MAX_BOOST_TICKS;
+        return 10 * (flightDuration + 1) + LIFETIME_JITTER + LIFETIME_SLOP;
+    }
 
     public void candidate(int entityId) {
         for (int i = 0; i < candidateCount; i++) {
@@ -130,11 +135,6 @@ public final class FireworkData {
             if (candidateIds[i] == entityId) return candidateFlight[i];
         }
         return -1;
-    }
-
-    private static int boostWindow(int flightDuration) {
-        if (flightDuration < 0) return UNKNOWN_MAX_BOOST_TICKS;
-        return 10 * (flightDuration + 1) + LIFETIME_JITTER + LIFETIME_SLOP;
     }
 
     private void removeCandidate(int entityId) {

@@ -120,11 +120,6 @@ public record BoatControl(
     }
 
     @Override
-    public double sprintJumpResidual() {
-        return 0.0;
-    }
-
-    @Override
     public double lookX() {
         return 0.0;
     }

@@ -24,23 +24,20 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class HypothesisSet {
 
-    public enum Slot {
-        MAIN,
-        IMPULSE,
-        SNAP
-    }
-
     private final AreaBounds main = new AreaBounds();
     private final AreaBounds impulse = new AreaBounds();
     private final AreaBounds snap = new AreaBounds();
     private boolean mainEnabled;
     private boolean impulseEnabled;
     private boolean snapEnabled;
-
     @Getter
     private Slot chosenSlot = Slot.MAIN;
     @Getter
     private JudgedExcess chosenExcess = JudgedExcess.NONE;
+
+    private static double maxExcess(JudgedExcess judged) {
+        return Math.max(judged.horizontal(), Math.max(judged.ascent(), judged.descent()));
+    }
 
     public void reset(MotionArea carried) {
         main.reset(carried);
@@ -101,7 +98,9 @@ public final class HypothesisSet {
         return bounds(chosenSlot);
     }
 
-    private static double maxExcess(JudgedExcess judged) {
-        return Math.max(judged.horizontal(), Math.max(judged.ascent(), judged.descent()));
+    public enum Slot {
+        MAIN,
+        IMPULSE,
+        SNAP
     }
 }

@@ -24,11 +24,7 @@ import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Accessors(fluent = true)
 public final class EntityTracker {
@@ -48,6 +44,12 @@ public final class EntityTracker {
     private int standableCount;
     @Getter
     private int pushableCount;
+
+    private static double intervalGap(double aMin, double aMax, double bMin, double bMax) {
+        if (aMax < bMin) return bMin - aMax;
+        if (bMax < aMin) return aMin - bMax;
+        return 0.0;
+    }
 
     public Collection<TrackedEntity> tracked() {
         return entities.values();
@@ -259,11 +261,5 @@ public final class EntityTracker {
             if (xOk && zOk && yOk) count++;
         }
         return count;
-    }
-
-    private static double intervalGap(double aMin, double aMax, double bMin, double bMax) {
-        if (aMax < bMin) return bMin - aMax;
-        if (bMax < aMin) return aMin - bMax;
-        return 0.0;
     }
 }

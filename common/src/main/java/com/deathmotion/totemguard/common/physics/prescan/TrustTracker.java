@@ -20,14 +20,6 @@ package com.deathmotion.totemguard.common.physics.prescan;
 
 public final class TrustTracker {
 
-    public enum Trust {
-        TRUSTED,
-        TRUSTED_ZERO,
-        WITHHELD,
-        COAST_DOUBLE,
-        JUDGED_DOUBLE
-    }
-
     private int flyingSinceTickEnd;
     private int doubleMoveStreak;
 
@@ -36,7 +28,7 @@ public final class TrustTracker {
     }
 
     public Trust classify(boolean positionChanged, boolean duplicate, boolean supportsEndTick,
-                            boolean lastPacketWasTeleport, int doubleMoveGraceTicks) {
+                          boolean lastPacketWasTeleport, int doubleMoveGraceTicks) {
         if (!positionChanged) {
             if (duplicate) {
                 doubleMoveStreak = 0;
@@ -65,5 +57,13 @@ public final class TrustTracker {
     public void reset() {
         flyingSinceTickEnd = 0;
         doubleMoveStreak = 0;
+    }
+
+    public enum Trust {
+        TRUSTED,
+        TRUSTED_ZERO,
+        WITHHELD,
+        COAST_DOUBLE,
+        JUDGED_DOUBLE
     }
 }

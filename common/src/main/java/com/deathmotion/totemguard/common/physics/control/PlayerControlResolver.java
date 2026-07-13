@@ -21,14 +21,9 @@ package com.deathmotion.totemguard.common.physics.control;
 import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.VersionGates;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
-import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.player.data.EffectData;
-import com.deathmotion.totemguard.common.player.data.InputData;
-import com.deathmotion.totemguard.common.player.data.MovementData;
-import com.deathmotion.totemguard.common.player.data.PlayerAttributeData;
-import com.deathmotion.totemguard.common.player.data.UseItemData;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
@@ -51,9 +46,6 @@ public final class PlayerControlResolver {
     private static final double SPRINT_GROUND_SLIPPERINESS = 0.61;
 
     private static final double SPRINT_JUMP_BOOST = 0.2;
-    private static final int SPRINT_JUMP_BOOST_WINDOW = 2;
-    private static final double SPRINT_JUMP_BOOST_DECAY = 0.75;
-    private static final double[] SPRINT_JUMP_BOOST_RESIDUALS = boostResiduals();
 
     private static final double SPRINT_SPEED_MULTIPLIER = 1.3;
     private static final double SWIFT_SNEAK_PER_LEVEL = 0.15;
@@ -77,7 +69,6 @@ public final class PlayerControlResolver {
     private boolean lastClampedJump;
     private boolean lastWallContact = true;
     private double lastCeilingClearance = Double.MAX_VALUE;
-    private int sprintJumpBoostWindow;
 
     public PlayerControlResolver(Data data, EngineActor actor, VersionGates gates) {
         this.data = data;
@@ -85,16 +76,9 @@ public final class PlayerControlResolver {
         this.gates = gates;
     }
 
-    private static double[] boostResiduals() {
-        double[] residuals = new double[SPRINT_JUMP_BOOST_WINDOW];
-        for (int i = 0; i < residuals.length; i++) {
-            residuals[i] = SPRINT_JUMP_BOOST * Math.pow(SPRINT_JUMP_BOOST_DECAY, i + 1);
-        }
-        return residuals;
-    }
-
     public PlayerControl build(MovementData movement, ContactReport contact, GroundFacts ground,
-                              boolean fluidNow, double observedX, double observedY, double observedZ) {
+                               boolean fluidNow, double observedX, double observedY, double observedZ,
+                               boolean doubleMove, double stuckVertical) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
         boolean horizontalInput = !inventoryOpen
@@ -108,7 +92,8 @@ public final class PlayerControlResolver {
         double takeoffMin = attr.jumpStrength() * ground.startJumpMin() + jumpBoost;
         double takeoffMax = attr.jumpStrength() * ground.startJumpMax() + jumpBoost;
 
-        boolean freshJump = observedY >= takeoffMin - COYOTE_TAKEOFF_EPS;
+        double takeoffScale = Math.min(1.0, stuckVertical);
+        boolean freshJump = observedY >= takeoffMin * takeoffScale - COYOTE_TAKEOFF_EPS;
         boolean landingJump = ground.landingSupport()
                 && observedY > RISE_EPS && observedY <= takeoffMax + COYOTE_TAKEOFF_EPS;
         boolean coyoteJump = !ground.groundedStart()
@@ -144,14 +129,6 @@ public final class PlayerControlResolver {
                 ? geometricWall && movement.isHorizontalCollision()
                 : geometricWall;
 
-        double sprintJumpResidual = 0.0;
-        if (sprintJump) {
-            sprintJumpBoostWindow = SPRINT_JUMP_BOOST_WINDOW;
-        } else if (sprintJumpBoostWindow > 0) {
-            sprintJumpResidual = SPRINT_JUMP_BOOST_RESIDUALS[SPRINT_JUMP_BOOST_WINDOW - sprintJumpBoostWindow];
-            sprintJumpBoostWindow--;
-        }
-
         float yaw = movement.getCurrent().getYaw();
         float pitch = movement.getCurrent().getPitch();
         float prevYaw = movement.getPrevious().getYaw();
@@ -170,6 +147,8 @@ public final class PlayerControlResolver {
                     boostDirZ - ClientMath.lookZFast(yaw, 0.0f)) * SPRINT_JUMP_BOOST;
         }
 
+        ClaimedVector claimed = resolveClaimedInput(state, movement, doubleMove, sneaking, useMultiplier, yaw);
+
         return new PlayerControl(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
                 jumpPossible, ceilingClampedJump, fluidExitHop, priorWallContact,
                 effectiveSpeed(sprinting, sneaking, diagonal, ground) * useMultiplier,
@@ -178,7 +157,6 @@ public final class PlayerControlResolver {
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
                 fluidAccel(data.isSprinting(), effectiveGroundedStart) * useMultiplier,
-                sprintJumpResidual,
                 ClientMath.lookX(yaw, pitch, modernTrig),
                 ClientMath.lookY(pitch, modernTrig),
                 ClientMath.lookZ(yaw, pitch, modernTrig),
@@ -200,7 +178,78 @@ public final class PlayerControlResolver {
                 useMultiplier,
                 boostDirX,
                 boostDirZ,
-                boostSpread);
+                boostSpread,
+                claimed.exact(),
+                claimed.x(),
+                claimed.z(),
+                claimed.spread(),
+                effectiveSpeedBase(sprinting, ground),
+                fluidAccel(data.isSprinting(), effectiveGroundedStart),
+                data.getAbilitiesFlyingSpeed() * (data.isSprinting() ? 2.0 : 1.0));
+    }
+
+    private ClaimedVector resolveClaimedInput(InputData.State state, MovementData movement,
+                                              boolean doubleMove, boolean sneaking,
+                                              double useMultiplier, float yaw) {
+        if (!gates.claimedInput() || state == null || doubleMove
+                || movement.isLastFlyingWasDuplicate()) {
+            return ClaimedVector.NONE;
+        }
+        double impulseX = (state.left() ? 1.0 : 0.0) - (state.right() ? 1.0 : 0.0);
+        double impulseZ = (state.forward() ? 1.0 : 0.0) - (state.backward() ? 1.0 : 0.0);
+        if (impulseX == 0.0 && impulseZ == 0.0) return ClaimedVector.ZERO;
+        double multiplier = MotionDefaults.INPUT_SCALE;
+        if (sneaking && !data.isFlying() && !data.isSwimming()) multiplier *= sneakMultiplier();
+        multiplier *= useMultiplier;
+        double scaledX = impulseX * multiplier;
+        double scaledZ = impulseZ * multiplier;
+        double localX;
+        double localZ;
+        if (gates.squareInputRescale()) {
+            float floatX = (float) scaledX;
+            float floatZ = (float) scaledZ;
+            float length = (float) Math.sqrt(floatX * floatX + floatZ * floatZ);
+            if (length < 1.0e-4f) return ClaimedVector.ZERO;
+            double directionX = floatX / length;
+            double directionZ = floatZ / length;
+            double absX = Math.abs(scaledX);
+            double absZ = Math.abs(scaledZ);
+            double ratio = Math.min(absX, absZ) / Math.max(absX, absZ);
+            double magnitude = Math.min(ClientMath.horizontalDistance(scaledX, scaledZ)
+                    * Math.sqrt(1.0 + ratio * ratio), 1.0);
+            localX = directionX * magnitude;
+            localZ = directionZ * magnitude;
+        } else {
+            double lengthSqr = scaledX * scaledX + scaledZ * scaledZ;
+            if (lengthSqr < 1.0e-7) return ClaimedVector.ZERO;
+            if (lengthSqr > 1.0) {
+                double length = Math.sqrt(lengthSqr);
+                localX = scaledX / length;
+                localZ = scaledZ / length;
+            } else {
+                localX = scaledX;
+                localZ = scaledZ;
+            }
+        }
+        float radians = yaw * ClientMath.DEG_TO_RAD;
+        boolean modern = modernTrig();
+        double sin = ClientMath.sin(radians, modern);
+        double cos = ClientMath.cos(radians, modern);
+        double worldX = localX * cos - localZ * sin;
+        double worldZ = localZ * cos + localX * sin;
+        double sinFast = ClientMath.sinFast(radians);
+        double cosFast = ClientMath.cosFast(radians);
+        double spread = ClientMath.horizontalDistance(
+                worldX - (localX * cosFast - localZ * sinFast),
+                worldZ - (localZ * cosFast + localX * sinFast));
+        return new ClaimedVector(true, worldX, worldZ, spread);
+    }
+
+    private double effectiveSpeedBase(boolean sprinting, GroundFacts ground) {
+        double speed = data.getAttributeData().movementSpeed();
+        speed = Math.max(0.0, speed - frostPenalty(ground, speed));
+        if (sprinting) speed *= SPRINT_SPEED_MULTIPLIER;
+        return speed;
     }
 
     private double useSlowdownMultiplier() {
@@ -299,7 +348,6 @@ public final class PlayerControlResolver {
         improperSprint = false;
         lastWallContact = true;
         lastCeilingClearance = Double.MAX_VALUE;
-        sprintJumpBoostWindow = 0;
     }
 
     public void clear() {
@@ -309,6 +357,10 @@ public final class PlayerControlResolver {
         lastClampedJump = false;
         lastWallContact = true;
         lastCeilingClearance = Double.MAX_VALUE;
-        sprintJumpBoostWindow = 0;
+    }
+
+    private record ClaimedVector(boolean exact, double x, double z, double spread) {
+        static final ClaimedVector NONE = new ClaimedVector(false, 0.0, 0.0, 0.0);
+        static final ClaimedVector ZERO = new ClaimedVector(true, 0.0, 0.0, 0.0);
     }
 }

@@ -20,10 +20,10 @@ package com.deathmotion.totemguard.common.player.debug.provider;
 
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayFrame;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayProvider;
 import com.deathmotion.totemguard.common.util.Palette;
+import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateType;

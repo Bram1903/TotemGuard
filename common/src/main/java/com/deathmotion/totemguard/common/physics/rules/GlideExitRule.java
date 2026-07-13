@@ -20,12 +20,11 @@ package com.deathmotion.totemguard.common.physics.rules;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.area.MotionArea;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 import com.deathmotion.totemguard.common.physics.medium.MediumSelect;
-import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
@@ -43,18 +42,5 @@ public final class GlideExitRule {
         double reachX = probe.centerX() - bounds.centerX();
         double reachZ = probe.centerZ() - bounds.centerZ();
         bounds.expandRadius(ClientMath.horizontalDistance(reachX, reachZ) + probe.radius());
-    }
-
-    public MotionArea widenExitDecay(MediumModel medium, MediumSelect mediums, Data data,
-                                     double frictionMax, double speedFactor,
-                                     AreaBounds bounds, MotionArea carried) {
-        if (medium != mediums.land() || !data.getGlideData().exitActive()) return carried;
-        double groundDecay = frictionMax * speedFactor;
-        double airDecay = LandModel.AIR_FRICTION * speedFactor;
-        if (airDecay <= groundDecay) return carried;
-        double span = ClientMath.horizontalDistance(bounds.legalX(), bounds.legalZ())
-                * (airDecay - groundDecay);
-        return new MotionArea(carried.centerX(), carried.centerZ(),
-                carried.slack() + span, carried.floorVy(), carried.ceilVy());
     }
 }

@@ -37,9 +37,6 @@ public final class EntityDims {
 
     private static final Map<EntityType, Dims> DIMS = new HashMap<>(256);
 
-    private record Dims(double width, double height) {
-    }
-
     static {
         put(EntityTypes.ALLAY, 0.35, 0.6);
         put(EntityTypes.AREA_EFFECT_CLOUD, 6.0, 0.5);
@@ -222,5 +219,8 @@ public final class EntityDims {
     public static double height(EntityType type) {
         Dims dims = type == null ? null : DIMS.get(type);
         return dims == null ? DEFAULT_HEIGHT : dims.height();
+    }
+
+    private record Dims(double width, double height) {
     }
 }

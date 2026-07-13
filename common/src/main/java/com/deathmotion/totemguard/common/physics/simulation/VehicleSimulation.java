@@ -23,58 +23,26 @@ import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.EngineContext;
 import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.VersionGates;
-import com.deathmotion.totemguard.common.physics.area.AreaAdvancer;
-import com.deathmotion.totemguard.common.physics.area.AreaBounds;
-import com.deathmotion.totemguard.common.physics.area.AreaExpander;
-import com.deathmotion.totemguard.common.physics.area.HypothesisSet;
-import com.deathmotion.totemguard.common.physics.area.JudgedExcess;
-import com.deathmotion.totemguard.common.physics.area.MotionArea;
+import com.deathmotion.totemguard.common.physics.area.*;
 import com.deathmotion.totemguard.common.physics.body.BoatBody;
 import com.deathmotion.totemguard.common.physics.body.BodyKind;
 import com.deathmotion.totemguard.common.physics.body.GhastBody;
 import com.deathmotion.totemguard.common.physics.body.LivingVehicleBody;
-import com.deathmotion.totemguard.common.physics.body.SimulationBody;
-import com.deathmotion.totemguard.common.physics.collision.AxisClip;
-import com.deathmotion.totemguard.common.physics.collision.BandClip;
-import com.deathmotion.totemguard.common.physics.collision.ColliderBuffer;
-import com.deathmotion.totemguard.common.physics.collision.ColliderCollector;
-import com.deathmotion.totemguard.common.physics.collision.CollisionSweep;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
-import com.deathmotion.totemguard.common.physics.collision.ExemptCells;
-import com.deathmotion.totemguard.common.physics.collision.TraitSampler;
-import com.deathmotion.totemguard.common.physics.control.BoatControl;
-import com.deathmotion.totemguard.common.physics.control.BoatControlResolver;
-import com.deathmotion.totemguard.common.physics.control.GhastControl;
-import com.deathmotion.totemguard.common.physics.control.GhastControlResolver;
-import com.deathmotion.totemguard.common.physics.control.RiderControl;
-import com.deathmotion.totemguard.common.physics.control.RiderControlResolver;
+import com.deathmotion.totemguard.common.physics.collision.*;
+import com.deathmotion.totemguard.common.physics.control.*;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.ground.GroundResolver;
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
-import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.medium.MediumModel;
-import com.deathmotion.totemguard.common.physics.medium.MediumScan;
-import com.deathmotion.totemguard.common.physics.medium.MediumSample;
-import com.deathmotion.totemguard.common.physics.medium.StuckFactor;
-import com.deathmotion.totemguard.common.physics.medium.model.BoatFloatModel;
-import com.deathmotion.totemguard.common.physics.rules.BounceRule;
-import com.deathmotion.totemguard.common.physics.medium.model.FlyingModel;
-import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
-import com.deathmotion.totemguard.common.physics.medium.model.RiderWaterModel;
-import com.deathmotion.totemguard.common.physics.medium.model.StriderLavaModel;
+import com.deathmotion.totemguard.common.physics.medium.*;
+import com.deathmotion.totemguard.common.physics.medium.model.*;
 import com.deathmotion.totemguard.common.physics.mitigation.VehicleSetback;
 import com.deathmotion.totemguard.common.physics.prescan.MountFilter;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
 import com.deathmotion.totemguard.common.physics.rules.BoatSnapRule;
+import com.deathmotion.totemguard.common.physics.rules.BounceRule;
 import com.deathmotion.totemguard.common.physics.rules.RiderClaimRule;
 import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
-import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
-import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
-import com.deathmotion.totemguard.common.physics.verdict.FallFinding;
-import com.deathmotion.totemguard.common.physics.verdict.MitigationOutcome;
-import com.deathmotion.totemguard.common.physics.verdict.MotionStream;
-import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
-import com.deathmotion.totemguard.common.physics.verdict.TickOutcome;
+import com.deathmotion.totemguard.common.physics.verdict.*;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.VehicleData;
 import com.deathmotion.totemguard.common.world.WorldMirror;
@@ -136,6 +104,26 @@ public final class VehicleSimulation {
         this.context = context;
         this.gates = gates;
         this.trace = trace;
+    }
+
+    private static PhysicsVerdict idle(BodyKind kind) {
+        return new PhysicsVerdict(MotionStream.VEHICLE, kind,
+                TickOutcome.DECLINED, DeclineReason.WITHHELD, null,
+                0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0,
+                0.0, 0.0,
+                MediumKind.LAND, GroundState.AMBIGUOUS,
+                false, false, false,
+                MitigationOutcome.NONE, FallFinding.NONE);
+    }
+
+    private static double clamp(double value, double bound) {
+        return Math.max(-bound, Math.min(bound, value));
+    }
+
+    private static int floor(double value) {
+        return (int) Math.floor(value);
     }
 
     public void onVehicleMove(double x, double y, double z, float yaw, float pitch) {
@@ -271,7 +259,7 @@ public final class VehicleSimulation {
                 vehicle.getYaw(), grounded, water);
         MediumModel medium = water ? livingBody.water()
                 : lava ? livingBody.lava()
-                : land;
+                  : land;
 
         hypotheses.reset(carried);
         AreaBounds main = hypotheses.bounds(HypothesisSet.Slot.MAIN);
@@ -632,7 +620,7 @@ public final class VehicleSimulation {
         MediumScan.sample(reader, sample,
                 true, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
-                gates.modernFluidPush(), false,
+                gates.modernFluidPush(), false, true,
                 startX - half, startY, startZ - half,
                 startX + half, startY + height, startZ + half,
                 Math.min(startX, endX) - half, Math.min(startY, endY),
@@ -684,25 +672,5 @@ public final class VehicleSimulation {
                 medium, ground,
                 false, false, false,
                 MitigationOutcome.NONE, FallFinding.NONE);
-    }
-
-    private static PhysicsVerdict idle(BodyKind kind) {
-        return new PhysicsVerdict(MotionStream.VEHICLE, kind,
-                TickOutcome.DECLINED, DeclineReason.WITHHELD, null,
-                0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0,
-                0.0, 0.0,
-                MediumKind.LAND, GroundState.AMBIGUOUS,
-                false, false, false,
-                MitigationOutcome.NONE, FallFinding.NONE);
-    }
-
-    private static double clamp(double value, double bound) {
-        return Math.max(-bound, Math.min(bound, value));
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
     }
 }

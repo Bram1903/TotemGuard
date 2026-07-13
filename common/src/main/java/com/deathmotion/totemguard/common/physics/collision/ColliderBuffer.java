@@ -29,13 +29,11 @@ public final class ColliderBuffer implements ShapeSink {
 
     public static final long TAG_UNCERTAIN = 1L << 58;
     public static final long TAG_EXEMPT = 1L << 57;
+    public static final long NO_CELL = Long.MIN_VALUE;
     private static final int KIND_SHIFT = 60;
     public static final long KIND_BLOCK = 0L << KIND_SHIFT;
     public static final long KIND_ENTITY = 1L << KIND_SHIFT;
     private static final long KIND_MASK = 3L << KIND_SHIFT;
-
-    public static final long NO_CELL = Long.MIN_VALUE;
-
     private double[] boxes = new double[STRIDE * 64];
     private long[] tags = new long[64];
     private long[] cells = new long[64];
@@ -45,6 +43,34 @@ public final class ColliderBuffer implements ShapeSink {
 
     private long currentTag;
     private long currentCell = NO_CELL;
+
+    public static boolean isBlock(long tag) {
+        return (tag & KIND_MASK) == KIND_BLOCK;
+    }
+
+    public static boolean isEntity(long tag) {
+        return (tag & KIND_MASK) == KIND_ENTITY;
+    }
+
+    public static boolean clipEligible(long tag) {
+        return (tag & (TAG_UNCERTAIN | TAG_EXEMPT)) == 0;
+    }
+
+    public static long packCell(int x, int y, int z) {
+        return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFFL);
+    }
+
+    public static int cellX(long cellKey) {
+        return (int) (cellKey >> 38);
+    }
+
+    public static int cellZ(long cellKey) {
+        return (int) (cellKey << 26 >> 38);
+    }
+
+    public static int cellY(long cellKey) {
+        return (int) (cellKey << 52 >> 52);
+    }
 
     public void reset() {
         count = 0;
@@ -107,34 +133,6 @@ public final class ColliderBuffer implements ShapeSink {
 
     public long cellOf(int i) {
         return cells[i];
-    }
-
-    public static boolean isBlock(long tag) {
-        return (tag & KIND_MASK) == KIND_BLOCK;
-    }
-
-    public static boolean isEntity(long tag) {
-        return (tag & KIND_MASK) == KIND_ENTITY;
-    }
-
-    public static boolean clipEligible(long tag) {
-        return (tag & (TAG_UNCERTAIN | TAG_EXEMPT)) == 0;
-    }
-
-    public static long packCell(int x, int y, int z) {
-        return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFFL);
-    }
-
-    public static int cellX(long cellKey) {
-        return (int) (cellKey >> 38);
-    }
-
-    public static int cellZ(long cellKey) {
-        return (int) (cellKey << 26 >> 38);
-    }
-
-    public static int cellY(long cellKey) {
-        return (int) (cellKey << 52 >> 52);
     }
 
     private void grow() {

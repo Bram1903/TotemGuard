@@ -51,7 +51,8 @@ public final class MovementReporter {
         switch (verdict.breach()) {
             case GROUNDSPOOF -> flagger.flag(extras, "{0} | claims onGround, vy={1} | over={2}",
                     shownType, PhysicsFormat.d(verdict.observedY()), PhysicsFormat.d(excess));
-            case HOVER -> flagger.flag(extras, "{0} | airborne, not falling | over={1}", shownType, PhysicsFormat.d(excess));
+            case HOVER ->
+                    flagger.flag(extras, "{0} | airborne, not falling | over={1}", shownType, PhysicsFormat.d(excess));
             case DESCENT_FLOOR -> flagger.flag(extras, "{0} | vy={1} fell faster than gravity | over={2}",
                     shownType, PhysicsFormat.d(verdict.observedY()), PhysicsFormat.d(excess));
             case PHASE_CROSS, PHASE_EMBED -> flagger.flag(extras, "{0} | moved {1} through a wall | over={2}",

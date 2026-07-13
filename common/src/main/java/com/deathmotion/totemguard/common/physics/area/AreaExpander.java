@@ -18,17 +18,12 @@
 
 package com.deathmotion.totemguard.common.physics.area;
 
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
-import com.deathmotion.totemguard.common.physics.medium.BubbleLift;
-import com.deathmotion.totemguard.common.physics.medium.FlowSolver;
-import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.medium.MediumModel;
-import com.deathmotion.totemguard.common.physics.medium.MediumSample;
-import com.deathmotion.totemguard.common.physics.medium.StuckFactor;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.physics.medium.*;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
 import com.deathmotion.totemguard.common.physics.simulation.TickContext;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class AreaExpander {
 

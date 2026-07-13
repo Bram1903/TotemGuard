@@ -32,6 +32,10 @@ public final class StriderLavaModel implements MediumModel {
 
     private final LandModel land = new LandModel();
 
+    public static double floated(double advanced) {
+        return advanced * FLOAT_DRAG + FLOAT_RISE;
+    }
+
     @Override
     public MediumKind kind() {
         return MediumKind.LAVA;
@@ -58,9 +62,5 @@ public final class StriderLavaModel implements MediumModel {
     @Override
     public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
         return land.advanceVertical(verticalVelocity, input);
-    }
-
-    public static double floated(double advanced) {
-        return advanced * FLOAT_DRAG + FLOAT_RISE;
     }
 }

@@ -32,13 +32,16 @@ public final class BedBounceRule {
     private int window;
     private boolean valid;
     private boolean usedLast;
+    private boolean prepared;
 
-    public boolean offer(boolean landMedium, AreaBounds bounds) {
-        boolean offered = landMedium && valid && !usedLast && !bounds.hasAltCenter();
-        if (offered) {
-            bounds.altCenter(altCenterX, altCenterZ);
-        }
-        return offered;
+    public void prepare(boolean landMedium) {
+        prepared = landMedium && valid && !usedLast;
+    }
+
+    public boolean applyTo(AreaBounds bounds) {
+        if (!prepared || bounds.hasAltCenter()) return false;
+        bounds.altCenter(altCenterX, altCenterZ);
+        return true;
     }
 
     public void onJudged(boolean offered, JudgedExcess excess) {
@@ -64,5 +67,6 @@ public final class BedBounceRule {
         valid = false;
         usedLast = false;
         window = 0;
+        prepared = false;
     }
 }

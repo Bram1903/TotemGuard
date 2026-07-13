@@ -20,11 +20,10 @@ package com.deathmotion.totemguard.common.util;
 
 public final class ClientMath {
 
+    public static final float DEG_TO_RAD = (float) (Math.PI / 180.0);
     private static final double MODERN_SCALE = 10430.378350470453;
     private static final float LEGACY_SCALE = 10430.378f;
     private static final float FASTMATH_SCALE = 651.8986f;
-    private static final float DEG_TO_RAD = (float) (Math.PI / 180.0);
-
     private static final float[] MODERN = new float[65536];
     private static final float[] LEGACY = new float[65536];
     private static final float[] FASTMATH = new float[4096];

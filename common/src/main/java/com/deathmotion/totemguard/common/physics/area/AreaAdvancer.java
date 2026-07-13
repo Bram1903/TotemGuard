@@ -53,13 +53,13 @@ public final class AreaAdvancer {
     }
 
     public static MotionArea next(double legalX, double legalZ, double frictionH, double speedFactor,
-                                      double advancedFloorVy, double advancedCeilVy) {
+                                  double advancedFloorVy, double advancedCeilVy) {
         double f = frictionH * speedFactor;
         return new MotionArea(legalX * f, legalZ * f, 0.0, advancedFloorVy, advancedCeilVy);
     }
 
     public static MotionArea coast(MotionArea area, double accelBound, double frictionMax,
-                                       double advancedFloor, double advancedCeil) {
+                                   double advancedFloor, double advancedCeil) {
         return new MotionArea(
                 area.centerX() * frictionMax,
                 area.centerZ() * frictionMax,

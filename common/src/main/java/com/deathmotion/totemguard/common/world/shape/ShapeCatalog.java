@@ -159,43 +159,8 @@ public final class ShapeCatalog {
             14, 2, 0, 16, 16, 16,
             2, 2, 0, 14, 16, 2,
             2, 2, 14, 14, 16, 16);
-
-    private static final double[] HOPPER_BODY = px(
-            0, 10, 0, 2, 16, 16,
-            14, 10, 0, 16, 16, 16,
-            2, 10, 0, 14, 16, 2,
-            2, 10, 14, 14, 16, 16,
-            2, 10, 2, 14, 11, 14,
-            4, 4, 4, 12, 10, 12);
-    public static final double[] HOPPER_DOWN = concat(HOPPER_BODY, px(6, 0, 6, 10, 4, 10));
-    public static final double[] HOPPER_NORTH = concat(HOPPER_BODY, px(6, 4, 0, 10, 8, 4));
-    public static final double[] HOPPER_SOUTH = concat(HOPPER_BODY, px(6, 4, 12, 10, 8, 16));
-    public static final double[] HOPPER_WEST = concat(HOPPER_BODY, px(0, 4, 6, 4, 8, 10));
-    public static final double[] HOPPER_EAST = concat(HOPPER_BODY, px(12, 4, 6, 16, 8, 10));
-
-    private static final double[] ANVIL_BASE = px(2, 0, 2, 14, 4, 14);
-    public static final double[] ANVIL_X = concat(ANVIL_BASE, px(
-            3, 4, 4, 13, 5, 12,
-            4, 5, 6, 12, 10, 10,
-            0, 10, 3, 16, 16, 13));
-    public static final double[] ANVIL_Z = concat(ANVIL_BASE, px(
-            4, 4, 3, 12, 5, 13,
-            6, 5, 4, 10, 10, 12,
-            3, 10, 0, 13, 16, 16));
-
-    private static final double[] BELL_BODY = px(
-            5, 6, 5, 11, 13, 11,
-            4, 4, 4, 12, 6, 12);
     public static final double[] BELL_FLOOR_Z = px(0, 0, 4, 16, 16, 12);
     public static final double[] BELL_FLOOR_X = px(4, 0, 0, 12, 16, 16);
-    public static final double[] BELL_CEILING = concat(BELL_BODY, px(7, 13, 7, 9, 16, 9));
-    public static final double[] BELL_DOUBLE_Z = concat(BELL_BODY, px(7, 13, 0, 9, 15, 16));
-    public static final double[] BELL_DOUBLE_X = concat(BELL_BODY, px(0, 13, 7, 16, 15, 9));
-    public static final double[] BELL_WALL_NORTH = concat(BELL_BODY, px(7, 13, 0, 9, 15, 13));
-    public static final double[] BELL_WALL_SOUTH = concat(BELL_BODY, px(7, 13, 3, 9, 15, 16));
-    public static final double[] BELL_WALL_WEST = concat(BELL_BODY, px(0, 13, 7, 13, 15, 9));
-    public static final double[] BELL_WALL_EAST = concat(BELL_BODY, px(3, 13, 7, 16, 15, 9));
-
     public static final double[] GRIND_WALL_NORTH = px(
             4, 2, 0, 12, 14, 12,
             2, 6, 7, 4, 10, 16,
@@ -244,14 +209,12 @@ public final class ShapeCatalog {
             6, 7, 12, 10, 16, 14,
             5, 3, 2, 11, 9, 4,
             5, 3, 12, 11, 9, 14);
-
     public static final double[] PISTON_UP = top(0.75);
     public static final double[] PISTON_DOWN = px(0, 4, 0, 16, 16, 16);
     public static final double[] PISTON_NORTH = px(0, 0, 4, 16, 16, 16);
     public static final double[] PISTON_SOUTH = px(0, 0, 0, 16, 16, 12);
     public static final double[] PISTON_WEST = px(4, 0, 0, 16, 16, 16);
     public static final double[] PISTON_EAST = px(0, 0, 0, 12, 16, 16);
-
     public static final double[] HEAD_UP = px(0, 12, 0, 16, 16, 16, 6, -4, 6, 10, 12, 10);
     public static final double[] HEAD_UP_SHORT = px(0, 12, 0, 16, 16, 16, 6, 0, 6, 10, 12, 10);
     public static final double[] HEAD_DOWN = px(0, 0, 0, 16, 4, 16, 6, 4, 6, 10, 20, 10);
@@ -264,7 +227,6 @@ public final class ShapeCatalog {
     public static final double[] HEAD_WEST_SHORT = px(0, 0, 0, 4, 16, 16, 4, 6, 6, 16, 10, 10);
     public static final double[] HEAD_EAST = px(12, 0, 0, 16, 16, 16, -4, 6, 6, 12, 10, 10);
     public static final double[] HEAD_EAST_SHORT = px(12, 0, 0, 16, 16, 16, 0, 6, 6, 12, 10, 10);
-
     public static final double[] PIPE_CORE = px(3, 3, 3, 13, 13, 13);
     public static final double[] PIPE_NORTH = px(3, 3, 0, 13, 13, 8);
     public static final double[] PIPE_SOUTH = px(3, 3, 8, 13, 13, 16);
@@ -272,7 +234,6 @@ public final class ShapeCatalog {
     public static final double[] PIPE_EAST = px(8, 3, 3, 16, 13, 13);
     public static final double[] PIPE_DOWN = px(3, 0, 3, 13, 8, 13);
     public static final double[] PIPE_UP = px(3, 8, 3, 13, 16, 13);
-
     public static final double[] SCAFFOLD_STABLE = px(
             0, 14, 0, 16, 16, 16,
             0, 0, 0, 2, 16, 2,
@@ -280,9 +241,7 @@ public final class ShapeCatalog {
             0, 0, 14, 2, 16, 16,
             14, 0, 14, 16, 16, 16);
     public static final double[] SCAFFOLD_BOTTOM = top(0.125);
-
     public static final double[] POWDER_SNOW_FALLING = {0.0, 0.0, 0.0, 1.0, 0.9, 1.0};
-
     public static final double[] SPELEO_TIP_MERGE = px(5, 0, 5, 11, 16, 11);
     public static final double[] SPELEO_TIP_UP = px(5, 0, 5, 11, 11, 11);
     public static final double[] SPELEO_TIP_DOWN = px(5, 5, 5, 11, 16, 11);
@@ -290,10 +249,8 @@ public final class ShapeCatalog {
     public static final double[] SPELEO_MIDDLE = px(3, 0, 3, 13, 16, 13);
     public static final double[] SPELEO_BASE = px(2, 0, 2, 14, 16, 14);
     public static final float SPELEO_MAX_OFFSET = 0.125f;
-
     public static final double[] BAMBOO_BOX = px(6.5, 0, 6.5, 9.5, 16, 9.5);
     public static final float BAMBOO_MAX_OFFSET = 0.25f;
-
     public static final double[] SHELF_NORTH = px(
             0, 12, 11, 16, 16, 13,
             0, 0, 13, 16, 16, 16,
@@ -310,12 +267,42 @@ public final class ShapeCatalog {
             11, 12, 0, 13, 16, 16,
             13, 0, 0, 16, 16, 16,
             11, 0, 0, 13, 4, 16);
-
     public static final double[][][] COCOA = {
             {px(6, 7, 1, 10, 12, 5), px(5, 5, 1, 11, 12, 7), px(4, 3, 1, 12, 12, 9)},
             {px(11, 7, 6, 15, 12, 10), px(9, 5, 5, 15, 12, 11), px(7, 3, 4, 15, 12, 12)},
             {px(6, 7, 11, 10, 12, 15), px(5, 5, 9, 11, 12, 15), px(4, 3, 7, 12, 12, 15)},
             {px(1, 7, 6, 5, 12, 10), px(1, 5, 5, 7, 12, 11), px(1, 3, 4, 9, 12, 12)}};
+    private static final double[] HOPPER_BODY = px(
+            0, 10, 0, 2, 16, 16,
+            14, 10, 0, 16, 16, 16,
+            2, 10, 0, 14, 16, 2,
+            2, 10, 14, 14, 16, 16,
+            2, 10, 2, 14, 11, 14,
+            4, 4, 4, 12, 10, 12);
+    public static final double[] HOPPER_DOWN = concat(HOPPER_BODY, px(6, 0, 6, 10, 4, 10));
+    public static final double[] HOPPER_NORTH = concat(HOPPER_BODY, px(6, 4, 0, 10, 8, 4));
+    public static final double[] HOPPER_SOUTH = concat(HOPPER_BODY, px(6, 4, 12, 10, 8, 16));
+    public static final double[] HOPPER_WEST = concat(HOPPER_BODY, px(0, 4, 6, 4, 8, 10));
+    public static final double[] HOPPER_EAST = concat(HOPPER_BODY, px(12, 4, 6, 16, 8, 10));
+    private static final double[] ANVIL_BASE = px(2, 0, 2, 14, 4, 14);
+    public static final double[] ANVIL_X = concat(ANVIL_BASE, px(
+            3, 4, 4, 13, 5, 12,
+            4, 5, 6, 12, 10, 10,
+            0, 10, 3, 16, 16, 13));
+    public static final double[] ANVIL_Z = concat(ANVIL_BASE, px(
+            4, 4, 3, 12, 5, 13,
+            6, 5, 4, 10, 10, 12,
+            3, 10, 0, 13, 16, 16));
+    private static final double[] BELL_BODY = px(
+            5, 6, 5, 11, 13, 11,
+            4, 4, 4, 12, 6, 12);
+    public static final double[] BELL_CEILING = concat(BELL_BODY, px(7, 13, 7, 9, 16, 9));
+    public static final double[] BELL_DOUBLE_Z = concat(BELL_BODY, px(7, 13, 0, 9, 15, 16));
+    public static final double[] BELL_DOUBLE_X = concat(BELL_BODY, px(0, 13, 7, 16, 15, 9));
+    public static final double[] BELL_WALL_NORTH = concat(BELL_BODY, px(7, 13, 0, 9, 15, 13));
+    public static final double[] BELL_WALL_SOUTH = concat(BELL_BODY, px(7, 13, 3, 9, 15, 16));
+    public static final double[] BELL_WALL_WEST = concat(BELL_BODY, px(0, 13, 7, 13, 15, 9));
+    public static final double[] BELL_WALL_EAST = concat(BELL_BODY, px(3, 13, 7, 16, 15, 9));
 
     private ShapeCatalog() {
     }

@@ -40,7 +40,6 @@ public record PlayerControl(
         boolean slowFalling,
         double fluidFriction,
         double fluidAccel,
-        double sprintJumpResidual,
         double lookX,
         double lookY,
         double lookZ,
@@ -62,13 +61,31 @@ public record PlayerControl(
         double inputMultiplier,
         double boostDirX,
         double boostDirZ,
-        double boostSpread) implements ControlEnvelope {
+        double boostSpread,
+        boolean claimedInputExact,
+        double claimedWorldX,
+        double claimedWorldZ,
+        double claimedSpread,
+        double moveSpeedBase,
+        double fluidAccelBase,
+        double flyAccelBase) implements ControlEnvelope {
 
     public static final double AIR_ACCEL = 0.026;
+    public static final double AIR_ACCEL_WALK = 0.02;
 
     @Override
     public double airAccel() {
         return AIR_ACCEL * inputMultiplier;
+    }
+
+    @Override
+    public double airAccelBase() {
+        return AIR_ACCEL;
+    }
+
+    @Override
+    public double airAccelBaseMin() {
+        return AIR_ACCEL_WALK;
     }
 
     public double jumpBoostPower() {

@@ -19,19 +19,7 @@
 package com.deathmotion.totemguard.common.world.shape;
 
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Attachment;
-import com.github.retrooper.packetevents.protocol.world.states.enums.East;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Face;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Half;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Hinge;
-import com.github.retrooper.packetevents.protocol.world.states.enums.North;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Part;
-import com.github.retrooper.packetevents.protocol.world.states.enums.South;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Thickness;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Tilt;
-import com.github.retrooper.packetevents.protocol.world.states.enums.Type;
-import com.github.retrooper.packetevents.protocol.world.states.enums.VerticalDirection;
-import com.github.retrooper.packetevents.protocol.world.states.enums.West;
+import com.github.retrooper.packetevents.protocol.world.states.enums.*;
 
 import static com.deathmotion.totemguard.common.world.shape.ShapeCatalog.emit;
 
@@ -125,10 +113,14 @@ final class ShapeVariants {
         boolean closed = !state.isOpen();
         boolean rightHinge = state.getHinge() == Hinge.RIGHT;
         return switch (state.getFacing()) {
-            case SOUTH -> closed ? ShapeCatalog.DOOR_SOUTH : (rightHinge ? ShapeCatalog.DOOR_EAST : ShapeCatalog.DOOR_WEST);
-            case WEST -> closed ? ShapeCatalog.DOOR_WEST : (rightHinge ? ShapeCatalog.DOOR_SOUTH : ShapeCatalog.DOOR_NORTH);
-            case NORTH -> closed ? ShapeCatalog.DOOR_NORTH : (rightHinge ? ShapeCatalog.DOOR_WEST : ShapeCatalog.DOOR_EAST);
-            default -> closed ? ShapeCatalog.DOOR_EAST : (rightHinge ? ShapeCatalog.DOOR_NORTH : ShapeCatalog.DOOR_SOUTH);
+            case SOUTH ->
+                    closed ? ShapeCatalog.DOOR_SOUTH : (rightHinge ? ShapeCatalog.DOOR_EAST : ShapeCatalog.DOOR_WEST);
+            case WEST ->
+                    closed ? ShapeCatalog.DOOR_WEST : (rightHinge ? ShapeCatalog.DOOR_SOUTH : ShapeCatalog.DOOR_NORTH);
+            case NORTH ->
+                    closed ? ShapeCatalog.DOOR_NORTH : (rightHinge ? ShapeCatalog.DOOR_WEST : ShapeCatalog.DOOR_EAST);
+            default ->
+                    closed ? ShapeCatalog.DOOR_EAST : (rightHinge ? ShapeCatalog.DOOR_NORTH : ShapeCatalog.DOOR_SOUTH);
         };
     }
 
@@ -401,7 +393,8 @@ final class ShapeVariants {
     static void fenceGate(WrappedBlockState state, int x, int y, int z, ShapeSink sink) {
         if (state.isOpen()) return;
         switch (state.getFacing()) {
-            case NORTH, SOUTH -> sink.accept(x, y, z + 0.5 - FENCE_ARM_HALF, x + 1.0, y + FENCE_TOP, z + 0.5 + FENCE_ARM_HALF);
+            case NORTH, SOUTH ->
+                    sink.accept(x, y, z + 0.5 - FENCE_ARM_HALF, x + 1.0, y + FENCE_TOP, z + 0.5 + FENCE_ARM_HALF);
             default -> sink.accept(x + 0.5 - FENCE_ARM_HALF, y, z, x + 0.5 + FENCE_ARM_HALF, y + FENCE_TOP, z + 1.0);
         }
     }

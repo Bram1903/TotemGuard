@@ -30,6 +30,27 @@ public final class PoseTracker {
     private double lastPoseBase = MotionDefaults.STANDING_HEIGHT;
     private double lastFeetClearance = Double.MAX_VALUE;
 
+    private static double headroom(ColliderBuffer colliders,
+                                   double minX, double feetY, double minZ, double maxX, double maxZ) {
+        double headroom = Double.MAX_VALUE;
+        int count = colliders.count();
+        for (int i = 0; i < count; i++) {
+            if (!ColliderBuffer.clipEligible(colliders.tagOf(i))) continue;
+            if (!overlaps(minX, maxX, colliders.minX(i), colliders.maxX(i))) continue;
+            if (!overlaps(minZ, maxZ, colliders.minZ(i), colliders.maxZ(i))) continue;
+            if (colliders.maxY(i) <= feetY + POSE_FIT_EPS) continue;
+            double bottom = colliders.minY(i);
+            if (bottom <= feetY + POSE_FIT_EPS) return -1.0;
+            double room = bottom - feetY;
+            if (room < headroom) headroom = room;
+        }
+        return headroom;
+    }
+
+    private static boolean overlaps(double movingMin, double movingMax, double boxMin, double boxMax) {
+        return movingMin + POSE_FIT_EPS < boxMax && movingMax - POSE_FIT_EPS > boxMin;
+    }
+
     public double height(Data data) {
         double scale = data.getAttributeData().scale();
         double base;
@@ -63,26 +84,5 @@ public final class PoseTracker {
 
     private boolean fits(double height) {
         return lastFeetClearance >= height - POSE_FIT_EPS;
-    }
-
-    private static double headroom(ColliderBuffer colliders,
-                                   double minX, double feetY, double minZ, double maxX, double maxZ) {
-        double headroom = Double.MAX_VALUE;
-        int count = colliders.count();
-        for (int i = 0; i < count; i++) {
-            if (!ColliderBuffer.clipEligible(colliders.tagOf(i))) continue;
-            if (!overlaps(minX, maxX, colliders.minX(i), colliders.maxX(i))) continue;
-            if (!overlaps(minZ, maxZ, colliders.minZ(i), colliders.maxZ(i))) continue;
-            if (colliders.maxY(i) <= feetY + POSE_FIT_EPS) continue;
-            double bottom = colliders.minY(i);
-            if (bottom <= feetY + POSE_FIT_EPS) return -1.0;
-            double room = bottom - feetY;
-            if (room < headroom) headroom = room;
-        }
-        return headroom;
-    }
-
-    private static boolean overlaps(double movingMin, double movingMax, double boxMin, double boxMax) {
-        return movingMin + POSE_FIT_EPS < boxMax && movingMax - POSE_FIT_EPS > boxMin;
     }
 }

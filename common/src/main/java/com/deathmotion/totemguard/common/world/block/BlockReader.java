@@ -51,6 +51,10 @@ public final class BlockReader {
         this.air = WrappedBlockState.getByGlobalId(stateMap.stateVersion(), 0, false);
     }
 
+    private static int floor(double value) {
+        return (int) Math.floor(value);
+    }
+
     public ClientStateMap stateMap() {
         return stateMap;
     }
@@ -144,9 +148,5 @@ public final class BlockReader {
         BaseChunk chunk = sections[section];
         if (chunk == null) return 0;
         return chunk.getBlockId(x & 0xF, offsetY & 0xF, z & 0xF);
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
     }
 }

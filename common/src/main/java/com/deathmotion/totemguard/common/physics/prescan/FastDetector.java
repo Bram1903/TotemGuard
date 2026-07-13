@@ -27,12 +27,6 @@ public final class FastDetector {
 
     private int streak;
 
-    public enum Outcome {
-        NONE,
-        DECLINE,
-        FLAG
-    }
-
     public Outcome evaluate(double horizontalSpeed, boolean externalActive) {
         if (horizontalSpeed <= HORIZONTAL_CAP) {
             streak = 0;
@@ -48,5 +42,11 @@ public final class FastDetector {
 
     public void reset() {
         streak = 0;
+    }
+
+    public enum Outcome {
+        NONE,
+        DECLINE,
+        FLAG
     }
 }

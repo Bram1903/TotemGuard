@@ -19,17 +19,17 @@
 package com.deathmotion.totemguard.common.physics.trace;
 
 import com.deathmotion.totemguard.common.config.view.ConfigView;
+import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.EngineContext;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.verdict.MotionStream;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
-import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.FireworkData;
 import com.deathmotion.totemguard.common.player.data.GlideData;
@@ -44,8 +44,10 @@ public final class TraceRecording {
     private final Data data;
     private final EngineContext context;
     private final TraceFrame frame = new TraceFrame();
-    private long stagedContributors;
     private final TraceDump dumper;
+    private long stagedContributors;
+    private byte stagedChosenSlot;
+    private byte stagedLiveCount = 1;
     private TickRecorder recorder;
     private long tickCounter;
 
@@ -54,6 +56,33 @@ public final class TraceRecording {
         this.data = data;
         this.context = context;
         this.dumper = new TraceDump(context.logger());
+    }
+
+    private static int flags(@Nullable ContactReport contact, @Nullable MediumSample sample,
+                             @Nullable GroundFacts ground, @Nullable ControlEnvelope input,
+                             PhysicsVerdict verdict) {
+        int flags = 0;
+        if (input != null) {
+            if (input.sprinting()) flags |= TraceFrame.FLAG_SPRINT;
+            if (input.sneaking()) flags |= TraceFrame.FLAG_SNEAK;
+            if (input.jumpPossible()) flags |= TraceFrame.FLAG_JUMP_POSSIBLE;
+        }
+        if (verdict.inventoryOpen()) flags |= TraceFrame.FLAG_INVENTORY_OPEN;
+        if (contact != null) {
+            if (contact.wallNear()) flags |= TraceFrame.FLAG_WALL_NEAR;
+            if (contact.startOverlapping()) flags |= TraceFrame.FLAG_START_OVERLAP;
+            if (contact.stepUsedHeight() > 0.0) flags |= TraceFrame.FLAG_STEP_USED;
+        }
+        if (sample != null) {
+            if (sample.stuck()) flags |= TraceFrame.FLAG_STUCK;
+            if (sample.bubbleAscent() > 0.0) flags |= TraceFrame.FLAG_BUBBLE;
+        }
+        if (ground != null) {
+            if (ground.groundedEnd()) flags |= TraceFrame.FLAG_GROUNDED_END;
+            if (ground.arrested()) flags |= TraceFrame.FLAG_ARRESTED;
+        }
+        if (verdict.knockbackConsumed()) flags |= TraceFrame.FLAG_ALT_CENTER;
+        return flags;
     }
 
     public @Nullable TickRecorder recorder() {
@@ -73,6 +102,11 @@ public final class TraceRecording {
 
     public void contributors(long bits) {
         this.stagedContributors = bits;
+    }
+
+    public void hypotheses(int chosenSlot, int liveCount) {
+        this.stagedChosenSlot = (byte) chosenSlot;
+        this.stagedLiveCount = (byte) liveCount;
     }
 
     public void record(ConfigView view,
@@ -112,6 +146,9 @@ public final class TraceRecording {
         frame.radius = bounds.radius();
         frame.ceiling = bounds.ceiling();
         frame.floor = bounds.floor() - bounds.descentSlack();
+        frame.altPresent = bounds.hasAltCenter();
+        frame.altCenterX = frame.altPresent ? bounds.altCenterX() : 0.0;
+        frame.altCenterZ = frame.altPresent ? bounds.altCenterZ() : 0.0;
         frame.horizontalExcess = verdict.horizontalExcess();
         frame.ascentExcess = verdict.ascentExcess();
         frame.descentExcess = verdict.descentExcess();
@@ -122,8 +159,13 @@ public final class TraceRecording {
         frame.medium = (byte) verdict.medium().ordinal();
         frame.ground = (byte) verdict.ground().ordinal();
         frame.flags = flags(contact, sample, ground, input, verdict);
+        if (data.getMovementData().isOnGround()) frame.flags |= TraceFrame.FLAG_CLAIMED_GROUND;
         frame.contributors = stagedContributors;
         stagedContributors = 0L;
+        frame.chosenSlot = stagedChosenSlot;
+        frame.liveCount = stagedLiveCount;
+        stagedChosenSlot = 0;
+        stagedLiveCount = 1;
         populateContext(sample, input);
         frame.supportGap = contact != null ? Math.min(contact.nearestSupportGap(), 9.999) : 0.0;
         frame.ceilingClearance = contact != null ? contact.ceilingClearance() : 0.0;
@@ -154,7 +196,7 @@ public final class TraceRecording {
         frame.bubbleAscent = 0.0;
         frame.stuckHorizontal = frame.stuckVertical = 1.0;
         frame.fluidFriction = frame.fluidAccel = 0.0;
-        frame.moveSpeed = frame.jumpStrength = frame.stepHeight = frame.sprintJumpResidual = 0.0;
+        frame.moveSpeed = frame.jumpStrength = frame.stepHeight = 0.0;
         frame.riptideStrength = 0.0;
         frame.fireworkMin = frame.fireworkMax = 0;
 
@@ -174,7 +216,6 @@ public final class TraceRecording {
             frame.moveSpeed = input.moveSpeed();
             frame.jumpStrength = input.jumpStrength();
             frame.stepHeight = input.stepHeight();
-            frame.sprintJumpResidual = input.sprintJumpResidual();
             if (input.swimming()) frame.flags |= TraceFrame.FLAG_SWIMMING;
             if (input.fluidExitHop()) frame.flags |= TraceFrame.FLAG_FLUID_HOP;
         }
@@ -189,32 +230,5 @@ public final class TraceRecording {
         FireworkData firework = data.getFireworkData();
         frame.fireworkMin = firework.boostCountMin();
         frame.fireworkMax = firework.boostCountMax();
-    }
-
-    private static int flags(@Nullable ContactReport contact, @Nullable MediumSample sample,
-                             @Nullable GroundFacts ground, @Nullable ControlEnvelope input,
-                             PhysicsVerdict verdict) {
-        int flags = 0;
-        if (input != null) {
-            if (input.sprinting()) flags |= TraceFrame.FLAG_SPRINT;
-            if (input.sneaking()) flags |= TraceFrame.FLAG_SNEAK;
-            if (input.jumpPossible()) flags |= TraceFrame.FLAG_JUMP_POSSIBLE;
-        }
-        if (verdict.inventoryOpen()) flags |= TraceFrame.FLAG_INVENTORY_OPEN;
-        if (contact != null) {
-            if (contact.wallNear()) flags |= TraceFrame.FLAG_WALL_NEAR;
-            if (contact.startOverlapping()) flags |= TraceFrame.FLAG_START_OVERLAP;
-            if (contact.stepUsedHeight() > 0.0) flags |= TraceFrame.FLAG_STEP_USED;
-        }
-        if (sample != null) {
-            if (sample.stuck()) flags |= TraceFrame.FLAG_STUCK;
-            if (sample.bubbleAscent() > 0.0) flags |= TraceFrame.FLAG_BUBBLE;
-        }
-        if (ground != null) {
-            if (ground.groundedEnd()) flags |= TraceFrame.FLAG_GROUNDED_END;
-            if (ground.arrested()) flags |= TraceFrame.FLAG_ARRESTED;
-        }
-        if (verdict.knockbackConsumed()) flags |= TraceFrame.FLAG_ALT_CENTER;
-        return flags;
     }
 }

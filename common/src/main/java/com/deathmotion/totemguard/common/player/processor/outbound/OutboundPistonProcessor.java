@@ -38,7 +38,9 @@ public class OutboundPistonProcessor extends ProcessorOutbound {
     private static final double ARM_RANGE = 15.0;
     private static final double ARM_RANGE_SQUARED = ARM_RANGE * ARM_RANGE;
     private static final int MAX_PUSH_DEPTH = 12;
-
+    private static final int[] DIR_X = {0, 0, 0, 0, -1, 1, 0, 0};
+    private static final int[] DIR_Y = {-1, 1, 0, 0, 0, 0, 0, 0};
+    private static final int[] DIR_Z = {0, 0, -1, 1, 0, 0, 0, 0};
     private final Data data;
     private final WorldMirror world;
     private final PacketLatencyHandler latencyHandler;
@@ -48,6 +50,17 @@ public class OutboundPistonProcessor extends ProcessorOutbound {
         this.data = player.getData();
         this.world = player.getWorldMirror();
         this.latencyHandler = player.getLatencyHandler();
+    }
+
+    private static boolean isPushable(BlockReader reader, int x, int y, int z) {
+        long facts = reader.facts(x, y, z);
+        if (StateFacts.is(facts, StateFacts.AIR) || StateFacts.is(facts, StateFacts.ANY_FLUID)) return false;
+        if (!StateFacts.is(facts, StateFacts.HAS_SHAPE)) return false;
+        StateType type = reader.state(x, y, z).getType();
+        return type != StateTypes.OBSIDIAN && type != StateTypes.CRYING_OBSIDIAN
+                && type != StateTypes.RESPAWN_ANCHOR && type != StateTypes.BEDROCK
+                && type != StateTypes.PISTON && type != StateTypes.STICKY_PISTON
+                && type != StateTypes.MOVING_PISTON && type != StateTypes.PISTON_HEAD;
     }
 
     @Override
@@ -122,19 +135,4 @@ public class OutboundPistonProcessor extends ProcessorOutbound {
         data.getPistonData().arm(pushX, pushY, pushZ, slimeFront, honeyFront,
                 minX, minY, minZ, maxX, maxY, maxZ);
     }
-
-    private static boolean isPushable(BlockReader reader, int x, int y, int z) {
-        long facts = reader.facts(x, y, z);
-        if (StateFacts.is(facts, StateFacts.AIR) || StateFacts.is(facts, StateFacts.ANY_FLUID)) return false;
-        if (!StateFacts.is(facts, StateFacts.HAS_SHAPE)) return false;
-        StateType type = reader.state(x, y, z).getType();
-        return type != StateTypes.OBSIDIAN && type != StateTypes.CRYING_OBSIDIAN
-                && type != StateTypes.RESPAWN_ANCHOR && type != StateTypes.BEDROCK
-                && type != StateTypes.PISTON && type != StateTypes.STICKY_PISTON
-                && type != StateTypes.MOVING_PISTON && type != StateTypes.PISTON_HEAD;
-    }
-
-    private static final int[] DIR_X = {0, 0, 0, 0, -1, 1, 0, 0};
-    private static final int[] DIR_Y = {-1, 1, 0, 0, 0, 0, 0, 0};
-    private static final int[] DIR_Z = {0, 0, -1, 1, 0, 0, 0, 0};
 }

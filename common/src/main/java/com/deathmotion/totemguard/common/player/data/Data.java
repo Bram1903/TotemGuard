@@ -34,8 +34,8 @@ import lombok.Setter;
 public class Data {
 
 
+    public static final int FLY_CHANGE_GRACE_TICKS = 4;
     private static final int NETHER_PORTAL_ABSENT_TICKS_TO_CLEAR = 3;
-
     private final TGPlayer player;
     private final TGPlatform platform;
     private final TeleportData teleportData;
@@ -58,7 +58,10 @@ public class Data {
     private boolean sneaking;
     private boolean dead;
     private boolean canFly;
+    @Setter(AccessLevel.NONE)
     private boolean isFlying;
+    @Setter(AccessLevel.NONE)
+    private int flyChangeGrace;
     private boolean swimming;
     private boolean gliding;
     private boolean spinAttacking;
@@ -66,27 +69,21 @@ public class Data {
     private int vehicleId = -1;
     private int ticksFrozen;
     private double abilitiesFlyingSpeed = 0.05;
-
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private Boolean lastSprinting;
-
     @Setter(AccessLevel.NONE)
     private boolean redundantSprint;
-
     @Setter(AccessLevel.NONE)
     private boolean openInventory;
-
     @Setter(AccessLevel.NONE)
     private Issuer lastInventoryIssuer = Issuer.CLIENT;
-
     private long inventoryOpenedAt;
     private boolean serverOpenedInventoryThisTick;
     private boolean clientOpenedInventoryThisTick;
     private boolean inventoryMitigated;
     private boolean inventoryMitigatedThisTick;
     private volatile boolean sendingBundlePacket;
-
     @Setter(AccessLevel.NONE)
     private volatile boolean inNetherPortal;
     @Setter(AccessLevel.NONE)
@@ -139,6 +136,15 @@ public class Data {
     public long getInventoryOpenDurationMs() {
         if (!openInventory || inventoryOpenedAt == 0L) return 0L;
         return System.currentTimeMillis() - inventoryOpenedAt;
+    }
+
+    public void setFlying(boolean flying) {
+        if (flying != this.isFlying) this.flyChangeGrace = FLY_CHANGE_GRACE_TICKS;
+        this.isFlying = flying;
+    }
+
+    public void decayFlyChangeGrace() {
+        if (flyChangeGrace > 0) flyChangeGrace--;
     }
 
     public boolean isInVehicle() {

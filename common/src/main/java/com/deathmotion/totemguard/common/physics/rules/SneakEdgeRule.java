@@ -21,7 +21,6 @@ package com.deathmotion.totemguard.common.physics.rules;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
@@ -30,10 +29,10 @@ public final class SneakEdgeRule {
     private SneakEdgeRule() {
     }
 
-    public static boolean protectsCarry(ControlEnvelope input, GroundFacts ground, boolean landMedium,
+    public static boolean protectsCarry(boolean sneakHeld, GroundFacts ground, boolean landMedium,
                                         double dy, double observedSpeed,
                                         AreaBounds bounds, ContactReport contact, PhysicsPreset preset) {
-        return input.sneaking() && ground.groundedStart() && landMedium
+        return sneakHeld && ground.groundedStart() && landMedium
                 && dy <= 0.0
                 && observedSpeed < ClientMath.horizontalDistance(bounds.centerX(), bounds.centerZ())
                 + bounds.radius() - preset.horizontalFlagEpsilon()

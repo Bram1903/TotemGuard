@@ -35,25 +35,18 @@ public final class BoatFloatModel {
     public static final double SNAP_RISE = 0.101;
 
     public static final double GRAVITY = 0.04;
+    public static final double CONTROL_MIN = -0.005;
+    public static final double CONTROL_MAX = 0.04;
     private static final double UNDER_FLOWING_GRAVITY = 7.0E-4;
     private static final double UNDER_WATER_BUOYANCY = 0.01;
     private static final double BUOYANCY_SCALE = GRAVITY / 0.65;
     private static final double BOB_DRAG = 0.75;
-
     private static final double FRICTION_WATER = 0.9;
     private static final double FRICTION_UNDER_WATER = 0.45;
     private static final double FRICTION_AIR = 0.9;
-
-    public static final double CONTROL_MIN = -0.005;
-    public static final double CONTROL_MAX = 0.04;
-
     private static final double FRICTION_SLAB = 0.001;
     private static final double SURFACE_PROBE = 0.001;
-
-    public enum Status {IN_WATER, UNDER_WATER, UNDER_FLOWING_WATER, ON_LAND, IN_AIR}
-
     private final ColliderBuffer frictionScratch = new ColliderBuffer();
-
     @Getter
     @Accessors(fluent = true)
     private Status status = Status.IN_AIR;
@@ -64,6 +57,25 @@ public final class BoatFloatModel {
     private boolean oldStatusKnown;
     private double waterLevel;
     private double landFriction;
+
+    private static boolean watery(Status status) {
+        return status == Status.IN_WATER || status == Status.UNDER_WATER
+                || status == Status.UNDER_FLOWING_WATER;
+    }
+
+    private static float fluidHeight(BlockReader reader, long facts, int x, int y, int z) {
+        return StateFacts.is(reader.facts(x, y + 1, z), StateFacts.WATER)
+                ? 1.0F
+                : StateFacts.fluidAmount(facts) / 9.0F;
+    }
+
+    private static int floor(double value) {
+        return (int) Math.floor(value);
+    }
+
+    private static int ceil(double value) {
+        return (int) Math.ceil(value);
+    }
 
     public void resolve(BlockReader reader, ShapeQuery query,
                         double minX, double minY, double minZ,
@@ -135,11 +147,6 @@ public final class BoatFloatModel {
         oldStatusKnown = false;
         waterLevel = 0.0;
         landFriction = 0.0;
-    }
-
-    private static boolean watery(Status status) {
-        return status == Status.IN_WATER || status == Status.UNDER_WATER
-                || status == Status.UNDER_FLOWING_WATER;
     }
 
     private Status resolveStatus(BlockReader reader, ShapeQuery query,
@@ -254,17 +261,5 @@ public final class BoatFloatModel {
         return false;
     }
 
-    private static float fluidHeight(BlockReader reader, long facts, int x, int y, int z) {
-        return StateFacts.is(reader.facts(x, y + 1, z), StateFacts.WATER)
-                ? 1.0F
-                : StateFacts.fluidAmount(facts) / 9.0F;
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
-    }
-
-    private static int ceil(double value) {
-        return (int) Math.ceil(value);
-    }
+    public enum Status {IN_WATER, UNDER_WATER, UNDER_FLOWING_WATER, ON_LAND, IN_AIR}
 }

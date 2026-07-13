@@ -18,9 +18,9 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
-import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
+import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 
 public final class LavaModel extends FluidModel {
 

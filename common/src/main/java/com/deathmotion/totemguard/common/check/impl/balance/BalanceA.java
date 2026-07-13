@@ -40,10 +40,8 @@ public class BalanceA extends CheckImpl implements PacketCheck {
     private static final double BUFFER_DECAY = 0.0025;
     private static final double BUFFER_THRESHOLD = 2.0;
     private static final double BUFFER_RETAIN = 1.0;
-
-    protected long anchorNanos;
-
     private final SetbackController setbackController;
+    protected long anchorNanos;
     private long balance;
     private boolean flyingThisTick;
     private boolean overBudget;

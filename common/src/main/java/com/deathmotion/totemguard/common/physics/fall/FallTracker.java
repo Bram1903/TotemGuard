@@ -21,9 +21,9 @@ package com.deathmotion.totemguard.common.physics.fall;
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.mitigation.MitigationService;
 import com.deathmotion.totemguard.common.physics.MotionDefaults;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
 import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
 import com.deathmotion.totemguard.common.physics.verdict.FallFinding;
@@ -81,6 +81,18 @@ public final class FallTracker {
     public FallTracker(Data data, BlockReader reader) {
         this.data = data;
         this.reader = reader;
+    }
+
+    private static double accumulate(double fall, double dy) {
+        return Math.min(MAX_FALL_DISTANCE, fall - dy);
+    }
+
+    private static boolean lenientType(StateType type) {
+        return LENIENT_LANDING.contains(type) || BlockTags.BEDS.contains(type);
+    }
+
+    private static int floor(double value) {
+        return (int) Math.floor(value);
     }
 
     public void observe(TickOutcome outcome, DeclineReason reason, BoundBreach breach,
@@ -226,10 +238,6 @@ public final class FallTracker {
         damageApplied = false;
     }
 
-    private static double accumulate(double fall, double dy) {
-        return Math.min(MAX_FALL_DISTANCE, fall - dy);
-    }
-
     private void tickLateClaim(ConfigView view) {
         if (lateClaimTicks <= 0 || --lateClaimTicks > 0) return;
         resolve(pendingExpected, fallDistance, true, view);
@@ -291,13 +299,5 @@ public final class FallTracker {
             }
         }
         return false;
-    }
-
-    private static boolean lenientType(StateType type) {
-        return LENIENT_LANDING.contains(type) || BlockTags.BEDS.contains(type);
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
     }
 }

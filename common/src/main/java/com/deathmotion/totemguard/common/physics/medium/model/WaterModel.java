@@ -19,11 +19,11 @@
 package com.deathmotion.totemguard.common.physics.medium.model;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
+import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
+import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
-import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
-import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 
 public final class WaterModel extends FluidModel {
 
@@ -38,6 +38,11 @@ public final class WaterModel extends FluidModel {
     private int entryTicks;
     private boolean steerWater;
     private boolean climbable;
+
+    private static double steered(double bound, double lookY) {
+        double rate = lookY < STEER_STEEP_LOOK ? STEER_RATE_STEEP : STEER_RATE;
+        return bound + (lookY - bound) * rate;
+    }
 
     @Override
     public MediumKind kind() {
@@ -75,11 +80,6 @@ public final class WaterModel extends FluidModel {
             bounds.ceiling(Math.max(bounds.ceiling(), steeredCeiling));
             bounds.floor(Math.min(bounds.floor(), steeredFloor));
         }
-    }
-
-    private static double steered(double bound, double lookY) {
-        double rate = lookY < STEER_STEEP_LOOK ? STEER_RATE_STEEP : STEER_RATE;
-        return bound + (lookY - bound) * rate;
     }
 
     public void observe(MediumSample sample) {

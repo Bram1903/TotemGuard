@@ -29,12 +29,6 @@ public final class FlyModel implements MediumModel {
 
     private static final double VERTICAL_DAMPING = 0.6;
 
-    private final LandModel land;
-
-    public FlyModel(LandModel land) {
-        this.land = land;
-    }
-
     @Override
     public MediumKind kind() {
         return MediumKind.FLYING;
@@ -42,12 +36,17 @@ public final class FlyModel implements MediumModel {
 
     @Override
     public double accelBound(ControlEnvelope input, GroundFacts ground) {
-        double groundBound = LandModel.groundAccel(input, ground);
-        return switch (ground.start()) {
-            case SUPPORTED -> groundBound;
-            case AMBIGUOUS -> Math.max(groundBound, input.flyAccel());
-            case AIRBORNE -> input.flyAccel();
-        };
+        return input.flyAccel();
+    }
+
+    @Override
+    public double accelBoundBase(ControlEnvelope input, GroundFacts ground) {
+        return input.flyAccelBase();
+    }
+
+    @Override
+    public double accelBoundBaseMin(ControlEnvelope input, GroundFacts ground) {
+        return input.flyAccelBase();
     }
 
     @Override
@@ -63,7 +62,7 @@ public final class FlyModel implements MediumModel {
 
     @Override
     public double frictionMax(ControlEnvelope input, GroundFacts ground) {
-        return land.frictionMax(input, ground);
+        return LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, input.airDragModifier());
     }
 
     @Override

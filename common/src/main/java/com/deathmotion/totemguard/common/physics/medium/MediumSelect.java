@@ -18,12 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium;
 
-import com.deathmotion.totemguard.common.physics.medium.model.ClimbModel;
-import com.deathmotion.totemguard.common.physics.medium.model.FlyModel;
-import com.deathmotion.totemguard.common.physics.medium.model.GlideModel;
-import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
-import com.deathmotion.totemguard.common.physics.medium.model.LavaModel;
-import com.deathmotion.totemguard.common.physics.medium.model.WaterModel;
+import com.deathmotion.totemguard.common.physics.medium.model.*;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
@@ -37,7 +32,7 @@ public final class MediumSelect {
     @Getter
     private final GlideModel glide = new GlideModel(land);
     @Getter
-    private final FlyModel fly = new FlyModel(land);
+    private final FlyModel fly = new FlyModel();
     private final LavaModel lava = new LavaModel();
     private final ClimbModel climb = new ClimbModel();
 

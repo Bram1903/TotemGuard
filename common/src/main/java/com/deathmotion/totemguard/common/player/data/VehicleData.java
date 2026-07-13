@@ -28,17 +28,13 @@ import lombok.experimental.Accessors;
 public final class VehicleData {
 
     private static final int IMPULSE_WINDOW = 3;
-
+    private static final int JUMP_CLAIM_GROUNDED_MOVES = 3;
     private boolean hasPosition;
     private double prevX, prevY, prevZ;
     private double curX, curY, curZ;
     private float yaw, pitch;
-
     private double impulseX, impulseY, impulseZ;
     private int impulseTicks;
-
-    private static final int JUMP_CLAIM_GROUNDED_MOVES = 3;
-
     private double jumpClaimScale;
     private int jumpClaimBudget;
 

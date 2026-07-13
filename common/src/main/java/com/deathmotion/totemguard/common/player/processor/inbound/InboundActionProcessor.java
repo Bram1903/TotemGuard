@@ -57,6 +57,29 @@ public class InboundActionProcessor extends ProcessorInbound {
         this.combatTracker = player.getCombatTracker();
     }
 
+    private static int riptideLevel(ItemStack stack) {
+        if (stack == null || stack.getType() != ItemTypes.TRIDENT) return 0;
+        return stack.getEnchantmentLevel(EnchantmentTypes.RIPTIDE);
+    }
+
+    private static boolean usableGlider(ItemStack stack) {
+        if (stack == null) return false;
+        if (stack.getType() != ItemTypes.ELYTRA && stack.getComponent(ComponentTypes.GLIDER).isEmpty()) {
+            return false;
+        }
+        return stack.getMaxDamage() <= 0 || stack.getDamageValue() < stack.getMaxDamage() - 1;
+    }
+
+    private static boolean spear(ItemType type) {
+        return type == ItemTypes.WOODEN_SPEAR
+                || type == ItemTypes.STONE_SPEAR
+                || type == ItemTypes.COPPER_SPEAR
+                || type == ItemTypes.IRON_SPEAR
+                || type == ItemTypes.GOLDEN_SPEAR
+                || type == ItemTypes.DIAMOND_SPEAR
+                || type == ItemTypes.NETHERITE_SPEAR;
+    }
+
     @Override
     public void handleInbound(PacketReceiveEvent event) {
         if (event.isCancelled()) return;
@@ -193,11 +216,6 @@ public class InboundActionProcessor extends ProcessorInbound {
         data.getGlideData().armRiptide(0.75 * (level + 1), data.getMovementData().isOnGround());
     }
 
-    private static int riptideLevel(ItemStack stack) {
-        if (stack == null || stack.getType() != ItemTypes.TRIDENT) return 0;
-        return stack.getEnchantmentLevel(EnchantmentTypes.RIPTIDE);
-    }
-
     private boolean glideClaimLegal() {
         if (data.isGliding()) return false;
         if (data.isInVehicle() || data.getEffectData().hasLevitation()) return false;
@@ -208,14 +226,6 @@ public class InboundActionProcessor extends ProcessorInbound {
                 || usableGlider(player.getInventory().getItem(InventoryConstants.SLOT_BOOTS));
     }
 
-    private static boolean usableGlider(ItemStack stack) {
-        if (stack == null) return false;
-        if (stack.getType() != ItemTypes.ELYTRA && stack.getComponent(ComponentTypes.GLIDER).isEmpty()) {
-            return false;
-        }
-        return stack.getMaxDamage() <= 0 || stack.getDamageValue() < stack.getMaxDamage() - 1;
-    }
-
     private double useSlowdownMultiplier(ItemStack used) {
         boolean componentEra = player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_11);
         if (!componentEra) return DEFAULT_USE_SLOWDOWN;
@@ -223,15 +233,5 @@ public class InboundActionProcessor extends ProcessorInbound {
         Optional<ItemUseEffects> effects = used.getComponent(ComponentTypes.USE_EFFECTS);
         if (effects.isPresent()) return effects.get().getSpeedMultiplier();
         return spear(used.getType()) ? 1.0 : DEFAULT_USE_SLOWDOWN;
-    }
-
-    private static boolean spear(ItemType type) {
-        return type == ItemTypes.WOODEN_SPEAR
-                || type == ItemTypes.STONE_SPEAR
-                || type == ItemTypes.COPPER_SPEAR
-                || type == ItemTypes.IRON_SPEAR
-                || type == ItemTypes.GOLDEN_SPEAR
-                || type == ItemTypes.DIAMOND_SPEAR
-                || type == ItemTypes.NETHERITE_SPEAR;
     }
 }

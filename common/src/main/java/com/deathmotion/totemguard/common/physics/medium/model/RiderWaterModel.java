@@ -33,6 +33,10 @@ public final class RiderWaterModel implements MediumModel {
     private static final double VERTICAL_DRAG = 0.8;
     private static final double GRAVITY_DIVISOR = 16.0;
 
+    public static double floatRise(ControlEnvelope input) {
+        return input instanceof RiderControl rider && rider.canFloatInWater() ? FLOAT_RISE : 0.0;
+    }
+
     @Override
     public MediumKind kind() {
         return MediumKind.WATER;
@@ -55,9 +59,5 @@ public final class RiderWaterModel implements MediumModel {
     @Override
     public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
         return verticalVelocity * VERTICAL_DRAG - input.gravity() / GRAVITY_DIVISOR;
-    }
-
-    public static double floatRise(ControlEnvelope input) {
-        return input instanceof RiderControl rider && rider.canFloatInWater() ? FLOAT_RISE : 0.0;
     }
 }

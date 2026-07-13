@@ -18,8 +18,8 @@
 
 package com.deathmotion.totemguard.common.physics.push;
 
-import com.deathmotion.totemguard.common.physics.area.JudgedExcess;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
+import com.deathmotion.totemguard.common.physics.area.JudgedExcess;
 import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
@@ -36,14 +36,17 @@ public final class KnockbackTracker {
         this.external = external;
     }
 
-    public void apply(AreaBounds bounds, double knockbackPad) {
+    public void apply(AreaBounds bounds, double knockbackPad, boolean knockbackSetHypothesis) {
         if (!external.isActive()) return;
         double slack = external.slack();
         if (external.hasSet()) {
-            bounds.altCenter(external.x(), external.z());
-        } else {
-            bounds.altCenter(bounds.centerX() + external.x(), bounds.centerZ() + external.z());
+            if (!knockbackSetHypothesis) return;
+            bounds.expandRadius(knockbackPad);
+            bounds.ceiling(bounds.ceiling() + knockbackPad);
+            bounds.addDescentSlack(knockbackPad);
+            return;
         }
+        bounds.altCenter(bounds.centerX() + external.x(), bounds.centerZ() + external.z());
         bounds.expandRadius(knockbackPad + slack);
         double up = Math.max(0.0, external.y() + slack);
         if (up > 0.0) bounds.ceiling(bounds.ceiling() + up + knockbackPad);
@@ -52,12 +55,18 @@ public final class KnockbackTracker {
     }
 
     public void consumeIfExplained(JudgedExcess excess, double horizontalEpsilon, double verticalEpsilon) {
-        if (!external.isActive()) return;
+        if (!external.isActive() || external.hasSet()) return;
         if (excess.altCenterUsed() && excess.horizontal() <= horizontalEpsilon
                 && excess.ascent() <= verticalEpsilon) {
             external.consume();
             resetRequirement();
         }
+    }
+
+    public void consumeExplained() {
+        if (!external.isActive()) return;
+        external.consume();
+        resetRequirement();
     }
 
     public void observeRequirement(double obsX, double obsZ, double reach,

@@ -19,8 +19,8 @@
 package com.deathmotion.totemguard.common.physics.phase;
 
 import com.deathmotion.totemguard.common.physics.collision.ExemptCells;
-import com.deathmotion.totemguard.common.world.block.PendingBlocks;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
+import com.deathmotion.totemguard.common.world.block.PendingBlocks;
 import com.deathmotion.totemguard.common.world.shape.ShapeQuery;
 import com.deathmotion.totemguard.common.world.shape.ShapeRegistry;
 
@@ -35,6 +35,25 @@ public final class EmbedExemptions implements ExemptCells {
     private static final int PRUNE_VERTICAL_SLACK = 2;
 
     private final Set<Long> cells = new HashSet<>();
+
+    private static boolean overlapsBody(BlockReader reader, ShapeQuery query, int x, int y, int z,
+                                        double minX, double minY, double minZ,
+                                        double maxX, double maxY, double maxZ) {
+        boolean[] overlap = {false};
+        ShapeRegistry.collect(reader.state(x, y, z), x, y, z, query,
+                (bMinX, bMinY, bMinZ, bMaxX, bMaxY, bMaxZ) -> {
+                    if (bMaxX > minX + CONTACT_EPS && bMinX < maxX - CONTACT_EPS
+                            && bMaxY > minY + CONTACT_EPS && bMinY < maxY - CONTACT_EPS
+                            && bMaxZ > minZ + CONTACT_EPS && bMinZ < maxZ - CONTACT_EPS) {
+                        overlap[0] = true;
+                    }
+                });
+        return overlap[0];
+    }
+
+    private static int floor(double value) {
+        return (int) Math.floor(value);
+    }
 
     @Override
     public boolean contains(int x, int y, int z) {
@@ -87,24 +106,5 @@ public final class EmbedExemptions implements ExemptCells {
 
     public void clear() {
         cells.clear();
-    }
-
-    private static boolean overlapsBody(BlockReader reader, ShapeQuery query, int x, int y, int z,
-                                        double minX, double minY, double minZ,
-                                        double maxX, double maxY, double maxZ) {
-        boolean[] overlap = {false};
-        ShapeRegistry.collect(reader.state(x, y, z), x, y, z, query,
-                (bMinX, bMinY, bMinZ, bMaxX, bMaxY, bMaxZ) -> {
-                    if (bMaxX > minX + CONTACT_EPS && bMinX < maxX - CONTACT_EPS
-                            && bMaxY > minY + CONTACT_EPS && bMinY < maxY - CONTACT_EPS
-                            && bMaxZ > minZ + CONTACT_EPS && bMinZ < maxZ - CONTACT_EPS) {
-                        overlap[0] = true;
-                    }
-                });
-        return overlap[0];
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
     }
 }

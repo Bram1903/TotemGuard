@@ -51,6 +51,10 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
         this.latencyHandler = player.getLatencyHandler();
     }
 
+    private static int minY(DimensionType dimension) {
+        return dimension != null ? dimension.getMinY() : 0;
+    }
+
     @Override
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
@@ -98,20 +102,16 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
         }
     }
 
-    private static int minY(DimensionType dimension) {
-        return dimension != null ? dimension.getMinY() : 0;
-    }
-
     private void loadColumn(PacketSendEvent event, int chunkX, int chunkZ, BaseChunk[] sections, boolean fullChunk) {
         Runnable apply = fullChunk
                 ? () -> {
-                    blocks.loadChunk(chunkX, chunkZ, sections);
-                    mirror.readiness().onChunkApplied();
-                }
+            blocks.loadChunk(chunkX, chunkZ, sections);
+            mirror.readiness().onChunkApplied();
+        }
                 : () -> {
-                    blocks.mergeChunk(chunkX, chunkZ, sections);
-                    mirror.readiness().onChunkApplied();
-                };
+            blocks.mergeChunk(chunkX, chunkZ, sections);
+            mirror.readiness().onChunkApplied();
+        };
         latencyHandler.compensateLazy(event, apply);
     }
 

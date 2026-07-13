@@ -37,23 +37,9 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class TickGate {
 
-    public enum Kind {
-        PROCEED,
-        DECLINE,
-        FLAG
-    }
-
-    public enum CarriedMode {
-        KEEP,
-        REST,
-        REST_JUMP_CEILING,
-        FROZEN
-    }
-
     private final TeleportFilter teleportFilter = new TeleportFilter();
     private final FastDetector fastDetector = new FastDetector();
     private final GroundSpoofDetector groundSpoofDetector = new GroundSpoofDetector();
-
     @Getter
     private Kind kind = Kind.PROCEED;
     @Getter
@@ -68,6 +54,10 @@ public final class TickGate {
     private double horizontalExcess;
     @Getter
     private double verticalExcess;
+
+    private static int floor(double value) {
+        return (int) Math.floor(value);
+    }
 
     public void evaluateSelf(Data data, WorldMirror world, BlockReader reader, EngineActor actor,
                              MovementData movement, Location current,
@@ -184,7 +174,16 @@ public final class TickGate {
         this.carriedMode = mode;
     }
 
-    private static int floor(double value) {
-        return (int) Math.floor(value);
+    public enum Kind {
+        PROCEED,
+        DECLINE,
+        FLAG
+    }
+
+    public enum CarriedMode {
+        KEEP,
+        REST,
+        REST_JUMP_CEILING,
+        FROZEN
     }
 }

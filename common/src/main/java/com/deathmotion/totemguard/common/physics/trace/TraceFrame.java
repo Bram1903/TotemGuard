@@ -53,11 +53,48 @@ public final class TraceFrame {
     public static final long WIDENED_STEP_CARRY = 1L << 9;
     public static final long WIDENED_SNEAK_EDGE = 1L << 10;
     public static final long WIDENED_RESIDUAL_CARRY = 1L << 11;
+    public static final long SPAWN_STEP = 1L << 12;
+    public static final long SPAWN_KNOCKBACK = 1L << 13;
+    public static final long SPAWN_GLIDE_EXIT = 1L << 14;
+    public static final long HYPOTHESIS_OVERFLOW = 1L << 15;
+    public static final long SPAWN_VERTICAL_DUAL = 1L << 16;
+    public static final long SPAWN_COLLIDE_ZERO = 1L << 17;
+    public static final long INPUT_EXACT = 1L << 18;
+    public static final long SPAWN_AIR_REGIME = 1L << 19;
+    public static final long STEP_FROM_FALL = 1L << 20;
+    public static final long FLY_TRANSITION = 1L << 21;
 
     private static final String[] WIDENING_NAMES = {
             "knockback", "riptide", "piston", "push", "stuck", "bubble",
-            "bed", "honey", "boost", "step", "sneak", "carry"
+            "bed", "honey", "boost", "step", "sneak", "carry",
+            "spawn-step", "spawn-kb", "spawn-glide", "hyp-overflow",
+            "spawn-vdual", "spawn-collide", "input-exact", "spawn-air",
+            "step-fall", "trans-hold"
     };
+    public long tick;
+    public byte stream;
+    public byte body;
+    public double obsX, obsY, obsZ;
+    public double yaw, pitch, prevYaw, prevPitch;
+    public double preCarriedX, preCarriedZ, preCarriedFloor, preCarriedCeil;
+    public double centerX, centerZ, radius, ceiling, floor;
+    public double altCenterX, altCenterZ;
+    public boolean altPresent;
+    public double horizontalExcess, ascentExcess, descentExcess, phaseExcess;
+    public byte outcome, reason, breach, medium, ground;
+    public byte chosenSlot, liveCount;
+    public int flags;
+    public long contributors;
+    public double supportGap, ceilingClearance;
+    public int reads, misses, uncertainHits;
+    public double buffer, engineFall;
+    public byte mitigation;
+    public double pushX, pushY, pushZ, bubbleAscent;
+    public double stuckHorizontal, stuckVertical;
+    public double fluidFriction, fluidAccel;
+    public double moveSpeed, jumpStrength, stepHeight;
+    public double riptideStrength;
+    public int fireworkMin, fireworkMax;
 
     public static String describeWidenings(long contributors) {
         if (contributors == 0L) return "";
@@ -69,29 +106,6 @@ public final class TraceFrame {
         }
         return out.toString();
     }
-
-    public long tick;
-    public byte stream;
-    public byte body;
-    public double obsX, obsY, obsZ;
-    public double yaw, pitch, prevYaw, prevPitch;
-    public double preCarriedX, preCarriedZ, preCarriedFloor, preCarriedCeil;
-    public double centerX, centerZ, radius, ceiling, floor;
-    public double horizontalExcess, ascentExcess, descentExcess, phaseExcess;
-    public byte outcome, reason, breach, medium, ground;
-    public int flags;
-    public long contributors;
-    public double supportGap, ceilingClearance;
-    public int reads, misses, uncertainHits;
-    public double buffer, engineFall;
-    public byte mitigation;
-
-    public double pushX, pushY, pushZ, bubbleAscent;
-    public double stuckHorizontal, stuckVertical;
-    public double fluidFriction, fluidAccel;
-    public double moveSpeed, jumpStrength, stepHeight, sprintJumpResidual;
-    public double riptideStrength;
-    public int fireworkMin, fireworkMax;
 
     public void copyFrom(TraceFrame other) {
         tick = other.tick;
@@ -113,6 +127,9 @@ public final class TraceFrame {
         radius = other.radius;
         ceiling = other.ceiling;
         floor = other.floor;
+        altCenterX = other.altCenterX;
+        altCenterZ = other.altCenterZ;
+        altPresent = other.altPresent;
         horizontalExcess = other.horizontalExcess;
         ascentExcess = other.ascentExcess;
         descentExcess = other.descentExcess;
@@ -122,6 +139,8 @@ public final class TraceFrame {
         breach = other.breach;
         medium = other.medium;
         ground = other.ground;
+        chosenSlot = other.chosenSlot;
+        liveCount = other.liveCount;
         flags = other.flags;
         contributors = other.contributors;
         supportGap = other.supportGap;
@@ -143,7 +162,6 @@ public final class TraceFrame {
         moveSpeed = other.moveSpeed;
         jumpStrength = other.jumpStrength;
         stepHeight = other.stepHeight;
-        sprintJumpResidual = other.sprintJumpResidual;
         riptideStrength = other.riptideStrength;
         fireworkMin = other.fireworkMin;
         fireworkMax = other.fireworkMax;
