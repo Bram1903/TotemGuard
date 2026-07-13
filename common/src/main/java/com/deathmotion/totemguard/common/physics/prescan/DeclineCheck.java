@@ -20,22 +20,17 @@ package com.deathmotion.totemguard.common.physics.prescan;
 
 import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
 import com.deathmotion.totemguard.common.player.data.Data;
-import com.deathmotion.totemguard.common.world.border.BorderMirror;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import org.jetbrains.annotations.Nullable;
 
 public final class DeclineCheck {
 
-    private static final double BORDER_MARGIN = 2.0;
-
     private DeclineCheck() {
     }
 
-    public static @Nullable DeclineReason check(Data data, BorderMirror border, double x, double z) {
+    public static @Nullable DeclineReason check(Data data) {
         if (data.getGameMode() == GameMode.SPECTATOR) return DeclineReason.FLY;
         if (data.isInVehicle()) return DeclineReason.VEHICLE;
-        if (data.isSleeping()) return DeclineReason.SLEEPING;
-        if (border.isActive() && border.distanceToEdge(x, z) < BORDER_MARGIN) return DeclineReason.BORDER;
         return null;
     }
 }

@@ -30,6 +30,7 @@ public final class CarriedHypotheses {
     private final Kind[] kinds = new Kind[CAPACITY];
     private final boolean[] live = new boolean[CAPACITY];
     private boolean overflowed;
+
     public CarriedHypotheses() {
         collapse(MotionArea.rest());
     }

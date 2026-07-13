@@ -38,9 +38,9 @@ public final class BedBounceRule {
         prepared = landMedium && valid && !usedLast;
     }
 
-    public boolean applyTo(AreaBounds bounds) {
+    public boolean applyTo(AreaBounds bounds, double inputShiftX, double inputShiftZ) {
         if (!prepared || bounds.hasAltCenter()) return false;
-        bounds.altCenter(altCenterX, altCenterZ);
+        bounds.altCenter(altCenterX + inputShiftX, altCenterZ + inputShiftZ);
         return true;
     }
 

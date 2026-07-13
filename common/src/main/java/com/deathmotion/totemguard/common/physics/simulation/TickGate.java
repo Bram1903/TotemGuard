@@ -37,9 +37,15 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class TickGate {
 
+    private static final int SLEEP_ENTER_GRACE = 2;
+    private static final int SLEEP_EXIT_GRACE = 3;
+
     private final TeleportFilter teleportFilter = new TeleportFilter();
     private final FastDetector fastDetector = new FastDetector();
     private final GroundSpoofDetector groundSpoofDetector = new GroundSpoofDetector();
+    private boolean lastSleeping;
+    private boolean sleepExiting;
+    private int sleepGrace;
     @Getter
     private Kind kind = Kind.PROCEED;
     @Getter
@@ -69,6 +75,13 @@ public final class TickGate {
         breach = null;
         horizontalExcess = 0.0;
         verticalExcess = 0.0;
+
+        boolean sleeping = data.isSleeping();
+        if (sleeping != lastSleeping) {
+            sleepExiting = !sleeping;
+            sleepGrace = sleeping ? SLEEP_ENTER_GRACE : SLEEP_EXIT_GRACE;
+        }
+        lastSleeping = sleeping;
 
         switch (teleportFilter.classify(movement, data.getTeleportData(),
                 data.getMitigationService().setbackPending())) {
@@ -115,9 +128,18 @@ public final class TickGate {
             decline(DeclineReason.CAMERA, true, CarriedMode.KEEP);
             return;
         }
-        DeclineReason bail = DeclineCheck.check(data, world.border(), current.getX(), current.getZ());
+        DeclineReason bail = DeclineCheck.check(data);
         if (bail != null) {
             decline(bail, true, CarriedMode.KEEP);
+            return;
+        }
+        if (sleepGrace > 0) {
+            sleepGrace--;
+            if (sleepExiting) {
+                decline(DeclineReason.SLEEPING, true, CarriedMode.KEEP);
+            } else {
+                decline(DeclineReason.SLEEPING, false, CarriedMode.REST);
+            }
             return;
         }
 
@@ -165,6 +187,9 @@ public final class TickGate {
         teleportFilter.reset();
         fastDetector.reset();
         groundSpoofDetector.reset();
+        lastSleeping = false;
+        sleepExiting = false;
+        sleepGrace = 0;
     }
 
     private void decline(DeclineReason reason, boolean reseed, CarriedMode mode) {

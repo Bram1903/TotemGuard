@@ -81,7 +81,8 @@ public final class PlayerControlResolver {
                                boolean doubleMove, double stuckVertical) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
-        boolean horizontalInput = !inventoryOpen
+        boolean immobile = inventoryOpen || data.isSleeping();
+        boolean horizontalInput = !immobile
                 && (state == null || state.forward() || state.backward() || state.left() || state.right());
         boolean jumpHeld = state == null || state.jumping();
 
@@ -97,15 +98,15 @@ public final class PlayerControlResolver {
         boolean landingJump = ground.landingSupport()
                 && observedY > RISE_EPS && observedY <= takeoffMax + COYOTE_TAKEOFF_EPS;
         boolean coyoteJump = !ground.groundedStart()
-                && jumpHeld && !inventoryOpen && !ground.coyoteBlocked()
+                && jumpHeld && !immobile && !ground.coyoteBlocked()
                 && (((ground.recentlyGrounded() || ground.startAmbiguous()) && freshJump) || landingJump);
         boolean effectiveGroundedStart = ground.groundedStart() || coyoteJump;
-        boolean jumpPossible = effectiveGroundedStart && jumpHeld && !inventoryOpen;
+        boolean jumpPossible = effectiveGroundedStart && jumpHeld && !immobile;
 
         double observedSpeed = ClientMath.horizontalDistance(observedX, observedZ);
-        boolean sprinting = !inventoryOpen && data.isSprinting() && data.getFoodData().canSprint()
+        boolean sprinting = !immobile && data.isSprinting() && data.getFoodData().canSprint()
                 && sprintForward(movement, contact, state, observedX, observedZ, observedSpeed, ground.groundedStart());
-        improperSprint = data.isSprinting() && !sprinting && !inventoryOpen;
+        improperSprint = data.isSprinting() && !sprinting && !immobile;
 
         boolean ceilingBlocked = contact.ceilingClearance() < takeoffMax;
         boolean ceilingBlockedAtTakeoff = ceilingBlocked || lastCeilingClearance < takeoffMax;

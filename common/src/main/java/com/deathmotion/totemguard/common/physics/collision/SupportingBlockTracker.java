@@ -43,6 +43,7 @@ public final class SupportingBlockTracker {
     private double jumpFactor = 1.0;
     private boolean speedCertain;
     private double speedFactor = 1.0;
+
     public SupportingBlockTracker(boolean supportingBlockClient) {
         this.supportingBlockClient = supportingBlockClient;
     }

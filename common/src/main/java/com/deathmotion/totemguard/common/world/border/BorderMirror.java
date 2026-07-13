@@ -70,7 +70,29 @@ public final class BorderMirror {
     public double distanceToEdge(double x, double z) {
         double dx = Math.abs(x - centerX);
         double dz = Math.abs(z - centerZ);
-        return currentHalfExtent() - Math.max(dx, dz);
+        return collisionHalfExtent() - Math.max(dx, dz);
+    }
+
+    public double minX() {
+        return centerX - collisionHalfExtent();
+    }
+
+    public double maxX() {
+        return centerX + collisionHalfExtent();
+    }
+
+    public double minZ() {
+        return centerZ - collisionHalfExtent();
+    }
+
+    public double maxZ() {
+        return centerZ + collisionHalfExtent();
+    }
+
+    public boolean withinBounds(double x, double z, double margin) {
+        double half = collisionHalfExtent();
+        return x >= centerX - half - margin && x < centerX + half + margin
+                && z >= centerZ - half - margin && z < centerZ + half + margin;
     }
 
     public void reset() {
@@ -78,6 +100,12 @@ public final class BorderMirror {
         centerZ = 0.0;
         halfExtent = DEFAULT_HALF_EXTENT;
         lerpDurationNanos = 0;
+    }
+
+    private double collisionHalfExtent() {
+        double current = currentHalfExtent();
+        if (lerpDurationNanos <= 0) return current;
+        return Math.max(lerpFromHalfExtent, lerpToHalfExtent);
     }
 
     private double currentHalfExtent() {

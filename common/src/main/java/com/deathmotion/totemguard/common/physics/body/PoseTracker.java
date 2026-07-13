@@ -52,6 +52,11 @@ public final class PoseTracker {
     }
 
     public double height(Data data) {
+        if (data.isSleeping()) {
+            lastPoseBase = MotionDefaults.SLEEPING_SIZE;
+            lastPoseHeight = MotionDefaults.SLEEPING_SIZE;
+            return lastPoseHeight;
+        }
         double scale = data.getAttributeData().scale();
         double base;
         if (data.isSwimming() || data.isGliding() || data.isSpinAttacking()) {

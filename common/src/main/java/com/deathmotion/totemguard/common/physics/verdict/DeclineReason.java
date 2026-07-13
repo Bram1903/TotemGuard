@@ -23,7 +23,6 @@ public enum DeclineReason {
     VEHICLE,
     GLIDE,
     SLEEPING,
-    BORDER,
     RESYNC,
     TELEPORT,
     LOADING,

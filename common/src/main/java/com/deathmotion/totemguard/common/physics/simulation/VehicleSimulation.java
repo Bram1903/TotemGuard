@@ -609,6 +609,8 @@ public final class VehicleSimulation {
         double maxZ = startZ + half + Math.max(0.0, obsZ) + HARVEST_MARGIN;
         ColliderCollector.fill(colliders, reader, world.entities(), query, ExemptCells.NONE,
                 data.getPistonData(), minX, minY, minZ, maxX, maxY, maxZ);
+        BorderColliders.fill(colliders, world.border(), startX, startZ, half,
+                minX, minY, minZ, maxX, maxY, maxZ);
         sweep.resolve(colliders, contact,
                 startX, startY, startZ,
                 half, height, obsX, obsY, obsZ,

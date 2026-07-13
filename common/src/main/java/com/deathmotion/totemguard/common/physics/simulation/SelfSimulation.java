@@ -395,7 +395,7 @@ public final class SelfSimulation {
         MovementData movement = data.getMovementData();
         if (!movement.isCameraIsSelf()) return;
         Location current = movement.getCurrent();
-        if (DeclineCheck.check(data, world.border(), current.getX(), current.getZ()) != null) return;
+        if (DeclineCheck.check(data) != null) return;
         PhysicsPreset preset = view.physicsPreset();
 
         reader.resetCounters();
@@ -445,6 +445,8 @@ public final class SelfSimulation {
         double maxZ = Math.max(previous.getZ(), current.getZ()) + half + HARVEST_HORIZONTAL_MARGIN;
         ColliderCollector.fill(colliders, reader, world.entities(), query, exemptions,
                 data.getPistonData(),
+                minX, minY, minZ, maxX, maxY, maxZ);
+        BorderColliders.fill(colliders, world.border(), previous.getX(), previous.getZ(), half,
                 minX, minY, minZ, maxX, maxY, maxZ);
         pistons.setPlayerBox(minX, minY, minZ, maxX, maxY, maxZ);
         sweep.resolve(colliders, contact,
@@ -535,7 +537,8 @@ public final class SelfSimulation {
                     Math.max(current.getY() - dy, current.getY()) + height,
                     Math.max(current.getZ() - dz, current.getZ()) + half,
                     half, height);
-            boolean slotBounce = bedBounce.applyTo(slotBounds);
+            boolean slotBounce = bedBounce.applyTo(slotBounds,
+                    slotBounds.centerX() - area.centerX(), slotBounds.centerZ() - area.centerZ());
             boolean slotBoost = SprintBoostRule.apply(input, slotBounds, boostStuckScale);
             if (slot == 0) {
                 knockbackWidened = slotKnockback;
@@ -958,7 +961,11 @@ public final class SelfSimulation {
 
     private void decline(DeclineReason reason, double dx, double dy, double dz, boolean reseed,
                          Location current, double half, double height) {
-        if (reseed) carried.collapse(MotionArea.seeded(dx, dz, dy));
+        if (reseed) {
+            carried.collapse(reason == DeclineReason.SLEEPING
+                    ? wakeSeed(dx, dy, dz)
+                    : MotionArea.seeded(dx, dz, dy));
+        }
         chosenSlot = 0;
         supportTracker.invalidate();
         trust.clearDoubleMoveStreak();
@@ -968,17 +975,28 @@ public final class SelfSimulation {
             seedEmbedExemptions(current, half, height);
         }
         if (reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT
-                || reason == DeclineReason.UNLOADED || reason == DeclineReason.LOADING) {
+                || reason == DeclineReason.UNLOADED || reason == DeclineReason.LOADING
+                || reason == DeclineReason.SLEEPING) {
             phase.seedGrace();
             phase.invalidateEmbed();
         }
-        if (reseed || reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT) {
+        if (reseed || reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT
+                || reason == DeclineReason.SLEEPING) {
             groundResolver.displaced();
         }
         carry.clear();
         bedBounce.reset();
         verdict = buildVerdict(TickOutcome.DECLINED, reason, null,
                 dx, dy, dz, 0.0, 0.0, 0.0, 0.0, 0.0, null, null);
+    }
+
+    // Bed exit reseeds on an un-scanned grace tick, so the vertical seed must bracket the one gravity
+    // tick of handoff ambiguity: the observed dy is this tick's velocity, and the next judged tick is
+    // either the fall continued (dy advanced one gravity step) or arrested toward it. A bare point at
+    // dy lags the continuing fall by exactly one step and falses DESCENT_FLOOR.
+    private MotionArea wakeSeed(double dx, double dy, double dz) {
+        double advancedVy = (dy - data.getAttributeData().gravity()) * MotionDefaults.VERTICAL_DRAG;
+        return new MotionArea(dx, dz, 0.0, Math.min(dy, advancedVy), Math.max(dy, advancedVy));
     }
 
     private void flagDetection(BoundBreach breach, double dx, double dy, double dz,

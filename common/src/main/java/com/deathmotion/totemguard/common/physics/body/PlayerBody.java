@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.physics.body;
 
 import com.deathmotion.totemguard.common.physics.EngineActor;
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.VersionGates;
 import com.deathmotion.totemguard.common.physics.control.PlayerControlResolver;
 import com.deathmotion.totemguard.common.physics.medium.GlideState;
@@ -55,6 +56,7 @@ public final class PlayerBody implements SimulationBody {
 
     @Override
     public double halfWidth() {
+        if (data.isSleeping()) return MotionDefaults.SLEEPING_SIZE / 2.0;
         return data.getAttributeData().width() / 2.0;
     }
 
