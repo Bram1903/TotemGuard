@@ -33,6 +33,15 @@ public class EffectData {
     private int dolphinsGraceTicks;
     private int weavingTicks;
 
+    private int hasteAmplifier = UNSET;
+    private int hasteTicks;
+
+    private int conduitPowerAmplifier = UNSET;
+    private int conduitPowerTicks;
+
+    private int miningFatigueAmplifier = UNSET;
+    private int miningFatigueTicks;
+
     private static int normalize(int durationTicks) {
         return durationTicks < 0 ? INFINITE : durationTicks;
     }
@@ -81,6 +90,36 @@ public class EffectData {
         this.weavingTicks = 0;
     }
 
+    public void setHaste(int amplifier, int durationTicks) {
+        this.hasteAmplifier = amplifier;
+        this.hasteTicks = normalize(durationTicks);
+    }
+
+    public void clearHaste() {
+        this.hasteAmplifier = UNSET;
+        this.hasteTicks = 0;
+    }
+
+    public void setConduitPower(int amplifier, int durationTicks) {
+        this.conduitPowerAmplifier = amplifier;
+        this.conduitPowerTicks = normalize(durationTicks);
+    }
+
+    public void clearConduitPower() {
+        this.conduitPowerAmplifier = UNSET;
+        this.conduitPowerTicks = 0;
+    }
+
+    public void setMiningFatigue(int amplifier, int durationTicks) {
+        this.miningFatigueAmplifier = amplifier;
+        this.miningFatigueTicks = normalize(durationTicks);
+    }
+
+    public void clearMiningFatigue() {
+        this.miningFatigueAmplifier = UNSET;
+        this.miningFatigueTicks = 0;
+    }
+
     public void tick() {
         if (levitationTicks > 0 && --levitationTicks <= 0) {
             levitationAmplifier = UNSET;
@@ -96,6 +135,15 @@ public class EffectData {
         }
         if (weavingTicks > 0) {
             weavingTicks--;
+        }
+        if (hasteTicks > 0 && --hasteTicks <= 0) {
+            hasteAmplifier = UNSET;
+        }
+        if (conduitPowerTicks > 0 && --conduitPowerTicks <= 0) {
+            conduitPowerAmplifier = UNSET;
+        }
+        if (miningFatigueTicks > 0 && --miningFatigueTicks <= 0) {
+            miningFatigueAmplifier = UNSET;
         }
     }
 
@@ -127,11 +175,38 @@ public class EffectData {
         return weavingTicks != 0;
     }
 
+    public boolean hasHaste() {
+        return hasteAmplifier != UNSET && hasteTicks != 0;
+    }
+
+    public int hasteAmplifier() {
+        return hasteAmplifier;
+    }
+
+    public boolean hasConduitPower() {
+        return conduitPowerAmplifier != UNSET && conduitPowerTicks != 0;
+    }
+
+    public int conduitPowerAmplifier() {
+        return conduitPowerAmplifier;
+    }
+
+    public boolean hasMiningFatigue() {
+        return miningFatigueAmplifier != UNSET && miningFatigueTicks != 0;
+    }
+
+    public int miningFatigueAmplifier() {
+        return miningFatigueAmplifier;
+    }
+
     public void reset() {
         clearLevitation();
         clearJumpBoost();
         clearSlowFalling();
         clearDolphinsGrace();
         clearWeaving();
+        clearHaste();
+        clearConduitPower();
+        clearMiningFatigue();
     }
 }

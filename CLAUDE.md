@@ -142,7 +142,7 @@ stable across reloads. `loader/host` exists specifically to share those types be
 Do not treat it as a normal compile dependency from `common/`.
 
 **Checks.** Detection logic lives in `common/check/impl/`, grouped by category, `autototem/`, `inventory/`,
-`manual/`, `mods/`, `protocol/`, `tick/`. Every check extends `CheckImpl` and implements one of `PacketCheck`,
+`manual/`, `mods/`, `protocol/`, `tick/`, `world/`. Every check extends `CheckImpl` and implements one of `PacketCheck`,
 `EventCheck`, `ExtendedCheck`, or `ManualCheck`, and the interface determines which dispatch table in
 `CheckManagerImpl` it lands in. Metadata comes from `@CheckData(name, description, type, experimental)`.
 Tick-end ordering comes from `@RequiresTickEnd`. `CheckManagerImpl` hard-codes every check in its constructor

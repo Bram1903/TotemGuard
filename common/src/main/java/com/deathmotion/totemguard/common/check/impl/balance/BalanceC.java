@@ -39,6 +39,6 @@ public class BalanceC extends BalanceA {
 
     @Override
     protected boolean shouldReport(long now) {
-        return anchorNanos < now - MAX_CREDIT_NANOS;
+        return clock.referenceNanos() < now - MAX_CREDIT_NANOS;
     }
 }

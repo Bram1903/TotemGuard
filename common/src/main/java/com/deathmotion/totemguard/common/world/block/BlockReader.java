@@ -28,6 +28,7 @@ public final class BlockReader {
 
     private final BlockStore store;
     private final PendingBlocks pending;
+    private final PredictedBlocks predicted;
     private final ClientStateMap stateMap;
     private final StateFacts factsTable;
     private final WrappedBlockState air;
@@ -43,9 +44,10 @@ public final class BlockReader {
     @Getter
     private int uncertainHitsThisTick;
 
-    public BlockReader(BlockStore store, PendingBlocks pending, ClientStateMap stateMap) {
+    public BlockReader(BlockStore store, PendingBlocks pending, PredictedBlocks predicted, ClientStateMap stateMap) {
         this.store = store;
         this.pending = pending;
+        this.predicted = predicted;
         this.stateMap = stateMap;
         this.factsTable = StateFacts.tableFor(stateMap.stateVersion());
         this.air = WrappedBlockState.getByGlobalId(stateMap.stateVersion(), 0, false);
@@ -87,7 +89,7 @@ public final class BlockReader {
     }
 
     public boolean uncertain(int x, int y, int z) {
-        boolean hit = pending.has(x, y, z);
+        boolean hit = pending.has(x, y, z) || predicted.has(x, y, z);
         if (hit) uncertainHitsThisTick++;
         return hit;
     }
@@ -95,6 +97,11 @@ public final class BlockReader {
     public int pendingStateId(int x, int y, int z) {
         int serverId = pending.peek(x, y, z);
         return serverId == PendingBlocks.NONE ? PendingBlocks.NONE : stateMap.toClientId(serverId);
+    }
+
+    public int predictedStateId(int x, int y, int z) {
+        int serverId = predicted.peek(x, y, z);
+        return serverId == PredictedBlocks.NONE ? PredictedBlocks.NONE : stateMap.toClientId(serverId);
     }
 
     public boolean containsPortal(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {

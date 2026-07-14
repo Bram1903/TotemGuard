@@ -23,11 +23,18 @@ import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
+import com.deathmotion.totemguard.common.world.WorldMirror;
+import com.deathmotion.totemguard.common.world.block.PendingBlocks;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerInput;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSteerVehicle;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerAcknowledgeBlockChanges;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 
 public class MitigationService {
@@ -156,6 +163,20 @@ public class MitigationService {
         PlatformPlayer platformPlayer = data.getPlayer().getPlatformPlayer();
         if (platformPlayer == null) return false;
         return platformPlayer.dealFallDamage(amount);
+    }
+
+    public void resyncBlock(int x, int y, int z) {
+        WorldMirror mirror = data.getPlayer().getWorldMirror();
+        int pendingId = mirror.pending().peek(x, y, z);
+        int serverStateId = pendingId != PendingBlocks.NONE ? pendingId : mirror.blocks().serverStateId(x, y, z);
+        data.getPlayer().getUser().sendPacket(
+                new WrapperPlayServerBlockChange(new Vector3i(x, y, z), serverStateId));
+    }
+
+    public void acknowledgeBlockChanges(int sequence) {
+        if (sequence <= 0) return;
+        if (!PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_19)) return;
+        data.getPlayer().getUser().sendPacket(new WrapperPlayServerAcknowledgeBlockChanges(sequence));
     }
 
     public void reset() {

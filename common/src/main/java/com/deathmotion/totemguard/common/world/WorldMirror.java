@@ -33,6 +33,7 @@ public final class WorldMirror {
 
     private final BlockStore blocks = new BlockStore();
     private final PendingBlocks pending = new PendingBlocks();
+    private final PredictedBlocks predicted = new PredictedBlocks();
     private final BlockReader reader;
     private final EntityTracker entities = new EntityTracker();
     private final BorderMirror border = new BorderMirror();
@@ -40,7 +41,7 @@ public final class WorldMirror {
     private final DimensionProfile dimension = new DimensionProfile();
 
     public WorldMirror(ClientVersion clientVersion) {
-        this.reader = new BlockReader(blocks, pending, ClientStateMap.forClient(clientVersion));
+        this.reader = new BlockReader(blocks, pending, predicted, ClientStateMap.forClient(clientVersion));
     }
 
     public void onJoin(String worldName, DimensionType dimensionType, int minY) {
@@ -67,6 +68,7 @@ public final class WorldMirror {
     private void clearWorldState() {
         blocks.clear();
         pending.clear();
+        predicted.clear();
         entities.clear();
         border.reset();
         readiness.reset();

@@ -33,6 +33,7 @@ import com.deathmotion.totemguard.common.features.punishment.BanAnimationImpl;
 import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.EngineContext;
 import com.deathmotion.totemguard.common.physics.PhysicsEngine;
+import com.deathmotion.totemguard.common.physics.VersionGates;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.player.data.ping.PingData;
@@ -91,6 +92,7 @@ public class TGPlayer implements TGUser, EngineActor {
     private final CheckManagerImpl checkManager;
     private final WorldMirror worldMirror;
     private final Data data;
+    private final VersionGates versionGates;
     private final PhysicsEngine physics;
     private final TotemData totemData;
     private final ClickData clickData;
@@ -146,9 +148,10 @@ public class TGPlayer implements TGUser, EngineActor {
         this.inventory = new PacketInventory();
         this.worldMirror = new WorldMirror(getClientVersion());
         this.data = new Data(this);
+        this.versionGates = new VersionGates(getClientVersion(), computeSupportsEndTick());
         EngineContext engineContext = new EngineContext(
                 () -> platform.getConfigRepository().configView(), platform.getLogger());
-        this.physics = new PhysicsEngine(this, data, worldMirror, engineContext);
+        this.physics = new PhysicsEngine(this, data, worldMirror, engineContext, versionGates);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
@@ -168,6 +171,7 @@ public class TGPlayer implements TGUser, EngineActor {
                 new InboundInventoryProcessor(this),
                 new InboundClientProcessor(this),
                 new InboundActionProcessor(this),
+                new InboundWorldProcessor(this),
                 new InboundTeleportProcessor(this),
                 new InboundMovementProcessor(this),
                 new InboundVehicleProcessor(this),

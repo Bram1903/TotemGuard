@@ -101,6 +101,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 }
                 data.getFishingData().reset();
                 data.getUseItemData().reset();
+                data.getDiggingData().reset();
                 inputData.reset();
                 data.getMovementData().reset();
                 player.getPhysics().reset();

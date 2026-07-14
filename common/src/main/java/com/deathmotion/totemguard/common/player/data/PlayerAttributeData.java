@@ -35,6 +35,10 @@ public class PlayerAttributeData {
     private double fallDamageMultiplier = 1.0;
     private double airDragModifier = 1.0;
     private double frictionModifier = 1.0;
+    private double blockBreakSpeed = 1.0;
+    private double miningEfficiency = 0.0;
+    private double submergedMiningSpeed = 0.2;
+    private double blockInteractionRange = 4.5;
 
     public void setScale(double scale) {
         this.scale = Math.max(0.0625, Math.min(16.0, scale));
@@ -86,6 +90,22 @@ public class PlayerAttributeData {
 
     public void setFrictionModifier(double frictionModifier) {
         this.frictionModifier = Math.max(0.0, Math.min(2048.0, frictionModifier));
+    }
+
+    public void setBlockBreakSpeed(double blockBreakSpeed) {
+        this.blockBreakSpeed = Math.max(0.0, Math.min(1024.0, blockBreakSpeed));
+    }
+
+    public void setMiningEfficiency(double miningEfficiency) {
+        this.miningEfficiency = Math.max(0.0, Math.min(1024.0, miningEfficiency));
+    }
+
+    public void setSubmergedMiningSpeed(double submergedMiningSpeed) {
+        this.submergedMiningSpeed = Math.max(0.0, Math.min(20.0, submergedMiningSpeed));
+    }
+
+    public void setBlockInteractionRange(double blockInteractionRange) {
+        this.blockInteractionRange = Math.max(0.0, Math.min(64.0, blockInteractionRange));
     }
 
     public double width() {
@@ -148,6 +168,22 @@ public class PlayerAttributeData {
         return frictionModifier;
     }
 
+    public double blockBreakSpeed() {
+        return blockBreakSpeed;
+    }
+
+    public double miningEfficiency() {
+        return miningEfficiency;
+    }
+
+    public double submergedMiningSpeed() {
+        return submergedMiningSpeed;
+    }
+
+    public double blockInteractionRange() {
+        return blockInteractionRange;
+    }
+
     public void reset() {
         scale = 1.0;
         movementSpeed = MotionDefaults.BASE_MOVEMENT_SPEED;
@@ -162,5 +198,9 @@ public class PlayerAttributeData {
         fallDamageMultiplier = 1.0;
         airDragModifier = 1.0;
         frictionModifier = 1.0;
+        blockBreakSpeed = 1.0;
+        miningEfficiency = 0.0;
+        submergedMiningSpeed = 0.2;
+        blockInteractionRange = 4.5;
     }
 }

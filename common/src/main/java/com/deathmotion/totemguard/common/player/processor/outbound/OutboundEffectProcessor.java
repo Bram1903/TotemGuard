@@ -64,6 +64,12 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, () -> effectData.setDolphinsGrace(duration));
             } else if (potion == PotionTypes.WEAVING && observesWeaving()) {
                 latencyHandler.compensate(event, () -> effectData.setWeaving(duration));
+            } else if (potion == PotionTypes.HASTE) {
+                latencyHandler.compensate(event, () -> effectData.setHaste(amplifier, duration));
+            } else if (potion == PotionTypes.CONDUIT_POWER) {
+                latencyHandler.compensate(event, () -> effectData.setConduitPower(amplifier, duration));
+            } else if (potion == PotionTypes.MINING_FATIGUE) {
+                latencyHandler.compensate(event, () -> effectData.setMiningFatigue(amplifier, duration));
             }
         } else if (type == PacketType.Play.Server.REMOVE_ENTITY_EFFECT) {
             WrapperPlayServerRemoveEntityEffect packet = new WrapperPlayServerRemoveEntityEffect(event);
@@ -80,6 +86,12 @@ public class OutboundEffectProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, effectData::clearDolphinsGrace);
             } else if (potion == PotionTypes.WEAVING) {
                 latencyHandler.compensate(event, effectData::clearWeaving);
+            } else if (potion == PotionTypes.HASTE) {
+                latencyHandler.compensate(event, effectData::clearHaste);
+            } else if (potion == PotionTypes.CONDUIT_POWER) {
+                latencyHandler.compensate(event, effectData::clearConduitPower);
+            } else if (potion == PotionTypes.MINING_FATIGUE) {
+                latencyHandler.compensate(event, effectData::clearMiningFatigue);
             }
         }
     }

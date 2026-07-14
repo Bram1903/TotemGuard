@@ -155,6 +155,22 @@ public class OutboundAttributeProcessor extends ProcessorOutbound {
                 if (!clientObserves(ClientVersion.V_26_2)) continue;
                 double value = property.calcValue();
                 latencyHandler.compensate(event, () -> attributes.setFrictionModifier(value));
+            } else if (self && property.getAttribute() == Attributes.BLOCK_BREAK_SPEED) {
+                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
+                double value = property.calcValue();
+                latencyHandler.compensate(event, () -> attributes.setBlockBreakSpeed(value));
+            } else if (self && property.getAttribute() == Attributes.MINING_EFFICIENCY) {
+                if (!clientObserves(ClientVersion.V_1_21)) continue;
+                double value = property.calcValue();
+                latencyHandler.compensate(event, () -> attributes.setMiningEfficiency(value));
+            } else if (self && property.getAttribute() == Attributes.SUBMERGED_MINING_SPEED) {
+                if (!clientObserves(ClientVersion.V_1_21)) continue;
+                double value = property.calcValue();
+                latencyHandler.compensate(event, () -> attributes.setSubmergedMiningSpeed(value));
+            } else if (self && property.getAttribute() == Attributes.BLOCK_INTERACTION_RANGE) {
+                if (!clientObserves(ClientVersion.V_1_20_5)) continue;
+                double value = property.calcValue();
+                latencyHandler.compensate(event, () -> attributes.setBlockInteractionRange(value));
             }
         }
     }

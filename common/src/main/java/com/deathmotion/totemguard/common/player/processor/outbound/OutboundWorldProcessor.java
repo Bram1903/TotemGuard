@@ -24,9 +24,11 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.world.block.BlockStore;
 import com.deathmotion.totemguard.common.world.block.PendingBlocks;
+import com.deathmotion.totemguard.common.world.block.PredictedBlocks;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.dimension.DimensionType;
@@ -41,6 +43,7 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
     private final WorldMirror mirror;
     private final BlockStore blocks;
     private final PendingBlocks pending;
+    private final PredictedBlocks predicted;
     private final PacketLatencyHandler latencyHandler;
 
     public OutboundWorldProcessor(TGPlayer player) {
@@ -48,6 +51,7 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
         this.mirror = player.getWorldMirror();
         this.blocks = mirror.blocks();
         this.pending = mirror.pending();
+        this.predicted = mirror.predicted();
         this.latencyHandler = player.getLatencyHandler();
     }
 
@@ -99,6 +103,11 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
             }
         } else if (type == PacketType.Play.Server.CONFIGURATION_START) {
             mirror.onConfigurationStart();
+        } else if (type == PacketType.Play.Server.ACKNOWLEDGE_BLOCK_CHANGES) {
+            if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_19)) {
+                int sequence = new WrapperPlayServerAcknowledgeBlockChanges(event).getSequence();
+                latencyHandler.compensateLazy(event, () -> predicted.dropUpToSequence(sequence));
+            }
         }
     }
 
@@ -116,6 +125,13 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
     }
 
     private void applyBlock(PacketSendEvent event, int x, int y, int z, int blockId) {
+        if (predicted.has(x, y, z)) {
+            boolean denial = blockId == effectiveId(x, y, z);
+            latencyHandler.compensateLazy(event, () -> {
+                if (denial) predicted.recordDenial(x, y, z, System.currentTimeMillis());
+                predicted.drop(x, y, z);
+            });
+        }
         if (blockId == effectiveId(x, y, z)) return;
 
         event.getTasksAfterSend().add(() -> {
@@ -132,6 +148,14 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
     private void applyMultiBlock(PacketSendEvent event, WrapperPlayServerMultiBlockChange packet) {
         List<WrapperPlayServerMultiBlockChange.EncodedBlock> changed = null;
         for (WrapperPlayServerMultiBlockChange.EncodedBlock block : packet.getBlocks()) {
+            if (predicted.has(block.getX(), block.getY(), block.getZ())) {
+                final int x = block.getX(), y = block.getY(), z = block.getZ();
+                final boolean denial = block.getBlockId() == effectiveId(x, y, z);
+                latencyHandler.compensateLazy(event, () -> {
+                    if (denial) predicted.recordDenial(x, y, z, System.currentTimeMillis());
+                    predicted.drop(x, y, z);
+                });
+            }
             if (block.getBlockId() == effectiveId(block.getX(), block.getY(), block.getZ())) continue;
             if (changed == null) changed = new ArrayList<>();
             changed.add(block);

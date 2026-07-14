@@ -138,13 +138,13 @@ public final class SelfSimulation {
     private PhysicsVerdict verdict = PhysicsVerdict.INITIAL;
 
     public SelfSimulation(EngineActor actor, Data data, WorldMirror world, EngineContext context,
-                          TraceRecording trace) {
+                          VersionGates gates, TraceRecording trace) {
         this.actor = actor;
         this.data = data;
         this.world = world;
         this.reader = world.reader();
         this.context = context;
-        this.gates = new VersionGates(actor.clientVersion(), actor.supportsEndTick());
+        this.gates = gates;
         this.supportTracker = new SupportingBlockTracker(gates.supportingBlock());
         this.body = new PlayerBody(data, actor, gates);
         this.knockback = new KnockbackTracker(data.getExternalVelocityData());

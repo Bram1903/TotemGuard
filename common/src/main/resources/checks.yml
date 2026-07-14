@@ -127,6 +127,15 @@ Physics:
   punishment-commands:
     - "%default_punishment%"
 
+FastBreak:
+  enabled: true
+  punishable: true
+  mitigate: true
+  max-violations: 10
+
+  punishment-commands:
+    - "%default_punishment%"
+
 TickA:
   enabled: true
   punishable: true

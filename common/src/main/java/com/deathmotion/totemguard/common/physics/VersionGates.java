@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.physics;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -45,6 +47,13 @@ public final class VersionGates {
     private final boolean squareInputRescale;
     private final boolean endTick;
 
+    private final boolean blockBreakComponentEra;
+    private final boolean blockBreakAttributeEra;
+    private final boolean creativeDestroyComponentEra;
+    private final boolean maceCreativePenalty;
+    private final boolean harvestOverride1214;
+    private final boolean harvestOverride121;
+
     public VersionGates(ClientVersion client, boolean supportsEndTick) {
         this.modernTrig = client.isNewerThanOrEquals(ClientVersion.V_1_21_11);
         this.waterEfficiencyAttribute = client.isNewerThanOrEquals(ClientVersion.V_1_21);
@@ -65,5 +74,16 @@ public final class VersionGates {
         this.claimedInput = client.isNewerThanOrEquals(ClientVersion.V_1_21_2);
         this.squareInputRescale = client.isNewerThanOrEquals(ClientVersion.V_1_21_5);
         this.endTick = supportsEndTick;
+
+        ServerVersion server = PacketEvents.getAPI().getServerManager().getVersion();
+        boolean componentEra = server.isNewerThanOrEquals(ServerVersion.V_1_20_5)
+                && client.isNewerThanOrEquals(ClientVersion.V_1_20_5);
+        this.blockBreakComponentEra = componentEra;
+        this.blockBreakAttributeEra = server.isNewerThanOrEquals(ServerVersion.V_1_21)
+                && client.isNewerThanOrEquals(ClientVersion.V_1_21);
+        this.creativeDestroyComponentEra = componentEra && client.isNewerThanOrEquals(ClientVersion.V_1_21_5);
+        this.maceCreativePenalty = client.isNewerThanOrEquals(ClientVersion.V_1_20_5);
+        this.harvestOverride1214 = client.isNewerThanOrEquals(ClientVersion.V_1_21_4);
+        this.harvestOverride121 = client.isNewerThanOrEquals(ClientVersion.V_1_21);
     }
 }

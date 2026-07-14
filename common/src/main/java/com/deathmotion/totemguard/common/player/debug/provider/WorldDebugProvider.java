@@ -102,6 +102,9 @@ public final class WorldDebugProvider implements DebugOverlayProvider {
                 .append(Component.text(reader.uncertain(x, y, z) || reader.uncertain(x, y - 1, z) ? "yes" : "no",
                         Palette.CAPTION))
                 .append(separator())
+                .append(label("pred "))
+                .append(value(Integer.toString(player.getWorldMirror().predicted().size())))
+                .append(separator())
                 .append(label("below "))
                 .append(value(below.getType().getName()))
                 .append(separator())

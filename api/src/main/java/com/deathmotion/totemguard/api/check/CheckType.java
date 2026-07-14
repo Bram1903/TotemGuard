@@ -59,5 +59,11 @@ public enum CheckType {
      * Physics and prediction checks. Motion the vanilla client could not have produced, caught by simulating the
      * reachable velocity each tick (fly, hover, ascent without support, excess speed).
      */
-    PHYSICS
+    PHYSICS,
+
+    /**
+     * World interaction checks. Block digging and placing the vanilla client could not have produced,
+     * caught by replicating the client's digging state machine and placement rules (fast break, fast place).
+     */
+    WORLD
 }

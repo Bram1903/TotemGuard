@@ -51,6 +51,7 @@ public class Data {
     private final FoodData foodData;
     private final FishingData fishingData;
     private final UseItemData useItemData;
+    private final DiggingData diggingData;
     private final MitigationService mitigationService;
     private final SetbackController setbackController;
     private GameMode gameMode;
@@ -107,6 +108,7 @@ public class Data {
         this.foodData = new FoodData();
         this.fishingData = new FishingData();
         this.useItemData = new UseItemData();
+        this.diggingData = new DiggingData();
         this.mitigationService = new MitigationService(this);
         this.setbackController = new SetbackController(mitigationService, externalVelocityData);
     }

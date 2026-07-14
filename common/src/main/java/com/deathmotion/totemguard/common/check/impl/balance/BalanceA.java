@@ -25,14 +25,10 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.mitigation.SetbackController;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @CheckData(description = "Game clock running faster than real time", type = CheckType.TICK)
 public class BalanceA extends CheckImpl implements PacketCheck {
 
-    protected static final long TICK_NANOS = 50_000_000L;
     protected static final long CLOCK_DRIFT_NANOS = 120_000_000L;
 
     private static final long JOIN_GRACE_NANOS = 60_000_000_000L;
@@ -40,37 +36,27 @@ public class BalanceA extends CheckImpl implements PacketCheck {
     private static final double BUFFER_DECAY = 0.0025;
     private static final double BUFFER_THRESHOLD = 2.0;
     private static final double BUFFER_RETAIN = 1.0;
+    final GameClock clock;
     private final SetbackController setbackController;
-    protected long anchorNanos;
-    private long balance;
-    private boolean flyingThisTick;
-    private boolean overBudget;
+    private boolean runningFast;
 
     public BalanceA(TGPlayer player) {
         super(player);
         this.setbackController = player.getData().getSetbackController();
-        long start = System.nanoTime() - JOIN_GRACE_NANOS;
-        this.balance = start;
-        this.anchorNanos = start;
+        this.clock = new GameClock(player, System.nanoTime() - JOIN_GRACE_NANOS);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!countsAsClientTick(event.getPacketType())) return;
+        if (!clock.onClientTick(event.getPacketType())) return;
 
-        long gated = player.getPingData().getGatedTransactionAnchorNanos();
-        if (gated != 0L) {
-            anchorNanos = gated;
-        }
-        player.getPingData().markMovementForTransactionAnchor();
-
-        balance += TICK_NANOS;
+        clock.advance();
 
         long now = System.nanoTime();
-        overBudget = balance > now;
-        if (overBudget) {
-            long aheadMillis = (balance - now) / 1_000_000L;
-            balance -= TICK_NANOS;
+        runningFast = clock.virtualNanos() > now;
+        if (runningFast) {
+            long aheadMillis = (clock.virtualNanos() - now) / 1_000_000L;
+            clock.rewind();
             if (mitigate) setbackController.requestAnchorFreeze();
             if (shouldReport(now) && buffer.increase(BUFFER_GAIN) >= BUFFER_THRESHOLD) {
                 buffer.set(BUFFER_RETAIN);
@@ -81,15 +67,12 @@ public class BalanceA extends CheckImpl implements PacketCheck {
             buffer.decrease(BUFFER_DECAY);
         }
 
-        long floor = floorNanos(now);
-        if (balance < floor) {
-            balance = floor;
-        }
+        clock.raiseTo(floorNanos(now));
     }
 
     @Override
     public void onPreFlying(PacketReceiveEvent event) {
-        if (!mitigate || !overBudget) return;
+        if (!mitigate || !runningFast) return;
         if (data.getMitigationService().setbackPending()) return;
         if (data.getTeleportData().lastPacketWasTeleport()) return;
         if (!platform.getConfigRepository().configView().physicsEngineTimerPacketCancel()) return;
@@ -97,27 +80,10 @@ public class BalanceA extends CheckImpl implements PacketCheck {
     }
 
     protected long floorNanos(long now) {
-        return anchorNanos - CLOCK_DRIFT_NANOS;
+        return clock.referenceNanos() - CLOCK_DRIFT_NANOS;
     }
 
     protected boolean shouldReport(long now) {
         return true;
-    }
-
-    private boolean countsAsClientTick(PacketTypeCommon packetType) {
-        if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
-            boolean counted = !data.getTeleportData().lastPacketWasTeleport()
-                    && !data.getMovementData().isLastFlyingWasDuplicate();
-            flyingThisTick = true;
-            return counted;
-        }
-
-        if (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
-            boolean hadFlying = flyingThisTick;
-            flyingThisTick = false;
-            return !hadFlying;
-        }
-
-        return false;
     }
 }

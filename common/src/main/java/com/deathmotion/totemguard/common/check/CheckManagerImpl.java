@@ -34,6 +34,7 @@ import com.deathmotion.totemguard.common.check.impl.mods.Mod;
 import com.deathmotion.totemguard.common.check.impl.physics.Physics;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.impl.tick.*;
+import com.deathmotion.totemguard.common.check.impl.world.FastBreak;
 import com.deathmotion.totemguard.common.check.type.EventCheck;
 import com.deathmotion.totemguard.common.check.type.ExtendedCheck;
 import com.deathmotion.totemguard.common.check.type.ManualCheck;
@@ -101,6 +102,7 @@ public class CheckManagerImpl {
                 .put(ProtocolF.class, new ProtocolF(player))
                 .put(ProtocolG.class, new ProtocolG(player))
                 .put(Physics.class, new Physics(player))
+                .put(FastBreak.class, new FastBreak(player))
                 .put(InventoryA.class, new InventoryA(player))
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))

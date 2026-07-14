@@ -25,17 +25,13 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 @CheckData(description = "Game clock running slower than real time", type = CheckType.TICK,
         experimental = true)
 public class BalanceB extends CheckImpl implements PacketCheck {
 
-    private static final long TICK_NANOS = 50_000_000L;
     private static final long NEGATIVE_DRIFT_NANOS = 1_200_000_000L;
-    private static final long STREAM_GAP_NANOS = 2L * TICK_NANOS;
+    private static final long STREAM_GAP_NANOS = 2L * GameClock.TICK_NANOS;
     private static final long JOIN_GRACE_NANOS = 60_000_000_000L;
     private static final double SKIP_THRESHOLD = 0.03;
     private static final double BUFFER_GAIN = 1.0;
@@ -43,51 +39,40 @@ public class BalanceB extends CheckImpl implements PacketCheck {
     private static final double BUFFER_THRESHOLD = 2.0;
     private static final double BUFFER_RETAIN = 1.0;
 
-    private long anchorNanos;
-    private long previousAnchorNanos;
-    private long balance;
-    private boolean flyingThisTick;
+    private final GameClock clock;
+    private long previousReferenceNanos;
 
     public BalanceB(TGPlayer player) {
         super(player);
-        long start = System.nanoTime() - JOIN_GRACE_NANOS;
-        this.balance = start;
-        this.anchorNanos = start;
-        this.previousAnchorNanos = start;
+        this.clock = new GameClock(player, System.nanoTime() - JOIN_GRACE_NANOS);
+        this.previousReferenceNanos = clock.referenceNanos();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!countsAsClientTick(event.getPacketType())) return;
+        if (!clock.onClientTick(event.getPacketType())) return;
 
-        long gated = player.getPingData().getGatedTransactionAnchorNanos();
-        if (gated != 0L) {
-            anchorNanos = gated;
-        }
-        player.getPingData().markMovementForTransactionAnchor();
-
-        long anchorGap = anchorNanos - previousAnchorNanos;
-        previousAnchorNanos = anchorNanos;
+        long reference = clock.referenceNanos();
+        long referenceGap = reference - previousReferenceNanos;
+        previousReferenceNanos = reference;
 
         long now = System.nanoTime();
-        if (data.isDead() || anchorGap > STREAM_GAP_NANOS || !tickingReliably()) {
-            balance = Math.max(balance, Math.min(now, anchorNanos));
+        if (data.isDead() || referenceGap > STREAM_GAP_NANOS || !tickingReliably()) {
+            clock.raiseTo(Math.min(now, reference));
             buffer.decrease(BUFFER_DECAY);
             return;
         }
 
-        balance += TICK_NANOS;
-        if (balance > now) {
-            balance = now;
-        }
+        clock.advance();
+        clock.lowerTo(now);
 
-        long behind = anchorNanos - NEGATIVE_DRIFT_NANOS - balance;
+        long behind = reference - NEGATIVE_DRIFT_NANOS - clock.virtualNanos();
         if (behind <= 0) {
             buffer.decrease(BUFFER_DECAY);
             return;
         }
 
-        balance += TICK_NANOS;
+        clock.advance();
         if (buffer.increase(BUFFER_GAIN) >= BUFFER_THRESHOLD) {
             buffer.set(BUFFER_RETAIN);
             fail("behind={0}ms,ping={1}ms", behind / 1_000_000L,
@@ -105,22 +90,5 @@ public class BalanceB extends CheckImpl implements PacketCheck {
         double dz = movement.getCurrent().getZ() - movement.getPrevious().getZ();
         return Math.abs(dx) > SKIP_THRESHOLD || Math.abs(dy) > SKIP_THRESHOLD
                 || Math.abs(dz) > SKIP_THRESHOLD;
-    }
-
-    private boolean countsAsClientTick(PacketTypeCommon packetType) {
-        if (WrapperPlayClientPlayerFlying.isFlying(packetType)) {
-            boolean counted = !data.getTeleportData().lastPacketWasTeleport()
-                    && !data.getMovementData().isLastFlyingWasDuplicate();
-            flyingThisTick = true;
-            return counted;
-        }
-
-        if (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
-            boolean hadFlying = flyingThisTick;
-            flyingThisTick = false;
-            return !hadFlying;
-        }
-
-        return false;
     }
 }

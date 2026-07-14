@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.physics.collision;
 import com.deathmotion.totemguard.common.player.data.PistonData;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.world.block.PendingBlocks;
+import com.deathmotion.totemguard.common.world.block.PredictedBlocks;
 import com.deathmotion.totemguard.common.world.block.StateFacts;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.deathmotion.totemguard.common.world.shape.ShapeQuery;
@@ -63,6 +64,15 @@ public final class ColliderCollector {
                                 buffer.tag(pendingFacts | ColliderBuffer.KIND_BLOCK | trust);
                                 buffer.cell(ColliderBuffer.packCell(x, y, z));
                                 collectShape(buffer, reader, query, pendingId, pendingFacts, x, y, z);
+                            }
+                        }
+                        int predictedId = reader.predictedStateId(x, y, z);
+                        if (predictedId != PredictedBlocks.NONE && predictedId != clientId && predictedId != pendingId) {
+                            long predictedFacts = reader.factsForClientId(predictedId);
+                            if (StateFacts.is(predictedFacts, StateFacts.HAS_SHAPE | StateFacts.SUPPORT_APPROXIMATE)) {
+                                buffer.tag(predictedFacts | ColliderBuffer.KIND_BLOCK | trust);
+                                buffer.cell(ColliderBuffer.packCell(x, y, z));
+                                buffer.accept(x, y, z, x + 1.0, y + 1.0, z + 1.0);
                             }
                         }
                     }
