@@ -29,6 +29,7 @@ public record PlayerControl(
         boolean jumpPossible,
         boolean ceilingClampedJump,
         boolean fluidExitHop,
+        boolean powderSnowClimb,
         boolean priorWallContact,
         double moveSpeed,
         double jumpStrength,

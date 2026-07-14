@@ -51,6 +51,8 @@ public final class MediumScan {
         double fluidThreshold = feetY - FLUID_SURFACE_MARGIN;
         double bestStuckHorizontal = -1.0;
         boolean sweptStuck = false;
+        int feetBlockX = floor((minX + maxX) / 2.0);
+        int feetBlockZ = floor((minZ + maxZ) / 2.0);
 
         for (int x = wx0; x <= wx1; x++) {
             for (int z = wz0; z <= wz1; z++) {
@@ -62,7 +64,12 @@ public final class MediumScan {
                     boolean inStart = inStartColumn && y >= sy0 && y <= sy1;
                     if (stuckApplies && StateFacts.is(facts, StateFacts.STUCK)) {
                         sweptStuck = true;
-                        if (inStart) {
+                        boolean powderSnow = StateFacts.isPowderSnowStuck(facts);
+                        if (powderSnow && inStartColumn) out.powderSnowSwept(true);
+                        boolean arms = powderSnow
+                                ? x == feetBlockX && z == feetBlockZ && y == sy0
+                                : inStart;
+                        if (arms) {
                             double horizontal = StateFacts.stuckHorizontal(facts, weavingCobweb);
                             if (horizontal > bestStuckHorizontal) {
                                 bestStuckHorizontal = horizontal;
@@ -100,9 +107,7 @@ public final class MediumScan {
         }
         out.stuckAlongPath(sweptStuck);
 
-        int feetBlockX = floor((minX + maxX) / 2.0);
         int feetBlockY = floor(feetY);
-        int feetBlockZ = floor((minZ + maxZ) / 2.0);
         out.swimSteerWater(StateFacts.is(
                 reader.facts(feetBlockX, floor(feetY + 0.9), feetBlockZ), StateFacts.ANY_FLUID));
         long feetFacts = reader.facts(feetBlockX, feetBlockY, feetBlockZ);

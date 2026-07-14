@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 // Vanilla zeroes the velocity at the NEXT move's start, so a stuck tick advances to rest.
 public final class StuckFactor {
 
-    private static final double STUCK_DESCENT = -10.0;
     private static final int ARREST_TICKS = 2;
 
     private int arrestTicks;
@@ -33,10 +32,9 @@ public final class StuckFactor {
         bounds.centerX(bounds.centerX() * horizontal);
         bounds.centerZ(bounds.centerZ() * horizontal);
         bounds.radius(bounds.radius() * horizontal);
-        double ceiling = Math.max(0.0, bounds.ceiling()) * Math.min(1.0, sample.stuckVertical());
-        bounds.ceiling(ceiling);
-        bounds.floor(STUCK_DESCENT);
-        bounds.enforceDescentFloor(false);
+        double vertical = sample.stuckVertical();
+        bounds.ceiling(Math.max(0.0, bounds.ceiling()) * vertical);
+        bounds.floor(bounds.floor() * vertical);
     }
 
     public void applyArrestWindow(AreaBounds bounds) {

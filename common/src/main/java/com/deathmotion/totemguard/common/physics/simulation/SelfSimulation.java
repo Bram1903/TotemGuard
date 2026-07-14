@@ -124,6 +124,7 @@ public final class SelfSimulation {
     private boolean initialized;
     private boolean previousClaimedGround = true;
     private boolean previousIsFlying;
+    private boolean previousPowderSnowSwept;
     private int stuckSettleScans;
     private double lastSupportGap = Double.MAX_VALUE;
     private GameMode lastGameMode;
@@ -267,7 +268,7 @@ public final class SelfSimulation {
             boolean doubleMove = trustKind == TrustTracker.Trust.COAST_DOUBLE
                     || trustKind == TrustTracker.Trust.JUDGED_DOUBLE;
             ControlEnvelope input = body.control().build(movement, contact, ground, sample.fluid(),
-                    dx, dy, dz, doubleMove, sample.stuckVertical());
+                    dx, dy, dz, doubleMove, sample.stuckVertical(), previousPowderSnowSwept);
             inputThisTick = input;
             MediumModel medium = body.medium(sample, false);
             mediumThisTick = medium;
@@ -282,6 +283,7 @@ public final class SelfSimulation {
             observeTail(view, preset, dy);
             previousClaimedGround = movement.isOnGround();
             previousIsFlying = data.isFlying();
+            previousPowderSnowSwept = scannedThisTick && sample.powderSnowSwept();
             stuckSettleScans = scannedThisTick ? stuckSettleScans + 1 : 0;
             data.decayFlyChangeGrace();
         }
@@ -414,7 +416,7 @@ public final class SelfSimulation {
         groundThisTick = ground;
         supportTracker.invalidate();
         ControlEnvelope input = body.control().build(movement, contact, ground, sample.fluid(),
-                0.0, 0.0, 0.0, false, sample.stuckVertical());
+                0.0, 0.0, 0.0, false, sample.stuckVertical(), previousPowderSnowSwept);
         inputThisTick = input;
         MediumModel medium = body.medium(sample, true);
         mediumThisTick = medium;
@@ -431,6 +433,7 @@ public final class SelfSimulation {
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, input, ground);
         }
 
+        previousPowderSnowSwept = scannedThisTick && sample.powderSnowSwept();
         observeTail(view, preset, 0.0);
     }
 
@@ -629,7 +632,9 @@ public final class SelfSimulation {
                 current.getX(), current.getY(), current.getZ(), half, height);
 
         if (sample.stuck() && !sample.fluid()) {
-            carried.collapse(MotionArea.rest());
+            double climbVy = input.powderSnowClimb()
+                    ? medium.advanceVertical(LandModel.POWDER_SNOW_CLIMB, input) : 0.0;
+            carried.collapse(climbVy > 0.0 ? MotionArea.seeded(0.0, 0.0, climbVy) : MotionArea.rest());
             pendingSpawnCount = 0;
         } else {
             double frictionMax = medium.frictionMax(input, ground);
@@ -743,6 +748,13 @@ public final class SelfSimulation {
             double honeyVy = HoneySlideRule.carriedVy(gates.modernBlockEffects(), input.gravity());
             if (honeyVy > advancedVy) {
                 advancedVy = honeyVy;
+                intervalOverridden = true;
+            }
+        }
+        if (input.powderSnowClimb()) {
+            double climbVy = medium.advanceVertical(LandModel.POWDER_SNOW_CLIMB, input);
+            if (climbVy > advancedVy) {
+                advancedVy = climbVy;
                 intervalOverridden = true;
             }
         }

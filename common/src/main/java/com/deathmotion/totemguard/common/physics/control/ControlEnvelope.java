@@ -36,6 +36,10 @@ public interface ControlEnvelope {
 
     boolean fluidExitHop();
 
+    default boolean powderSnowClimb() {
+        return false;
+    }
+
     boolean priorWallContact();
 
     double moveSpeed();

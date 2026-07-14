@@ -27,6 +27,7 @@ import com.deathmotion.totemguard.common.player.data.*;
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -78,7 +79,7 @@ public final class PlayerControlResolver {
 
     public PlayerControl build(MovementData movement, ContactReport contact, GroundFacts ground,
                                boolean fluidNow, double observedX, double observedY, double observedZ,
-                               boolean doubleMove, double stuckVertical) {
+                               boolean doubleMove, double stuckVertical, boolean wasInPowderSnow) {
         InputData.State state = data.getInputData().current();
         boolean inventoryOpen = data.isOpenInventory();
         boolean immobile = inventoryOpen || data.isSleeping();
@@ -124,6 +125,7 @@ public final class PlayerControlResolver {
 
         boolean fluidExitHop = ground.wasFluid() && !fluidNow && observedY > RISE_EPS
                 && lastWallContact;
+        boolean powderSnowClimb = wasInPowderSnow && leatherBoots();
         boolean priorWallContact = lastWallContact;
         boolean geometricWall = contact.collidedX() || contact.collidedZ() || contact.wallNear();
         lastWallContact = gates.endTick()
@@ -151,7 +153,7 @@ public final class PlayerControlResolver {
         ClaimedVector claimed = resolveClaimedInput(state, movement, doubleMove, sneaking, useMultiplier, yaw);
 
         return new PlayerControl(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
-                jumpPossible, ceilingClampedJump, fluidExitHop, priorWallContact,
+                jumpPossible, ceilingClampedJump, fluidExitHop, powderSnowClimb, priorWallContact,
                 effectiveSpeed(sprinting, sneaking, diagonal, ground) * useMultiplier,
                 attr.jumpStrength() * ground.startJumpMax(), attr.gravity(), attr.stepHeight(),
                 jumpBoostAmplifier,
@@ -270,6 +272,11 @@ public final class PlayerControlResolver {
         ItemStack boots = actor.bootsItem();
         if (boots == null) return 0.0;
         return Math.min(3, boots.getEnchantmentLevel(EnchantmentTypes.DEPTH_STRIDER)) / 3.0;
+    }
+
+    private boolean leatherBoots() {
+        ItemStack boots = actor.bootsItem();
+        return boots != null && boots.getType() == ItemTypes.LEATHER_BOOTS;
     }
 
     private boolean observesWaterEfficiency() {

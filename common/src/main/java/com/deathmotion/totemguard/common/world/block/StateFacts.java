@@ -58,6 +58,9 @@ public final class StateFacts {
     private static final long HALF_JUMP_FACTOR = 1L << 19;
     private static final int STUCK_SHIFT = 20;
     private static final long STUCK_MASK = 3L << STUCK_SHIFT;
+    private static final long STUCK_COBWEB = 1L;
+    private static final long STUCK_BERRY = 2L;
+    private static final long STUCK_POWDER_SNOW = 3L;
     private static final long BED_BOUNCE = 1L << 22;
     private static final int FLUID_AMOUNT_SHIFT = 23;
     private static final long FLUID_AMOUNT_MASK = 15L << FLUID_AMOUNT_SHIFT;
@@ -108,20 +111,24 @@ public final class StateFacts {
 
     public static double stuckHorizontal(long facts, boolean weavingCobweb) {
         return switch ((int) ((facts & STUCK_MASK) >> STUCK_SHIFT)) {
-            case 1 -> weavingCobweb ? 0.5 : 0.25;
-            case 2 -> 0.8;
-            case 3 -> 0.9;
+            case (int) STUCK_COBWEB -> weavingCobweb ? 0.5 : 0.25;
+            case (int) STUCK_BERRY -> 0.8;
+            case (int) STUCK_POWDER_SNOW -> 0.9;
             default -> 1.0;
         };
     }
 
     public static double stuckVertical(long facts, boolean weavingCobweb) {
         return switch ((int) ((facts & STUCK_MASK) >> STUCK_SHIFT)) {
-            case 1 -> weavingCobweb ? 0.25 : 0.05;
-            case 2 -> 0.75;
-            case 3 -> 1.5;
+            case (int) STUCK_COBWEB -> weavingCobweb ? 0.25 : 0.05;
+            case (int) STUCK_BERRY -> 0.75;
+            case (int) STUCK_POWDER_SNOW -> 1.5;
             default -> 1.0;
         };
+    }
+
+    public static boolean isPowderSnowStuck(long facts) {
+        return ((facts & STUCK_MASK) >> STUCK_SHIFT) == STUCK_POWDER_SNOW;
     }
 
     public static int fluidAmount(long facts) {
@@ -181,9 +188,9 @@ public final class StateFacts {
         if (BlockTraits.isClimbable(type)) facts |= CLIMBABLE;
         if (BlockTraits.isStuck(type)) {
             facts |= STUCK;
-            if (type == StateTypes.COBWEB) facts |= 1L << STUCK_SHIFT;
-            else if (type == StateTypes.SWEET_BERRY_BUSH) facts |= 2L << STUCK_SHIFT;
-            else facts |= 3L << STUCK_SHIFT;
+            if (type == StateTypes.COBWEB) facts |= STUCK_COBWEB << STUCK_SHIFT;
+            else if (type == StateTypes.SWEET_BERRY_BUSH) facts |= STUCK_BERRY << STUCK_SHIFT;
+            else facts |= STUCK_POWDER_SNOW << STUCK_SHIFT;
         }
         double bounce = BlockTraits.bounceFactor(type);
         if (bounce > 0.0) {

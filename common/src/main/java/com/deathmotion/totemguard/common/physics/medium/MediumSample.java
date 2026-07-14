@@ -31,6 +31,7 @@ public final class MediumSample {
     private boolean lava;
     private boolean climbable;
     private boolean stuck;
+    private boolean powderSnowSwept;
     private boolean stuckAlongPath;
     private double stuckHorizontal;
     private double stuckVertical;
@@ -45,6 +46,7 @@ public final class MediumSample {
         lava = false;
         climbable = false;
         stuck = false;
+        powderSnowSwept = false;
         stuckAlongPath = false;
         stuckHorizontal = 1.0;
         stuckVertical = 1.0;

@@ -29,6 +29,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 public final class LandModel implements MediumModel {
 
     public static final double AIR_FRICTION = 0.91;
+    public static final double POWDER_SNOW_CLIMB = 0.2;
     private static final double GROUND_ACCEL_NUMERATOR = 0.21600002;
     private static final double LEVITATION_PER_LEVEL = 0.05;
     private static final double LEVITATION_RATE = 0.2;
@@ -95,6 +96,7 @@ public final class LandModel implements MediumModel {
     public void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
         if (input.fluidExitHop()) bounds.raiseCeiling(MotionDefaults.FLUID_EXIT_HOP);
+        if (input.powderSnowClimb()) bounds.raiseCeiling(advanceVertical(POWDER_SNOW_CLIMB, input));
         if (ground.groundedStart() || ground.groundedEnd() || contact.startOverlapping()) {
             bounds.raiseCeiling(input.stepHeight());
         }
