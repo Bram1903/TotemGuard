@@ -50,7 +50,6 @@ public final class ClimbModel implements MediumModel {
         bounds.radius(HORIZONTAL_MAX);
     }
 
-    // Falling past a ladder without climbing it must not flag, so the descent clamp is no floor.
     @Override
     public void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
         double ascent = ASCENT;
@@ -58,8 +57,8 @@ public final class ClimbModel implements MediumModel {
         if (ground.groundedStart() || ground.groundedEnd()) ascent = Math.max(ascent, input.stepHeight());
         if (input.fluidExitHop()) ascent = Math.max(ascent, MotionDefaults.FLUID_EXIT_HOP);
         bounds.raiseCeiling(ascent);
-        bounds.lowerFloor(DESCENT);
-        bounds.enforceDescentFloor(false);
+        bounds.floor(DESCENT);
+        bounds.enforceDescentFloor(true);
     }
 
     @Override

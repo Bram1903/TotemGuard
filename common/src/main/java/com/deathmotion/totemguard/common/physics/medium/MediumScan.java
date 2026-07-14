@@ -113,10 +113,13 @@ public final class MediumScan {
         long feetFacts = reader.facts(feetBlockX, feetBlockY, feetBlockZ);
         if (StateFacts.is(feetFacts, StateFacts.CLIMBABLE)) {
             out.climbable(true);
+            out.climbableUncertain(reader.uncertain(feetBlockX, feetBlockY, feetBlockZ));
         } else {
             WrappedBlockState feetState = reader.state(feetBlockX, feetBlockY, feetBlockZ);
             if (BlockTraits.trapdoorUsableAsLadder(feetState, reader.state(feetBlockX, feetBlockY - 1, feetBlockZ))) {
                 out.climbable(true);
+                out.climbableUncertain(reader.uncertain(feetBlockX, feetBlockY, feetBlockZ)
+                        || reader.uncertain(feetBlockX, feetBlockY - 1, feetBlockZ));
             }
         }
     }

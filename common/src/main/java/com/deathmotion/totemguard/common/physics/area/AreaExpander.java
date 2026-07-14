@@ -44,6 +44,9 @@ public final class AreaExpander {
         bounds.reset(area);
         medium.horizontalOptions(input, ground, bounds);
         medium.verticalOptions(input, ground, contact, bounds);
+        if (medium.kind() == MediumKind.CLIMB && sample.climbableUncertain()) {
+            bounds.enforceDescentFloor(false);
+        }
         applyFluidPush(area, sample, bounds);
 
         if (sample.stuck() && !sample.fluid()) stuckFactor.apply(bounds, sample);

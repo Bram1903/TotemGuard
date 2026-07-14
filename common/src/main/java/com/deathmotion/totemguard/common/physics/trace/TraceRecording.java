@@ -209,6 +209,7 @@ public final class TraceRecording {
             frame.stuckVertical = sample.stuckVertical();
             if (sample.swimSteerWater()) frame.flags |= TraceFrame.FLAG_SWIM_STEER;
             if (sample.climbable()) frame.flags |= TraceFrame.FLAG_CLIMBABLE;
+            if (sample.climbableUncertain()) frame.flags |= TraceFrame.FLAG_CLIMB_UNCERTAIN;
         }
         if (input != null) {
             frame.fluidFriction = input.fluidFriction();

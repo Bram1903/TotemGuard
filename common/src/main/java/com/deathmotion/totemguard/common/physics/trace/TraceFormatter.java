@@ -98,6 +98,7 @@ public final class TraceFormatter {
         if (contexts.contains(PhysicsDebugContext.CLIMB)) {
             sb.append(" | climb");
             if (f.has(TraceFrame.FLAG_CLIMBABLE)) sb.append(" able");
+            if (f.has(TraceFrame.FLAG_CLIMB_UNCERTAIN)) sb.append(" unc");
             if (f.has(TraceFrame.FLAG_WALL_NEAR)) sb.append(" wall");
             sb.append(String.format(Locale.ROOT, " gap%.3f", cap(f.supportGap)));
             if (f.has(TraceFrame.FLAG_FLUID_HOP)) sb.append(" hop");

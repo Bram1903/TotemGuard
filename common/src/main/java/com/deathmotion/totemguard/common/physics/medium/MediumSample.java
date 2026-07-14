@@ -30,6 +30,7 @@ public final class MediumSample {
     private boolean water;
     private boolean lava;
     private boolean climbable;
+    private boolean climbableUncertain;
     private boolean stuck;
     private boolean powderSnowSwept;
     private boolean stuckAlongPath;
@@ -45,6 +46,7 @@ public final class MediumSample {
         water = false;
         lava = false;
         climbable = false;
+        climbableUncertain = false;
         stuck = false;
         powderSnowSwept = false;
         stuckAlongPath = false;

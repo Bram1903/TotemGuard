@@ -40,6 +40,7 @@ public final class TraceFrame {
     public static final int FLAG_GLIDE_CLAIM = 1 << 18;
     public static final int FLAG_GLIDE_RIPTIDE = 1 << 19;
     public static final int FLAG_GLIDE_EXIT = 1 << 20;
+    public static final int FLAG_CLIMB_UNCERTAIN = 1 << 21;
 
     public static final long WIDENED_KNOCKBACK = 1L;
     public static final long WIDENED_RIPTIDE = 1L << 1;
