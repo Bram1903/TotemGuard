@@ -1,0 +1,42 @@
+#    ___________     __                   ________                       .___
+#    \__    ___/____/  |_  ____   _____  /  _____/ __ _______ _______  __| _/
+#      |    | /  _ \   __\/ __ \ /     \/   \  ___|  |  \__  \\_  __ \/ __ |
+#      |    |(  <_> )  | \  ___/|  Y Y  \    \_\  \  |  // __ \|  | \/ /_/ |
+#      |____| \____/|__|  \___  >__|_|  /\______  /____/(____  /__|  \____ |
+#                             \/      \/        \/           \/           \/
+
+# DO NOT TOUCH!!!
+config_version: 1
+
+# Placeholders: %tg_player%, %tg_mod_list%, %tg_mod_count%, %tg_mod_overflow_count%, %tg_mod%
+kick-command: "kick %tg_player% Unfair mods detected: %tg_mod_list%"
+ban-command: "ban %tg_player% Unfair mods detected: %tg_mod_list%"
+
+# KICK_THEN_BAN: re-join with a previously warned mod -> ban; with a brand-new mod -> kick.
+kick-then-ban-window-minutes: 30
+
+# Caps the mod list shown in messages; extras collapse into the overflow suffix.
+mod-list-limit: 8
+mod-list-overflow-format: " (+%tg_mod_overflow_count% more)"
+
+# severity: LOG | KICK | BAN | KICK_THEN_BAN. Each payload/translation belongs to one mod.
+mods:
+  AutoTotem:
+    severity: LOG
+    payloads:
+      - autototem
+
+  Meteor:
+    severity: LOG
+    translations:
+      - key.meteor-client.open-gui
+
+  Tweakeroo:
+    severity: LOG
+    payloads:
+      - servux:tweaks
+
+  AccurateBlockPlacement:
+    severity: LOG
+    translations:
+      - net.clayborn.accurateblockplacement.togglevanillaplacement

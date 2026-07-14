@@ -1,0 +1,5 @@
+name: TotemGuard-Bridge
+main: com.deathmotion.totemguard.proxybridge.bungee.BungeeBridgePlugin
+version: ${version}
+author: Bram
+description: ${description}
