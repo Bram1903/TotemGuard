@@ -32,7 +32,7 @@ public final class MediumScan {
 
     public static void sample(BlockReader reader, MediumSample out,
                               boolean pushedByFluid, boolean lavaFast, boolean modernFluidPush,
-                              boolean weavingCobweb, boolean stuckApplies,
+                              boolean weavingCobweb, boolean stuckApplies, boolean stuckOnPath,
                               double minX, double feetY, double minZ,
                               double maxX, double headY, double maxZ,
                               double sweptMinX, double sweptMinY, double sweptMinZ,
@@ -62,14 +62,14 @@ public final class MediumScan {
                 for (int y = wy1; y >= wy0; y--) {
                     long facts = reader.facts(x, y, z);
                     boolean inStart = inStartColumn && y >= sy0 && y <= sy1;
-                    if (stuckApplies && StateFacts.is(facts, StateFacts.STUCK)) {
+                    if (stuckOnPath && StateFacts.is(facts, StateFacts.STUCK)) {
                         sweptStuck = true;
                         boolean powderSnow = StateFacts.isPowderSnowStuck(facts);
                         if (powderSnow && inStartColumn) out.powderSnowSwept(true);
                         boolean arms = powderSnow
                                 ? x == feetBlockX && z == feetBlockZ && y == sy0
                                 : inStart;
-                        if (arms) {
+                        if (stuckApplies && arms) {
                             double horizontal = StateFacts.stuckHorizontal(facts, weavingCobweb);
                             if (horizontal > bestStuckHorizontal) {
                                 bestStuckHorizontal = horizontal;

@@ -622,7 +622,7 @@ public final class VehicleSimulation {
         MediumScan.sample(reader, sample,
                 true, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
-                gates.modernFluidPush(), false, true,
+                gates.modernFluidPush(), false, true, true,
                 startX - half, startY, startZ - half,
                 startX + half, startY + height, startZ + half,
                 Math.min(startX, endX) - half, Math.min(startY, endY),

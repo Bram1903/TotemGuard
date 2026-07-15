@@ -466,7 +466,7 @@ public final class SelfSimulation {
                 !data.isFlying(), world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
                 gates.modernFluidPush(), data.getEffectData().hasWeaving(),
-                !previousIsFlying && stuckSettleScans >= STUCK_SETTLE_SCANS,
+                !previousIsFlying && stuckSettleScans >= STUCK_SETTLE_SCANS, !previousIsFlying,
                 previous.getX() - half, previous.getY(), previous.getZ() - half,
                 previous.getX() + half, previous.getY() + height, previous.getZ() + half,
                 Math.min(previous.getX(), current.getX()) - half, Math.min(previous.getY(), current.getY()),
