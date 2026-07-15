@@ -19,6 +19,8 @@
 package com.deathmotion.totemguard.paper;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.permission.PermissionDefault;
+import com.deathmotion.totemguard.common.permission.PermissionNode;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -37,6 +39,8 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.permissions.Permission;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.brigadier.BrigadierSetting;
@@ -166,6 +170,32 @@ public class TGPaperPlatform extends TGPlatform {
     @Override
     public boolean isPluginEnabled(String plugin) {
         return Bukkit.getPluginManager().isPluginEnabled(plugin);
+    }
+
+    @Override
+    public void registerPermission(@NotNull PermissionNode node) {
+        PluginManager pluginManager = Bukkit.getPluginManager();
+        org.bukkit.permissions.PermissionDefault bukkitDefault = toBukkitDefault(node.defaultValue());
+
+        Permission existing = pluginManager.getPermission(node.node());
+        if (existing != null) {
+            existing.setDefault(bukkitDefault);
+            return;
+        }
+
+        try {
+            pluginManager.addPermission(new Permission(node.node(), bukkitDefault));
+        } catch (IllegalArgumentException alreadyRegistered) {
+            Permission registered = pluginManager.getPermission(node.node());
+            if (registered != null) registered.setDefault(bukkitDefault);
+        }
+    }
+
+    private static org.bukkit.permissions.PermissionDefault toBukkitDefault(PermissionDefault permissionDefault) {
+        return switch (permissionDefault) {
+            case OP -> org.bukkit.permissions.PermissionDefault.OP;
+            case FALSE -> org.bukkit.permissions.PermissionDefault.FALSE;
+        };
     }
 
     @Override

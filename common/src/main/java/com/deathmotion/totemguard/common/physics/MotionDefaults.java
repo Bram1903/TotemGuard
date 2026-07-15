@@ -32,6 +32,11 @@ public final class MotionDefaults {
     public static final double COMPACT_HEIGHT = 0.6;
     public static final double SLEEPING_SIZE = 0.2;
 
+    public static final double STANDING_EYE_HEIGHT = 1.62;
+    public static final double SNEAKING_EYE_HEIGHT = 1.27;
+    public static final double COMPACT_EYE_HEIGHT = 0.4;
+    public static final double SLEEPING_EYE_HEIGHT = 0.2;
+
     public static final double BASE_MOVEMENT_SPEED = 0.1;
     public static final double SNEAKING_SPEED = 0.3;
     public static final double INPUT_SCALE = 0.98f;

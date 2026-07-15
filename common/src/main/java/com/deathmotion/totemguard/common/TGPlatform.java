@@ -45,6 +45,7 @@ import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.network.NetworkPresenceRepository;
 import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.network.bridge.BridgeManager;
+import com.deathmotion.totemguard.common.permission.PermissionNode;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
@@ -178,6 +179,8 @@ public abstract class TGPlatform {
     public abstract String getPlatformVersion();
 
     public abstract boolean isPluginEnabled(String plugin);
+
+    public abstract void registerPermission(@NotNull PermissionNode node);
 
     public abstract void disablePlugin();
 

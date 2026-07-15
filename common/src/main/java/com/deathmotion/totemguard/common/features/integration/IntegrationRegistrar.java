@@ -20,6 +20,8 @@ package com.deathmotion.totemguard.common.features.integration;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.features.integration.impl.GrimIntegration;
+import com.deathmotion.totemguard.common.features.integration.impl.LuckPermsIntegration;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,8 @@ import java.util.function.Supplier;
 public class IntegrationRegistrar {
 
     private static final String GRIM_PLUGIN_NAME = "GrimAC";
+    private static final String LUCKPERMS_PLUGIN_NAME = "LuckPerms";
+    private static final String LUCKPERMS_MOD_ID = "luckperms";
 
     private final List<Integration> integrations = new ArrayList<>();
 
@@ -62,11 +66,13 @@ public class IntegrationRegistrar {
     }
 
     private void registerIntegrations() {
-        registerIfEnabled(GRIM_PLUGIN_NAME, this::createGrimIntegration);
+        registerIfEnabled(this::createGrimIntegration, GRIM_PLUGIN_NAME);
+        registerIfEnabled(this::createLuckPermsIntegration, LUCKPERMS_PLUGIN_NAME, LUCKPERMS_MOD_ID);
     }
 
-    private void registerIfEnabled(String pluginName, Supplier<Integration> supplier) {
-        if (!TGPlatform.getInstance().isPluginEnabled(pluginName)) {
+    private void registerIfEnabled(Supplier<Integration> supplier, String... platformNames) {
+        String detectedName = detect(platformNames);
+        if (detectedName == null) {
             return;
         }
 
@@ -74,12 +80,26 @@ public class IntegrationRegistrar {
             integrations.add(supplier.get());
         } catch (LinkageError exception) {
             TGPlatform.getInstance().getLogger().severe(
-                    "Failed to load " + pluginName + " integration: " + exception
+                    "Failed to load " + detectedName + " integration: " + exception
             );
         }
     }
 
+    private @Nullable String detect(String... platformNames) {
+        for (String platformName : platformNames) {
+            if (TGPlatform.getInstance().isPluginEnabled(platformName)) {
+                return platformName;
+            }
+        }
+
+        return null;
+    }
+
     private Integration createGrimIntegration() {
         return new GrimIntegration();
+    }
+
+    private Integration createLuckPermsIntegration() {
+        return new LuckPermsIntegration();
     }
 }

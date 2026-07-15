@@ -52,7 +52,7 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> TICK_SKIP_KEEP_ALIVE_VALIDATION = ConfigKey.bool("tick.skip-keep-alive-validation");
 
-    public static final ConfigKey<Boolean> PHYSICS_ENGINE_ENABLED = ConfigKey.bool("physics-engine.enabled");
+    public static final ConfigKey<Boolean> PHYSICS_ENGINE_SIMULATE_FLYING = ConfigKey.bool("physics-engine.simulate-flying");
 
     public static final ConfigKey<String> PHYSICS_ENGINE_PRESET = ConfigKey.string("physics-engine.preset");
 

@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-@CheckData(name = "Mod Detection", description = "Detects disallowed client mods", type = CheckType.MOD)
+@CheckData(name = "ModDetection", description = "Detects disallowed client mods", type = CheckType.MOD)
 public final class Mod extends CheckImpl implements ManualCheck {
 
     public Mod(TGPlayer player) {

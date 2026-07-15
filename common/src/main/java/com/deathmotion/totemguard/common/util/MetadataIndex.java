@@ -29,6 +29,8 @@ public final class MetadataIndex {
     private final int health;
     private final int absorption;
     private final int slimeSize;
+    private final int pose;
+    private final int sleepingPos;
     private final int livingEntityFlags;
     private final int fireworkAttached;
     private final int fireworkItem;
@@ -42,6 +44,8 @@ public final class MetadataIndex {
         this.health = resolveHealth(version);
         this.absorption = resolveAbsorption(version);
         this.slimeSize = resolveSlimeSize(version);
+        this.pose = resolvePose(version);
+        this.sleepingPos = resolveSleepingPos(version);
         this.livingEntityFlags = resolveLivingEntityFlags(version);
         this.fireworkAttached = resolveFireworkAttached(version);
         this.fireworkItem = resolveFireworkItem(version);
@@ -73,6 +77,18 @@ public final class MetadataIndex {
         if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 16;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_15)) return 15;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_14)) return 14;
+        return -1;
+    }
+
+    private static int resolvePose(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_14)) return 6;
+        return -1;
+    }
+
+    private static int resolveSleepingPos(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 14;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_15)) return 13;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_14)) return 12;
         return -1;
     }
 

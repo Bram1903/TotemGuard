@@ -41,6 +41,8 @@ public final class MediumSample {
     private double pushY;
     private double pushZ;
     private boolean swimSteerWater;
+    private boolean eyeInWater;
+    private boolean waterAtFeet;
 
     public void reset() {
         water = false;
@@ -57,6 +59,8 @@ public final class MediumSample {
         pushY = 0.0;
         pushZ = 0.0;
         swimSteerWater = false;
+        eyeInWater = false;
+        waterAtFeet = false;
     }
 
     public boolean pushed() {

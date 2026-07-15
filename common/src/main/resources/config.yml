@@ -77,11 +77,13 @@ tick:
 # Movement prediction engine powering the Physics check (fly, hover, speed, inventory-move).
 # Everything here applies on reload, no restart needed.
 physics-engine:
-  enabled: true
-
   # strict = tight to vanilla, recommended (a false positive is a bug, report it).
   # lenient = wider margins, only blatant cheats fire. Unknown = strict.
   preset: strict
+
+  # Simulate players using Minecraft's own flight (creative, /fly).
+  # False = a flying player is fully exempt from the engine until they stop flying.
+  simulate-flying: true
 
   # Removes the advantage directly, riding the same trigger as the Physics flag.
   mitigation:

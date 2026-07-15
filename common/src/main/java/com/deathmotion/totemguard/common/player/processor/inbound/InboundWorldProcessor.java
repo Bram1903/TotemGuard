@@ -71,6 +71,7 @@ public class InboundWorldProcessor extends ProcessorInbound {
     private final PredictedBlocks predicted;
     private final DiggingData digging;
     private final BreakSpeed.VersionRules breakRules;
+    private final boolean modernFluidInteraction;
 
     private PendingEdit pendingEdit;
 
@@ -82,6 +83,7 @@ public class InboundWorldProcessor extends ProcessorInbound {
         this.digging = player.getData().getDiggingData();
 
         VersionGates gates = player.getVersionGates();
+        this.modernFluidInteraction = gates.modernFluidPush();
         this.breakRules = new BreakSpeed.VersionRules(
                 gates.blockBreakComponentEra(),
                 gates.blockBreakAttributeEra(),
@@ -299,14 +301,16 @@ public class InboundWorldProcessor extends ProcessorInbound {
     }
 
     private boolean eyeSampleInWater(Location at, double eyeHeight) {
-        double sampleY = at.getY() + eyeHeight - EYE_FLUID_OFFSET;
+        double eyeY = at.getY() + eyeHeight;
+        double sampleY = modernFluidInteraction ? eyeY : eyeY - EYE_FLUID_OFFSET;
         int x = floor(at.getX());
         int y = floor(sampleY);
         int z = floor(at.getZ());
         if (reader.uncertain(x, y, z)) return false;
         long facts = reader.facts(x, y, z);
         if (!StateFacts.is(facts, StateFacts.WATER)) return false;
-        return sampleY <= y + StateFacts.fluidHeight(facts);
+        double surface = y + StateFacts.fluidHeight(facts);
+        return modernFluidInteraction ? sampleY <= surface : sampleY < surface;
     }
 
     private boolean breakableForEdit(WrappedBlockState block) {

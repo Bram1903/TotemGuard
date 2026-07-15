@@ -52,6 +52,8 @@ import com.deathmotion.totemguard.common.network.ProxyTopologyService;
 import com.deathmotion.totemguard.common.network.ServerIdentity;
 import com.deathmotion.totemguard.common.network.bridge.BridgeManager;
 import com.deathmotion.totemguard.common.network.bridge.BridgePacketListener;
+import com.deathmotion.totemguard.common.permission.PermissionNode;
+import com.deathmotion.totemguard.common.permission.PermissionNodes;
 import com.deathmotion.totemguard.common.placeholder.PlaceholderRepositoryImpl;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
@@ -109,6 +111,7 @@ final class TotemGuardLifecycle {
         p.punishmentRepository = new PunishmentRepositoryImpl();
         p.alertRepository = new AlertRepositoryImpl();
         p.discordWebhookService = new DiscordWebhookService();
+        registerPermissions(p);
         p.playerRepository = new PlayerRepositoryImpl();
         p.integrationRegistrar = new IntegrationRegistrar();
         p.guiManager = new GuiManager();
@@ -170,6 +173,12 @@ final class TotemGuardLifecycle {
         p.enableBStats();
         replayOnlinePlayers(p);
         p.getLogger().info("Enabled TotemGuard in " + stopwatch.stop().elapsed().toMillis() + "ms");
+    }
+
+    private static void registerPermissions(TGPlatform p) {
+        for (PermissionNode node : PermissionNodes.all()) {
+            p.registerPermission(node);
+        }
     }
 
     private static void replayOnlinePlayers(TGPlatform p) {

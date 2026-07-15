@@ -65,6 +65,10 @@ public final class PlayerBody implements SimulationBody {
         return pose.height(data);
     }
 
+    public double lastEyeHeight() {
+        return pose.lastEyeHeight();
+    }
+
     @Override
     public double stepHeight() {
         return data.getAttributeData().stepHeight();

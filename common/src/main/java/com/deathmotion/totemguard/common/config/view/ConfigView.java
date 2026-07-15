@@ -42,7 +42,7 @@ public final class ConfigView {
     private final EntitySpoofingOptions entitySpoofing;
     private final boolean banAnimationEnabled;
     private final boolean tickSkipKeepAliveValidation;
-    private final boolean physicsEngineEnabled;
+    private final boolean physicsSimulateFlying;
     private final PhysicsPreset physicsPreset;
     private final PhysicsDebugLevel physicsDebugLevel;
     private final Set<PhysicsDebugContext> physicsDebugContexts;
@@ -97,7 +97,7 @@ public final class ConfigView {
         );
         this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
         this.tickSkipKeepAliveValidation = config.getBoolean(ConfigKeys.TICK_SKIP_KEEP_ALIVE_VALIDATION);
-        this.physicsEngineEnabled = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_ENABLED);
+        this.physicsSimulateFlying = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_SIMULATE_FLYING);
         this.physicsPreset = PhysicsPreset.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_PRESET));
         this.physicsDebugLevel = PhysicsDebugLevel.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_DEBUG_LEVEL));
         this.physicsDebugContexts = PhysicsDebugContext.parse(config.getStringList(ConfigKeys.PHYSICS_ENGINE_DEBUG_CONTEXT));
@@ -150,8 +150,8 @@ public final class ConfigView {
         return tickSkipKeepAliveValidation;
     }
 
-    public boolean physicsEngineEnabled() {
-        return physicsEngineEnabled;
+    public boolean physicsSimulateFlying() {
+        return physicsSimulateFlying;
     }
 
     public @NotNull PhysicsPreset physicsPreset() {

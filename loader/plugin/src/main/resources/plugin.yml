@@ -15,6 +15,7 @@ depend:
 softdepend:
   - PlaceholderAPI
   - GrimAC
+  - LuckPerms
 commands:
   tgloader:
     description: TotemGuard loader administration.

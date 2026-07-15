@@ -25,6 +25,7 @@ import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.VersionGates;
 import com.deathmotion.totemguard.common.physics.area.*;
 import com.deathmotion.totemguard.common.physics.body.PlayerBody;
+import com.deathmotion.totemguard.common.physics.body.SwimTracker;
 import com.deathmotion.totemguard.common.physics.collision.*;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.fall.FallTracker;
@@ -105,6 +106,7 @@ public final class SelfSimulation {
     private final PistonWindow pistons;
     private final RiptideWindow riptide;
     private final PhaseTracker phase = new PhaseTracker();
+    private final SwimTracker swim = new SwimTracker();
     private final EmbedExemptions exemptions = new EmbedExemptions();
     private final PlayerBody body;
     private final GlideExitRule glideExit = new GlideExitRule();
@@ -180,7 +182,9 @@ public final class SelfSimulation {
 
     public void onFlying() {
         ConfigView view = context.view();
-        if (!view.physicsEngineEnabled()) {
+        if (!view.physicsSimulateFlying() && data.isFlying()) {
+            data.setSwimming(false);
+            swim.reset();
             disengage();
             return;
         }
@@ -397,7 +401,7 @@ public final class SelfSimulation {
         if (data.isDead()) return;
         if (!world.readiness().ready()) return;
         ConfigView view = context.view();
-        if (!view.physicsEngineEnabled()) return;
+        if (!view.physicsSimulateFlying() && data.isFlying()) return;
         if (data.getTeleportData().hasPendingTeleport()) return;
         MovementData movement = data.getMovementData();
         if (!movement.isCameraIsSelf()) return;
@@ -467,6 +471,7 @@ public final class SelfSimulation {
                         && world.dimension().dimensionType().isUltraWarm(),
                 gates.modernFluidPush(), data.getEffectData().hasWeaving(),
                 !previousIsFlying && stuckSettleScans >= STUCK_SETTLE_SCANS, !previousIsFlying,
+                previous.getY() + body.lastEyeHeight(),
                 previous.getX() - half, previous.getY(), previous.getZ() - half,
                 previous.getX() + half, previous.getY() + height, previous.getZ() + half,
                 Math.min(previous.getX(), current.getX()) - half, Math.min(previous.getY(), current.getY()),
@@ -474,6 +479,7 @@ public final class SelfSimulation {
                 Math.max(previous.getX(), current.getX()) + half,
                 Math.max(previous.getY(), current.getY()) + height,
                 Math.max(previous.getZ(), current.getZ()) + half);
+        swim.update(data, sample);
         scannedThisTick = true;
     }
 
@@ -1106,7 +1112,7 @@ public final class SelfSimulation {
                 dy, data.getMovementData().isOnGround(), honeySlideActive,
                 scannedThisTick ? sample : null, groundThisTick, scannedThisTick ? contact : null, view);
 
-        boolean offense = verdict.breach() != null;
+        boolean offense = verdict.breach() != null && !actor.physicsBypassed();
         double excess = Math.max(Math.max(verdict.horizontalExcess(), verdict.ascentExcess()),
                 Math.max(verdict.descentExcess(), verdict.phaseExcess()));
         boolean inventoryMove = data.isOpenInventory()

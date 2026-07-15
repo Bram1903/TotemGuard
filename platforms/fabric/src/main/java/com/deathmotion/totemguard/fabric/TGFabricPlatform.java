@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.fabric;
 
 import com.deathmotion.totemguard.common.TGPlatform;
+import com.deathmotion.totemguard.common.permission.PermissionNode;
 import com.deathmotion.totemguard.common.platform.Platform;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayerFactory;
 import com.deathmotion.totemguard.common.platform.sender.Sender;
@@ -145,6 +146,10 @@ public class TGFabricPlatform extends TGPlatform {
     @Override
     public boolean isPluginEnabled(String pluginName) {
         return FabricLoader.getInstance().isModLoaded(pluginName);
+    }
+
+    @Override
+    public void registerPermission(@NotNull PermissionNode node) {
     }
 
     @Override

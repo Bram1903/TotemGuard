@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.features.punishment.PunishmentCommand;
+import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
@@ -41,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class CheckImpl implements Check {
+
+    private static final String BYPASS_PERMISSION_PREFIX = "TotemGuard.Bypass.";
 
     public final TGPlayer player;
 
@@ -65,6 +68,8 @@ public abstract class CheckImpl implements Check {
     @Getter
     private boolean enabled;
     @Getter
+    private volatile boolean bypassed;
+    @Getter
     private int violations;
 
     @Getter
@@ -80,19 +85,34 @@ public abstract class CheckImpl implements Check {
         this.buffer = new Buffer();
         this.platform = TGPlatform.getInstance();
 
-        final Class<?> checkClass = this.getClass();
-        if (!checkClass.isAnnotationPresent(CheckData.class)) {
-            throw new IllegalStateException("Check class " + checkClass.getName() + " is missing the @CheckData annotation!");
-        }
+        final Class<? extends CheckImpl> checkClass = this.getClass();
+        this.name = resolveName(checkClass);
+
         final CheckData checkData = checkClass.getAnnotation(CheckData.class);
         this.requiresTickEnd = checkClass.isAnnotationPresent(RequiresTickEnd.class);
-
-        this.name = checkData.name().isBlank() ? checkClass.getSimpleName() : checkData.name();
         this.description = checkData.description();
         this.type = checkData.type();
         this.experimental = checkData.experimental();
 
         load();
+    }
+
+    public static @NotNull String resolveName(@NotNull Class<? extends CheckImpl> checkClass) {
+        final CheckData checkData = checkClass.getAnnotation(CheckData.class);
+        if (checkData == null) {
+            throw new IllegalStateException("Check class " + checkClass.getName() + " is missing the @CheckData annotation!");
+        }
+
+        final String resolved = checkData.name().isBlank() ? checkClass.getSimpleName() : checkData.name();
+        if (resolved.indexOf(' ') >= 0) {
+            throw new IllegalStateException("Check name doubles as the "
+                    + BYPASS_PERMISSION_PREFIX + " suffix and must not contain spaces: " + resolved);
+        }
+        return resolved;
+    }
+
+    public static @NotNull String resolveBypassPermission(@NotNull Class<? extends CheckImpl> checkClass) {
+        return BYPASS_PERMISSION_PREFIX + resolveName(checkClass);
     }
 
     @Override
@@ -108,6 +128,15 @@ public abstract class CheckImpl implements Check {
         mitigate = checkOptions.isMitigate();
         maxViolations = checkOptions.getMaxViolations();
         punishCommands = checkOptions.getPunishCommands();
+    }
+
+    public @NotNull String getBypassPermission() {
+        return BYPASS_PERMISSION_PREFIX + name;
+    }
+
+    public void updateBypassPermission() {
+        PlatformPlayer platformPlayer = player.getPlatformPlayer();
+        bypassed = platformPlayer != null && platformPlayer.hasPermission(getBypassPermission());
     }
 
     protected boolean fail() {
@@ -161,6 +190,7 @@ public abstract class CheckImpl implements Check {
     }
 
     protected boolean shouldFail(@Nullable String debug) {
+        if (bypassed) return false;
         return !TGPlatform.getInstance().getEventBus().getUserFlag().fire(player, this, debug);
     }
 

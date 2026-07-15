@@ -223,6 +223,7 @@ public class TGPlayer implements TGUser, EngineActor {
         }
 
         supportsEndTickCache = computeSupportsEndTick();
+        updatePermissions();
 
         platform.getEventBus().getUserJoin().fire(this);
 
@@ -237,6 +238,10 @@ public class TGPlayer implements TGUser, EngineActor {
     public void onLogout() {
         platform.getModDetectionService().onPlayerLogout(uuid);
         platform.getScheduler().runAsyncTask(this::cacheData);
+    }
+
+    public void updatePermissions() {
+        checkManager.updateBypassPermissions();
     }
 
     public void resyncFromPlatform() {
@@ -386,6 +391,11 @@ public class TGPlayer implements TGUser, EngineActor {
         Boolean cached = supportsEndTickCache;
         if (cached != null) return cached;
         return computeSupportsEndTick();
+    }
+
+    @Override
+    public boolean physicsBypassed() {
+        return checkManager.physicsBypassed();
     }
 
     @Override

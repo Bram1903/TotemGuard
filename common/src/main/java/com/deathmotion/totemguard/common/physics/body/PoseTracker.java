@@ -28,6 +28,7 @@ public final class PoseTracker {
 
     private double lastPoseHeight = MotionDefaults.STANDING_HEIGHT;
     private double lastPoseBase = MotionDefaults.STANDING_HEIGHT;
+    private double lastPoseEyeHeight = MotionDefaults.STANDING_EYE_HEIGHT;
     private double lastFeetClearance = Double.MAX_VALUE;
 
     private static double headroom(ColliderBuffer colliders,
@@ -55,6 +56,7 @@ public final class PoseTracker {
         if (data.isSleeping()) {
             lastPoseBase = MotionDefaults.SLEEPING_SIZE;
             lastPoseHeight = MotionDefaults.SLEEPING_SIZE;
+            lastPoseEyeHeight = MotionDefaults.SLEEPING_EYE_HEIGHT;
             return lastPoseHeight;
         }
         double scale = data.getAttributeData().scale();
@@ -69,12 +71,23 @@ public final class PoseTracker {
             else base = lastPoseBase;
         }
         lastPoseBase = base;
+        lastPoseEyeHeight = eyeHeightFor(base) * scale;
         lastPoseHeight = base * scale;
         return lastPoseHeight;
     }
 
+    private static double eyeHeightFor(double poseBase) {
+        if (poseBase == MotionDefaults.COMPACT_HEIGHT) return MotionDefaults.COMPACT_EYE_HEIGHT;
+        if (poseBase == MotionDefaults.SNEAKING_HEIGHT) return MotionDefaults.SNEAKING_EYE_HEIGHT;
+        return MotionDefaults.STANDING_EYE_HEIGHT;
+    }
+
     public double lastHeight() {
         return lastPoseHeight;
+    }
+
+    public double lastEyeHeight() {
+        return lastPoseEyeHeight;
     }
 
     public void updateHeadroom(ColliderBuffer colliders,

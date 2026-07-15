@@ -23,6 +23,7 @@ mysql-jdbc = "9.1.0"
 
 placeholderapi = "2.11.7"
 grim-api = "1.6.0.9"
+luckperms-api = "5.5"
 viaversion = "5.10.0"
 
 jetbrains-annotations = "26.0.2-1"
@@ -67,6 +68,7 @@ mysql-jdbc = { group = "com.mysql", name = "mysql-connector-j", version.ref = "m
 
 placeholderapi = { group = "me.clip", name = "placeholderapi", version.ref = "placeholderapi" }
 grim-api = { group = "ac.grim.grimac", name = "GrimAPI", version.ref = "grim-api" }
+luckperms-api = { group = "net.luckperms", name = "api", version.ref = "luckperms-api" }
 viaversion-api = { group = "com.viaversion", name = "viaversion-api", version.ref = "viaversion" }
 
 jetbrains-annotations = { group = "org.jetbrains", name = "annotations", version.ref = "jetbrains-annotations" }

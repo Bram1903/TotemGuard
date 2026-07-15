@@ -55,10 +55,40 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 
 public class CheckManagerImpl {
+
+    private static final List<CheckEntry<? extends CheckImpl>> ENTRIES = List.of(
+            entry(AutoTotemA.class, AutoTotemA::new),
+            entry(AutoTotemB.class, AutoTotemB::new),
+            entry(TickA.class, TickA::new),
+            entry(TickB.class, TickB::new),
+            entry(TickC.class, TickC::new),
+            entry(TickD.class, TickD::new),
+            entry(TickE.class, TickE::new),
+            entry(TickF.class, TickF::new),
+            entry(BalanceA.class, BalanceA::new),
+            entry(BalanceB.class, BalanceB::new),
+            entry(BalanceC.class, BalanceC::new),
+            entry(ProtocolA.class, ProtocolA::new),
+            entry(ProtocolB.class, ProtocolB::new),
+            entry(ProtocolC.class, ProtocolC::new),
+            entry(ProtocolD.class, ProtocolD::new),
+            entry(ProtocolE.class, ProtocolE::new),
+            entry(ProtocolF.class, ProtocolF::new),
+            entry(ProtocolG.class, ProtocolG::new),
+            entry(Physics.class, Physics::new),
+            entry(FastBreak.class, FastBreak::new),
+            entry(InventoryA.class, InventoryA::new),
+            entry(InventoryB.class, InventoryB::new),
+            entry(InventoryC.class, InventoryC::new),
+            entry(InventoryD.class, InventoryD::new),
+            entry(ManualTotemA.class, ManualTotemA::new),
+            entry(Mod.class, Mod::new)
+    );
 
     private static volatile int knownCheckCount;
 
@@ -69,6 +99,7 @@ public class CheckManagerImpl {
     private final ClassToInstanceMap<PacketCheck> packetChecks;
     private final ClassToInstanceMap<ManualCheck> manualChecks;
     private final Map<String, CheckImpl> checksByName;
+    private final Physics physicsCheck;
 
     private final PacketCheck[] allPacketChecks;
     private final EventCheck[] allEventChecks;
@@ -79,43 +110,33 @@ public class CheckManagerImpl {
     public CheckManagerImpl(TGPlayer player) {
         this.player = player;
 
-        ImmutableClassToInstanceMap<EventCheck> eventChecks = ImmutableClassToInstanceMap.<EventCheck>builder()
-                .put(AutoTotemA.class, new AutoTotemA(player))
-                .put(AutoTotemB.class, new AutoTotemB(player))
-                .build();
+        ImmutableClassToInstanceMap.Builder<PacketCheck> packetBuilder = ImmutableClassToInstanceMap.builder();
+        ImmutableClassToInstanceMap.Builder<EventCheck> eventBuilder = ImmutableClassToInstanceMap.builder();
+        ImmutableClassToInstanceMap.Builder<ExtendedCheck> extendedBuilder = ImmutableClassToInstanceMap.builder();
+        ImmutableClassToInstanceMap.Builder<ManualCheck> manualBuilder = ImmutableClassToInstanceMap.builder();
 
-        this.packetChecks = ImmutableClassToInstanceMap.<PacketCheck>builder()
-                .put(TickA.class, new TickA(player))
-                .put(TickB.class, new TickB(player))
-                .put(TickC.class, new TickC(player))
-                .put(TickD.class, new TickD(player))
-                .put(TickE.class, new TickE(player))
-                .put(TickF.class, new TickF(player))
-                .put(BalanceA.class, new BalanceA(player))
-                .put(BalanceB.class, new BalanceB(player))
-                .put(BalanceC.class, new BalanceC(player))
-                .put(ProtocolA.class, new ProtocolA(player))
-                .put(ProtocolB.class, new ProtocolB(player))
-                .put(ProtocolC.class, new ProtocolC(player))
-                .put(ProtocolD.class, new ProtocolD(player))
-                .put(ProtocolE.class, new ProtocolE(player))
-                .put(ProtocolF.class, new ProtocolF(player))
-                .put(ProtocolG.class, new ProtocolG(player))
-                .put(Physics.class, new Physics(player))
-                .put(FastBreak.class, new FastBreak(player))
-                .put(InventoryA.class, new InventoryA(player))
-                .put(InventoryB.class, new InventoryB(player))
-                .put(InventoryC.class, new InventoryC(player))
-                .put(InventoryD.class, new InventoryD(player))
-                .build();
+        for (CheckEntry<? extends CheckImpl> checkEntry : ENTRIES) {
+            Class<? extends CheckImpl> checkClass = checkEntry.type();
+            CheckImpl check = checkEntry.factory().apply(player);
 
-        ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = ImmutableClassToInstanceMap.<ExtendedCheck>builder()
-                .build();
+            if (check instanceof ExtendedCheck) {
+                putInstance(extendedBuilder, checkClass, check);
+            } else if (check instanceof PacketCheck) {
+                putInstance(packetBuilder, checkClass, check);
+            } else if (check instanceof EventCheck) {
+                putInstance(eventBuilder, checkClass, check);
+            } else if (check instanceof ManualCheck) {
+                putInstance(manualBuilder, checkClass, check);
+            } else {
+                throw new IllegalStateException("Check class " + checkClass.getName()
+                        + " must implement PacketCheck, EventCheck, ExtendedCheck or ManualCheck");
+            }
+        }
 
-        this.manualChecks = ImmutableClassToInstanceMap.<ManualCheck>builder()
-                .put(ManualTotemA.class, new ManualTotemA(player))
-                .put(Mod.class, new Mod(player))
-                .build();
+        ImmutableClassToInstanceMap<EventCheck> eventChecks = eventBuilder.build();
+        ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = extendedBuilder.build();
+        this.packetChecks = packetBuilder.build();
+        this.manualChecks = manualBuilder.build();
 
         this.allChecks = ImmutableClassToInstanceMap.<Check>builder()
                 .putAll(packetChecks)
@@ -126,6 +147,8 @@ public class CheckManagerImpl {
         this.allPacketChecks = packetChecks.values().toArray(PacketCheck[]::new);
         this.allEventChecks = eventChecks.values().toArray(EventCheck[]::new);
         this.allExtendedChecks = extendedChecks.values().toArray(ExtendedCheck[]::new);
+
+        this.physicsCheck = packetChecks.getInstance(Physics.class);
 
         this.checksByName = new HashMap<>(allChecks.size());
         for (Check check : allChecks.values()) {
@@ -139,6 +162,25 @@ public class CheckManagerImpl {
 
     public static int knownCheckCount() {
         return knownCheckCount;
+    }
+
+    public static List<String> bypassPermissionNodes() {
+        List<String> nodes = new ArrayList<>(ENTRIES.size());
+        for (CheckEntry<? extends CheckImpl> checkEntry : ENTRIES) {
+            nodes.add(CheckImpl.resolveBypassPermission(checkEntry.type()));
+        }
+        return List.copyOf(nodes);
+    }
+
+    private static <T extends CheckImpl> CheckEntry<T> entry(Class<T> type, Function<TGPlayer, T> factory) {
+        return new CheckEntry<>(type, factory);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <B extends Check> void putInstance(ImmutableClassToInstanceMap.Builder<B> builder,
+                                                      Class<? extends CheckImpl> type,
+                                                      CheckImpl check) {
+        builder.put((Class<B>) type, (B) check);
     }
 
     private static <T extends Check> CheckSlot<T> buildSlot(T[] all, IntFunction<T[]> ctor, Predicate<T> respondsToDirection) {
@@ -173,6 +215,16 @@ public class CheckManagerImpl {
 
     public void rebuild() {
         this.dispatch = buildDispatch();
+    }
+
+    public void updateBypassPermissions() {
+        for (CheckImpl check : checksByName.values()) {
+            check.updateBypassPermission();
+        }
+    }
+
+    public boolean physicsBypassed() {
+        return physicsCheck.isBypassed();
     }
 
     public void onPacketReceive(final PacketReceiveEvent packet) {
@@ -290,5 +342,8 @@ public class CheckManagerImpl {
                 buildSlot(allExtendedChecks, ExtendedCheck[]::new, c -> overrides(c, "onPacketSend", PacketSendEvent.class)),
                 buildSlot(allExtendedChecks, ExtendedCheck[]::new, c -> true)
         );
+    }
+
+    private record CheckEntry<T extends CheckImpl>(Class<T> type, Function<TGPlayer, T> factory) {
     }
 }

@@ -53,6 +53,7 @@ import java.util.concurrent.ConcurrentMap;
 public final class PlayerRepositoryImpl implements UserRepository {
 
     private static final String BYPASS_PERMISSION = "TotemGuard.Bypass";
+    private static final String BYPASS_ALL_PERMISSION = "TotemGuard.Bypass.*";
     private static final Duration ALERTS_TOGGLE_TTL = Duration.ofMinutes(30);
     private final TGPlatform platform;
     private final CacheRepositoryImpl cacheRepository;
@@ -146,7 +147,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         boolean canFocus = platformPlayer.hasPermission("TotemGuard.Focus");
         boolean wantsTester = TGVersions.CURRENT.snapshot()
                 && platformPlayer.hasPermission("TotemGuard.Tester")
-                && !platformPlayer.hasPermission(BYPASS_PERMISSION);
+                && !hasFullBypass(platformPlayer);
         if (!wantsAlerts && !wantsTester && !canFocus) return;
 
         platform.getScheduler().runAsyncTask(() -> {
@@ -302,12 +303,17 @@ public final class PlayerRepositoryImpl implements UserRepository {
             return false;
         }
 
-        if (platformPlayer != null && platformPlayer.hasPermission(BYPASS_PERMISSION)) {
+        if (platformPlayer != null && hasFullBypass(platformPlayer)) {
             setExempt(uuid, true);
             return false;
         }
 
         return true;
+    }
+
+    public boolean hasFullBypass(final @NotNull PlatformPlayer platformPlayer) {
+        return platformPlayer.hasPermission(BYPASS_PERMISSION)
+                || platformPlayer.hasPermission(BYPASS_ALL_PERMISSION);
     }
 
     @Override

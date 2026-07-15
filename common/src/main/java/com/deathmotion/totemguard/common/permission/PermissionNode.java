@@ -16,28 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics;
+package com.deathmotion.totemguard.common.permission;
 
-import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
-import com.github.retrooper.packetevents.protocol.item.ItemStack;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
-public interface EngineActor {
-
-    ClientVersion clientVersion();
-
-    PacketLatencyHandler latencyHandler();
-
-    @Nullable
-    ItemStack bootsItem();
-
-    @Nullable
-    ItemStack leggingsItem();
-
-    boolean supportsEndTick();
-
-    boolean physicsBypassed();
-
-    String name();
+public record PermissionNode(@NotNull String node, @NotNull PermissionDefault defaultValue) {
 }

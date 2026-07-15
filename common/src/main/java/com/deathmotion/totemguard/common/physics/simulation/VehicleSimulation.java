@@ -128,10 +128,6 @@ public final class VehicleSimulation {
 
     public void onVehicleMove(double x, double y, double z, float yaw, float pitch) {
         ConfigView view = context.view();
-        if (!view.physicsEngineEnabled()) {
-            disengage();
-            return;
-        }
         PhysicsPreset preset = view.physicsPreset();
         reader.resetCounters();
         VehicleData vehicle = data.getVehicleData();
@@ -623,6 +619,7 @@ public final class VehicleSimulation {
                 true, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
                 gates.modernFluidPush(), false, true, true,
+                MediumScan.NO_EYE_SAMPLE,
                 startX - half, startY, startZ - half,
                 startX + half, startY + height, startZ + half,
                 Math.min(startX, endX) - half, Math.min(startY, endY),

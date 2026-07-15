@@ -21,5 +21,8 @@
     "minecraft": ">=26.1",
     "java": ">=25",
     "packetevents": "*"
+  },
+  "suggests": {
+    "luckperms": "*"
   }
 }

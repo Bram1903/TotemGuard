@@ -32,13 +32,13 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemFireworks;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
-import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -59,6 +59,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     private final int healthIndex;
     private final int absorptionIndex;
     private final int slimeSizeIndex;
+    private final int poseIndex;
+    private final int sleepingPosIndex;
     private final int livingFlagsIndex;
     private final int fireworkAttachedIndex;
     private final int fireworkItemIndex;
@@ -78,6 +80,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         this.healthIndex = metadataIndex.health();
         this.absorptionIndex = metadataIndex.absorption();
         this.slimeSizeIndex = metadataIndex.slimeSize();
+        this.poseIndex = metadataIndex.pose();
+        this.sleepingPosIndex = metadataIndex.sleepingPos();
         this.livingFlagsIndex = metadataIndex.livingEntityFlags();
         this.fireworkAttachedIndex = metadataIndex.fireworkAttached();
         this.fireworkItemIndex = metadataIndex.fireworkItem();
@@ -139,6 +143,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
 
         if (entityId == player.getUser().getEntityId()) {
             trackOwnMetadata(event, packet);
+            stripOwnPose(event, packet);
             return;
         }
 
@@ -234,15 +239,21 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         }
     }
 
+    private void stripOwnPose(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {
+        if (poseIndex < 0) return;
+        List<EntityData<?>> metadata = packet.getEntityMetadata();
+        if (!metadata.removeIf(meta -> meta.getIndex() == poseIndex)) return;
+        packet.setEntityMetadata(metadata);
+        event.markForReEncode(true);
+    }
+
     private void trackOwnMetadata(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {
         for (EntityData<?> meta : packet.getEntityMetadata()) {
             int index = meta.getIndex();
             Object value = meta.getValue();
             if (index == 0 && value instanceof Byte sharedFlags) {
-                final boolean swimming = (sharedFlags & 0x10) != 0;
                 final boolean gliding = (sharedFlags & 0x80) != 0;
                 latencyHandler.compensate(event, () -> {
-                    data.setSwimming(swimming);
                     data.setGliding(gliding);
                     data.getGlideData().answerClaim();
                 });
@@ -255,8 +266,8 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
                 });
             } else if (index == ticksFrozenIndex && value instanceof Integer frozen) {
                 latencyHandler.compensate(event, () -> data.setTicksFrozen(frozen));
-            } else if (value instanceof EntityPose pose) {
-                final boolean sleeping = pose == EntityPose.SLEEPING;
+            } else if (index == sleepingPosIndex && value instanceof Optional<?> bedPosition) {
+                final boolean sleeping = bedPosition.isPresent();
                 latencyHandler.compensate(event, () -> data.setSleeping(sleeping));
             }
         }

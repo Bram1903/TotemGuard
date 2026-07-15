@@ -57,11 +57,12 @@ public class BalanceA extends CheckImpl implements PacketCheck {
         if (runningFast) {
             long aheadMillis = (clock.virtualNanos() - now) / 1_000_000L;
             clock.rewind();
-            if (mitigate) setbackController.requestAnchorFreeze();
+            if (mitigate && !isBypassed()) setbackController.requestAnchorFreeze();
             if (shouldReport(now) && buffer.increase(BUFFER_GAIN) >= BUFFER_THRESHOLD) {
                 buffer.set(BUFFER_RETAIN);
-                fail("ahead={0}ms,ping={1}ms", aheadMillis, player.getPingData().getTransactionPing());
-                if (mitigate) setbackController.requestSetback();
+                boolean flagged = fail("ahead={0}ms,ping={1}ms", aheadMillis,
+                        player.getPingData().getTransactionPing());
+                if (flagged && mitigate) setbackController.requestSetback();
             }
         } else {
             buffer.decrease(BUFFER_DECAY);

@@ -13,3 +13,4 @@ depend:
 softdepend:
   - PlaceholderAPI
   - GrimAC
+  - LuckPerms

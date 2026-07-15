@@ -49,7 +49,7 @@ public class CheckOptions {
                 .get(checkName);
 
         if (typed.isEmpty()) {
-            if (!checkName.equals("Mod Detection")) {
+            if (!checkName.equals("ModDetection")) {
                 TGPlatform.getInstance().getLogger().warning(
                         "Missing check configuration for '" + checkName + "' in checks.yml. Using fallback values."
                 );

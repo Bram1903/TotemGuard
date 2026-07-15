@@ -25,7 +25,10 @@ import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState
 
 public final class MediumScan {
 
+    public static final double NO_EYE_SAMPLE = Double.NaN;
+
     private static final double FLUID_BOX_DEFLATE = 0.001;
+    private static final double LEGACY_EYE_FLUID_OFFSET = 0.11111111111111111;
 
     private MediumScan() {
     }
@@ -33,6 +36,7 @@ public final class MediumScan {
     public static void sample(BlockReader reader, MediumSample out,
                               boolean pushedByFluid, boolean lavaFast, boolean modernFluidPush,
                               boolean weavingCobweb, boolean stuckApplies, boolean stuckOnPath,
+                              double eyeY,
                               double minX, double feetY, double minZ,
                               double maxX, double headY, double maxZ,
                               double sweptMinX, double sweptMinY, double sweptMinZ,
@@ -110,6 +114,9 @@ public final class MediumScan {
         int feetBlockY = floor(feetY);
         out.swimSteerWater(StateFacts.is(
                 reader.facts(feetBlockX, floor(feetY + 0.9), feetBlockZ), StateFacts.ANY_FLUID));
+        out.waterAtFeet(StateFacts.is(
+                reader.facts(feetBlockX, feetBlockY, feetBlockZ), StateFacts.WATER));
+        out.eyeInWater(eyeInWater(reader, modernFluidPush, eyeY, feetBlockX, feetBlockZ));
         int feetClientId = reader.clientStateId(feetBlockX, feetBlockY, feetBlockZ);
         if (StateFacts.is(reader.factsForClientId(feetClientId), StateFacts.CLIMBABLE)) {
             out.climbable(true);
@@ -124,6 +131,17 @@ public final class MediumScan {
                         || reader.uncertain(feetBlockX, feetBlockY - 1, feetBlockZ));
             }
         }
+    }
+
+    private static boolean eyeInWater(BlockReader reader, boolean modernFluidPush,
+                                      double eyeY, int blockX, int blockZ) {
+        if (Double.isNaN(eyeY)) return false;
+        double sampleY = modernFluidPush ? eyeY : eyeY - LEGACY_EYE_FLUID_OFFSET;
+        int blockY = floor(sampleY);
+        long facts = reader.facts(blockX, blockY, blockZ);
+        if (!StateFacts.is(facts, StateFacts.WATER)) return false;
+        double surface = blockY + StateFacts.fluidHeight(facts);
+        return modernFluidPush ? sampleY <= surface : sampleY < surface;
     }
 
     private static int floor(double value) {
