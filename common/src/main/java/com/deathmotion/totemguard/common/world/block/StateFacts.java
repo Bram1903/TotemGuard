@@ -215,10 +215,9 @@ public final class StateFacts {
                 && type != StateTypes.ICE && type != StateTypes.FROSTED_ICE) {
             facts |= FLOW_STURDY;
         }
-        if ((facts & HAS_SHAPE) != 0
-                && type != StateTypes.SNOW && type != StateTypes.LILY_PAD) {
-            facts |= BLOCKS_MOTION;
-        }
+        // isBlocking is vanilla blocksMotion (forceSolidOn/Off applied, cobweb and bamboo_sapling
+        // excluded, dynamic-shape blocks non-solid). isSolid is the legacy flag and differs.
+        if (type.isBlocking()) facts |= BLOCKS_MOTION;
         return facts;
     }
 }

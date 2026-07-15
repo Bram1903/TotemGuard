@@ -25,7 +25,7 @@ import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState
 
 public final class MediumScan {
 
-    private static final double FLUID_SURFACE_MARGIN = 0.01;
+    private static final double FLUID_BOX_DEFLATE = 0.001;
 
     private MediumScan() {
     }
@@ -48,7 +48,7 @@ public final class MediumScan {
         int wx0 = floor(sweptMinX), wx1 = floor(sweptMaxX);
         int wy0 = floor(sweptMinY), wy1 = floor(sweptMaxY);
         int wz0 = floor(sweptMinZ), wz1 = floor(sweptMaxZ);
-        double fluidThreshold = feetY - FLUID_SURFACE_MARGIN;
+        double fluidThreshold = feetY + FLUID_BOX_DEFLATE;
         double bestStuckHorizontal = -1.0;
         boolean sweptStuck = false;
         int feetBlockX = floor((minX + maxX) / 2.0);
