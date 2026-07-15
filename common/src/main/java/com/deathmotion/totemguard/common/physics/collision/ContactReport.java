@@ -46,6 +46,7 @@ public final class ContactReport {
     private boolean startOverlapping;
     private boolean startSuffocating;
     private double embedDepth;
+    private double stepCandidateMax;
 
     private double supportGap;
     private double trailingSupportGap;
@@ -80,6 +81,7 @@ public final class ContactReport {
         startOverlapping = false;
         startSuffocating = false;
         embedDepth = 0.0;
+        stepCandidateMax = 0.0;
         supportGap = NO_SUPPORT;
         trailingSupportGap = NO_SUPPORT;
         supportTop = Double.NEGATIVE_INFINITY;

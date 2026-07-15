@@ -34,8 +34,8 @@ public final class GlideModel implements MediumModel {
     private static final double PITCH_UP_COST = 0.04;
     private static final double PITCH_UP_LIFT = 3.2;
     private static final double STEER_RATE = 0.1;
-    private static final double DRAG_H = 0.99;
-    private static final double DRAG_V = 0.98;
+    private static final double DRAG_H = 0.99f;
+    private static final double DRAG_V = 0.98f;
     private static final double SLOW_FALLING_GRAVITY = 0.01;
     private static final double BOOST_KEEP = 0.5;
     private static final double BOOST_ADD = 0.85;

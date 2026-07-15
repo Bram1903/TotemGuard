@@ -79,6 +79,32 @@ public final class CollisionSweep {
         return false;
     }
 
+    private static double stepCandidateMax(ColliderBuffer buffer,
+                                           double minX, double feetY, double minZ,
+                                           double maxX, double maxZ,
+                                           double dx, double dz, double stepHeight) {
+        if (stepHeight <= 0.0) return 0.0;
+        double x0 = Math.min(minX, minX + dx);
+        double x1 = Math.max(maxX, maxX + dx);
+        double z0 = Math.min(minZ, minZ + dz);
+        double z1 = Math.max(maxZ, maxZ + dz);
+        double best = 0.0;
+        int count = buffer.count();
+        for (int i = 0; i < count; i++) {
+            if (!AxisClip.overlaps(x0, x1, buffer.minX(i), buffer.maxX(i))) continue;
+            if (!AxisClip.overlaps(z0, z1, buffer.minZ(i), buffer.maxZ(i))) continue;
+            long tag = buffer.tagOf(i);
+            if (ColliderBuffer.isEntity(tag) || StateFacts.is(tag, StateFacts.SUPPORT_APPROXIMATE)) {
+                return stepHeight;
+            }
+            double top = buffer.maxY(i) - feetY;
+            if (top > best && top <= stepHeight) best = top;
+            double bottom = buffer.minY(i) - feetY;
+            if (bottom > best && bottom <= stepHeight) best = bottom;
+        }
+        return best;
+    }
+
     public void resolve(ColliderBuffer buffer, ContactReport report,
                         double startX, double startY, double startZ,
                         double halfWidth, double height,
@@ -140,6 +166,8 @@ public final class CollisionSweep {
         report.crossX(dx - allowedX);
         report.crossY(dy - flatY);
         report.crossZ(dz - allowedZ);
+
+        report.stepCandidateMax(stepCandidateMax(buffer, minX, minY, minZ, maxX, maxZ, dx, dz, stepHeight));
 
         report.embedDepth(embedDepth(buffer, minX + dx, minY + dy, minZ + dz,
                 maxX + dx, maxY + dy, maxZ + dz));

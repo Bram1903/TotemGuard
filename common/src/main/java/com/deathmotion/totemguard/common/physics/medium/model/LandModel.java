@@ -33,7 +33,7 @@ public final class LandModel implements MediumModel {
     private static final double GROUND_ACCEL_NUMERATOR = 0.21600002;
     private static final double LEVITATION_PER_LEVEL = 0.05;
     private static final double LEVITATION_RATE = 0.2;
-    private static final double VERTICAL_DRAG = 0.98;
+    private static final double VERTICAL_DRAG = 0.98f;
     private static final double SLOW_FALLING_GRAVITY = 0.01;
 
     static double groundAccel(ControlEnvelope input, GroundFacts ground) {
@@ -97,8 +97,10 @@ public final class LandModel implements MediumModel {
         if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
         if (input.fluidExitHop()) bounds.raiseCeiling(MotionDefaults.FLUID_EXIT_HOP);
         if (input.powderSnowClimb()) bounds.raiseCeiling(advanceVertical(POWDER_SNOW_CLIMB, input));
-        if (ground.groundedStart() || ground.groundedEnd() || contact.startOverlapping()) {
+        if (contact.startOverlapping()) {
             bounds.raiseCeiling(input.stepHeight());
+        } else if (ground.groundedStart() || ground.groundedEnd()) {
+            bounds.raiseCeiling(contact.stepCandidateMax());
         }
         bounds.lowerFloor(advanceVertical(0.0, input));
         bounds.enforceDescentFloor(true);

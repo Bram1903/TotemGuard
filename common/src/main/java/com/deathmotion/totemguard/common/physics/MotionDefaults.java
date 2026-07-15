@@ -21,7 +21,7 @@ package com.deathmotion.totemguard.common.physics;
 public final class MotionDefaults {
 
     public static final double GRAVITY = 0.08;
-    public static final double VERTICAL_DRAG = 0.98;
+    public static final double VERTICAL_DRAG = 0.98f;
     public static final double JUMP_POWER = 0.42;
     public static final double STEP_HEIGHT = 0.6;
     public static final double FLUID_EXIT_HOP = 0.3;

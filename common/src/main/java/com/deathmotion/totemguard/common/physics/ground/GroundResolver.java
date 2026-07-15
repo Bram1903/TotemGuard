@@ -100,8 +100,8 @@ public final class GroundResolver {
         lastGroundedEnd = groundedEnd;
 
         boolean bounced = contact.supportBounce() > 0.0 && groundedEnd && !sneaking
-                && carriedFloor < -BOUNCE_MIN_DESCENT;
-        if (bounced) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
+                && carriedFloor < 0.0;
+        if (bounced && carriedFloor < -BOUNCE_MIN_DESCENT) bounceTicks = BOUNCE_UNCERTAINTY_TICKS;
         else if (bounceTicks > 0) bounceTicks--;
 
         double startSlipMin;

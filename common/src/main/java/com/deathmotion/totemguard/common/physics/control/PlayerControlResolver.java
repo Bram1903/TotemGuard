@@ -113,7 +113,7 @@ public final class PlayerControlResolver {
         boolean ceilingBlockedAtTakeoff = ceilingBlocked || lastCeilingClearance < takeoffMax;
         boolean sprintJump = effectiveGroundedStart && sprinting
                 && (freshJump || (ceilingBlockedAtTakeoff && jumpHeld));
-        boolean clampedJumpNow = jumpPossible && ceilingBlocked;
+        boolean clampedJumpNow = jumpPossible && ceilingBlockedAtTakeoff;
         boolean ceilingClampedJump = clampedJumpNow || lastClampedJump;
         lastClampedJump = clampedJumpNow;
         lastCeilingClearance = contact.ceilingClearance();

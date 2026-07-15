@@ -30,7 +30,7 @@ public final class RiderWaterModel implements MediumModel {
 
     public static final double FLOAT_RISE = 0.04;
 
-    private static final double VERTICAL_DRAG = 0.8;
+    private static final double VERTICAL_DRAG = 0.8f;
     private static final double GRAVITY_DIVISOR = 16.0;
 
     public static double floatRise(ControlEnvelope input) {

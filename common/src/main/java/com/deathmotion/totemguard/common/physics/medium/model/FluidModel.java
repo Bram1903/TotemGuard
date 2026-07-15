@@ -26,7 +26,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 
 public abstract class FluidModel implements MediumModel {
 
-    protected static final double VERTICAL_DRAG = 0.8;
+    protected static final double VERTICAL_DRAG = 0.8f;
     protected static final double SWIM_IMPULSE = 0.04;
     protected static final double ASCENT_MIN = 0.1;
     protected static final double WALL_BUMP_ASCENT = 0.34;
@@ -55,7 +55,7 @@ public abstract class FluidModel implements MediumModel {
         if (input.jumpPossible()) bounds.raiseCeiling(input.jumpTakeoff());
         if (ground.groundedStart() || ground.groundedEnd()
                 || contact.nearestSupportGap() <= input.stepHeight()) {
-            bounds.raiseCeiling(input.stepHeight());
+            bounds.raiseCeiling(contact.stepCandidateMax());
         }
         ascentOptions(input, contact, bounds);
         bounds.enforceDescentFloor(true);

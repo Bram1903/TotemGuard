@@ -29,7 +29,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 
 public final class FlyingModel implements MediumModel {
 
-    private static final double WATER_DRAG = 0.8;
+    private static final double WATER_DRAG = 0.8f;
     private static final double LAVA_DRAG = 0.5;
 
     private double drag = LandModel.AIR_FRICTION;

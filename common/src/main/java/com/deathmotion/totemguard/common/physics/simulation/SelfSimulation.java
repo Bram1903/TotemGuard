@@ -588,7 +588,8 @@ public final class SelfSimulation {
                     current.getX() + half, current.getZ() + half);
         }
         boolean stepped = contact.stepUsedHeight() > 0.0
-                || (dy > preset.verticalFlagEpsilon() && ground.groundedEnd())
+                || (dy > preset.verticalFlagEpsilon() && ground.groundedEnd()
+                && contact.stepCandidateMax() > 0.0)
                 || stepFromFall;
         if (stepped && horizontalExcess > 0.0) {
             horizontalExcess = Math.max(0.0, horizontalExcess - preset.stepNoiseSlack());
