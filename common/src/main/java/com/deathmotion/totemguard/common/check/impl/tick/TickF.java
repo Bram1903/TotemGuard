@@ -83,7 +83,8 @@ public class TickF extends CheckImpl implements PacketCheck {
 
     private boolean carriesPosition(PacketTypeCommon packetType) {
         if (data.isInVehicle()) {
-            return packetType == PacketType.Play.Client.STEER_VEHICLE
+            return packetType == PacketType.Play.Client.PLAYER_ROTATION
+                    || packetType == PacketType.Play.Client.STEER_VEHICLE
                     || packetType == PacketType.Play.Client.VEHICLE_MOVE
                     || packetType == PacketType.Play.Client.PLAYER_INPUT;
         }
