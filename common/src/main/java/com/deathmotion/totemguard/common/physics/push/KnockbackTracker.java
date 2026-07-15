@@ -69,8 +69,8 @@ public final class KnockbackTracker {
         resetRequirement();
     }
 
-    public void observeRequirement(double obsX, double obsZ, double reach,
-                                   boolean taintedTick, double consumeEpsilon) {
+    public void observeRequirement(double obsX, double obsZ, double centerX, double centerZ,
+                                   double reach, boolean taintedTick, double consumeEpsilon) {
         requirementObservedThisTick = true;
         if (!external.isActive() || !external.hasSet()) return;
         if (trackedSetSequence != external.setSequence()) {
@@ -83,7 +83,7 @@ public final class KnockbackTracker {
             return;
         }
         double miss = Math.max(0.0,
-                ClientMath.horizontalDistance(obsX - external.x(), obsZ - external.z()) - reach);
+                ClientMath.horizontalDistance(obsX - centerX, obsZ - centerZ) - reach);
         if (miss < minRequiredMiss) minRequiredMiss = miss;
         if (miss <= consumeEpsilon) {
             external.consume();

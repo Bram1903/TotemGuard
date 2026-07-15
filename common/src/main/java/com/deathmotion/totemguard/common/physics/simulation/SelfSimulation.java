@@ -614,8 +614,7 @@ public final class SelfSimulation {
                 || data.getGlideData().riptideActive() || data.isSpinAttacking()
                 || offerBounceAlt
                 || data.getMitigationService().setbackPending();
-        knockback.observeRequirement(dx, dz, requirementReach(chosenSlotBounds), knockbackTainted,
-                preset.horizontalFlagEpsilon());
+        observeKnockbackRequirement(dx, dz, chosenSlotBounds, knockbackTainted, preset);
 
         double descentExcess = excess.descent();
         BoundBreach breach = classify(horizontalExcess, ascentExcess, descentExcess, phaseExcess, preset);
@@ -941,13 +940,28 @@ public final class SelfSimulation {
         knockback.consumeIfExplained(excess, preset.horizontalFlagEpsilon(), preset.verticalFlagEpsilon());
     }
 
-    private double requirementReach(AreaBounds chosenSlotBounds) {
+    private void observeKnockbackRequirement(double dx, double dz, AreaBounds chosenSlotBounds,
+                                             boolean tainted, PhysicsPreset preset) {
+        AreaBounds kb = knockbackSlotBounds(chosenSlotBounds);
+        double centerX = kb.centerX();
+        double centerZ = kb.centerZ();
+        if (kb.hasAltCenter()
+                && ClientMath.horizontalDistance(dx - kb.altCenterX(), dz - kb.altCenterZ())
+                < ClientMath.horizontalDistance(dx - centerX, dz - centerZ)) {
+            centerX = kb.altCenterX();
+            centerZ = kb.altCenterZ();
+        }
+        knockback.observeRequirement(dx, dz, centerX, centerZ, kb.radius(), tainted,
+                preset.horizontalFlagEpsilon());
+    }
+
+    private AreaBounds knockbackSlotBounds(AreaBounds chosenSlotBounds) {
         for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
             if (carried.live(slot) && carried.kind(slot) == CarriedHypotheses.Kind.KNOCKBACK_SET) {
-                return boundsSlots[slot].radius();
+                return boundsSlots[slot];
             }
         }
-        return chosenSlotBounds.radius();
+        return chosenSlotBounds;
     }
 
     private void coastArea(MediumModel medium, ControlEnvelope input, GroundFacts ground, PhysicsPreset preset) {
@@ -1074,7 +1088,8 @@ public final class SelfSimulation {
                 + ClientMath.horizontalDistance(continuation.centerX(), continuation.centerZ())
                 + continuation.slack()
                 + external.slack() + preset.knockbackPad() + threshold;
-        knockback.observeRequirement(0.0, 0.0, reach, tainted, preset.horizontalFlagEpsilon());
+        knockback.observeRequirement(0.0, 0.0, external.x(), external.z(), reach, tainted,
+                preset.horizontalFlagEpsilon());
     }
 
     private void observeTail(ConfigView view, PhysicsPreset preset, double dy) {
