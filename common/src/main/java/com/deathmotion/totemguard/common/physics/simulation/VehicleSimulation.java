@@ -341,7 +341,7 @@ public final class VehicleSimulation {
             boolean unclippedPossible = obsY >= chosenBandLo - CLIP_EPS && obsY <= chosenBandHi + CLIP_EPS;
             double restingCarry = -gravity * MotionDefaults.VERTICAL_DRAG;
             vyLo = Math.min(unclippedPossible ? Math.min(obsY, 0.0) : 0.0, restingCarry);
-            vyHi = Math.max(0.0, BounceRule.reflect(gates.restitutionBounce(), contact,
+            vyHi = Math.max(0.0, BounceRule.reflectMax(gates.restitutionBounce(), contact,
                     chosenBandLo, gravity));
         } else {
             double clamped = Math.min(Math.max(obsY, chosenBounds.floor() - chosenBounds.descentSlack()),
@@ -483,7 +483,7 @@ public final class VehicleSimulation {
             if (landed) {
                 boolean unclippedPossible = obsY >= chosenAdvLo - CLIP_EPS && obsY <= chosenAdvHi + CLIP_EPS;
                 vyLo = unclippedPossible ? Math.min(obsY, 0.0) : 0.0;
-                vyHi = Math.max(0.0, BounceRule.reflect(gates.restitutionBounce(), contact,
+                vyHi = Math.max(0.0, BounceRule.reflectMax(gates.restitutionBounce(), contact,
                         chosenAdvLo, BoatFloatModel.GRAVITY) * NON_LIVING_BOUNCE);
                 lastDy = 0.0;
             } else {

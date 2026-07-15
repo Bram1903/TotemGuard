@@ -61,6 +61,7 @@ public final class ContactReport {
     private double supportJumpMax;
 
     private double ceilingClearance;
+    private double ceilingClearanceAny;
     private boolean wallNear;
 
     public void reset() {
@@ -92,6 +93,7 @@ public final class ContactReport {
         supportJumpMin = 1.0;
         supportJumpMax = 1.0;
         ceilingClearance = Double.MAX_VALUE;
+        ceilingClearanceAny = Double.MAX_VALUE;
         wallNear = false;
     }
 

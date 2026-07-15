@@ -47,8 +47,8 @@ public final class AreaJudge {
         }
 
         double descent = 0.0;
-        if (bounds.enforceDescentFloor() && bounds.floor() <= 0.0) {
-            descent = Math.max(0.0, (bounds.floor() - bounds.descentSlack()) - obsY);
+        if (bounds.riseFloor() > 0.0 || (bounds.enforceDescentFloor() && bounds.floor() <= 0.0)) {
+            descent = Math.max(0.0, bounds.judgedFloor() - obsY);
         }
 
         return new JudgedExcess(horizontal, ascent, descent, altUsed);

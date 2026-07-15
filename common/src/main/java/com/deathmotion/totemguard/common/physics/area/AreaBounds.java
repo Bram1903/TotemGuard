@@ -44,6 +44,7 @@ public final class AreaBounds {
     private double floor;
     private double descentSlack;
     private boolean enforceDescentFloor;
+    private double riseFloor;
 
     private double legalX;
     private double legalZ;
@@ -67,9 +68,14 @@ public final class AreaBounds {
         floor = area.floorVy();
         descentSlack = 0.0;
         enforceDescentFloor = false;
+        riseFloor = 0.0;
         legalX = 0.0;
         legalZ = 0.0;
         legalVy = 0.0;
+    }
+
+    public double judgedFloor() {
+        return riseFloor > 0.0 ? riseFloor : floor - descentSlack;
     }
 
     public void expandRadius(double amount) {

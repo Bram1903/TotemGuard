@@ -109,15 +109,19 @@ final class SupportScanner {
     private static void probeCeiling(ColliderBuffer buffer, ContactReport report,
                                      double minX, double minZ, double maxX, double headY, double maxZ) {
         double clearance = CEILING_PROBE;
+        double clearanceAny = CEILING_PROBE;
         int count = buffer.count();
         for (int i = 0; i < count; i++) {
-            if (!ColliderBuffer.clipEligible(buffer.tagOf(i))) continue;
             if (!AxisClip.overlaps(minX, maxX, buffer.minX(i), buffer.maxX(i))) continue;
             if (!AxisClip.overlaps(minZ, maxZ, buffer.minZ(i), buffer.maxZ(i))) continue;
             double gap = buffer.minY(i) - headY;
-            if (gap >= -AxisClip.EPS && gap < clearance) clearance = Math.max(0.0, gap);
+            if (gap < -AxisClip.EPS) continue;
+            if (gap < clearanceAny) clearanceAny = Math.max(0.0, gap);
+            if (!ColliderBuffer.clipEligible(buffer.tagOf(i))) continue;
+            if (gap < clearance) clearance = Math.max(0.0, gap);
         }
         report.ceilingClearance(clearance);
+        report.ceilingClearanceAny(clearanceAny);
     }
 
     private static boolean wallNear(ColliderBuffer buffer,

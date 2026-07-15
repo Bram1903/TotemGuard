@@ -30,6 +30,7 @@ public final class SupportingBlockTracker {
 
     private static final double LEGACY_COLUMN_DEPTH = 0.5000001;
     private static final double MODERN_COLUMN_DEPTH = 0.500001F;
+    private static final double BOUNCE_COLUMN_DEPTH = 0.2F;
     private static final long EMPTY = Long.MAX_VALUE;
     private static final long TAINTED = Long.MAX_VALUE - 1;
     private final boolean supportingBlockClient;
@@ -43,6 +44,9 @@ public final class SupportingBlockTracker {
     private double jumpFactor = 1.0;
     private boolean speedCertain;
     private double speedFactor = 1.0;
+    private boolean bounceCertain;
+    private double bounceFactor;
+    private boolean bounceBed;
 
     public SupportingBlockTracker(boolean supportingBlockClient) {
         this.supportingBlockClient = supportingBlockClient;
@@ -99,12 +103,25 @@ public final class SupportingBlockTracker {
         return speedFactor;
     }
 
+    public boolean bounceCertain() {
+        return bounceCertain;
+    }
+
+    public double bounceFactor() {
+        return bounceFactor;
+    }
+
+    public boolean bounceBed() {
+        return bounceBed;
+    }
+
     public void invalidate() {
         support = Presence.UNKNOWN;
         noBlocks = Presence.UNKNOWN;
         slipCertain = false;
         jumpCertain = false;
         speedCertain = false;
+        bounceCertain = false;
     }
 
     public void reset() {
@@ -113,9 +130,12 @@ public final class SupportingBlockTracker {
         slipCertain = false;
         jumpCertain = false;
         speedCertain = false;
+        bounceCertain = false;
         slip = BlockTraits.DEFAULT_SLIPPERINESS;
         jumpFactor = 1.0;
         speedFactor = 1.0;
+        bounceFactor = 0.0;
+        bounceBed = false;
     }
 
     public void update(ColliderBuffer colliders, BlockReader reader,
@@ -228,28 +248,39 @@ public final class SupportingBlockTracker {
         int feetCellY = floor(feetY);
         int feetZ = floor(posZ);
         int belowY = floor(feetY - columnDepth);
+        int bounceY = floor(feetY - BOUNCE_COLUMN_DEPTH);
 
         long fallbackPos = ColliderBuffer.packCell(feetX, belowY, feetZ);
+        long bounceFallbackPos = ColliderBuffer.packCell(feetX, bounceY, feetZ);
         long primaryPos;
         long alternatePos;
+        long bouncePrimaryPos;
+        long bounceAlternatePos;
         switch (state) {
             case PRESENT -> {
-                primaryPos = affectsMovementPos(reader, supportCell, belowY);
+                primaryPos = onPos(reader, supportCell, belowY, false);
                 alternatePos = primaryPos;
+                bouncePrimaryPos = onPos(reader, supportCell, bounceY, true);
+                bounceAlternatePos = bouncePrimaryPos;
             }
             case ABSENT -> {
                 primaryPos = fallbackPos;
                 alternatePos = primaryPos;
+                bouncePrimaryPos = bounceFallbackPos;
+                bounceAlternatePos = bouncePrimaryPos;
             }
             case DUAL -> {
                 primaryPos = fallbackPos;
-                alternatePos = affectsMovementPos(reader, dualCell, belowY);
+                alternatePos = onPos(reader, dualCell, belowY, false);
+                bouncePrimaryPos = bounceFallbackPos;
+                bounceAlternatePos = onPos(reader, dualCell, bounceY, true);
             }
             default -> {
                 resolveUnknown(reader, feetX, feetCellY, feetZ);
                 return;
             }
         }
+        resolveBounce(reader, bouncePrimaryPos, bounceAlternatePos);
 
         boolean posCertain = cellKnown(reader, primaryPos) && cellKnown(reader, alternatePos);
         long primaryFacts = facts(reader, primaryPos);
@@ -287,8 +318,26 @@ public final class SupportingBlockTracker {
         }
     }
 
+    private void resolveBounce(BlockReader reader, long primaryPos, long alternatePos) {
+        if (!cellKnown(reader, primaryPos) || !cellKnown(reader, alternatePos)) {
+            bounceCertain = false;
+            return;
+        }
+        long primaryFacts = facts(reader, primaryPos);
+        long alternateFacts = facts(reader, alternatePos);
+        double primary = StateFacts.bounceFactor(primaryFacts);
+        boolean primaryBed = StateFacts.bedBounce(primaryFacts);
+        bounceCertain = primary == StateFacts.bounceFactor(alternateFacts)
+                && primaryBed == StateFacts.bedBounce(alternateFacts);
+        if (bounceCertain) {
+            bounceFactor = primary;
+            bounceBed = primaryBed;
+        }
+    }
+
     private void resolveUnknown(BlockReader reader, int feetX, int feetCellY, int feetZ) {
         slipCertain = false;
+        bounceCertain = false;
         boolean feetKnown = !reader.uncertain(feetX, feetCellY, feetZ);
         long feetFacts = reader.facts(feetX, feetCellY, feetZ);
 
@@ -302,14 +351,15 @@ public final class SupportingBlockTracker {
         if (speedCertain) speedFactor = feetFluid ? 1.0 : speedFeet;
     }
 
-    private long affectsMovementPos(BlockReader reader, long cell, int belowY) {
+    private long onPos(BlockReader reader, long cell, int columnY, boolean fenceKeepsCell) {
         StateType type = reader.stateForClientId(
                         reader.stateId(ColliderBuffer.cellX(cell), ColliderBuffer.cellY(cell), ColliderBuffer.cellZ(cell)))
                 .getType();
-        if (BlockTags.WALLS.contains(type) || BlockTags.FENCE_GATES.contains(type)) {
+        if (BlockTags.WALLS.contains(type) || BlockTags.FENCE_GATES.contains(type)
+                || (fenceKeepsCell && BlockTags.FENCES.contains(type))) {
             return cell;
         }
-        return ColliderBuffer.packCell(ColliderBuffer.cellX(cell), belowY, ColliderBuffer.cellZ(cell));
+        return ColliderBuffer.packCell(ColliderBuffer.cellX(cell), columnY, ColliderBuffer.cellZ(cell));
     }
 
     private enum Presence {ABSENT, PRESENT, DUAL, UNKNOWN}

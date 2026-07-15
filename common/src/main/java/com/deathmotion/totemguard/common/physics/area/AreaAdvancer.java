@@ -32,8 +32,7 @@ public final class AreaAdvancer {
         if (bounds.hasSegment() && !altCenterUsed) {
             OutwardResidual.segmentClosest(bounds, obsX, obsZ);
             OutwardResidual.segmentCollapse(bounds, obsX, obsZ, bounds.radius() + driftSlack);
-            double segFloor = bounds.floor() - bounds.descentSlack();
-            bounds.legalVy(Math.min(Math.max(obsY, segFloor), bounds.ceiling()));
+            bounds.legalVy(Math.min(Math.max(obsY, bounds.judgedFloor()), bounds.ceiling()));
             return;
         }
         double centerX = altCenterUsed ? bounds.altCenterX() : bounds.centerX();
@@ -48,8 +47,7 @@ public final class AreaAdvancer {
             bounds.legalX(OutwardResidual.collapseAxis(obsX, centerX, s));
             bounds.legalZ(OutwardResidual.collapseAxis(obsZ, centerZ, s));
         }
-        double floor = bounds.floor() - bounds.descentSlack();
-        bounds.legalVy(Math.min(Math.max(obsY, floor), bounds.ceiling()));
+        bounds.legalVy(Math.min(Math.max(obsY, bounds.judgedFloor()), bounds.ceiling()));
     }
 
     public static MotionArea next(double legalX, double legalZ, double frictionH, double speedFactor,

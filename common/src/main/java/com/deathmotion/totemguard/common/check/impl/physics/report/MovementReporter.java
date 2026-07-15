@@ -55,6 +55,9 @@ public final class MovementReporter {
                     flagger.flag(extras, "{0} | airborne, not falling | over={1}", shownType, PhysicsFormat.d(excess));
             case DESCENT_FLOOR -> flagger.flag(extras, "{0} | vy={1} fell faster than gravity | over={2}",
                     shownType, PhysicsFormat.d(verdict.observedY()), PhysicsFormat.d(excess));
+            case BOUNCE_RISE -> flagger.flag(extras, "{0} | vy={1} required>={2} | over={3}",
+                    shownType, PhysicsFormat.d(verdict.observedY()), PhysicsFormat.d(verdict.boundFloor()),
+                    PhysicsFormat.d(excess));
             case PHASE_CROSS, PHASE_EMBED -> flagger.flag(extras, "{0} | moved {1} through a wall | over={2}",
                     shownType, PhysicsFormat.d(verdict.observedSpeed()), PhysicsFormat.d(excess));
             case FAST -> flagger.flag(extras, "{0} | speed={1} | over={2}",
@@ -75,6 +78,7 @@ public final class MovementReporter {
             case GROUNDSPOOF -> "groundspoof";
             case HOVER -> "hover";
             case DESCENT_FLOOR -> "fastfall";
+            case BOUNCE_RISE -> "nobounce";
             case PHASE_CROSS, PHASE_EMBED -> "phase";
             case FAST -> "speed";
             case ASCENT -> switch (verdict.medium()) {

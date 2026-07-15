@@ -145,7 +145,7 @@ public final class TraceRecording {
         frame.centerZ = bounds.centerZ();
         frame.radius = bounds.radius();
         frame.ceiling = bounds.ceiling();
-        frame.floor = bounds.floor() - bounds.descentSlack();
+        frame.floor = bounds.judgedFloor();
         frame.altPresent = bounds.hasAltCenter();
         frame.altCenterX = frame.altPresent ? bounds.altCenterX() : 0.0;
         frame.altCenterZ = frame.altPresent ? bounds.altCenterZ() : 0.0;

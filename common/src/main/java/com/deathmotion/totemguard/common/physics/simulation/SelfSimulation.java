@@ -110,6 +110,7 @@ public final class SelfSimulation {
     private final GlideExitRule glideExit = new GlideExitRule();
     private final RiptideGlideRule riptideGlide = new RiptideGlideRule();
     private final BedBounceRule bedBounce = new BedBounceRule();
+    private final BounceRiseRule bounceRise = new BounceRiseRule();
     private final TrustTracker trust = new TrustTracker();
     private final TickGate gate = new TickGate();
     private final TickContext ctx = new TickContext();
@@ -129,6 +130,7 @@ public final class SelfSimulation {
     private double lastSupportGap = Double.MAX_VALUE;
     private GameMode lastGameMode;
     private boolean scannedThisTick;
+    private boolean doubleMoveThisTick;
     private boolean honeySlideActive;
     private GroundFacts groundThisTick;
     private ControlEnvelope inputThisTick;
@@ -210,6 +212,7 @@ public final class SelfSimulation {
         }
 
         scannedThisTick = false;
+        doubleMoveThisTick = false;
         honeySlideActive = false;
         groundThisTick = null;
         inputThisTick = null;
@@ -267,6 +270,7 @@ public final class SelfSimulation {
                     data.getTeleportData().lastPacketWasTeleport(), preset.doubleMoveGraceTicks());
             boolean doubleMove = trustKind == TrustTracker.Trust.COAST_DOUBLE
                     || trustKind == TrustTracker.Trust.JUDGED_DOUBLE;
+            doubleMoveThisTick = doubleMove;
             ControlEnvelope input = body.control().build(movement, contact, ground, sample.fluid(),
                     dx, dy, dz, doubleMove, sample.stuckVertical(), previousPowderSnowSwept);
             inputThisTick = input;
@@ -348,6 +352,7 @@ public final class SelfSimulation {
         phase.clear();
         exemptions.clear();
         bedBounce.reset();
+        bounceRise.disarm();
         body.pose().clearHistory();
         verdict = PhysicsVerdict.INITIAL;
     }
@@ -494,6 +499,9 @@ public final class SelfSimulation {
         boolean landMedium = sample.landMedium();
 
         boolean residualCarryWidened = carry.horizontal() > 0.0;
+        boolean landModel = medium == body.mediums().land();
+        double riseFloor = bounceRise.required(riseTainted(landModel), input,
+                data.getAttributeData().jumpStrength() * ground.startJumpMin() + input.jumpBoostPower());
         bedBounce.prepare(landMedium);
         double arrestCap = landMedium && dy <= -preset.verticalFlagEpsilon()
                 ? Math.max(0.0, contact.nearestSupportGap() - preset.verticalNoisePad())
@@ -543,6 +551,7 @@ public final class SelfSimulation {
             boolean slotBounce = bedBounce.applyTo(slotBounds,
                     slotBounds.centerX() - area.centerX(), slotBounds.centerZ() - area.centerZ());
             boolean slotBoost = SprintBoostRule.apply(input, slotBounds, boostStuckScale);
+            if (riseFloor > 0.0) slotBounds.riseFloor(riseFloor);
             if (slot == 0) {
                 knockbackWidened = slotKnockback;
                 riptideWidened = slotRiptide;
@@ -609,11 +618,12 @@ public final class SelfSimulation {
 
         double descentExcess = excess.descent();
         BoundBreach breach = classify(horizontalExcess, ascentExcess, descentExcess, phaseExcess, preset);
+        if (breach == BoundBreach.DESCENT_FLOOR && riseFloor > 0.0) breach = BoundBreach.BOUNCE_RISE;
 
         boolean flyGraceSuppressed = false;
         if (breach != null && data.isCanFly() && data.getFlyChangeGrace() > 0
                 && (breach == BoundBreach.HORIZONTAL_DISK || breach == BoundBreach.ASCENT
-                || breach == BoundBreach.DESCENT_FLOOR)) {
+                || breach == BoundBreach.DESCENT_FLOOR || breach == BoundBreach.BOUNCE_RISE)) {
             breach = null;
             horizontalExcess = 0.0;
             ascentExcess = 0.0;
@@ -636,6 +646,7 @@ public final class SelfSimulation {
                     ? medium.advanceVertical(LandModel.POWDER_SNOW_CLIMB, input) : 0.0;
             carried.collapse(climbVy > 0.0 ? MotionArea.seeded(0.0, 0.0, climbVy) : MotionArea.rest());
             pendingSpawnCount = 0;
+            bounceRise.disarm();
         } else {
             double frictionMax = medium.frictionMax(input, ground);
             double speedFactor = effectiveSpeedFactor();
@@ -663,6 +674,9 @@ public final class SelfSimulation {
             flushPendingSpawns();
             carried.mergeConverged();
             bedBounce.arm(contact, chosenSlotBounds);
+            bounceRise.arm(landModel, doubleMoveThisTick, fullPose(), sneakHeld, sample.stuck(),
+                    honeySlideActive, supportTracker.bounceCertain(), dy, preStepCarriedCeil,
+                    carried.minFloorVy(), contact.ceilingClearanceAny());
         }
         gate.tickPreserveGrace();
 
@@ -675,6 +689,7 @@ public final class SelfSimulation {
         if (sample.stuck() && !sample.fluid()) widenings |= TraceFrame.WIDENED_STUCK;
         if (sample.bubbleAscent() > 0.0) widenings |= TraceFrame.WIDENED_BUBBLE;
         if (offerBounceAlt) widenings |= TraceFrame.WIDENED_BED_BOUNCE;
+        if (riseFloor > 0.0) widenings |= TraceFrame.PINNED_BOUNCE_RISE;
         if (honeySlideActive) widenings |= TraceFrame.WIDENED_HONEY_SLIDE;
         if (boostApplied) widenings |= TraceFrame.WIDENED_BOOST_SEGMENT;
         if (carryPredicted) widenings |= TraceFrame.WIDENED_STEP_CARRY;
@@ -687,7 +702,7 @@ public final class SelfSimulation {
 
         boolean phaseBreach = breach == BoundBreach.PHASE_CROSS || breach == BoundBreach.PHASE_EMBED;
         carry.store(phaseBreach ? 0.0 : horizontalExcess,
-                breach == BoundBreach.DESCENT_FLOOR ? 0.0 : ascentExcess,
+                breach == BoundBreach.DESCENT_FLOOR || breach == BoundBreach.BOUNCE_RISE ? 0.0 : ascentExcess,
                 false, preset.residualCarryCap());
 
         verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
@@ -796,11 +811,11 @@ public final class SelfSimulation {
         }
 
         if (ground.bounced() && area.floorVy() < 0.0 && contact.supportBounce() > 0.0) {
-            double reflected = BounceRule.reflect(gates.restitutionBounce(), contact,
+            double reflected = BounceRule.reflectMax(gates.restitutionBounce(), contact,
                     area.floorVy(), input.gravity(), LandModel.verticalDrag(input));
-            double advanced = medium.advanceVertical(reflected, input);
+            double advancedCeil = medium.advanceVertical(reflected, input);
             next = new MotionArea(next.centerX(), next.centerZ(), next.slack(),
-                    advanced, advanced);
+                    bounceFloor(advancedCeil, area, medium, input), advancedCeil);
             intervalOverridden = true;
         }
 
@@ -815,6 +830,14 @@ public final class SelfSimulation {
         }
 
         return next;
+    }
+
+    private double bounceFloor(double advancedCeil, MotionArea area, MediumModel medium, ControlEnvelope input) {
+        if (!supportTracker.bounceCertain() || area.ceilVy() >= 0.0) return advancedCeil;
+        double least = BounceRule.reflectMin(gates.restitutionBounce(), supportTracker.bounceFactor(),
+                supportTracker.bounceBed(), area.ceilVy(), input.gravity());
+        if (least <= 0.0) return medium.advanceVertical(0.0, input);
+        return Math.min(advancedCeil, medium.advanceVertical(least, input));
     }
 
     private void spawnWallZero(int chosen) {
@@ -930,6 +953,7 @@ public final class SelfSimulation {
         if (sample.stuck() && !sample.fluid()) {
             carried.collapse(MotionArea.rest());
             carry.clear();
+            bounceRise.disarm();
             return;
         }
         double accel = medium.accelBound(input, ground);
@@ -969,6 +993,7 @@ public final class SelfSimulation {
         carried.mergeConverged();
         carry.clear();
         bedBounce.reset();
+        bounceRise.disarm();
     }
 
     private void decline(DeclineReason reason, double dx, double dy, double dz, boolean reseed,
@@ -998,14 +1023,11 @@ public final class SelfSimulation {
         }
         carry.clear();
         bedBounce.reset();
+        bounceRise.disarm();
         verdict = buildVerdict(TickOutcome.DECLINED, reason, null,
                 dx, dy, dz, 0.0, 0.0, 0.0, 0.0, 0.0, null, null);
     }
 
-    // Bed exit reseeds on an un-scanned grace tick, so the vertical seed must bracket the one gravity
-    // tick of handoff ambiguity: the observed dy is this tick's velocity, and the next judged tick is
-    // either the fall continued (dy advanced one gravity step) or arrested toward it. A bare point at
-    // dy lags the continuing fall by exactly one step and falses DESCENT_FLOOR.
     private MotionArea wakeSeed(double dx, double dy, double dz) {
         double advancedVy = (dy - data.getAttributeData().gravity()) * MotionDefaults.VERTICAL_DRAG;
         return new MotionArea(dx, dz, 0.0, Math.min(dy, advancedVy), Math.max(dy, advancedVy));
@@ -1020,6 +1042,7 @@ public final class SelfSimulation {
         chosenSlot = 0;
         carry.clear();
         bedBounce.reset();
+        bounceRise.disarm();
         verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
                 dx, dy, dz, Math.max(0.0, horizontalExcess), Math.max(0.0, verticalExcess), 0.0, 0.0,
                 0.0, null, null);
@@ -1131,7 +1154,7 @@ public final class SelfSimulation {
                 dx, dy, dz,
                 horizontalExcess, ascentExcess, descentExcess, phaseExcess,
                 chosenBounds.centerX(), chosenBounds.centerZ(), chosenBounds.radius(),
-                chosenBounds.ceiling(), chosenBounds.floor() - chosenBounds.descentSlack(),
+                chosenBounds.ceiling(), chosenBounds.judgedFloor(),
                 scannedThisTick && mediumThisTick != null ? mediumThisTick.kind() : MediumKind.LAND,
                 ground != null ? ground.start() : GroundState.AMBIGUOUS,
                 data.isOpenInventory(),
@@ -1166,6 +1189,19 @@ public final class SelfSimulation {
         if (!gates.speedFactorOnCenter()) return 1.0;
         double efficiency = data.getAttributeData().movementEfficiency();
         return raw + efficiency * (1.0 - raw);
+    }
+
+    private boolean riseTainted(boolean landModel) {
+        return !landModel || data.isFlying() || doubleMoveThisTick
+                || sample.stuck() || sample.pushed() || sample.bubbleAscent() > 0.0
+                || data.getExternalVelocityData().isActive()
+                || data.getPistonData().isActive()
+                || data.getGlideData().riptideActive() || data.isSpinAttacking()
+                || data.getMitigationService().setbackPending();
+    }
+
+    private boolean fullPose() {
+        return body.height() >= MotionDefaults.STANDING_HEIGHT * data.getAttributeData().scale();
     }
 
     private double jumpCeiling() {

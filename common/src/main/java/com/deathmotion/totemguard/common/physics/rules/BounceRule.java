@@ -27,18 +27,28 @@ public final class BounceRule {
     private BounceRule() {
     }
 
-    public static double reflect(boolean restitutionBounce, ContactReport contact,
-                                 double fallVy, double gravity) {
-        return reflect(restitutionBounce, contact, fallVy, gravity, MotionDefaults.VERTICAL_DRAG);
+    public static double reflectMax(boolean restitutionBounce, ContactReport contact,
+                                    double fallVy, double gravity) {
+        return reflectMax(restitutionBounce, contact, fallVy, gravity, MotionDefaults.VERTICAL_DRAG);
     }
 
-    public static double reflect(boolean restitutionBounce, ContactReport contact,
-                                 double fallVy, double gravity, double airDrag) {
+    public static double reflectMax(boolean restitutionBounce, ContactReport contact,
+                                    double fallVy, double gravity, double airDrag) {
         double factor = contact.supportBounce();
         if (factor <= 0.0 || fallVy >= 0.0) return 0.0;
         if (restitutionBounce) {
             if (contact.supportBounceBed()) factor = BlockTraits.BED_RESTITUTION;
             return (-fallVy + gravity) * airDrag * factor;
+        }
+        return -fallVy * factor;
+    }
+
+    public static double reflectMin(boolean restitutionBounce, double factor, boolean bed,
+                                    double fallVy, double gravity) {
+        if (factor <= 0.0 || fallVy >= 0.0) return 0.0;
+        if (restitutionBounce) {
+            if (-fallVy < gravity) return 0.0;
+            if (bed) factor = BlockTraits.BED_RESTITUTION;
         }
         return -fallVy * factor;
     }

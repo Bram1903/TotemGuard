@@ -22,6 +22,7 @@ public enum BoundBreach {
     HORIZONTAL_DISK,
     ASCENT,
     DESCENT_FLOOR,
+    BOUNCE_RISE,
     PHASE_CROSS,
     PHASE_EMBED,
     HOVER,
