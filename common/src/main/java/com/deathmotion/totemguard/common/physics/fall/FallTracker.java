@@ -59,6 +59,7 @@ public final class FallTracker {
 
     private final Data data;
     private final BlockReader reader;
+    private final int[] realityScratch = new int[BlockReader.MAX_REALITIES];
 
     @Getter
     private double engineFall;
@@ -294,9 +295,17 @@ public final class FallTracker {
         int belowY = floor(current.getY() - SUPPORT_BLOCK_OFFSET);
         for (int px = floor(current.getX() - half); px <= floor(current.getX() + half); px++) {
             for (int pz = floor(current.getZ() - half); pz <= floor(current.getZ() + half); pz++) {
-                if (lenientType(reader.state(px, feetY, pz).getType())) return true;
-                if (belowY != feetY && lenientType(reader.state(px, belowY, pz).getType())) return true;
+                if (lenientCell(px, feetY, pz)) return true;
+                if (belowY != feetY && lenientCell(px, belowY, pz)) return true;
             }
+        }
+        return false;
+    }
+
+    private boolean lenientCell(int x, int y, int z) {
+        int count = reader.realities(x, y, z, realityScratch);
+        for (int i = 0; i < count; i++) {
+            if (lenientType(reader.stateForClientId(realityScratch[i]).getType())) return true;
         }
         return false;
     }

@@ -26,6 +26,8 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class BlockReader {
 
+    public static final int MAX_REALITIES = 3;
+
     private final BlockStore store;
     private final PendingBlocks pending;
     private final PredictedBlocks predicted;
@@ -92,6 +94,36 @@ public final class BlockReader {
         boolean hit = pending.has(x, y, z) || predicted.has(x, y, z);
         if (hit) uncertainHitsThisTick++;
         return hit;
+    }
+
+    public int clientStateId(int x, int y, int z) {
+        if (!predicted.isEmpty()) {
+            int serverId = predicted.peek(x, y, z);
+            if (serverId != PredictedBlocks.NONE) return stateMap.toClientId(serverId);
+        }
+        return stateId(x, y, z);
+    }
+
+    public int realities(int x, int y, int z, int[] out) {
+        int confirmed = stateId(x, y, z);
+        out[0] = confirmed;
+        if (pending.isEmpty() && predicted.isEmpty()) return 1;
+
+        int count = 1;
+        int pendingId = pendingStateId(x, y, z);
+        if (pendingId != PendingBlocks.NONE && pendingId != confirmed) out[count++] = pendingId;
+        int predictedId = predictedStateId(x, y, z);
+        if (predictedId != PredictedBlocks.NONE) {
+            boolean known = false;
+            for (int i = 0; i < count; i++) {
+                if (out[i] == predictedId) {
+                    known = true;
+                    break;
+                }
+            }
+            if (!known) out[count++] = predictedId;
+        }
+        return count;
     }
 
     public int pendingStateId(int x, int y, int z) {

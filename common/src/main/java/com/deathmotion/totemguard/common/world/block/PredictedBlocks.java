@@ -26,7 +26,6 @@ public final class PredictedBlocks {
 
     public static final int NONE = -1;
     private static final int NO_SEQUENCE = 0;
-    private static final int MAX_PREDICTIONS = 32;
 
     private static final int DENIAL_LIMIT = 3;
     private static final long DENIAL_WINDOW_MILLIS = 3000;
@@ -35,10 +34,11 @@ public final class PredictedBlocks {
     private final Map<Long, Prediction> predictions = new ConcurrentHashMap<>();
     private final Map<Long, Denial> denials = new ConcurrentHashMap<>();
 
-    public boolean predict(int x, int y, int z, int serverStateId, int sequence, int chainDepth, long nowMillis) {
+    public boolean predict(int x, int y, int z, int serverStateId, int sequence, int chainDepth,
+                           long nowMillis, int maxPredictions) {
         long key = PendingBlocks.blockKey(x, y, z);
         if (lockedOut(key, nowMillis)) return false;
-        if (predictions.size() >= MAX_PREDICTIONS && !predictions.containsKey(key)) {
+        if (predictions.size() >= maxPredictions && !predictions.containsKey(key)) {
             return false;
         }
         predictions.put(key, new Prediction(serverStateId, sequence, chainDepth, nowMillis));
@@ -69,6 +69,10 @@ public final class PredictedBlocks {
 
     public boolean has(int x, int y, int z) {
         return !predictions.isEmpty() && predictions.containsKey(PendingBlocks.blockKey(x, y, z));
+    }
+
+    public boolean isEmpty() {
+        return predictions.isEmpty();
     }
 
     public int chainDepth(int x, int y, int z) {

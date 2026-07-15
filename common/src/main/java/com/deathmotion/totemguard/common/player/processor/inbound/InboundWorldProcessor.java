@@ -54,7 +54,10 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 
 public class InboundWorldProcessor extends ProcessorInbound {
 
-    private static final long PREDICTION_TIMEOUT_MILLIS = 1500;
+    private static final long MIN_PREDICTION_TIMEOUT_MILLIS = 1500;
+    private static final long MAX_PREDICTION_TIMEOUT_MILLIS = 10000;
+    private static final int MIN_PREDICTION_SLOTS = 32;
+    private static final int MAX_PREDICTION_SLOTS = 128;
     private static final int MAX_STARTS_PER_SECOND = 60;
     private static final int MIN_PLACEMENT_CHAIN = 3;
     private static final int MAX_PLACEMENT_CHAIN = 16;
@@ -113,7 +116,7 @@ public class InboundWorldProcessor extends ProcessorInbound {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.PLAYER_DIGGING) {
-            predicted.expire(event.getTimestamp(), PREDICTION_TIMEOUT_MILLIS);
+            predicted.expire(event.getTimestamp(), predictionTimeoutMillis());
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
             Vector3i position = packet.getBlockPosition();
             switch (packet.getAction()) {
@@ -125,7 +128,7 @@ public class InboundWorldProcessor extends ProcessorInbound {
                 }
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            predicted.expire(event.getTimestamp(), PREDICTION_TIMEOUT_MILLIS);
+            predicted.expire(event.getTimestamp(), predictionTimeoutMillis());
             WrapperPlayClientPlayerBlockPlacement packet = new WrapperPlayClientPlayerBlockPlacement(event);
             if (packet.getFace() != BlockFace.OTHER) {
                 onPlacement(packet, event.getTimestamp());
@@ -133,7 +136,7 @@ public class InboundWorldProcessor extends ProcessorInbound {
         } else if (packetType == PacketType.Play.Client.ANIMATION
                 || WrapperPlayClientPlayerFlying.isFlying(packetType)) {
             sampleDigging();
-            predicted.expire(event.getTimestamp(), PREDICTION_TIMEOUT_MILLIS);
+            predicted.expire(event.getTimestamp(), predictionTimeoutMillis());
         }
     }
 
@@ -146,14 +149,16 @@ public class InboundWorldProcessor extends ProcessorInbound {
     }
 
     private void applyEdit(PendingEdit edit) {
+        int slots = predictionSlots();
         if (edit.place()) {
             predicted.predict(edit.x(), edit.y(), edit.z(), edit.serverStateId(),
-                    edit.sequence(), edit.chainDepth(), edit.nowMillis());
+                    edit.sequence(), edit.chainDepth(), edit.nowMillis(), slots);
             return;
         }
-        if (!predicted.predict(edit.x(), edit.y(), edit.z(), 0, edit.sequence(), 0, edit.nowMillis())) return;
+        if (!predicted.predict(edit.x(), edit.y(), edit.z(), 0, edit.sequence(), 0, edit.nowMillis(), slots)) return;
         if (edit.hasPartner()) {
-            predicted.predict(edit.partnerX(), edit.partnerY(), edit.partnerZ(), 0, edit.sequence(), 0, edit.nowMillis());
+            predicted.predict(edit.partnerX(), edit.partnerY(), edit.partnerZ(), 0,
+                    edit.sequence(), 0, edit.nowMillis(), slots);
         }
     }
 
@@ -240,6 +245,10 @@ public class InboundWorldProcessor extends ProcessorInbound {
         WrappedBlockState placedState = WrappedBlockState.getDefaultState(serverBlockVersion, placedType);
         long placedFacts = reader.factsForClientId(reader.stateMap().toClientId(placedState.getGlobalId()));
         if (StateFacts.is(placedFacts, StateFacts.FULL_CUBE) && intersectsSelf(targetX, targetY, targetZ)) return;
+        if (StateFacts.is(placedFacts, StateFacts.CLIMBABLE)
+                && !sturdyClimbAnchor(replaceClicked, clicked.getX(), clicked.getY(), clicked.getZ())) {
+            return;
+        }
 
         pendingEdit = PendingEdit.place(targetX, targetY, targetZ,
                 placedState.getGlobalId(), packet.getSequence(), chainDepth, nowMillis);
@@ -307,6 +316,19 @@ public class InboundWorldProcessor extends ProcessorInbound {
         return data.getGameMode() == GameMode.CREATIVE || type.getHardness() != -1.0f;
     }
 
+    private long predictionTimeoutMillis() {
+        int ping = player.getPingData().getTransactionPing();
+        if (ping <= 0) return MIN_PREDICTION_TIMEOUT_MILLIS;
+        return Math.min(MAX_PREDICTION_TIMEOUT_MILLIS, MIN_PREDICTION_TIMEOUT_MILLIS + ping * 2L);
+    }
+
+    private int predictionSlots() {
+        int ping = player.getPingData().getTransactionPing();
+        if (ping <= 0) return MIN_PREDICTION_SLOTS;
+        int scaled = MIN_PREDICTION_SLOTS + (int) Math.ceil(ping / 50.0);
+        return Math.min(MAX_PREDICTION_SLOTS, Math.max(MIN_PREDICTION_SLOTS, scaled));
+    }
+
     private int maxPlacementChain() {
         int ping = player.getPingData().getTransactionPing();
         if (ping <= 0) return MIN_PLACEMENT_CHAIN;
@@ -342,6 +364,11 @@ public class InboundWorldProcessor extends ProcessorInbound {
         if (StateFacts.is(facts, StateFacts.AIR)) return true;
         if (StateFacts.is(facts, StateFacts.ANY_FLUID) && !StateFacts.is(facts, StateFacts.HAS_SHAPE)) return true;
         return reader.stateForClientId(clientId).getType().isReplaceable();
+    }
+
+    private boolean sturdyClimbAnchor(boolean replaceClicked, int x, int y, int z) {
+        if (replaceClicked) return false;
+        return StateFacts.is(reader.factsForClientId(reader.clientStateId(x, y, z)), StateFacts.FULL_CUBE);
     }
 
     private boolean clickedAgainstConfirmed(int x, int y, int z) {

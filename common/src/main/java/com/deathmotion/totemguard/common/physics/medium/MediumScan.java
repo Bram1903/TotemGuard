@@ -110,13 +110,15 @@ public final class MediumScan {
         int feetBlockY = floor(feetY);
         out.swimSteerWater(StateFacts.is(
                 reader.facts(feetBlockX, floor(feetY + 0.9), feetBlockZ), StateFacts.ANY_FLUID));
-        long feetFacts = reader.facts(feetBlockX, feetBlockY, feetBlockZ);
-        if (StateFacts.is(feetFacts, StateFacts.CLIMBABLE)) {
+        int feetClientId = reader.clientStateId(feetBlockX, feetBlockY, feetBlockZ);
+        if (StateFacts.is(reader.factsForClientId(feetClientId), StateFacts.CLIMBABLE)) {
             out.climbable(true);
             out.climbableUncertain(reader.uncertain(feetBlockX, feetBlockY, feetBlockZ));
         } else {
-            WrappedBlockState feetState = reader.state(feetBlockX, feetBlockY, feetBlockZ);
-            if (BlockTraits.trapdoorUsableAsLadder(feetState, reader.state(feetBlockX, feetBlockY - 1, feetBlockZ))) {
+            WrappedBlockState feetState = reader.stateForClientId(feetClientId);
+            WrappedBlockState belowState = reader.stateForClientId(
+                    reader.clientStateId(feetBlockX, feetBlockY - 1, feetBlockZ));
+            if (BlockTraits.trapdoorUsableAsLadder(feetState, belowState)) {
                 out.climbable(true);
                 out.climbableUncertain(reader.uncertain(feetBlockX, feetBlockY, feetBlockZ)
                         || reader.uncertain(feetBlockX, feetBlockY - 1, feetBlockZ));
