@@ -45,7 +45,7 @@ public final class MediumSelect {
         }
         if (sample.lava()) return lava;
         boolean glidesPastClimbable = glideState == GlideState.FLAG && !glideYieldsToClimb;
-        if (sample.climbable() && !sample.stuck() && !glidesPastClimbable) return climb;
+        if (sample.climbable() && !glidesPastClimbable) return climb;
         if (glideState != GlideState.NONE) return glide;
         return land;
     }
