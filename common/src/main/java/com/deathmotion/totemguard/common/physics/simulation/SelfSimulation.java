@@ -1198,6 +1198,7 @@ public final class SelfSimulation {
     }
 
     private double effectiveSpeedFactor() {
+        if (data.isFlying() || data.isGliding() || data.getGlideData().claimActive()) return 1.0;
         double raw = supportTracker.speedCertain()
                 ? supportTracker.speedFactor()
                 : contact.supportSpeedFactor();
