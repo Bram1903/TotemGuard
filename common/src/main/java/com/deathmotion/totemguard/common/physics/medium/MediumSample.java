@@ -44,7 +44,35 @@ public final class MediumSample {
     private boolean eyeInWater;
     private boolean waterAtFeet;
 
+    private double boxMinX;
+    private double boxFeetY;
+    private double boxMinZ;
+    private double boxMaxX;
+    private double boxHeadY;
+    private double boxMaxZ;
+    private double eyeSampleY;
+    private boolean wetCellFound;
+    private int wetCellX;
+    private int wetCellY;
+    private int wetCellZ;
+    private double wetCellSurface;
+    private int fluidCellX0;
+    private int fluidCellX1;
+    private int fluidCellY0;
+    private int fluidCellY1;
+    private int fluidCellZ0;
+    private int fluidCellZ1;
+
     public void reset() {
+        boxMinX = boxFeetY = boxMinZ = 0.0;
+        boxMaxX = boxHeadY = boxMaxZ = 0.0;
+        eyeSampleY = 0.0;
+        wetCellFound = false;
+        wetCellX = wetCellY = wetCellZ = 0;
+        wetCellSurface = 0.0;
+        fluidCellX0 = fluidCellX1 = 0;
+        fluidCellY0 = fluidCellY1 = 0;
+        fluidCellZ0 = fluidCellZ1 = 0;
         water = false;
         lava = false;
         climbable = false;

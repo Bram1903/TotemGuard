@@ -31,6 +31,8 @@ import java.util.Set;
 
 public final class TraceFormatter {
 
+    private static final double FLUID_DEFLATE = 0.001;
+
     private static final TickOutcome[] OUTCOMES = TickOutcome.values();
     private static final BodyKind[] BODIES = BodyKind.values();
     private static final DeclineReason[] REASONS = DeclineReason.values();
@@ -90,6 +92,37 @@ public final class TraceFormatter {
             if (f.has(TraceFrame.FLAG_SWIM_STEER)) sb.append(" steer");
             if (f.has(TraceFrame.FLAG_FLUID_HOP)) sb.append(" hop");
         }
+        if (contexts.contains(PhysicsDebugContext.FLUIDBOX)) {
+            sb.append(String.format(Locale.ROOT,
+                    " | fbox feet(%.5f,%.5f,%.5f) head%.5f h%.4f eye%.5f",
+                    f.boxMinX + (f.boxMaxX - f.boxMinX) / 2.0, f.boxFeetY,
+                    f.boxMinZ + (f.boxMaxZ - f.boxMinZ) / 2.0,
+                    f.boxHeadY, f.boxHeadY - f.boxFeetY, f.eyeSampleY));
+            sb.append(String.format(Locale.ROOT, " cells y[%d..%d] x[%d..%d] z[%d..%d]",
+                    f.fluidCellY0, f.fluidCellY1, f.fluidCellX0, f.fluidCellX1, f.fluidCellZ0, f.fluidCellZ1));
+            int my0 = floor(f.boxFeetY + FLUID_DEFLATE), my1 = ceil(f.boxHeadY - FLUID_DEFLATE) - 1;
+            int mx0 = floor(f.boxMinX + FLUID_DEFLATE), mx1 = ceil(f.boxMaxX - FLUID_DEFLATE) - 1;
+            int mz0 = floor(f.boxMinZ + FLUID_DEFLATE), mz1 = ceil(f.boxMaxZ - FLUID_DEFLATE) - 1;
+            if (my0 != f.fluidCellY0 || my1 != f.fluidCellY1 || mx0 != f.fluidCellX0
+                    || mx1 != f.fluidCellX1 || mz0 != f.fluidCellZ0 || mz1 != f.fluidCellZ1) {
+                sb.append(String.format(Locale.ROOT, " MISMATCH-mc y[%d..%d] x[%d..%d] z[%d..%d]",
+                        my0, my1, mx0, mx1, mz0, mz1));
+            }
+            if (f.wetCellFound) {
+                sb.append(String.format(Locale.ROOT, " wet(%d,%d,%d) surf%.5f need%.5f",
+                        f.wetCellX, f.wetCellY, f.wetCellZ, f.wetCellSurface, f.boxFeetY + FLUID_DEFLATE));
+            } else {
+                sb.append(" dry");
+            }
+            if (f.has(TraceFrame.FLAG_RAW_SPRINT)) sb.append(" rspr");
+            if (f.has(TraceFrame.FLAG_EYE_IN_WATER)) sb.append(" eyewet");
+            if (f.has(TraceFrame.FLAG_WATER_AT_FEET)) sb.append(" feetwet");
+            if (f.has(TraceFrame.FLAG_SWIMMING)) sb.append(" swim");
+            sb.append(String.format(Locale.ROOT, " echo%s(spr%d swim%d)",
+                    f.has(TraceFrame.FLAG_ECHO_LANDED) ? "!" : "",
+                    f.has(TraceFrame.FLAG_ECHO_SPRINT) ? 1 : 0,
+                    f.has(TraceFrame.FLAG_ECHO_SWIM) ? 1 : 0));
+        }
         if (contexts.contains(PhysicsDebugContext.LAVA)) {
             sb.append(String.format(Locale.ROOT, " | lava fric%.3f acc%.3f push(%+.3f,%+.3f,%+.3f)",
                     f.fluidFriction, f.fluidAccel, f.pushX, f.pushY, f.pushZ));
@@ -135,6 +168,14 @@ public final class TraceFormatter {
 
     private static double cap(double value) {
         return Math.min(value, 9.999);
+    }
+
+    private static int floor(double value) {
+        return (int) Math.floor(value);
+    }
+
+    private static int ceil(double value) {
+        return (int) Math.ceil(value);
     }
 
     private static String name(Enum<?>[] values, byte ordinal) {

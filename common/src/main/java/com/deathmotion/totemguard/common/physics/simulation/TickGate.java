@@ -22,7 +22,6 @@ import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.area.MotionArea;
 import com.deathmotion.totemguard.common.physics.prescan.DeclineCheck;
 import com.deathmotion.totemguard.common.physics.prescan.FastDetector;
-import com.deathmotion.totemguard.common.physics.prescan.GroundSpoofDetector;
 import com.deathmotion.totemguard.common.physics.prescan.TeleportFilter;
 import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
 import com.deathmotion.totemguard.common.physics.verdict.DeclineReason;
@@ -42,7 +41,6 @@ public final class TickGate {
 
     private final TeleportFilter teleportFilter = new TeleportFilter();
     private final FastDetector fastDetector = new FastDetector();
-    private final GroundSpoofDetector groundSpoofDetector = new GroundSpoofDetector();
     private boolean lastSleeping;
     private boolean sleepExiting;
     private int sleepGrace;
@@ -66,8 +64,7 @@ public final class TickGate {
     }
 
     public void evaluateSelf(Data data, WorldMirror world, BlockReader reader, EngineActor actor,
-                             MovementData movement, Location current,
-                             double dx, double dy, double dz, double observedSpeed) {
+                             MovementData movement, Location current, double observedSpeed) {
         kind = Kind.PROCEED;
         reason = null;
         reseed = false;
@@ -143,14 +140,8 @@ public final class TickGate {
             return;
         }
 
-        if (groundSpoofDetector.provoked(movement.isOnGround(), dy)) {
-            kind = Kind.FLAG;
-            breach = BoundBreach.GROUNDSPOOF;
-            horizontalExcess = 0.0;
-            verticalExcess = Math.abs(dy) - GroundSpoofDetector.VERTICAL_EPS;
-            return;
-        }
-        switch (fastDetector.evaluate(observedSpeed, data.getExternalVelocityData().isActive())) {
+        double fastCap = FastDetector.cap(data.getAttributeData().movementSpeed());
+        switch (fastDetector.evaluate(observedSpeed, fastCap, data.getExternalVelocityData().isActive())) {
             case DECLINE -> {
                 decline(DeclineReason.FAST, true, CarriedMode.KEEP);
                 return;
@@ -158,7 +149,7 @@ public final class TickGate {
             case FLAG -> {
                 kind = Kind.FLAG;
                 breach = BoundBreach.FAST;
-                horizontalExcess = observedSpeed - FastDetector.HORIZONTAL_CAP;
+                horizontalExcess = observedSpeed - fastCap;
                 verticalExcess = 0.0;
                 return;
             }
@@ -186,7 +177,6 @@ public final class TickGate {
     public void clearHistory() {
         teleportFilter.reset();
         fastDetector.reset();
-        groundSpoofDetector.reset();
         lastSleeping = false;
         sleepExiting = false;
         sleepGrace = 0;

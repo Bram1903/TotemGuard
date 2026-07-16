@@ -253,9 +253,12 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
             Object value = meta.getValue();
             if (index == 0 && value instanceof Byte sharedFlags) {
                 final boolean gliding = (sharedFlags & 0x80) != 0;
+                final boolean echoedSprinting = (sharedFlags & 0x08) != 0;
+                final boolean echoedSwimming = (sharedFlags & 0x10) != 0;
                 latencyHandler.compensate(event, () -> {
                     data.setGliding(gliding);
                     data.getGlideData().answerClaim();
+                    data.onSharedFlagsEcho(echoedSprinting, echoedSwimming);
                 });
             } else if (index == livingFlagsIndex && value instanceof Byte livingFlags) {
                 final boolean spinAttacking = (livingFlags & 0x04) != 0;

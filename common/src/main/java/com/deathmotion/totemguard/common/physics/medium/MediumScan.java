@@ -42,6 +42,13 @@ public final class MediumScan {
                               double sweptMinX, double sweptMinY, double sweptMinZ,
                               double sweptMaxX, double sweptMaxY, double sweptMaxZ) {
         out.reset();
+        out.boxMinX(minX);
+        out.boxFeetY(feetY);
+        out.boxMinZ(minZ);
+        out.boxMaxX(maxX);
+        out.boxHeadY(headY);
+        out.boxMaxZ(maxZ);
+        out.eyeSampleY(eyeY);
         if (pushedByFluid) {
             FlowSolver.solve(reader, out, lavaFast, false, modernFluidPush,
                     minX, feetY, minZ, maxX, headY, maxZ);
@@ -49,6 +56,15 @@ public final class MediumScan {
         int sx0 = floor(minX), sx1 = floor(maxX);
         int sy0 = floor(feetY), sy1 = floor(headY);
         int sz0 = floor(minZ), sz1 = floor(maxZ);
+        int fx0 = floor(minX + FLUID_BOX_DEFLATE), fx1 = ceil(maxX - FLUID_BOX_DEFLATE) - 1;
+        int fy0 = floor(feetY + FLUID_BOX_DEFLATE), fy1 = ceil(headY - FLUID_BOX_DEFLATE) - 1;
+        int fz0 = floor(minZ + FLUID_BOX_DEFLATE), fz1 = ceil(maxZ - FLUID_BOX_DEFLATE) - 1;
+        out.fluidCellX0(fx0);
+        out.fluidCellX1(fx1);
+        out.fluidCellY0(fy0);
+        out.fluidCellY1(fy1);
+        out.fluidCellZ0(fz0);
+        out.fluidCellZ1(fz1);
         int wx0 = floor(sweptMinX), wx1 = floor(sweptMaxX);
         int wy0 = floor(sweptMinY), wy1 = floor(sweptMaxY);
         int wz0 = floor(sweptMinZ), wz1 = floor(sweptMaxZ);
@@ -61,11 +77,13 @@ public final class MediumScan {
         for (int x = wx0; x <= wx1; x++) {
             for (int z = wz0; z <= wz1; z++) {
                 boolean inStartColumn = x >= sx0 && x <= sx1 && z >= sz0 && z <= sz1;
+                boolean inFluidColumn = x >= fx0 && x <= fx1 && z >= fz0 && z <= fz1;
                 long factsAbove = 0L;
                 boolean aboveValid = false;
                 for (int y = wy1; y >= wy0; y--) {
                     long facts = reader.facts(x, y, z);
                     boolean inStart = inStartColumn && y >= sy0 && y <= sy1;
+                    boolean inFluidBox = inFluidColumn && y >= fy0 && y <= fy1;
                     if (stuckOnPath && StateFacts.is(facts, StateFacts.STUCK)) {
                         sweptStuck = true;
                         boolean powderSnow = StateFacts.isPowderSnowStuck(facts);
@@ -86,13 +104,21 @@ public final class MediumScan {
                     if (inStart && StateFacts.is(facts, StateFacts.ANY_FLUID)) {
                         long above = aboveValid ? factsAbove : reader.facts(x, y + 1, z);
                         boolean lava = StateFacts.is(facts, StateFacts.LAVA);
-                        if (!(lava ? out.lava() : out.water())) {
-                            double height = StateFacts.is(above, StateFacts.ANY_FLUID)
+                        if (inFluidBox && !(lava ? out.lava() : out.water())) {
+                            double height = StateFacts.is(above, lava ? StateFacts.LAVA : StateFacts.WATER)
                                     ? 1.0
                                     : StateFacts.fluidHeight(facts);
                             if (y + height >= fluidThreshold) {
-                                if (lava) out.lava(true);
-                                else out.water(true);
+                                if (lava) {
+                                    out.lava(true);
+                                } else {
+                                    out.water(true);
+                                    out.wetCellFound(true);
+                                    out.wetCellX(x);
+                                    out.wetCellY(y);
+                                    out.wetCellZ(z);
+                                    out.wetCellSurface(y + height);
+                                }
                             }
                         }
                         if (StateFacts.is(facts, StateFacts.BUBBLE_COLUMN)
@@ -140,11 +166,18 @@ public final class MediumScan {
         int blockY = floor(sampleY);
         long facts = reader.facts(blockX, blockY, blockZ);
         if (!StateFacts.is(facts, StateFacts.WATER)) return false;
-        double surface = blockY + StateFacts.fluidHeight(facts);
+        double height = StateFacts.is(reader.facts(blockX, blockY + 1, blockZ), StateFacts.WATER)
+                ? 1.0
+                : StateFacts.fluidHeight(facts);
+        double surface = blockY + height;
         return modernFluidPush ? sampleY <= surface : sampleY < surface;
     }
 
     private static int floor(double value) {
         return (int) Math.floor(value);
+    }
+
+    private static int ceil(double value) {
+        return (int) Math.ceil(value);
     }
 }

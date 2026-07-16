@@ -24,22 +24,34 @@ import com.deathmotion.totemguard.common.player.data.Data;
 public final class SwimTracker {
 
     private boolean lastSprinting;
+    private boolean lastEyeInWater;
+    private long lastEchoSeq;
 
     public void update(Data data, MediumSample sample) {
         boolean sprinting = data.isSprinting();
+        boolean eyeInWater = sample.eyeInWater();
+        long echoSeq = data.getSharedFlagsEchoSeq();
+        boolean echoed = echoSeq != lastEchoSeq;
+        lastEchoSeq = echoSeq;
+
+        boolean wasSwimming = echoed ? data.isEchoedSwimming() : data.isSwimming();
+        boolean readSprinting = echoed ? data.isEchoedSprinting() : lastSprinting;
+
         boolean swimming;
         if (data.isFlying() || data.isInVehicle()) {
             swimming = false;
-        } else if (data.isSwimming()) {
-            swimming = lastSprinting && sample.water();
+        } else if (wasSwimming) {
+            swimming = readSprinting && sample.water();
         } else {
-            swimming = lastSprinting && sample.eyeInWater() && sample.water() && sample.waterAtFeet();
+            swimming = readSprinting && lastEyeInWater && sample.waterAtFeet();
         }
         data.setSwimming(swimming);
         lastSprinting = sprinting;
+        lastEyeInWater = eyeInWater;
     }
 
     public void reset() {
         lastSprinting = false;
+        lastEyeInWater = false;
     }
 }

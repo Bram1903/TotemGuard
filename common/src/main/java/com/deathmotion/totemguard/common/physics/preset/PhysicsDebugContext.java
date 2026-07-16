@@ -28,7 +28,8 @@ public enum PhysicsDebugContext {
     LAVA,
     CLIMB,
     GLIDE,
-    VEHICLE;
+    VEHICLE,
+    FLUIDBOX;
 
     public static Set<PhysicsDebugContext> parse(List<String> raw) {
         EnumSet<PhysicsDebugContext> set = EnumSet.noneOf(PhysicsDebugContext.class);
@@ -49,6 +50,7 @@ public enum PhysicsDebugContext {
             case "climb", "climbing", "ladder", "vine" -> CLIMB;
             case "glide", "gliding", "elytra" -> GLIDE;
             case "vehicle", "vehicles", "boat" -> VEHICLE;
+            case "fluidbox", "fluid-box", "membership" -> FLUIDBOX;
             default -> null;
         };
     }

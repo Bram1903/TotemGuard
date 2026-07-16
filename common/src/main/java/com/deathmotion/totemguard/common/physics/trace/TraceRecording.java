@@ -50,6 +50,7 @@ public final class TraceRecording {
     private byte stagedLiveCount = 1;
     private TickRecorder recorder;
     private long tickCounter;
+    private long lastEchoSeq;
 
     public TraceRecording(EngineActor actor, Data data, EngineContext context) {
         this.actor = actor;
@@ -92,6 +93,7 @@ public final class TraceRecording {
     public void reset() {
         if (recorder != null) recorder.clear();
         tickCounter = 0;
+        lastEchoSeq = data.getSharedFlagsEchoSeq();
     }
 
     public boolean dumpNow(String cause) {
@@ -116,6 +118,9 @@ public final class TraceRecording {
                        BlockReader reader, double buffer, double engineFall,
                        double preCarriedX, double preCarriedZ, double preCarriedFloor, double preCarriedCeil) {
         tickCounter++;
+        long echoSeq = data.getSharedFlagsEchoSeq();
+        boolean echoLanded = echoSeq != lastEchoSeq;
+        lastEchoSeq = echoSeq;
         PhysicsDebugLevel level = view.physicsDebugLevel();
         if (!level.recording()) return;
         if (recorder == null) recorder = new TickRecorder();
@@ -160,6 +165,10 @@ public final class TraceRecording {
         frame.ground = (byte) verdict.ground().ordinal();
         frame.flags = flags(contact, sample, ground, input, verdict);
         if (data.getMovementData().isOnGround()) frame.flags |= TraceFrame.FLAG_CLAIMED_GROUND;
+        if (data.isSprinting()) frame.flags |= TraceFrame.FLAG_RAW_SPRINT;
+        if (echoLanded) frame.flags |= TraceFrame.FLAG_ECHO_LANDED;
+        if (data.isEchoedSprinting()) frame.flags |= TraceFrame.FLAG_ECHO_SPRINT;
+        if (data.isEchoedSwimming()) frame.flags |= TraceFrame.FLAG_ECHO_SWIM;
         frame.contributors = stagedContributors;
         stagedContributors = 0L;
         frame.chosenSlot = stagedChosenSlot;
@@ -196,6 +205,15 @@ public final class TraceRecording {
         frame.bubbleAscent = 0.0;
         frame.stuckHorizontal = frame.stuckVertical = 1.0;
         frame.fluidFriction = frame.fluidAccel = 0.0;
+        frame.boxMinX = frame.boxFeetY = frame.boxMinZ = 0.0;
+        frame.boxMaxX = frame.boxHeadY = frame.boxMaxZ = 0.0;
+        frame.eyeSampleY = 0.0;
+        frame.wetCellFound = false;
+        frame.wetCellX = frame.wetCellY = frame.wetCellZ = 0;
+        frame.wetCellSurface = 0.0;
+        frame.fluidCellX0 = frame.fluidCellX1 = 0;
+        frame.fluidCellY0 = frame.fluidCellY1 = 0;
+        frame.fluidCellZ0 = frame.fluidCellZ1 = 0;
         frame.moveSpeed = frame.jumpStrength = frame.stepHeight = 0.0;
         frame.riptideStrength = 0.0;
         frame.fireworkMin = frame.fireworkMax = 0;
@@ -207,6 +225,26 @@ public final class TraceRecording {
             frame.bubbleAscent = sample.bubbleAscent();
             frame.stuckHorizontal = sample.stuckHorizontal();
             frame.stuckVertical = sample.stuckVertical();
+            frame.boxMinX = sample.boxMinX();
+            frame.boxFeetY = sample.boxFeetY();
+            frame.boxMinZ = sample.boxMinZ();
+            frame.boxMaxX = sample.boxMaxX();
+            frame.boxHeadY = sample.boxHeadY();
+            frame.boxMaxZ = sample.boxMaxZ();
+            frame.eyeSampleY = sample.eyeSampleY();
+            frame.wetCellFound = sample.wetCellFound();
+            frame.wetCellX = sample.wetCellX();
+            frame.wetCellY = sample.wetCellY();
+            frame.wetCellZ = sample.wetCellZ();
+            frame.wetCellSurface = sample.wetCellSurface();
+            frame.fluidCellX0 = sample.fluidCellX0();
+            frame.fluidCellX1 = sample.fluidCellX1();
+            frame.fluidCellY0 = sample.fluidCellY0();
+            frame.fluidCellY1 = sample.fluidCellY1();
+            frame.fluidCellZ0 = sample.fluidCellZ0();
+            frame.fluidCellZ1 = sample.fluidCellZ1();
+            if (sample.eyeInWater()) frame.flags |= TraceFrame.FLAG_EYE_IN_WATER;
+            if (sample.waterAtFeet()) frame.flags |= TraceFrame.FLAG_WATER_AT_FEET;
             if (sample.swimSteerWater()) frame.flags |= TraceFrame.FLAG_SWIM_STEER;
             if (sample.climbable()) frame.flags |= TraceFrame.FLAG_CLIMBABLE;
             if (sample.climbableUncertain()) frame.flags |= TraceFrame.FLAG_CLIMB_UNCERTAIN;

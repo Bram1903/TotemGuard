@@ -20,14 +20,18 @@ package com.deathmotion.totemguard.common.physics.prescan;
 
 public final class GroundSpoofDetector {
 
-    public static final double VERTICAL_EPS = 0.1;
+    public static final double SUPPORT_GAP_EPS = 0.02;
 
     private static final int TOLERANCE = 4;
 
     private int streak;
 
-    public boolean provoked(boolean claimedGround, double observedVy) {
-        if (!claimedGround || Math.abs(observedVy) <= VERTICAL_EPS) {
+    public static boolean claimProvablyFalse(boolean claimedGround, boolean groundedEnd, double supportGap) {
+        return claimedGround && !groundedEnd && supportGap > SUPPORT_GAP_EPS;
+    }
+
+    public boolean provoked(boolean claimedGround, boolean groundedEnd, double supportGap) {
+        if (!claimProvablyFalse(claimedGround, groundedEnd, supportGap)) {
             streak = 0;
             return false;
         }

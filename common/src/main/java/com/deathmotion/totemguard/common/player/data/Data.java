@@ -65,6 +65,12 @@ public class Data {
     private int flyChangeGrace;
     private boolean swimming;
     private boolean gliding;
+    @Setter(AccessLevel.NONE)
+    private boolean echoedSprinting;
+    @Setter(AccessLevel.NONE)
+    private boolean echoedSwimming;
+    @Setter(AccessLevel.NONE)
+    private long sharedFlagsEchoSeq;
     private boolean spinAttacking;
     private boolean sleeping;
     private int vehicleId = -1;
@@ -151,6 +157,12 @@ public class Data {
 
     public boolean isInVehicle() {
         return vehicleId != -1;
+    }
+
+    public void onSharedFlagsEcho(boolean sprinting, boolean swimming) {
+        this.echoedSprinting = sprinting;
+        this.echoedSwimming = swimming;
+        this.sharedFlagsEchoSeq++;
     }
 
     public void recordSprinting(boolean sprinting) {

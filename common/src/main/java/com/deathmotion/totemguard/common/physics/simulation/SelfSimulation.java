@@ -39,6 +39,7 @@ import com.deathmotion.totemguard.common.physics.mitigation.MitigationTracker;
 import com.deathmotion.totemguard.common.physics.phase.EmbedExemptions;
 import com.deathmotion.totemguard.common.physics.phase.PhaseTracker;
 import com.deathmotion.totemguard.common.physics.prescan.DeclineCheck;
+import com.deathmotion.totemguard.common.physics.prescan.GroundSpoofDetector;
 import com.deathmotion.totemguard.common.physics.prescan.TrustTracker;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
 import com.deathmotion.totemguard.common.physics.push.EntityPushTracker;
@@ -75,7 +76,6 @@ public final class SelfSimulation {
     private static final double HOVER_EXCESS = MotionDefaults.GRAVITY;
     private static final int HOVER_SETBACK_LIMIT = 2;
     private static final double GLIDE_PRESERVE_GAP = 0.1;
-    private static final double GROUND_CLAIM_FALSE_GAP = 0.02;
     private static final double VERTICAL_DUAL_GAP = 0.05;
     private static final double STEP_FROM_FALL_EPS = 1.0e-4;
     private static final int STUCK_SETTLE_SCANS = 3;
@@ -106,6 +106,7 @@ public final class SelfSimulation {
     private final PistonWindow pistons;
     private final RiptideWindow riptide;
     private final PhaseTracker phase = new PhaseTracker();
+    private final GroundSpoofDetector groundSpoof = new GroundSpoofDetector();
     private final SwimTracker swim = new SwimTracker();
     private final EmbedExemptions exemptions = new EmbedExemptions();
     private final PlayerBody body;
@@ -134,6 +135,8 @@ public final class SelfSimulation {
     private boolean scannedThisTick;
     private boolean doubleMoveThisTick;
     private boolean honeySlideActive;
+    private boolean deltaZeroedDisplacement;
+    private boolean deltaZeroedLastTick;
     private GroundFacts groundThisTick;
     private ControlEnvelope inputThisTick;
     private MediumModel mediumThisTick;
@@ -218,6 +221,8 @@ public final class SelfSimulation {
         scannedThisTick = false;
         doubleMoveThisTick = false;
         honeySlideActive = false;
+        deltaZeroedLastTick = deltaZeroedDisplacement;
+        deltaZeroedDisplacement = false;
         groundThisTick = null;
         inputThisTick = null;
         mediumThisTick = null;
@@ -234,11 +239,17 @@ public final class SelfSimulation {
             }
 
             double observedSpeed = ClientMath.horizontalDistance(dx, dz);
-            gate.evaluateSelf(data, world, reader, actor, movement, current, dx, dy, dz, observedSpeed);
+            gate.evaluateSelf(data, world, reader, actor, movement, current, observedSpeed);
             if (gate.kind() == TickGate.Kind.DECLINE) {
                 switch (gate.carriedMode()) {
-                    case REST -> carried.collapse(MotionArea.rest());
-                    case REST_JUMP_CEILING -> carried.collapse(new MotionArea(0.0, 0.0, 0.0, 0.0, jumpCeiling()));
+                    case REST -> {
+                        carried.collapse(MotionArea.rest());
+                        deltaZeroedDisplacement = true;
+                    }
+                    case REST_JUMP_CEILING -> {
+                        carried.collapse(new MotionArea(0.0, 0.0, 0.0, 0.0, jumpCeiling()));
+                        deltaZeroedDisplacement = true;
+                    }
                     case FROZEN -> {
                         double gravity = data.getAttributeData().gravity();
                         double jumpCeiling = jumpCeiling();
@@ -265,6 +276,12 @@ public final class SelfSimulation {
                     data.getAttributeData().stepHeight(), carried.minFloorVy(), data.isSneaking(),
                     supportTracker);
             groundThisTick = ground;
+            double supportGap = contact.nearestSupportGap();
+            if (groundSpoof.provoked(movement.isOnGround(), ground.groundedEnd(), supportGap)) {
+                flagDetection(BoundBreach.GROUNDSPOOF, dx, dy, dz, 0.0,
+                        Math.min(supportGap, HARVEST_DOWN_MARGIN) - GroundSpoofDetector.SUPPORT_GAP_EPS);
+                return;
+            }
             bubble.observe(sample.bubbleAscent());
             body.mediums().water().advanceEntryWindow(sample.fluid(), ground.wasFluid());
             stuckFactor.advanceWindow(sample.stuckAlongPath());
@@ -303,7 +320,7 @@ public final class SelfSimulation {
         boolean claimed = data.getMovementData().isOnGround();
         double gap = contact.nearestSupportGap();
         boolean rewriteTo;
-        if (claimed && !groundThisTick.groundedEnd() && gap > GROUND_CLAIM_FALSE_GAP) {
+        if (GroundSpoofDetector.claimProvablyFalse(claimed, groundThisTick.groundedEnd(), gap)) {
             rewriteTo = false;
         } else if (!claimed && groundThisTick.groundedEnd()
                 && gap <= SupportingBlockTracker.SLAB_DEPTH && !contact.supportApproximate()) {
@@ -345,6 +362,9 @@ public final class SelfSimulation {
 
     public void clearHistory() {
         gate.clearHistory();
+        groundSpoof.reset();
+        deltaZeroedDisplacement = false;
+        deltaZeroedLastTick = false;
         supportTracker.invalidate();
         hover.reset();
         bubble.reset();
@@ -894,7 +914,7 @@ public final class SelfSimulation {
     private void spawnAirRegime(AreaBounds chosenSlotBounds, MediumModel medium, ControlEnvelope input,
                                 GroundFacts ground, boolean stepped, boolean stepFromFall,
                                 double frictionMax, double speedFactor) {
-        if (!stepped || (!ground.groundedEnd() && !stepFromFall)) return;
+        if ((!stepped && !deltaZeroedLastTick) || (!ground.groundedEnd() && !stepFromFall)) return;
         if (medium != body.mediums().land()) return;
         boolean claimedGround = data.getMovementData().isOnGround();
         if (claimedGround && previousClaimedGround) return;

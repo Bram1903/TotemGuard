@@ -100,7 +100,7 @@ physics-engine:
   # level: off = none, summary = evidence ring dumped on violation, trace = a line per tick.
   # context: extra detail blocks appended to each row, opt in only what you are debugging
   #          (e.g. [glide, water] for a glide into water). Any of land, water, lava, climb,
-  #          glide, vehicle. Empty = plain rows.
+  #          glide, vehicle, fluidbox. Empty = plain rows.
   debug:
     level: off
     context: [ ]
