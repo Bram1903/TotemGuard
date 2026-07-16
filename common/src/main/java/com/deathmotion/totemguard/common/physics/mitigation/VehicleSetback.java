@@ -36,9 +36,9 @@ public final class VehicleSetback {
     }
 
     public boolean requestSetback(MitigationService service, MountFilter mounts, int vehicleId,
-                                  boolean supportsEndTick, long nowMs) {
+                                  long nowMs) {
         if (!mounts.seeded() || !safeKnown) return false;
-        boolean issued = service.bootRider(safeX, safeY, safeZ, supportsEndTick);
+        boolean issued = service.bootRider(safeX, safeY, safeZ);
         if (issued) {
             mounts.markReentry(vehicleId, safeX, safeY, safeZ, nowMs + REENTRY_BLOCK_MS);
         }

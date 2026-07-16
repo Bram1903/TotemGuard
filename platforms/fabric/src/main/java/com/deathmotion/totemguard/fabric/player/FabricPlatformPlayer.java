@@ -99,6 +99,16 @@ public class FabricPlatformPlayer implements PlatformPlayer {
     }
 
     @Override
+    public void stopRiding() {
+        MinecraftServer server = resolveServer();
+        if (server == null) return;
+        server.execute(() -> {
+            if (fabricPlayer.hasDisconnected()) return;
+            fabricPlayer.stopRiding();
+        });
+    }
+
+    @Override
     public void resetFallDistance() {
         MinecraftServer server = resolveServer();
         if (server == null) return;

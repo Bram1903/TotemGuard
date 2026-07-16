@@ -104,6 +104,14 @@ public class PaperPlatformPlayer implements PlatformPlayer {
     }
 
     @Override
+    public void stopRiding() {
+        scheduler.runForEntity(paperPlayer, () -> {
+            if (!paperPlayer.isOnline()) return;
+            paperPlayer.leaveVehicle();
+        }, null);
+    }
+
+    @Override
     public void resetFallDistance() {
         scheduler.runForEntity(paperPlayer, () -> {
             if (!paperPlayer.isOnline()) return;

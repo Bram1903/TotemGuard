@@ -41,6 +41,8 @@ public interface PlatformPlayer {
 
     void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch);
 
+    void stopRiding();
+
     void resetFallDistance();
 
     boolean dealFallDamage(double amount);

@@ -31,8 +31,6 @@ import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.util.Vector3i;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerInput;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSteerVehicle;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerAcknowledgeBlockChanges;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
@@ -96,6 +94,10 @@ public class MitigationService {
     }
 
     public boolean setback(Vector3d target) {
+        return setback(target, false);
+    }
+
+    private boolean setback(Vector3d target, boolean forceTeleport) {
         if (pendingSetback) return false;
         PlatformPlayer platformPlayer = data.getPlayer().getPlatformPlayer();
         if (platformPlayer == null) return false;
@@ -106,7 +108,8 @@ public class MitigationService {
         double dx = target.getX() - current.getX();
         double dy = target.getY() - current.getY();
         double dz = target.getZ() - current.getZ();
-        boolean packet = dx * dx + dy * dy + dz * dz <= PACKET_SETBACK_MAX * PACKET_SETBACK_MAX;
+        boolean packet = !forceTeleport
+                && dx * dx + dy * dy + dz * dz <= PACKET_SETBACK_MAX * PACKET_SETBACK_MAX;
 
         if (TGPlatform.getInstance().getEventBus().getSetback().fire(
                 data.getPlayer(), current.getX(), current.getY(), current.getZ(),
@@ -132,14 +135,11 @@ public class MitigationService {
         return true;
     }
 
-    public boolean bootRider(double x, double y, double z, boolean supportsEndTick) {
-        if (!setback(new Vector3d(x, y, z))) return false;
-        if (supportsEndTick) {
-            data.getPlayer().getUser().receivePacket(
-                    new WrapperPlayClientPlayerInput(false, false, false, false, false, true, false));
-        } else {
-            data.getPlayer().getUser().receivePacket(new WrapperPlayClientSteerVehicle(0.0f, 0.0f, (byte) 0x02));
-        }
+    public boolean bootRider(double x, double y, double z) {
+        PlatformPlayer platformPlayer = data.getPlayer().getPlatformPlayer();
+        if (platformPlayer == null) return false;
+        if (!setback(new Vector3d(x, y, z), true)) return false;
+        platformPlayer.stopRiding();
         return true;
     }
 

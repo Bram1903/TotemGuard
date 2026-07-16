@@ -132,6 +132,7 @@ public final class VehicleSimulation {
         reader.resetCounters();
         VehicleData vehicle = data.getVehicleData();
         int vehicleId = data.getVehicleId();
+        verdict = idle(verdict.body());
 
         if (data.getMitigationService().setbackPending()) {
             markBoostLag(vehicleId);
@@ -139,8 +140,7 @@ public final class VehicleSimulation {
         }
         long now = System.currentTimeMillis();
         if (vehicleId >= 0 && mounts.reentryBlocked(vehicleId, now)
-                && data.getMitigationService().bootRider(mounts.reentryX(), mounts.reentryY(), mounts.reentryZ(),
-                gates.endTick())) {
+                && data.getMitigationService().bootRider(mounts.reentryX(), mounts.reentryY(), mounts.reentryZ())) {
             markBoostLag(vehicleId);
             return;
         }
@@ -211,7 +211,7 @@ public final class VehicleSimulation {
 
     public boolean requestSetback() {
         return setback.requestSetback(data.getMitigationService(), mounts, data.getVehicleId(),
-                gates.endTick(), System.currentTimeMillis());
+                System.currentTimeMillis());
     }
 
     public void reset() {
