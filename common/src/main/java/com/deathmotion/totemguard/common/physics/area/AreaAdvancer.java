@@ -35,17 +35,29 @@ public final class AreaAdvancer {
             bounds.legalVy(Math.min(Math.max(obsY, bounds.judgedFloor()), bounds.ceiling()));
             return;
         }
-        double centerX = altCenterUsed ? bounds.altCenterX() : bounds.centerX();
-        double centerZ = altCenterUsed ? bounds.altCenterZ() : bounds.centerZ();
+        double referenceX = altCenterUsed ? bounds.altCenterX() : bounds.centerX();
+        double referenceZ = altCenterUsed ? bounds.altCenterZ() : bounds.centerZ();
         double reach = bounds.radius() + driftSlack;
-        double deviation = OutwardResidual.deviation(obsX, obsZ, centerX, centerZ);
-        if (deviation <= reach || deviation <= 0.0) {
-            bounds.legalX(obsX);
-            bounds.legalZ(obsZ);
-        } else {
+
+        double adjustedX = bounds.pushAdjustedX(obsX, referenceX);
+        double adjustedZ = bounds.pushAdjustedZ(obsZ, referenceZ);
+        double admittedX = obsX;
+        double admittedZ = obsZ;
+        double deviation = OutwardResidual.deviation(obsX, obsZ, adjustedX, adjustedZ);
+        if (deviation > reach && deviation > 0.0) {
             double s = reach / deviation;
-            bounds.legalX(OutwardResidual.collapseAxis(obsX, centerX, s));
-            bounds.legalZ(OutwardResidual.collapseAxis(obsZ, centerZ, s));
+            admittedX = OutwardResidual.collapseAxis(obsX, adjustedX, s);
+            admittedZ = OutwardResidual.collapseAxis(obsZ, adjustedZ, s);
+        }
+
+        double velocityDeviation = OutwardResidual.deviation(admittedX, admittedZ, referenceX, referenceZ);
+        if (velocityDeviation > reach && velocityDeviation > 0.0) {
+            double s = reach / velocityDeviation;
+            bounds.legalX(OutwardResidual.collapseAxis(admittedX, referenceX, s));
+            bounds.legalZ(OutwardResidual.collapseAxis(admittedZ, referenceZ, s));
+        } else {
+            bounds.legalX(admittedX);
+            bounds.legalZ(admittedZ);
         }
         bounds.legalVy(Math.min(Math.max(obsY, bounds.judgedFloor()), bounds.ceiling()));
     }

@@ -57,20 +57,19 @@ public final class OutwardResidual {
         return observed * s;
     }
 
-    public static double segmentExcess(double obsX, double obsZ, double centerX, double centerZ,
-                                       double dirX, double dirZ, double reachMin, double reachMax,
-                                       double radius) {
-        double along = segmentAlong(obsX, obsZ, centerX, centerZ, dirX, dirZ, reachMin, reachMax);
-        double closestX = centerX + dirX * along;
-        double closestZ = centerZ + dirZ * along;
-        return ClientMath.horizontalDistance(obsX - closestX, obsZ - closestZ) - radius;
+    public static double segmentExcess(AreaBounds bounds, double obsX, double obsZ) {
+        double along = segmentAlong(obsX, obsZ, bounds.centerX(), bounds.centerZ(),
+                bounds.segDirX(), bounds.segDirZ(), bounds.segMin(), bounds.segMax());
+        double closestX = bounds.pushAdjustedX(obsX, bounds.centerX() + bounds.segDirX() * along);
+        double closestZ = bounds.pushAdjustedZ(obsZ, bounds.centerZ() + bounds.segDirZ() * along);
+        return ClientMath.horizontalDistance(obsX - closestX, obsZ - closestZ) - bounds.radius();
     }
 
     public static void segmentClosest(AreaBounds bounds, double obsX, double obsZ) {
         double along = segmentAlong(obsX, obsZ, bounds.centerX(), bounds.centerZ(),
                 bounds.segDirX(), bounds.segDirZ(), bounds.segMin(), bounds.segMax());
-        bounds.segClosestX(bounds.centerX() + bounds.segDirX() * along);
-        bounds.segClosestZ(bounds.centerZ() + bounds.segDirZ() * along);
+        bounds.segClosestX(bounds.pushAdjustedX(obsX, bounds.centerX() + bounds.segDirX() * along));
+        bounds.segClosestZ(bounds.pushAdjustedZ(obsZ, bounds.centerZ() + bounds.segDirZ() * along));
     }
 
     public static void segmentCollapse(AreaBounds bounds, double obsX, double obsZ, double reach) {

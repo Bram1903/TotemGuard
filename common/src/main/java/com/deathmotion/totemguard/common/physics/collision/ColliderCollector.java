@@ -106,12 +106,26 @@ public final class ColliderCollector {
         buffer.cell(ColliderBuffer.NO_CELL);
         for (int i = 0; i < pistons.sceneCount(); i++) {
             PistonData.Scene scene = pistons.scene(i);
-            double bMinX = Math.min(scene.minX(), scene.minX() + scene.dirX());
-            double bMinY = Math.min(scene.minY(), scene.minY() + scene.dirY());
-            double bMinZ = Math.min(scene.minZ(), scene.minZ() + scene.dirZ());
-            double bMaxX = Math.max(scene.maxX(), scene.maxX() + scene.dirX()) + 1.0;
-            double bMaxY = Math.max(scene.maxY(), scene.maxY() + scene.dirY()) + 1.0;
-            double bMaxZ = Math.max(scene.maxZ(), scene.maxZ() + scene.dirZ()) + 1.0;
+            if (scene.cellsExact()) {
+                for (int c = 0; c < scene.cellCount(); c++) {
+                    long cell = scene.cell(c);
+                    double bMinX = PistonData.Scene.cellX(cell);
+                    double bMinY = PistonData.Scene.cellY(cell);
+                    double bMinZ = PistonData.Scene.cellZ(cell);
+                    if (bMinX + 1.0 < minX || bMinX > maxX || bMinY + 1.0 < minY || bMinY > maxY
+                            || bMinZ + 1.0 < minZ || bMinZ > maxZ) {
+                        continue;
+                    }
+                    buffer.accept(bMinX, bMinY, bMinZ, bMinX + 1.0, bMinY + 1.0, bMinZ + 1.0);
+                }
+                continue;
+            }
+            double bMinX = scene.minX();
+            double bMinY = scene.minY();
+            double bMinZ = scene.minZ();
+            double bMaxX = scene.maxX() + 1.0;
+            double bMaxY = scene.maxY() + 1.0;
+            double bMaxZ = scene.maxZ() + 1.0;
             if (bMaxX < minX || bMinX > maxX || bMaxY < minY || bMinY > maxY
                     || bMaxZ < minZ || bMinZ > maxZ) {
                 continue;

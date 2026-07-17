@@ -27,13 +27,16 @@ public final class AreaJudge {
         boolean altUsed = false;
         double horizontal;
         if (bounds.hasSegment()) {
-            horizontal = OutwardResidual.segmentExcess(obsX, obsZ, bounds.centerX(), bounds.centerZ(),
-                    bounds.segDirX(), bounds.segDirZ(), bounds.segMin(), bounds.segMax(), bounds.radius());
+            horizontal = OutwardResidual.segmentExcess(bounds, obsX, obsZ);
         } else {
-            horizontal = OutwardResidual.excess(obsX, obsZ, bounds.centerX(), bounds.centerZ(), bounds.radius());
+            horizontal = OutwardResidual.excess(obsX, obsZ,
+                    bounds.pushAdjustedX(obsX, bounds.centerX()),
+                    bounds.pushAdjustedZ(obsZ, bounds.centerZ()), bounds.radius());
         }
         if (bounds.hasAltCenter() && horizontal > 0.0) {
-            double altExcess = OutwardResidual.excess(obsX, obsZ, bounds.altCenterX(), bounds.altCenterZ(), bounds.radius());
+            double altExcess = OutwardResidual.excess(obsX, obsZ,
+                    bounds.pushAdjustedX(obsX, bounds.altCenterX()),
+                    bounds.pushAdjustedZ(obsZ, bounds.altCenterZ()), bounds.radius());
             if (altExcess < horizontal) {
                 horizontal = altExcess;
                 altUsed = true;

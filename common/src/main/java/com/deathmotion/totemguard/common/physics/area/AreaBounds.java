@@ -40,6 +40,11 @@ public final class AreaBounds {
     private double segMax;
     private double segClosestX;
     private double segClosestZ;
+    private double pushLoX;
+    private double pushHiX;
+    private double pushLoZ;
+    private double pushHiZ;
+    private boolean pistonReached;
     private double ceiling;
     private double floor;
     private double descentSlack;
@@ -64,6 +69,11 @@ public final class AreaBounds {
         segMax = 0.0;
         segClosestX = 0.0;
         segClosestZ = 0.0;
+        pushLoX = 0.0;
+        pushHiX = 0.0;
+        pushLoZ = 0.0;
+        pushHiZ = 0.0;
+        pistonReached = false;
         ceiling = area.ceilVy();
         floor = area.floorVy();
         descentSlack = 0.0;
@@ -106,5 +116,25 @@ public final class AreaBounds {
         segDirZ = dirZ;
         segMin = min;
         segMax = max;
+    }
+
+    public void extendPushX(double lo, double hi) {
+        if (lo < pushLoX) pushLoX = lo;
+        if (hi > pushHiX) pushHiX = hi;
+    }
+
+    public void extendPushZ(double lo, double hi) {
+        if (lo < pushLoZ) pushLoZ = lo;
+        if (hi > pushHiZ) pushHiZ = hi;
+    }
+
+    public double pushAdjustedX(double observed, double reference) {
+        if (pushLoX == 0.0 && pushHiX == 0.0) return reference;
+        return reference + Math.max(pushLoX, Math.min(pushHiX, observed - reference));
+    }
+
+    public double pushAdjustedZ(double observed, double reference) {
+        if (pushLoZ == 0.0 && pushHiZ == 0.0) return reference;
+        return reference + Math.max(pushLoZ, Math.min(pushHiZ, observed - reference));
     }
 }

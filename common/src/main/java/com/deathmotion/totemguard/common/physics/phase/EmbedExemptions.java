@@ -60,6 +60,10 @@ public final class EmbedExemptions implements ExemptCells {
         return !cells.isEmpty() && cells.contains(PendingBlocks.blockKey(x, y, z));
     }
 
+    public boolean hasAny() {
+        return !cells.isEmpty();
+    }
+
     public void seedBodyOverlaps(BlockReader reader, ShapeQuery query,
                                  double minX, double minY, double minZ,
                                  double maxX, double maxY, double maxZ) {

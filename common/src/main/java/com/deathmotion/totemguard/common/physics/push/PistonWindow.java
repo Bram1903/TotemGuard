@@ -20,13 +20,27 @@ package com.deathmotion.totemguard.common.physics.push;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.player.data.PistonData;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
+@Accessors(fluent = true)
 public final class PistonWindow {
 
     private final PistonData pistons;
 
     private double playerMinX, playerMinY, playerMinZ;
     private double playerMaxX, playerMaxY, playerMaxZ;
+
+    private double pushLoX, pushHiX;
+    @Getter
+    private double pushLoY;
+    private double pushHiY;
+    private double pushLoZ, pushHiZ;
+    @Getter
+    private int launchMask;
+    @Getter
+    private boolean reaching;
+    private boolean touching;
 
     public PistonWindow(PistonData pistons) {
         this.pistons = pistons;
@@ -42,52 +56,64 @@ public final class PistonWindow {
         this.playerMaxZ = maxZ;
     }
 
-    public boolean apply(AreaBounds bounds) {
-        if (!pistons.isActive()) return false;
-        boolean applied = false;
-        double launchX = 0.0, launchZ = 0.0;
-        double launchUp = 0.0, launchDown = 0.0;
+    public void evaluate() {
+        pushLoX = 0.0;
+        pushHiX = 0.0;
+        pushLoY = 0.0;
+        pushHiY = 0.0;
+        pushLoZ = 0.0;
+        pushHiZ = 0.0;
+        launchMask = 0;
+        reaching = false;
+        touching = false;
+        if (!pistons.isActive()) return;
         for (int i = 0; i < pistons.sceneCount(); i++) {
             PistonData.Scene scene = pistons.scene(i);
             if (!reaches(scene)) continue;
-            applied = true;
-
-            double px = PistonData.PUSH_STEP * scene.dirX();
-            double pz = PistonData.PUSH_STEP * scene.dirZ();
-            if (px != 0.0) bounds.centerX(bounds.centerX() + px);
-            if (pz != 0.0) bounds.centerZ(bounds.centerZ() + pz);
-            if (scene.dirY() > 0) bounds.ceiling(bounds.ceiling() + PistonData.PUSH_STEP);
-            else if (scene.dirY() < 0) bounds.addDescentSlack(PistonData.PUSH_STEP);
-            if (scene.honeyFront() && (px != 0.0 || pz != 0.0)) {
-                bounds.expandRadius(PistonData.PUSH_STEP);
-            }
-
-            if (scene.slimeFront()) {
-                launchX += PistonData.SLIME_LAUNCH * scene.dirX();
-                launchZ += PistonData.SLIME_LAUNCH * scene.dirZ();
-                if (scene.dirY() > 0) launchUp = PistonData.SLIME_LAUNCH;
-                else if (scene.dirY() < 0) launchDown = -PistonData.SLIME_LAUNCH;
-            }
+            reaching = true;
+            if (overlaps(scene)) touching = true;
+            pushLoX += scene.pushLoX();
+            pushHiX += scene.pushHiX();
+            pushLoY += scene.pushLoY();
+            pushHiY += scene.pushHiY();
+            pushLoZ += scene.pushLoZ();
+            pushHiZ += scene.pushHiZ();
+            launchMask |= scene.launchMask();
         }
-        if (!applied) return false;
+        pushLoX = Math.max(pushLoX, -PistonData.PUSH_STEP);
+        pushHiX = Math.min(pushHiX, PistonData.PUSH_STEP);
+        pushLoY = Math.max(pushLoY, -PistonData.PUSH_STEP);
+        pushHiY = Math.min(pushHiY, PistonData.PUSH_STEP);
+        pushLoZ = Math.max(pushLoZ, -PistonData.PUSH_STEP);
+        pushHiZ = Math.min(pushHiZ, PistonData.PUSH_STEP);
+    }
 
-        if ((launchX != 0.0 || launchZ != 0.0) && !bounds.hasAltCenter()) {
-            bounds.altCenter(bounds.centerX() + launchX, bounds.centerZ() + launchZ);
-        }
-        if (launchUp > 0.0) bounds.ceiling(bounds.ceiling() + launchUp);
-        if (launchDown < 0.0) bounds.addDescentSlack(-launchDown);
+    public double horizontalReach() {
+        return Math.max(Math.max(-pushLoX, pushHiX), Math.max(-pushLoZ, pushHiZ));
+    }
+
+    public boolean apply(AreaBounds bounds) {
+        if (!reaching) return false;
+        if (touching) bounds.pistonReached(true);
+        if (pushLoX != 0.0 || pushHiX != 0.0) bounds.extendPushX(pushLoX, pushHiX);
+        if (pushLoZ != 0.0 || pushHiZ != 0.0) bounds.extendPushZ(pushLoZ, pushHiZ);
+        if (pushHiY > 0.0) bounds.ceiling(bounds.ceiling() + pushHiY);
+        if (pushLoY < 0.0) bounds.addDescentSlack(-pushLoY);
         return true;
     }
 
+    private boolean overlaps(PistonData.Scene scene) {
+        return playerMaxX > scene.minX() && playerMinX < scene.maxX() + 1.0
+                && playerMaxY > scene.minY() && playerMinY < scene.maxY() + 1.0
+                && playerMaxZ > scene.minZ() && playerMinZ < scene.maxZ() + 1.0;
+    }
+
     private boolean reaches(PistonData.Scene scene) {
-        double minX = Math.min(scene.minX(), scene.minX() + scene.dirX());
-        double minY = Math.min(scene.minY(), scene.minY() + scene.dirY());
-        double minZ = Math.min(scene.minZ(), scene.minZ() + scene.dirZ());
-        double maxX = Math.max(scene.maxX(), scene.maxX() + scene.dirX()) + 1.0;
-        double maxY = Math.max(scene.maxY(), scene.maxY() + scene.dirY()) + 1.0;
-        double maxZ = Math.max(scene.maxZ(), scene.maxZ() + scene.dirZ()) + 1.0;
-        return playerMaxX >= minX && playerMinX <= maxX
-                && playerMaxY >= minY && playerMinY <= maxY
-                && playerMaxZ >= minZ && playerMinZ <= maxZ;
+        return playerMaxX >= scene.minX() - PistonData.PUSH_STEP
+                && playerMinX <= scene.maxX() + 1.0 + PistonData.PUSH_STEP
+                && playerMaxY >= scene.minY() - PistonData.PUSH_STEP
+                && playerMinY <= scene.maxY() + 1.0 + PistonData.PUSH_STEP
+                && playerMaxZ >= scene.minZ() - PistonData.PUSH_STEP
+                && playerMinZ <= scene.maxZ() + 1.0 + PistonData.PUSH_STEP;
     }
 }

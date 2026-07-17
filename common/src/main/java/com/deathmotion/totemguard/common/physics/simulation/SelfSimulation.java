@@ -54,6 +54,7 @@ import com.deathmotion.totemguard.common.physics.verdict.*;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
+import com.deathmotion.totemguard.common.player.data.PistonData;
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
@@ -104,6 +105,7 @@ public final class SelfSimulation {
     private final BubbleLift bubble = new BubbleLift();
     private final KnockbackTracker knockback;
     private final PistonWindow pistons;
+    private final SqueezeOutRule squeezeOut = new SqueezeOutRule();
     private final RiptideWindow riptide;
     private final PhaseTracker phase = new PhaseTracker();
     private final GroundSpoofDetector groundSpoof = new GroundSpoofDetector();
@@ -277,7 +279,8 @@ public final class SelfSimulation {
                     supportTracker);
             groundThisTick = ground;
             double supportGap = contact.nearestSupportGap();
-            if (groundSpoof.provoked(movement.isOnGround(), ground.groundedEnd(), supportGap)) {
+            if (!pistons.reaching()
+                    && groundSpoof.provoked(movement.isOnGround(), ground.groundedEnd(), supportGap)) {
                 flagDetection(BoundBreach.GROUNDSPOOF, dx, dy, dz, 0.0,
                         Math.min(supportGap, HARVEST_DOWN_MARGIN) - GroundSpoofDetector.SUPPORT_GAP_EPS);
                 return;
@@ -317,6 +320,7 @@ public final class SelfSimulation {
     public void rewriteGroundClaim(PacketReceiveEvent event) {
         if (!scannedThisTick || groundThisTick == null) return;
         if (verdict.outcome() != TickOutcome.JUDGED) return;
+        if (pistons.reaching()) return;
         boolean claimed = data.getMovementData().isOnGround();
         double gap = contact.nearestSupportGap();
         boolean rewriteTo;
@@ -480,7 +484,14 @@ public final class SelfSimulation {
                 minX, minY, minZ, maxX, maxY, maxZ);
         BorderColliders.fill(colliders, world.border(), previous.getX(), previous.getZ(), half,
                 minX, minY, minZ, maxX, maxY, maxZ);
-        pistons.setPlayerBox(minX, minY, minZ, maxX, maxY, maxZ);
+        pistons.setPlayerBox(
+                Math.min(previous.getX(), current.getX()) - half,
+                Math.min(previous.getY(), current.getY()),
+                Math.min(previous.getZ(), current.getZ()) - half,
+                Math.max(previous.getX(), current.getX()) + half,
+                Math.max(previous.getY(), current.getY()) + height,
+                Math.max(previous.getZ(), current.getZ()) + half);
+        pistons.evaluate();
         sweep.resolve(colliders, contact,
                 previous.getX(), previous.getY(), previous.getZ(),
                 half, height, dx, dy, dz,
@@ -517,6 +528,7 @@ public final class SelfSimulation {
         spawnBits = 0L;
         pendingSpawnCount = 0;
         spawnKnockbackHypothesis(medium, input);
+        spawnPistonLaunch(medium, input);
         MotionArea preStep = carried.union();
         preStepCarriedX = preStep.centerX();
         preStepCarriedZ = preStep.centerZ();
@@ -536,6 +548,17 @@ public final class SelfSimulation {
         Location current = data.getMovementData().getCurrent();
         double half = body.halfWidth();
         double height = body.lastHeight();
+
+        if ((contact.startOverlapping() || exemptions.hasAny())
+                && squeezeOut.evaluate(reader, shapeQuery(current.getY() - dy),
+                current.getX() - dx, current.getY() - dy, current.getZ() - dz, half, height)) {
+            MotionArea union = carried.union();
+            carried.spawn(CarriedHypotheses.Kind.SPARE,
+                    new MotionArea(squeezeOut.setX() ? squeezeOut.valX() : union.centerX(),
+                            squeezeOut.setZ() ? squeezeOut.valZ() : union.centerZ(),
+                            union.slack(), union.floorVy(), union.ceilVy()));
+            spawnBits |= TraceFrame.SPAWN_SQUEEZE_OUT;
+        }
 
         int chosen = 0;
         double best = Double.MAX_VALUE;
@@ -624,7 +647,7 @@ public final class SelfSimulation {
         if (stepFromFall) ascentExcess = 0.0;
 
         double phaseExcess;
-        if (landMedium) {
+        if (landMedium && !pistonInfluence) {
             phaseExcess = phase.excess(contact.horizontalCrossingDepth(), contact.embedDepth(),
                     observedSpeed, true, preset);
         } else {
@@ -699,6 +722,9 @@ public final class SelfSimulation {
                     frictionMax, speedFactor);
             flushPendingSpawns();
             carried.mergeConverged();
+            if (pistonInfluence && contact.startOverlapping()) {
+                seedEmbedExemptions(current, half, height);
+            }
             bedBounce.arm(contact, chosenSlotBounds);
             bounceRise.arm(landModel, doubleMoveThisTick, fullPose(), sneakHeld, sample.stuck(),
                     honeySlideActive, supportTracker.bounceCertain(), dy, preStepCarriedCeil,
@@ -745,7 +771,7 @@ public final class SelfSimulation {
         gate.tickPreserveGrace();
 
         double phaseExcess = 0.0;
-        if (!withheld && sample.landMedium()) {
+        if (!withheld && sample.landMedium() && !pistons.reaching()) {
             phaseExcess = phase.excess(contact.horizontalCrossingDepth(), contact.embedDepth(),
                     ClientMath.horizontalDistance(dx, dz), false, preset);
         }
@@ -774,9 +800,10 @@ public final class SelfSimulation {
                                GroundFacts ground, PhysicsPreset preset,
                                double frictionMax, double speedFactor,
                                double dx, double dy, double dz) {
+        boolean landModel = medium == body.mediums().land();
         boolean airRegime = kind == CarriedHypotheses.Kind.AIR_REGIME && !previousClaimedGround
-                && medium == body.mediums().land();
-        if (airRegime) {
+                && landModel;
+        if (airRegime || (landModel && bounds.pistonReached())) {
             frictionMax = LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, input.airDragModifier());
         }
         AreaAdvancer.clampObserved(bounds, dx, dy, dz, excess.altCenterUsed(), preset.modelDriftSlack());
@@ -911,6 +938,37 @@ public final class SelfSimulation {
         spawnBits |= TraceFrame.SPAWN_KNOCKBACK;
     }
 
+    private void spawnPistonLaunch(MediumModel medium, ControlEnvelope input) {
+        int mask = pistons.launchMask();
+        if (mask == 0) return;
+        MotionArea union = carried.union();
+        if ((mask & PistonData.LAUNCH_NEG_X) != 0) spawnLaunchHorizontal(union, -PistonData.SLIME_LAUNCH, 0.0);
+        if ((mask & PistonData.LAUNCH_POS_X) != 0) spawnLaunchHorizontal(union, PistonData.SLIME_LAUNCH, 0.0);
+        if ((mask & PistonData.LAUNCH_NEG_Z) != 0) spawnLaunchHorizontal(union, 0.0, -PistonData.SLIME_LAUNCH);
+        if ((mask & PistonData.LAUNCH_POS_Z) != 0) spawnLaunchHorizontal(union, 0.0, PistonData.SLIME_LAUNCH);
+        boolean up = (mask & PistonData.LAUNCH_POS_Y) != 0;
+        boolean down = (mask & PistonData.LAUNCH_NEG_Y) != 0;
+        if (up || down) {
+            double rawHi = up ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
+            double rawLo = down ? -PistonData.SLIME_LAUNCH : PistonData.SLIME_LAUNCH;
+            double advancedLo = medium.advanceVertical(rawLo, input);
+            double advancedHi = medium.advanceVertical(rawHi, input);
+            double floor = Math.min(rawLo, Math.min(advancedLo, advancedHi));
+            double ceiling = Math.max(rawHi, Math.max(advancedLo, advancedHi));
+            carried.spawn(CarriedHypotheses.Kind.SPARE,
+                    new MotionArea(union.centerX(), union.centerZ(), union.slack(), floor, ceiling));
+            spawnBits |= TraceFrame.SPAWN_PISTON_LAUNCH;
+        }
+    }
+
+    private void spawnLaunchHorizontal(MotionArea union, double launchX, double launchZ) {
+        carried.spawn(CarriedHypotheses.Kind.SPARE,
+                new MotionArea(launchX != 0.0 ? launchX : union.centerX(),
+                        launchZ != 0.0 ? launchZ : union.centerZ(),
+                        union.slack(), union.floorVy(), union.ceilVy()));
+        spawnBits |= TraceFrame.SPAWN_PISTON_LAUNCH;
+    }
+
     private void spawnAirRegime(AreaBounds chosenSlotBounds, MediumModel medium, ControlEnvelope input,
                                 GroundFacts ground, boolean stepped, boolean stepFromFall,
                                 double frictionMax, double speedFactor) {
@@ -997,7 +1055,7 @@ public final class SelfSimulation {
             bounceRise.disarm();
             return;
         }
-        double accel = medium.accelBound(input, ground);
+        double accel = medium.accelBound(input, ground) + pistons.horizontalReach();
         double frictionMax = medium.frictionMax(input, ground);
         boolean glide = medium.kind() == MediumKind.GLIDE;
         int first = -1;
@@ -1022,7 +1080,7 @@ public final class SelfSimulation {
                         ? LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, input.airDragModifier())
                         : frictionMax;
                 boolean grounded = ground.groundedEnd() && !airRegime;
-                double floorSource = grounded ? 0.0 : area.floorVy();
+                double floorSource = (grounded ? 0.0 : area.floorVy()) + pistons.pushLoY();
                 double ceilSource = grounded ? 0.0 : slotBounds.ceiling();
                 carried.area(slot, AreaAdvancer.zeroClamp(AreaAdvancer.coast(area, accel, slotFriction,
                         medium.advanceVertical(floorSource, input),
