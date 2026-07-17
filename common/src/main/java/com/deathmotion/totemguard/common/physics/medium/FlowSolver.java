@@ -158,18 +158,16 @@ public final class FlowSolver {
 
         double pushX = 0.0, pushY = 0.0, pushZ = 0.0;
         if (waterCount > 0 && pushGate(waterX, waterY, waterZ, modernDeadZone)) {
-            double inv = normalizePush
-                    ? WATER_SCALE / Math.sqrt(lengthSquared(waterX, waterY, waterZ))
-                    : WATER_SCALE / waterCount;
+            double inv = pushScale(WATER_SCALE, waterX, waterY, waterZ, waterCount,
+                    normalizePush, modernDeadZone);
             pushX += waterX * inv;
             pushY += waterY * inv;
             pushZ += waterZ * inv;
         }
         if (lavaCount > 0 && pushGate(lavaX, lavaY, lavaZ, modernDeadZone)) {
             double scale = lavaFast ? LAVA_SCALE_ULTRAWARM : LAVA_SCALE;
-            double inv = normalizePush
-                    ? scale / Math.sqrt(lengthSquared(lavaX, lavaY, lavaZ))
-                    : scale / lavaCount;
+            double inv = pushScale(scale, lavaX, lavaY, lavaZ, lavaCount,
+                    normalizePush, modernDeadZone);
             pushX += lavaX * inv;
             pushY += lavaY * inv;
             pushZ += lavaZ * inv;
@@ -177,6 +175,14 @@ public final class FlowSolver {
         out.pushX(pushX);
         out.pushY(pushY);
         out.pushZ(pushZ);
+    }
+
+    private static double pushScale(double motionScale, double x, double y, double z, int count,
+                                    boolean normalizePush, boolean modernDeadZone) {
+        if (!normalizePush) return motionScale / count;
+        double length = Math.sqrt(lengthSquared(x, y, z));
+        if (!modernDeadZone && length / count < NORMALIZE_EPS) return 0.0;
+        return motionScale / length;
     }
 
     private static boolean pushGate(double x, double y, double z, boolean modernDeadZone) {

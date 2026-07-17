@@ -27,12 +27,12 @@ public final class BoatControlResolver {
     private BoatControlResolver() {
     }
 
-    public static BoatControl build(VersionGates gates, float yaw) {
+    public static BoatControl build(VersionGates gates, float yaw, boolean controlling) {
         boolean modernTrig = gates.modernTrig();
         return new BoatControl(
                 ClientMath.lookX(yaw, 0.0f, modernTrig),
                 ClientMath.lookZ(yaw, 0.0f, modernTrig),
-                BoatFloatModel.CONTROL_MIN,
-                BoatFloatModel.CONTROL_MAX);
+                controlling ? BoatFloatModel.CONTROL_MIN : 0.0,
+                controlling ? BoatFloatModel.CONTROL_MAX : 0.0);
     }
 }

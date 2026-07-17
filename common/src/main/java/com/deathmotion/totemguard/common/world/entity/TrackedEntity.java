@@ -51,6 +51,10 @@ public final class TrackedEntity {
     private int boostTotal;
     private int boostLagSlack;
     private boolean suffocating;
+    private boolean saddleSeen;
+    private boolean saddled;
+    private boolean harnessed;
+    private boolean staysStill;
 
     private double targetX;
     private double targetY;
@@ -62,6 +66,7 @@ public final class TrackedEntity {
     private double prevRenderY;
     private double prevRenderZ;
     private int interpSteps;
+    private boolean interpolatedLast;
     private boolean queuedForAdvance;
 
     TrackedEntity(EntityType type) {
@@ -105,9 +110,15 @@ public final class TrackedEntity {
             renderY += (targetY - renderY) * t;
             renderZ += (targetZ - renderZ) * t;
             interpSteps--;
+            interpolatedLast = true;
             return false;
         }
+        interpolatedLast = false;
         return true;
+    }
+
+    public boolean interpolating() {
+        return interpSteps > 0 || interpolatedLast;
     }
 
     void queuedForAdvance(boolean queued) {
@@ -147,6 +158,19 @@ public final class TrackedEntity {
 
     void suffocating(boolean value) {
         this.suffocating = value;
+    }
+
+    void saddled(boolean value) {
+        this.saddleSeen = true;
+        this.saddled = value;
+    }
+
+    void harnessed(boolean value) {
+        this.harnessed = value;
+    }
+
+    void staysStill(boolean value) {
+        this.staysStill = value;
     }
 
     public void tickBoost() {

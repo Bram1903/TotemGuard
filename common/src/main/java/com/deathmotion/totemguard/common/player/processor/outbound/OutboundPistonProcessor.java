@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.player.processor.outbound;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.PistonData;
+import com.deathmotion.totemguard.common.player.data.VehicleData;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.world.WorldMirror;
@@ -129,10 +130,21 @@ public class OutboundPistonProcessor extends ProcessorOutbound {
     }
 
     private void resolve(Vector3i pos, int actionId) {
-        Location current = data.getMovementData().getCurrent();
-        double dx = (pos.getX() + 0.5) - current.getX();
-        double dy = (pos.getY() + 0.5) - current.getY();
-        double dz = (pos.getZ() + 0.5) - current.getZ();
+        double bodyX, bodyY, bodyZ;
+        VehicleData vehicle = data.getVehicleData();
+        if (data.getVehicleId() >= 0 && vehicle.isHasPosition()) {
+            bodyX = vehicle.getCurX();
+            bodyY = vehicle.getCurY();
+            bodyZ = vehicle.getCurZ();
+        } else {
+            Location current = data.getMovementData().getCurrent();
+            bodyX = current.getX();
+            bodyY = current.getY();
+            bodyZ = current.getZ();
+        }
+        double dx = (pos.getX() + 0.5) - bodyX;
+        double dy = (pos.getY() + 0.5) - bodyY;
+        double dz = (pos.getZ() + 0.5) - bodyZ;
         if (dx * dx + dy * dy + dz * dz > ARM_RANGE_SQUARED) return;
 
         BlockReader reader = world.reader();

@@ -46,7 +46,8 @@ public final class RiderControlResolver {
     }
 
     public static RiderControl build(TrackedEntity ridden, EntityType type, VehicleData vehicle, Data data,
-                                     VersionGates gates, float yaw, boolean grounded, boolean water) {
+                                     VersionGates gates, float yaw, boolean grounded, boolean water,
+                                     boolean controlling) {
         double speed = ridden.movementSpeed();
         boolean steerable = EntityRoles.steerableMob(type);
         boolean camel = EntityRoles.camel(type);
@@ -61,6 +62,7 @@ public final class RiderControlResolver {
         double riddenSpeed = steerable
                 ? speed * steeringFactor * ridden.boostFactorCeiling(gates.modernTrig())
                 : speed + (camel && data.isSprinting() ? CAMEL_SPRINT_BONUS : 0.0);
+        if (!controlling) riddenSpeed = 0.0;
         double gravity = Double.isNaN(ridden.gravity()) ? MotionDefaults.GRAVITY : ridden.gravity();
         double jumpStrength = ridden.jumpStrength();
 
@@ -70,6 +72,9 @@ public final class RiderControlResolver {
         double dashVertical = 0.0;
         if (jumpTick) {
             vehicle.tickJumpClaimGrounded();
+            jumpTick = controlling;
+        }
+        if (jumpTick) {
             if (!Double.isNaN(jumpStrength)) {
                 double scale = vehicle.jumpClaimScale();
                 if (camel) {

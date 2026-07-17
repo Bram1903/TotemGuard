@@ -58,37 +58,47 @@ public final class OutwardResidual {
     }
 
     public static double segmentExcess(AreaBounds bounds, double obsX, double obsZ) {
-        double along = segmentAlong(obsX, obsZ, bounds.centerX(), bounds.centerZ(),
-                bounds.segDirX(), bounds.segDirZ(), bounds.segMin(), bounds.segMax());
-        double closestX = bounds.pushAdjustedX(obsX, bounds.centerX() + bounds.segDirX() * along);
-        double closestZ = bounds.pushAdjustedZ(obsZ, bounds.centerZ() + bounds.segDirZ() * along);
-        return ClientMath.horizontalDistance(obsX - closestX, obsZ - closestZ) - bounds.radius();
-    }
-
-    public static void segmentClosest(AreaBounds bounds, double obsX, double obsZ) {
-        double along = segmentAlong(obsX, obsZ, bounds.centerX(), bounds.centerZ(),
-                bounds.segDirX(), bounds.segDirZ(), bounds.segMin(), bounds.segMax());
-        bounds.segClosestX(bounds.pushAdjustedX(obsX, bounds.centerX() + bounds.segDirX() * along));
-        bounds.segClosestZ(bounds.pushAdjustedZ(obsZ, bounds.centerZ() + bounds.segDirZ() * along));
+        return excess(obsX, obsZ,
+                bounds.pushAdjustedX(obsX, segmentBestX(bounds, obsX)),
+                bounds.pushAdjustedZ(obsZ, segmentBestZ(bounds, obsZ)),
+                bounds.radius());
     }
 
     public static void segmentCollapse(AreaBounds bounds, double obsX, double obsZ, double reach) {
-        double closestX = bounds.segClosestX();
-        double closestZ = bounds.segClosestZ();
-        double deviation = deviation(obsX, obsZ, closestX, closestZ);
-        if (deviation <= reach || deviation <= 0.0) {
-            bounds.legalX(obsX);
-            bounds.legalZ(obsZ);
-            return;
+        double rawX = segmentBestX(bounds, obsX);
+        double rawZ = segmentBestZ(bounds, obsZ);
+        double adjustedX = bounds.pushAdjustedX(obsX, rawX);
+        double adjustedZ = bounds.pushAdjustedZ(obsZ, rawZ);
+        double admittedX = obsX;
+        double admittedZ = obsZ;
+        double deviation = deviation(obsX, obsZ, adjustedX, adjustedZ);
+        if (deviation > reach && deviation > 0.0) {
+            double s = reach / deviation;
+            admittedX = collapseAxis(obsX, adjustedX, s);
+            admittedZ = collapseAxis(obsZ, adjustedZ, s);
         }
-        double s = reach / deviation;
-        bounds.legalX(collapseAxis(obsX, closestX, s));
-        bounds.legalZ(collapseAxis(obsZ, closestZ, s));
+        double velocityDeviation = deviation(admittedX, admittedZ, rawX, rawZ);
+        if (velocityDeviation > reach && velocityDeviation > 0.0) {
+            double s = reach / velocityDeviation;
+            bounds.legalX(collapseAxis(admittedX, rawX, s));
+            bounds.legalZ(collapseAxis(admittedZ, rawZ, s));
+        } else {
+            bounds.legalX(admittedX);
+            bounds.legalZ(admittedZ);
+        }
     }
 
-    private static double segmentAlong(double obsX, double obsZ, double centerX, double centerZ,
-                                       double dirX, double dirZ, double reachMin, double reachMax) {
-        double along = (obsX - centerX) * dirX + (obsZ - centerZ) * dirZ;
-        return Math.max(reachMin, Math.min(reachMax, along));
+    private static double segmentBestX(AreaBounds bounds, double obs) {
+        double lo = bounds.centerX() + bounds.segDirX() * bounds.segMin();
+        double hi = bounds.centerX() + bounds.segDirX() * bounds.segMax();
+        return outward(obs, bounds.pushAdjustedX(obs, lo))
+                <= outward(obs, bounds.pushAdjustedX(obs, hi)) ? lo : hi;
+    }
+
+    private static double segmentBestZ(AreaBounds bounds, double obs) {
+        double lo = bounds.centerZ() + bounds.segDirZ() * bounds.segMin();
+        double hi = bounds.centerZ() + bounds.segDirZ() * bounds.segMax();
+        return outward(obs, bounds.pushAdjustedZ(obs, lo))
+                <= outward(obs, bounds.pushAdjustedZ(obs, hi)) ? lo : hi;
     }
 }

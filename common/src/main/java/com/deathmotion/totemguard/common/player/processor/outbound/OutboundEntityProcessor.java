@@ -22,13 +22,17 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
+import com.deathmotion.totemguard.common.world.entity.EntityRoles;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.Equipment;
+import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
@@ -101,8 +105,29 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             handleDestroyEntities(event);
         } else if (type == PacketType.Play.Server.SET_PASSENGERS) {
             handleSetPassengers(event);
+        } else if (type == PacketType.Play.Server.ENTITY_EQUIPMENT) {
+            handleEquipment(event);
         } else if (type == PacketType.Play.Server.RESPAWN) {
             serverVehicleId = -1;
+        }
+    }
+
+    private void handleEquipment(PacketSendEvent event) {
+        WrapperPlayServerEntityEquipment packet = new WrapperPlayServerEntityEquipment(event);
+        final int entityId = packet.getEntityId();
+        EntityType entityType = entities.announcedType(entityId);
+        boolean saddleable = EntityRoles.horseFamily(entityType) || EntityRoles.steerableMob(entityType);
+        boolean ghast = EntityRoles.happyGhast(entityType);
+        if (!saddleable && !ghast) return;
+        for (Equipment equipment : packet.getEquipment()) {
+            EquipmentSlot slot = equipment.getSlot();
+            ItemStack item = equipment.getItem();
+            final boolean present = item != null && !item.isEmpty();
+            if (saddleable && slot == EquipmentSlot.SADDLE) {
+                latencyHandler.compensate(event, () -> entities.setSaddled(entityId, present));
+            } else if (ghast && slot == EquipmentSlot.BODY) {
+                latencyHandler.compensate(event, () -> entities.setHarnessed(entityId, present));
+            }
         }
     }
 
@@ -174,6 +199,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
                 break;
             }
         }
+        final boolean driverSeat = passengers.length > 0 && passengers[0] == playerId;
 
         final boolean wasInThisVehicle = serverVehicleId == vehicleId;
 
@@ -182,6 +208,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             latencyHandler.compensate(event, () -> {
                 data.setVehicleId(vehicleId);
                 data.getVehicleData().onMount();
+                data.getVehicleData().setDriverSeat(driverSeat);
             });
         } else if (!playerInThisVehicle && wasInThisVehicle) {
             serverVehicleId = -1;
@@ -189,6 +216,13 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
                 if (data.getVehicleId() == vehicleId) data.setVehicleId(-1);
                 data.getMovementData().markVehicleSwitchResync();
                 data.getVehicleData().onMount();
+                data.getVehicleData().setDriverSeat(false);
+            });
+        } else if (playerInThisVehicle) {
+            latencyHandler.compensate(event, () -> {
+                if (data.getVehicleId() == vehicleId) {
+                    data.getVehicleData().setDriverSeat(driverSeat);
+                }
             });
         }
     }

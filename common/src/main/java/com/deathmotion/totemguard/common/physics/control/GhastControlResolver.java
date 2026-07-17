@@ -31,7 +31,8 @@ public final class GhastControlResolver {
     private GhastControlResolver() {
     }
 
-    public static GhastControl build(TrackedEntity ridden) {
+    public static GhastControl build(TrackedEntity ridden, boolean controlling) {
+        if (!controlling) return new GhastControl(0.0, 0.0, 0.0);
         double flyingSpeed = Double.isNaN(ridden.flyingSpeed())
                 ? FLYING_SPEED_DEFAULT
                 : ridden.flyingSpeed();

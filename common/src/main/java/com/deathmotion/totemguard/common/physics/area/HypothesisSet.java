@@ -27,9 +27,11 @@ public final class HypothesisSet {
     private final AreaBounds main = new AreaBounds();
     private final AreaBounds impulse = new AreaBounds();
     private final AreaBounds snap = new AreaBounds();
+    private final AreaBounds launch = new AreaBounds();
     private boolean mainEnabled;
     private boolean impulseEnabled;
     private boolean snapEnabled;
+    private boolean launchEnabled;
     @Getter
     private Slot chosenSlot = Slot.MAIN;
     @Getter
@@ -44,6 +46,7 @@ public final class HypothesisSet {
         mainEnabled = true;
         impulseEnabled = false;
         snapEnabled = false;
+        launchEnabled = false;
         chosenSlot = Slot.MAIN;
         chosenExcess = JudgedExcess.NONE;
     }
@@ -53,6 +56,7 @@ public final class HypothesisSet {
             case MAIN -> main;
             case IMPULSE -> impulse;
             case SNAP -> snap;
+            case LAUNCH -> launch;
         };
     }
 
@@ -61,6 +65,7 @@ public final class HypothesisSet {
             case MAIN -> mainEnabled = true;
             case IMPULSE -> impulseEnabled = true;
             case SNAP -> snapEnabled = true;
+            case LAUNCH -> launchEnabled = true;
         }
     }
 
@@ -87,6 +92,15 @@ public final class HypothesisSet {
             if (excess < best) {
                 winner = Slot.SNAP;
                 winning = judged;
+                best = excess;
+            }
+        }
+        if (launchEnabled) {
+            JudgedExcess judged = AreaJudge.judge(launch, dx, dy, dz, arrestCap);
+            double excess = maxExcess(judged);
+            if (excess < best) {
+                winner = Slot.LAUNCH;
+                winning = judged;
             }
         }
         chosenSlot = winner;
@@ -101,6 +115,7 @@ public final class HypothesisSet {
     public enum Slot {
         MAIN,
         IMPULSE,
-        SNAP
+        SNAP,
+        LAUNCH
     }
 }

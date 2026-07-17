@@ -39,6 +39,10 @@ public final class MetadataIndex {
     private final int pigBoostTime;
     private final int striderBoostTime;
     private final int striderSuffocating;
+    private final int horseFlags;
+    private final int pigSaddle;
+    private final int striderSaddle;
+    private final int ghastStaysStill;
 
     public MetadataIndex(ClientVersion version) {
         this.health = resolveHealth(version);
@@ -54,6 +58,10 @@ public final class MetadataIndex {
         this.pigBoostTime = resolvePigBoostTime(version);
         this.striderBoostTime = resolveStriderBoostTime(version);
         this.striderSuffocating = resolveStriderSuffocating(version);
+        this.horseFlags = resolveHorseFlags(version);
+        this.pigSaddle = resolvePigSaddle(version);
+        this.striderSaddle = resolveStriderSaddle(version);
+        this.ghastStaysStill = resolveGhastStaysStill(version);
     }
 
     private static int resolveHealth(ClientVersion version) {
@@ -136,6 +144,30 @@ public final class MetadataIndex {
     private static int resolveStriderSuffocating(ClientVersion version) {
         if (version.isNewerThanOrEquals(ClientVersion.V_26_1)) return 19;
         if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 18;
+        return -1;
+    }
+
+    private static int resolveHorseFlags(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_21_5)) return -1;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 17;
+        return -1;
+    }
+
+    private static int resolvePigSaddle(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_21_5)) return -1;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 17;
+        return -1;
+    }
+
+    private static int resolveStriderSaddle(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_21_5)) return -1;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_17)) return 19;
+        return -1;
+    }
+
+    private static int resolveGhastStaysStill(ClientVersion version) {
+        if (version.isNewerThanOrEquals(ClientVersion.V_26_1)) return 19;
+        if (version.isNewerThanOrEquals(ClientVersion.V_1_21_6)) return 18;
         return -1;
     }
 }

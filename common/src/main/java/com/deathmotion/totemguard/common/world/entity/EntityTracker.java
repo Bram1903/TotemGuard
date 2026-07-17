@@ -144,6 +144,24 @@ public final class EntityTracker {
         entity.suffocating(value);
     }
 
+    public void setSaddled(int entityId, boolean value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.saddled(value);
+    }
+
+    public void setHarnessed(int entityId, boolean value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.harnessed(value);
+    }
+
+    public void setStaysStill(int entityId, boolean value) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.staysStill(value);
+    }
+
     public void setJumpStrength(int entityId, double value) {
         TrackedEntity entity = entities.get(entityId);
         if (entity == null) return;
@@ -194,6 +212,10 @@ public final class EntityTracker {
 
     public boolean isPlayer(int entityId) {
         return announced.get(entityId) == EntityTypes.PLAYER;
+    }
+
+    public EntityType announcedType(int entityId) {
+        return announced.get(entityId);
     }
 
     public boolean isSlimeLike(int entityId) {

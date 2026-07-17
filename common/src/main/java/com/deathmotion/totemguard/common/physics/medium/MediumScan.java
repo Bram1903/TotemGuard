@@ -34,7 +34,8 @@ public final class MediumScan {
     }
 
     public static void sample(BlockReader reader, MediumSample out,
-                              boolean pushedByFluid, boolean lavaFast, boolean modernFluidPush,
+                              boolean pushedByFluid, boolean normalizePush,
+                              boolean lavaFast, boolean modernFluidPush,
                               boolean weavingCobweb, boolean stuckApplies, boolean stuckOnPath,
                               double eyeY,
                               double minX, double feetY, double minZ,
@@ -50,7 +51,7 @@ public final class MediumScan {
         out.boxMaxZ(maxZ);
         out.eyeSampleY(eyeY);
         if (pushedByFluid) {
-            FlowSolver.solve(reader, out, lavaFast, false, modernFluidPush,
+            FlowSolver.solve(reader, out, lavaFast, normalizePush, modernFluidPush,
                     minX, feetY, minZ, maxX, headY, maxZ);
         }
         int sx0 = floor(minX), sx1 = floor(maxX);

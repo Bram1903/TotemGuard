@@ -419,6 +419,16 @@ public class TGPlayer implements TGUser, EngineActor {
     }
 
     @Override
+    public ItemStack mainHandItem() {
+        return inventory.getMainHandItem();
+    }
+
+    @Override
+    public ItemStack offhandItem() {
+        return inventory.getOffhandItem();
+    }
+
+    @Override
     public String name() {
         return user.getName();
     }

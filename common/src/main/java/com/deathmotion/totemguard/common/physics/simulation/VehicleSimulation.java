@@ -38,12 +38,14 @@ import com.deathmotion.totemguard.common.physics.medium.model.*;
 import com.deathmotion.totemguard.common.physics.mitigation.VehicleSetback;
 import com.deathmotion.totemguard.common.physics.prescan.MountFilter;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
+import com.deathmotion.totemguard.common.physics.push.PistonWindow;
 import com.deathmotion.totemguard.common.physics.rules.BoatSnapRule;
 import com.deathmotion.totemguard.common.physics.rules.BounceRule;
 import com.deathmotion.totemguard.common.physics.rules.RiderClaimRule;
 import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
 import com.deathmotion.totemguard.common.physics.verdict.*;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.PistonData;
 import com.deathmotion.totemguard.common.player.data.VehicleData;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
@@ -81,6 +83,7 @@ public final class VehicleSimulation {
     private final VehicleSetback setback = new VehicleSetback();
     private final StuckFactor stuckFactor = new StuckFactor();
     private final LandModel land = new LandModel();
+    private final PistonWindow pistons;
 
     private final LivingVehicleBody livingBody = new LivingVehicleBody();
     private final BoatBody boatBody = new BoatBody();
@@ -104,6 +107,7 @@ public final class VehicleSimulation {
         this.context = context;
         this.gates = gates;
         this.trace = trace;
+        this.pistons = new PistonWindow(data.getPistonData());
     }
 
     private static PhysicsVerdict idle(BodyKind kind) {
@@ -163,7 +167,7 @@ public final class VehicleSimulation {
             return;
         }
         if (EntityRoles.steerableMob(type)) ridden.tickBoost();
-        if (!world.readiness().ready() || seedRequested) {
+        if (!world.readiness().ready() || seedRequested || ridden.interpolating()) {
             seedFrom(vehicle, BodyKind.HORSE);
             vehicle.tickImpulse();
             return;
@@ -178,19 +182,20 @@ public final class VehicleSimulation {
         preZ = carried.centerZ();
         preFloor = carried.floorVy();
         preCeil = carried.ceilVy();
+        boolean controlling = VehicleAuthority.controlling(type, ridden, vehicle.isDriverSeat(), actor, gates);
         BodyKind kind;
         if (EntityRoles.boat(type)) {
             boatBody.mount(ridden, type);
             kind = BodyKind.BOAT;
-            judgeBoat(vehicle, preset);
+            judgeBoat(vehicle, preset, controlling);
         } else if (EntityRoles.happyGhast(type)) {
             ghastBody.mount(ridden, type);
             kind = BodyKind.GHAST;
-            judgeGhast(vehicle, ridden, preset);
+            judgeGhast(vehicle, ridden, preset, controlling);
         } else if (EntityRoles.horseFamily(type) || EntityRoles.steerableMob(type)) {
             livingBody.mount(ridden, type);
             kind = livingBody.kind();
-            judgeLiving(vehicle, ridden, type, preset);
+            judgeLiving(vehicle, ridden, type, preset, controlling);
         } else {
             seedFrom(vehicle, BodyKind.HORSE);
             vehicle.tickImpulse();
@@ -218,7 +223,8 @@ public final class VehicleSimulation {
         disengage();
     }
 
-    private void judgeLiving(VehicleData vehicle, TrackedEntity ridden, EntityType type, PhysicsPreset preset) {
+    private void judgeLiving(VehicleData vehicle, TrackedEntity ridden, EntityType type, PhysicsPreset preset,
+                             boolean controlling) {
         double speed = ridden.movementSpeed();
         if (Double.isNaN(speed)) {
             verdict = idle(livingBody.kind());
@@ -233,8 +239,11 @@ public final class VehicleSimulation {
         double height = livingBody.height();
         ShapeQuery query = livingBody.shapeQuery(startY, false);
 
-        double reachDown = Math.min(carried.floorVy() - HARVEST_MARGIN, obsY);
-        double reachUp = Math.max(carried.ceilVy() + RiderControlResolver.STEP_HEIGHT_CAMEL, obsY);
+        evaluatePistons(startX, startY, startZ, half, height, obsX, obsY, obsZ);
+        double reachDown = Math.min(carried.floorVy() + pistons.pushLoY() + launchReachDown()
+                - HARVEST_MARGIN, obsY);
+        double reachUp = Math.max(carried.ceilVy() + pistons.pushHiY() + launchReachUp()
+                + RiderControlResolver.STEP_HEIGHT_CAMEL, obsY);
         scan(query, startX, startY, startZ, half, height, obsX, obsY, obsZ, reachDown, reachUp,
                 livingBody.stepHeight());
         if (reader.missesThisTick() > 0) return;
@@ -252,7 +261,7 @@ public final class VehicleSimulation {
                 livingBody.stepHeight(), carried.floorVy(), false, null);
         boolean grounded = ground.groundedStart() || (strider && lava);
         RiderControl control = RiderControlResolver.build(ridden, type, vehicle, data, gates,
-                vehicle.getYaw(), grounded, water);
+                vehicle.getYaw(), grounded, water, controlling);
         MediumModel medium = water ? livingBody.water()
                 : lava ? livingBody.lava()
                   : land;
@@ -294,6 +303,7 @@ public final class VehicleSimulation {
         main.addDescentSlack(vPad);
         main.enforceDescentFloor(true);
         main.ceiling(Math.max(clipHi + vPad, extraCeiling));
+        pistons.apply(main);
 
         double impulseBandLo = 0.0;
         double impulseClip = 0.0;
@@ -317,7 +327,45 @@ public final class VehicleSimulation {
             impulse.addDescentSlack(vPad);
             impulse.enforceDescentFloor(true);
             impulse.ceiling(Math.max(impulseClip + vPad, extraCeiling));
+            pistons.apply(impulse);
             hypotheses.enable(HypothesisSet.Slot.IMPULSE);
+        }
+
+        double launchBandLo = bandLo;
+        double launchBandHi = bandHi;
+        double launchClip = clipLo;
+        int launchMask = pistons.launchMask();
+        if (launchMask != 0) {
+            AreaBounds launchBounds = hypotheses.bounds(HypothesisSet.Slot.LAUNCH);
+            launchBounds.reset(carried);
+            launchBounds.centerX(launchCenter(launchMask, PistonData.LAUNCH_NEG_X, PistonData.LAUNCH_POS_X,
+                    carried.centerX()) + sample.pushX());
+            launchBounds.centerZ(launchCenter(launchMask, PistonData.LAUNCH_NEG_Z, PistonData.LAUNCH_POS_Z,
+                    carried.centerZ()) + sample.pushZ());
+            if (control.steerable()) {
+                launchBounds.controlSegment(control.lookX(), control.lookZ(), 0.0, accel + control.leapRadius());
+            } else {
+                launchBounds.expandRadius(accel);
+                RiderClaimRule.expandLeap(launchBounds, control.leapRadius());
+            }
+            launchBounds.expandRadius(preset.vehicleHorizontalPad());
+            double launchClipHi = clipHi;
+            if ((launchMask & (PistonData.LAUNCH_NEG_Y | PistonData.LAUNCH_POS_Y)) != 0) {
+                double launchVy = (launchMask & PistonData.LAUNCH_POS_Y) != 0
+                        ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
+                launchClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
+                        startX - half, startY, startZ - half,
+                        startX + half, startY + height, startZ + half, launchVy, true);
+                launchBandLo = launchVy;
+                launchBandHi = launchVy;
+                launchClipHi = launchClip;
+            }
+            launchBounds.floor(launchClip);
+            launchBounds.addDescentSlack(vPad);
+            launchBounds.enforceDescentFloor(true);
+            launchBounds.ceiling(Math.max(launchClipHi + vPad, extraCeiling));
+            pistons.apply(launchBounds);
+            hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
         HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, -1.0);
@@ -326,9 +374,18 @@ public final class VehicleSimulation {
         JudgedExcess excess = hypotheses.chosenExcess();
         BoundBreach breach = classify(excess, preset);
 
-        double chosenBandLo = chosen == HypothesisSet.Slot.IMPULSE ? impulseBandLo : bandLo;
-        double chosenBandHi = chosen == HypothesisSet.Slot.IMPULSE ? impulseBandLo : bandHi;
-        double chosenClipLo = chosen == HypothesisSet.Slot.IMPULSE ? impulseClip : clipLo;
+        double chosenBandLo = bandLo;
+        double chosenBandHi = bandHi;
+        double chosenClipLo = clipLo;
+        if (chosen == HypothesisSet.Slot.IMPULSE) {
+            chosenBandLo = impulseBandLo;
+            chosenBandHi = impulseBandLo;
+            chosenClipLo = impulseClip;
+        } else if (chosen == HypothesisSet.Slot.LAUNCH) {
+            chosenBandLo = launchBandLo;
+            chosenBandHi = launchBandHi;
+            chosenClipLo = launchClip;
+        }
         double gravity = control.gravity();
         boolean landed = chosenClipLo != chosenBandLo && obsY <= chosenClipLo + CLIP_EPS;
         double vyLo;
@@ -365,6 +422,10 @@ public final class VehicleSimulation {
         lastDy = vyLo;
         AreaAdvancer.clampObserved(chosenBounds, obsX, obsY, obsZ, false, 0.0);
         double drag = water ? RiderControl.WATER_FRICTION : land.frictionMax(control, ground);
+        if (!water && chosenBounds.pistonReached()) {
+            drag = Math.max(drag,
+                    LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, control.airDragModifier()));
+        }
         carried = AreaAdvancer.zeroClamp(new MotionArea(chosenBounds.legalX() * drag,
                 chosenBounds.legalZ() * drag, 0.0, vyLo, vyHi), false);
 
@@ -374,7 +435,7 @@ public final class VehicleSimulation {
                 chosenBounds, verdict, reader, 0.0, 0.0, preX, preZ, preFloor, preCeil);
     }
 
-    private void judgeBoat(VehicleData vehicle, PhysicsPreset preset) {
+    private void judgeBoat(VehicleData vehicle, PhysicsPreset preset, boolean controlling) {
         double obsX = vehicle.deltaX();
         double obsY = vehicle.deltaY();
         double obsZ = vehicle.deltaZ();
@@ -386,16 +447,29 @@ public final class VehicleSimulation {
 
         boat.resolve(reader, query, startX - half, startY, startZ - half,
                 startX + half, startY + height, startZ + half);
-        double reachDown = Math.min(carried.floorVy() - HARVEST_MARGIN, obsY);
-        double reachUp = Math.max(carried.ceilVy() + HARVEST_MARGIN, obsY);
+        evaluatePistons(startX, startY, startZ, half, height, obsX, obsY, obsZ);
+        double reachDown = Math.min(carried.floorVy() + pistons.pushLoY() + launchReachDown()
+                - HARVEST_MARGIN, obsY);
+        double reachUp = Math.max(carried.ceilVy() + pistons.pushHiY() + launchReachUp()
+                + HARVEST_MARGIN, obsY);
         scan(query, startX, startY, startZ, half, height, obsX, obsY, obsZ, reachDown, reachUp, 0.0);
         if (reader.missesThisTick() > 0) return;
 
-        BoatControl control = BoatControlResolver.build(gates, vehicle.getYaw());
+        BoatControl control = BoatControlResolver.build(gates, vehicle.getYaw(), controlling);
         double friction = boat.horizontalFriction();
         double pushX = sample.pushX();
         double pushY = sample.pushY();
         double pushZ = sample.pushZ();
+        double pushLength = Math.sqrt(pushX * pushX + pushY * pushY + pushZ * pushZ);
+        double kick = FlowSolver.minKickScale(pushLength, carried.centerX(), carried.centerZ());
+        if (kick != 1.0) {
+            pushX *= kick;
+            pushY *= kick;
+            pushZ *= kick;
+            pushLength = FlowSolver.MIN_PUSH;
+        }
+        double kickPad = pushLength > 0.0 && pushLength < FlowSolver.MIN_PUSH
+                ? FlowSolver.MIN_PUSH - pushLength : 0.0;
         double vPad = preset.vehicleVerticalPad();
 
         double advLo = boat.advanceVertical(carried.floorVy() + pushY, startY);
@@ -411,7 +485,7 @@ public final class VehicleSimulation {
         main.centerX((carried.centerX() + pushX) * friction);
         main.centerZ((carried.centerZ() + pushZ) * friction);
         main.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
-        main.expandRadius(preset.vehicleHorizontalPad());
+        main.expandRadius(preset.vehicleHorizontalPad() + kickPad * friction);
         bandClip.clipY(colliders, startX - half, startY, startZ - half,
                 startX + half, startY + height, startZ + half, advLo, advHi);
         main.floor(bandClip.floor());
@@ -419,6 +493,8 @@ public final class VehicleSimulation {
         main.enforceDescentFloor(true);
         main.ceiling(bandClip.ceiling() + vPad);
         double mainClipLo = bandClip.floor();
+        double mainClipHi = bandClip.ceiling();
+        pistons.apply(main);
 
         double impulseAdv = 0.0;
         double impulseClip = 0.0;
@@ -428,7 +504,7 @@ public final class VehicleSimulation {
             impulse.centerX((vehicle.getImpulseX() + pushX) * friction);
             impulse.centerZ((vehicle.getImpulseZ() + pushZ) * friction);
             impulse.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
-            impulse.expandRadius(preset.vehicleHorizontalPad());
+            impulse.expandRadius(preset.vehicleHorizontalPad() + kickPad * friction);
             impulseAdv = boat.advanceVertical(vehicle.getImpulseY() + pushY, startY);
             impulseClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
                     startX - half, startY, startZ - half,
@@ -437,24 +513,71 @@ public final class VehicleSimulation {
             impulse.addDescentSlack(vPad);
             impulse.enforceDescentFloor(true);
             impulse.ceiling(impulseClip + vPad);
+            pistons.apply(impulse);
             hypotheses.enable(HypothesisSet.Slot.IMPULSE);
+        }
+
+        double launchAdvLo = advLo;
+        double launchAdvHi = advHi;
+        double launchClip = mainClipLo;
+        int launchMask = pistons.launchMask();
+        if (launchMask != 0) {
+            AreaBounds launchBounds = hypotheses.bounds(HypothesisSet.Slot.LAUNCH);
+            launchBounds.reset(carried);
+            launchBounds.centerX((launchCenter(launchMask, PistonData.LAUNCH_NEG_X, PistonData.LAUNCH_POS_X,
+                    carried.centerX()) + pushX) * friction);
+            launchBounds.centerZ((launchCenter(launchMask, PistonData.LAUNCH_NEG_Z, PistonData.LAUNCH_POS_Z,
+                    carried.centerZ()) + pushZ) * friction);
+            launchBounds.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
+            launchBounds.expandRadius(preset.vehicleHorizontalPad() + kickPad * friction);
+            double launchClipHi = mainClipHi;
+            if ((launchMask & (PistonData.LAUNCH_NEG_Y | PistonData.LAUNCH_POS_Y)) != 0) {
+                double launchVy = (launchMask & PistonData.LAUNCH_POS_Y) != 0
+                        ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
+                double launchAdv = boat.advanceVertical(launchVy + pushY, startY);
+                launchClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
+                        startX - half, startY, startZ - half,
+                        startX + half, startY + height, startZ + half, launchAdv, true);
+                launchAdvLo = launchAdv;
+                launchAdvHi = launchAdv;
+                launchClipHi = launchClip;
+            }
+            launchBounds.floor(launchClip);
+            launchBounds.addDescentSlack(vPad);
+            launchBounds.enforceDescentFloor(true);
+            launchBounds.ceiling(launchClipHi + vPad);
+            pistons.apply(launchBounds);
+            hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
         double snapDy = 0.0;
         boolean snapOffered = false;
+        boolean snapBlocked = false;
         if (BoatSnapRule.eligible(boat)) {
             snapDy = BoatSnapRule.snapDy(boat, reader, startX - half, startZ - half,
                     startX + half, startY + height, startZ + half, startY, lastDy);
+            snapBlocked = gates.boatSnapCollisionGate()
+                    && !BoatSnapRule.collisionFree(colliders, startX - half, startY + snapDy, startZ - half,
+                    startX + half, startY + snapDy + height, startZ + half);
             AreaBounds snap = hypotheses.bounds(HypothesisSet.Slot.SNAP);
             snap.reset(carried);
             snap.centerX(carried.centerX() + pushX);
             snap.centerZ(carried.centerZ() + pushZ);
             snap.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
-            snap.expandRadius(preset.vehicleHorizontalPad());
-            snap.floor(snapDy);
+            snap.expandRadius(preset.vehicleHorizontalPad() + kickPad);
+            if (snapBlocked) {
+                bandClip.clipY(colliders, startX - half, startY, startZ - half,
+                        startX + half, startY + height, startZ + half,
+                        carried.floorVy() + pushY, carried.ceilVy() + pushY);
+                snap.floor(bandClip.floor());
+                snap.ceiling(bandClip.ceiling() + vPad);
+            } else {
+                snap.floor(snapDy);
+                snap.ceiling(snapDy + vPad);
+            }
             snap.addDescentSlack(vPad);
             snap.enforceDescentFloor(true);
-            snap.ceiling(snapDy + vPad);
+            pistons.apply(snap);
             hypotheses.enable(HypothesisSet.Slot.SNAP);
             snapOffered = true;
         }
@@ -467,14 +590,27 @@ public final class VehicleSimulation {
 
         double vyLo;
         double vyHi;
-        if (snapOffered && chosen == HypothesisSet.Slot.SNAP) {
+        if (snapOffered && chosen == HypothesisSet.Slot.SNAP && !snapBlocked) {
             vyLo = 0.0;
             vyHi = 0.0;
             lastDy = 0.0;
         } else {
-            double chosenAdvLo = chosen == HypothesisSet.Slot.IMPULSE ? impulseAdv : advLo;
-            double chosenAdvHi = chosen == HypothesisSet.Slot.IMPULSE ? impulseAdv : advHi;
-            double chosenClipLo = chosen == HypothesisSet.Slot.IMPULSE ? impulseClip : mainClipLo;
+            double chosenAdvLo = advLo;
+            double chosenAdvHi = advHi;
+            double chosenClipLo = mainClipLo;
+            if (chosen == HypothesisSet.Slot.IMPULSE) {
+                chosenAdvLo = impulseAdv;
+                chosenAdvHi = impulseAdv;
+                chosenClipLo = impulseClip;
+            } else if (chosen == HypothesisSet.Slot.LAUNCH) {
+                chosenAdvLo = launchAdvLo;
+                chosenAdvHi = launchAdvHi;
+                chosenClipLo = launchClip;
+            } else if (chosen == HypothesisSet.Slot.SNAP) {
+                chosenAdvLo = carried.floorVy() + pushY;
+                chosenAdvHi = carried.ceilVy() + pushY;
+                chosenClipLo = chosenBounds.floor();
+            }
             boolean landed = chosenClipLo != chosenAdvLo && obsY <= chosenClipLo + CLIP_EPS;
             if (landed) {
                 boolean unclippedPossible = obsY >= chosenAdvLo - CLIP_EPS && obsY <= chosenAdvHi + CLIP_EPS;
@@ -500,7 +636,8 @@ public final class VehicleSimulation {
                 chosenBounds, verdict, reader, 0.0, 0.0, preX, preZ, preFloor, preCeil);
     }
 
-    private void judgeGhast(VehicleData vehicle, TrackedEntity ridden, PhysicsPreset preset) {
+    private void judgeGhast(VehicleData vehicle, TrackedEntity ridden, PhysicsPreset preset,
+                            boolean controlling) {
         double obsX = vehicle.deltaX();
         double obsY = vehicle.deltaY();
         double obsZ = vehicle.deltaZ();
@@ -509,9 +646,12 @@ public final class VehicleSimulation {
         double height = ghastBody.height();
         ShapeQuery query = ghastBody.shapeQuery(startY, false);
 
-        GhastControl control = GhastControlResolver.build(ridden);
-        double reachDown = Math.min(carried.floorVy() - control.down() - HARVEST_MARGIN, obsY);
-        double reachUp = Math.max(carried.ceilVy() + control.up() + HARVEST_MARGIN, obsY);
+        GhastControl control = GhastControlResolver.build(ridden, controlling);
+        evaluatePistons(startX, startY, startZ, half, height, obsX, obsY, obsZ);
+        double reachDown = Math.min(carried.floorVy() - control.down() + pistons.pushLoY()
+                + launchReachDown() - HARVEST_MARGIN, obsY);
+        double reachUp = Math.max(carried.ceilVy() + control.up() + pistons.pushHiY()
+                + launchReachUp() + HARVEST_MARGIN, obsY);
         scan(query, startX, startY, startZ, half, height, obsX, obsY, obsZ, reachDown, reachUp, 0.0);
         if (reader.missesThisTick() > 0) return;
 
@@ -537,6 +677,8 @@ public final class VehicleSimulation {
         main.enforceDescentFloor(true);
         main.ceiling(bandClip.ceiling() + vPad);
         double mainClipLo = bandClip.floor();
+        double mainClipHi = bandClip.ceiling();
+        pistons.apply(main);
 
         double impulseBandLo = 0.0;
         double impulseClip = 0.0;
@@ -554,7 +696,39 @@ public final class VehicleSimulation {
             impulse.addDescentSlack(vPad);
             impulse.enforceDescentFloor(true);
             impulse.ceiling(impulseClip + control.up() + vPad);
+            pistons.apply(impulse);
             hypotheses.enable(HypothesisSet.Slot.IMPULSE);
+        }
+
+        double launchBandLo = bandLo;
+        double launchClip = mainClipLo;
+        int launchMask = pistons.launchMask();
+        if (launchMask != 0) {
+            AreaBounds launchBounds = hypotheses.bounds(HypothesisSet.Slot.LAUNCH);
+            launchBounds.reset(carried);
+            launchBounds.centerX(launchCenter(launchMask, PistonData.LAUNCH_NEG_X, PistonData.LAUNCH_POS_X,
+                    carried.centerX()) + pushX);
+            launchBounds.centerZ(launchCenter(launchMask, PistonData.LAUNCH_NEG_Z, PistonData.LAUNCH_POS_Z,
+                    carried.centerZ()) + pushZ);
+            launchBounds.expandRadius(control.horizontalReach() + preset.vehicleHorizontalPad());
+            double launchClipHi = mainClipHi;
+            if ((launchMask & (PistonData.LAUNCH_NEG_Y | PistonData.LAUNCH_POS_Y)) != 0) {
+                double launchVy = (launchMask & PistonData.LAUNCH_POS_Y) != 0
+                        ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
+                double launchBase = launchVy + pushY;
+                bandClip.clipY(colliders, startX - half, startY, startZ - half,
+                        startX + half, startY + height, startZ + half,
+                        launchBase - control.down(), launchBase + control.up());
+                launchBandLo = launchBase - control.down();
+                launchClip = bandClip.floor();
+                launchClipHi = bandClip.ceiling();
+            }
+            launchBounds.floor(launchClip);
+            launchBounds.addDescentSlack(vPad);
+            launchBounds.enforceDescentFloor(true);
+            launchBounds.ceiling(launchClipHi + vPad);
+            pistons.apply(launchBounds);
+            hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
         HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, -1.0);
@@ -563,8 +737,15 @@ public final class VehicleSimulation {
         JudgedExcess excess = hypotheses.chosenExcess();
         BoundBreach breach = classify(excess, preset);
 
-        double chosenBandLo = chosen == HypothesisSet.Slot.IMPULSE ? impulseBandLo : bandLo;
-        double chosenClipLo = chosen == HypothesisSet.Slot.IMPULSE ? impulseClip : mainClipLo;
+        double chosenBandLo = bandLo;
+        double chosenClipLo = mainClipLo;
+        if (chosen == HypothesisSet.Slot.IMPULSE) {
+            chosenBandLo = impulseBandLo;
+            chosenClipLo = impulseClip;
+        } else if (chosen == HypothesisSet.Slot.LAUNCH) {
+            chosenBandLo = launchBandLo;
+            chosenClipLo = launchClip;
+        }
         boolean landed = chosenClipLo != chosenBandLo && obsY <= chosenClipLo + CLIP_EPS;
         double vyLo;
         double vyHi;
@@ -594,6 +775,32 @@ public final class VehicleSimulation {
         if (ridden != null && EntityRoles.steerableMob(ridden.type())) ridden.addBoostLag();
     }
 
+    private void evaluatePistons(double startX, double startY, double startZ,
+                                 double half, double height, double obsX, double obsY, double obsZ) {
+        pistons.setPlayerBox(
+                startX - half + Math.min(0.0, obsX),
+                startY + Math.min(0.0, obsY),
+                startZ - half + Math.min(0.0, obsZ),
+                startX + half + Math.max(0.0, obsX),
+                startY + height + Math.max(0.0, obsY),
+                startZ + half + Math.max(0.0, obsZ));
+        pistons.evaluate();
+    }
+
+    private double launchReachUp() {
+        return (pistons.launchMask() & PistonData.LAUNCH_POS_Y) != 0 ? PistonData.SLIME_LAUNCH : 0.0;
+    }
+
+    private double launchReachDown() {
+        return (pistons.launchMask() & PistonData.LAUNCH_NEG_Y) != 0 ? -PistonData.SLIME_LAUNCH : 0.0;
+    }
+
+    private static double launchCenter(int mask, int negBit, int posBit, double carried) {
+        if ((mask & posBit) != 0) return PistonData.SLIME_LAUNCH;
+        if ((mask & negBit) != 0) return -PistonData.SLIME_LAUNCH;
+        return carried;
+    }
+
     private void scan(ShapeQuery query, double startX, double startY, double startZ,
                       double half, double height, double obsX, double obsY, double obsZ,
                       double reachDown, double reachUp, double stepHeight) {
@@ -616,7 +823,7 @@ public final class VehicleSimulation {
         double endZ = startZ + obsZ;
         TraitSampler.sample(reader, contact, endX, endY, endZ, half);
         MediumScan.sample(reader, sample,
-                true, world.dimension().dimensionType() != null
+                true, true, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
                 gates.modernFluidPush(), false, true, true,
                 MediumScan.NO_EYE_SAMPLE,

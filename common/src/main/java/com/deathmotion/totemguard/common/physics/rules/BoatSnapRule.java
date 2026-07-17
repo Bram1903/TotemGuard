@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.rules;
 
+import com.deathmotion.totemguard.common.physics.collision.ColliderBuffer;
 import com.deathmotion.totemguard.common.physics.medium.model.BoatFloatModel;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 
@@ -35,5 +36,19 @@ public final class BoatSnapRule {
                                 double startY, double lastDy) {
         double surface = model.waterLevelAbove(reader, minX, minZ, maxX, maxY, maxZ, Math.min(0.0, lastDy));
         return surface - BoatFloatModel.BOAT_HEIGHT + BoatFloatModel.SNAP_RISE - startY;
+    }
+
+    public static boolean collisionFree(ColliderBuffer colliders,
+                                        double minX, double minY, double minZ,
+                                        double maxX, double maxY, double maxZ) {
+        int count = colliders.count();
+        for (int i = 0; i < count; i++) {
+            if (colliders.maxX(i) > minX && colliders.minX(i) < maxX
+                    && colliders.maxY(i) > minY && colliders.minY(i) < maxY
+                    && colliders.maxZ(i) > minZ && colliders.minZ(i) < maxZ) {
+                return false;
+            }
+        }
+        return true;
     }
 }

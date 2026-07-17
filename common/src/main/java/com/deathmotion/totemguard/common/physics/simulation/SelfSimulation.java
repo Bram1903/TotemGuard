@@ -498,7 +498,7 @@ public final class SelfSimulation {
                 data.getAttributeData().stepHeight(), groundResolver.lastGroundedEnd());
         TraitSampler.sample(reader, contact, current.getX(), current.getY(), current.getZ(), half);
         MediumScan.sample(reader, sample,
-                !data.isFlying(), world.dimension().dimensionType() != null
+                !data.isFlying(), false, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
                 gates.modernFluidPush(), data.getEffectData().hasWeaving(),
                 !previousIsFlying && stuckSettleScans >= STUCK_SETTLE_SCANS, !previousIsFlying,

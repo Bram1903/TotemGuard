@@ -30,7 +30,6 @@ public final class AreaAdvancer {
     public static void clampObserved(AreaBounds bounds, double obsX, double obsY, double obsZ,
                                      boolean altCenterUsed, double driftSlack) {
         if (bounds.hasSegment() && !altCenterUsed) {
-            OutwardResidual.segmentClosest(bounds, obsX, obsZ);
             OutwardResidual.segmentCollapse(bounds, obsX, obsZ, bounds.radius() + driftSlack);
             bounds.legalVy(Math.min(Math.max(obsY, bounds.judgedFloor()), bounds.ceiling()));
             return;

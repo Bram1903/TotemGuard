@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.physics.control;
 
+import com.deathmotion.totemguard.common.util.ClientMath;
+
 public record BoatControl(
         double dirX,
         double dirZ,
@@ -121,7 +123,7 @@ public record BoatControl(
 
     @Override
     public double lookX() {
-        return 0.0;
+        return dirX;
     }
 
     @Override
@@ -131,7 +133,7 @@ public record BoatControl(
 
     @Override
     public double lookZ() {
-        return 0.0;
+        return dirZ;
     }
 
     @Override
@@ -171,6 +173,6 @@ public record BoatControl(
 
     @Override
     public double lookHorizontal() {
-        return 0.0;
+        return ClientMath.horizontalDistance(dirX, dirZ);
     }
 }

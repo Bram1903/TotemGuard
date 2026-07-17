@@ -38,8 +38,6 @@ public final class AreaBounds {
     private double segDirZ;
     private double segMin;
     private double segMax;
-    private double segClosestX;
-    private double segClosestZ;
     private double pushLoX;
     private double pushHiX;
     private double pushLoZ;
@@ -67,8 +65,6 @@ public final class AreaBounds {
         segDirZ = 0.0;
         segMin = 0.0;
         segMax = 0.0;
-        segClosestX = 0.0;
-        segClosestZ = 0.0;
         pushLoX = 0.0;
         pushHiX = 0.0;
         pushLoZ = 0.0;

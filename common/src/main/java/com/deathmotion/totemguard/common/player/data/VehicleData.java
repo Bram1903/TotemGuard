@@ -37,6 +37,7 @@ public final class VehicleData {
     private int impulseTicks;
     private double jumpClaimScale;
     private int jumpClaimBudget;
+    private boolean driverSeat;
 
     private boolean seedFromMount = true;
 
@@ -117,5 +118,6 @@ public final class VehicleData {
         seedFromMount = true;
         impulseTicks = 0;
         jumpClaimBudget = 0;
+        driverSeat = false;
     }
 }

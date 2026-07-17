@@ -35,6 +35,12 @@ public interface EngineActor {
     @Nullable
     ItemStack leggingsItem();
 
+    @Nullable
+    ItemStack mainHandItem();
+
+    @Nullable
+    ItemStack offhandItem();
+
     boolean supportsEndTick();
 
     boolean physicsBypassed();

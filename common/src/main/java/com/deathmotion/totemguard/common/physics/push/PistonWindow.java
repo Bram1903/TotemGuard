@@ -34,6 +34,7 @@ public final class PistonWindow {
     private double pushLoX, pushHiX;
     @Getter
     private double pushLoY;
+    @Getter
     private double pushHiY;
     private double pushLoZ, pushHiZ;
     @Getter

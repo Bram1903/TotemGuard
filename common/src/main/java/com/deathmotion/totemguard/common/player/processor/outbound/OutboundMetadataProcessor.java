@@ -26,12 +26,13 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
+import com.deathmotion.totemguard.common.world.entity.EntityRoles;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
-import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemFireworks;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
@@ -46,6 +47,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
 
     private static final float MIN_SPOOFED_HEALTH = 0.5F;
     private static final float MAX_SPOOFED_HEALTH = 20.0F;
+    private static final int HORSE_FLAG_SADDLE = 0x04;
 
     private static final String[] COMPETING_PLUGINS = {
             "AntiHealthIndicator", "antihealthindicator", "PolarLoader"
@@ -69,6 +71,10 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
     private final int pigBoostTimeIndex;
     private final int striderBoostTimeIndex;
     private final int striderSuffocatingIndex;
+    private final int horseFlagsIndex;
+    private final int pigSaddleIndex;
+    private final int striderSaddleIndex;
+    private final int ghastStaysStillIndex;
 
     public OutboundMetadataProcessor(TGPlayer player) {
         super(player);
@@ -90,6 +96,10 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         this.pigBoostTimeIndex = metadataIndex.pigBoostTime();
         this.striderBoostTimeIndex = metadataIndex.striderBoostTime();
         this.striderSuffocatingIndex = metadataIndex.striderSuffocating();
+        this.horseFlagsIndex = metadataIndex.horseFlags();
+        this.pigSaddleIndex = metadataIndex.pigSaddle();
+        this.striderSaddleIndex = metadataIndex.striderSaddle();
+        this.ghastStaysStillIndex = metadataIndex.ghastStaysStill();
     }
 
     private static boolean detectCompetingPlugin() {
@@ -151,6 +161,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         trackFireworkAttachment(event, entityId, packet);
         trackFishingHook(event, entityId, packet);
         trackSteerable(event, entityId, packet);
+        trackControlState(event, entityId, packet);
 
         if (COMPETING_PLUGIN_ACTIVE) return;
 
@@ -199,10 +210,9 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
 
     private void trackSteerable(PacketSendEvent event, int entityId,
                                 WrapperPlayServerEntityMetadata packet) {
-        TrackedEntity entity = entities.resolve(entityId);
-        if (entity == null) return;
-        boolean pig = entity.type() == EntityTypes.PIG;
-        boolean strider = entity.type() == EntityTypes.STRIDER;
+        EntityType type = entities.announcedType(entityId);
+        boolean pig = type == EntityTypes.PIG;
+        boolean strider = type == EntityTypes.STRIDER;
         if (!pig && !strider) return;
         int boostIndex = pig ? pigBoostTimeIndex : striderBoostTimeIndex;
         for (EntityData<?> meta : packet.getEntityMetadata()) {
@@ -212,6 +222,42 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
             } else if (strider && index == striderSuffocatingIndex
                     && meta.getValue() instanceof Boolean suffocating) {
                 latencyHandler.compensate(event, () -> entities.setSuffocating(entityId, suffocating));
+            }
+        }
+    }
+
+    private void trackControlState(PacketSendEvent event, int entityId,
+                                   WrapperPlayServerEntityMetadata packet) {
+        EntityType type = entities.announcedType(entityId);
+        if (type == null) return;
+        if (EntityRoles.horseFamily(type)) {
+            if (horseFlagsIndex < 0) return;
+            for (EntityData<?> meta : packet.getEntityMetadata()) {
+                if (meta.getIndex() != horseFlagsIndex) continue;
+                if (meta.getValue() instanceof Byte flags) {
+                    final boolean saddled = (flags & HORSE_FLAG_SADDLE) != 0;
+                    latencyHandler.compensate(event, () -> entities.setSaddled(entityId, saddled));
+                }
+                return;
+            }
+        } else if (EntityRoles.steerableMob(type)) {
+            int saddleIndex = type == EntityTypes.PIG ? pigSaddleIndex : striderSaddleIndex;
+            if (saddleIndex < 0) return;
+            for (EntityData<?> meta : packet.getEntityMetadata()) {
+                if (meta.getIndex() != saddleIndex) continue;
+                if (meta.getValue() instanceof Boolean saddled) {
+                    latencyHandler.compensate(event, () -> entities.setSaddled(entityId, saddled));
+                }
+                return;
+            }
+        } else if (EntityRoles.happyGhast(type)) {
+            if (ghastStaysStillIndex < 0) return;
+            for (EntityData<?> meta : packet.getEntityMetadata()) {
+                if (meta.getIndex() != ghastStaysStillIndex) continue;
+                if (meta.getValue() instanceof Boolean still) {
+                    latencyHandler.compensate(event, () -> entities.setStaysStill(entityId, still));
+                }
+                return;
             }
         }
     }
