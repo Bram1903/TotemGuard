@@ -35,13 +35,14 @@ public final class WorldMirror {
     private final PendingBlocks pending = new PendingBlocks();
     private final PredictedBlocks predicted = new PredictedBlocks();
     private final BlockReader reader;
-    private final EntityTracker entities = new EntityTracker();
+    private final EntityTracker entities;
     private final BorderMirror border = new BorderMirror();
     private final WorldReadiness readiness = new WorldReadiness();
     private final DimensionProfile dimension = new DimensionProfile();
 
     public WorldMirror(ClientVersion clientVersion) {
         this.reader = new BlockReader(blocks, pending, predicted, ClientStateMap.forClient(clientVersion));
+        this.entities = new EntityTracker(clientVersion);
     }
 
     public void onJoin(String worldName, DimensionType dimensionType, int minY) {

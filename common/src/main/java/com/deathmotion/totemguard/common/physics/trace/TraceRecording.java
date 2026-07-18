@@ -34,6 +34,8 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.FireworkData;
 import com.deathmotion.totemguard.common.player.data.GlideData;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
+import com.deathmotion.totemguard.common.world.entity.EntityTracker;
+import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
@@ -44,6 +46,11 @@ public final class TraceRecording {
     private final Data data;
     private final EngineContext context;
     private final TraceFrame frame = new TraceFrame();
+    private TrackedEntity stagedEntity;
+    private double stagedPlyMinX, stagedPlyMaxX, stagedPlyMinZ, stagedPlyMaxZ;
+    private int stagedAuthoritativeId = -1;
+    private int stagedVehicleId = -1;
+    private String stagedNearby = "";
     private final TraceDump dumper;
     private long stagedContributors;
     private byte stagedChosenSlot;
@@ -104,6 +111,17 @@ public final class TraceRecording {
 
     public void contributors(long bits) {
         this.stagedContributors = bits;
+    }
+
+    public void stageNearestStandable(EntityTracker entities, double x, double y, double z, double half) {
+        stagedEntity = entities.nearestStandable(x, y, z);
+        stagedPlyMinX = x - half;
+        stagedPlyMaxX = x + half;
+        stagedPlyMinZ = z - half;
+        stagedPlyMaxZ = z + half;
+        stagedAuthoritativeId = entities.authoritativeId();
+        stagedVehicleId = data.getVehicleId();
+        stagedNearby = entities.describeStandablesNear(x, z, 2.5);
     }
 
     public void hypotheses(int chosenSlot, int liveCount) {
@@ -178,6 +196,9 @@ public final class TraceRecording {
         populateContext(sample, input);
         frame.supportGap = contact != null ? Math.min(contact.nearestSupportGap(), 9.999) : 0.0;
         frame.ceilingClearance = contact != null ? contact.ceilingClearance() : 0.0;
+        frame.supportTop = contact != null ? contact.supportTop() : Double.NEGATIVE_INFINITY;
+        if (contact != null && contact.supportIsEntity()) frame.flags |= TraceFrame.FLAG_SUPPORT_ENTITY;
+        populateEntity();
         frame.reads = reader.readsThisTick();
         frame.misses = reader.missesThisTick();
         frame.uncertainHits = reader.uncertainHitsThisTick();
@@ -198,6 +219,36 @@ public final class TraceRecording {
                 || (verdict.stream() == MotionStream.VEHICLE && verdict.breach() != null)) {
             dumper.dump(actor, recorder, verdict.breach() != null ? verdict.breach().name() : "fall", contexts);
         }
+    }
+
+    private void populateEntity() {
+        TrackedEntity entity = stagedEntity;
+        stagedEntity = null;
+        frame.entPlyMinX = stagedPlyMinX;
+        frame.entPlyMaxX = stagedPlyMaxX;
+        frame.entPlyMinZ = stagedPlyMinZ;
+        frame.entPlyMaxZ = stagedPlyMaxZ;
+        frame.entAuthoritativeId = stagedAuthoritativeId;
+        frame.entVehicleId = stagedVehicleId;
+        frame.entNearby = stagedNearby;
+        stagedAuthoritativeId = -1;
+        stagedVehicleId = -1;
+        stagedNearby = "";
+        frame.entTracked = entity != null;
+        if (entity == null) return;
+        frame.entRenderX = entity.renderX();
+        frame.entRenderY = entity.renderY();
+        frame.entRenderZ = entity.renderZ();
+        frame.entTargetX = entity.targetX();
+        frame.entTargetY = entity.targetY();
+        frame.entTargetZ = entity.targetZ();
+        frame.entSpanMinX = entity.spanMinX();
+        frame.entSpanMaxX = entity.spanMaxX();
+        frame.entSpanMinZ = entity.spanMinZ();
+        frame.entSpanMaxZ = entity.spanMaxZ();
+        frame.entHalfWidth = entity.halfWidth();
+        frame.entHeight = entity.height();
+        frame.entSteps = entity.interpSteps();
     }
 
     private void populateContext(@Nullable MediumSample sample, @Nullable ControlEnvelope input) {

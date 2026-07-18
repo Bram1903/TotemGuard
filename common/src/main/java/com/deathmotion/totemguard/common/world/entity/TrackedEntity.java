@@ -27,9 +27,10 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class TrackedEntity {
 
-    private static final int INTERPOLATION_STEPS = 3;
+    public static final int INTERPOLATION_STEPS = 3;
     private static final double BOOST_AMPLITUDE = 1.15F;
 
+    private final int interpolationSteps;
     private final EntityType type;
     private final boolean pushable;
     private final boolean standable;
@@ -69,7 +70,8 @@ public final class TrackedEntity {
     private boolean interpolatedLast;
     private boolean queuedForAdvance;
 
-    TrackedEntity(EntityType type) {
+    TrackedEntity(EntityType type, int interpolationSteps) {
+        this.interpolationSteps = interpolationSteps;
         this.type = type;
         this.pushable = EntityRoles.pushable(type);
         this.standable = EntityRoles.standable(type);
@@ -89,7 +91,19 @@ public final class TrackedEntity {
         targetX = x;
         targetY = y;
         targetZ = z;
-        interpSteps = INTERPOLATION_STEPS;
+        interpSteps = interpolationSteps;
+        positioned = true;
+    }
+
+    void driveAuthoritative(double x, double y, double z) {
+        prevRenderX = renderX;
+        prevRenderY = renderY;
+        prevRenderZ = renderZ;
+        renderX = targetX = x;
+        renderY = targetY = y;
+        renderZ = targetZ = z;
+        interpSteps = 0;
+        interpolatedLast = false;
         positioned = true;
     }
 
@@ -97,7 +111,7 @@ public final class TrackedEntity {
         targetX += dx;
         targetY += dy;
         targetZ += dz;
-        interpSteps = INTERPOLATION_STEPS;
+        interpSteps = interpolationSteps;
     }
 
     boolean advance() {

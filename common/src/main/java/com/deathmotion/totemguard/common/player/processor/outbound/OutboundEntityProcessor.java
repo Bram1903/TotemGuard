@@ -109,6 +109,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             handleEquipment(event);
         } else if (type == PacketType.Play.Server.RESPAWN) {
             serverVehicleId = -1;
+            entities.clearAuthoritative();
         }
     }
 
@@ -180,6 +181,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
                 latencyHandler.compensate(event, () -> {
                     if (data.getVehicleId() == entityId) data.setVehicleId(-1);
                     data.getMovementData().markVehicleSwitchResync();
+                    entities.clearAuthoritative();
                 });
                 return;
             }
@@ -217,6 +219,7 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
                 data.getMovementData().markVehicleSwitchResync();
                 data.getVehicleData().onMount();
                 data.getVehicleData().setDriverSeat(false);
+                entities.clearAuthoritative();
             });
         } else if (playerInThisVehicle) {
             latencyHandler.compensate(event, () -> {

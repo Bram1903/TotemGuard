@@ -66,6 +66,10 @@ public final class TraceFormatter {
         if (f.liveCount > 1) sb.append(" hyp=").append(f.chosenSlot).append('/').append(f.liveCount);
         sb.append(f.has(TraceFrame.FLAG_GROUNDED_END) ? " gnd" : " air");
         sb.append(String.format(Locale.ROOT, " gap%.3f ceil%.2f", cap(f.supportGap), cap(f.ceilingClearance)));
+        if (f.supportTop != Double.NEGATIVE_INFINITY) {
+            sb.append(String.format(Locale.ROOT, " top%.4f%s", f.supportTop,
+                    f.has(TraceFrame.FLAG_SUPPORT_ENTITY) ? "E" : "B"));
+        }
         if (f.stuckHorizontal != 1.0 || f.stuckVertical != 1.0) {
             sb.append(String.format(Locale.ROOT, " stk(%.2f,%.2f)", f.stuckHorizontal, f.stuckVertical));
         }
@@ -135,6 +139,24 @@ public final class TraceFormatter {
             if (f.has(TraceFrame.FLAG_WALL_NEAR)) sb.append(" wall");
             sb.append(String.format(Locale.ROOT, " gap%.3f", cap(f.supportGap)));
             if (f.has(TraceFrame.FLAG_FLUID_HOP)) sb.append(" hop");
+        }
+        if (contexts.contains(PhysicsDebugContext.ENTITY)) {
+            sb.append(String.format(Locale.ROOT, " | veh%d auth%d ply x[%.4f,%.4f] z[%.4f,%.4f]",
+                    f.entVehicleId, f.entAuthoritativeId,
+                    f.entPlyMinX, f.entPlyMaxX, f.entPlyMinZ, f.entPlyMaxZ));
+            if (!f.entTracked) {
+                sb.append(" ent none");
+            } else {
+                sb.append(String.format(Locale.ROOT,
+                        " ent rnd(%.4f,%.4f,%.4f) tgt(%.4f,%.4f,%.4f) stp%d box x[%.4f,%.4f] z[%.4f,%.4f]",
+                        f.entRenderX, f.entRenderY, f.entRenderZ,
+                        f.entTargetX, f.entTargetY, f.entTargetZ, f.entSteps,
+                        f.entSpanMinX - f.entHalfWidth, f.entSpanMaxX + f.entHalfWidth,
+                        f.entSpanMinZ - f.entHalfWidth, f.entSpanMaxZ + f.entHalfWidth));
+            }
+            if (f.entNearby != null && !f.entNearby.isEmpty()) {
+                sb.append(" near[").append(f.entNearby).append(']');
+            }
         }
         if (contexts.contains(PhysicsDebugContext.GLIDE)) {
             sb.append(String.format(Locale.ROOT, " | glide pitch%+.2f fw%d/%d", f.pitch, f.fireworkMin, f.fireworkMax));

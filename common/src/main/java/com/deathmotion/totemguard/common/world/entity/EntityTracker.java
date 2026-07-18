@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.world.entity;
 import com.deathmotion.totemguard.common.world.shape.ShapeSink;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
@@ -29,10 +30,13 @@ import java.util.*;
 @Accessors(fluent = true)
 public final class EntityTracker {
 
+    private static final int LEGACY_BOAT_INTERPOLATION_STEPS = 10;
+
     private static final double SNAP_THRESHOLD = 4.0;
-    private static final double SUPPORT_HORIZONTAL_PAD = 0.1;
-    private static final double SUPPORT_TOP_EPS = 0.03;
-    private static final double SUPPORT_MAX_DROP = 2.0;
+
+    private final int boatInterpolationSteps;
+
+    private int authoritativeId = -1;
 
     private final Map<Integer, TrackedEntity> entities = new HashMap<>();
     // Identity follows packet SEND order, positions follow acks: a CAMERA or METADATA sent right
@@ -44,6 +48,12 @@ public final class EntityTracker {
     private int standableCount;
     @Getter
     private int pushableCount;
+
+    public EntityTracker(ClientVersion clientVersion) {
+        this.boatInterpolationSteps = clientVersion.isOlderThan(ClientVersion.V_1_21_2)
+                ? LEGACY_BOAT_INTERPOLATION_STEPS
+                : TrackedEntity.INTERPOLATION_STEPS;
+    }
 
     private static double intervalGap(double aMin, double aMax, double bMin, double bMax) {
         if (aMax < bMin) return bMin - aMax;
@@ -68,7 +78,8 @@ public final class EntityTracker {
     }
 
     public void spawn(int entityId, EntityType type, double x, double y, double z) {
-        TrackedEntity entity = new TrackedEntity(type);
+        TrackedEntity entity = new TrackedEntity(type,
+                EntityRoles.boat(type) ? boatInterpolationSteps : TrackedEntity.INTERPOLATION_STEPS);
         entity.snapTo(x, y, z);
         TrackedEntity previous = entities.put(entityId, entity);
         if (previous != null) {
@@ -85,9 +96,37 @@ public final class EntityTracker {
             if (removed.standable()) standableCount--;
             if (removed.pushable()) pushableCount--;
         }
+        if (entityId == authoritativeId) authoritativeId = -1;
+    }
+
+    public void setAuthoritative(int entityId, boolean authoritative) {
+        if (authoritative) {
+            authoritativeId = entityId;
+        } else if (authoritativeId == entityId) {
+            authoritativeId = -1;
+        }
+    }
+
+    public void clearAuthoritative() {
+        authoritativeId = -1;
+    }
+
+    public int authoritativeId() {
+        return authoritativeId;
+    }
+
+    public void reconcileAuthority(int currentVehicleId) {
+        if (authoritativeId >= 0 && authoritativeId != currentVehicleId) authoritativeId = -1;
+    }
+
+    public void driveAuthoritative(int entityId, double x, double y, double z) {
+        TrackedEntity entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.driveAuthoritative(x, y, z);
     }
 
     public void place(int entityId, double x, double y, double z) {
+        if (entityId == authoritativeId) return;
         TrackedEntity entity = entities.get(entityId);
         if (entity == null) return;
         if (!entity.positioned()
@@ -102,6 +141,7 @@ public final class EntityTracker {
     }
 
     public void nudge(int entityId, double dx, double dy, double dz) {
+        if (entityId == authoritativeId) return;
         TrackedEntity entity = entities.get(entityId);
         if (entity == null || !entity.positioned()) return;
         entity.addDelta(dx, dy, dz);
@@ -198,12 +238,32 @@ public final class EntityTracker {
         settling.clear();
         standableCount = 0;
         pushableCount = 0;
+        authoritativeId = -1;
     }
 
     private void enqueueSettling(TrackedEntity entity) {
         if (entity.queuedForAdvance()) return;
         entity.queuedForAdvance(true);
         settling.add(entity);
+    }
+
+    public String describeStandablesNear(double x, double z, double radius) {
+        StringBuilder out = new StringBuilder();
+        int shown = 0;
+        for (Map.Entry<Integer, TrackedEntity> entry : entities.entrySet()) {
+            TrackedEntity entity = entry.getValue();
+            if (!entity.positioned() || !entity.standable()) continue;
+            double half = entity.halfWidth();
+            if (Math.abs(entity.renderX() - x) > radius + half) continue;
+            if (Math.abs(entity.renderZ() - z) > radius + half) continue;
+            if (out.length() > 0) out.append(' ');
+            out.append(String.format(java.util.Locale.ROOT, "#%d(%.3f,%.3f)tgt(%.3f,%.3f)stp%d top%.4f",
+                    entry.getKey(), entity.renderX(), entity.renderZ(),
+                    entity.targetX(), entity.targetZ(), entity.interpSteps(),
+                    entity.spanMaxY() + entity.height()));
+            if (++shown >= 8) break;
+        }
+        return out.length() == 0 ? "none" : out.toString();
     }
 
     public boolean isTracked(int entityId) {
@@ -221,6 +281,23 @@ public final class EntityTracker {
     public boolean isSlimeLike(int entityId) {
         EntityType type = announced.get(entityId);
         return type == EntityTypes.SLIME || type == EntityTypes.MAGMA_CUBE;
+    }
+
+    public TrackedEntity nearestStandable(double x, double y, double z) {
+        TrackedEntity best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (TrackedEntity entity : entities.values()) {
+            if (!entity.positioned() || !entity.standable()) continue;
+            double dx = entity.renderX() - x;
+            double dy = entity.renderY() - y;
+            double dz = entity.renderZ() - z;
+            double distance = dx * dx + dy * dy + dz * dz;
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = entity;
+            }
+        }
+        return best;
     }
 
     public int collectStandable(double minX, double minY, double minZ,
@@ -243,28 +320,6 @@ public final class EntityTracker {
             emitted++;
         }
         return emitted;
-    }
-
-    public double highestStandableTop(double pMinX, double pMinZ, double pMaxX, double pMaxZ, double feetY) {
-        if (standableCount == 0) return Double.NEGATIVE_INFINITY;
-        double best = Double.NEGATIVE_INFINITY;
-        for (TrackedEntity entity : entities.values()) {
-            if (!entity.positioned() || !entity.standable()) continue;
-
-            double half = entity.halfWidth() + SUPPORT_HORIZONTAL_PAD;
-            double eMinX = entity.spanMinX() - half;
-            double eMaxX = entity.spanMaxX() + half;
-            if (pMaxX <= eMinX || pMinX >= eMaxX) continue;
-            double eMinZ = entity.spanMinZ() - half;
-            double eMaxZ = entity.spanMaxZ() + half;
-            if (pMaxZ <= eMinZ || pMinZ >= eMaxZ) continue;
-
-            double top = entity.spanMaxY() + entity.height();
-            if (top > feetY + SUPPORT_TOP_EPS) continue;
-            if (top < feetY - SUPPORT_MAX_DROP) continue;
-            if (top > best) best = top;
-        }
-        return best;
     }
 
     public int countPushableNear(double pMinX, double pMinY, double pMinZ,

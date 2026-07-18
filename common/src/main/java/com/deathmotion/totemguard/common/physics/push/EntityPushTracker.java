@@ -23,21 +23,24 @@ import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 
 public final class EntityPushTracker {
 
-    private static final double PUSH_PER_ENTITY = 0.08;
-    private static final double MAX_PUSH = 0.30;
+    private static final double VANILLA_PUSH_PER_TICK = 0.05;
+    private static final double PUSH_CEILING = 1.5;
 
     private EntityPushTracker() {
     }
 
-    public static double apply(AreaBounds bounds, EntityTracker entities,
-                               double sweptMinX, double sweptMinY, double sweptMinZ,
-                               double sweptMaxX, double sweptMaxY, double sweptMaxZ,
-                               double playerHalfWidth, double playerHeight) {
+    public static double advance(double carried, EntityTracker entities, double friction,
+                                 double sweptMinX, double sweptMinY, double sweptMinZ,
+                                 double sweptMaxX, double sweptMaxY, double sweptMaxZ,
+                                 double playerHalfWidth, double playerHeight) {
         int count = entities.countPushableNear(sweptMinX, sweptMinY, sweptMinZ,
                 sweptMaxX, sweptMaxY, sweptMaxZ, playerHalfWidth, playerHeight);
-        if (count <= 0) return 0.0;
-        double widen = Math.min(MAX_PUSH, count * PUSH_PER_ENTITY);
-        bounds.expandRadius(widen);
-        return widen;
+        double next = carried * friction + count * VANILLA_PUSH_PER_TICK;
+        return Math.min(PUSH_CEILING, Math.max(0.0, next));
+    }
+
+    public static double apply(AreaBounds bounds, double push) {
+        if (push > 0.0) bounds.expandRadius(push);
+        return push;
     }
 }

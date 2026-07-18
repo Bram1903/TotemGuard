@@ -166,6 +166,12 @@ public final class VehicleSimulation {
             disengage();
             return;
         }
+        boolean controlling = VehicleAuthority.controlling(type, ridden, vehicle.isDriverSeat(), actor, gates);
+        world.entities().setAuthoritative(vehicleId, controlling);
+        if (controlling) {
+            world.entities().driveAuthoritative(vehicleId,
+                    vehicle.getCurX(), vehicle.getCurY(), vehicle.getCurZ());
+        }
         if (EntityRoles.steerableMob(type)) ridden.tickBoost();
         if (!world.readiness().ready() || seedRequested || ridden.interpolating()) {
             seedFrom(vehicle, BodyKind.HORSE);
@@ -182,7 +188,6 @@ public final class VehicleSimulation {
         preZ = carried.centerZ();
         preFloor = carried.floorVy();
         preCeil = carried.ceilVy();
-        boolean controlling = VehicleAuthority.controlling(type, ridden, vehicle.isDriverSeat(), actor, gates);
         BodyKind kind;
         if (EntityRoles.boat(type)) {
             boatBody.mount(ridden, type);
@@ -856,6 +861,7 @@ public final class VehicleSimulation {
     }
 
     private void disengage() {
+        world.entities().clearAuthoritative();
         mounts.reset();
         carried = MotionArea.rest();
         lastDy = 0.0;

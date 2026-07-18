@@ -143,6 +143,7 @@ public final class SelfSimulation {
     private ControlEnvelope inputThisTick;
     private MediumModel mediumThisTick;
     private double preStepCarriedX, preStepCarriedZ, preStepCarriedFloor, preStepCarriedCeil;
+    private double carriedEntityPush;
 
     @Getter
     private PhysicsVerdict verdict = PhysicsVerdict.INITIAL;
@@ -196,6 +197,7 @@ public final class SelfSimulation {
         PhysicsPreset preset = view.physicsPreset();
         MovementData movement = data.getMovementData();
         world.entities().advance();
+        world.entities().reconcileAuthority(data.getVehicleId());
         reader.resetCounters();
 
         Location current = movement.getCurrent();
@@ -387,6 +389,7 @@ public final class SelfSimulation {
 
     public void reset() {
         initialized = false;
+        carriedEntityPush = 0.0;
         carried.collapse(MotionArea.rest());
         trust.reset();
         groundResolver.reset();
@@ -482,6 +485,7 @@ public final class SelfSimulation {
         ColliderCollector.fill(colliders, reader, world.entities(), query, exemptions,
                 data.getPistonData(),
                 minX, minY, minZ, maxX, maxY, maxZ);
+        trace.stageNearestStandable(world.entities(), current.getX(), current.getY(), current.getZ(), half);
         BorderColliders.fill(colliders, world.border(), previous.getX(), previous.getZ(), half,
                 minX, minY, minZ, maxX, maxY, maxZ);
         pistons.setPlayerBox(
@@ -560,6 +564,15 @@ public final class SelfSimulation {
             spawnBits |= TraceFrame.SPAWN_SQUEEZE_OUT;
         }
 
+        carriedEntityPush = EntityPushTracker.advance(carriedEntityPush, world.entities(),
+                medium.frictionMax(input, ground),
+                Math.min(current.getX() - dx, current.getX()) - half, Math.min(current.getY() - dy, current.getY()),
+                Math.min(current.getZ() - dz, current.getZ()) - half,
+                Math.max(current.getX() - dx, current.getX()) + half,
+                Math.max(current.getY() - dy, current.getY()) + height,
+                Math.max(current.getZ() - dz, current.getZ()) + half,
+                half, height);
+
         int chosen = 0;
         double best = Double.MAX_VALUE;
         boolean knockbackWidened = false;
@@ -590,13 +603,7 @@ public final class SelfSimulation {
             boolean slotPiston = pistons.apply(slotBounds);
             glideExit.widenForExit(medium, data, body.mediums(), input, ground, area, slotBounds);
             riptideGlide.offer(medium, data, body.mediums(), input, ground, contact, area, slotBounds);
-            double slotPush = EntityPushTracker.apply(slotBounds, world.entities(),
-                    Math.min(current.getX() - dx, current.getX()) - half, Math.min(current.getY() - dy, current.getY()),
-                    Math.min(current.getZ() - dz, current.getZ()) - half,
-                    Math.max(current.getX() - dx, current.getX()) + half,
-                    Math.max(current.getY() - dy, current.getY()) + height,
-                    Math.max(current.getZ() - dz, current.getZ()) + half,
-                    half, height);
+            double slotPush = EntityPushTracker.apply(slotBounds, carriedEntityPush);
             boolean slotBounce = bedBounce.applyTo(slotBounds,
                     slotBounds.centerX() - area.centerX(), slotBounds.centerZ() - area.centerZ());
             boolean slotBoost = SprintBoostRule.apply(input, slotBounds, boostStuckScale);
@@ -1119,6 +1126,7 @@ public final class SelfSimulation {
         if (reseed || reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT
                 || reason == DeclineReason.SLEEPING) {
             groundResolver.displaced();
+            carriedEntityPush = 0.0;
         }
         carry.clear();
         bedBounce.reset();
