@@ -308,6 +308,7 @@ public final class VehicleSimulation {
         main.addDescentSlack(vPad);
         main.enforceDescentFloor(true);
         main.ceiling(Math.max(clipHi + vPad, extraCeiling));
+        main.raiseCeiling(entityArrestCeiling(startY));
         pistons.apply(main);
 
         double impulseBandLo = 0.0;
@@ -497,6 +498,7 @@ public final class VehicleSimulation {
         main.addDescentSlack(vPad);
         main.enforceDescentFloor(true);
         main.ceiling(bandClip.ceiling() + vPad);
+        main.raiseCeiling(entityArrestCeiling(startY));
         double mainClipLo = bandClip.floor();
         double mainClipHi = bandClip.ceiling();
         pistons.apply(main);
@@ -681,6 +683,7 @@ public final class VehicleSimulation {
         main.addDescentSlack(vPad);
         main.enforceDescentFloor(true);
         main.ceiling(bandClip.ceiling() + vPad);
+        main.raiseCeiling(entityArrestCeiling(startY));
         double mainClipLo = bandClip.floor();
         double mainClipHi = bandClip.ceiling();
         pistons.apply(main);
@@ -816,7 +819,7 @@ public final class VehicleSimulation {
         double maxY = startY + height + Math.max(0.0, reachUp) + HARVEST_MARGIN;
         double maxZ = startZ + half + Math.max(0.0, obsZ) + HARVEST_MARGIN;
         ColliderCollector.fill(colliders, reader, world.entities(), query, ExemptCells.NONE,
-                data.getPistonData(), minX, minY, minZ, maxX, maxY, maxZ);
+                data.getPistonData(), data.getVehicleId(), minX, minY, minZ, maxX, maxY, maxZ);
         BorderColliders.fill(colliders, world.border(), startX, startZ, half,
                 minX, minY, minZ, maxX, maxY, maxZ);
         sweep.resolve(colliders, contact,
@@ -839,6 +842,20 @@ public final class VehicleSimulation {
                 Math.max(startX, endX) + half,
                 Math.max(startY, endY) + height,
                 Math.max(startZ, endZ) + half);
+    }
+
+    // A standable entity below the vehicle (a happy ghast under a boat, a shulker, another boat)
+    // never clips the descent band because its interpolated position is uncertain, so a fall arrested
+    // on top of it would otherwise read as an ASCENT breach. The support scan still reports the entity
+    // top, so use it to RAISE the descent ceiling to the arrest displacement: one-sided (the vehicle
+    // may equally keep falling if the entity sits elsewhere in the client frame) and capped at 0 so
+    // entity support can never license a rise. The ridden vehicle is excluded from the support scan,
+    // so this never triggers on the vehicle's own box.
+    private double entityArrestCeiling(double feetY) {
+        if (!contact.supportIsEntity() || contact.supportGap() == ContactReport.NO_SUPPORT) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        return Math.min(0.0, contact.supportTop() - feetY);
     }
 
     private BoundBreach classify(JudgedExcess excess, PhysicsPreset preset) {

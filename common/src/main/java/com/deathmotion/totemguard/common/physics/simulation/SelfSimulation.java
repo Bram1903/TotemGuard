@@ -483,7 +483,7 @@ public final class SelfSimulation {
         double minZ = Math.min(previous.getZ(), current.getZ()) - half - HARVEST_HORIZONTAL_MARGIN;
         double maxZ = Math.max(previous.getZ(), current.getZ()) + half + HARVEST_HORIZONTAL_MARGIN;
         ColliderCollector.fill(colliders, reader, world.entities(), query, exemptions,
-                data.getPistonData(),
+                data.getPistonData(), -1,
                 minX, minY, minZ, maxX, maxY, maxZ);
         trace.stageNearestStandable(world.entities(), current.getX(), current.getY(), current.getZ(), half);
         BorderColliders.fill(colliders, world.border(), previous.getX(), previous.getZ(), half,

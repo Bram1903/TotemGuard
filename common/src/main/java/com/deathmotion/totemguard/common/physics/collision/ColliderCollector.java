@@ -33,7 +33,7 @@ public final class ColliderCollector {
     }
 
     public static void fill(ColliderBuffer buffer, BlockReader reader, EntityTracker entities,
-                            ShapeQuery query, ExemptCells exempt, PistonData pistons,
+                            ShapeQuery query, ExemptCells exempt, PistonData pistons, int excludeEntityId,
                             double minX, double minY, double minZ,
                             double maxX, double maxY, double maxZ) {
         buffer.reset();
@@ -82,9 +82,10 @@ public final class ColliderCollector {
 
         // Entity positions carry interpolation uncertainty, so their boxes support but never clip:
         // charging a crossing against a box the client may render elsewhere would be a false phase.
+        // excludeEntityId drops the ridden vehicle itself so it never reads as its own support.
         buffer.tag(ColliderBuffer.KIND_ENTITY | ColliderBuffer.TAG_UNCERTAIN);
         buffer.cell(ColliderBuffer.NO_CELL);
-        entities.collectStandable(minX, minY, minZ, maxX, maxY, maxZ, buffer);
+        entities.collectStandable(minX, minY, minZ, maxX, maxY, maxZ, buffer, excludeEntityId);
 
         collectMovingPistons(buffer, pistons, minX, minY, minZ, maxX, maxY, maxZ);
     }

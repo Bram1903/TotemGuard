@@ -301,10 +301,12 @@ public final class EntityTracker {
     }
 
     public int collectStandable(double minX, double minY, double minZ,
-                                double maxX, double maxY, double maxZ, ShapeSink sink) {
+                                double maxX, double maxY, double maxZ, ShapeSink sink, int excludeEntityId) {
         if (standableCount == 0) return 0;
         int emitted = 0;
-        for (TrackedEntity entity : entities.values()) {
+        for (Map.Entry<Integer, TrackedEntity> entry : entities.entrySet()) {
+            if (entry.getKey() == excludeEntityId) continue;
+            TrackedEntity entity = entry.getValue();
             if (!entity.positioned() || !entity.standable()) continue;
             double half = entity.halfWidth();
             double eMinX = entity.spanMinX() - half;
