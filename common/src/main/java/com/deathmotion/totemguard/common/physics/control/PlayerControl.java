@@ -60,8 +60,8 @@ public record PlayerControl(
         double airDragModifier,
         double frictionModifier,
         double inputMultiplier,
-        double boostDirX,
-        double boostDirZ,
+        double boostX,
+        double boostZ,
         double boostSpread,
         boolean claimedInputExact,
         double claimedWorldX,
@@ -73,8 +73,8 @@ public record PlayerControl(
         boolean airSprint,
         boolean airSprintFirm) implements ControlEnvelope {
 
-    public static final double AIR_ACCEL = 0.026;
-    public static final double AIR_ACCEL_WALK = 0.02;
+    public static final double AIR_ACCEL = 0.025999999f;
+    public static final double AIR_ACCEL_WALK = 0.02f;
 
     @Override
     public double airAccel() {
@@ -92,11 +92,12 @@ public record PlayerControl(
     }
 
     public double jumpBoostPower() {
-        return jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;
+        return jumpBoostAmplifier >= 0 ? 0.1F * (jumpBoostAmplifier + 1) : 0.0;
     }
 
     public double jumpTakeoff() {
-        return jumpStrength + jumpBoostPower();
+        if (jumpBoostAmplifier < 0) return jumpStrength;
+        return (float) jumpStrength + 0.1F * (jumpBoostAmplifier + 1);
     }
 
     public double lookHorizontal() {

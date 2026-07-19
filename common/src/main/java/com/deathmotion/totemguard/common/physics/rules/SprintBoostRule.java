@@ -29,13 +29,12 @@ public final class SprintBoostRule {
 
     public static boolean apply(ControlEnvelope input, AreaBounds bounds, double stuckHorizontal) {
         if (!input.sprintJump()) return false;
-        double boost = MediumModel.SPRINT_JUMP_BOOST * stuckHorizontal;
-        if ((input.boostDirX() == 0.0 && input.boostDirZ() == 0.0) || bounds.hasAltCenter()) {
-            bounds.expandRadius(boost);
+        if ((input.boostX() == 0.0 && input.boostZ() == 0.0) || bounds.hasAltCenter()) {
+            bounds.expandRadius(MediumModel.SPRINT_JUMP_BOOST * stuckHorizontal);
             return true;
         }
-        bounds.altCenter(bounds.centerX() + input.boostDirX() * boost,
-                bounds.centerZ() + input.boostDirZ() * boost);
+        bounds.altCenter(bounds.centerX() + input.boostX() * stuckHorizontal,
+                bounds.centerZ() + input.boostZ() * stuckHorizontal);
         bounds.expandRadius(input.boostSpread() * stuckHorizontal);
         return true;
     }

@@ -112,15 +112,15 @@ public final class StateFacts {
     public static double stuckHorizontal(long facts, boolean weavingCobweb) {
         return switch ((int) ((facts & STUCK_MASK) >> STUCK_SHIFT)) {
             case (int) STUCK_COBWEB -> weavingCobweb ? 0.5 : 0.25;
-            case (int) STUCK_BERRY -> 0.8;
-            case (int) STUCK_POWDER_SNOW -> 0.9;
+            case (int) STUCK_BERRY -> 0.8f;
+            case (int) STUCK_POWDER_SNOW -> 0.9f;
             default -> 1.0;
         };
     }
 
     public static double stuckVertical(long facts, boolean weavingCobweb) {
         return switch ((int) ((facts & STUCK_MASK) >> STUCK_SHIFT)) {
-            case (int) STUCK_COBWEB -> weavingCobweb ? 0.25 : 0.05;
+            case (int) STUCK_COBWEB -> weavingCobweb ? 0.25 : 0.05f;
             case (int) STUCK_BERRY -> 0.75;
             case (int) STUCK_POWDER_SNOW -> 1.5;
             default -> 1.0;

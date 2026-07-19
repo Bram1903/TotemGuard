@@ -69,6 +69,10 @@ public final class ClientMath {
         return Math.sqrt(x * x + z * z);
     }
 
+    public static float sqrt(float value) {
+        return (float) Math.sqrt(value);
+    }
+
     public static float sinFast(float radians) {
         return FASTMATH[(int) (radians * FASTMATH_SCALE) & 4095];
     }

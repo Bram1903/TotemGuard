@@ -116,11 +116,11 @@ public interface ControlEnvelope {
         return 1.0;
     }
 
-    default double boostDirX() {
+    default double boostX() {
         return 0.0;
     }
 
-    default double boostDirZ() {
+    default double boostZ() {
         return 0.0;
     }
 

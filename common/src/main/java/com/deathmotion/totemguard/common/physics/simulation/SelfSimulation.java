@@ -82,7 +82,7 @@ public final class SelfSimulation {
     private static final int STUCK_SETTLE_SCANS = 3;
     private static final int PENDING_SPAWN_LIMIT = 12;
     private static final double TURN_DRIFT_DECAY = 0.85;
-    private static final double TURN_DRIFT_TOLERANCE = 0.006;
+    private static final double TURN_DRIFT_TOLERANCE = 1.0E-5;
 
     private final EngineActor actor;
     private final Data data;
@@ -606,7 +606,7 @@ public final class SelfSimulation {
             ctx.fill(preset, sample, input, slotGround, contact, medium, slotBounds);
             AreaExpander.grow(area, ctx, stuckFactor, bubble, carry);
             if (unobstructedFall && carried.kind(slot) == CarriedHypotheses.Kind.MAIN) {
-                slotBounds.ceiling(Math.min(slotBounds.ceiling(), area.ceilVy() + preset.verticalNoisePad()));
+                slotBounds.ceiling(Math.min(slotBounds.ceiling(), area.ceilVy()));
                 minFallPinned = true;
             }
             knockback.apply(slotBounds, preset.knockbackPad(),
@@ -699,6 +699,8 @@ public final class SelfSimulation {
                 || data.getMitigationService().setbackPending()
                 || pistonInfluence || knockbackHypothesisChosen || excess.altCenterUsed()
                 || input.airAccelBase() != input.airAccelBaseMin()
+                || input.sneaking() != data.isSneaking()
+                || data.getUseItemData().slowdownAmbiguous()
                 || doubleMoveThisTick;
         double momentumExcess = turnMomentumExcess(dx, dz, medium, input, ground, preset, momentumTainted);
         boolean momentumFlagged = momentumExcess > preset.horizontalFlagEpsilon();
@@ -878,8 +880,8 @@ public final class SelfSimulation {
             double coastZ = area.centerZ();
             double coastSlack = area.slack() + accel;
             if (input.sprintJump()) {
-                coastX += input.boostDirX() * MediumModel.SPRINT_JUMP_BOOST;
-                coastZ += input.boostDirZ() * MediumModel.SPRINT_JUMP_BOOST;
+                coastX += input.boostX();
+                coastZ += input.boostZ();
                 coastSlack += input.boostSpread();
             }
             queueSpawn(CarriedHypotheses.Kind.STEP_TRACK, TraceFrame.SPAWN_STEP,
@@ -1325,15 +1327,14 @@ public final class SelfSimulation {
             return 0.0;
         }
         if (!momentumValid) {
-            momentumX = dx * friction * speedFactor;
-            momentumZ = dz * friction * speedFactor;
+            momentumX = dx * speedFactor * friction;
+            momentumZ = dz * speedFactor * friction;
             momentumDrift = 0.0;
             momentumValid = true;
             return 0.0;
         }
         momentumBounds.reset(new MotionArea(momentumX, momentumZ, 0.0, 0.0, 0.0));
         medium.horizontalOptions(input, ground, momentumBounds);
-        momentumBounds.expandRadius(preset.horizontalNoisePad());
         double predX = momentumBounds.centerX();
         double predZ = momentumBounds.centerZ();
         double excess = OutwardResidual.excess(dx, dz, predX, predZ, momentumBounds.radius());
@@ -1348,8 +1349,8 @@ public final class SelfSimulation {
         }
         double driftExcess = Math.max(0.0, Math.abs(momentumDrift) - TURN_DRIFT_TOLERANCE);
 
-        momentumX = (inside ? dx : predX) * friction * speedFactor;
-        momentumZ = (inside ? dz : predZ) * friction * speedFactor;
+        momentumX = (inside ? dx : predX) * speedFactor * friction;
+        momentumZ = (inside ? dz : predZ) * speedFactor * friction;
         return Math.max(Math.max(0.0, excess), driftExcess);
     }
 
@@ -1393,8 +1394,9 @@ public final class SelfSimulation {
                 : contact.supportSpeedFactor();
         if (raw >= 1.0) return 1.0;
         if (!gates.speedFactorOnCenter()) return 1.0;
-        double efficiency = data.getAttributeData().movementEfficiency();
-        return raw + efficiency * (1.0 - raw);
+        float factor = (float) raw;
+        float efficiency = (float) data.getAttributeData().movementEfficiency();
+        return factor + efficiency * (1.0F - factor);
     }
 
     private boolean riseTainted(boolean landModel) {

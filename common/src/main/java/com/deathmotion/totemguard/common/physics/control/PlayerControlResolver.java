@@ -46,9 +46,7 @@ public final class PlayerControlResolver {
     private static final int SPRINT_TURN_TOLERANCE = 8;
     private static final double SPRINT_GROUND_SLIPPERINESS = 0.61;
 
-    private static final double SPRINT_JUMP_BOOST = 0.2;
-
-    private static final double SPRINT_SPEED_MULTIPLIER = 1.3;
+    private static final double SPRINT_SPEED_MULTIPLIER = 1.0 + 0.3f;
     private static final double SWIFT_SNEAK_PER_LEVEL = 0.15;
     private static final double FROST_SPEED_PENALTY = 0.05;
     private static final int FROST_FULL_TICKS = 140;
@@ -91,9 +89,8 @@ public final class PlayerControlResolver {
         EffectData effects = data.getEffectData();
         PlayerAttributeData attr = data.getAttributeData();
         int jumpBoostAmplifier = effects.hasJumpBoost() ? effects.jumpBoostAmplifier() : -1;
-        double jumpBoost = jumpBoostAmplifier >= 0 ? 0.1 * (jumpBoostAmplifier + 1) : 0.0;
-        double takeoffMin = attr.jumpStrength() * ground.startJumpMin() + jumpBoost;
-        double takeoffMax = attr.jumpStrength() * ground.startJumpMax() + jumpBoost;
+        double takeoffMin = jumpPower(attr.jumpStrength(), ground.startJumpMin(), jumpBoostAmplifier);
+        double takeoffMax = jumpPower(attr.jumpStrength(), ground.startJumpMax(), jumpBoostAmplifier);
 
         double takeoffScale = Math.min(1.0, stuckVertical);
         boolean freshJump = observedY >= takeoffMin * takeoffScale - COYOTE_TAKEOFF_EPS;
@@ -140,15 +137,29 @@ public final class PlayerControlResolver {
         boolean modernTrig = modernTrig();
         double useMultiplier = useSlowdownMultiplier();
 
-        double boostDirX = 0.0;
-        double boostDirZ = 0.0;
+        double boostX = 0.0;
+        double boostZ = 0.0;
         double boostSpread = 0.0;
         if (sprintJump) {
-            boostDirX = ClientMath.lookX(yaw, 0.0f, modernTrig);
-            boostDirZ = ClientMath.lookZ(yaw, 0.0f, modernTrig);
-            boostSpread = ClientMath.horizontalDistance(
-                    boostDirX - ClientMath.lookXFast(yaw, 0.0f),
-                    boostDirZ - ClientMath.lookZFast(yaw, 0.0f)) * SPRINT_JUMP_BOOST;
+            float yawRadians = yaw * ClientMath.DEG_TO_RAD;
+            float boostSin = ClientMath.sin(yawRadians, modernTrig);
+            float boostCos = ClientMath.cos(yawRadians, modernTrig);
+            float boostSinFast = ClientMath.sinFast(yawRadians);
+            float boostCosFast = ClientMath.cosFast(yawRadians);
+            double boostFastX;
+            double boostFastZ;
+            if (gates.doublePrecisionSprintBoost()) {
+                boostX = -(double) boostSin * 0.2;
+                boostZ = (double) boostCos * 0.2;
+                boostFastX = -(double) boostSinFast * 0.2;
+                boostFastZ = (double) boostCosFast * 0.2;
+            } else {
+                boostX = -boostSin * 0.2F;
+                boostZ = boostCos * 0.2F;
+                boostFastX = -boostSinFast * 0.2F;
+                boostFastZ = boostCosFast * 0.2F;
+            }
+            boostSpread = ClientMath.horizontalDistance(boostX - boostFastX, boostZ - boostFastZ);
         }
 
         ClaimedVector claimed = resolveClaimedInput(state, movement, doubleMove, sneaking, useMultiplier, yaw);
@@ -162,7 +173,8 @@ public final class PlayerControlResolver {
         return new PlayerControl(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
                 jumpPossible, ceilingClampedJump, fluidExitHop, powderSnowClimb, priorWallContact,
                 effectiveSpeed(sprinting, sneaking, diagonal, ground) * useMultiplier,
-                attr.jumpStrength() * ground.startJumpMax(), attr.gravity(), attr.stepHeight(),
+                jumpPower(attr.jumpStrength(), ground.startJumpMax(), -1),
+                attr.gravity(), attr.stepHeight(),
                 jumpBoostAmplifier,
                 effects.hasLevitation(), effects.levitationAmplifier(), effects.hasSlowFalling(),
                 fluidFriction(data.isSprinting(), effectiveGroundedStart, effects),
@@ -186,8 +198,8 @@ public final class PlayerControlResolver {
                 attr.airDragModifier(),
                 attr.frictionModifier(),
                 useMultiplier,
-                boostDirX,
-                boostDirZ,
+                boostX,
+                boostZ,
                 boostSpread,
                 claimed.exact(),
                 claimed.x(),
@@ -207,41 +219,60 @@ public final class PlayerControlResolver {
                 || movement.isLastFlyingWasDuplicate()) {
             return ClaimedVector.NONE;
         }
-        double impulseX = (state.left() ? 1.0 : 0.0) - (state.right() ? 1.0 : 0.0);
-        double impulseZ = (state.forward() ? 1.0 : 0.0) - (state.backward() ? 1.0 : 0.0);
-        if (impulseX == 0.0 && impulseZ == 0.0) return ClaimedVector.ZERO;
-        double multiplier = MotionDefaults.INPUT_SCALE;
-        if (sneaking && !data.isFlying() && !data.isSwimming()) multiplier *= sneakMultiplier();
-        multiplier *= useMultiplier;
-        double scaledX = impulseX * multiplier;
-        double scaledZ = impulseZ * multiplier;
-        double localX;
-        double localZ;
+        float inputX = (state.left() ? 1.0F : 0.0F) - (state.right() ? 1.0F : 0.0F);
+        float inputZ = (state.forward() ? 1.0F : 0.0F) - (state.backward() ? 1.0F : 0.0F);
+        if (inputX == 0.0F && inputZ == 0.0F) return ClaimedVector.ZERO;
+        float sneakScale = sneaking && !data.isFlying() && !data.isSwimming()
+                ? (float) sneakMultiplier() : 1.0F;
+        float useScale = (float) useMultiplier;
         if (gates.squareInputRescale()) {
-            float floatX = (float) scaledX;
-            float floatZ = (float) scaledZ;
-            float length = (float) Math.sqrt(floatX * floatX + floatZ * floatZ);
-            if (length < 1.0e-4f) return ClaimedVector.ZERO;
-            double directionX = floatX / length;
-            double directionZ = floatZ / length;
-            double absX = Math.abs(scaledX);
-            double absZ = Math.abs(scaledZ);
-            double ratio = Math.min(absX, absZ) / Math.max(absX, absZ);
-            double magnitude = Math.min(ClientMath.horizontalDistance(scaledX, scaledZ)
-                    * Math.sqrt(1.0 + ratio * ratio), 1.0);
-            localX = directionX * magnitude;
-            localZ = directionZ * magnitude;
-        } else {
-            double lengthSqr = scaledX * scaledX + scaledZ * scaledZ;
-            if (lengthSqr < 1.0e-7) return ClaimedVector.ZERO;
-            if (lengthSqr > 1.0) {
-                double length = Math.sqrt(lengthSqr);
-                localX = scaledX / length;
-                localZ = scaledZ / length;
-            } else {
-                localX = scaledX;
-                localZ = scaledZ;
+            float keyboardLength = ClientMath.sqrt(inputX * inputX + inputZ * inputZ);
+            if (keyboardLength < 1.0E-4F) return ClaimedVector.ZERO;
+            inputX /= keyboardLength;
+            inputZ /= keyboardLength;
+            inputX *= 0.98F;
+            inputZ *= 0.98F;
+            if (useScale != 1.0F) {
+                inputX *= useScale;
+                inputZ *= useScale;
             }
+            if (sneakScale != 1.0F) {
+                inputX *= sneakScale;
+                inputZ *= sneakScale;
+            }
+            float scaledLength = ClientMath.sqrt(inputX * inputX + inputZ * inputZ);
+            if (scaledLength > 0.0F) {
+                float inverseLength = 1.0F / scaledLength;
+                float directionX = inputX * inverseLength;
+                float directionZ = inputZ * inverseLength;
+                float absX = Math.abs(directionX);
+                float absZ = Math.abs(directionZ);
+                float ratio = absZ > absX ? absX / absZ : absZ / absX;
+                float unitSquareReach = ClientMath.sqrt(1.0F + ratio * ratio);
+                float magnitude = Math.min(scaledLength * unitSquareReach, 1.0F);
+                inputX = directionX * magnitude;
+                inputZ = directionZ * magnitude;
+            }
+        } else {
+            if (sneakScale != 1.0F) {
+                inputX *= sneakScale;
+                inputZ *= sneakScale;
+            }
+            if (useScale != 1.0F) {
+                inputX *= useScale;
+                inputZ *= useScale;
+            }
+            inputX *= 0.98F;
+            inputZ *= 0.98F;
+        }
+        double localX = inputX;
+        double localZ = inputZ;
+        double lengthSqr = localX * localX + localZ * localZ;
+        if (lengthSqr < 1.0E-7) return ClaimedVector.ZERO;
+        if (lengthSqr > 1.0) {
+            double length = Math.sqrt(lengthSqr);
+            localX /= length;
+            localZ /= length;
         }
         float radians = yaw * ClientMath.DEG_TO_RAD;
         boolean modern = modernTrig();
@@ -261,7 +292,13 @@ public final class PlayerControlResolver {
         double speed = data.getAttributeData().movementSpeed();
         speed = Math.max(0.0, speed - frostPenalty(ground, speed));
         if (sprinting) speed *= SPRINT_SPEED_MULTIPLIER;
-        return speed;
+        return (float) speed;
+    }
+
+    private static double jumpPower(double jumpStrength, double jumpFactor, int jumpBoostAmplifier) {
+        float power = (float) jumpStrength * (float) jumpFactor;
+        if (jumpBoostAmplifier >= 0) power += 0.1F * (jumpBoostAmplifier + 1);
+        return power;
     }
 
     private double useSlowdownMultiplier() {
@@ -302,7 +339,8 @@ public final class PlayerControlResolver {
     }
 
     private double fluidAccel(boolean sprinting, boolean groundedStart) {
-        double getSpeed = data.getAttributeData().movementSpeed() * (sprinting ? SPRINT_SPEED_MULTIPLIER : 1.0);
+        double getSpeed = (float) (data.getAttributeData().movementSpeed()
+                * (sprinting ? SPRINT_SPEED_MULTIPLIER : 1.0));
         return WATER_ACCEL + (getSpeed - WATER_ACCEL) * waterEfficiency(groundedStart);
     }
 
@@ -330,9 +368,7 @@ public final class PlayerControlResolver {
     }
 
     private double effectiveSpeed(boolean sprinting, boolean sneaking, boolean diagonal, GroundFacts ground) {
-        double speed = data.getAttributeData().movementSpeed();
-        speed = Math.max(0.0, speed - frostPenalty(ground, speed));
-        if (sprinting) speed *= SPRINT_SPEED_MULTIPLIER;
+        double speed = effectiveSpeedBase(sprinting, ground);
         if (sneaking) {
             double sneak = sneakMultiplier();
             if (diagonal) sneak = Math.min(1.0, sneak * SNEAK_DIAGONAL_FACTOR);

@@ -75,6 +75,10 @@ public final class UseItemData {
         return active && edgeTicks == 0;
     }
 
+    public boolean slowdownAmbiguous() {
+        return pendingStart || edgeTicks > 0;
+    }
+
     public double slowdownMultiplier() {
         return slowdownMultiplier;
     }

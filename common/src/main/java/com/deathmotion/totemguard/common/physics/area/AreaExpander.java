@@ -53,9 +53,12 @@ public final class AreaExpander {
         if (medium.kind() == MediumKind.LAND) stuckFactor.applyArrestWindow(bounds);
         bubble.apply(bounds);
 
-        bounds.expandRadius(preset.horizontalNoisePad() + carry.horizontal());
-        bounds.ceiling(bounds.ceiling() + preset.verticalNoisePad() + carry.vertical());
-        bounds.addDescentSlack(preset.verticalNoisePad());
+        boolean landExact = medium.kind() == MediumKind.LAND;
+        double horizontalPad = landExact && input.claimedInputExact() ? 0.0 : preset.horizontalNoisePad();
+        double verticalPad = landExact ? 0.0 : preset.verticalNoisePad();
+        bounds.expandRadius(horizontalPad + carry.horizontal());
+        bounds.ceiling(bounds.ceiling() + verticalPad + carry.vertical());
+        bounds.addDescentSlack(verticalPad);
         if (medium.kind() == MediumKind.WATER || medium.kind() == MediumKind.LAVA) {
             bounds.addDescentSlack(preset.fluidDescentSlack());
         }

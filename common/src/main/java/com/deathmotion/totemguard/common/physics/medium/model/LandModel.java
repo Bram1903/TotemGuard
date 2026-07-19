@@ -30,22 +30,24 @@ public final class LandModel implements MediumModel {
 
     public static final double AIR_FRICTION = 0.91;
     public static final double POWDER_SNOW_CLIMB = 0.2;
-    private static final double GROUND_ACCEL_NUMERATOR = 0.21600002;
     private static final double LEVITATION_PER_LEVEL = 0.05;
     private static final double LEVITATION_RATE = 0.2;
     private static final double VERTICAL_DRAG = 0.98f;
     private static final double SLOW_FALLING_GRAVITY = 0.01;
 
     static double groundAccel(ControlEnvelope input, GroundFacts ground) {
-        double slip = computeModifiedFriction(ground.startSlipMin(), input.frictionModifier());
-        if (slip <= 0.6) return input.moveSpeed();
-        return input.moveSpeed() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
+        return frictionInfluencedSpeed(input.moveSpeed(), ground.startSlipMin(), input.frictionModifier());
     }
 
     static double groundAccelBase(ControlEnvelope input, GroundFacts ground) {
-        double slip = computeModifiedFriction(ground.startSlipMin(), input.frictionModifier());
-        if (slip <= 0.6) return input.moveSpeedBase();
-        return input.moveSpeedBase() * GROUND_ACCEL_NUMERATOR / (slip * slip * slip);
+        return frictionInfluencedSpeed(input.moveSpeedBase(), ground.startSlipMin(), input.frictionModifier());
+    }
+
+    private static double frictionInfluencedSpeed(double speed, double slip, double modifier) {
+        float friction = modifiedFriction((float) slip, (float) modifier);
+        float speedFloat = (float) speed;
+        if (!(friction > 0.6)) return speedFloat;
+        return speedFloat * (0.21600002F / (friction * friction * friction));
     }
 
     public static double verticalDrag(ControlEnvelope input) {
@@ -53,8 +55,14 @@ public final class LandModel implements MediumModel {
     }
 
     public static double computeModifiedFriction(double friction, double modifier) {
-        if (modifier == 1.0) return friction;
-        return Math.max(0.0, Math.min(1.0, 1.0 - (1.0 - friction) * modifier));
+        return modifiedFriction((float) friction, (float) modifier);
+    }
+
+    static float modifiedFriction(float friction, float modifier) {
+        if (modifier == 1.0F) return friction;
+        float value = 1.0F - (1.0F - friction) * modifier;
+        if (value < 0.0F) return 0.0F;
+        return Math.min(value, 1.0F);
     }
 
     @Override
@@ -109,9 +117,9 @@ public final class LandModel implements MediumModel {
     @Override
     public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         boolean groundDrag = ground.supportedStart() && !input.ceilingClampedJump();
-        double airDrag = computeModifiedFriction(AIR_FRICTION, input.airDragModifier());
+        float airDrag = modifiedFriction(0.91F, (float) input.airDragModifier());
         if (!groundDrag) return airDrag;
-        return computeModifiedFriction(ground.startSlipMax(), input.frictionModifier()) * airDrag;
+        return modifiedFriction((float) ground.startSlipMax(), (float) input.frictionModifier()) * airDrag;
     }
 
     @Override
