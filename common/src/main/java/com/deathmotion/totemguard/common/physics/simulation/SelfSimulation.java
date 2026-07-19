@@ -81,6 +81,8 @@ public final class SelfSimulation {
     private static final double STEP_FROM_FALL_EPS = 1.0e-4;
     private static final int STUCK_SETTLE_SCANS = 3;
     private static final int PENDING_SPAWN_LIMIT = 12;
+    private static final double TURN_DRIFT_DECAY = 0.85;
+    private static final double TURN_DRIFT_TOLERANCE = 0.006;
 
     private final EngineActor actor;
     private final Data data;
@@ -144,6 +146,10 @@ public final class SelfSimulation {
     private MediumModel mediumThisTick;
     private double preStepCarriedX, preStepCarriedZ, preStepCarriedFloor, preStepCarriedCeil;
     private double carriedEntityPush;
+    private double momentumX, momentumZ;
+    private double momentumDrift;
+    private boolean momentumValid;
+    private final AreaBounds momentumBounds = new AreaBounds();
 
     @Getter
     private PhysicsVerdict verdict = PhysicsVerdict.INITIAL;
@@ -384,6 +390,7 @@ public final class SelfSimulation {
         bedBounce.reset();
         bounceRise.disarm();
         body.pose().clearHistory();
+        momentumValid = false;
         verdict = PhysicsVerdict.INITIAL;
     }
 
@@ -451,6 +458,7 @@ public final class SelfSimulation {
                 supportTracker);
         groundThisTick = ground;
         supportTracker.invalidate();
+        momentumValid = false;
         ControlEnvelope input = body.control().build(movement, contact, ground, sample.fluid(),
                 0.0, 0.0, 0.0, false, sample.stuckVertical(), previousPowderSnowSwept);
         inputThisTick = input;
@@ -583,6 +591,8 @@ public final class SelfSimulation {
         boolean boostApplied = false;
         GroundFacts claimAirGround = null;
         double boostStuckScale = sample.stuck() && !sample.fluid() ? sample.stuckHorizontal() : 1.0;
+        boolean unobstructedFall = provenUnobstructedFall(ground, input, medium);
+        boolean minFallPinned = false;
         for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
             if (!carried.live(slot)) continue;
             AreaBounds slotBounds = boundsSlots[slot];
@@ -595,6 +605,10 @@ public final class SelfSimulation {
             }
             ctx.fill(preset, sample, input, slotGround, contact, medium, slotBounds);
             AreaExpander.grow(area, ctx, stuckFactor, bubble, carry);
+            if (unobstructedFall && carried.kind(slot) == CarriedHypotheses.Kind.MAIN) {
+                slotBounds.ceiling(Math.min(slotBounds.ceiling(), area.ceilVy() + preset.verticalNoisePad()));
+                minFallPinned = true;
+            }
             knockback.apply(slotBounds, preset.knockbackPad(),
                     carried.kind(slot) == CarriedHypotheses.Kind.KNOCKBACK_SET);
             boolean slotKnockback = slotBounds.hasAltCenter();
@@ -673,7 +687,24 @@ public final class SelfSimulation {
         observeKnockbackRequirement(dx, dz, chosenSlotBounds, knockbackTainted, preset);
 
         double descentExcess = excess.descent();
-        BoundBreach breach = classify(horizontalExcess, ascentExcess, descentExcess, phaseExcess, preset);
+        boolean momentumTainted = !input.claimedInputExact() || !input.horizontalInput()
+                || ground.start() != GroundState.AIRBORNE
+                || medium != body.mediums().land()
+                || !landMedium || stepped || stepFromFall
+                || contact.collidedX() || contact.collidedZ() || contact.wallNear()
+                || contact.startOverlapping()
+                || sample.stuck() || sample.pushed() || sample.bubbleAscent() > 0.0
+                || data.getExternalVelocityData().isActive() || data.getPistonData().isActive()
+                || data.getGlideData().riptideActive() || data.isSpinAttacking()
+                || data.getMitigationService().setbackPending()
+                || pistonInfluence || knockbackHypothesisChosen || excess.altCenterUsed()
+                || input.airAccelBase() != input.airAccelBaseMin()
+                || doubleMoveThisTick;
+        double momentumExcess = turnMomentumExcess(dx, dz, medium, input, ground, preset, momentumTainted);
+        boolean momentumFlagged = momentumExcess > preset.horizontalFlagEpsilon();
+        double flagHorizontal = Math.max(horizontalExcess, momentumExcess);
+
+        BoundBreach breach = classify(flagHorizontal, ascentExcess, descentExcess, phaseExcess, preset);
         if (breach == BoundBreach.DESCENT_FLOOR && riseFloor > 0.0) breach = BoundBreach.BOUNCE_RISE;
 
         boolean flyGraceSuppressed = false;
@@ -682,6 +713,7 @@ public final class SelfSimulation {
                 || breach == BoundBreach.DESCENT_FLOOR || breach == BoundBreach.BOUNCE_RISE)) {
             breach = null;
             horizontalExcess = 0.0;
+            flagHorizontal = 0.0;
             ascentExcess = 0.0;
             descentExcess = 0.0;
             flyGraceSuppressed = true;
@@ -751,6 +783,8 @@ public final class SelfSimulation {
         if (riseFloor > 0.0) widenings |= TraceFrame.PINNED_BOUNCE_RISE;
         if (honeySlideActive) widenings |= TraceFrame.WIDENED_HONEY_SLIDE;
         if (boostApplied) widenings |= TraceFrame.WIDENED_BOOST_SEGMENT;
+        if (minFallPinned) widenings |= TraceFrame.PINNED_MIN_FALL;
+        if (momentumFlagged) widenings |= TraceFrame.TURN_MOMENTUM;
         if (carryPredicted) widenings |= TraceFrame.WIDENED_STEP_CARRY;
         if (stepFromFall) widenings |= TraceFrame.STEP_FROM_FALL;
         if (sneakEdge) widenings |= TraceFrame.WIDENED_SNEAK_EDGE;
@@ -765,7 +799,7 @@ public final class SelfSimulation {
                 false, preset.residualCarryCap());
 
         verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
-                dx, dy, dz, horizontalExcess, ascentExcess, descentExcess, phaseExcess,
+                dx, dy, dz, flagHorizontal, ascentExcess, descentExcess, phaseExcess,
                 (excess.altCenterUsed() || knockbackHypothesisChosen) && breach == null ? 1.0 : 0.0,
                 input, ground);
     }
@@ -773,6 +807,7 @@ public final class SelfSimulation {
     private void coastTick(boolean withheld, double dx, double dy, double dz,
                            MediumModel medium, ControlEnvelope input, GroundFacts ground, PhysicsPreset preset) {
         supportTracker.invalidate();
+        momentumValid = false;
         if (withheld) observeAbsentKnockback(medium, input, ground, preset);
         coastArea(medium, input, ground, preset);
         gate.tickPreserveGrace();
@@ -1131,6 +1166,7 @@ public final class SelfSimulation {
         carry.clear();
         bedBounce.reset();
         bounceRise.disarm();
+        momentumValid = false;
         verdict = buildVerdict(TickOutcome.DECLINED, reason, null,
                 dx, dy, dz, 0.0, 0.0, 0.0, 0.0, 0.0, null, null);
     }
@@ -1150,6 +1186,7 @@ public final class SelfSimulation {
         carry.clear();
         bedBounce.reset();
         bounceRise.disarm();
+        momentumValid = false;
         verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
                 dx, dy, dz, Math.max(0.0, horizontalExcess), Math.max(0.0, verticalExcess), 0.0, 0.0,
                 0.0, null, null);
@@ -1277,6 +1314,66 @@ public final class SelfSimulation {
                 && !data.isFlying()
                 && contact.nearestSupportGap() > preset.hoverMinGap()
                 && !contact.startOverlapping();
+    }
+
+    private double turnMomentumExcess(double dx, double dz, MediumModel medium, ControlEnvelope input,
+                                      GroundFacts ground, PhysicsPreset preset, boolean tainted) {
+        double friction = medium.frictionMax(input, ground);
+        double speedFactor = effectiveSpeedFactor();
+        if (tainted) {
+            momentumValid = false;
+            return 0.0;
+        }
+        if (!momentumValid) {
+            momentumX = dx * friction * speedFactor;
+            momentumZ = dz * friction * speedFactor;
+            momentumDrift = 0.0;
+            momentumValid = true;
+            return 0.0;
+        }
+        momentumBounds.reset(new MotionArea(momentumX, momentumZ, 0.0, 0.0, 0.0));
+        medium.horizontalOptions(input, ground, momentumBounds);
+        momentumBounds.expandRadius(preset.horizontalNoisePad());
+        double predX = momentumBounds.centerX();
+        double predZ = momentumBounds.centerZ();
+        double excess = OutwardResidual.excess(dx, dz, predX, predZ, momentumBounds.radius());
+        boolean inside = excess <= 0.0;
+
+        double dirLen = ClientMath.horizontalDistance(predX, predZ);
+        if (dirLen > 1.0e-6) {
+            double perp = (predX * (dz - predZ) - predZ * (dx - predX)) / dirLen;
+            momentumDrift = momentumDrift * TURN_DRIFT_DECAY + perp;
+        } else {
+            momentumDrift *= TURN_DRIFT_DECAY;
+        }
+        double driftExcess = Math.max(0.0, Math.abs(momentumDrift) - TURN_DRIFT_TOLERANCE);
+
+        momentumX = (inside ? dx : predX) * friction * speedFactor;
+        momentumZ = (inside ? dz : predZ) * friction * speedFactor;
+        return Math.max(Math.max(0.0, excess), driftExcess);
+    }
+
+    private boolean provenUnobstructedFall(GroundFacts ground, ControlEnvelope input, MediumModel medium) {
+        if (medium != body.mediums().land()) return false;
+        if (ground.start() != GroundState.AIRBORNE) return false;
+        if (ground.groundedEnd() || ground.recentlyGrounded() || ground.landingSupport()
+                || ground.arrested() || ground.bounced() || ground.wasFluid()) return false;
+        if (input.jumpPossible() || input.fluidExitHop() || input.powderSnowClimb()
+                || input.levitation()) return false;
+        if (!sample.landMedium() || sample.climbable() || sample.climbableUncertain()
+                || sample.bubbleAscent() > 0.0 || sample.pushed()) return false;
+        if (contact.supportGap() != ContactReport.NO_SUPPORT
+                || contact.trailingSupportGap() != ContactReport.NO_SUPPORT) return false;
+        if (contact.startOverlapping() || contact.stepUsedHeight() > 0.0 || contact.groundHit()
+                || contact.wallNear() || contact.collidedX() || contact.collidedZ()) return false;
+        if (carriedEntityPush > 0.0 || exemptions.hasAny() || doubleMoveThisTick) return false;
+        if (data.isFlying() || data.getFlyChangeGrace() > 0
+                || data.getExternalVelocityData().isActive() || data.getPistonData().isActive()
+                || data.getGlideData().claimActive() || data.getGlideData().riptideActive()
+                || data.isGliding() || data.isSpinAttacking()
+                || data.getTeleportData().hasPendingTeleport()
+                || data.getMitigationService().setbackPending()) return false;
+        return carried.liveCount() == 1;
     }
 
     private void seedEmbedExemptions(Location current, double half, double height) {

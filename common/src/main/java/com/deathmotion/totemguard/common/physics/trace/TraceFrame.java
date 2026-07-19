@@ -74,6 +74,8 @@ public final class TraceFrame {
     public static final long PINNED_BOUNCE_RISE = 1L << 22;
     public static final long SPAWN_PISTON_LAUNCH = 1L << 23;
     public static final long SPAWN_SQUEEZE_OUT = 1L << 24;
+    public static final long PINNED_MIN_FALL = 1L << 25;
+    public static final long TURN_MOMENTUM = 1L << 26;
 
     private static final String[] WIDENING_NAMES = {
             "knockback", "riptide", "piston", "push", "stuck", "bubble",
@@ -81,7 +83,7 @@ public final class TraceFrame {
             "spawn-step", "spawn-kb", "spawn-glide", "hyp-overflow",
             "spawn-vdual", "spawn-collide", "input-exact", "spawn-air",
             "step-fall", "trans-hold", "bounce-rise",
-            "spawn-launch", "spawn-squeeze"
+            "spawn-launch", "spawn-squeeze", "min-fall", "turn"
     };
     public long tick;
     public byte stream;

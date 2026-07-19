@@ -69,24 +69,26 @@ public record PlayerControl(
         double claimedSpread,
         double moveSpeedBase,
         double fluidAccelBase,
-        double flyAccelBase) implements ControlEnvelope {
+        double flyAccelBase,
+        boolean airSprint,
+        boolean airSprintFirm) implements ControlEnvelope {
 
     public static final double AIR_ACCEL = 0.026;
     public static final double AIR_ACCEL_WALK = 0.02;
 
     @Override
     public double airAccel() {
-        return AIR_ACCEL * inputMultiplier;
+        return (airSprint ? AIR_ACCEL : AIR_ACCEL_WALK) * inputMultiplier;
     }
 
     @Override
     public double airAccelBase() {
-        return AIR_ACCEL;
+        return airSprint ? AIR_ACCEL : AIR_ACCEL_WALK;
     }
 
     @Override
     public double airAccelBaseMin() {
-        return AIR_ACCEL_WALK;
+        return airSprintFirm ? AIR_ACCEL : AIR_ACCEL_WALK;
     }
 
     public double jumpBoostPower() {

@@ -70,6 +70,7 @@ public final class PlayerControlResolver {
     private boolean lastClampedJump;
     private boolean lastWallContact = true;
     private double lastCeilingClearance = Double.MAX_VALUE;
+    private boolean previousAirborneSprint;
 
     public PlayerControlResolver(Data data, EngineActor actor, VersionGates gates) {
         this.data = data;
@@ -152,6 +153,12 @@ public final class PlayerControlResolver {
 
         ClaimedVector claimed = resolveClaimedInput(state, movement, doubleMove, sneaking, useMultiplier, yaw);
 
+        boolean rawAirborneSprint = data.isSprinting();
+        boolean sprintTransition = rawAirborneSprint != previousAirborneSprint;
+        boolean airSprint = rawAirborneSprint || sprintTransition;
+        boolean airSprintFirm = rawAirborneSprint && !sprintTransition;
+        previousAirborneSprint = rawAirborneSprint;
+
         return new PlayerControl(inventoryOpen, horizontalInput, sneaking, sprinting, sprintJump,
                 jumpPossible, ceilingClampedJump, fluidExitHop, powderSnowClimb, priorWallContact,
                 effectiveSpeed(sprinting, sneaking, diagonal, ground) * useMultiplier,
@@ -188,7 +195,9 @@ public final class PlayerControlResolver {
                 claimed.spread(),
                 effectiveSpeedBase(sprinting, ground),
                 fluidAccel(data.isSprinting(), effectiveGroundedStart),
-                data.getAbilitiesFlyingSpeed() * (data.isSprinting() ? 2.0 : 1.0));
+                data.getAbilitiesFlyingSpeed() * (data.isSprinting() ? 2.0 : 1.0),
+                airSprint,
+                airSprintFirm);
     }
 
     private ClaimedVector resolveClaimedInput(InputData.State state, MovementData movement,
@@ -365,6 +374,7 @@ public final class PlayerControlResolver {
         lastClampedJump = false;
         lastWallContact = true;
         lastCeilingClearance = Double.MAX_VALUE;
+        previousAirborneSprint = false;
     }
 
     private record ClaimedVector(boolean exact, double x, double z, double spread) {
