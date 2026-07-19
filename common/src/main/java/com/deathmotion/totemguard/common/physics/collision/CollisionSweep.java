@@ -66,19 +66,6 @@ public final class CollisionSweep {
         }
     }
 
-    public boolean flushTopAt(ColliderBuffer buffer, double feetY,
-                              double minX, double minZ, double maxX, double maxZ) {
-        int count = buffer.count();
-        for (int i = 0; i < count; i++) {
-            if (!ColliderBuffer.clipEligible(buffer.tagOf(i))) continue;
-            if (Math.abs(buffer.maxY(i) - feetY) > FLUSH_TOP_EPS) continue;
-            if (!AxisClip.overlaps(minX, maxX, buffer.minX(i), buffer.maxX(i))) continue;
-            if (!AxisClip.overlaps(minZ, maxZ, buffer.minZ(i), buffer.maxZ(i))) continue;
-            return true;
-        }
-        return false;
-    }
-
     private static double stepCandidateMax(ColliderBuffer buffer,
                                            double minX, double feetY, double minZ,
                                            double maxX, double maxZ,
@@ -103,6 +90,19 @@ public final class CollisionSweep {
             if (bottom > best && bottom <= stepHeight) best = bottom;
         }
         return best;
+    }
+
+    public boolean flushTopAt(ColliderBuffer buffer, double feetY,
+                              double minX, double minZ, double maxX, double maxZ) {
+        int count = buffer.count();
+        for (int i = 0; i < count; i++) {
+            if (!ColliderBuffer.clipEligible(buffer.tagOf(i))) continue;
+            if (Math.abs(buffer.maxY(i) - feetY) > FLUSH_TOP_EPS) continue;
+            if (!AxisClip.overlaps(minX, maxX, buffer.minX(i), buffer.maxX(i))) continue;
+            if (!AxisClip.overlaps(minZ, maxZ, buffer.minZ(i), buffer.maxZ(i))) continue;
+            return true;
+        }
+        return false;
     }
 
     public void resolve(ColliderBuffer buffer, ContactReport report,

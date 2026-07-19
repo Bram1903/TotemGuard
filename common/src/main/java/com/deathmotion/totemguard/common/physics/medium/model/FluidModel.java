@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
@@ -26,7 +27,6 @@ import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 
 public abstract class FluidModel implements MediumModel {
 
-    protected static final double VERTICAL_DRAG = 0.8f;
     protected static final double SWIM_IMPULSE = 0.04;
     protected static final double ASCENT_MIN = 0.1;
     protected static final double WALL_BUMP_ASCENT = 0.34;
@@ -67,6 +67,6 @@ public abstract class FluidModel implements MediumModel {
 
     @Override
     public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
-        return verticalVelocity * VERTICAL_DRAG;
+        return verticalVelocity * MotionDefaults.FLUID_VERTICAL_DRAG;
     }
 }

@@ -29,35 +29,7 @@ public final class AreaAdvancer {
 
     public static void clampObserved(AreaBounds bounds, double obsX, double obsY, double obsZ,
                                      boolean altCenterUsed, double driftSlack) {
-        if (bounds.hasSegment() && !altCenterUsed) {
-            OutwardResidual.segmentCollapse(bounds, obsX, obsZ, bounds.radius() + driftSlack);
-            bounds.legalVy(Math.min(Math.max(obsY, bounds.judgedFloor()), bounds.ceiling()));
-            return;
-        }
-        double referenceX = altCenterUsed ? bounds.altCenterX() : bounds.centerX();
-        double referenceZ = altCenterUsed ? bounds.altCenterZ() : bounds.centerZ();
-        double reach = bounds.radius() + driftSlack;
-
-        double adjustedX = bounds.pushAdjustedX(obsX, referenceX);
-        double adjustedZ = bounds.pushAdjustedZ(obsZ, referenceZ);
-        double admittedX = obsX;
-        double admittedZ = obsZ;
-        double deviation = OutwardResidual.deviation(obsX, obsZ, adjustedX, adjustedZ);
-        if (deviation > reach && deviation > 0.0) {
-            double s = reach / deviation;
-            admittedX = OutwardResidual.collapseAxis(obsX, adjustedX, s);
-            admittedZ = OutwardResidual.collapseAxis(obsZ, adjustedZ, s);
-        }
-
-        double velocityDeviation = OutwardResidual.deviation(admittedX, admittedZ, referenceX, referenceZ);
-        if (velocityDeviation > reach && velocityDeviation > 0.0) {
-            double s = reach / velocityDeviation;
-            bounds.legalX(OutwardResidual.collapseAxis(admittedX, referenceX, s));
-            bounds.legalZ(OutwardResidual.collapseAxis(admittedZ, referenceZ, s));
-        } else {
-            bounds.legalX(admittedX);
-            bounds.legalZ(admittedZ);
-        }
+        HorizontalRegion.clampToLegal(bounds, obsX, obsZ, altCenterUsed, bounds.radius() + driftSlack);
         bounds.legalVy(Math.min(Math.max(obsY, bounds.judgedFloor()), bounds.ceiling()));
     }
 

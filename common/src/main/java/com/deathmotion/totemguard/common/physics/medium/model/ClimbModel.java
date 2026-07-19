@@ -31,7 +31,6 @@ public final class ClimbModel implements MediumModel {
     private static final double HORIZONTAL_MAX = 0.15 * Math.sqrt(2.0);
     private static final double ASCENT = 0.2;
     private static final double DESCENT = -0.15;
-    private static final double AIR_FRICTION = 0.91;
 
     @Override
     public MediumKind kind() {
@@ -63,7 +62,7 @@ public final class ClimbModel implements MediumModel {
 
     @Override
     public double frictionMax(ControlEnvelope input, GroundFacts ground) {
-        return AIR_FRICTION;
+        return MotionDefaults.AIR_FRICTION;
     }
 
     @Override

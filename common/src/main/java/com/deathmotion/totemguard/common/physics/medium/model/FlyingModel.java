@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
@@ -32,10 +33,10 @@ public final class FlyingModel implements MediumModel {
     private static final double WATER_DRAG = 0.8f;
     private static final double LAVA_DRAG = 0.5;
 
-    private double drag = LandModel.AIR_FRICTION;
+    private double drag = MotionDefaults.AIR_FRICTION;
 
     public void prepare(MediumSample sample) {
-        drag = sample.water() ? WATER_DRAG : sample.lava() ? LAVA_DRAG : LandModel.AIR_FRICTION;
+        drag = sample.water() ? WATER_DRAG : sample.lava() ? LAVA_DRAG : MotionDefaults.AIR_FRICTION;
     }
 
     public double drag() {

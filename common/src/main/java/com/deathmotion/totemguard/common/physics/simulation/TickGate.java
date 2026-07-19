@@ -38,6 +38,7 @@ public final class TickGate {
 
     private static final int SLEEP_ENTER_GRACE = 2;
     private static final int SLEEP_EXIT_GRACE = 3;
+    private static final int TELEPORT_SILENT_GRACE = 40;
 
     private final TeleportFilter teleportFilter = new TeleportFilter();
     private final FastDetector fastDetector = new FastDetector();
@@ -160,6 +161,17 @@ public final class TickGate {
         if (!reader.columnLoaded(floor(current.getX()) >> 4, floor(current.getZ()) >> 4)) {
             decline(DeclineReason.UNLOADED, true, CarriedMode.KEEP);
         }
+    }
+
+    public boolean allowsSilent(Data data, WorldMirror world, boolean simulateFlying, MovementData movement,
+                                int pendingTeleportQuietTicks) {
+        if (data.isDead()) return false;
+        if (!world.readiness().ready()) return false;
+        if (!simulateFlying && data.isFlying()) return false;
+        if (data.getTeleportData().hasPendingTeleport()
+                && pendingTeleportQuietTicks < TELEPORT_SILENT_GRACE) return false;
+        if (!movement.isCameraIsSelf()) return false;
+        return DeclineCheck.check(data) == null;
     }
 
     public MotionArea frozen(MotionArea area, double gravity, double jumpCeiling) {

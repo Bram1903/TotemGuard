@@ -78,6 +78,8 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
             }
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
             player.getPhysics().onTickEnd();
+        } else if (packetType == PacketType.Play.Client.PONG) {
+            player.getPhysics().onPong();
         }
         checkManager.onPacketReceive(event);
         player.triggerInventoryEvent();

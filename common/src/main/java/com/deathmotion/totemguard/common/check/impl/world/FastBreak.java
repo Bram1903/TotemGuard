@@ -110,7 +110,7 @@ public class FastBreak extends CheckImpl implements PacketCheck {
 
         String detail = tooFast
                 ? "broke in " + judgment.elapsedMillis() + "ms, server accepts at "
-                  + (long) (judgment.expectedMillis() * DiggingData.SERVER_ACCEPT_FRACTION) + "ms"
+                + (long) (judgment.expectedMillis() * DiggingData.SERVER_ACCEPT_FRACTION) + "ms"
                 : "finish gap " + judgment.sinceLastFinishMillis() + "ms, needs " + judgment.requiredGapMillis() + "ms";
         if (fail(detail) && mitigate) {
             cancelAndResync(event, packet);

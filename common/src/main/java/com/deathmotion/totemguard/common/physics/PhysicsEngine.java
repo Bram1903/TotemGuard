@@ -65,6 +65,10 @@ public final class PhysicsEngine {
         self.onTickEnd();
     }
 
+    public void onPong() {
+        self.onPong();
+    }
+
     public void onBlockApplied(int x, int y, int z, int serverStateId) {
         self.onBlockApplied(x, y, z, serverStateId);
     }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
@@ -25,7 +26,6 @@ import com.deathmotion.totemguard.common.physics.medium.MediumKind;
 public final class LavaModel extends FluidModel {
 
     private static final double HORIZONTAL_DRAG = 0.5;
-    private static final double GRAVITY_DIVISOR = 4.0;
 
     @Override
     public MediumKind kind() {
@@ -34,7 +34,7 @@ public final class LavaModel extends FluidModel {
 
     @Override
     protected double gravityDivisor() {
-        return GRAVITY_DIVISOR;
+        return MotionDefaults.LAVA_GRAVITY_DIVISOR;
     }
 
     @Override

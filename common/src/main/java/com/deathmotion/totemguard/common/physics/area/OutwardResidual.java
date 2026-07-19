@@ -57,48 +57,4 @@ public final class OutwardResidual {
         return observed * s;
     }
 
-    public static double segmentExcess(AreaBounds bounds, double obsX, double obsZ) {
-        return excess(obsX, obsZ,
-                bounds.pushAdjustedX(obsX, segmentBestX(bounds, obsX)),
-                bounds.pushAdjustedZ(obsZ, segmentBestZ(bounds, obsZ)),
-                bounds.radius());
-    }
-
-    public static void segmentCollapse(AreaBounds bounds, double obsX, double obsZ, double reach) {
-        double rawX = segmentBestX(bounds, obsX);
-        double rawZ = segmentBestZ(bounds, obsZ);
-        double adjustedX = bounds.pushAdjustedX(obsX, rawX);
-        double adjustedZ = bounds.pushAdjustedZ(obsZ, rawZ);
-        double admittedX = obsX;
-        double admittedZ = obsZ;
-        double deviation = deviation(obsX, obsZ, adjustedX, adjustedZ);
-        if (deviation > reach && deviation > 0.0) {
-            double s = reach / deviation;
-            admittedX = collapseAxis(obsX, adjustedX, s);
-            admittedZ = collapseAxis(obsZ, adjustedZ, s);
-        }
-        double velocityDeviation = deviation(admittedX, admittedZ, rawX, rawZ);
-        if (velocityDeviation > reach && velocityDeviation > 0.0) {
-            double s = reach / velocityDeviation;
-            bounds.legalX(collapseAxis(admittedX, rawX, s));
-            bounds.legalZ(collapseAxis(admittedZ, rawZ, s));
-        } else {
-            bounds.legalX(admittedX);
-            bounds.legalZ(admittedZ);
-        }
-    }
-
-    private static double segmentBestX(AreaBounds bounds, double obs) {
-        double lo = bounds.centerX() + bounds.segDirX() * bounds.segMin();
-        double hi = bounds.centerX() + bounds.segDirX() * bounds.segMax();
-        return outward(obs, bounds.pushAdjustedX(obs, lo))
-                <= outward(obs, bounds.pushAdjustedX(obs, hi)) ? lo : hi;
-    }
-
-    private static double segmentBestZ(AreaBounds bounds, double obs) {
-        double lo = bounds.centerZ() + bounds.segDirZ() * bounds.segMin();
-        double hi = bounds.centerZ() + bounds.segDirZ() * bounds.segMax();
-        return outward(obs, bounds.pushAdjustedZ(obs, lo))
-                <= outward(obs, bounds.pushAdjustedZ(obs, hi)) ? lo : hi;
-    }
 }

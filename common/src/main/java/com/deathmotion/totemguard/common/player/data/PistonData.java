@@ -138,6 +138,22 @@ public final class PistonData {
         @Getter(AccessLevel.NONE)
         private int ticks;
 
+        public static int cellX(long cell) {
+            return (int) (cell >> 38);
+        }
+
+        public static int cellY(long cell) {
+            return (int) (cell << 52 >> 52);
+        }
+
+        public static int cellZ(long cell) {
+            return (int) (cell << 26 >> 38);
+        }
+
+        public static long packCell(int x, int y, int z) {
+            return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFFL);
+        }
+
         private void clear() {
             pushLoX = 0.0;
             pushHiX = 0.0;
@@ -205,22 +221,6 @@ public final class PistonData {
 
         public long cell(int index) {
             return cells[index];
-        }
-
-        public static int cellX(long cell) {
-            return (int) (cell >> 38);
-        }
-
-        public static int cellY(long cell) {
-            return (int) (cell << 52 >> 52);
-        }
-
-        public static int cellZ(long cell) {
-            return (int) (cell << 26 >> 38);
-        }
-
-        public static long packCell(int x, int y, int z) {
-            return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFFL);
         }
     }
 }

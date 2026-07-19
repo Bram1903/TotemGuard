@@ -46,13 +46,14 @@ public final class TraceRecording {
     private final Data data;
     private final EngineContext context;
     private final TraceFrame frame = new TraceFrame();
+    private final TraceDump dumper;
     private TrackedEntity stagedEntity;
     private double stagedPlyMinX, stagedPlyMaxX, stagedPlyMinZ, stagedPlyMaxZ;
     private int stagedAuthoritativeId = -1;
     private int stagedVehicleId = -1;
     private String stagedNearby = "";
-    private final TraceDump dumper;
     private long stagedContributors;
+    private long stagedTaints;
     private byte stagedChosenSlot;
     private byte stagedLiveCount = 1;
     private TickRecorder recorder;
@@ -113,7 +114,18 @@ public final class TraceRecording {
         this.stagedContributors = bits;
     }
 
+    public void taints(long bits) {
+        this.stagedTaints = bits;
+    }
+
     public void stageNearestStandable(EntityTracker entities, double x, double y, double z, double half) {
+        if (!context.view().physicsDebugLevel().recording()) {
+            stagedEntity = null;
+            stagedAuthoritativeId = -1;
+            stagedVehicleId = -1;
+            stagedNearby = "";
+            return;
+        }
         stagedEntity = entities.nearestStandable(x, y, z);
         stagedPlyMinX = x - half;
         stagedPlyMaxX = x + half;
@@ -189,6 +201,8 @@ public final class TraceRecording {
         if (data.isEchoedSwimming()) frame.flags |= TraceFrame.FLAG_ECHO_SWIM;
         frame.contributors = stagedContributors;
         stagedContributors = 0L;
+        frame.taints = stagedTaints;
+        stagedTaints = 0L;
         frame.chosenSlot = stagedChosenSlot;
         frame.liveCount = stagedLiveCount;
         stagedChosenSlot = 0;

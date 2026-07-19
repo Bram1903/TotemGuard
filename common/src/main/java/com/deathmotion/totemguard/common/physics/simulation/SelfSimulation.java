@@ -32,13 +32,11 @@ import com.deathmotion.totemguard.common.physics.fall.FallTracker;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.ground.GroundResolver;
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
-import com.deathmotion.totemguard.common.physics.hover.HoverDetector;
 import com.deathmotion.totemguard.common.physics.medium.*;
 import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 import com.deathmotion.totemguard.common.physics.mitigation.MitigationTracker;
 import com.deathmotion.totemguard.common.physics.phase.EmbedExemptions;
 import com.deathmotion.totemguard.common.physics.phase.PhaseTracker;
-import com.deathmotion.totemguard.common.physics.prescan.DeclineCheck;
 import com.deathmotion.totemguard.common.physics.prescan.GroundSpoofDetector;
 import com.deathmotion.totemguard.common.physics.prescan.TrustTracker;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
@@ -47,6 +45,10 @@ import com.deathmotion.totemguard.common.physics.push.KnockbackTracker;
 import com.deathmotion.totemguard.common.physics.push.PistonWindow;
 import com.deathmotion.totemguard.common.physics.push.RiptideWindow;
 import com.deathmotion.totemguard.common.physics.rules.*;
+import com.deathmotion.totemguard.common.physics.rules.spawn.*;
+import com.deathmotion.totemguard.common.physics.silence.HoverDetector;
+import com.deathmotion.totemguard.common.physics.silence.MovementSilenceTracker;
+import com.deathmotion.totemguard.common.physics.silence.OwedMotionDetector;
 import com.deathmotion.totemguard.common.physics.trace.TickRecorder;
 import com.deathmotion.totemguard.common.physics.trace.TraceFrame;
 import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
@@ -54,7 +56,6 @@ import com.deathmotion.totemguard.common.physics.verdict.*;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.ExternalVelocityData;
 import com.deathmotion.totemguard.common.player.data.MovementData;
-import com.deathmotion.totemguard.common.player.data.PistonData;
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.deathmotion.totemguard.common.world.WorldMirror;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
@@ -75,14 +76,10 @@ public final class SelfSimulation {
     private static final double HARVEST_UP_MARGIN = 2.1;
     private static final double HARVEST_DOWN_MARGIN = 2.6;
     private static final double HOVER_EXCESS = MotionDefaults.GRAVITY;
+    private static final double SILENCE_EXCESS = MotionDefaults.GRAVITY;
     private static final int HOVER_SETBACK_LIMIT = 2;
-    private static final double GLIDE_PRESERVE_GAP = 0.1;
-    private static final double VERTICAL_DUAL_GAP = 0.05;
     private static final double STEP_FROM_FALL_EPS = 1.0e-4;
     private static final int STUCK_SETTLE_SCANS = 3;
-    private static final int PENDING_SPAWN_LIMIT = 12;
-    private static final double TURN_DRIFT_DECAY = 0.85;
-    private static final double TURN_DRIFT_TOLERANCE = 1.0E-5;
 
     private final EngineActor actor;
     private final Data data;
@@ -94,10 +91,9 @@ public final class SelfSimulation {
     private final CarriedHypotheses carried = new CarriedHypotheses();
     private final AreaBounds[] boundsSlots = new AreaBounds[CarriedHypotheses.CAPACITY];
     private final JudgedExcess[] excessSlots = new JudgedExcess[CarriedHypotheses.CAPACITY];
-    private final MotionArea[] pendingSpawnAreas = new MotionArea[PENDING_SPAWN_LIMIT];
-    private final CarriedHypotheses.Kind[] pendingSpawnKinds = new CarriedHypotheses.Kind[PENDING_SPAWN_LIMIT];
     private final ResidualCarry carry = new ResidualCarry();
     private final ColliderBuffer colliders = new ColliderBuffer();
+    private final TraitSampler traits = new TraitSampler();
     private final CollisionSweep sweep = new CollisionSweep();
     private final ContactReport contact = new ContactReport();
     private final GroundResolver groundResolver = new GroundResolver();
@@ -117,39 +113,29 @@ public final class SelfSimulation {
     private final GlideExitRule glideExit = new GlideExitRule();
     private final RiptideGlideRule riptideGlide = new RiptideGlideRule();
     private final BedBounceRule bedBounce = new BedBounceRule();
-    private final BounceRiseRule bounceRise = new BounceRiseRule();
+    private final RiseObligation obligation = new RiseObligation();
     private final TrustTracker trust = new TrustTracker();
     private final TickGate gate = new TickGate();
-    private final TickContext ctx = new TickContext();
     private final HoverDetector hover = new HoverDetector();
+    private final OwedMotionDetector owedRiseQuiet = new OwedMotionDetector();
+    private final OwedMotionDetector owedFallQuiet = new OwedMotionDetector();
+    private final MovementSilenceTracker silence = new MovementSilenceTracker();
+    private final EntityPushTracker push = new EntityPushTracker();
+    private final TurnMomentumTracker momentum = new TurnMomentumTracker();
+    private final TickState state = new TickState();
+    private final TickTaints taints = new TickTaints();
+    private final PreviousTick previous = new PreviousTick();
+    private final SpawnQueue spawns = new SpawnQueue();
+    private final AreaAdvance advanceRules;
     private final MitigationTracker mitigation;
     private final FallTracker fall;
     private final TraceRecording trace;
-    private int pendingSpawnCount;
-    private long spawnBits;
+
+    private boolean initialized;
+    private GameMode lastGameMode;
     private AreaBounds chosenBounds;
     private int chosenSlot;
-    private boolean initialized;
-    private boolean previousClaimedGround = true;
-    private boolean previousIsFlying;
-    private boolean previousPowderSnowSwept;
-    private int stuckSettleScans;
-    private double lastSupportGap = Double.MAX_VALUE;
-    private GameMode lastGameMode;
-    private boolean scannedThisTick;
-    private boolean doubleMoveThisTick;
-    private boolean honeySlideActive;
-    private boolean deltaZeroedDisplacement;
-    private boolean deltaZeroedLastTick;
-    private GroundFacts groundThisTick;
-    private ControlEnvelope inputThisTick;
-    private MediumModel mediumThisTick;
-    private double preStepCarriedX, preStepCarriedZ, preStepCarriedFloor, preStepCarriedCeil;
-    private double carriedEntityPush;
-    private double momentumX, momentumZ;
-    private double momentumDrift;
-    private boolean momentumValid;
-    private final AreaBounds momentumBounds = new AreaBounds();
+    private int pendingTeleportQuietTicks;
 
     @Getter
     private PhysicsVerdict verdict = PhysicsVerdict.INITIAL;
@@ -167,6 +153,7 @@ public final class SelfSimulation {
         this.knockback = new KnockbackTracker(data.getExternalVelocityData());
         this.pistons = new PistonWindow(data.getPistonData());
         this.riptide = new RiptideWindow(data);
+        this.advanceRules = new AreaAdvance(gates, body.mediums(), supportTracker);
         this.mitigation = new MitigationTracker(data);
         this.fall = new FallTracker(data, reader);
         this.trace = trace;
@@ -188,10 +175,6 @@ public final class SelfSimulation {
         return Math.max(excess.horizontal(), Math.max(excess.ascent(), excess.descent()));
     }
 
-    private static int floor(double value) {
-        return (int) Math.floor(value);
-    }
-
     public void onFlying() {
         ConfigView view = context.view();
         if (!view.physicsSimulateFlying() && data.isFlying()) {
@@ -207,11 +190,14 @@ public final class SelfSimulation {
         reader.resetCounters();
 
         Location current = movement.getCurrent();
-        Location previous = movement.getPrevious();
-        double dx = current.getX() - previous.getX();
-        double dy = current.getY() - previous.getY();
-        double dz = current.getZ() - previous.getZ();
+        Location previousLocation = movement.getPrevious();
+        double dx = current.getX() - previousLocation.getX();
+        double dy = current.getY() - previousLocation.getY();
+        double dz = current.getZ() - previousLocation.getZ();
         trust.countFlying(movement.isLastFlyingWasTeleportResync());
+        if (movement.isLastFlyingCarriedPosition()) {
+            silence.onPositionPacket(System.nanoTime());
+        }
 
         double half = body.halfWidth();
         double height = body.height();
@@ -228,14 +214,9 @@ public final class SelfSimulation {
             }
         }
 
-        scannedThisTick = false;
-        doubleMoveThisTick = false;
-        honeySlideActive = false;
-        deltaZeroedLastTick = deltaZeroedDisplacement;
-        deltaZeroedDisplacement = false;
-        groundThisTick = null;
-        inputThisTick = null;
-        mediumThisTick = null;
+        previous.deltaZeroed = state.deltaZeroedDisplacement;
+        state.reset(preset, sample, contact, dx, dy, dz,
+                ClientMath.horizontalDistance(dx, dz), previous.claimedGround);
         try {
             if (!initialized) {
                 initialized = true;
@@ -248,17 +229,16 @@ public final class SelfSimulation {
                 return;
             }
 
-            double observedSpeed = ClientMath.horizontalDistance(dx, dz);
-            gate.evaluateSelf(data, world, reader, actor, movement, current, observedSpeed);
+            gate.evaluateSelf(data, world, reader, actor, movement, current, state.observedSpeed);
             if (gate.kind() == TickGate.Kind.DECLINE) {
                 switch (gate.carriedMode()) {
                     case REST -> {
                         carried.collapse(MotionArea.rest());
-                        deltaZeroedDisplacement = true;
+                        state.deltaZeroedDisplacement = true;
                     }
                     case REST_JUMP_CEILING -> {
                         carried.collapse(new MotionArea(0.0, 0.0, 0.0, 0.0, jumpCeiling()));
-                        deltaZeroedDisplacement = true;
+                        state.deltaZeroedDisplacement = true;
                     }
                     case FROZEN -> {
                         double gravity = data.getAttributeData().gravity();
@@ -268,28 +248,28 @@ public final class SelfSimulation {
                     case KEEP -> {
                     }
                 }
-                decline(gate.reason(), dx, dy, dz, gate.reseed(), current, half, height);
+                decline(gate.reason(), gate.reseed(), current, half, height);
                 return;
             }
             if (gate.kind() == TickGate.Kind.FLAG) {
-                flagDetection(gate.breach(), dx, dy, dz, gate.horizontalExcess(), gate.verticalExcess());
+                flagDetection(gate.breach(), gate.horizontalExcess(), gate.verticalExcess());
                 return;
             }
 
-            scanTick(previous, current, half, height, dx, dy, dz);
+            scanTick(previousLocation, current, half, height, dx, dy, dz);
             if (reader.missesThisTick() > 0) {
-                scannedThisTick = false;
-                decline(DeclineReason.UNLOADED, dx, dy, dz, true, current, half, height);
+                state.scanned = false;
+                decline(DeclineReason.UNLOADED, true, current, half, height);
                 return;
             }
             GroundFacts ground = groundResolver.resolve(dy, contact, sample.fluid(),
                     data.getAttributeData().stepHeight(), carried.minFloorVy(), data.isSneaking(),
                     supportTracker);
-            groundThisTick = ground;
+            state.ground = ground;
             double supportGap = contact.nearestSupportGap();
             if (!pistons.reaching()
                     && groundSpoof.provoked(movement.isOnGround(), ground.groundedEnd(), supportGap)) {
-                flagDetection(BoundBreach.GROUNDSPOOF, dx, dy, dz, 0.0,
+                flagDetection(BoundBreach.GROUNDSPOOF, 0.0,
                         Math.min(supportGap, HARVEST_DOWN_MARGIN) - GroundSpoofDetector.SUPPORT_GAP_EPS);
                 return;
             }
@@ -300,41 +280,38 @@ public final class SelfSimulation {
             TrustTracker.Trust trustKind = trust.classify(movement.isLastFlyingPositionChanged(),
                     movement.isLastFlyingWasDuplicate(), gates.endTick(),
                     data.getTeleportData().lastPacketWasTeleport(), preset.doubleMoveGraceTicks());
-            boolean doubleMove = trustKind == TrustTracker.Trust.COAST_DOUBLE
+            state.doubleMove = trustKind == TrustTracker.Trust.COAST_DOUBLE
                     || trustKind == TrustTracker.Trust.JUDGED_DOUBLE;
-            doubleMoveThisTick = doubleMove;
-            ControlEnvelope input = body.control().build(movement, contact, ground, sample.fluid(),
-                    dx, dy, dz, doubleMove, sample.stuckVertical(), previousPowderSnowSwept);
-            inputThisTick = input;
-            MediumModel medium = body.medium(sample, false);
-            mediumThisTick = medium;
+            state.input = body.control().build(movement, contact, ground, sample.fluid(),
+                    dx, dy, dz, state.doubleMove, sample.stuckVertical(), previous.powderSnowSwept);
+            state.medium = body.medium(sample, false);
+            state.landMedium = sample.landMedium();
 
             switch (trustKind) {
-                case TRUSTED, TRUSTED_ZERO, JUDGED_DOUBLE ->
-                        judgeTick(dx, dy, dz, observedSpeed, medium, input, ground, preset);
-                case WITHHELD -> coastTick(true, dx, dy, dz, medium, input, ground, preset);
-                case COAST_DOUBLE -> coastTick(false, dx, dy, dz, medium, input, ground, preset);
+                case TRUSTED, TRUSTED_ZERO, JUDGED_DOUBLE -> judgeTick();
+                case WITHHELD -> coastTick(true);
+                case COAST_DOUBLE -> coastTick(false);
             }
         } finally {
-            observeTail(view, preset, dy);
-            previousClaimedGround = movement.isOnGround();
-            previousIsFlying = data.isFlying();
-            previousPowderSnowSwept = scannedThisTick && sample.powderSnowSwept();
-            stuckSettleScans = scannedThisTick ? stuckSettleScans + 1 : 0;
+            observeTail(view, preset, dy, true);
+            previous.claimedGround = movement.isOnGround();
+            previous.flying = data.isFlying();
+            previous.powderSnowSwept = state.scanned && sample.powderSnowSwept();
+            previous.stuckSettleScans = state.scanned ? previous.stuckSettleScans + 1 : 0;
             data.decayFlyChangeGrace();
         }
     }
 
     public void rewriteGroundClaim(PacketReceiveEvent event) {
-        if (!scannedThisTick || groundThisTick == null) return;
+        if (!state.scanned || state.ground == null) return;
         if (verdict.outcome() != TickOutcome.JUDGED) return;
         if (pistons.reaching()) return;
         boolean claimed = data.getMovementData().isOnGround();
         double gap = contact.nearestSupportGap();
         boolean rewriteTo;
-        if (GroundSpoofDetector.claimProvablyFalse(claimed, groundThisTick.groundedEnd(), gap)) {
+        if (GroundSpoofDetector.claimProvablyFalse(claimed, state.ground.groundedEnd(), gap)) {
             rewriteTo = false;
-        } else if (!claimed && groundThisTick.groundedEnd()
+        } else if (!claimed && state.ground.groundedEnd()
                 && gap <= SupportingBlockTracker.SLAB_DEPTH && !contact.supportApproximate()) {
             rewriteTo = true;
         } else {
@@ -349,12 +326,31 @@ public final class SelfSimulation {
         boolean sawFlying = trust.onTickEnd();
         mitigation.clearTickFlags();
         if (sawFlying) {
+            pendingTeleportQuietTicks = 0;
             if (verdict.mitigation().triggered() || verdict.fall().violation()) {
                 verdict = verdict.withOutcome(MitigationOutcome.NONE, FallFinding.NONE, verdict.improperSprint());
             }
             return;
         }
-        onSilentTick();
+        if (data.getTeleportData().hasPendingTeleport()) {
+            pendingTeleportQuietTicks++;
+        } else {
+            pendingTeleportQuietTicks = 0;
+        }
+        if (!onSilentTick()) {
+            mitigation.advancePendingSetback();
+            data.getSetbackController().coastRise();
+        }
+    }
+
+    public void onPong() {
+        if (!initialized) return;
+        ConfigView view = context.view();
+        if (!view.physicsEngineSetback()) return;
+        if (!gate.allowsSilent(data, world, view.physicsSimulateFlying(), data.getMovementData(),
+                pendingTeleportQuietTicks)) return;
+        if (!silence.probeWanted(System.nanoTime())) return;
+        mitigation.probeSetback();
     }
 
     public void onBlockApplied(int x, int y, int z, int serverStateId) {
@@ -374,11 +370,16 @@ public final class SelfSimulation {
 
     public void clearHistory() {
         gate.clearHistory();
+        pendingTeleportQuietTicks = 0;
         groundSpoof.reset();
-        deltaZeroedDisplacement = false;
-        deltaZeroedLastTick = false;
+        state.deltaZeroedDisplacement = false;
+        previous.clearZeroing();
         supportTracker.invalidate();
         hover.reset();
+        owedRiseQuiet.reset();
+        owedFallQuiet.reset();
+        silence.reset(System.nanoTime());
+        data.getSetbackController().clearRise();
         bubble.reset();
         stuckFactor.reset();
         body.mediums().reset();
@@ -388,15 +389,15 @@ public final class SelfSimulation {
         phase.clear();
         exemptions.clear();
         bedBounce.reset();
-        bounceRise.disarm();
+        obligation.disarm();
         body.pose().clearHistory();
-        momentumValid = false;
+        momentum.invalidate();
         verdict = PhysicsVerdict.INITIAL;
     }
 
     public void reset() {
         initialized = false;
-        carriedEntityPush = 0.0;
+        push.reset();
         carried.collapse(MotionArea.rest());
         trust.reset();
         groundResolver.reset();
@@ -430,150 +431,164 @@ public final class SelfSimulation {
         return fall;
     }
 
-    private void onSilentTick() {
-        if (!initialized) return;
-        if (data.isDead()) return;
-        if (!world.readiness().ready()) return;
+    private boolean onSilentTick() {
+        if (!initialized) return false;
         ConfigView view = context.view();
-        if (!view.physicsSimulateFlying() && data.isFlying()) return;
-        if (data.getTeleportData().hasPendingTeleport()) return;
         MovementData movement = data.getMovementData();
-        if (!movement.isCameraIsSelf()) return;
+        if (!gate.allowsSilent(data, world, view.physicsSimulateFlying(), movement,
+                pendingTeleportQuietTicks)) return false;
         Location current = movement.getCurrent();
-        if (DeclineCheck.check(data) != null) return;
         PhysicsPreset preset = view.physicsPreset();
 
         reader.resetCounters();
         double half = body.halfWidth();
         double height = body.height();
-        scannedThisTick = false;
-        honeySlideActive = false;
-        groundThisTick = null;
-        inputThisTick = null;
-        mediumThisTick = null;
+        boolean deltaZeroed = state.deltaZeroedDisplacement;
+        state.reset(preset, sample, contact, 0.0, 0.0, 0.0, 0.0, previous.claimedGround);
+        state.deltaZeroedDisplacement = deltaZeroed;
         scanTick(current, current, half, height, 0.0, 0.0, 0.0);
-        if (reader.missesThisTick() > 0) return;
+        if (reader.missesThisTick() > 0) return false;
         GroundFacts ground = groundResolver.resolve(0.0, contact, sample.fluid(),
                 data.getAttributeData().stepHeight(), carried.minFloorVy(), data.isSneaking(),
                 supportTracker);
-        groundThisTick = ground;
+        state.ground = ground;
         supportTracker.invalidate();
-        momentumValid = false;
-        ControlEnvelope input = body.control().build(movement, contact, ground, sample.fluid(),
-                0.0, 0.0, 0.0, false, sample.stuckVertical(), previousPowderSnowSwept);
-        inputThisTick = input;
-        MediumModel medium = body.medium(sample, true);
-        mediumThisTick = medium;
+        momentum.invalidate();
+        state.input = body.control().build(movement, contact, ground, sample.fluid(),
+                0.0, 0.0, 0.0, false, sample.stuckVertical(), previous.powderSnowSwept);
+        state.medium = body.medium(sample, true);
+        state.landMedium = sample.landMedium();
+        taints.computeBase(state, data);
+        obligation.prepare(taints.forbidsRiseObligation(), state.input,
+                data.getAttributeData().jumpStrength() * ground.startJumpMin()
+                        + state.input.jumpBoostPower(),
+                sample, contact);
 
-        observeAbsentKnockback(medium, input, ground, preset);
-        coastArea(medium, input, ground, preset);
+        observeAbsentKnockback();
+        coastArea();
 
+        double owedRise = state.quietOwedRise;
+        double owedFall = state.quietOwedFall;
+        data.getSetbackController().accumulateRise(owedRise, levitationTarget(state.input),
+                contact.ceilingClearanceAny());
+        double owedThreshold = Math.max(preset.verticalFlagEpsilon(), MotionDefaults.MOTION_ZERO_THRESHOLD);
+        boolean risePinned = owedRiseQuiet.observe(owedRise, owedThreshold);
+        boolean fallPinned = owedFallQuiet.observe(owedFall, owedThreshold);
         boolean airborne = airborneNow(ground, preset);
-        if (hover.observe(airborne, preset.hoverGraceTicks(), HOVER_SETBACK_LIMIT)) {
+        boolean hovering = hover.observe(airborne, preset.hoverGraceTicks(), HOVER_SETBACK_LIMIT)
+                || fallPinned;
+        boolean starving = silence.clockTick();
+        if (risePinned) {
+            verdict = buildVerdict(TickOutcome.COASTED, null, BoundBreach.FORCED_RISE,
+                    0.0, 0.0, 0.0, 0.0, 0.0, owedRise, 0.0, 0.0, state.input, ground);
+        } else if (hovering) {
             verdict = buildVerdict(TickOutcome.COASTED, null, BoundBreach.HOVER,
-                    0.0, 0.0, 0.0, 0.0, 0.0, HOVER_EXCESS, 0.0, 0.0, input, ground);
+                    0.0, 0.0, 0.0, 0.0, 0.0,
+                    fallPinned ? owedFall : HOVER_EXCESS, 0.0, 0.0, state.input, ground);
+        } else if (starving) {
+            verdict = buildVerdict(TickOutcome.COASTED, null, BoundBreach.MOTION_SILENCE,
+                    0.0, 0.0, 0.0, 0.0, 0.0, SILENCE_EXCESS, 0.0, 0.0, state.input, ground);
         } else {
             verdict = buildVerdict(TickOutcome.COASTED, DeclineReason.WITHHELD, null,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, input, ground);
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, state.input, ground);
         }
 
-        previousPowderSnowSwept = scannedThisTick && sample.powderSnowSwept();
-        observeTail(view, preset, 0.0);
+        previous.powderSnowSwept = state.scanned && sample.powderSnowSwept();
+        observeTail(view, preset, 0.0, false);
+        return true;
     }
 
-    private void scanTick(Location previous, Location current, double half, double height,
+    private void scanTick(Location from, Location to, double half, double height,
                           double dx, double dy, double dz) {
-        ShapeQuery query = shapeQuery(current.getY());
-        double minX = Math.min(previous.getX(), current.getX()) - half - HARVEST_HORIZONTAL_MARGIN;
-        double maxX = Math.max(previous.getX(), current.getX()) + half + HARVEST_HORIZONTAL_MARGIN;
-        double minY = Math.min(previous.getY(), current.getY()) - HARVEST_DOWN_MARGIN;
-        double maxY = Math.max(previous.getY(), current.getY()) + height + HARVEST_UP_MARGIN;
-        double minZ = Math.min(previous.getZ(), current.getZ()) - half - HARVEST_HORIZONTAL_MARGIN;
-        double maxZ = Math.max(previous.getZ(), current.getZ()) + half + HARVEST_HORIZONTAL_MARGIN;
+        ShapeQuery query = shapeQuery(to.getY());
+        double minX = Math.min(from.getX(), to.getX()) - half - HARVEST_HORIZONTAL_MARGIN;
+        double maxX = Math.max(from.getX(), to.getX()) + half + HARVEST_HORIZONTAL_MARGIN;
+        double minY = Math.min(from.getY(), to.getY()) - HARVEST_DOWN_MARGIN;
+        double maxY = Math.max(from.getY(), to.getY()) + height + HARVEST_UP_MARGIN;
+        double minZ = Math.min(from.getZ(), to.getZ()) - half - HARVEST_HORIZONTAL_MARGIN;
+        double maxZ = Math.max(from.getZ(), to.getZ()) + half + HARVEST_HORIZONTAL_MARGIN;
         ColliderCollector.fill(colliders, reader, world.entities(), query, exemptions,
                 data.getPistonData(), -1,
                 minX, minY, minZ, maxX, maxY, maxZ);
-        trace.stageNearestStandable(world.entities(), current.getX(), current.getY(), current.getZ(), half);
-        BorderColliders.fill(colliders, world.border(), previous.getX(), previous.getZ(), half,
+        trace.stageNearestStandable(world.entities(), to.getX(), to.getY(), to.getZ(), half);
+        BorderColliders.fill(colliders, world.border(), from.getX(), from.getZ(), half,
                 minX, minY, minZ, maxX, maxY, maxZ);
         pistons.setPlayerBox(
-                Math.min(previous.getX(), current.getX()) - half,
-                Math.min(previous.getY(), current.getY()),
-                Math.min(previous.getZ(), current.getZ()) - half,
-                Math.max(previous.getX(), current.getX()) + half,
-                Math.max(previous.getY(), current.getY()) + height,
-                Math.max(previous.getZ(), current.getZ()) + half);
+                Math.min(from.getX(), to.getX()) - half,
+                Math.min(from.getY(), to.getY()),
+                Math.min(from.getZ(), to.getZ()) - half,
+                Math.max(from.getX(), to.getX()) + half,
+                Math.max(from.getY(), to.getY()) + height,
+                Math.max(from.getZ(), to.getZ()) + half);
         pistons.evaluate();
         sweep.resolve(colliders, contact,
-                previous.getX(), previous.getY(), previous.getZ(),
+                from.getX(), from.getY(), from.getZ(),
                 half, height, dx, dy, dz,
                 data.getAttributeData().stepHeight(), groundResolver.lastGroundedEnd());
-        TraitSampler.sample(reader, contact, current.getX(), current.getY(), current.getZ(), half);
+        traits.sample(reader, contact, to.getX(), to.getY(), to.getZ(), half);
         MediumScan.sample(reader, sample,
                 !data.isFlying(), false, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
                 gates.modernFluidPush(), data.getEffectData().hasWeaving(),
-                !previousIsFlying && stuckSettleScans >= STUCK_SETTLE_SCANS, !previousIsFlying,
-                previous.getY() + body.lastEyeHeight(),
-                previous.getX() - half, previous.getY(), previous.getZ() - half,
-                previous.getX() + half, previous.getY() + height, previous.getZ() + half,
-                Math.min(previous.getX(), current.getX()) - half, Math.min(previous.getY(), current.getY()),
-                Math.min(previous.getZ(), current.getZ()) - half,
-                Math.max(previous.getX(), current.getX()) + half,
-                Math.max(previous.getY(), current.getY()) + height,
-                Math.max(previous.getZ(), current.getZ()) + half);
+                !previous.flying && previous.stuckSettleScans >= STUCK_SETTLE_SCANS, !previous.flying,
+                from.getY() + body.lastEyeHeight(),
+                from.getX() - half, from.getY(), from.getZ() - half,
+                from.getX() + half, from.getY() + height, from.getZ() + half,
+                Math.min(from.getX(), to.getX()) - half, Math.min(from.getY(), to.getY()),
+                Math.min(from.getZ(), to.getZ()) - half,
+                Math.max(from.getX(), to.getX()) + half,
+                Math.max(from.getY(), to.getY()) + height,
+                Math.max(from.getZ(), to.getZ()) + half);
         swim.update(data, sample);
-        scannedThisTick = true;
+        state.scanned = true;
     }
 
-    private void judgeTick(double dx, double dy, double dz, double observedSpeed,
-                           MediumModel medium, ControlEnvelope input,
-                           GroundFacts ground, PhysicsPreset preset) {
+    private void judgeTick() {
         hover.onJudged();
-        Location end = data.getMovementData().getCurrent();
-        double trackHalf = body.halfWidth();
-        supportTracker.update(colliders, reader, ground.groundedEnd(), contact.nearestSupportGap(),
-                contact.supportApproximate(),
-                end.getX() - trackHalf, end.getZ() - trackHalf,
-                end.getX() + trackHalf, end.getZ() + trackHalf,
-                end.getX(), end.getY(), end.getZ(), dx, dz);
-        spawnBits = 0L;
-        pendingSpawnCount = 0;
-        spawnKnockbackHypothesis(medium, input);
-        spawnPistonLaunch(medium, input);
-        MotionArea preStep = carried.union();
-        preStepCarriedX = preStep.centerX();
-        preStepCarriedZ = preStep.centerZ();
-        preStepCarriedFloor = preStep.floorVy();
-        preStepCarriedCeil = preStep.ceilVy();
-        boolean landMedium = sample.landMedium();
-
-        boolean residualCarryWidened = carry.horizontal() > 0.0;
-        boolean landModel = medium == body.mediums().land();
-        double riseFloor = bounceRise.required(riseTainted(landModel), input,
-                data.getAttributeData().jumpStrength() * ground.startJumpMin() + input.jumpBoostPower());
-        bedBounce.prepare(landMedium);
-        double arrestCap = landMedium && dy <= -preset.verticalFlagEpsilon()
-                ? Math.max(0.0, contact.nearestSupportGap() - preset.verticalNoisePad())
-                : -1.0;
-
-        Location current = data.getMovementData().getCurrent();
+        owedRiseQuiet.reset();
+        owedFallQuiet.reset();
+        MovementData movement = data.getMovementData();
+        Location current = movement.getCurrent();
         double half = body.halfWidth();
         double height = body.lastHeight();
+        GroundFacts ground = state.ground;
+        ControlEnvelope input = state.input;
+        MediumModel medium = state.medium;
+        PhysicsPreset preset = state.preset;
+        double dx = state.dx, dy = state.dy, dz = state.dz;
+
+        supportTracker.update(colliders, reader, ground.groundedEnd(), contact.nearestSupportGap(),
+                contact.supportApproximate(),
+                current.getX() - half, current.getZ() - half,
+                current.getX() + half, current.getZ() + half,
+                current.getX(), current.getY(), current.getZ(), dx, dz);
+
+        spawns.begin();
+        KnockbackSetSpawnRule.spawn(data.getExternalVelocityData(), medium, input, carried, spawns);
+        PistonLaunchSpawnRule.spawn(pistons.launchMask(), medium, input, carried, spawns);
+        MotionArea preStep = carried.union();
+        state.preCarriedX = preStep.centerX();
+        state.preCarriedZ = preStep.centerZ();
+        state.preCarriedFloor = preStep.floorVy();
+        state.preCarriedCeil = preStep.ceilVy();
+
+        boolean residualCarryWidened = carry.horizontal() > 0.0;
+        taints.computeBase(state, data);
+        obligation.prepare(taints.forbidsRiseObligation(), input,
+                data.getAttributeData().jumpStrength() * ground.startJumpMin() + input.jumpBoostPower(),
+                sample, contact);
+        bedBounce.prepare(state.landMedium);
+        double arrestCap = state.landMedium && dy <= -preset.verticalFlagEpsilon()
+                ? Math.max(0.0, contact.nearestSupportGap() - preset.verticalNoisePad())
+                : -1.0;
 
         if ((contact.startOverlapping() || exemptions.hasAny())
                 && squeezeOut.evaluate(reader, shapeQuery(current.getY() - dy),
                 current.getX() - dx, current.getY() - dy, current.getZ() - dz, half, height)) {
-            MotionArea union = carried.union();
-            carried.spawn(CarriedHypotheses.Kind.SPARE,
-                    new MotionArea(squeezeOut.setX() ? squeezeOut.valX() : union.centerX(),
-                            squeezeOut.setZ() ? squeezeOut.valZ() : union.centerZ(),
-                            union.slack(), union.floorVy(), union.ceilVy()));
-            spawnBits |= TraceFrame.SPAWN_SQUEEZE_OUT;
+            SqueezeOutSpawnRule.spawn(squeezeOut, carried, spawns);
         }
 
-        carriedEntityPush = EntityPushTracker.advance(carriedEntityPush, world.entities(),
-                medium.frictionMax(input, ground),
+        push.advance(world.entities(), medium.frictionMax(input, ground),
                 Math.min(current.getX() - dx, current.getX()) - half, Math.min(current.getY() - dy, current.getY()),
                 Math.min(current.getZ() - dz, current.getZ()) - half,
                 Math.max(current.getX() - dx, current.getX()) + half,
@@ -589,22 +604,21 @@ public final class SelfSimulation {
         double entityPushInfluence = 0.0;
         boolean offerBounceAlt = false;
         boolean boostApplied = false;
+        boolean riseFloorPinned = false;
         GroundFacts claimAirGround = null;
         double boostStuckScale = sample.stuck() && !sample.fluid() ? sample.stuckHorizontal() : 1.0;
-        boolean unobstructedFall = provenUnobstructedFall(ground, input, medium);
+        boolean unobstructedFall = provenUnobstructedFall();
         boolean minFallPinned = false;
         for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
             if (!carried.live(slot)) continue;
             AreaBounds slotBounds = boundsSlots[slot];
             MotionArea area = carried.area(slot);
             GroundFacts slotGround = ground;
-            if (carried.kind(slot) == CarriedHypotheses.Kind.AIR_REGIME && !previousClaimedGround
-                    && medium == body.mediums().land()) {
+            if (state.airRegime(carried.kind(slot))) {
                 if (claimAirGround == null) claimAirGround = airRegimeView(ground);
                 slotGround = claimAirGround;
             }
-            ctx.fill(preset, sample, input, slotGround, contact, medium, slotBounds);
-            AreaExpander.grow(area, ctx, stuckFactor, bubble, carry);
+            AreaExpander.grow(area, slotBounds, slotGround, state, stuckFactor, bubble, carry);
             if (unobstructedFall && carried.kind(slot) == CarriedHypotheses.Kind.MAIN) {
                 slotBounds.ceiling(Math.min(slotBounds.ceiling(), area.ceilVy()));
                 minFallPinned = true;
@@ -617,11 +631,15 @@ public final class SelfSimulation {
             boolean slotPiston = pistons.apply(slotBounds);
             glideExit.widenForExit(medium, data, body.mediums(), input, ground, area, slotBounds);
             riptideGlide.offer(medium, data, body.mediums(), input, ground, contact, area, slotBounds);
-            double slotPush = EntityPushTracker.apply(slotBounds, carriedEntityPush);
+            double slotPush = push.apply(slotBounds);
             boolean slotBounce = bedBounce.applyTo(slotBounds,
                     slotBounds.centerX() - area.centerX(), slotBounds.centerZ() - area.centerZ());
             boolean slotBoost = SprintBoostRule.apply(input, slotBounds, boostStuckScale);
-            if (riseFloor > 0.0) slotBounds.riseFloor(riseFloor);
+            double slotRise = obligation.riseFloorFor(slotBounds);
+            if (slotRise > 0.0) {
+                slotBounds.riseFloor(slotRise);
+                riseFloorPinned = true;
+            }
             if (slot == 0) {
                 knockbackWidened = slotKnockback;
                 riptideWidened = slotRiptide;
@@ -647,11 +665,11 @@ public final class SelfSimulation {
 
         double horizontalExcess = excess.horizontal();
         boolean stepFromFall = false;
-        if (landMedium && !ground.groundedStart() && !ground.groundedEnd()
+        if (state.landMedium && !ground.groundedStart() && !ground.groundedEnd()
                 && dy > preset.verticalFlagEpsilon()
-                && lastSupportGap >= 0.0
-                && dy + lastSupportGap <= input.stepHeight() + STEP_FROM_FALL_EPS
-                && lastSupportGap <= -preStepCarriedFloor + STEP_FROM_FALL_EPS) {
+                && previous.supportGap >= 0.0
+                && dy + previous.supportGap <= input.stepHeight() + STEP_FROM_FALL_EPS
+                && previous.supportGap <= -state.preCarriedFloor + STEP_FROM_FALL_EPS) {
             stepFromFall = contact.nearestSupportGap() <= preset.verticalNoisePad()
                     || sweep.flushTopAt(colliders, current.getY(),
                     current.getX() - half, current.getZ() - half,
@@ -661,6 +679,8 @@ public final class SelfSimulation {
                 || (dy > preset.verticalFlagEpsilon() && ground.groundedEnd()
                 && contact.stepCandidateMax() > 0.0)
                 || stepFromFall;
+        state.stepped = stepped;
+        state.stepFromFall = stepFromFall;
         if (stepped && horizontalExcess > 0.0) {
             horizontalExcess = Math.max(0.0, horizontalExcess - preset.stepNoiseSlack());
         }
@@ -668,51 +688,35 @@ public final class SelfSimulation {
         if (stepFromFall) ascentExcess = 0.0;
 
         double phaseExcess;
-        if (landMedium && !pistonInfluence) {
+        if (state.landMedium && !pistonInfluence) {
             phaseExcess = phase.excess(contact.horizontalCrossingDepth(), contact.embedDepth(),
-                    observedSpeed, true, preset);
+                    state.observedSpeed, true, preset);
         } else {
             phase.invalidateEmbed();
             phaseExcess = 0.0;
         }
 
+        taints.computeJudged(pistonInfluence, stepped, stepFromFall, offerBounceAlt,
+                knockbackHypothesisChosen, excess.altCenterUsed());
         consumeKnockback(knockbackHypothesisChosen, excess, preset);
-        boolean knockbackTainted = contact.collidedX() || contact.collidedZ() || contact.wallNear()
-                || contact.startOverlapping() || contact.stepUsedHeight() > 0.0 || stepFromFall
-                || sample.stuck() || !landMedium || data.isFlying()
-                || pistonInfluence
-                || data.getGlideData().riptideActive() || data.isSpinAttacking()
-                || offerBounceAlt
-                || data.getMitigationService().setbackPending();
-        observeKnockbackRequirement(dx, dz, chosenSlotBounds, knockbackTainted, preset);
+        observeKnockbackRequirement(dx, dz, chosenSlotBounds, taints.forbidsKnockbackRequirement(), preset);
 
         double descentExcess = excess.descent();
-        boolean momentumTainted = !input.claimedInputExact() || !input.horizontalInput()
-                || ground.start() != GroundState.AIRBORNE
-                || medium != body.mediums().land()
-                || !landMedium || stepped || stepFromFall
-                || contact.collidedX() || contact.collidedZ() || contact.wallNear()
-                || contact.startOverlapping()
-                || sample.stuck() || sample.pushed() || sample.bubbleAscent() > 0.0
-                || data.getExternalVelocityData().isActive() || data.getPistonData().isActive()
-                || data.getGlideData().riptideActive() || data.isSpinAttacking()
-                || data.getMitigationService().setbackPending()
-                || pistonInfluence || knockbackHypothesisChosen || excess.altCenterUsed()
-                || input.airAccelBase() != input.airAccelBaseMin()
-                || input.sneaking() != data.isSneaking()
-                || data.getUseItemData().slowdownAmbiguous()
-                || doubleMoveThisTick;
-        double momentumExcess = turnMomentumExcess(dx, dz, medium, input, ground, preset, momentumTainted);
+        state.frictionMax = medium.frictionMax(input, ground);
+        state.speedFactor = effectiveSpeedFactor();
+        double momentumExcess = momentum.excess(state, taints.forbidsMomentum());
         boolean momentumFlagged = momentumExcess > preset.horizontalFlagEpsilon();
         double flagHorizontal = Math.max(horizontalExcess, momentumExcess);
 
         BoundBreach breach = classify(flagHorizontal, ascentExcess, descentExcess, phaseExcess, preset);
-        if (breach == BoundBreach.DESCENT_FLOOR && riseFloor > 0.0) breach = BoundBreach.BOUNCE_RISE;
-
+        if (breach == BoundBreach.DESCENT_FLOOR && chosenSlotBounds.riseFloor() > 0.0) {
+            breach = obligation.breachLabel();
+        }
         boolean flyGraceSuppressed = false;
         if (breach != null && data.isCanFly() && data.getFlyChangeGrace() > 0
                 && (breach == BoundBreach.HORIZONTAL_DISK || breach == BoundBreach.ASCENT
-                || breach == BoundBreach.DESCENT_FLOOR || breach == BoundBreach.BOUNCE_RISE)) {
+                || breach == BoundBreach.DESCENT_FLOOR || breach == BoundBreach.BOUNCE_RISE
+                || breach == BoundBreach.FORCED_RISE)) {
             breach = null;
             horizontalExcess = 0.0;
             flagHorizontal = 0.0;
@@ -720,14 +724,18 @@ public final class SelfSimulation {
             descentExcess = 0.0;
             flyGraceSuppressed = true;
         }
+        if (breach == BoundBreach.FORCED_RISE || breach == BoundBreach.BOUNCE_RISE) {
+            data.getSetbackController().accumulateRise(chosenSlotBounds.riseFloor(),
+                    levitationTarget(input), contact.ceilingClearanceAny());
+        }
 
         boolean sneakHeld = data.isSneaking();
-        boolean sneakEdge = SneakEdgeRule.protectsCarry(sneakHeld, ground, landMedium, dy, observedSpeed,
-                chosenSlotBounds, contact, preset);
+        boolean sneakEdge = SneakEdgeRule.protectsCarry(sneakHeld, ground, state.landMedium, dy,
+                state.observedSpeed, chosenSlotBounds, contact, preset);
         boolean preserveGrace = gate.inPreserveGrace();
         boolean carryPredicted = stepped || preserveGrace || sneakEdge;
 
-        honeySlideActive = landMedium && HoneySlideRule.slidePossible(reader,
+        state.honeySlide = state.landMedium && HoneySlideRule.slidePossible(reader,
                 gates.modernBlockEffects(), dy, ground.groundedEnd(), input.gravity(),
                 current.getX(), current.getY(), current.getZ(), half, height);
 
@@ -735,45 +743,44 @@ public final class SelfSimulation {
             double climbVy = input.powderSnowClimb()
                     ? medium.advanceVertical(LandModel.POWDER_SNOW_CLIMB, input) : 0.0;
             carried.collapse(climbVy > 0.0 ? MotionArea.seeded(0.0, 0.0, climbVy) : MotionArea.rest());
-            pendingSpawnCount = 0;
-            bounceRise.disarm();
+            spawns.drop();
+            obligation.disarmBounce();
         } else {
-            double frictionMax = medium.frictionMax(input, ground);
-            double speedFactor = effectiveSpeedFactor();
             for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
                 if (!carried.live(slot)) continue;
                 boolean slotSneakEdge = slot == chosen ? sneakEdge
-                        : SneakEdgeRule.protectsCarry(sneakHeld, ground, landMedium, dy, observedSpeed,
-                        boundsSlots[slot], contact, preset);
+                        : SneakEdgeRule.protectsCarry(sneakHeld, ground, state.landMedium, dy,
+                        state.observedSpeed, boundsSlots[slot], contact, preset);
                 boolean slotCarry = stepped || preserveGrace || slotSneakEdge;
-                carried.area(slot, advance(boundsSlots[slot], carried.area(slot), excessSlots[slot],
-                        carried.kind(slot), slotCarry, stepFromFall, medium, input, ground, preset,
-                        frictionMax, speedFactor, dx, dy, dz));
+                carried.area(slot, advanceRules.advance(boundsSlots[slot], carried.area(slot),
+                        excessSlots[slot], carried.kind(slot), slotCarry, state, spawns));
             }
-            if (previousClaimedGround) {
+            if (state.previousClaimedGround) {
                 if (chosen != 0 && carried.live(chosen)
                         && carried.kind(chosen) == CarriedHypotheses.Kind.AIR_REGIME) {
                     carried.area(0, carried.area(chosen));
                 }
                 carried.killKind(CarriedHypotheses.Kind.AIR_REGIME);
             }
-            spawnWallZero(chosen);
-            spawnGlideExit(chosen, chosenSlotBounds, medium, frictionMax, speedFactor);
-            spawnAirRegime(chosenSlotBounds, medium, input, ground, stepped, stepFromFall,
-                    frictionMax, speedFactor);
-            flushPendingSpawns();
+            WallZeroSpawnRule.queue(contact, gates.endTick(), movement.isHorizontalCollision(),
+                    carried.area(chosen), spawns);
+            GlideExitSpawnRule.queue(state, data.getGlideData(), chosenSlotBounds,
+                    carried.area(chosen), spawns);
+            AirRegimeSpawnRule.queue(state, previous.deltaZeroed, movement.isOnGround(),
+                    chosenSlotBounds, spawns);
+            spawns.flush(carried);
             carried.mergeConverged();
             if (pistonInfluence && contact.startOverlapping()) {
                 seedEmbedExemptions(current, half, height);
             }
             bedBounce.arm(contact, chosenSlotBounds);
-            bounceRise.arm(landModel, doubleMoveThisTick, fullPose(), sneakHeld, sample.stuck(),
-                    honeySlideActive, supportTracker.bounceCertain(), dy, preStepCarriedCeil,
-                    carried.minFloorVy(), contact.ceilingClearanceAny());
+            obligation.armBounce(state.landModel(), state.doubleMove, fullPose(), sneakHeld,
+                    sample.stuck(), state.honeySlide, supportTracker.bounceCertain(), dy,
+                    state.preCarriedCeil, carried.minFloorVy(), contact.ceilingClearanceAny());
         }
         gate.tickPreserveGrace();
 
-        long widenings = spawnBits;
+        long widenings = spawns.bits();
         if (carried.pollOverflowed()) widenings |= TraceFrame.HYPOTHESIS_OVERFLOW;
         if (knockbackWidened) widenings |= TraceFrame.WIDENED_KNOCKBACK;
         if (riptideWidened) widenings |= TraceFrame.WIDENED_RIPTIDE;
@@ -782,8 +789,9 @@ public final class SelfSimulation {
         if (sample.stuck() && !sample.fluid()) widenings |= TraceFrame.WIDENED_STUCK;
         if (sample.bubbleAscent() > 0.0) widenings |= TraceFrame.WIDENED_BUBBLE;
         if (offerBounceAlt) widenings |= TraceFrame.WIDENED_BED_BOUNCE;
-        if (riseFloor > 0.0) widenings |= TraceFrame.PINNED_BOUNCE_RISE;
-        if (honeySlideActive) widenings |= TraceFrame.WIDENED_HONEY_SLIDE;
+        if (riseFloorPinned && obligation.bouncePinned()) widenings |= TraceFrame.PINNED_BOUNCE_RISE;
+        if (riseFloorPinned && !obligation.bouncePinned()) widenings |= TraceFrame.PINNED_FORCED_RISE;
+        if (state.honeySlide) widenings |= TraceFrame.WIDENED_HONEY_SLIDE;
         if (boostApplied) widenings |= TraceFrame.WIDENED_BOOST_SEGMENT;
         if (minFallPinned) widenings |= TraceFrame.PINNED_MIN_FALL;
         if (momentumFlagged) widenings |= TraceFrame.TURN_MOMENTUM;
@@ -794,10 +802,12 @@ public final class SelfSimulation {
         if (input.claimedInputExact() && input.horizontalInput()) widenings |= TraceFrame.INPUT_EXACT;
         if (flyGraceSuppressed) widenings |= TraceFrame.FLY_TRANSITION;
         trace.contributors(widenings);
+        trace.taints(taints.bits());
 
         boolean phaseBreach = breach == BoundBreach.PHASE_CROSS || breach == BoundBreach.PHASE_EMBED;
         carry.store(phaseBreach ? 0.0 : horizontalExcess,
-                breach == BoundBreach.DESCENT_FLOOR || breach == BoundBreach.BOUNCE_RISE ? 0.0 : ascentExcess,
+                breach == BoundBreach.DESCENT_FLOOR || breach == BoundBreach.BOUNCE_RISE
+                        || breach == BoundBreach.FORCED_RISE ? 0.0 : ascentExcess,
                 false, preset.residualCarryCap());
 
         verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
@@ -806,256 +816,204 @@ public final class SelfSimulation {
                 input, ground);
     }
 
-    private void coastTick(boolean withheld, double dx, double dy, double dz,
-                           MediumModel medium, ControlEnvelope input, GroundFacts ground, PhysicsPreset preset) {
+    private void coastTick(boolean withheld) {
+        PhysicsPreset preset = state.preset;
         supportTracker.invalidate();
-        momentumValid = false;
-        if (withheld) observeAbsentKnockback(medium, input, ground, preset);
-        coastArea(medium, input, ground, preset);
+        momentum.invalidate();
+        taints.computeBase(state, data);
+        obligation.prepare(taints.forbidsRiseObligation(), state.input,
+                data.getAttributeData().jumpStrength() * state.ground.startJumpMin()
+                        + state.input.jumpBoostPower(),
+                sample, contact);
+        if (withheld) observeAbsentKnockback();
+        coastArea();
         gate.tickPreserveGrace();
 
+        double owedRise = withheld ? state.quietOwedRise : 0.0;
+        double owedFall = withheld ? state.quietOwedFall : 0.0;
+        data.getSetbackController().accumulateRise(owedRise, levitationTarget(state.input),
+                contact.ceilingClearanceAny());
         double phaseExcess = 0.0;
         if (!withheld && sample.landMedium() && !pistons.reaching()) {
             phaseExcess = phase.excess(contact.horizontalCrossingDepth(), contact.embedDepth(),
-                    ClientMath.horizontalDistance(dx, dz), false, preset);
+                    state.observedSpeed, false, preset);
         }
-        boolean airborne = withheld && airborneNow(ground, preset);
-        boolean hovering = hover.observe(airborne, preset.hoverGraceTicks(), HOVER_SETBACK_LIMIT);
+        double owedThreshold = Math.max(preset.verticalFlagEpsilon(), MotionDefaults.MOTION_ZERO_THRESHOLD);
+        boolean risePinned = owedRiseQuiet.observe(owedRise, owedThreshold);
+        boolean fallPinned = owedFallQuiet.observe(owedFall, owedThreshold);
+        boolean airborne = withheld && airborneNow(state.ground, preset);
+        boolean hovering = hover.observe(airborne, preset.hoverGraceTicks(), HOVER_SETBACK_LIMIT)
+                || fallPinned;
+        boolean starving = silence.clockTick();
 
         if (phaseExcess > preset.horizontalFlagEpsilon()) {
             BoundBreach breach = contact.horizontalCrossingDepth() > preset.phaseCrossTolerance()
                     ? BoundBreach.PHASE_CROSS : BoundBreach.PHASE_EMBED;
             verdict = buildVerdict(TickOutcome.COASTED, null, breach,
-                    dx, dy, dz, phaseExcess, 0.0, 0.0, phaseExcess, 0.0, input, ground);
+                    state.dx, state.dy, state.dz, phaseExcess, 0.0, 0.0, phaseExcess, 0.0,
+                    state.input, state.ground);
+        } else if (risePinned) {
+            verdict = buildVerdict(TickOutcome.COASTED, null, BoundBreach.FORCED_RISE,
+                    state.dx, state.dy, state.dz, 0.0, 0.0, owedRise, 0.0, 0.0,
+                    state.input, state.ground);
         } else if (hovering) {
             verdict = buildVerdict(TickOutcome.COASTED, null, BoundBreach.HOVER,
-                    dx, dy, dz, 0.0, HOVER_EXCESS, 0.0, 0.0, 0.0, input, ground);
+                    state.dx, state.dy, state.dz, 0.0,
+                    fallPinned ? owedFall : HOVER_EXCESS, 0.0, 0.0, 0.0,
+                    state.input, state.ground);
+        } else if (starving) {
+            verdict = buildVerdict(TickOutcome.COASTED, null, BoundBreach.MOTION_SILENCE,
+                    state.dx, state.dy, state.dz, 0.0, SILENCE_EXCESS, 0.0, 0.0, 0.0,
+                    state.input, state.ground);
         } else {
             verdict = buildVerdict(TickOutcome.COASTED,
                     withheld ? DeclineReason.WITHHELD : DeclineReason.DOUBLE_MOVE, null,
-                    dx, dy, dz, 0.0, 0.0, 0.0, 0.0, 0.0, input, ground);
+                    state.dx, state.dy, state.dz, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    state.input, state.ground);
         }
         carry.clear();
     }
 
-    private MotionArea advance(AreaBounds bounds, MotionArea area, JudgedExcess excess,
-                               CarriedHypotheses.Kind kind, boolean carryPredicted, boolean stepFromFall,
-                               MediumModel medium, ControlEnvelope input,
-                               GroundFacts ground, PhysicsPreset preset,
-                               double frictionMax, double speedFactor,
-                               double dx, double dy, double dz) {
-        boolean landModel = medium == body.mediums().land();
-        boolean airRegime = kind == CarriedHypotheses.Kind.AIR_REGIME && !previousClaimedGround
-                && landModel;
-        if (airRegime || (landModel && bounds.pistonReached())) {
-            frictionMax = LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, input.airDragModifier());
-        }
-        AreaAdvancer.clampObserved(bounds, dx, dy, dz, excess.altCenterUsed(), preset.modelDriftSlack());
-        double anchor = (ground.groundedEnd() || stepFromFall) && !airRegime ? 0.0 : bounds.legalVy();
-        double advancedVy = medium.advanceVertical(anchor, input);
-        double advancedFloorVy = CeilingFlushRule.advanceFloor(anchor, advancedVy, medium, input, bounds, contact);
-        advancedFloorVy = ClimbExitRule.carryFloor(advancedFloorVy, medium, body.mediums(), bounds, input);
-        boolean intervalOverridden = false;
-        if (honeySlideActive) {
-            double honeyVy = HoneySlideRule.carriedVy(gates.modernBlockEffects(), input.gravity());
-            if (honeyVy > advancedVy) {
-                advancedVy = honeyVy;
-                intervalOverridden = true;
-            }
-        }
-        if (input.powderSnowClimb()) {
-            double climbVy = medium.advanceVertical(LandModel.POWDER_SNOW_CLIMB, input);
-            if (climbVy > advancedVy) {
-                advancedVy = climbVy;
-                intervalOverridden = true;
-            }
-        }
-
-        MotionArea next = AreaAdvancer.next(bounds.legalX(), bounds.legalZ(), frictionMax,
-                speedFactor, advancedFloorVy, advancedVy);
-
-        if (carryPredicted) {
-            double accel = medium.accelBound(input, ground);
-            double coastX = area.centerX();
-            double coastZ = area.centerZ();
-            double coastSlack = area.slack() + accel;
-            if (input.sprintJump()) {
-                coastX += input.boostX();
-                coastZ += input.boostZ();
-                coastSlack += input.boostSpread();
-            }
-            queueSpawn(CarriedHypotheses.Kind.STEP_TRACK, TraceFrame.SPAWN_STEP,
-                    new MotionArea(coastX * frictionMax, coastZ * frictionMax,
-                            coastSlack * frictionMax, advancedFloorVy, advancedVy));
-        }
-
-        if (medium == body.mediums().glide() && body.mediums().glide().dualActive()) {
-            double glideX = bounds.legalX() * speedFactor;
-            double glideZ = bounds.legalZ() * speedFactor;
-            double freeFallShrink = ClientMath.horizontalDistance(glideX, glideZ) * (1.0 - frictionMax);
-            next = new MotionArea(glideX, glideZ, next.slack() + freeFallShrink,
-                    body.mediums().land().advanceVertical(bounds.legalVy(), input), bounds.legalVy());
-            intervalOverridden = true;
-        }
-
-        if (medium == body.mediums().glide() && contact.nearestSupportGap() <= GLIDE_PRESERVE_GAP) {
-            double exitFloor = body.mediums().land().advanceVertical(bounds.floor(), input);
-            if (exitFloor < next.floorVy()) {
-                next = new MotionArea(next.centerX(), next.centerZ(), next.slack(),
-                        exitFloor, next.ceilVy());
-                intervalOverridden = true;
-            }
-        }
-
-        if (ground.bounced() && area.floorVy() < 0.0 && contact.supportBounce() > 0.0) {
-            double reflected = BounceRule.reflectMax(gates.restitutionBounce(), contact,
-                    area.floorVy(), input.gravity(), LandModel.verticalDrag(input));
-            double advancedCeil = medium.advanceVertical(reflected, input);
-            next = new MotionArea(next.centerX(), next.centerZ(), next.slack(),
-                    bounceFloor(advancedCeil, area, medium, input), advancedCeil);
-            intervalOverridden = true;
-        }
-
-        next = AreaAdvancer.zeroClamp(next, gates.jointHorizontalZeroing());
-
-        if (!intervalOverridden && next.ceilVy() - next.floorVy() > VERTICAL_DUAL_GAP) {
-            queueSpawn(CarriedHypotheses.Kind.SPARE, TraceFrame.SPAWN_VERTICAL_DUAL,
-                    new MotionArea(next.centerX(), next.centerZ(), next.slack(),
-                            next.floorVy(), next.floorVy()));
-            next = new MotionArea(next.centerX(), next.centerZ(), next.slack(),
-                    next.ceilVy(), next.ceilVy());
-        }
-
-        return next;
-    }
-
-    private double bounceFloor(double advancedCeil, MotionArea area, MediumModel medium, ControlEnvelope input) {
-        if (!supportTracker.bounceCertain() || area.ceilVy() >= 0.0) return advancedCeil;
-        double least = BounceRule.reflectMin(gates.restitutionBounce(), supportTracker.bounceFactor(),
-                supportTracker.bounceBed(), area.ceilVy(), input.gravity());
-        if (least <= 0.0) return medium.advanceVertical(0.0, input);
-        return Math.min(advancedCeil, medium.advanceVertical(least, input));
-    }
-
-    private void spawnWallZero(int chosen) {
-        if (contact.stepUsedHeight() > 0.0) return;
-        boolean penetration = contact.collidedX() || contact.collidedZ();
-        if (!penetration && !contact.wallNear()) return;
-        if (gates.endTick() && !data.getMovementData().isHorizontalCollision()) return;
-        MotionArea advanced = carried.area(chosen);
-        double centerX = advanced.centerX();
-        double centerZ = advanced.centerZ();
-        if (penetration) {
-            double zeroedX = contact.collidedX() ? 0.0 : centerX;
-            double zeroedZ = contact.collidedZ() ? 0.0 : centerZ;
-            if (zeroedX != centerX || zeroedZ != centerZ) {
-                queueSpawn(CarriedHypotheses.Kind.SPARE, TraceFrame.SPAWN_COLLIDE_ZERO,
-                        new MotionArea(zeroedX, zeroedZ, advanced.slack(),
-                                advanced.floorVy(), advanced.ceilVy()));
-            }
+    private void coastArea() {
+        state.quietOwedRise = 0.0;
+        state.quietOwedFall = 0.0;
+        MediumModel medium = state.medium;
+        ControlEnvelope input = state.input;
+        GroundFacts ground = state.ground;
+        if (sample.stuck() && !sample.fluid()) {
+            carried.collapse(MotionArea.rest());
+            carry.clear();
+            obligation.disarmBounce();
             return;
         }
-        if (Math.abs(centerX) > 1.0e-9) {
-            queueSpawn(CarriedHypotheses.Kind.SPARE, TraceFrame.SPAWN_COLLIDE_ZERO,
-                    new MotionArea(0.0, centerZ, advanced.slack(),
-                            advanced.floorVy(), advanced.ceilVy()));
+        double accel = medium.accelBound(input, ground) + pistons.horizontalReach();
+        double frictionMax = medium.frictionMax(input, ground);
+        boolean glide = medium.kind() == MediumKind.GLIDE;
+        double owedRise = Double.MAX_VALUE;
+        double maxCeiling = -Double.MAX_VALUE;
+        int first = -1;
+        for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
+            if (!carried.live(slot)) continue;
+            if (first < 0) first = slot;
+            AreaBounds slotBounds = boundsSlots[slot];
+            MotionArea area = carried.area(slot);
+            AreaExpander.grow(area, slotBounds, ground, state, stuckFactor, bubble, carry);
+            knockback.apply(slotBounds, state.preset.knockbackPad(),
+                    carried.kind(slot) == CarriedHypotheses.Kind.KNOCKBACK_SET);
+            riptide.apply(slotBounds, input);
+            pistons.apply(slotBounds);
+            double slotRise = obligation.riseFloorFor(slotBounds);
+            if (slotRise > 0.0) slotBounds.riseFloor(slotRise);
+            owedRise = Math.min(owedRise, slotRise);
+            maxCeiling = Math.max(maxCeiling, slotBounds.ceiling());
+            if (glide) {
+                carried.area(slot, new MotionArea(slotBounds.centerX(), slotBounds.centerZ(),
+                        area.slack() + accel, slotBounds.floor(), slotBounds.ceiling()));
+            } else {
+                boolean airRegime = state.airRegime(carried.kind(slot));
+                double slotFriction = airRegime
+                        ? LandModel.computeModifiedFriction(MotionDefaults.AIR_FRICTION, input.airDragModifier())
+                        : frictionMax;
+                boolean grounded = ground.groundedEnd() && !airRegime;
+                double floorSource = (grounded ? 0.0 : area.floorVy()) + pistons.pushLoY();
+                double ceilSource = grounded ? 0.0 : slotBounds.ceiling();
+                carried.area(slot, AreaAdvancer.zeroClamp(AreaAdvancer.coast(area, accel, slotFriction,
+                        medium.advanceVertical(floorSource, input),
+                        medium.advanceVertical(ceilSource, input)), gates.jointHorizontalZeroing()));
+            }
         }
-        if (Math.abs(centerZ) > 1.0e-9) {
-            queueSpawn(CarriedHypotheses.Kind.SPARE, TraceFrame.SPAWN_COLLIDE_ZERO,
-                    new MotionArea(centerX, 0.0, advanced.slack(),
-                            advanced.floorVy(), advanced.ceilVy()));
-        }
+        chosenBounds = boundsSlots[first];
+        chosenSlot = first;
+        carried.mergeConverged();
+        carry.clear();
+        bedBounce.reset();
+        obligation.disarmBounce();
+        state.quietOwedRise = owedRise == Double.MAX_VALUE ? 0.0 : owedRise;
+        state.quietOwedFall = maxCeiling == -Double.MAX_VALUE ? 0.0 : Math.max(0.0, -maxCeiling);
     }
 
-    private void spawnKnockbackHypothesis(MediumModel medium, ControlEnvelope input) {
+    private void decline(DeclineReason reason, boolean reseed, Location current, double half, double height) {
+        if (reseed) {
+            carried.collapse(reason == DeclineReason.SLEEPING
+                    ? wakeSeed(state.dx, state.dy, state.dz)
+                    : MotionArea.seeded(state.dx, state.dz, state.dy));
+        }
+        chosenSlot = 0;
+        supportTracker.invalidate();
+        trust.clearDoubleMoveStreak();
+        hover.onDeclined();
+        owedRiseQuiet.reset();
+        owedFallQuiet.reset();
+        silence.reset(System.nanoTime());
+        if (reason != DeclineReason.RESYNC) data.getSetbackController().clearRise();
+        body.control().onDecline();
+        if (reason != DeclineReason.FAST) {
+            seedEmbedExemptions(current, half, height);
+        }
+        if (reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT
+                || reason == DeclineReason.UNLOADED || reason == DeclineReason.LOADING
+                || reason == DeclineReason.SLEEPING) {
+            phase.seedGrace();
+            phase.invalidateEmbed();
+        }
+        if (reseed || reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT
+                || reason == DeclineReason.SLEEPING) {
+            groundResolver.displaced();
+            push.reset();
+        }
+        carry.clear();
+        bedBounce.reset();
+        obligation.disarmBounce();
+        momentum.invalidate();
+        verdict = buildVerdict(TickOutcome.DECLINED, reason, null,
+                state.dx, state.dy, state.dz, 0.0, 0.0, 0.0, 0.0, 0.0, null, null);
+    }
+
+    private MotionArea wakeSeed(double dx, double dy, double dz) {
+        double advancedVy = (dy - data.getAttributeData().gravity()) * MotionDefaults.VERTICAL_DRAG;
+        return new MotionArea(dx, dz, 0.0, Math.min(dy, advancedVy), Math.max(dy, advancedVy));
+    }
+
+    private void flagDetection(BoundBreach breach, double horizontalExcess, double verticalExcess) {
+        hover.onDeclined();
+        owedRiseQuiet.reset();
+        owedFallQuiet.reset();
+        silence.reset(System.nanoTime());
+        data.getSetbackController().clearRise();
+        supportTracker.invalidate();
+        body.control().improperSprint(false);
+        carried.collapse(MotionArea.seeded(state.dx, state.dz, state.dy));
+        chosenSlot = 0;
+        carry.clear();
+        bedBounce.reset();
+        obligation.disarmBounce();
+        momentum.invalidate();
+        verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
+                state.dx, state.dy, state.dz,
+                Math.max(0.0, horizontalExcess), Math.max(0.0, verticalExcess), 0.0, 0.0,
+                0.0, null, null);
+    }
+
+    private void observeAbsentKnockback() {
         ExternalVelocityData external = data.getExternalVelocityData();
         if (!external.isActive() || !external.hasSet()) return;
-        double slack = external.slack();
-        double rawLow = external.y() - slack;
-        double rawHigh = external.y() + slack;
-        double advancedLow = medium.advanceVertical(rawLow, input);
-        double advancedHigh = medium.advanceVertical(rawHigh, input);
-        double floor = Math.min(rawLow, Math.min(advancedLow, advancedHigh));
-        double ceiling = Math.max(rawHigh, Math.max(advancedLow, advancedHigh));
-        carried.spawn(CarriedHypotheses.Kind.KNOCKBACK_SET,
-                new MotionArea(external.x(), external.z(), slack, floor, ceiling));
-        spawnBits |= TraceFrame.SPAWN_KNOCKBACK;
-    }
-
-    private void spawnPistonLaunch(MediumModel medium, ControlEnvelope input) {
-        int mask = pistons.launchMask();
-        if (mask == 0) return;
-        MotionArea union = carried.union();
-        if ((mask & PistonData.LAUNCH_NEG_X) != 0) spawnLaunchHorizontal(union, -PistonData.SLIME_LAUNCH, 0.0);
-        if ((mask & PistonData.LAUNCH_POS_X) != 0) spawnLaunchHorizontal(union, PistonData.SLIME_LAUNCH, 0.0);
-        if ((mask & PistonData.LAUNCH_NEG_Z) != 0) spawnLaunchHorizontal(union, 0.0, -PistonData.SLIME_LAUNCH);
-        if ((mask & PistonData.LAUNCH_POS_Z) != 0) spawnLaunchHorizontal(union, 0.0, PistonData.SLIME_LAUNCH);
-        boolean up = (mask & PistonData.LAUNCH_POS_Y) != 0;
-        boolean down = (mask & PistonData.LAUNCH_NEG_Y) != 0;
-        if (up || down) {
-            double rawHi = up ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
-            double rawLo = down ? -PistonData.SLIME_LAUNCH : PistonData.SLIME_LAUNCH;
-            double advancedLo = medium.advanceVertical(rawLo, input);
-            double advancedHi = medium.advanceVertical(rawHi, input);
-            double floor = Math.min(rawLo, Math.min(advancedLo, advancedHi));
-            double ceiling = Math.max(rawHi, Math.max(advancedLo, advancedHi));
-            carried.spawn(CarriedHypotheses.Kind.SPARE,
-                    new MotionArea(union.centerX(), union.centerZ(), union.slack(), floor, ceiling));
-            spawnBits |= TraceFrame.SPAWN_PISTON_LAUNCH;
-        }
-    }
-
-    private void spawnLaunchHorizontal(MotionArea union, double launchX, double launchZ) {
-        carried.spawn(CarriedHypotheses.Kind.SPARE,
-                new MotionArea(launchX != 0.0 ? launchX : union.centerX(),
-                        launchZ != 0.0 ? launchZ : union.centerZ(),
-                        union.slack(), union.floorVy(), union.ceilVy()));
-        spawnBits |= TraceFrame.SPAWN_PISTON_LAUNCH;
-    }
-
-    private void spawnAirRegime(AreaBounds chosenSlotBounds, MediumModel medium, ControlEnvelope input,
-                                GroundFacts ground, boolean stepped, boolean stepFromFall,
-                                double frictionMax, double speedFactor) {
-        if ((!stepped && !deltaZeroedLastTick) || (!ground.groundedEnd() && !stepFromFall)) return;
-        if (medium != body.mediums().land()) return;
-        boolean claimedGround = data.getMovementData().isOnGround();
-        if (claimedGround && previousClaimedGround) return;
-        if (!claimedGround && !input.jumpPossible()) return;
-        double carryFriction = (previousClaimedGround ? frictionMax
-                : LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, input.airDragModifier()))
-                * speedFactor;
-        double fallVy = medium.advanceVertical(0.0, input);
-        double jumpVy = medium.advanceVertical(input.jumpTakeoff(), input);
-        queueSpawn(CarriedHypotheses.Kind.AIR_REGIME, TraceFrame.SPAWN_AIR_REGIME,
-                new MotionArea(chosenSlotBounds.legalX() * carryFriction, chosenSlotBounds.legalZ() * carryFriction,
-                        0.0, fallVy, Math.max(fallVy, jumpVy)));
-    }
-
-    private void spawnGlideExit(int chosen, AreaBounds chosenSlotBounds, MediumModel medium,
-                                double frictionMax, double speedFactor) {
-        if (medium != body.mediums().land() || !data.getGlideData().justExited()) return;
-        double airDecay = LandModel.AIR_FRICTION * speedFactor;
-        if (airDecay <= frictionMax * speedFactor) return;
-        MotionArea advanced = carried.area(chosen);
-        queueSpawn(CarriedHypotheses.Kind.GLIDE_EXIT, TraceFrame.SPAWN_GLIDE_EXIT,
-                new MotionArea(chosenSlotBounds.legalX() * airDecay, chosenSlotBounds.legalZ() * airDecay,
-                        0.0, advanced.floorVy(), advanced.ceilVy()));
-    }
-
-    private void queueSpawn(CarriedHypotheses.Kind kind, long bit, MotionArea area) {
-        if (pendingSpawnCount >= PENDING_SPAWN_LIMIT) return;
-        pendingSpawnKinds[pendingSpawnCount] = kind;
-        pendingSpawnAreas[pendingSpawnCount] = area;
-        pendingSpawnCount++;
-        spawnBits |= bit;
-    }
-
-    private void flushPendingSpawns() {
-        for (int i = 0; i < pendingSpawnCount; i++) {
-            carried.spawn(pendingSpawnKinds[i], pendingSpawnAreas[i]);
-            pendingSpawnAreas[i] = null;
-        }
-        pendingSpawnCount = 0;
+        Location at = data.getMovementData().getCurrent();
+        double half = body.halfWidth();
+        double height = body.height();
+        int pushers = world.entities().countPushableNear(
+                at.getX() - half, at.getY(), at.getZ() - half,
+                at.getX() + half, at.getY() + height, at.getZ() + half,
+                half, height);
+        double threshold = gates.modernMovementThreshold()
+                ? MovementData.DUPLICATE_THRESHOLD_MODERN
+                : MovementData.DUPLICATE_THRESHOLD_LEGACY;
+        MotionArea continuation = carried.union(CarriedHypotheses.Kind.KNOCKBACK_SET);
+        double reach = state.medium.accelBound(state.input, state.ground)
+                + ClientMath.horizontalDistance(continuation.centerX(), continuation.centerZ())
+                + continuation.slack()
+                + external.slack() + state.preset.knockbackPad() + threshold;
+        knockback.observeRequirement(0.0, 0.0, external.x(), external.z(), reach,
+                taints.forbidsAbsentKnockbackRequirement(pushers), state.preset.horizontalFlagEpsilon());
     }
 
     private void consumeKnockback(boolean knockbackHypothesisChosen, JudgedExcess excess, PhysicsPreset preset) {
@@ -1092,138 +1050,7 @@ public final class SelfSimulation {
         return chosenSlotBounds;
     }
 
-    private void coastArea(MediumModel medium, ControlEnvelope input, GroundFacts ground, PhysicsPreset preset) {
-        if (sample.stuck() && !sample.fluid()) {
-            carried.collapse(MotionArea.rest());
-            carry.clear();
-            bounceRise.disarm();
-            return;
-        }
-        double accel = medium.accelBound(input, ground) + pistons.horizontalReach();
-        double frictionMax = medium.frictionMax(input, ground);
-        boolean glide = medium.kind() == MediumKind.GLIDE;
-        int first = -1;
-        for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
-            if (!carried.live(slot)) continue;
-            if (first < 0) first = slot;
-            AreaBounds slotBounds = boundsSlots[slot];
-            MotionArea area = carried.area(slot);
-            ctx.fill(preset, sample, input, ground, contact, medium, slotBounds);
-            AreaExpander.grow(area, ctx, stuckFactor, bubble, carry);
-            knockback.apply(slotBounds, preset.knockbackPad(),
-                    carried.kind(slot) == CarriedHypotheses.Kind.KNOCKBACK_SET);
-            riptide.apply(slotBounds, input);
-            pistons.apply(slotBounds);
-            if (glide) {
-                carried.area(slot, new MotionArea(slotBounds.centerX(), slotBounds.centerZ(),
-                        area.slack() + accel, slotBounds.floor(), slotBounds.ceiling()));
-            } else {
-                boolean airRegime = carried.kind(slot) == CarriedHypotheses.Kind.AIR_REGIME
-                        && !previousClaimedGround && medium == body.mediums().land();
-                double slotFriction = airRegime
-                        ? LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, input.airDragModifier())
-                        : frictionMax;
-                boolean grounded = ground.groundedEnd() && !airRegime;
-                double floorSource = (grounded ? 0.0 : area.floorVy()) + pistons.pushLoY();
-                double ceilSource = grounded ? 0.0 : slotBounds.ceiling();
-                carried.area(slot, AreaAdvancer.zeroClamp(AreaAdvancer.coast(area, accel, slotFriction,
-                        medium.advanceVertical(floorSource, input),
-                        medium.advanceVertical(ceilSource, input)), gates.jointHorizontalZeroing()));
-            }
-        }
-        chosenBounds = boundsSlots[first];
-        chosenSlot = first;
-        carried.mergeConverged();
-        carry.clear();
-        bedBounce.reset();
-        bounceRise.disarm();
-    }
-
-    private void decline(DeclineReason reason, double dx, double dy, double dz, boolean reseed,
-                         Location current, double half, double height) {
-        if (reseed) {
-            carried.collapse(reason == DeclineReason.SLEEPING
-                    ? wakeSeed(dx, dy, dz)
-                    : MotionArea.seeded(dx, dz, dy));
-        }
-        chosenSlot = 0;
-        supportTracker.invalidate();
-        trust.clearDoubleMoveStreak();
-        hover.onDeclined();
-        body.control().onDecline();
-        if (reason != DeclineReason.FAST) {
-            seedEmbedExemptions(current, half, height);
-        }
-        if (reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT
-                || reason == DeclineReason.UNLOADED || reason == DeclineReason.LOADING
-                || reason == DeclineReason.SLEEPING) {
-            phase.seedGrace();
-            phase.invalidateEmbed();
-        }
-        if (reseed || reason == DeclineReason.RESYNC || reason == DeclineReason.TELEPORT
-                || reason == DeclineReason.SLEEPING) {
-            groundResolver.displaced();
-            carriedEntityPush = 0.0;
-        }
-        carry.clear();
-        bedBounce.reset();
-        bounceRise.disarm();
-        momentumValid = false;
-        verdict = buildVerdict(TickOutcome.DECLINED, reason, null,
-                dx, dy, dz, 0.0, 0.0, 0.0, 0.0, 0.0, null, null);
-    }
-
-    private MotionArea wakeSeed(double dx, double dy, double dz) {
-        double advancedVy = (dy - data.getAttributeData().gravity()) * MotionDefaults.VERTICAL_DRAG;
-        return new MotionArea(dx, dz, 0.0, Math.min(dy, advancedVy), Math.max(dy, advancedVy));
-    }
-
-    private void flagDetection(BoundBreach breach, double dx, double dy, double dz,
-                               double horizontalExcess, double verticalExcess) {
-        hover.onDeclined();
-        supportTracker.invalidate();
-        body.control().improperSprint(false);
-        carried.collapse(MotionArea.seeded(dx, dz, dy));
-        chosenSlot = 0;
-        carry.clear();
-        bedBounce.reset();
-        bounceRise.disarm();
-        momentumValid = false;
-        verdict = buildVerdict(TickOutcome.JUDGED, null, breach,
-                dx, dy, dz, Math.max(0.0, horizontalExcess), Math.max(0.0, verticalExcess), 0.0, 0.0,
-                0.0, null, null);
-    }
-
-    private void observeAbsentKnockback(MediumModel medium, ControlEnvelope input,
-                                        GroundFacts ground, PhysicsPreset preset) {
-        ExternalVelocityData external = data.getExternalVelocityData();
-        if (!external.isActive() || !external.hasSet()) return;
-        Location at = data.getMovementData().getCurrent();
-        double half = body.halfWidth();
-        double height = body.height();
-        int pushers = world.entities().countPushableNear(
-                at.getX() - half, at.getY(), at.getZ() - half,
-                at.getX() + half, at.getY() + height, at.getZ() + half,
-                half, height);
-        boolean tainted = sample.stuck() || !sample.landMedium() || data.isFlying()
-                || contact.wallNear() || contact.startOverlapping()
-                || pushers > 0
-                || data.getPistonData().isActive()
-                || data.getGlideData().riptideActive() || data.isSpinAttacking()
-                || data.getMitigationService().setbackPending();
-        double threshold = gates.modernMovementThreshold()
-                ? MovementData.DUPLICATE_THRESHOLD_MODERN
-                : MovementData.DUPLICATE_THRESHOLD_LEGACY;
-        MotionArea continuation = carried.union(CarriedHypotheses.Kind.KNOCKBACK_SET);
-        double reach = medium.accelBound(input, ground)
-                + ClientMath.horizontalDistance(continuation.centerX(), continuation.centerZ())
-                + continuation.slack()
-                + external.slack() + preset.knockbackPad() + threshold;
-        knockback.observeRequirement(0.0, 0.0, external.x(), external.z(), reach, tainted,
-                preset.horizontalFlagEpsilon());
-    }
-
-    private void observeTail(ConfigView view, PhysicsPreset preset, double dy) {
+    private void observeTail(ConfigView view, PhysicsPreset preset, double dy, boolean flyingTick) {
         double ignoredKnockback = knockback.pollIgnored();
         if (ignoredKnockback > preset.horizontalFlagEpsilon()
                 && verdict.breach() == null
@@ -1234,8 +1061,8 @@ public final class SelfSimulation {
         knockback.finishTick();
 
         fall.observe(verdict.outcome(), verdict.declineReason(), verdict.breach(),
-                dy, data.getMovementData().isOnGround(), honeySlideActive,
-                scannedThisTick ? sample : null, groundThisTick, scannedThisTick ? contact : null, view);
+                dy, data.getMovementData().isOnGround(), state.honeySlide,
+                state.scanned ? sample : null, state.ground, state.scanned ? contact : null, view);
 
         boolean offense = verdict.breach() != null && !actor.physicsBypassed();
         double excess = Math.max(Math.max(verdict.horizontalExcess(), verdict.ascentExcess()),
@@ -1249,17 +1076,17 @@ public final class SelfSimulation {
                 && reason != DeclineReason.VEHICLE
                 && reason != DeclineReason.GLIDE
                 && reason != DeclineReason.SLEEPING;
-        double safeGap = scannedThisTick ? Math.min(contact.nearestSupportGap(), 99.0) : 0.0;
-        boolean safeAirborne = scannedThisTick && groundThisTick != null
-                && airborneNow(groundThisTick, preset);
+        double safeGap = state.scanned ? Math.min(contact.nearestSupportGap(), 99.0) : 0.0;
+        boolean safeAirborne = state.scanned && state.ground != null
+                && airborneNow(state.ground, preset);
         mitigation.observe(view, preset, offense, excess, inventoryMove, trustedPosition,
-                dy, safeGap, safeAirborne);
+                dy, safeGap, safeAirborne, flyingTick);
         if (verdict.breach() == BoundBreach.HOVER && mitigation.setbackIssuedThisTick()) {
             hover.onSetbackIssued();
         }
         verdict = verdict.withOutcome(mitigation.outcome(), fall.finding(), body.control().improperSprint());
 
-        if (scannedThisTick) {
+        if (state.scanned) {
             Location poseAt = data.getMovementData().getCurrent();
             double poseHalf = body.halfWidth();
             body.pose().updateHeadroom(colliders, poseAt.getX() - poseHalf, poseAt.getY(),
@@ -1273,11 +1100,11 @@ public final class SelfSimulation {
         data.getFireworkData().tick();
         data.getUseItemData().tick();
 
-        if (scannedThisTick) lastSupportGap = contact.nearestSupportGap();
+        if (state.scanned) previous.supportGap = contact.nearestSupportGap();
         trace.hypotheses(chosenSlot, carried.liveCount());
-        trace.record(view, scannedThisTick ? contact : null, scannedThisTick ? sample : null,
-                groundThisTick, inputThisTick, chosenBounds, verdict, reader, mitigation.buffer(), fall.engineFall(),
-                preStepCarriedX, preStepCarriedZ, preStepCarriedFloor, preStepCarriedCeil);
+        trace.record(view, state.scanned ? contact : null, state.scanned ? sample : null,
+                state.ground, state.input, chosenBounds, verdict, reader, mitigation.buffer(), fall.engineFall(),
+                state.preCarriedX, state.preCarriedZ, state.preCarriedFloor, state.preCarriedCeil);
     }
 
     private BoundBreach classify(double horizontalExcess, double ascentExcess, double descentExcess,
@@ -1302,13 +1129,18 @@ public final class SelfSimulation {
                 horizontalExcess, ascentExcess, descentExcess, phaseExcess,
                 chosenBounds.centerX(), chosenBounds.centerZ(), chosenBounds.radius(),
                 chosenBounds.ceiling(), chosenBounds.judgedFloor(),
-                scannedThisTick && mediumThisTick != null ? mediumThisTick.kind() : MediumKind.LAND,
+                state.scanned && state.medium != null ? state.medium.kind() : MediumKind.LAND,
                 ground != null ? ground.start() : GroundState.AMBIGUOUS,
                 data.isOpenInventory(),
                 impulseUsed > 0.0,
                 body.control().improperSprint(),
                 MitigationOutcome.NONE,
                 FallFinding.NONE);
+    }
+
+    private double levitationTarget(ControlEnvelope input) {
+        if (input == null || !input.levitation() || input.levitationAmplifier() < 0) return 0.0;
+        return MotionDefaults.LEVITATION_PER_LEVEL * (input.levitationAmplifier() + 1);
     }
 
     private boolean airborneNow(GroundFacts ground, PhysicsPreset preset) {
@@ -1318,62 +1150,23 @@ public final class SelfSimulation {
                 && !contact.startOverlapping();
     }
 
-    private double turnMomentumExcess(double dx, double dz, MediumModel medium, ControlEnvelope input,
-                                      GroundFacts ground, PhysicsPreset preset, boolean tainted) {
-        double friction = medium.frictionMax(input, ground);
-        double speedFactor = effectiveSpeedFactor();
-        if (tainted) {
-            momentumValid = false;
-            return 0.0;
-        }
-        if (!momentumValid) {
-            momentumX = dx * speedFactor * friction;
-            momentumZ = dz * speedFactor * friction;
-            momentumDrift = 0.0;
-            momentumValid = true;
-            return 0.0;
-        }
-        momentumBounds.reset(new MotionArea(momentumX, momentumZ, 0.0, 0.0, 0.0));
-        medium.horizontalOptions(input, ground, momentumBounds);
-        double predX = momentumBounds.centerX();
-        double predZ = momentumBounds.centerZ();
-        double excess = OutwardResidual.excess(dx, dz, predX, predZ, momentumBounds.radius());
-        boolean inside = excess <= 0.0;
-
-        double dirLen = ClientMath.horizontalDistance(predX, predZ);
-        if (dirLen > 1.0e-6) {
-            double perp = (predX * (dz - predZ) - predZ * (dx - predX)) / dirLen;
-            momentumDrift = momentumDrift * TURN_DRIFT_DECAY + perp;
-        } else {
-            momentumDrift *= TURN_DRIFT_DECAY;
-        }
-        double driftExcess = Math.max(0.0, Math.abs(momentumDrift) - TURN_DRIFT_TOLERANCE);
-
-        momentumX = (inside ? dx : predX) * speedFactor * friction;
-        momentumZ = (inside ? dz : predZ) * speedFactor * friction;
-        return Math.max(Math.max(0.0, excess), driftExcess);
-    }
-
-    private boolean provenUnobstructedFall(GroundFacts ground, ControlEnvelope input, MediumModel medium) {
-        if (medium != body.mediums().land()) return false;
+    private boolean provenUnobstructedFall() {
+        if (taints.forbidsUnobstructedFall()) return false;
+        GroundFacts ground = state.ground;
+        ControlEnvelope input = state.input;
         if (ground.start() != GroundState.AIRBORNE) return false;
         if (ground.groundedEnd() || ground.recentlyGrounded() || ground.landingSupport()
                 || ground.arrested() || ground.bounced() || ground.wasFluid()) return false;
         if (input.jumpPossible() || input.fluidExitHop() || input.powderSnowClimb()
                 || input.levitation()) return false;
-        if (!sample.landMedium() || sample.climbable() || sample.climbableUncertain()
-                || sample.bubbleAscent() > 0.0 || sample.pushed()) return false;
+        if (!sample.landMedium() || sample.climbable() || sample.climbableUncertain()) return false;
         if (contact.supportGap() != ContactReport.NO_SUPPORT
                 || contact.trailingSupportGap() != ContactReport.NO_SUPPORT) return false;
-        if (contact.startOverlapping() || contact.stepUsedHeight() > 0.0 || contact.groundHit()
-                || contact.wallNear() || contact.collidedX() || contact.collidedZ()) return false;
-        if (carriedEntityPush > 0.0 || exemptions.hasAny() || doubleMoveThisTick) return false;
-        if (data.isFlying() || data.getFlyChangeGrace() > 0
-                || data.getExternalVelocityData().isActive() || data.getPistonData().isActive()
-                || data.getGlideData().claimActive() || data.getGlideData().riptideActive()
-                || data.isGliding() || data.isSpinAttacking()
-                || data.getTeleportData().hasPendingTeleport()
-                || data.getMitigationService().setbackPending()) return false;
+        if (contact.groundHit()) return false;
+        if (push.carried() > 0.0 || exemptions.hasAny()) return false;
+        if (data.getFlyChangeGrace() > 0
+                || data.getGlideData().claimActive() || data.isGliding()
+                || data.getTeleportData().hasPendingTeleport()) return false;
         return carried.liveCount() == 1;
     }
 
@@ -1399,15 +1192,6 @@ public final class SelfSimulation {
         return factor + efficiency * (1.0F - factor);
     }
 
-    private boolean riseTainted(boolean landModel) {
-        return !landModel || data.isFlying() || doubleMoveThisTick
-                || sample.stuck() || sample.pushed() || sample.bubbleAscent() > 0.0
-                || data.getExternalVelocityData().isActive()
-                || data.getPistonData().isActive()
-                || data.getGlideData().riptideActive() || data.isSpinAttacking()
-                || data.getMitigationService().setbackPending();
-    }
-
     private boolean fullPose() {
         return body.height() >= MotionDefaults.STANDING_HEIGHT * data.getAttributeData().scale();
     }
@@ -1415,7 +1199,7 @@ public final class SelfSimulation {
     private double jumpCeiling() {
         return data.getAttributeData().jumpStrength()
                 + (data.getEffectData().hasJumpBoost()
-                ? 0.1 * (data.getEffectData().jumpBoostAmplifier() + 1) : 0.0);
+                ? MotionDefaults.JUMP_BOOST_PER_LEVEL * (data.getEffectData().jumpBoostAmplifier() + 1) : 0.0);
     }
 
     private void disengage() {

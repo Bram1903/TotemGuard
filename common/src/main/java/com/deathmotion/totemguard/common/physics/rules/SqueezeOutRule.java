@@ -41,6 +41,10 @@ public final class SqueezeOutRule {
     private double valX;
     private double valZ;
 
+    private static int floor(double value) {
+        return (int) Math.floor(value);
+    }
+
     public boolean evaluate(BlockReader reader, ShapeQuery query,
                             double x, double feetY, double z,
                             double halfWidth, double height) {
@@ -108,9 +112,5 @@ public final class SqueezeOutRule {
                     });
         }
         return hit[0];
-    }
-
-    private static int floor(double value) {
-        return (int) Math.floor(value);
     }
 }

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.control;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
 public record PlayerControl(
@@ -92,12 +93,13 @@ public record PlayerControl(
     }
 
     public double jumpBoostPower() {
-        return jumpBoostAmplifier >= 0 ? 0.1F * (jumpBoostAmplifier + 1) : 0.0;
+        return jumpBoostAmplifier >= 0
+                ? (float) MotionDefaults.JUMP_BOOST_PER_LEVEL * (jumpBoostAmplifier + 1) : 0.0;
     }
 
     public double jumpTakeoff() {
         if (jumpBoostAmplifier < 0) return jumpStrength;
-        return (float) jumpStrength + 0.1F * (jumpBoostAmplifier + 1);
+        return (float) jumpStrength + (float) MotionDefaults.JUMP_BOOST_PER_LEVEL * (jumpBoostAmplifier + 1);
     }
 
     public double lookHorizontal() {

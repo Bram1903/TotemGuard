@@ -131,7 +131,7 @@ public final class GroundResolver {
 
         GroundState start = groundedStart ? GroundState.SUPPORTED
                 : startAmbiguous ? GroundState.AMBIGUOUS
-                  : GroundState.AIRBORNE;
+                : GroundState.AIRBORNE;
         return new GroundFacts(start, groundedEnd, supportedStart, arrested, recentlyGrounded, landingSupport, bounced,
                 bounceTicks > 0, wasFluid, startSlipMin, startSlipMax, startJumpMin, startJumpMax, gap);
     }

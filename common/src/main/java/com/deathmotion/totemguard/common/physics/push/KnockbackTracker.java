@@ -105,10 +105,6 @@ public final class KnockbackTracker {
         return result;
     }
 
-    public boolean active() {
-        return external.isActive();
-    }
-
     private void resetRequirement() {
         minRequiredMiss = Double.MAX_VALUE;
         windowTainted = false;

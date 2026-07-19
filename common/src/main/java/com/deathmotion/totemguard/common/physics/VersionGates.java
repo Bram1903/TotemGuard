@@ -42,12 +42,10 @@ public final class VersionGates {
     private final boolean floatWhileRidden;
     private final boolean modernStriderSuffocation;
     private final boolean supportingBlock;
-    private final boolean useEffectsComponent;
     private final boolean claimedInput;
     private final boolean squareInputRescale;
     private final boolean doublePrecisionSprintBoost;
     private final boolean endTick;
-    private final boolean horseSaddleAuthority;
     private final boolean pigSaddleAuthority;
     private final boolean striderSaddleAuthority;
     private final boolean boatSnapCollisionGate;
@@ -75,12 +73,10 @@ public final class VersionGates {
         this.floatWhileRidden = client.isNewerThanOrEquals(ClientVersion.V_1_21_11);
         this.modernStriderSuffocation = client.isNewerThanOrEquals(ClientVersion.V_1_19_4);
         this.supportingBlock = client.isNewerThanOrEquals(ClientVersion.V_1_20);
-        this.useEffectsComponent = client.isNewerThanOrEquals(ClientVersion.V_1_21_11);
         this.claimedInput = client.isNewerThanOrEquals(ClientVersion.V_1_21_2);
         this.squareInputRescale = client.isNewerThanOrEquals(ClientVersion.V_1_21_5);
         this.doublePrecisionSprintBoost = client.isNewerThanOrEquals(ClientVersion.V_1_20_5);
         this.endTick = supportsEndTick;
-        this.horseSaddleAuthority = client.isNewerThanOrEquals(ClientVersion.V_1_19);
         this.pigSaddleAuthority = client.isNewerThanOrEquals(ClientVersion.V_1_19);
         this.striderSaddleAuthority = client.isNewerThanOrEquals(ClientVersion.V_1_20_2);
         this.boatSnapCollisionGate = client.isNewerThanOrEquals(ClientVersion.V_1_21);

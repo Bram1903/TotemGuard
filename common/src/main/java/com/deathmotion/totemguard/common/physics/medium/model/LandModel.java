@@ -28,12 +28,7 @@ import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 
 public final class LandModel implements MediumModel {
 
-    public static final double AIR_FRICTION = 0.91;
     public static final double POWDER_SNOW_CLIMB = 0.2;
-    private static final double LEVITATION_PER_LEVEL = 0.05;
-    private static final double LEVITATION_RATE = 0.2;
-    private static final double VERTICAL_DRAG = 0.98f;
-    private static final double SLOW_FALLING_GRAVITY = 0.01;
 
     static double groundAccel(ControlEnvelope input, GroundFacts ground) {
         return frictionInfluencedSpeed(input.moveSpeed(), ground.startSlipMin(), input.frictionModifier());
@@ -51,7 +46,7 @@ public final class LandModel implements MediumModel {
     }
 
     public static double verticalDrag(ControlEnvelope input) {
-        return computeModifiedFriction(VERTICAL_DRAG, input.airDragModifier());
+        return computeModifiedFriction(MotionDefaults.VERTICAL_DRAG, input.airDragModifier());
     }
 
     public static double computeModifiedFriction(double friction, double modifier) {
@@ -110,14 +105,15 @@ public final class LandModel implements MediumModel {
         } else if (ground.groundedStart() || ground.groundedEnd()) {
             bounds.raiseCeiling(contact.stepCandidateMax());
         }
-        bounds.lowerFloor(advanceVertical(0.0, input));
+        double restAdvance = advanceVertical(0.0, input);
+        if (restAdvance <= 0.0) bounds.lowerFloor(restAdvance);
         bounds.enforceDescentFloor(true);
     }
 
     @Override
     public double frictionMax(ControlEnvelope input, GroundFacts ground) {
         boolean groundDrag = ground.supportedStart() && !input.ceilingClampedJump();
-        float airDrag = modifiedFriction(0.91F, (float) input.airDragModifier());
+        float airDrag = modifiedFriction((float) MotionDefaults.AIR_FRICTION, (float) input.airDragModifier());
         if (!groundDrag) return airDrag;
         return modifiedFriction((float) ground.startSlipMax(), (float) input.frictionModifier()) * airDrag;
     }
@@ -126,11 +122,11 @@ public final class LandModel implements MediumModel {
     public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
         double verticalDrag = verticalDrag(input);
         if (input.levitation()) {
-            double target = LEVITATION_PER_LEVEL * (input.levitationAmplifier() + 1);
-            return (verticalVelocity + (target - verticalVelocity) * LEVITATION_RATE) * verticalDrag;
+            double target = MotionDefaults.LEVITATION_PER_LEVEL * (input.levitationAmplifier() + 1);
+            return (verticalVelocity + (target - verticalVelocity) * MotionDefaults.LEVITATION_RATE) * verticalDrag;
         }
         double gravity = (input.slowFalling() && verticalVelocity <= 0.0)
-                ? Math.min(input.gravity(), SLOW_FALLING_GRAVITY)
+                ? Math.min(input.gravity(), MotionDefaults.SLOW_FALLING_GRAVITY)
                 : input.gravity();
         return (verticalVelocity - gravity) * verticalDrag;
     }

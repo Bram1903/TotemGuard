@@ -35,15 +35,12 @@ public final class EntityTracker {
     private static final double SNAP_THRESHOLD = 4.0;
 
     private final int boatInterpolationSteps;
-
-    private int authoritativeId = -1;
-
     private final Map<Integer, TrackedEntity> entities = new HashMap<>();
     // Identity follows packet SEND order, positions follow acks: a CAMERA or METADATA sent right
     // after a SPAWN is valid before either is acked.
     private final Map<Integer, EntityType> announced = new HashMap<>();
     private final List<TrackedEntity> settling = new ArrayList<>();
-
+    private int authoritativeId = -1;
     @Getter
     private int standableCount;
     @Getter

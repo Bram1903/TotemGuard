@@ -29,7 +29,6 @@ public final class HoneySlideRule {
     private static final double EDGE_EPS = 1.0E-7;
     private static final double EDGE_REACH = 0.4375;
     private static final double SLIDE_START = -0.08;
-    private static final double BAKED_GRAVITY = 0.08;
 
     private HoneySlideRule() {
     }
@@ -40,7 +39,7 @@ public final class HoneySlideRule {
                                         double halfWidth, double height) {
         if (groundedEnd) return false;
         double startThreshold = modernBlockEffects
-                ? SLIDE_START - BAKED_GRAVITY + gravity
+                ? SLIDE_START - MotionDefaults.GRAVITY + gravity
                 : SLIDE_START;
         if (obsDy >= startThreshold) return false;
 
@@ -63,7 +62,7 @@ public final class HoneySlideRule {
     }
 
     public static double carriedVy(boolean modernBlockEffects, double gravity) {
-        double applied = modernBlockEffects ? BAKED_GRAVITY : gravity;
+        double applied = modernBlockEffects ? MotionDefaults.GRAVITY : gravity;
         return (-SLIDE_SPEED - applied) * MotionDefaults.VERTICAL_DRAG;
     }
 

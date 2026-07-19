@@ -25,49 +25,8 @@ public final class TraitSampler {
 
     private static final double SAMPLE_DEPTH = 0.500001;
 
-    private TraitSampler() {
-    }
-
-    public static void sample(BlockReader reader, ContactReport report,
-                              double centerX, double feetY, double centerZ, double half) {
-        int belowY = floor(feetY - SAMPLE_DEPTH);
-        int feetCellY = floor(feetY);
-        int x0 = floor(centerX - half), x1 = floor(centerX + half);
-        int z0 = floor(centerZ - half), z1 = floor(centerZ + half);
-
-        int[] belowIds = new int[BlockReader.MAX_REALITIES];
-        int[] feetIds = new int[BlockReader.MAX_REALITIES];
-
-        double slipMin = Double.MAX_VALUE;
-        double slipMax = -Double.MAX_VALUE;
-        double jumpMin = Double.MAX_VALUE;
-        double jumpMax = -Double.MAX_VALUE;
-        double speedMax = -Double.MAX_VALUE;
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0; z <= z1; z++) {
-                int belowCount = reader.realities(x, belowY, z, belowIds);
-                int feetCount = reader.realities(x, feetCellY, z, feetIds);
-
-                double slipLow = minSlip(reader, belowIds, belowCount);
-                if (slipLow < slipMin) slipMin = slipLow;
-                double slipHigh = maxSlip(reader, belowIds, belowCount);
-                if (slipHigh > slipMax) slipMax = slipHigh;
-
-                double jump = Math.min(minJump(reader, belowIds, belowCount), minJump(reader, feetIds, feetCount));
-                if (jump < jumpMin) jumpMin = jump;
-                double jumpHigh = Math.max(maxJump(reader, belowIds, belowCount), maxJump(reader, feetIds, feetCount));
-                if (jumpHigh > jumpMax) jumpMax = jumpHigh;
-
-                double speed = Math.max(maxSpeed(reader, belowIds, belowCount), maxSpeed(reader, feetIds, feetCount));
-                if (speed > speedMax) speedMax = speed;
-            }
-        }
-        report.supportSlipMin(slipMin);
-        report.supportSlipMax(slipMax);
-        report.supportSpeedFactor(speedMax);
-        report.supportJumpMin(jumpMin);
-        report.supportJumpMax(jumpMax);
-    }
+    private final int[] belowIds = new int[BlockReader.MAX_REALITIES];
+    private final int[] feetIds = new int[BlockReader.MAX_REALITIES];
 
     private static double minSlip(BlockReader reader, int[] ids, int count) {
         double value = Double.MAX_VALUE;
@@ -111,5 +70,43 @@ public final class TraitSampler {
 
     private static int floor(double value) {
         return (int) Math.floor(value);
+    }
+
+    public void sample(BlockReader reader, ContactReport report,
+                       double centerX, double feetY, double centerZ, double half) {
+        int belowY = floor(feetY - SAMPLE_DEPTH);
+        int feetCellY = floor(feetY);
+        int x0 = floor(centerX - half), x1 = floor(centerX + half);
+        int z0 = floor(centerZ - half), z1 = floor(centerZ + half);
+
+        double slipMin = Double.MAX_VALUE;
+        double slipMax = -Double.MAX_VALUE;
+        double jumpMin = Double.MAX_VALUE;
+        double jumpMax = -Double.MAX_VALUE;
+        double speedMax = -Double.MAX_VALUE;
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                int belowCount = reader.realities(x, belowY, z, belowIds);
+                int feetCount = reader.realities(x, feetCellY, z, feetIds);
+
+                double slipLow = minSlip(reader, belowIds, belowCount);
+                if (slipLow < slipMin) slipMin = slipLow;
+                double slipHigh = maxSlip(reader, belowIds, belowCount);
+                if (slipHigh > slipMax) slipMax = slipHigh;
+
+                double jump = Math.min(minJump(reader, belowIds, belowCount), minJump(reader, feetIds, feetCount));
+                if (jump < jumpMin) jumpMin = jump;
+                double jumpHigh = Math.max(maxJump(reader, belowIds, belowCount), maxJump(reader, feetIds, feetCount));
+                if (jumpHigh > jumpMax) jumpMax = jumpHigh;
+
+                double speed = Math.max(maxSpeed(reader, belowIds, belowCount), maxSpeed(reader, feetIds, feetCount));
+                if (speed > speedMax) speedMax = speed;
+            }
+        }
+        report.supportSlipMin(slipMin);
+        report.supportSlipMax(slipMax);
+        report.supportSpeedFactor(speedMax);
+        report.supportJumpMin(jumpMin);
+        report.supportJumpMax(jumpMax);
     }
 }

@@ -59,11 +59,15 @@ public final class MitigationTracker {
 
     public void observe(ConfigView view, PhysicsPreset preset,
                         boolean offense, double excess, boolean inventoryMove, boolean trustedPosition,
-                        double safeVelY, double safeGroundGap, boolean safeAirborne) {
+                        double safeVelY, double safeGroundGap, boolean safeAirborne, boolean flyingTick) {
         clearTickFlags();
 
         controller.tickAnchorFreeze();
-        service.onFlying();
+        if (flyingTick) {
+            service.onFlying();
+        } else {
+            service.onSilentTick();
+        }
         if (service.setbackConfirmedThisTick()) {
             buffer = 0.0;
         }
@@ -111,6 +115,15 @@ public final class MitigationTracker {
         setbackIssuedThisTick = false;
         setbackSkippedThisTick = false;
         inventoryClosedThisTick = false;
+    }
+
+    public void advancePendingSetback() {
+        service.onSilentTick();
+    }
+
+    public boolean probeSetback() {
+        if (service.setbackPending() || !controller.hasSafe() || !service.setbackIssuable()) return false;
+        return controller.requestSetback();
     }
 
     public void reset() {

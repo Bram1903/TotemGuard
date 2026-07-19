@@ -28,5 +28,7 @@ public enum BoundBreach {
     HOVER,
     FAST,
     GROUNDSPOOF,
-    KNOCKBACK
+    KNOCKBACK,
+    FORCED_RISE,
+    MOTION_SILENCE
 }

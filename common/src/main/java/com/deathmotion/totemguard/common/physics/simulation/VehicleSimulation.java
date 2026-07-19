@@ -43,7 +43,8 @@ import com.deathmotion.totemguard.common.physics.rules.BoatSnapRule;
 import com.deathmotion.totemguard.common.physics.rules.BounceRule;
 import com.deathmotion.totemguard.common.physics.rules.RiderClaimRule;
 import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
-import com.deathmotion.totemguard.common.physics.verdict.*;
+import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
+import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.PistonData;
 import com.deathmotion.totemguard.common.player.data.VehicleData;
@@ -73,6 +74,7 @@ public final class VehicleSimulation {
     private final VersionGates gates;
 
     private final ColliderBuffer colliders = new ColliderBuffer();
+    private final TraitSampler traits = new TraitSampler();
     private final CollisionSweep sweep = new CollisionSweep();
     private final ContactReport contact = new ContactReport();
     private final MediumSample sample = new MediumSample();
@@ -85,7 +87,7 @@ public final class VehicleSimulation {
     private final LandModel land = new LandModel();
     private final PistonWindow pistons;
 
-    private final LivingVehicleBody livingBody = new LivingVehicleBody();
+    private final LivingVehicleBody livingBody = new LivingVehicleBody(land);
     private final BoatBody boatBody = new BoatBody();
     private final GhastBody ghastBody = new GhastBody();
 
@@ -94,9 +96,11 @@ public final class VehicleSimulation {
     private MotionArea carried = MotionArea.rest();
     private double lastDy;
     private double preX, preZ, preFloor, preCeil;
+    private TrackedEntity gatedRidden;
+    private boolean gatedControlling;
 
     @Getter
-    private PhysicsVerdict verdict = idle(BodyKind.HORSE);
+    private PhysicsVerdict verdict = PhysicsVerdict.vehicleIdle(BodyKind.HORSE);
 
     public VehicleSimulation(EngineActor actor, Data data, WorldMirror world,
                              EngineContext context, VersionGates gates, TraceRecording trace) {
@@ -110,18 +114,6 @@ public final class VehicleSimulation {
         this.pistons = new PistonWindow(data.getPistonData());
     }
 
-    private static PhysicsVerdict idle(BodyKind kind) {
-        return new PhysicsVerdict(MotionStream.VEHICLE, kind,
-                TickOutcome.DECLINED, DeclineReason.WITHHELD, null,
-                0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0,
-                0.0, 0.0,
-                MediumKind.LAND, GroundState.AMBIGUOUS,
-                false, false, false,
-                MitigationOutcome.NONE, FallFinding.NONE);
-    }
-
     private static double clamp(double value, double bound) {
         return Math.max(-bound, Math.min(bound, value));
     }
@@ -130,59 +122,39 @@ public final class VehicleSimulation {
         return (int) Math.floor(value);
     }
 
+    private static double launchCenter(int mask, int negBit, int posBit, double carried) {
+        if ((mask & posBit) != 0) return PistonData.SLIME_LAUNCH;
+        if ((mask & negBit) != 0) return -PistonData.SLIME_LAUNCH;
+        return carried;
+    }
+
     public void onVehicleMove(double x, double y, double z, float yaw, float pitch) {
         ConfigView view = context.view();
         PhysicsPreset preset = view.physicsPreset();
         reader.resetCounters();
         VehicleData vehicle = data.getVehicleData();
         int vehicleId = data.getVehicleId();
-        verdict = idle(verdict.body());
+        verdict = PhysicsVerdict.vehicleIdle(verdict.body());
 
-        if (data.getMitigationService().setbackPending()) {
-            markBoostLag(vehicleId);
-            return;
+        switch (gate(vehicle, vehicleId, x, y, z, yaw, pitch)) {
+            case SKIP -> {
+                return;
+            }
+            case DISENGAGE -> {
+                disengage();
+                return;
+            }
+            case SEED -> {
+                seedFrom(vehicle, BodyKind.HORSE);
+                vehicle.tickImpulse();
+                return;
+            }
+            case PROCEED -> {
+            }
         }
-        long now = System.currentTimeMillis();
-        if (vehicleId >= 0 && mounts.reentryBlocked(vehicleId, now)
-                && data.getMitigationService().bootRider(mounts.reentryX(), mounts.reentryY(), mounts.reentryZ())) {
-            markBoostLag(vehicleId);
-            return;
-        }
-
-        boolean seedRequested = mounts.needsSeed(vehicle);
-        vehicle.handleMove(x, y, z, yaw, pitch);
-
-        if (vehicleId < 0) {
-            disengage();
-            return;
-        }
-        TrackedEntity ridden = world.entities().resolve(vehicleId);
-        if (ridden == null) {
-            disengage();
-            return;
-        }
+        TrackedEntity ridden = gatedRidden;
+        boolean controlling = gatedControlling;
         EntityType type = ridden.type();
-        if (!EntityRoles.clientAuthoritativeVehicle(type)) {
-            disengage();
-            return;
-        }
-        boolean controlling = VehicleAuthority.controlling(type, ridden, vehicle.isDriverSeat(), actor, gates);
-        world.entities().setAuthoritative(vehicleId, controlling);
-        if (controlling) {
-            world.entities().driveAuthoritative(vehicleId,
-                    vehicle.getCurX(), vehicle.getCurY(), vehicle.getCurZ());
-        }
-        if (EntityRoles.steerableMob(type)) ridden.tickBoost();
-        if (!world.readiness().ready() || seedRequested || ridden.interpolating()) {
-            seedFrom(vehicle, BodyKind.HORSE);
-            vehicle.tickImpulse();
-            return;
-        }
-        if (!reader.columnLoaded(floor(vehicle.getCurX()) >> 4, floor(vehicle.getCurZ()) >> 4)) {
-            seedFrom(vehicle, BodyKind.HORSE);
-            vehicle.tickImpulse();
-            return;
-        }
 
         preX = carried.centerX();
         preZ = carried.centerZ();
@@ -197,18 +169,14 @@ public final class VehicleSimulation {
             ghastBody.mount(ridden, type);
             kind = BodyKind.GHAST;
             judgeGhast(vehicle, ridden, preset, controlling);
-        } else if (EntityRoles.horseFamily(type) || EntityRoles.steerableMob(type)) {
+        } else {
             livingBody.mount(ridden, type);
             kind = livingBody.kind();
             judgeLiving(vehicle, ridden, type, preset, controlling);
-        } else {
-            seedFrom(vehicle, BodyKind.HORSE);
-            vehicle.tickImpulse();
-            return;
         }
 
         if (reader.missesThisTick() > 0) {
-            verdict = idle(kind);
+            verdict = PhysicsVerdict.vehicleIdle(kind);
             seedFrom(vehicle, kind);
             vehicle.tickImpulse();
             return;
@@ -228,11 +196,54 @@ public final class VehicleSimulation {
         disengage();
     }
 
+    private GateAction gate(VehicleData vehicle, int vehicleId,
+                            double x, double y, double z, float yaw, float pitch) {
+        gatedRidden = null;
+        gatedControlling = false;
+        if (data.getMitigationService().setbackPending()) {
+            markBoostLag(vehicleId);
+            return GateAction.SKIP;
+        }
+        long now = System.currentTimeMillis();
+        if (vehicleId >= 0 && mounts.reentryBlocked(vehicleId, now)
+                && data.getMitigationService().bootRider(mounts.reentryX(), mounts.reentryY(), mounts.reentryZ())) {
+            markBoostLag(vehicleId);
+            return GateAction.SKIP;
+        }
+
+        boolean seedRequested = mounts.needsSeed(vehicle);
+        vehicle.handleMove(x, y, z, yaw, pitch);
+
+        if (vehicleId < 0) return GateAction.DISENGAGE;
+        TrackedEntity ridden = world.entities().resolve(vehicleId);
+        if (ridden == null) return GateAction.DISENGAGE;
+        EntityType type = ridden.type();
+        if (!EntityRoles.clientAuthoritativeVehicle(type)) return GateAction.DISENGAGE;
+        boolean controlling = VehicleAuthority.controlling(type, ridden, vehicle.isDriverSeat(), actor, gates);
+        world.entities().setAuthoritative(vehicleId, controlling);
+        if (controlling) {
+            world.entities().driveAuthoritative(vehicleId,
+                    vehicle.getCurX(), vehicle.getCurY(), vehicle.getCurZ());
+        }
+        if (EntityRoles.steerableMob(type)) ridden.tickBoost();
+        if (!world.readiness().ready() || seedRequested || ridden.interpolating()) return GateAction.SEED;
+        if (!reader.columnLoaded(floor(vehicle.getCurX()) >> 4, floor(vehicle.getCurZ()) >> 4)) {
+            return GateAction.SEED;
+        }
+        if (!EntityRoles.boat(type) && !EntityRoles.happyGhast(type)
+                && !EntityRoles.horseFamily(type) && !EntityRoles.steerableMob(type)) {
+            return GateAction.SEED;
+        }
+        gatedRidden = ridden;
+        gatedControlling = controlling;
+        return GateAction.PROCEED;
+    }
+
     private void judgeLiving(VehicleData vehicle, TrackedEntity ridden, EntityType type, PhysicsPreset preset,
                              boolean controlling) {
         double speed = ridden.movementSpeed();
         if (Double.isNaN(speed)) {
-            verdict = idle(livingBody.kind());
+            verdict = PhysicsVerdict.vehicleIdle(livingBody.kind());
             seedFrom(vehicle, livingBody.kind());
             return;
         }
@@ -257,7 +268,7 @@ public final class VehicleSimulation {
         boolean lava = sample.lava();
         boolean strider = type == EntityTypes.STRIDER;
         if (lava && !strider) {
-            verdict = idle(livingBody.kind());
+            verdict = PhysicsVerdict.vehicleIdle(livingBody.kind());
             seedFrom(vehicle, livingBody.kind());
             return;
         }
@@ -269,26 +280,19 @@ public final class VehicleSimulation {
                 vehicle.getYaw(), grounded, water, controlling);
         MediumModel medium = water ? livingBody.water()
                 : lava ? livingBody.lava()
-                  : land;
+                : land;
 
         hypotheses.reset(carried);
         AreaBounds main = hypotheses.bounds(HypothesisSet.Slot.MAIN);
         AreaExpander.applyFluidPush(carried, sample, main);
         if (sample.stuck() && !sample.fluid()) stuckFactor.apply(main, sample);
         double accel = medium.accelBound(control, ground);
-        if (control.steerable()) {
-            main.controlSegment(control.lookX(), control.lookZ(), 0.0, accel + control.leapRadius());
-        } else {
-            main.expandRadius(accel);
-            RiderClaimRule.expandLeap(main, control.leapRadius());
-        }
-        main.expandRadius(preset.vehicleHorizontalPad());
+        shapeLiving(main, control, accel, preset);
 
         double vPad = preset.vehicleVerticalPad();
         double bandLo = main.floor();
         double bandHi = main.ceiling() + control.dashVertical();
-        bandClip.clipY(colliders, startX - half, startY, startZ - half,
-                startX + half, startY + height, startZ + half, bandLo, bandHi);
+        clipBand(startX, startY, startZ, half, height, bandLo, bandHi);
         double clipLo = bandClip.floor();
         double clipHi = bandClip.ceiling();
         boolean landing = bandLo < 0.0 && clipLo != bandLo;
@@ -296,20 +300,12 @@ public final class VehicleSimulation {
 
         double extraCeiling = Double.NEGATIVE_INFINITY;
         if (control.jumpTakeoff() > 0.0) {
-            double jumpClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
-                    startX - half, startY, startZ - half,
-                    startX + half, startY + height, startZ + half, control.jumpTakeoff(), true);
-            extraCeiling = jumpClip + vPad;
+            extraCeiling = clipSingle(startX, startY, startZ, half, height, control.jumpTakeoff()) + vPad;
         }
         if (groundContact) {
             extraCeiling = Math.max(extraCeiling, control.stepHeight() + vPad);
         }
-        main.floor(clipLo);
-        main.addDescentSlack(vPad);
-        main.enforceDescentFloor(true);
-        main.ceiling(Math.max(clipHi + vPad, extraCeiling));
-        main.raiseCeiling(entityArrestCeiling(startY));
-        pistons.apply(main);
+        applyVerticalBand(main, clipLo, clipHi, extraCeiling, vPad, true, startY);
 
         double impulseBandLo = 0.0;
         double impulseClip = 0.0;
@@ -318,22 +314,10 @@ public final class VehicleSimulation {
             impulse.reset(carried);
             impulse.centerX(vehicle.getImpulseX() + sample.pushX());
             impulse.centerZ(vehicle.getImpulseZ() + sample.pushZ());
-            if (control.steerable()) {
-                impulse.controlSegment(control.lookX(), control.lookZ(), 0.0, accel + control.leapRadius());
-            } else {
-                impulse.expandRadius(accel);
-                RiderClaimRule.expandLeap(impulse, control.leapRadius());
-            }
-            impulse.expandRadius(preset.vehicleHorizontalPad());
+            shapeLiving(impulse, control, accel, preset);
             impulseBandLo = vehicle.getImpulseY() + sample.pushY();
-            impulseClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
-                    startX - half, startY, startZ - half,
-                    startX + half, startY + height, startZ + half, impulseBandLo, true);
-            impulse.floor(impulseClip);
-            impulse.addDescentSlack(vPad);
-            impulse.enforceDescentFloor(true);
-            impulse.ceiling(Math.max(impulseClip + vPad, extraCeiling));
-            pistons.apply(impulse);
+            impulseClip = clipSingle(startX, startY, startZ, half, height, impulseBandLo);
+            applyVerticalBand(impulse, impulseClip, impulseClip, extraCeiling, vPad, false, startY);
             hypotheses.enable(HypothesisSet.Slot.IMPULSE);
         }
 
@@ -348,29 +332,17 @@ public final class VehicleSimulation {
                     carried.centerX()) + sample.pushX());
             launchBounds.centerZ(launchCenter(launchMask, PistonData.LAUNCH_NEG_Z, PistonData.LAUNCH_POS_Z,
                     carried.centerZ()) + sample.pushZ());
-            if (control.steerable()) {
-                launchBounds.controlSegment(control.lookX(), control.lookZ(), 0.0, accel + control.leapRadius());
-            } else {
-                launchBounds.expandRadius(accel);
-                RiderClaimRule.expandLeap(launchBounds, control.leapRadius());
-            }
-            launchBounds.expandRadius(preset.vehicleHorizontalPad());
+            shapeLiving(launchBounds, control, accel, preset);
             double launchClipHi = clipHi;
             if ((launchMask & (PistonData.LAUNCH_NEG_Y | PistonData.LAUNCH_POS_Y)) != 0) {
                 double launchVy = (launchMask & PistonData.LAUNCH_POS_Y) != 0
                         ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
-                launchClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
-                        startX - half, startY, startZ - half,
-                        startX + half, startY + height, startZ + half, launchVy, true);
+                launchClip = clipSingle(startX, startY, startZ, half, height, launchVy);
                 launchBandLo = launchVy;
                 launchBandHi = launchVy;
                 launchClipHi = launchClip;
             }
-            launchBounds.floor(launchClip);
-            launchBounds.addDescentSlack(vPad);
-            launchBounds.enforceDescentFloor(true);
-            launchBounds.ceiling(Math.max(launchClipHi + vPad, extraCeiling));
-            pistons.apply(launchBounds);
+            applyVerticalBand(launchBounds, launchClip, launchClipHi, extraCeiling, vPad, false, startY);
             hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
@@ -430,7 +402,7 @@ public final class VehicleSimulation {
         double drag = water ? RiderControl.WATER_FRICTION : land.frictionMax(control, ground);
         if (!water && chosenBounds.pistonReached()) {
             drag = Math.max(drag,
-                    LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, control.airDragModifier()));
+                    LandModel.computeModifiedFriction(MotionDefaults.AIR_FRICTION, control.airDragModifier()));
         }
         carried = AreaAdvancer.zeroClamp(new MotionArea(chosenBounds.legalX() * drag,
                 chosenBounds.legalZ() * drag, 0.0, vyLo, vyHi), false);
@@ -490,18 +462,11 @@ public final class VehicleSimulation {
         AreaBounds main = hypotheses.bounds(HypothesisSet.Slot.MAIN);
         main.centerX((carried.centerX() + pushX) * friction);
         main.centerZ((carried.centerZ() + pushZ) * friction);
-        main.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
-        main.expandRadius(preset.vehicleHorizontalPad() + kickPad * friction);
-        bandClip.clipY(colliders, startX - half, startY, startZ - half,
-                startX + half, startY + height, startZ + half, advLo, advHi);
-        main.floor(bandClip.floor());
-        main.addDescentSlack(vPad);
-        main.enforceDescentFloor(true);
-        main.ceiling(bandClip.ceiling() + vPad);
-        main.raiseCeiling(entityArrestCeiling(startY));
+        shapeBoat(main, control, preset.vehicleHorizontalPad() + kickPad * friction);
+        clipBand(startX, startY, startZ, half, height, advLo, advHi);
         double mainClipLo = bandClip.floor();
         double mainClipHi = bandClip.ceiling();
-        pistons.apply(main);
+        applyVerticalBand(main, mainClipLo, mainClipHi, Double.NEGATIVE_INFINITY, vPad, true, startY);
 
         double impulseAdv = 0.0;
         double impulseClip = 0.0;
@@ -510,17 +475,10 @@ public final class VehicleSimulation {
             impulse.reset(carried);
             impulse.centerX((vehicle.getImpulseX() + pushX) * friction);
             impulse.centerZ((vehicle.getImpulseZ() + pushZ) * friction);
-            impulse.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
-            impulse.expandRadius(preset.vehicleHorizontalPad() + kickPad * friction);
+            shapeBoat(impulse, control, preset.vehicleHorizontalPad() + kickPad * friction);
             impulseAdv = boat.advanceVertical(vehicle.getImpulseY() + pushY, startY);
-            impulseClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
-                    startX - half, startY, startZ - half,
-                    startX + half, startY + height, startZ + half, impulseAdv, true);
-            impulse.floor(impulseClip);
-            impulse.addDescentSlack(vPad);
-            impulse.enforceDescentFloor(true);
-            impulse.ceiling(impulseClip + vPad);
-            pistons.apply(impulse);
+            impulseClip = clipSingle(startX, startY, startZ, half, height, impulseAdv);
+            applyVerticalBand(impulse, impulseClip, impulseClip, Double.NEGATIVE_INFINITY, vPad, false, startY);
             hypotheses.enable(HypothesisSet.Slot.IMPULSE);
         }
 
@@ -535,25 +493,18 @@ public final class VehicleSimulation {
                     carried.centerX()) + pushX) * friction);
             launchBounds.centerZ((launchCenter(launchMask, PistonData.LAUNCH_NEG_Z, PistonData.LAUNCH_POS_Z,
                     carried.centerZ()) + pushZ) * friction);
-            launchBounds.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
-            launchBounds.expandRadius(preset.vehicleHorizontalPad() + kickPad * friction);
+            shapeBoat(launchBounds, control, preset.vehicleHorizontalPad() + kickPad * friction);
             double launchClipHi = mainClipHi;
             if ((launchMask & (PistonData.LAUNCH_NEG_Y | PistonData.LAUNCH_POS_Y)) != 0) {
                 double launchVy = (launchMask & PistonData.LAUNCH_POS_Y) != 0
                         ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
                 double launchAdv = boat.advanceVertical(launchVy + pushY, startY);
-                launchClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
-                        startX - half, startY, startZ - half,
-                        startX + half, startY + height, startZ + half, launchAdv, true);
+                launchClip = clipSingle(startX, startY, startZ, half, height, launchAdv);
                 launchAdvLo = launchAdv;
                 launchAdvHi = launchAdv;
                 launchClipHi = launchClip;
             }
-            launchBounds.floor(launchClip);
-            launchBounds.addDescentSlack(vPad);
-            launchBounds.enforceDescentFloor(true);
-            launchBounds.ceiling(launchClipHi + vPad);
-            pistons.apply(launchBounds);
+            applyVerticalBand(launchBounds, launchClip, launchClipHi, Double.NEGATIVE_INFINITY, vPad, false, startY);
             hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
@@ -570,21 +521,15 @@ public final class VehicleSimulation {
             snap.reset(carried);
             snap.centerX(carried.centerX() + pushX);
             snap.centerZ(carried.centerZ() + pushZ);
-            snap.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
-            snap.expandRadius(preset.vehicleHorizontalPad() + kickPad);
+            shapeBoat(snap, control, preset.vehicleHorizontalPad() + kickPad);
             if (snapBlocked) {
-                bandClip.clipY(colliders, startX - half, startY, startZ - half,
-                        startX + half, startY + height, startZ + half,
+                clipBand(startX, startY, startZ, half, height,
                         carried.floorVy() + pushY, carried.ceilVy() + pushY);
-                snap.floor(bandClip.floor());
-                snap.ceiling(bandClip.ceiling() + vPad);
+                applyVerticalBand(snap, bandClip.floor(), bandClip.ceiling(),
+                        Double.NEGATIVE_INFINITY, vPad, false, startY);
             } else {
-                snap.floor(snapDy);
-                snap.ceiling(snapDy + vPad);
+                applyVerticalBand(snap, snapDy, snapDy, Double.NEGATIVE_INFINITY, vPad, false, startY);
             }
-            snap.addDescentSlack(vPad);
-            snap.enforceDescentFloor(true);
-            pistons.apply(snap);
             hypotheses.enable(HypothesisSet.Slot.SNAP);
             snapOffered = true;
         }
@@ -677,16 +622,10 @@ public final class VehicleSimulation {
         main.expandRadius(control.horizontalReach() + preset.vehicleHorizontalPad());
         double bandLo = carried.floorVy() + pushY - control.down();
         double bandHi = carried.ceilVy() + pushY + control.up();
-        bandClip.clipY(colliders, startX - half, startY, startZ - half,
-                startX + half, startY + height, startZ + half, bandLo, bandHi);
-        main.floor(bandClip.floor());
-        main.addDescentSlack(vPad);
-        main.enforceDescentFloor(true);
-        main.ceiling(bandClip.ceiling() + vPad);
-        main.raiseCeiling(entityArrestCeiling(startY));
+        clipBand(startX, startY, startZ, half, height, bandLo, bandHi);
         double mainClipLo = bandClip.floor();
         double mainClipHi = bandClip.ceiling();
-        pistons.apply(main);
+        applyVerticalBand(main, mainClipLo, mainClipHi, Double.NEGATIVE_INFINITY, vPad, true, startY);
 
         double impulseBandLo = 0.0;
         double impulseClip = 0.0;
@@ -697,14 +636,9 @@ public final class VehicleSimulation {
             impulse.centerZ(vehicle.getImpulseZ() + pushZ);
             impulse.expandRadius(control.horizontalReach() + preset.vehicleHorizontalPad());
             impulseBandLo = vehicle.getImpulseY() + pushY;
-            impulseClip = AxisClip.clip(colliders, AxisClip.AXIS_Y,
-                    startX - half, startY, startZ - half,
-                    startX + half, startY + height, startZ + half, impulseBandLo, true);
-            impulse.floor(impulseClip - control.down());
-            impulse.addDescentSlack(vPad);
-            impulse.enforceDescentFloor(true);
-            impulse.ceiling(impulseClip + control.up() + vPad);
-            pistons.apply(impulse);
+            impulseClip = clipSingle(startX, startY, startZ, half, height, impulseBandLo);
+            applyVerticalBand(impulse, impulseClip - control.down(), impulseClip + control.up(),
+                    Double.NEGATIVE_INFINITY, vPad, false, startY);
             hypotheses.enable(HypothesisSet.Slot.IMPULSE);
         }
 
@@ -724,18 +658,13 @@ public final class VehicleSimulation {
                 double launchVy = (launchMask & PistonData.LAUNCH_POS_Y) != 0
                         ? PistonData.SLIME_LAUNCH : -PistonData.SLIME_LAUNCH;
                 double launchBase = launchVy + pushY;
-                bandClip.clipY(colliders, startX - half, startY, startZ - half,
-                        startX + half, startY + height, startZ + half,
+                clipBand(startX, startY, startZ, half, height,
                         launchBase - control.down(), launchBase + control.up());
                 launchBandLo = launchBase - control.down();
                 launchClip = bandClip.floor();
                 launchClipHi = bandClip.ceiling();
             }
-            launchBounds.floor(launchClip);
-            launchBounds.addDescentSlack(vPad);
-            launchBounds.enforceDescentFloor(true);
-            launchBounds.ceiling(launchClipHi + vPad);
-            pistons.apply(launchBounds);
+            applyVerticalBand(launchBounds, launchClip, launchClipHi, Double.NEGATIVE_INFINITY, vPad, false, startY);
             hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
@@ -777,6 +706,44 @@ public final class VehicleSimulation {
                 chosenBounds, verdict, reader, 0.0, 0.0, preX, preZ, preFloor, preCeil);
     }
 
+    private void shapeLiving(AreaBounds bounds, RiderControl control, double accel, PhysicsPreset preset) {
+        if (control.steerable()) {
+            bounds.controlSegment(control.lookX(), control.lookZ(), 0.0, accel + control.leapRadius());
+        } else {
+            bounds.expandRadius(accel);
+            RiderClaimRule.expandLeap(bounds, control.leapRadius());
+        }
+        bounds.expandRadius(preset.vehicleHorizontalPad());
+    }
+
+    private void shapeBoat(AreaBounds bounds, BoatControl control, double extraRadius) {
+        bounds.controlSegment(control.dirX(), control.dirZ(), control.reachMin(), control.reachMax());
+        bounds.expandRadius(extraRadius);
+    }
+
+    private void applyVerticalBand(AreaBounds bounds, double clipLo, double clipHi, double extraCeiling,
+                                   double vPad, boolean entityArrest, double startY) {
+        bounds.floor(clipLo);
+        bounds.addDescentSlack(vPad);
+        bounds.enforceDescentFloor(true);
+        bounds.ceiling(Math.max(clipHi + vPad, extraCeiling));
+        if (entityArrest) bounds.raiseCeiling(entityArrestCeiling(startY));
+        pistons.apply(bounds);
+    }
+
+    private double clipSingle(double startX, double startY, double startZ,
+                              double half, double height, double vy) {
+        return AxisClip.clip(colliders, AxisClip.AXIS_Y,
+                startX - half, startY, startZ - half,
+                startX + half, startY + height, startZ + half, vy, true);
+    }
+
+    private void clipBand(double startX, double startY, double startZ,
+                          double half, double height, double bandLo, double bandHi) {
+        bandClip.clipY(colliders, startX - half, startY, startZ - half,
+                startX + half, startY + height, startZ + half, bandLo, bandHi);
+    }
+
     private void markBoostLag(int vehicleId) {
         if (vehicleId < 0) return;
         TrackedEntity ridden = world.entities().resolve(vehicleId);
@@ -803,12 +770,6 @@ public final class VehicleSimulation {
         return (pistons.launchMask() & PistonData.LAUNCH_NEG_Y) != 0 ? -PistonData.SLIME_LAUNCH : 0.0;
     }
 
-    private static double launchCenter(int mask, int negBit, int posBit, double carried) {
-        if ((mask & posBit) != 0) return PistonData.SLIME_LAUNCH;
-        if ((mask & negBit) != 0) return -PistonData.SLIME_LAUNCH;
-        return carried;
-    }
-
     private void scan(ShapeQuery query, double startX, double startY, double startZ,
                       double half, double height, double obsX, double obsY, double obsZ,
                       double reachDown, double reachUp, double stepHeight) {
@@ -829,7 +790,7 @@ public final class VehicleSimulation {
         double endX = startX + obsX;
         double endY = startY + obsY;
         double endZ = startZ + obsZ;
-        TraitSampler.sample(reader, contact, endX, endY, endZ, half);
+        traits.sample(reader, contact, endX, endY, endZ, half);
         MediumScan.sample(reader, sample,
                 true, true, world.dimension().dimensionType() != null
                         && world.dimension().dimensionType().isUltraWarm(),
@@ -886,20 +847,23 @@ public final class VehicleSimulation {
         setback.reset();
         boatBody.floatModel().reset();
         stuckFactor.reset();
-        verdict = idle(BodyKind.HORSE);
+        verdict = PhysicsVerdict.vehicleIdle(BodyKind.HORSE);
     }
 
     private PhysicsVerdict judged(BodyKind kind, MediumKind medium, GroundState ground,
                                   double obsX, double obsY, double obsZ,
                                   JudgedExcess excess, BoundBreach breach, AreaBounds bounds) {
-        return new PhysicsVerdict(MotionStream.VEHICLE, kind,
-                TickOutcome.JUDGED, null, breach,
+        return PhysicsVerdict.vehicleJudged(kind, medium, ground,
                 obsX, obsY, obsZ,
-                excess.horizontal(), excess.ascent(), excess.descent(), 0.0,
+                excess.horizontal(), excess.ascent(), excess.descent(), breach,
                 bounds.centerX(), bounds.centerZ(), bounds.radius(),
-                bounds.ceiling(), bounds.floor() - bounds.descentSlack(),
-                medium, ground,
-                false, false, false,
-                MitigationOutcome.NONE, FallFinding.NONE);
+                bounds.ceiling(), bounds.floor() - bounds.descentSlack());
+    }
+
+    private enum GateAction {
+        SKIP,
+        DISENGAGE,
+        SEED,
+        PROCEED
     }
 }

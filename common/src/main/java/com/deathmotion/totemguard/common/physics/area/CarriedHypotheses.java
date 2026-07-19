@@ -101,13 +101,6 @@ public final class CarriedHypotheses {
         return kinds[slot];
     }
 
-    public boolean anyLive(Kind kind) {
-        for (int slot = 0; slot < CAPACITY; slot++) {
-            if (live[slot] && kinds[slot] == kind) return true;
-        }
-        return false;
-    }
-
     public void killKind(Kind kind) {
         for (int slot = 1; slot < CAPACITY; slot++) {
             if (live[slot] && kinds[slot] == kind) {

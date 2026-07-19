@@ -76,6 +76,7 @@ public final class TraceFrame {
     public static final long SPAWN_SQUEEZE_OUT = 1L << 24;
     public static final long PINNED_MIN_FALL = 1L << 25;
     public static final long TURN_MOMENTUM = 1L << 26;
+    public static final long PINNED_FORCED_RISE = 1L << 27;
 
     private static final String[] WIDENING_NAMES = {
             "knockback", "riptide", "piston", "push", "stuck", "bubble",
@@ -83,7 +84,8 @@ public final class TraceFrame {
             "spawn-step", "spawn-kb", "spawn-glide", "hyp-overflow",
             "spawn-vdual", "spawn-collide", "input-exact", "spawn-air",
             "step-fall", "trans-hold", "bounce-rise",
-            "spawn-launch", "spawn-squeeze", "min-fall", "turn"
+            "spawn-launch", "spawn-squeeze", "min-fall", "turn",
+            "forced-rise"
     };
     public long tick;
     public byte stream;
@@ -99,6 +101,7 @@ public final class TraceFrame {
     public byte chosenSlot, liveCount;
     public int flags;
     public long contributors;
+    public long taints;
     public double supportGap, ceilingClearance;
     public double supportTop;
     public boolean entTracked;
@@ -173,6 +176,7 @@ public final class TraceFrame {
         liveCount = other.liveCount;
         flags = other.flags;
         contributors = other.contributors;
+        taints = other.taints;
         supportGap = other.supportGap;
         ceilingClearance = other.ceilingClearance;
         supportTop = other.supportTop;

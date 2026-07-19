@@ -18,8 +18,6 @@
 
 package com.deathmotion.totemguard.common.physics.control;
 
-import com.deathmotion.totemguard.common.util.ClientMath;
-
 public record RiderControl(
         double moveSpeed,
         double gravity,
@@ -40,68 +38,8 @@ public record RiderControl(
     private static final double AIR_ACCEL_FACTOR = 0.1;
 
     @Override
-    public boolean inventoryOpen() {
-        return false;
-    }
-
-    @Override
-    public boolean horizontalInput() {
-        return true;
-    }
-
-    @Override
-    public boolean sneaking() {
-        return false;
-    }
-
-    @Override
-    public boolean sprinting() {
-        return false;
-    }
-
-    @Override
-    public boolean sprintJump() {
-        return false;
-    }
-
-    @Override
-    public boolean jumpPossible() {
-        return false;
-    }
-
-    @Override
-    public boolean ceilingClampedJump() {
-        return false;
-    }
-
-    @Override
-    public boolean fluidExitHop() {
-        return false;
-    }
-
-    @Override
-    public boolean priorWallContact() {
-        return false;
-    }
-
-    @Override
     public double airAccel() {
         return moveSpeed * AIR_ACCEL_FACTOR;
-    }
-
-    @Override
-    public boolean levitation() {
-        return false;
-    }
-
-    @Override
-    public int levitationAmplifier() {
-        return 0;
-    }
-
-    @Override
-    public boolean slowFalling() {
-        return false;
     }
 
     @Override
@@ -112,45 +50,5 @@ public record RiderControl(
     @Override
     public double fluidAccel() {
         return WATER_ACCEL;
-    }
-
-    @Override
-    public double lookY() {
-        return 0.0;
-    }
-
-    @Override
-    public double pitchDegrees() {
-        return 0.0;
-    }
-
-    @Override
-    public boolean swimming() {
-        return false;
-    }
-
-    @Override
-    public double prevLookX() {
-        return 0.0;
-    }
-
-    @Override
-    public double prevLookY() {
-        return 0.0;
-    }
-
-    @Override
-    public double prevLookZ() {
-        return 0.0;
-    }
-
-    @Override
-    public double jumpBoostPower() {
-        return 0.0;
-    }
-
-    @Override
-    public double lookHorizontal() {
-        return ClientMath.horizontalDistance(lookX, lookZ);
     }
 }

@@ -68,6 +68,16 @@ public class MitigationService {
             setbackConfirmedThisTick = true;
             return;
         }
+        advancePending();
+    }
+
+    public void onSilentTick() {
+        setbackConfirmedThisTick = false;
+        advancePending();
+    }
+
+    private void advancePending() {
+        if (!pendingSetback) return;
         if (++pendingTicks > PENDING_TIMEOUT_TICKS) {
             pendingSetback = false;
             pendingTicks = 0;

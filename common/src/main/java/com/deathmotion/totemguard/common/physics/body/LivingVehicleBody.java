@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.physics.body;
 
 import com.deathmotion.totemguard.common.physics.control.RiderControlResolver;
+import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 import com.deathmotion.totemguard.common.physics.medium.model.RiderWaterModel;
 import com.deathmotion.totemguard.common.physics.medium.model.StriderLavaModel;
 import com.deathmotion.totemguard.common.world.entity.EntityRoles;
@@ -30,11 +31,15 @@ import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 public final class LivingVehicleBody implements SimulationBody {
 
     private final RiderWaterModel water = new RiderWaterModel();
-    private final StriderLavaModel lava = new StriderLavaModel();
+    private final StriderLavaModel lava;
 
     private TrackedEntity ridden;
     private BodyKind kind = BodyKind.HORSE;
     private double stepHeight = RiderControlResolver.STEP_HEIGHT_HORSE;
+
+    public LivingVehicleBody(LandModel land) {
+        this.lava = new StriderLavaModel(land);
+    }
 
     public void mount(TrackedEntity ridden, EntityType type) {
         this.ridden = ridden;

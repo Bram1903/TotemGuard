@@ -26,21 +26,28 @@ public final class EntityPushTracker {
     private static final double VANILLA_PUSH_PER_TICK = 0.05;
     private static final double PUSH_CEILING = 1.5;
 
-    private EntityPushTracker() {
-    }
+    private double carried;
 
-    public static double advance(double carried, EntityTracker entities, double friction,
-                                 double sweptMinX, double sweptMinY, double sweptMinZ,
-                                 double sweptMaxX, double sweptMaxY, double sweptMaxZ,
-                                 double playerHalfWidth, double playerHeight) {
+    public void advance(EntityTracker entities, double friction,
+                        double sweptMinX, double sweptMinY, double sweptMinZ,
+                        double sweptMaxX, double sweptMaxY, double sweptMaxZ,
+                        double playerHalfWidth, double playerHeight) {
         int count = entities.countPushableNear(sweptMinX, sweptMinY, sweptMinZ,
                 sweptMaxX, sweptMaxY, sweptMaxZ, playerHalfWidth, playerHeight);
         double next = carried * friction + count * VANILLA_PUSH_PER_TICK;
-        return Math.min(PUSH_CEILING, Math.max(0.0, next));
+        carried = Math.min(PUSH_CEILING, Math.max(0.0, next));
     }
 
-    public static double apply(AreaBounds bounds, double push) {
-        if (push > 0.0) bounds.expandRadius(push);
-        return push;
+    public double apply(AreaBounds bounds) {
+        if (carried > 0.0) bounds.expandRadius(carried);
+        return carried;
+    }
+
+    public double carried() {
+        return carried;
+    }
+
+    public void reset() {
+        carried = 0.0;
     }
 }

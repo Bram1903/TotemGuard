@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
@@ -27,13 +28,12 @@ import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 
 public final class WaterModel extends FluidModel {
 
-    private static final double GRAVITY_DIVISOR = 16.0;
     private static final int ENTRY_TICKS = 4;
     private static final double ENTRY_ASCENT = 0.75;
     private static final double STEER_RATE_STEEP = 0.085;
     private static final double STEER_RATE = 0.06;
     private static final double STEER_STEEP_LOOK = -0.2;
-    private static final double CLIMB_RISE = 0.2 * VERTICAL_DRAG;
+    private static final double CLIMB_RISE = 0.2 * MotionDefaults.FLUID_VERTICAL_DRAG;
 
     private int entryTicks;
     private boolean steerWater;
@@ -51,7 +51,7 @@ public final class WaterModel extends FluidModel {
 
     @Override
     protected double gravityDivisor() {
-        return GRAVITY_DIVISOR;
+        return MotionDefaults.WATER_GRAVITY_DIVISOR;
     }
 
     @Override

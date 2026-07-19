@@ -52,8 +52,33 @@ public record PhysicsVerdict(
             false, false, false,
             MitigationOutcome.NONE, FallFinding.NONE);
 
-    public boolean clean() {
-        return breach == null;
+    public static PhysicsVerdict vehicleIdle(BodyKind body) {
+        return new PhysicsVerdict(MotionStream.VEHICLE, body,
+                TickOutcome.DECLINED, DeclineReason.WITHHELD, null,
+                0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0,
+                0.0, 0.0,
+                MediumKind.LAND, GroundState.AMBIGUOUS,
+                false, false, false,
+                MitigationOutcome.NONE, FallFinding.NONE);
+    }
+
+    public static PhysicsVerdict vehicleJudged(BodyKind body, MediumKind medium, GroundState ground,
+                                               double obsX, double obsY, double obsZ,
+                                               double horizontalExcess, double ascentExcess, double descentExcess,
+                                               BoundBreach breach,
+                                               double boundCenterX, double boundCenterZ, double boundRadius,
+                                               double boundCeiling, double boundFloor) {
+        return new PhysicsVerdict(MotionStream.VEHICLE, body,
+                TickOutcome.JUDGED, null, breach,
+                obsX, obsY, obsZ,
+                horizontalExcess, ascentExcess, descentExcess, 0.0,
+                boundCenterX, boundCenterZ, boundRadius,
+                boundCeiling, boundFloor,
+                medium, ground,
+                false, false, false,
+                MitigationOutcome.NONE, FallFinding.NONE);
     }
 
     public double observedSpeed() {

@@ -52,6 +52,12 @@ public final class PoseTracker {
         return movingMin + POSE_FIT_EPS < boxMax && movingMax - POSE_FIT_EPS > boxMin;
     }
 
+    private static double eyeHeightFor(double poseBase) {
+        if (poseBase == MotionDefaults.COMPACT_HEIGHT) return MotionDefaults.COMPACT_EYE_HEIGHT;
+        if (poseBase == MotionDefaults.SNEAKING_HEIGHT) return MotionDefaults.SNEAKING_EYE_HEIGHT;
+        return MotionDefaults.STANDING_EYE_HEIGHT;
+    }
+
     public double height(Data data) {
         if (data.isSleeping()) {
             lastPoseBase = MotionDefaults.SLEEPING_SIZE;
@@ -74,12 +80,6 @@ public final class PoseTracker {
         lastPoseEyeHeight = eyeHeightFor(base) * scale;
         lastPoseHeight = base * scale;
         return lastPoseHeight;
-    }
-
-    private static double eyeHeightFor(double poseBase) {
-        if (poseBase == MotionDefaults.COMPACT_HEIGHT) return MotionDefaults.COMPACT_EYE_HEIGHT;
-        if (poseBase == MotionDefaults.SNEAKING_HEIGHT) return MotionDefaults.SNEAKING_EYE_HEIGHT;
-        return MotionDefaults.STANDING_EYE_HEIGHT;
     }
 
     public double lastHeight() {

@@ -16,33 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.physics.hover;
+package com.deathmotion.totemguard.common.physics.simulation;
 
-public final class HoverDetector {
+public final class PreviousTick {
 
-    private int withholdStreak;
-    private int setbackStreak;
+    public boolean claimedGround = true;
+    public boolean flying;
+    public boolean powderSnowSwept;
+    public boolean deltaZeroed;
+    public int stuckSettleScans;
+    public double supportGap = Double.MAX_VALUE;
 
-    public boolean observe(boolean airborneWithheld, int graceTicks, int setbackLimit) {
-        withholdStreak = airborneWithheld ? withholdStreak + 1 : 0;
-        return withholdStreak > graceTicks && setbackStreak < setbackLimit;
-    }
-
-    public void onSetbackIssued() {
-        setbackStreak++;
-    }
-
-    public void onJudged() {
-        withholdStreak = 0;
-        setbackStreak = 0;
-    }
-
-    public void onDeclined() {
-        withholdStreak = 0;
-    }
-
-    public void reset() {
-        withholdStreak = 0;
-        setbackStreak = 0;
+    public void clearZeroing() {
+        deltaZeroed = false;
     }
 }

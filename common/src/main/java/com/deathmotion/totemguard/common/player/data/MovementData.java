@@ -41,6 +41,7 @@ public class MovementData {
     private Location current = emptyLocation();
     private Location previous = emptyLocation();
     private boolean lastFlyingPositionChanged;
+    private boolean lastFlyingCarriedPosition;
     private boolean lastFlyingRotationChanged;
     private boolean lastFlyingWasResync;
     private boolean lastFlyingWasTeleportResync;
@@ -61,6 +62,7 @@ public class MovementData {
                              boolean inVehicle, ClientVersion clientVersion) {
         boolean previousOnGround = onGround;
         lastFlyingWasDuplicate = isMojangDuplicate(packet, teleportResponse, inVehicle, clientVersion, previousOnGround);
+        lastFlyingCarriedPosition = packet.hasPositionChanged();
 
         previous = copy(current);
 
@@ -186,6 +188,7 @@ public class MovementData {
         current = emptyLocation();
         previous = emptyLocation();
         lastFlyingPositionChanged = false;
+        lastFlyingCarriedPosition = false;
         lastFlyingRotationChanged = false;
         lastFlyingWasResync = false;
         lastFlyingWasTeleportResync = false;

@@ -23,7 +23,7 @@ import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.*;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
-import com.deathmotion.totemguard.common.physics.simulation.TickContext;
+import com.deathmotion.totemguard.common.physics.simulation.TickState;
 
 public final class AreaExpander {
 
@@ -32,15 +32,13 @@ public final class AreaExpander {
     private AreaExpander() {
     }
 
-    public static void grow(MotionArea area, TickContext ctx,
+    public static void grow(MotionArea area, AreaBounds bounds, GroundFacts ground, TickState state,
                             StuckFactor stuckFactor, BubbleLift bubble, ResidualCarry carry) {
-        MediumModel medium = ctx.medium;
-        MediumSample sample = ctx.sample;
-        ControlEnvelope input = ctx.input;
-        GroundFacts ground = ctx.ground;
-        ContactReport contact = ctx.contact;
-        PhysicsPreset preset = ctx.preset;
-        AreaBounds bounds = ctx.bounds;
+        MediumModel medium = state.medium;
+        MediumSample sample = state.sample;
+        ControlEnvelope input = state.input;
+        ContactReport contact = state.contact;
+        PhysicsPreset preset = state.preset;
         bounds.reset(area);
         medium.horizontalOptions(input, ground, bounds);
         medium.verticalOptions(input, ground, contact, bounds);

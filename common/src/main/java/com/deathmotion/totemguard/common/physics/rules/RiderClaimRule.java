@@ -28,12 +28,4 @@ public final class RiderClaimRule {
     public static void expandLeap(AreaBounds bounds, double leapRadius) {
         bounds.expandRadius(leapRadius);
     }
-
-    public static void raiseJumpCeiling(AreaBounds bounds, double clippedJumpSet, double pad) {
-        bounds.raiseCeiling(clippedJumpSet + pad);
-    }
-
-    public static void raiseStepCeiling(AreaBounds bounds, double stepHeight, double pad) {
-        bounds.raiseCeiling(stepHeight + pad);
-    }
 }

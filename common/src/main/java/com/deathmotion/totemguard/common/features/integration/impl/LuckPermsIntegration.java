@@ -50,6 +50,18 @@ public final class LuckPermsIntegration implements Integration {
     private boolean enabled;
     private LuckPerms luckPerms;
 
+    private static boolean inheritsGroup(User user, String groupName) {
+        for (Group inherited : user.getInheritedGroups(user.getQueryOptions())) {
+            if (normalizeGroupName(inherited).equals(groupName)) return true;
+        }
+
+        return false;
+    }
+
+    private static String normalizeGroupName(Group group) {
+        return group.getName().toLowerCase(Locale.ROOT);
+    }
+
     @Override
     public String getName() {
         return PLUGIN_NAME;
@@ -151,17 +163,5 @@ public final class LuckPermsIntegration implements Integration {
 
             player.updatePermissions();
         }
-    }
-
-    private static boolean inheritsGroup(User user, String groupName) {
-        for (Group inherited : user.getInheritedGroups(user.getQueryOptions())) {
-            if (normalizeGroupName(inherited).equals(groupName)) return true;
-        }
-
-        return false;
-    }
-
-    private static String normalizeGroupName(Group group) {
-        return group.getName().toLowerCase(Locale.ROOT);
     }
 }

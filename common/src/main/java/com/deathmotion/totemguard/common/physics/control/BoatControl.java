@@ -18,8 +18,6 @@
 
 package com.deathmotion.totemguard.common.physics.control;
 
-import com.deathmotion.totemguard.common.util.ClientMath;
-
 public record BoatControl(
         double dirX,
         double dirZ,
@@ -27,98 +25,8 @@ public record BoatControl(
         double reachMax) implements ControlEnvelope {
 
     @Override
-    public boolean inventoryOpen() {
-        return false;
-    }
-
-    @Override
     public boolean horizontalInput() {
         return false;
-    }
-
-    @Override
-    public boolean sneaking() {
-        return false;
-    }
-
-    @Override
-    public boolean sprinting() {
-        return false;
-    }
-
-    @Override
-    public boolean sprintJump() {
-        return false;
-    }
-
-    @Override
-    public boolean jumpPossible() {
-        return false;
-    }
-
-    @Override
-    public boolean ceilingClampedJump() {
-        return false;
-    }
-
-    @Override
-    public boolean fluidExitHop() {
-        return false;
-    }
-
-    @Override
-    public boolean priorWallContact() {
-        return false;
-    }
-
-    @Override
-    public double moveSpeed() {
-        return 0.0;
-    }
-
-    @Override
-    public double airAccel() {
-        return 0.0;
-    }
-
-    @Override
-    public double jumpStrength() {
-        return 0.0;
-    }
-
-    @Override
-    public double gravity() {
-        return 0.0;
-    }
-
-    @Override
-    public double stepHeight() {
-        return 0.0;
-    }
-
-    @Override
-    public boolean levitation() {
-        return false;
-    }
-
-    @Override
-    public int levitationAmplifier() {
-        return 0;
-    }
-
-    @Override
-    public boolean slowFalling() {
-        return false;
-    }
-
-    @Override
-    public double fluidFriction() {
-        return 0.0;
-    }
-
-    @Override
-    public double fluidAccel() {
-        return 0.0;
     }
 
     @Override
@@ -127,52 +35,7 @@ public record BoatControl(
     }
 
     @Override
-    public double lookY() {
-        return 0.0;
-    }
-
-    @Override
     public double lookZ() {
         return dirZ;
-    }
-
-    @Override
-    public double pitchDegrees() {
-        return 0.0;
-    }
-
-    @Override
-    public boolean swimming() {
-        return false;
-    }
-
-    @Override
-    public double prevLookX() {
-        return 0.0;
-    }
-
-    @Override
-    public double prevLookY() {
-        return 0.0;
-    }
-
-    @Override
-    public double prevLookZ() {
-        return 0.0;
-    }
-
-    @Override
-    public double jumpBoostPower() {
-        return 0.0;
-    }
-
-    @Override
-    public double jumpTakeoff() {
-        return 0.0;
-    }
-
-    @Override
-    public double lookHorizontal() {
-        return ClientMath.horizontalDistance(dirX, dirZ);
     }
 }

@@ -18,71 +18,133 @@
 
 package com.deathmotion.totemguard.common.physics.control;
 
+import com.deathmotion.totemguard.common.util.ClientMath;
+
 public interface ControlEnvelope {
 
-    boolean inventoryOpen();
+    default boolean inventoryOpen() {
+        return false;
+    }
 
-    boolean horizontalInput();
+    default boolean horizontalInput() {
+        return true;
+    }
 
-    boolean sneaking();
+    default boolean sneaking() {
+        return false;
+    }
 
-    boolean sprinting();
+    default boolean sprinting() {
+        return false;
+    }
 
-    boolean sprintJump();
+    default boolean sprintJump() {
+        return false;
+    }
 
-    boolean jumpPossible();
+    default boolean jumpPossible() {
+        return false;
+    }
 
-    boolean ceilingClampedJump();
+    default boolean ceilingClampedJump() {
+        return false;
+    }
 
-    boolean fluidExitHop();
+    default boolean fluidExitHop() {
+        return false;
+    }
 
     default boolean powderSnowClimb() {
         return false;
     }
 
-    boolean priorWallContact();
+    default boolean priorWallContact() {
+        return false;
+    }
 
-    double moveSpeed();
+    default double moveSpeed() {
+        return 0.0;
+    }
 
-    double airAccel();
+    default double airAccel() {
+        return 0.0;
+    }
 
-    double jumpStrength();
+    default double jumpStrength() {
+        return 0.0;
+    }
 
-    double gravity();
+    default double gravity() {
+        return 0.0;
+    }
 
-    double stepHeight();
+    default double stepHeight() {
+        return 0.0;
+    }
 
-    boolean levitation();
+    default boolean levitation() {
+        return false;
+    }
 
-    int levitationAmplifier();
+    default int levitationAmplifier() {
+        return 0;
+    }
 
-    boolean slowFalling();
+    default boolean slowFalling() {
+        return false;
+    }
 
-    double fluidFriction();
+    default double fluidFriction() {
+        return 0.0;
+    }
 
-    double fluidAccel();
+    default double fluidAccel() {
+        return 0.0;
+    }
 
-    double lookX();
+    default double lookX() {
+        return 0.0;
+    }
 
-    double lookY();
+    default double lookY() {
+        return 0.0;
+    }
 
-    double lookZ();
+    default double lookZ() {
+        return 0.0;
+    }
 
-    double pitchDegrees();
+    default double pitchDegrees() {
+        return 0.0;
+    }
 
-    boolean swimming();
+    default boolean swimming() {
+        return false;
+    }
 
-    double prevLookX();
+    default double prevLookX() {
+        return 0.0;
+    }
 
-    double prevLookY();
+    default double prevLookY() {
+        return 0.0;
+    }
 
-    double prevLookZ();
+    default double prevLookZ() {
+        return 0.0;
+    }
 
-    double jumpBoostPower();
+    default double jumpBoostPower() {
+        return 0.0;
+    }
 
-    double jumpTakeoff();
+    default double jumpTakeoff() {
+        return 0.0;
+    }
 
-    double lookHorizontal();
+    default double lookHorizontal() {
+        return ClientMath.horizontalDistance(lookX(), lookZ());
+    }
 
     default double lookXAlt() {
         return lookX();
@@ -98,6 +160,14 @@ public interface ControlEnvelope {
 
     default double prevLookXAlt() {
         return prevLookX();
+    }
+
+    default double prevLookYAlt() {
+        return prevLookY();
+    }
+
+    default double prevLookZAlt() {
+        return prevLookZ();
     }
 
     default double flyAccel() {
@@ -130,14 +200,6 @@ public interface ControlEnvelope {
 
     default double frictionModifier() {
         return 1.0;
-    }
-
-    default double prevLookYAlt() {
-        return prevLookY();
-    }
-
-    default double prevLookZAlt() {
-        return prevLookZ();
     }
 
     default boolean claimedInputExact() {

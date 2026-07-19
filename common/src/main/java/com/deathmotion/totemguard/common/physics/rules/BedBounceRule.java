@@ -18,10 +18,10 @@
 
 package com.deathmotion.totemguard.common.physics.rules;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.area.JudgedExcess;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
-import com.deathmotion.totemguard.common.physics.medium.model.LandModel;
 
 public final class BedBounceRule {
 
@@ -55,8 +55,8 @@ public final class BedBounceRule {
             window--;
         }
         if (window > 0) {
-            altCenterX = bounds.legalX() * LandModel.AIR_FRICTION;
-            altCenterZ = bounds.legalZ() * LandModel.AIR_FRICTION;
+            altCenterX = bounds.legalX() * MotionDefaults.AIR_FRICTION;
+            altCenterZ = bounds.legalZ() * MotionDefaults.AIR_FRICTION;
             valid = true;
         } else {
             valid = false;

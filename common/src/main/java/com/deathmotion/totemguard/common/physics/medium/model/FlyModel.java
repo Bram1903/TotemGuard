@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
@@ -62,7 +63,7 @@ public final class FlyModel implements MediumModel {
 
     @Override
     public double frictionMax(ControlEnvelope input, GroundFacts ground) {
-        return LandModel.computeModifiedFriction(LandModel.AIR_FRICTION, input.airDragModifier());
+        return LandModel.computeModifiedFriction(MotionDefaults.AIR_FRICTION, input.airDragModifier());
     }
 
     @Override

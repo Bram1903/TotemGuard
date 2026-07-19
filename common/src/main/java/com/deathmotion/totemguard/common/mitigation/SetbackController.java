@@ -39,6 +39,10 @@ public class SetbackController {
     private double safeVelY;
     private double safeGroundGap;
     private boolean safeAirborne;
+    private double pendingRise;
+    private double riseVelocity;
+    private double riseTarget;
+    private double riseCap;
 
     private int anchorFreeze;
 
@@ -56,6 +60,41 @@ public class SetbackController {
         safeVelY = velY;
         safeGroundGap = groundGap;
         safeAirborne = airborne;
+        pendingRise = 0.0;
+    }
+
+    public void accumulateRise(double owedRise, double levitationTarget, double ceilingHeadroom) {
+        if (owedRise <= 0.0) {
+            clearRise();
+            return;
+        }
+        if (!hasSafe) return;
+        riseTarget = levitationTarget;
+        riseCap = Math.max(0.0, ceilingHeadroom - GROUND_GAP_MARGIN);
+        stepRise(owedRise);
+    }
+
+    public void coastRise() {
+        if (riseVelocity <= 0.0) return;
+        stepRise(0.0);
+    }
+
+    public void clearRise() {
+        pendingRise = 0.0;
+        riseVelocity = 0.0;
+        riseTarget = 0.0;
+    }
+
+    private void stepRise(double owedFloor) {
+        double velocity = Math.max(riseVelocity, owedFloor);
+        if (riseTarget > 0.0) {
+            velocity = (velocity + (riseTarget - velocity) * MotionDefaults.LEVITATION_RATE)
+                    * MotionDefaults.VERTICAL_DRAG;
+        } else {
+            velocity = (velocity - MotionDefaults.GRAVITY) * MotionDefaults.VERTICAL_DRAG;
+        }
+        riseVelocity = Math.max(0.0, velocity);
+        pendingRise = Math.min(pendingRise + riseVelocity, riseCap);
     }
 
     public void requestAnchorFreeze() {
@@ -80,19 +119,30 @@ public class SetbackController {
         double kbY = foldKnockback ? externalVelocity.y() : 0.0;
         double kbZ = foldKnockback ? externalVelocity.z() : 0.0;
 
-        double drop = safeAirborne ? Math.min(safeVelY, 0.0) - MIN_PULL_DOWN : 0.0;
-        drop += kbY;
-        double maxDrop = -Math.max(0.0, safeGroundGap - GROUND_GAP_MARGIN);
-        if (drop < maxDrop) drop = maxDrop;
+        double vertical;
+        if (pendingRise > 0.0) {
+            vertical = pendingRise;
+        } else {
+            vertical = safeAirborne ? Math.min(safeVelY, 0.0) - MIN_PULL_DOWN : 0.0;
+            vertical += kbY;
+            double maxDrop = -Math.max(0.0, safeGroundGap - GROUND_GAP_MARGIN);
+            if (vertical < maxDrop) vertical = maxDrop;
+        }
 
-        boolean issued = service.setback(new Vector3d(safeX + kbX, safeY + drop, safeZ + kbZ));
+        boolean issued = service.setback(new Vector3d(safeX + kbX, safeY + vertical, safeZ + kbZ));
         if (!issued) return false;
 
         if (foldKnockback) externalVelocity.consume();
-        if (drop < 0.0) {
-            safeY += drop;
-            safeGroundGap = Math.max(0.0, safeGroundGap + drop);
-            safeVelY = Math.max(drop, -TERMINAL_PULL_DOWN);
+        if (pendingRise > 0.0) {
+            pendingRise = 0.0;
+            safeY += vertical;
+            safeGroundGap += vertical;
+            safeAirborne = true;
+            safeVelY = 0.0;
+        } else if (vertical < 0.0) {
+            safeY += vertical;
+            safeGroundGap = Math.max(0.0, safeGroundGap + vertical);
+            safeVelY = Math.max(vertical, -TERMINAL_PULL_DOWN);
         }
         return true;
     }
@@ -100,5 +150,6 @@ public class SetbackController {
     public void reset() {
         hasSafe = false;
         anchorFreeze = 0;
+        clearRise();
     }
 }

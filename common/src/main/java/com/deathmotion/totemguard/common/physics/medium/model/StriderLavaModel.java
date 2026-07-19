@@ -30,7 +30,11 @@ public final class StriderLavaModel implements MediumModel {
     public static final double FLOAT_DRAG = 0.5;
     public static final double FLOAT_RISE = 0.05;
 
-    private final LandModel land = new LandModel();
+    private final LandModel land;
+
+    public StriderLavaModel(LandModel land) {
+        this.land = land;
+    }
 
     public static double floated(double advanced) {
         return advanced * FLOAT_DRAG + FLOAT_RISE;

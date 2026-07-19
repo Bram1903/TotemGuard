@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.collision.ContactReport;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
@@ -36,7 +37,6 @@ public final class GlideModel implements MediumModel {
     private static final double STEER_RATE = 0.1;
     private static final double DRAG_H = 0.99f;
     private static final double DRAG_V = 0.98f;
-    private static final double SLOW_FALLING_GRAVITY = 0.01;
     private static final double BOOST_KEEP = 0.5;
     private static final double BOOST_ADD = 0.85;
     private static final double TRIG_PAD = 0.003;
@@ -61,7 +61,7 @@ public final class GlideModel implements MediumModel {
 
     private static double effectiveGravity(double vy, ControlEnvelope input) {
         return input.slowFalling() && vy <= 0.0
-                ? Math.min(input.gravity(), SLOW_FALLING_GRAVITY)
+                ? Math.min(input.gravity(), MotionDefaults.SLOW_FALLING_GRAVITY)
                 : input.gravity();
     }
 

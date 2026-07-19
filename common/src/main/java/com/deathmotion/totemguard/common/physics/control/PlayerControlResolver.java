@@ -76,6 +76,12 @@ public final class PlayerControlResolver {
         this.gates = gates;
     }
 
+    private static double jumpPower(double jumpStrength, double jumpFactor, int jumpBoostAmplifier) {
+        float power = (float) jumpStrength * (float) jumpFactor;
+        if (jumpBoostAmplifier >= 0) power += (float) MotionDefaults.JUMP_BOOST_PER_LEVEL * (jumpBoostAmplifier + 1);
+        return power;
+    }
+
     public PlayerControl build(MovementData movement, ContactReport contact, GroundFacts ground,
                                boolean fluidNow, double observedX, double observedY, double observedZ,
                                boolean doubleMove, double stuckVertical, boolean wasInPowderSnow) {
@@ -230,8 +236,8 @@ public final class PlayerControlResolver {
             if (keyboardLength < 1.0E-4F) return ClaimedVector.ZERO;
             inputX /= keyboardLength;
             inputZ /= keyboardLength;
-            inputX *= 0.98F;
-            inputZ *= 0.98F;
+            inputX *= (float) MotionDefaults.INPUT_SCALE;
+            inputZ *= (float) MotionDefaults.INPUT_SCALE;
             if (useScale != 1.0F) {
                 inputX *= useScale;
                 inputZ *= useScale;
@@ -262,8 +268,8 @@ public final class PlayerControlResolver {
                 inputX *= useScale;
                 inputZ *= useScale;
             }
-            inputX *= 0.98F;
-            inputZ *= 0.98F;
+            inputX *= (float) MotionDefaults.INPUT_SCALE;
+            inputZ *= (float) MotionDefaults.INPUT_SCALE;
         }
         double localX = inputX;
         double localZ = inputZ;
@@ -293,12 +299,6 @@ public final class PlayerControlResolver {
         speed = Math.max(0.0, speed - frostPenalty(ground, speed));
         if (sprinting) speed *= SPRINT_SPEED_MULTIPLIER;
         return (float) speed;
-    }
-
-    private static double jumpPower(double jumpStrength, double jumpFactor, int jumpBoostAmplifier) {
-        float power = (float) jumpStrength * (float) jumpFactor;
-        if (jumpBoostAmplifier >= 0) power += 0.1F * (jumpBoostAmplifier + 1);
-        return power;
     }
 
     private double useSlowdownMultiplier() {

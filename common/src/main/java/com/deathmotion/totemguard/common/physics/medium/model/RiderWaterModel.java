@@ -18,20 +18,15 @@
 
 package com.deathmotion.totemguard.common.physics.medium.model;
 
-import com.deathmotion.totemguard.common.physics.area.AreaBounds;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.MotionDefaults;
 import com.deathmotion.totemguard.common.physics.control.ControlEnvelope;
 import com.deathmotion.totemguard.common.physics.control.RiderControl;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumKind;
-import com.deathmotion.totemguard.common.physics.medium.MediumModel;
 
-public final class RiderWaterModel implements MediumModel {
+public final class RiderWaterModel extends FluidModel {
 
     public static final double FLOAT_RISE = 0.04;
-
-    private static final double VERTICAL_DRAG = 0.8f;
-    private static final double GRAVITY_DIVISOR = 16.0;
 
     public static double floatRise(ControlEnvelope input) {
         return input instanceof RiderControl rider && rider.canFloatInWater() ? FLOAT_RISE : 0.0;
@@ -43,12 +38,8 @@ public final class RiderWaterModel implements MediumModel {
     }
 
     @Override
-    public double accelBound(ControlEnvelope input, GroundFacts ground) {
-        return input.fluidAccel();
-    }
-
-    @Override
-    public void verticalOptions(ControlEnvelope input, GroundFacts ground, ContactReport contact, AreaBounds bounds) {
+    protected double gravityDivisor() {
+        return MotionDefaults.WATER_GRAVITY_DIVISOR;
     }
 
     @Override
@@ -58,6 +49,7 @@ public final class RiderWaterModel implements MediumModel {
 
     @Override
     public double advanceVertical(double verticalVelocity, ControlEnvelope input) {
-        return verticalVelocity * VERTICAL_DRAG - input.gravity() / GRAVITY_DIVISOR;
+        return verticalVelocity * MotionDefaults.FLUID_VERTICAL_DRAG
+                - input.gravity() / MotionDefaults.WATER_GRAVITY_DIVISOR;
     }
 }

@@ -25,18 +25,9 @@ public final class AreaJudge {
 
     public static JudgedExcess judge(AreaBounds bounds, double obsX, double obsY, double obsZ, double arrestGapCap) {
         boolean altUsed = false;
-        double horizontal;
-        if (bounds.hasSegment()) {
-            horizontal = OutwardResidual.segmentExcess(bounds, obsX, obsZ);
-        } else {
-            horizontal = OutwardResidual.excess(obsX, obsZ,
-                    bounds.pushAdjustedX(obsX, bounds.centerX()),
-                    bounds.pushAdjustedZ(obsZ, bounds.centerZ()), bounds.radius());
-        }
+        double horizontal = HorizontalRegion.primaryExcess(bounds, obsX, obsZ);
         if (bounds.hasAltCenter() && horizontal > 0.0) {
-            double altExcess = OutwardResidual.excess(obsX, obsZ,
-                    bounds.pushAdjustedX(obsX, bounds.altCenterX()),
-                    bounds.pushAdjustedZ(obsZ, bounds.altCenterZ()), bounds.radius());
+            double altExcess = HorizontalRegion.altExcess(bounds, obsX, obsZ);
             if (altExcess < horizontal) {
                 horizontal = altExcess;
                 altUsed = true;

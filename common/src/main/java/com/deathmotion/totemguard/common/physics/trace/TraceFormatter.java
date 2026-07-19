@@ -77,6 +77,7 @@ public final class TraceFormatter {
         appendFlags(sb, f);
         sb.append(String.format(Locale.ROOT, " | rd %d/%d/%d | buf %.1f", f.reads, f.misses, f.uncertainHits, f.buffer));
         if (f.contributors != 0L) sb.append(" | wid ").append(TraceFrame.describeWidenings(f.contributors));
+        if (f.taints != 0L) sb.append(" | tnt ").append(Long.toHexString(f.taints));
         if (f.engineFall > 0.0) sb.append(String.format(Locale.ROOT, " fall %.1f", f.engineFall));
         if (f.mitigation != 0) sb.append(" | mit ").append(Integer.toBinaryString(f.mitigation & 0xF));
         if (!contexts.isEmpty()) appendContexts(sb, f, contexts);
