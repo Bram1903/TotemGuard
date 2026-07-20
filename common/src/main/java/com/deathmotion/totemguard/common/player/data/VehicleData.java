@@ -38,6 +38,8 @@ public final class VehicleData {
     private double jumpClaimScale;
     private int jumpClaimBudget;
     private boolean driverSeat;
+    private int horseWindowId = -1;
+    private int horseWindowEntityId = -1;
 
     private boolean seedFromMount = true;
 
@@ -113,11 +115,23 @@ public final class VehicleData {
         if (jumpClaimBudget > 0) jumpClaimBudget--;
     }
 
+    public void onHorseWindowOpen(int windowId, int entityId) {
+        horseWindowId = windowId;
+        horseWindowEntityId = entityId;
+    }
+
+    public void onHorseWindowClosed() {
+        horseWindowId = -1;
+        horseWindowEntityId = -1;
+    }
+
     public void reset() {
         hasPosition = false;
         seedFromMount = true;
         impulseTicks = 0;
         jumpClaimBudget = 0;
         driverSeat = false;
+        horseWindowId = -1;
+        horseWindowEntityId = -1;
     }
 }

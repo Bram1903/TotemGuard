@@ -48,6 +48,7 @@ public final class VersionGates {
     private final boolean endTick;
     private final boolean pigSaddleAuthority;
     private final boolean striderSaddleAuthority;
+    private final boolean horseSaddleAuthority;
     private final boolean boatSnapCollisionGate;
 
     private final boolean blockBreakComponentEra;
@@ -79,6 +80,7 @@ public final class VersionGates {
         this.endTick = supportsEndTick;
         this.pigSaddleAuthority = client.isNewerThanOrEquals(ClientVersion.V_1_19);
         this.striderSaddleAuthority = client.isNewerThanOrEquals(ClientVersion.V_1_20_2);
+        this.horseSaddleAuthority = client.isNewerThanOrEquals(ClientVersion.V_1_19);
         this.boatSnapCollisionGate = client.isNewerThanOrEquals(ClientVersion.V_1_21);
 
         ServerVersion server = PacketEvents.getAPI().getServerManager().getVersion();

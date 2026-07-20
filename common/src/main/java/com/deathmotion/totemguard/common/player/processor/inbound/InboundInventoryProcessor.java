@@ -223,6 +223,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         data.setOpenInventory(false, Issuer.CLIENT);
         inventory.resetOpenWindow();
         inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.CLIENT, event.getTimestamp());
+        data.getVehicleData().onHorseWindowClosed();
     }
 
     private ItemStack copyItem(ItemStack stack) {

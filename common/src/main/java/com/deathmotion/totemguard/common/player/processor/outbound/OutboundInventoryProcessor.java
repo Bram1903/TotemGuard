@@ -22,14 +22,17 @@ import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
+import com.deathmotion.totemguard.common.player.data.VehicleData;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
+import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -39,10 +42,13 @@ import java.util.function.LongConsumer;
 
 public class OutboundInventoryProcessor extends ProcessorOutbound {
 
+    private static final int HORSE_SADDLE_SLOT = 0;
+
     private final Data data;
     private final PacketInventory inventory;
     private final PacketLatencyHandler latencyHandler;
     private final GuiManager guiManager;
+    private final EntityTracker entities;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
@@ -50,6 +56,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         this.inventory = player.getInventory();
         this.latencyHandler = player.getLatencyHandler();
         this.guiManager = TGPlatform.getInstance().getGuiManager();
+        this.entities = player.getWorldMirror().entities();
     }
 
     @Override
@@ -74,6 +81,8 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         final ItemStack carried = packet.getCarriedItem().map(this::copyItemStack).orElse(null);
         final List<ItemStack> items = packet.getItems().stream().map(this::copyItemStack).toList();
         final boolean isGui = guiManager.isGuiWindow(event.getUser(), windowId);
+
+        maybeTrackHorseSaddle(event, windowId, items.isEmpty() ? null : items.get(0));
 
         schedule(event, isGui, timestamp -> {
             if (carried != null) {
@@ -112,10 +121,12 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         WrapperPlayServerOpenHorseWindow packet = new WrapperPlayServerOpenHorseWindow(event);
         final int windowId = packet.getWindowId();
         final int slotCount = packet.getSlotCount();
+        final int entityId = packet.getEntityId();
         latencyHandler.compensate(event, () -> {
             inventory.setOpenWindow(windowId, slotCount);
             data.setOpenInventory(true, Issuer.SERVER);
             data.setServerOpenedInventoryThisTick(true);
+            data.getVehicleData().onHorseWindowOpen(windowId, entityId);
         });
     }
 
@@ -127,6 +138,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             // Server-side close abandons any cursor stack (placed back in inventory or dropped).
             inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.SERVER, timestamp);
             data.setOpenInventory(false, Issuer.SERVER);
+            data.getVehicleData().onHorseWindowClosed();
 
             if (!data.isInventoryMitigated()) return;
 
@@ -159,7 +171,18 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         final ItemStack item = copyItemStack(packet.getItem());
         final boolean isGui = guiManager.isGuiWindow(event.getUser(), windowId);
 
+        if (slot == HORSE_SADDLE_SLOT) maybeTrackHorseSaddle(event, windowId, item);
+
         schedule(event, isGui, timestamp -> applyServerSetSlot(windowId, slot, stateId, item, isGui, timestamp));
+    }
+
+    private void maybeTrackHorseSaddle(PacketSendEvent event, int windowId, ItemStack saddleSlotItem) {
+        VehicleData vehicle = data.getVehicleData();
+        int entityId = vehicle.getHorseWindowEntityId();
+        if (entityId < 0 || windowId != vehicle.getHorseWindowId()) return;
+        boolean saddled = saddleSlotItem != null && !saddleSlotItem.isEmpty()
+                && saddleSlotItem.getType() == ItemTypes.SADDLE;
+        latencyHandler.compensate(event, () -> entities.setSaddled(entityId, saddled));
     }
 
     private void applyServerSetSlot(int windowId, int slot, int stateId, ItemStack item, boolean isGui, long timestamp) {

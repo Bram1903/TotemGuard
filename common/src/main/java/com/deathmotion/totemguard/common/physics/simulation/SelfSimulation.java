@@ -322,7 +322,7 @@ public final class SelfSimulation {
         event.markForReEncode(true);
     }
 
-    public void onTickEnd() {
+    public boolean onTickEnd() {
         boolean sawFlying = trust.onTickEnd();
         mitigation.clearTickFlags();
         if (sawFlying) {
@@ -330,7 +330,7 @@ public final class SelfSimulation {
             if (verdict.mitigation().triggered() || verdict.fall().violation()) {
                 verdict = verdict.withOutcome(MitigationOutcome.NONE, FallFinding.NONE, verdict.improperSprint());
             }
-            return;
+            return true;
         }
         if (data.getTeleportData().hasPendingTeleport()) {
             pendingTeleportQuietTicks++;
@@ -341,6 +341,7 @@ public final class SelfSimulation {
             mitigation.advancePendingSetback();
             data.getSetbackController().coastRise();
         }
+        return false;
     }
 
     public void onPong() {

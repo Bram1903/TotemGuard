@@ -32,11 +32,13 @@ import org.jetbrains.annotations.Nullable;
 
 public final class PhysicsEngine {
 
+    private final Data data;
     private final SelfSimulation self;
     private final VehicleSimulation vehicle;
 
     public PhysicsEngine(EngineActor actor, Data data, WorldMirror world, EngineContext context, VersionGates gates) {
         TraceRecording trace = new TraceRecording(actor, data, context);
+        this.data = data;
         this.self = new SelfSimulation(actor, data, world, context, gates, trace);
         this.vehicle = new VehicleSimulation(actor, data, world, context, gates, trace);
     }
@@ -55,6 +57,7 @@ public final class PhysicsEngine {
 
     public void onFlying() {
         self.onFlying();
+        if (data.isInVehicle()) vehicle.onRiderTick();
     }
 
     public void rewriteGroundClaim(PacketReceiveEvent event) {
@@ -62,11 +65,18 @@ public final class PhysicsEngine {
     }
 
     public void onTickEnd() {
-        self.onTickEnd();
+        boolean sawFlying = self.onTickEnd();
+        if (!data.isInVehicle()) return;
+        if (sawFlying) {
+            vehicle.clearConsumedVerdict();
+        } else {
+            vehicle.onRiderTick();
+        }
     }
 
     public void onPong() {
         self.onPong();
+        if (data.isInVehicle()) vehicle.onPong();
     }
 
     public void onBlockApplied(int x, int y, int z, int serverStateId) {

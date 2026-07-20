@@ -35,6 +35,7 @@ import com.deathmotion.totemguard.common.physics.ground.GroundResolver;
 import com.deathmotion.totemguard.common.physics.ground.GroundState;
 import com.deathmotion.totemguard.common.physics.medium.*;
 import com.deathmotion.totemguard.common.physics.medium.model.*;
+import com.deathmotion.totemguard.common.physics.mitigation.VehicleMitigationTracker;
 import com.deathmotion.totemguard.common.physics.mitigation.VehicleSetback;
 import com.deathmotion.totemguard.common.physics.prescan.MountFilter;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
@@ -42,9 +43,12 @@ import com.deathmotion.totemguard.common.physics.push.PistonWindow;
 import com.deathmotion.totemguard.common.physics.rules.BoatSnapRule;
 import com.deathmotion.totemguard.common.physics.rules.BounceRule;
 import com.deathmotion.totemguard.common.physics.rules.RiderClaimRule;
+import com.deathmotion.totemguard.common.physics.silence.MovementSilenceTracker;
 import com.deathmotion.totemguard.common.physics.trace.TraceRecording;
 import com.deathmotion.totemguard.common.physics.verdict.BoundBreach;
+import com.deathmotion.totemguard.common.physics.verdict.FallFinding;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
+import com.deathmotion.totemguard.common.physics.verdict.TickOutcome;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.PistonData;
 import com.deathmotion.totemguard.common.player.data.VehicleData;
@@ -65,6 +69,7 @@ public final class VehicleSimulation {
     private static final double HARVEST_MARGIN = 0.5;
     private static final double CLIP_EPS = 1.0E-7;
     private static final double NON_LIVING_BOUNCE = 0.8;
+    private static final double SILENCE_EXCESS = MotionDefaults.GRAVITY;
 
     private final EngineActor actor;
     private final Data data;
@@ -83,6 +88,8 @@ public final class VehicleSimulation {
     private final BandClip bandClip = new BandClip();
     private final MountFilter mounts = new MountFilter();
     private final VehicleSetback setback = new VehicleSetback();
+    private final VehicleMitigationTracker mitigation = new VehicleMitigationTracker();
+    private final MovementSilenceTracker silence = new MovementSilenceTracker();
     private final StuckFactor stuckFactor = new StuckFactor();
     private final LandModel land = new LandModel();
     private final PistonWindow pistons;
@@ -98,6 +105,8 @@ public final class VehicleSimulation {
     private double preX, preZ, preFloor, preCeil;
     private TrackedEntity gatedRidden;
     private boolean gatedControlling;
+    private boolean settleAfterSeed;
+    private boolean sawVehicleMove;
 
     @Getter
     private PhysicsVerdict verdict = PhysicsVerdict.vehicleIdle(BodyKind.HORSE);
@@ -129,12 +138,14 @@ public final class VehicleSimulation {
     }
 
     public void onVehicleMove(double x, double y, double z, float yaw, float pitch) {
+        sawVehicleMove = true;
         ConfigView view = context.view();
         PhysicsPreset preset = view.physicsPreset();
         reader.resetCounters();
         VehicleData vehicle = data.getVehicleData();
         int vehicleId = data.getVehicleId();
         verdict = PhysicsVerdict.vehicleIdle(verdict.body());
+        silence.onPositionPacket(System.nanoTime());
 
         switch (gate(vehicle, vehicleId, x, y, z, yaw, pitch)) {
             case SKIP -> {
@@ -155,6 +166,14 @@ public final class VehicleSimulation {
         TrackedEntity ridden = gatedRidden;
         boolean controlling = gatedControlling;
         EntityType type = ridden.type();
+
+        if (settleAfterSeed) {
+            settleAfterSeed = false;
+            verdict = PhysicsVerdict.vehicleIdle(bodyKindOf(type));
+            reseedCarried(vehicle);
+            vehicle.tickImpulse();
+            return;
+        }
 
         preX = carried.centerX();
         preZ = carried.centerZ();
@@ -185,6 +204,18 @@ public final class VehicleSimulation {
         if (verdict.breach() == null) {
             setback.rememberSafe(vehicle.getCurX(), vehicle.getCurY(), vehicle.getCurZ());
         }
+        if (verdict.outcome() == TickOutcome.JUDGED && sample.stuck() && !sample.fluid()) {
+            carried = MotionArea.rest();
+        }
+        if (verdict.outcome() == TickOutcome.JUDGED) {
+            BoundBreach breach = verdict.breach();
+            double excess = Math.max(verdict.horizontalExcess(),
+                    Math.max(verdict.ascentExcess(), verdict.descentExcess()));
+            mitigation.observe(preset, breach != null, excess,
+                    data.getMitigationService().setbackPending());
+            verdict = verdict.withOutcome(mitigation.outcome(), FallFinding.NONE, false);
+            if (verdict.mitigation().triggered()) trace.dumpNow(breach == null ? "vehicle" : breach.name());
+        }
     }
 
     public boolean requestSetback() {
@@ -192,8 +223,79 @@ public final class VehicleSimulation {
                 System.currentTimeMillis());
     }
 
+    public void onRiderTick() {
+        long nowNanos = System.nanoTime();
+        verdict = PhysicsVerdict.vehicleIdle(verdict.body());
+        boolean movedSincePrevRiderTick = sawVehicleMove;
+        sawVehicleMove = false;
+        int vehicleId = data.getVehicleId();
+        if (vehicleId < 0) {
+            silence.reset(nowNanos);
+            return;
+        }
+        TrackedEntity ridden = world.entities().resolve(vehicleId);
+        long nowMs = System.currentTimeMillis();
+        boolean resolvable = ridden != null
+                && EntityRoles.clientAuthoritativeVehicle(ridden.type())
+                && world.readiness().ready();
+        boolean expectsMoves = resolvable
+                && VehicleAuthority.expectsMoves(ridden.type(), ridden, data.getVehicleData(), actor, gates);
+        if (resolvable && !expectsMoves && !movedSincePrevRiderTick) {
+            // The client only streams MoveVehicle while it holds authority over the mount, which for
+            // a horse needs the saddle (AbstractHorse.getControllingPassenger returns the rider only
+            // when saddled). While it sends none, the server drives the mount and our position baseline
+            // goes stale, so keep it seeded and the first authoritative move after the handoff (saddle
+            // placed) re-baselines instead of judging the accumulated drift as one huge delta. Guard on
+            // the move stream, not just expectsMoves: if our saddle read missed the placement the horse
+            // is authoritative (streaming moves) yet expectsMoves is still false, and seeding every tick
+            // would keep it from ever being judged. A move this tick means the client is driving now.
+            data.getVehicleData().onMount();
+        }
+        if (!expectsMoves
+                || data.isOpenInventory()
+                || mounts.needsSeed(data.getVehicleData())
+                || data.getMitigationService().setbackPending()
+                || mounts.reentryBlocked(vehicleId, nowMs)) {
+            silence.reset(nowNanos);
+            return;
+        }
+        if (!silence.clockTick()) return;
+        PhysicsPreset preset = context.view().physicsPreset();
+        mitigation.observe(preset, true, SILENCE_EXCESS, data.getMitigationService().setbackPending());
+        verdict = PhysicsVerdict.vehicleSilence(bodyKindOf(ridden.type()))
+                .withOutcome(mitigation.outcome(), FallFinding.NONE, false);
+        if (verdict.mitigation().triggered()) trace.dumpNow(BoundBreach.MOTION_SILENCE.name());
+    }
+
+    public void clearConsumedVerdict() {
+        verdict = PhysicsVerdict.vehicleIdle(verdict.body());
+    }
+
+    public void onPong() {
+        if (!context.view().physicsEngineSetback()) return;
+        if (data.isOpenInventory()) return;
+        int vehicleId = data.getVehicleId();
+        if (vehicleId < 0 || !world.readiness().ready()) return;
+        TrackedEntity ridden = world.entities().resolve(vehicleId);
+        if (ridden == null || !EntityRoles.clientAuthoritativeVehicle(ridden.type())) return;
+        if (!VehicleAuthority.expectsMoves(ridden.type(), ridden,
+                data.getVehicleData(), actor, gates)) return;
+        if (!silence.probeWanted(System.nanoTime())) return;
+        requestSetback();
+    }
+
+    private static BodyKind bodyKindOf(EntityType type) {
+        if (EntityRoles.boat(type)) return BodyKind.BOAT;
+        if (EntityRoles.happyGhast(type)) return BodyKind.GHAST;
+        if (EntityRoles.camel(type)) return BodyKind.CAMEL;
+        if (type == EntityTypes.STRIDER) return BodyKind.STRIDER;
+        if (type == EntityTypes.PIG) return BodyKind.PIG;
+        return BodyKind.HORSE;
+    }
+
     public void reset() {
         disengage();
+        mitigation.reset();
     }
 
     private GateAction gate(VehicleData vehicle, int vehicleId,
@@ -219,9 +321,11 @@ public final class VehicleSimulation {
         if (ridden == null) return GateAction.DISENGAGE;
         EntityType type = ridden.type();
         if (!EntityRoles.clientAuthoritativeVehicle(type)) return GateAction.DISENGAGE;
-        boolean controlling = VehicleAuthority.controlling(type, ridden, vehicle.isDriverSeat(), actor, gates);
-        world.entities().setAuthoritative(vehicleId, controlling);
-        if (controlling) {
+        boolean controlling = VehicleAuthority.controlling(type, ridden, vehicle, actor, gates);
+        boolean simulating = controlling
+                || VehicleAuthority.simulating(type, ridden, vehicle, actor, gates);
+        world.entities().setAuthoritative(vehicleId, simulating);
+        if (simulating) {
             world.entities().driveAuthoritative(vehicleId,
                     vehicle.getCurX(), vehicle.getCurY(), vehicle.getCurZ());
         }
@@ -255,13 +359,15 @@ public final class VehicleSimulation {
         double height = livingBody.height();
         ShapeQuery query = livingBody.shapeQuery(startY, false);
 
+        double stepHeight = livingBody.stepHeight();
+
         evaluatePistons(startX, startY, startZ, half, height, obsX, obsY, obsZ);
         double reachDown = Math.min(carried.floorVy() + pistons.pushLoY() + launchReachDown()
                 - HARVEST_MARGIN, obsY);
         double reachUp = Math.max(carried.ceilVy() + pistons.pushHiY() + launchReachUp()
-                + RiderControlResolver.STEP_HEIGHT_CAMEL, obsY);
+                + Math.max(stepHeight, RiderControlResolver.STEP_HEIGHT_CAMEL), obsY);
         scan(query, startX, startY, startZ, half, height, obsX, obsY, obsZ, reachDown, reachUp,
-                livingBody.stepHeight());
+                stepHeight);
         if (reader.missesThisTick() > 0) return;
 
         boolean water = sample.water();
@@ -274,7 +380,7 @@ public final class VehicleSimulation {
         }
 
         GroundFacts ground = groundResolver.resolve(obsY, contact, sample.fluid(),
-                livingBody.stepHeight(), carried.floorVy(), false, null);
+                stepHeight, carried.floorVy(), false, null);
         boolean grounded = ground.groundedStart() || (strider && lava);
         RiderControl control = RiderControlResolver.build(ridden, type, vehicle, data, gates,
                 vehicle.getYaw(), grounded, water, controlling);
@@ -284,7 +390,7 @@ public final class VehicleSimulation {
 
         hypotheses.reset(carried);
         AreaBounds main = hypotheses.bounds(HypothesisSet.Slot.MAIN);
-        AreaExpander.applyFluidPush(carried, sample, main);
+        AreaExpander.applyFluidPushShift(carried, sample, main);
         if (sample.stuck() && !sample.fluid()) stuckFactor.apply(main, sample);
         double accel = medium.accelBound(control, ground);
         shapeLiving(main, control, accel, preset);
@@ -303,7 +409,7 @@ public final class VehicleSimulation {
             extraCeiling = clipSingle(startX, startY, startZ, half, height, control.jumpTakeoff()) + vPad;
         }
         if (groundContact) {
-            extraCeiling = Math.max(extraCeiling, control.stepHeight() + vPad);
+            extraCeiling = Math.max(extraCeiling, contact.stepCandidateMax() + vPad);
         }
         applyVerticalBand(main, clipLo, clipHi, extraCeiling, vPad, true, startY);
 
@@ -346,7 +452,7 @@ public final class VehicleSimulation {
             hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
-        HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, -1.0);
+        HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, arrestCap(preset, obsY));
         if (chosen == HypothesisSet.Slot.IMPULSE) vehicle.consumeImpulse();
         AreaBounds chosenBounds = hypotheses.chosenBounds();
         JudgedExcess excess = hypotheses.chosenExcess();
@@ -410,7 +516,7 @@ public final class VehicleSimulation {
         verdict = judged(livingBody.kind(), medium.kind(), ground.start(),
                 obsX, obsY, obsZ, excess, breach, chosenBounds);
         trace.record(context.view(), contact, sample, ground, control,
-                chosenBounds, verdict, reader, 0.0, 0.0, preX, preZ, preFloor, preCeil);
+                chosenBounds, verdict, reader, mitigation.buffer(), 0.0, preX, preZ, preFloor, preCeil);
     }
 
     private void judgeBoat(VehicleData vehicle, PhysicsPreset preset, boolean controlling) {
@@ -534,7 +640,7 @@ public final class VehicleSimulation {
             snapOffered = true;
         }
 
-        HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, -1.0);
+        HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, arrestCap(preset, obsY));
         if (chosen == HypothesisSet.Slot.IMPULSE) vehicle.consumeImpulse();
         AreaBounds chosenBounds = hypotheses.chosenBounds();
         JudgedExcess excess = hypotheses.chosenExcess();
@@ -585,7 +691,7 @@ public final class VehicleSimulation {
         verdict = judged(BodyKind.BOAT, MediumKind.BOAT, GroundState.AMBIGUOUS,
                 obsX, obsY, obsZ, excess, breach, chosenBounds);
         trace.record(context.view(), contact, sample, null, control,
-                chosenBounds, verdict, reader, 0.0, 0.0, preX, preZ, preFloor, preCeil);
+                chosenBounds, verdict, reader, mitigation.buffer(), 0.0, preX, preZ, preFloor, preCeil);
     }
 
     private void judgeGhast(VehicleData vehicle, TrackedEntity ridden, PhysicsPreset preset,
@@ -668,7 +774,7 @@ public final class VehicleSimulation {
             hypotheses.enable(HypothesisSet.Slot.LAUNCH);
         }
 
-        HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, -1.0);
+        HypothesisSet.Slot chosen = hypotheses.judge(obsX, obsY, obsZ, arrestCap(preset, obsY));
         if (chosen == HypothesisSet.Slot.IMPULSE) vehicle.consumeImpulse();
         AreaBounds chosenBounds = hypotheses.chosenBounds();
         JudgedExcess excess = hypotheses.chosenExcess();
@@ -703,7 +809,7 @@ public final class VehicleSimulation {
         verdict = judged(BodyKind.GHAST, MediumKind.FLYING, GroundState.AMBIGUOUS,
                 obsX, obsY, obsZ, excess, breach, chosenBounds);
         trace.record(context.view(), contact, sample, null, control,
-                chosenBounds, verdict, reader, 0.0, 0.0, preX, preZ, preFloor, preCeil);
+                chosenBounds, verdict, reader, mitigation.buffer(), 0.0, preX, preZ, preFloor, preCeil);
     }
 
     private void shapeLiving(AreaBounds bounds, RiderControl control, double accel, PhysicsPreset preset) {
@@ -728,6 +834,7 @@ public final class VehicleSimulation {
         bounds.enforceDescentFloor(true);
         bounds.ceiling(Math.max(clipHi + vPad, extraCeiling));
         if (entityArrest) bounds.raiseCeiling(entityArrestCeiling(startY));
+        stuckFactor.applyArrestWindow(bounds);
         pistons.apply(bounds);
     }
 
@@ -803,6 +910,7 @@ public final class VehicleSimulation {
                 Math.max(startX, endX) + half,
                 Math.max(startY, endY) + height,
                 Math.max(startZ, endZ) + half);
+        stuckFactor.advanceWindow(sample.stuckAlongPath());
     }
 
     // A standable entity below the vehicle (a happy ghast under a boat, a shulker, another boat)
@@ -819,6 +927,11 @@ public final class VehicleSimulation {
         return Math.min(0.0, contact.supportTop() - feetY);
     }
 
+    private double arrestCap(PhysicsPreset preset, double obsY) {
+        if (sample.fluid() || obsY > -preset.verticalFlagEpsilon()) return -1.0;
+        return Math.max(0.0, contact.nearestSupportGap() - preset.verticalNoisePad());
+    }
+
     private BoundBreach classify(JudgedExcess excess, PhysicsPreset preset) {
         if (excess.descent() > preset.verticalFlagEpsilon()) return BoundBreach.DESCENT_FLOOR;
         if (excess.ascent() > preset.verticalFlagEpsilon()) return BoundBreach.ASCENT;
@@ -828,6 +941,11 @@ public final class VehicleSimulation {
 
     private void seedFrom(VehicleData vehicle, BodyKind kind) {
         mounts.markSeeded();
+        reseedCarried(vehicle);
+        settleAfterSeed = true;
+    }
+
+    private void reseedCarried(VehicleData vehicle) {
         double vx = clamp(vehicle.deltaX(), MOUNT_PAD);
         double vz = clamp(vehicle.deltaZ(), MOUNT_PAD);
         double vy = clamp(vehicle.deltaY(), MOUNT_PAD);
@@ -843,10 +961,13 @@ public final class VehicleSimulation {
         mounts.reset();
         carried = MotionArea.rest();
         lastDy = 0.0;
+        settleAfterSeed = false;
+        sawVehicleMove = false;
         groundResolver.reset();
         setback.reset();
         boatBody.floatModel().reset();
         stuckFactor.reset();
+        silence.reset(System.nanoTime());
         verdict = PhysicsVerdict.vehicleIdle(BodyKind.HORSE);
     }
 

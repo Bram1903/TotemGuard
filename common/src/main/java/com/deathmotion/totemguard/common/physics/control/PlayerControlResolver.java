@@ -61,6 +61,7 @@ public final class PlayerControlResolver {
     private final VersionGates gates;
 
     private int sneakStreak;
+    private boolean previousSneakInput;
     private int backwardSprintStreak;
     @Getter
     @Setter
@@ -123,7 +124,10 @@ public final class PlayerControlResolver {
         lastCeilingClearance = contact.ceilingClearance();
 
         sneakStreak = data.isSneaking() ? sneakStreak + 1 : 0;
-        boolean sneaking = sneakStreak >= SNEAK_CONFIRM && !contact.startOverlapping();
+        boolean currentSneakInput = state != null ? state.sneaking() : data.isSneaking();
+        boolean sneakEngaged = state != null ? previousSneakInput : sneakStreak >= SNEAK_CONFIRM;
+        previousSneakInput = currentSneakInput;
+        boolean sneaking = sneakEngaged && !contact.startOverlapping();
         boolean diagonal = state == null
                 || ((state.forward() ^ state.backward()) && (state.left() ^ state.right()));
 
@@ -405,6 +409,7 @@ public final class PlayerControlResolver {
 
     public void clear() {
         sneakStreak = 0;
+        previousSneakInput = false;
         backwardSprintStreak = 0;
         improperSprint = false;
         lastClampedJump = false;

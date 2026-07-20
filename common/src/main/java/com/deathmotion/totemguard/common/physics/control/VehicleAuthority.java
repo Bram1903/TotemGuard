@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.physics.control;
 
 import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.VersionGates;
+import com.deathmotion.totemguard.common.player.data.VehicleData;
 import com.deathmotion.totemguard.common.world.entity.EntityRoles;
 import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
@@ -33,9 +34,9 @@ public final class VehicleAuthority {
     private VehicleAuthority() {
     }
 
-    public static boolean controlling(EntityType type, TrackedEntity ridden, boolean driverSeat,
+    public static boolean controlling(EntityType type, TrackedEntity ridden, VehicleData vehicle,
                                       EngineActor actor, VersionGates gates) {
-        if (!driverSeat) return false;
+        if (!vehicle.isDriverSeat()) return false;
         if (type == EntityTypes.LLAMA || type == EntityTypes.TRADER_LLAMA) return false;
         if (EntityRoles.steerableMob(type)) {
             boolean saddleGate = type == EntityTypes.PIG
@@ -45,7 +46,36 @@ public final class VehicleAuthority {
             return stickHeld(type, actor) && (!saddleGate || saddled);
         }
         if (EntityRoles.horseFamily(type)) {
-            return ridden.saddleSeen() && ridden.saddled();
+            return !ridden.saddleSeen() || ridden.saddled();
+        }
+        if (EntityRoles.happyGhast(type)) {
+            return ridden.harnessed() && !ridden.staysStill();
+        }
+        return true;
+    }
+
+    public static boolean simulating(EntityType type, TrackedEntity ridden, VehicleData vehicle,
+                                     EngineActor actor, VersionGates gates) {
+        if (controlling(type, ridden, vehicle, actor, gates)) return true;
+        if (!vehicle.isDriverSeat()) return false;
+        if (type == EntityTypes.LLAMA || type == EntityTypes.TRADER_LLAMA) return false;
+        return EntityRoles.horseFamily(type) && !gates.horseSaddleAuthority();
+    }
+
+    public static boolean expectsMoves(EntityType type, TrackedEntity ridden, VehicleData vehicle,
+                                       EngineActor actor, VersionGates gates) {
+        if (!vehicle.isDriverSeat()) return false;
+        if (type == EntityTypes.LLAMA || type == EntityTypes.TRADER_LLAMA) return false;
+        if (EntityRoles.steerableMob(type)) {
+            boolean saddleGate = type == EntityTypes.PIG
+                    ? gates.pigSaddleAuthority()
+                    : gates.striderSaddleAuthority();
+            boolean saddled = !ridden.saddleSeen() || ridden.saddled();
+            return stickHeld(type, actor) && (!saddleGate || saddled);
+        }
+        if (EntityRoles.horseFamily(type)) {
+            boolean confirmed = ridden.saddleSeen() && ridden.saddled();
+            return confirmed || !gates.horseSaddleAuthority();
         }
         if (EntityRoles.happyGhast(type)) {
             return ridden.harnessed() && !ridden.staysStill();

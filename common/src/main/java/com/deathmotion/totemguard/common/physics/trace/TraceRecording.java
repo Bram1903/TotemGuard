@@ -28,7 +28,6 @@ import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.medium.MediumSample;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugLevel;
-import com.deathmotion.totemguard.common.physics.verdict.MotionStream;
 import com.deathmotion.totemguard.common.physics.verdict.PhysicsVerdict;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.FireworkData;
@@ -229,8 +228,7 @@ public final class TraceRecording {
             context.logger().info(
                     "[PhysicsTrace] " + actor.name() + " " + TraceFormatter.format(frame, contexts));
         }
-        if (verdict.mitigation().triggered() || verdict.fall().violation()
-                || (verdict.stream() == MotionStream.VEHICLE && verdict.breach() != null)) {
+        if (verdict.mitigation().triggered() || verdict.fall().violation()) {
             dumper.dump(actor, recorder, verdict.breach() != null ? verdict.breach().name() : "fall", contexts);
         }
     }

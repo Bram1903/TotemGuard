@@ -45,6 +45,12 @@ public final class RiderControlResolver {
     private RiderControlResolver() {
     }
 
+    public static double stepHeight(TrackedEntity ridden, boolean camel) {
+        double defaultStep = camel ? STEP_HEIGHT_CAMEL : STEP_HEIGHT_HORSE;
+        return Math.max(Double.isNaN(ridden.stepHeight()) ? defaultStep : ridden.stepHeight(),
+                STEP_HEIGHT_HORSE);
+    }
+
     public static RiderControl build(TrackedEntity ridden, EntityType type, VehicleData vehicle, Data data,
                                      VersionGates gates, float yaw, boolean grounded, boolean water,
                                      boolean controlling) {
@@ -87,10 +93,7 @@ public final class RiderControlResolver {
             }
         }
 
-        double defaultStep = camel ? STEP_HEIGHT_CAMEL : STEP_HEIGHT_HORSE;
-        double stepHeight = Math.max(
-                Double.isNaN(ridden.stepHeight()) ? defaultStep : ridden.stepHeight(),
-                STEP_HEIGHT_HORSE);
+        double stepHeight = stepHeight(ridden, camel);
         boolean canFloatInWater = EntityRoles.floatsWhileRidden(type) && gates.floatWhileRidden();
         boolean modernTrig = gates.modernTrig();
         return new RiderControl(riddenSpeed, gravity, stepHeight, jumpStrength, jumpTakeoff,

@@ -85,4 +85,25 @@ public final class AreaExpander {
         if (py < 0.0) bounds.floor(bounds.floor() + py);
         else if (py > 0.0) bounds.ceiling(bounds.ceiling() + py);
     }
+
+    public static void applyFluidPushShift(MotionArea area, MediumSample sample, AreaBounds bounds) {
+        if (!sample.pushed()) return;
+        double px = sample.pushX();
+        double py = sample.pushY();
+        double pz = sample.pushZ();
+        double length = Math.sqrt(px * px + py * py + pz * pz);
+        double kick = FlowSolver.minKickScale(length, area.centerX(), area.centerZ());
+        double pyKicked = py * kick;
+        if (kick != 1.0) {
+            px *= kick;
+            pz *= kick;
+        }
+        if (length < FlowSolver.MIN_PUSH) {
+            bounds.expandRadius(FlowSolver.MIN_PUSH - length);
+        }
+        bounds.centerX(bounds.centerX() + px);
+        bounds.centerZ(bounds.centerZ() + pz);
+        bounds.floor(bounds.floor() + Math.min(py, pyKicked));
+        bounds.ceiling(bounds.ceiling() + Math.max(py, pyKicked));
+    }
 }

@@ -51,6 +51,7 @@ public final class VehicleReporter {
         String suffix = switch (breach) {
             case DESCENT_FLOOR -> "fly";
             case ASCENT -> "ascend";
+            case MOTION_SILENCE -> "silence";
             default -> "speed";
         };
         return kind + "-" + suffix;
@@ -58,9 +59,17 @@ public final class VehicleReporter {
 
     public void report(PhysicsVerdict verdict) {
         BoundBreach breach = verdict.breach();
-        if (breach == null) return;
+        if (breach == null || !verdict.mitigation().triggered()) return;
 
         String label = label(verdict.body(), breach);
+        if (breach == BoundBreach.MOTION_SILENCE) {
+            boolean flagged = flagger.flag(Map.of("tg_physics_type", label),
+                    "{0} | client keeps ticking, vehicle moves withheld", label);
+            if (flagged && platform.getConfigRepository().configView().physicsEngineSetback()) {
+                physics.requestVehicleSetback();
+            }
+            return;
+        }
         double observed;
         double bound;
         double excess;

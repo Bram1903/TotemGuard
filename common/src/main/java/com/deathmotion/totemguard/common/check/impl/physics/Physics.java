@@ -63,5 +63,6 @@ public class Physics extends CheckImpl implements PacketCheck {
         PhysicsVerdict verdict = physics.verdict();
         if (flying) fallReporter.report(verdict);
         movementReporter.report(verdict);
+        if (data.isInVehicle()) vehicleReporter.report(physics.vehicleVerdict());
     }
 }

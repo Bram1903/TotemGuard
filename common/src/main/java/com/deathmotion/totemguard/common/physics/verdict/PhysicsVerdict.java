@@ -64,6 +64,18 @@ public record PhysicsVerdict(
                 MitigationOutcome.NONE, FallFinding.NONE);
     }
 
+    public static PhysicsVerdict vehicleSilence(BodyKind body) {
+        return new PhysicsVerdict(MotionStream.VEHICLE, body,
+                TickOutcome.JUDGED, null, BoundBreach.MOTION_SILENCE,
+                0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0,
+                0.0, 0.0,
+                MediumKind.LAND, GroundState.AMBIGUOUS,
+                false, false, false,
+                MitigationOutcome.NONE, FallFinding.NONE);
+    }
+
     public static PhysicsVerdict vehicleJudged(BodyKind body, MediumKind medium, GroundState ground,
                                                double obsX, double obsY, double obsZ,
                                                double horizontalExcess, double ascentExcess, double descentExcess,

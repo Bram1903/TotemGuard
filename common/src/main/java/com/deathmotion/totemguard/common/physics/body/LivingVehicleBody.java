@@ -35,7 +35,6 @@ public final class LivingVehicleBody implements SimulationBody {
 
     private TrackedEntity ridden;
     private BodyKind kind = BodyKind.HORSE;
-    private double stepHeight = RiderControlResolver.STEP_HEIGHT_HORSE;
 
     public LivingVehicleBody(LandModel land) {
         this.lava = new StriderLavaModel(land);
@@ -52,9 +51,6 @@ public final class LivingVehicleBody implements SimulationBody {
         } else {
             kind = BodyKind.HORSE;
         }
-        stepHeight = EntityRoles.camel(type)
-                ? RiderControlResolver.STEP_HEIGHT_CAMEL
-                : RiderControlResolver.STEP_HEIGHT_HORSE;
     }
 
     @Override
@@ -74,7 +70,7 @@ public final class LivingVehicleBody implements SimulationBody {
 
     @Override
     public double stepHeight() {
-        return stepHeight;
+        return RiderControlResolver.stepHeight(ridden, kind == BodyKind.CAMEL);
     }
 
     @Override
