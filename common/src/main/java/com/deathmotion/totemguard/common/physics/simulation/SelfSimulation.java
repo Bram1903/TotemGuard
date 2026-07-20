@@ -697,7 +697,8 @@ public final class SelfSimulation {
             phaseExcess = 0.0;
         }
 
-        taints.computeJudged(pistonInfluence, stepped, stepFromFall, offerBounceAlt,
+        taints.computeJudged(pistonInfluence, entityPushInfluence > 0.0,
+                stepped, stepFromFall, offerBounceAlt,
                 knockbackHypothesisChosen, excess.altCenterUsed());
         consumeKnockback(knockbackHypothesisChosen, excess, preset);
         observeKnockbackRequirement(dx, dz, chosenSlotBounds, taints.forbidsKnockbackRequirement(), preset);

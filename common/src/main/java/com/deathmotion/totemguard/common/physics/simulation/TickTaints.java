@@ -48,6 +48,7 @@ public final class TickTaints {
     private boolean slowdownAmbiguous;
 
     private boolean pistonInfluence;
+    private boolean entityPush;
     private boolean stepped;
     private boolean stepFromFall;
     private boolean bounceAltOffered;
@@ -80,6 +81,7 @@ public final class TickTaints {
         sneakMismatch = state.input != null && state.input.sneaking() != data.isSneaking();
         slowdownAmbiguous = data.getUseItemData().slowdownAmbiguous();
         pistonInfluence = false;
+        entityPush = false;
         stepped = false;
         stepFromFall = false;
         bounceAltOffered = false;
@@ -87,9 +89,11 @@ public final class TickTaints {
         altCenterUsed = false;
     }
 
-    public void computeJudged(boolean pistonInfluence, boolean stepped, boolean stepFromFall,
+    public void computeJudged(boolean pistonInfluence, boolean entityPush,
+                              boolean stepped, boolean stepFromFall,
                               boolean bounceAltOffered, boolean knockbackChosen, boolean altCenterUsed) {
         this.pistonInfluence = pistonInfluence;
+        this.entityPush = entityPush;
         this.stepped = stepped;
         this.stepFromFall = stepFromFall;
         this.bounceAltOffered = bounceAltOffered;
@@ -144,7 +148,7 @@ public final class TickTaints {
                 || externalVelocityActive || pistonDataActive
                 || riptideActive || spinAttacking
                 || setbackPending
-                || pistonInfluence || knockbackChosen || altCenterUsed
+                || pistonInfluence || entityPush || knockbackChosen || altCenterUsed
                 || airAccelAmbiguous
                 || sneakMismatch
                 || slowdownAmbiguous
@@ -182,6 +186,7 @@ public final class TickTaints {
         if (bounceAltOffered) bits |= 1L << 26;
         if (knockbackChosen) bits |= 1L << 27;
         if (altCenterUsed) bits |= 1L << 28;
+        if (entityPush) bits |= 1L << 29;
         return bits;
     }
 }
