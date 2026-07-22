@@ -148,7 +148,7 @@ public final class TickTaints {
                 || externalVelocityActive || pistonDataActive
                 || riptideActive || spinAttacking
                 || setbackPending
-                || pistonInfluence || entityPush || knockbackChosen || altCenterUsed
+                || pistonInfluence || knockbackChosen || altCenterUsed
                 || airAccelAmbiguous
                 || sneakMismatch
                 || slowdownAmbiguous

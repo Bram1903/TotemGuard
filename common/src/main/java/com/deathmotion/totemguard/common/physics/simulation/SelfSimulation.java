@@ -511,7 +511,8 @@ public final class SelfSimulation {
         ColliderCollector.fill(colliders, reader, world.entities(), query, exemptions,
                 data.getPistonData(), -1,
                 minX, minY, minZ, maxX, maxY, maxZ);
-        trace.stageNearestStandable(world.entities(), to.getX(), to.getY(), to.getZ(), half);
+        trace.stageNearestStandable(world.entities(), world.teams(),
+                to.getX(), to.getY(), to.getZ(), half, height);
         BorderColliders.fill(colliders, world.border(), from.getX(), from.getZ(), half,
                 minX, minY, minZ, maxX, maxY, maxZ);
         pistons.setPlayerBox(
@@ -589,13 +590,14 @@ public final class SelfSimulation {
             SqueezeOutSpawnRule.spawn(squeezeOut, carried, spawns);
         }
 
-        push.advance(world.entities(), medium.frictionMax(input, ground),
-                Math.min(current.getX() - dx, current.getX()) - half, Math.min(current.getY() - dy, current.getY()),
-                Math.min(current.getZ() - dz, current.getZ()) - half,
-                Math.max(current.getX() - dx, current.getX()) + half,
-                Math.max(current.getY() - dy, current.getY()) + height,
-                Math.max(current.getZ() - dz, current.getZ()) + half,
-                half, height);
+        push.advance(world.entities(), world.teams(), medium.frictionMax(input, ground),
+                Math.min(current.getX() - dx, current.getX()),
+                Math.min(current.getY() - dy, current.getY()),
+                Math.min(current.getZ() - dz, current.getZ()),
+                Math.max(current.getX() - dx, current.getX()),
+                Math.max(current.getY() - dy, current.getY()),
+                Math.max(current.getZ() - dz, current.getZ()),
+                dx, dy, dz, half, height);
 
         int chosen = 0;
         double best = Double.MAX_VALUE;
@@ -706,7 +708,7 @@ public final class SelfSimulation {
         double descentExcess = excess.descent();
         state.frictionMax = medium.frictionMax(input, ground);
         state.speedFactor = effectiveSpeedFactor();
-        double momentumExcess = momentum.excess(state, taints.forbidsMomentum());
+        double momentumExcess = momentum.excess(state, taints.forbidsMomentum(), push);
         boolean momentumFlagged = momentumExcess > preset.horizontalFlagEpsilon();
         double flagHorizontal = Math.max(horizontalExcess, momentumExcess);
 
@@ -1003,8 +1005,8 @@ public final class SelfSimulation {
         double half = body.halfWidth();
         double height = body.height();
         int pushers = world.entities().countPushableNear(
-                at.getX() - half, at.getY(), at.getZ() - half,
-                at.getX() + half, at.getY() + height, at.getZ() + half,
+                at.getX(), at.getY(), at.getZ(),
+                at.getX(), at.getY(), at.getZ(),
                 half, height);
         double threshold = gates.modernMovementThreshold()
                 ? MovementData.DUPLICATE_THRESHOLD_MODERN
@@ -1039,7 +1041,7 @@ public final class SelfSimulation {
             centerX = kb.altCenterX();
             centerZ = kb.altCenterZ();
         }
-        knockback.observeRequirement(dx, dz, centerX, centerZ, kb.radius(), tainted,
+        knockback.observeRequirement(dx, dz, centerX, centerZ, kb.radius() + push.extent(), tainted,
                 preset.horizontalFlagEpsilon());
     }
 
@@ -1165,7 +1167,7 @@ public final class SelfSimulation {
         if (contact.supportGap() != ContactReport.NO_SUPPORT
                 || contact.trailingSupportGap() != ContactReport.NO_SUPPORT) return false;
         if (contact.groundHit()) return false;
-        if (push.carried() > 0.0 || exemptions.hasAny()) return false;
+        if (push.active() || exemptions.hasAny()) return false;
         if (data.getFlyChangeGrace() > 0
                 || data.getGlideData().claimActive() || data.isGliding()
                 || data.getTeleportData().hasPendingTeleport()) return false;

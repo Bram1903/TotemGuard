@@ -53,6 +53,10 @@ public final class TraceFormatter {
         if (f.altPresent) {
             sb.append(String.format(Locale.ROOT, " alt(%+.3f,%+.3f)", f.altCenterX, f.altCenterZ));
         }
+        if (f.pushLoX != 0.0 || f.pushHiX != 0.0 || f.pushLoZ != 0.0 || f.pushHiZ != 0.0) {
+            sb.append(String.format(Locale.ROOT, " push x[%+.4f,%+.4f] z[%+.4f,%+.4f]",
+                    f.pushLoX, f.pushHiX, f.pushLoZ, f.pushHiZ));
+        }
         sb.append(String.format(Locale.ROOT, " | rot y%+.2f p%+.2f (prev y%+.2f p%+.2f)",
                 f.yaw, f.pitch, f.prevYaw, f.prevPitch));
         sb.append(String.format(Locale.ROOT, " | pre c(%+.3f,%+.3f) v[%.3f,%.3f]",
@@ -157,6 +161,9 @@ public final class TraceFormatter {
             }
             if (f.entNearby != null && !f.entNearby.isEmpty()) {
                 sb.append(" near[").append(f.entNearby).append(']');
+            }
+            if (f.entPushers != null && !f.entPushers.isEmpty()) {
+                sb.append(" push[").append(f.entPushers).append(']');
             }
         }
         if (contexts.contains(PhysicsDebugContext.GLIDE)) {

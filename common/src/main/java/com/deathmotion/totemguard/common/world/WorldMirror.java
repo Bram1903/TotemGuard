@@ -21,11 +21,14 @@ package com.deathmotion.totemguard.common.world;
 import com.deathmotion.totemguard.common.world.block.*;
 import com.deathmotion.totemguard.common.world.border.BorderMirror;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
+import com.deathmotion.totemguard.common.world.team.TeamState;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.world.dimension.DimensionType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRespawn;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+
+import java.util.function.Supplier;
 
 @Getter
 @Accessors(fluent = true)
@@ -36,13 +39,15 @@ public final class WorldMirror {
     private final PredictedBlocks predicted = new PredictedBlocks();
     private final BlockReader reader;
     private final EntityTracker entities;
+    private final TeamState teams;
     private final BorderMirror border = new BorderMirror();
     private final WorldReadiness readiness = new WorldReadiness();
     private final DimensionProfile dimension = new DimensionProfile();
 
-    public WorldMirror(ClientVersion clientVersion) {
+    public WorldMirror(ClientVersion clientVersion, Supplier<String> localName) {
         this.reader = new BlockReader(blocks, pending, predicted, ClientStateMap.forClient(clientVersion));
         this.entities = new EntityTracker(clientVersion);
+        this.teams = new TeamState(localName);
     }
 
     public void onJoin(String worldName, DimensionType dimensionType, int minY) {

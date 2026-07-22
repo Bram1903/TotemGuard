@@ -21,6 +21,7 @@ package com.deathmotion.totemguard.common.physics.simulation;
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
 import com.deathmotion.totemguard.common.physics.area.MotionArea;
 import com.deathmotion.totemguard.common.physics.area.OutwardResidual;
+import com.deathmotion.totemguard.common.physics.push.EntityPushTracker;
 import com.deathmotion.totemguard.common.util.ClientMath;
 
 public final class TurnMomentumTracker {
@@ -33,7 +34,7 @@ public final class TurnMomentumTracker {
     private double drift;
     private boolean valid;
 
-    public double excess(TickState state, boolean tainted) {
+    public double excess(TickState state, boolean tainted, EntityPushTracker push) {
         if (tainted || state.medium == null || state.input == null || state.ground == null) {
             valid = false;
             return 0.0;
@@ -49,22 +50,25 @@ public final class TurnMomentumTracker {
         }
         scratch.reset(new MotionArea(momentumX, momentumZ, 0.0, 0.0, 0.0));
         state.medium.horizontalOptions(state.input, state.ground, scratch);
+        push.apply(scratch);
         double predX = scratch.centerX();
         double predZ = scratch.centerZ();
-        double excess = OutwardResidual.excess(state.dx, state.dz, predX, predZ, scratch.radius());
+        double adjustedX = scratch.pushAdjustedX(state.dx, predX);
+        double adjustedZ = scratch.pushAdjustedZ(state.dz, predZ);
+        double excess = OutwardResidual.excess(state.dx, state.dz, adjustedX, adjustedZ, scratch.radius());
         boolean inside = excess <= 0.0;
 
         double dirLen = ClientMath.horizontalDistance(predX, predZ);
         if (dirLen > 1.0e-6) {
-            double perp = (predX * (state.dz - predZ) - predZ * (state.dx - predX)) / dirLen;
+            double perp = (predX * (state.dz - adjustedZ) - predZ * (state.dx - adjustedX)) / dirLen;
             drift = drift * DRIFT_DECAY + perp;
         } else {
             drift *= DRIFT_DECAY;
         }
         double driftExcess = Math.max(0.0, Math.abs(drift) - DRIFT_TOLERANCE);
 
-        momentumX = (inside ? state.dx : predX) * speedFactor * friction;
-        momentumZ = (inside ? state.dz : predZ) * speedFactor * friction;
+        momentumX = (inside ? state.dx - (adjustedX - predX) : predX) * speedFactor * friction;
+        momentumZ = (inside ? state.dz - (adjustedZ - predZ) : predZ) * speedFactor * friction;
         return Math.max(Math.max(0.0, excess), driftExcess);
     }
 

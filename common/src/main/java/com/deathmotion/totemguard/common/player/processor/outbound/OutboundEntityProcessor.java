@@ -36,6 +36,8 @@ import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
+import java.util.UUID;
+
 public class OutboundEntityProcessor extends ProcessorOutbound {
 
     private static final int FISHING_ROD_PULL_STATUS = 31;
@@ -72,13 +74,16 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
             if (packet.getEntityType() == EntityTypes.FISHING_BOBBER) {
                 data.getFishingData().onHookSpawn(packet.getEntityId(), packet.getData());
             }
-            spawn(event, packet.getEntityId(), packet.getEntityType(), packet.getPosition());
+            spawn(event, packet.getEntityId(), packet.getEntityType(),
+                    packet.getUUID().orElse(null), packet.getPosition());
         } else if (type == PacketType.Play.Server.SPAWN_LIVING_ENTITY) {
             WrapperPlayServerSpawnLivingEntity packet = new WrapperPlayServerSpawnLivingEntity(event);
-            spawn(event, packet.getEntityId(), packet.getEntityType(), packet.getPosition());
+            spawn(event, packet.getEntityId(), packet.getEntityType(),
+                    packet.getEntityUUID(), packet.getPosition());
         } else if (type == PacketType.Play.Server.SPAWN_PLAYER) {
             WrapperPlayServerSpawnPlayer packet = new WrapperPlayServerSpawnPlayer(event);
-            spawn(event, packet.getEntityId(), EntityTypes.PLAYER, packet.getPosition());
+            spawn(event, packet.getEntityId(), EntityTypes.PLAYER,
+                    packet.getUUID(), packet.getPosition());
         } else if (type == PacketType.Play.Server.ENTITY_RELATIVE_MOVE) {
             WrapperPlayServerEntityRelativeMove packet = new WrapperPlayServerEntityRelativeMove(event);
             final int id = packet.getEntityId();
@@ -146,13 +151,14 @@ public class OutboundEntityProcessor extends ProcessorOutbound {
         });
     }
 
-    private void spawn(PacketSendEvent event, int entityId, EntityType entityType, Vector3d pos) {
+    private void spawn(PacketSendEvent event, int entityId, EntityType entityType,
+                       UUID uuid, Vector3d pos) {
         entities.announce(entityId, entityType);
         if (entityType == EntityTypes.FIREWORK_ROCKET) {
             data.getFireworkData().candidate(entityId);
         }
         final double x = pos.getX(), y = pos.getY(), z = pos.getZ();
-        latencyHandler.compensateLazy(event, () -> entities.spawn(entityId, entityType, x, y, z));
+        latencyHandler.compensateLazy(event, () -> entities.spawn(entityId, entityType, uuid, x, y, z));
     }
 
     private void place(PacketSendEvent event, int entityId, Vector3d pos) {

@@ -35,6 +35,7 @@ import com.deathmotion.totemguard.common.player.data.GlideData;
 import com.deathmotion.totemguard.common.world.block.BlockReader;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
 import com.deathmotion.totemguard.common.world.entity.TrackedEntity;
+import com.deathmotion.totemguard.common.world.team.TeamState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
@@ -51,6 +52,7 @@ public final class TraceRecording {
     private int stagedAuthoritativeId = -1;
     private int stagedVehicleId = -1;
     private String stagedNearby = "";
+    private String stagedPushers = "";
     private long stagedContributors;
     private long stagedTaints;
     private byte stagedChosenSlot;
@@ -117,12 +119,14 @@ public final class TraceRecording {
         this.stagedTaints = bits;
     }
 
-    public void stageNearestStandable(EntityTracker entities, double x, double y, double z, double half) {
+    public void stageNearestStandable(EntityTracker entities, TeamState teams,
+                                      double x, double y, double z, double half, double height) {
         if (!context.view().physicsDebugLevel().recording()) {
             stagedEntity = null;
             stagedAuthoritativeId = -1;
             stagedVehicleId = -1;
             stagedNearby = "";
+            stagedPushers = "";
             return;
         }
         stagedEntity = entities.nearestStandable(x, y, z);
@@ -133,6 +137,7 @@ public final class TraceRecording {
         stagedAuthoritativeId = entities.authoritativeId();
         stagedVehicleId = data.getVehicleId();
         stagedNearby = entities.describeStandablesNear(x, z, 2.5);
+        stagedPushers = entities.describePushersNear(teams, x, y, z, half, height, 2.5);
     }
 
     public void hypotheses(int chosenSlot, int liveCount) {
@@ -183,6 +188,10 @@ public final class TraceRecording {
         frame.altPresent = bounds.hasAltCenter();
         frame.altCenterX = frame.altPresent ? bounds.altCenterX() : 0.0;
         frame.altCenterZ = frame.altPresent ? bounds.altCenterZ() : 0.0;
+        frame.pushLoX = bounds.pushLoX();
+        frame.pushHiX = bounds.pushHiX();
+        frame.pushLoZ = bounds.pushLoZ();
+        frame.pushHiZ = bounds.pushHiZ();
         frame.horizontalExcess = verdict.horizontalExcess();
         frame.ascentExcess = verdict.ascentExcess();
         frame.descentExcess = verdict.descentExcess();
@@ -243,6 +252,8 @@ public final class TraceRecording {
         frame.entAuthoritativeId = stagedAuthoritativeId;
         frame.entVehicleId = stagedVehicleId;
         frame.entNearby = stagedNearby;
+        frame.entPushers = stagedPushers;
+        stagedPushers = "";
         stagedAuthoritativeId = -1;
         stagedVehicleId = -1;
         stagedNearby = "";

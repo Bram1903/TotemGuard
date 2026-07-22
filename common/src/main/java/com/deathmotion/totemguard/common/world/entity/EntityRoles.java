@@ -32,6 +32,16 @@ public final class EntityRoles {
                 || EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT);
     }
 
+    public static boolean clientSidePusher(EntityType type) {
+        if (type == null) return false;
+        if (type == EntityTypes.ARMOR_STAND || type == EntityTypes.BAT
+                || type == EntityTypes.PARROT || type == EntityTypes.ENDER_DRAGON) {
+            return false;
+        }
+        return EntityTypes.isTypeInstanceOf(type, EntityTypes.LIVINGENTITY)
+                || EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT);
+    }
+
     // Minecarts are pushable but NOT standable: vanilla gives them no hard collision box.
     public static boolean standable(EntityType type) {
         if (type == null) return false;

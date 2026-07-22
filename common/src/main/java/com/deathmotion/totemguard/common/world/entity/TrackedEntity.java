@@ -20,22 +20,32 @@ package com.deathmotion.totemguard.common.world.entity;
 
 import com.deathmotion.totemguard.common.util.ClientMath;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
+import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+
+import java.util.UUID;
 
 @Getter
 @Accessors(fluent = true)
 public final class TrackedEntity {
 
     public static final int INTERPOLATION_STEPS = 3;
+    public static final int LANDING_TICK_AMBIGUITY = 2;
     private static final double BOOST_AMPLITUDE = 1.15F;
 
     private final int interpolationSteps;
     private final EntityType type;
     private final boolean pushable;
     private final boolean standable;
+    private final boolean clientSidePusher;
+    private final boolean boatPusher;
+    private final boolean playerEntity;
     private final double baseHalfWidth;
     private final double baseHeight;
+
+    private final UUID uuid;
+    private final String uuidString;
 
     private double scale = 1.0;
     private int slimeSize = 1;
@@ -70,13 +80,18 @@ public final class TrackedEntity {
     private boolean interpolatedLast;
     private boolean queuedForAdvance;
 
-    TrackedEntity(EntityType type, int interpolationSteps) {
+    TrackedEntity(EntityType type, int interpolationSteps, UUID uuid) {
         this.interpolationSteps = interpolationSteps;
         this.type = type;
         this.pushable = EntityRoles.pushable(type);
         this.standable = EntityRoles.standable(type);
+        this.clientSidePusher = EntityRoles.clientSidePusher(type);
+        this.boatPusher = EntityRoles.boat(type);
+        this.playerEntity = type == EntityTypes.PLAYER;
         this.baseHalfWidth = EntityDims.width(type) / 2.0;
         this.baseHeight = EntityDims.height(type);
+        this.uuid = uuid;
+        this.uuidString = uuid == null ? null : uuid.toString();
     }
 
     void snapTo(double x, double y, double z) {
@@ -268,5 +283,33 @@ public final class TrackedEntity {
 
     public double spanMaxZ() {
         return Math.max(Math.max(prevRenderZ, renderZ), targetZ);
+    }
+
+    private static double step(double previous, double render, double target) {
+        return Math.max(Math.abs(target - render), Math.abs(render - previous));
+    }
+
+    public double reachMinX() {
+        return spanMinX() - LANDING_TICK_AMBIGUITY * step(prevRenderX, renderX, targetX);
+    }
+
+    public double reachMaxX() {
+        return spanMaxX() + LANDING_TICK_AMBIGUITY * step(prevRenderX, renderX, targetX);
+    }
+
+    public double reachMinY() {
+        return spanMinY() - LANDING_TICK_AMBIGUITY * step(prevRenderY, renderY, targetY);
+    }
+
+    public double reachMaxY() {
+        return spanMaxY() + LANDING_TICK_AMBIGUITY * step(prevRenderY, renderY, targetY);
+    }
+
+    public double reachMinZ() {
+        return spanMinZ() - LANDING_TICK_AMBIGUITY * step(prevRenderZ, renderZ, targetZ);
+    }
+
+    public double reachMaxZ() {
+        return spanMaxZ() + LANDING_TICK_AMBIGUITY * step(prevRenderZ, renderZ, targetZ);
     }
 }

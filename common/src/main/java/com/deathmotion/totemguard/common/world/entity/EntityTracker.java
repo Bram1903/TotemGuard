@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.world.entity;
 
 import com.deathmotion.totemguard.common.world.shape.ShapeSink;
+import com.deathmotion.totemguard.common.world.team.TeamState;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -45,6 +46,8 @@ public final class EntityTracker {
     private int standableCount;
     @Getter
     private int pushableCount;
+    @Getter
+    private int clientPusherCount;
 
     public EntityTracker(ClientVersion clientVersion) {
         this.boatInterpolationSteps = clientVersion.isOlderThan(ClientVersion.V_1_21_2)
@@ -74,17 +77,19 @@ public final class EntityTracker {
         announced.remove(entityId);
     }
 
-    public void spawn(int entityId, EntityType type, double x, double y, double z) {
+    public void spawn(int entityId, EntityType type, UUID uuid, double x, double y, double z) {
         TrackedEntity entity = new TrackedEntity(type,
-                EntityRoles.boat(type) ? boatInterpolationSteps : TrackedEntity.INTERPOLATION_STEPS);
+                EntityRoles.boat(type) ? boatInterpolationSteps : TrackedEntity.INTERPOLATION_STEPS, uuid);
         entity.snapTo(x, y, z);
         TrackedEntity previous = entities.put(entityId, entity);
         if (previous != null) {
             if (previous.standable()) standableCount--;
             if (previous.pushable()) pushableCount--;
+            if (previous.clientSidePusher()) clientPusherCount--;
         }
         if (entity.standable()) standableCount++;
         if (entity.pushable()) pushableCount++;
+        if (entity.clientSidePusher()) clientPusherCount++;
     }
 
     public void destroy(int entityId) {
@@ -92,6 +97,7 @@ public final class EntityTracker {
         if (removed != null) {
             if (removed.standable()) standableCount--;
             if (removed.pushable()) pushableCount--;
+            if (removed.clientSidePusher()) clientPusherCount--;
         }
         if (entityId == authoritativeId) authoritativeId = -1;
     }
@@ -235,6 +241,7 @@ public final class EntityTracker {
         settling.clear();
         standableCount = 0;
         pushableCount = 0;
+        clientPusherCount = 0;
         authoritativeId = -1;
     }
 
@@ -259,6 +266,30 @@ public final class EntityTracker {
                     entity.targetX(), entity.targetZ(), entity.interpSteps(),
                     entity.spanMaxY() + entity.height()));
             if (++shown >= 8) break;
+        }
+        return out.length() == 0 ? "none" : out.toString();
+    }
+
+    public String describePushersNear(TeamState teams, double centerX, double feetY, double centerZ,
+                                      double playerHalfWidth, double playerHeight, double radius) {
+        StringBuilder out = new StringBuilder();
+        int shown = 0;
+        for (Map.Entry<Integer, TrackedEntity> entry : entities.entrySet()) {
+            TrackedEntity entity = entry.getValue();
+            if (!entity.positioned() || !entity.clientSidePusher()) continue;
+            double dx = centerX - entity.renderX();
+            double dz = centerZ - entity.renderZ();
+            if (Math.abs(dx) > radius || Math.abs(dz) > radius) continue;
+            double reach = playerHalfWidth + entity.halfWidth();
+            boolean contact = Math.abs(dx) < reach && Math.abs(dz) < reach
+                    && feetY < entity.renderY() + entity.height()
+                    && entity.renderY() < feetY + playerHeight;
+            boolean suppressed = !teams.pushableBy(entity.playerEntity(), entity.uuid(), entity.uuidString());
+            if (out.length() > 0) out.append(' ');
+            out.append(String.format(java.util.Locale.ROOT, "#%d d(%+.4f,%+.4f)m%.4f%s%s",
+                    entry.getKey(), dx, dz, Math.max(Math.abs(dx), Math.abs(dz)),
+                    contact ? "C" : "-", suppressed ? "X" : ""));
+            if (++shown >= 6) break;
         }
         return out.length() == 0 ? "none" : out.toString();
     }
@@ -321,8 +352,8 @@ public final class EntityTracker {
         return emitted;
     }
 
-    public int countPushableNear(double pMinX, double pMinY, double pMinZ,
-                                 double pMaxX, double pMaxY, double pMaxZ,
+    public int countPushableNear(double centerMinX, double feetMinY, double centerMinZ,
+                                 double centerMaxX, double feetMaxY, double centerMaxZ,
                                  double playerHalfWidth, double playerHeight) {
         if (pushableCount == 0) return 0;
         int count = 0;
@@ -330,9 +361,12 @@ public final class EntityTracker {
             if (!entity.positioned() || !entity.pushable()) continue;
 
             double horizontalReach = playerHalfWidth + entity.halfWidth();
-            boolean xOk = intervalGap(pMinX, pMaxX, entity.spanMinX(), entity.spanMaxX()) < horizontalReach;
-            boolean zOk = intervalGap(pMinZ, pMaxZ, entity.spanMinZ(), entity.spanMaxZ()) < horizontalReach;
-            boolean yOk = pMinY < entity.spanMaxY() + entity.height() && entity.spanMinY() < pMaxY + playerHeight;
+            boolean xOk = intervalGap(centerMinX, centerMaxX,
+                    entity.reachMinX(), entity.reachMaxX()) < horizontalReach;
+            boolean zOk = intervalGap(centerMinZ, centerMaxZ,
+                    entity.reachMinZ(), entity.reachMaxZ()) < horizontalReach;
+            boolean yOk = feetMinY < entity.reachMaxY() + entity.height()
+                    && entity.reachMinY() < feetMaxY + playerHeight;
 
             if (xOk && zOk && yOk) count++;
         }

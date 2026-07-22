@@ -96,8 +96,8 @@ public final class PistonWindow {
     public boolean apply(AreaBounds bounds) {
         if (!reaching) return false;
         if (touching) bounds.pistonReached(true);
-        if (pushLoX != 0.0 || pushHiX != 0.0) bounds.extendPushX(pushLoX, pushHiX);
-        if (pushLoZ != 0.0 || pushHiZ != 0.0) bounds.extendPushZ(pushLoZ, pushHiZ);
+        if (pushLoX != 0.0 || pushHiX != 0.0) bounds.addPushX(pushLoX, pushHiX);
+        if (pushLoZ != 0.0 || pushHiZ != 0.0) bounds.addPushZ(pushLoZ, pushHiZ);
         if (pushHiY > 0.0) bounds.ceiling(bounds.ceiling() + pushHiY);
         if (pushLoY < 0.0) bounds.addDescentSlack(-pushLoY);
         return true;

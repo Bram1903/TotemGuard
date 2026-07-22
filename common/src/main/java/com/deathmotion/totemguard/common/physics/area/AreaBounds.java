@@ -114,14 +114,14 @@ public final class AreaBounds {
         segMax = max;
     }
 
-    public void extendPushX(double lo, double hi) {
-        if (lo < pushLoX) pushLoX = lo;
-        if (hi > pushHiX) pushHiX = hi;
+    public void addPushX(double lo, double hi) {
+        pushLoX += lo;
+        pushHiX += hi;
     }
 
-    public void extendPushZ(double lo, double hi) {
-        if (lo < pushLoZ) pushLoZ = lo;
-        if (hi > pushHiZ) pushHiZ = hi;
+    public void addPushZ(double lo, double hi) {
+        pushLoZ += lo;
+        pushHiZ += hi;
     }
 
     public double pushAdjustedX(double observed, double reference) {

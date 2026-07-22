@@ -96,6 +96,7 @@ public final class TraceFrame {
     public double centerX, centerZ, radius, ceiling, floor;
     public double altCenterX, altCenterZ;
     public boolean altPresent;
+    public double pushLoX, pushHiX, pushLoZ, pushHiZ;
     public double horizontalExcess, ascentExcess, descentExcess, phaseExcess;
     public byte outcome, reason, breach, medium, ground;
     public byte chosenSlot, liveCount;
@@ -114,6 +115,7 @@ public final class TraceFrame {
     public int entAuthoritativeId = -1;
     public int entVehicleId = -1;
     public String entNearby = "";
+    public String entPushers = "";
     public int reads, misses, uncertainHits;
     public double buffer, engineFall;
     public byte mitigation;
@@ -163,6 +165,10 @@ public final class TraceFrame {
         altCenterX = other.altCenterX;
         altCenterZ = other.altCenterZ;
         altPresent = other.altPresent;
+        pushLoX = other.pushLoX;
+        pushHiX = other.pushHiX;
+        pushLoZ = other.pushLoZ;
+        pushHiZ = other.pushHiZ;
         horizontalExcess = other.horizontalExcess;
         ascentExcess = other.ascentExcess;
         descentExcess = other.descentExcess;
@@ -201,6 +207,7 @@ public final class TraceFrame {
         entAuthoritativeId = other.entAuthoritativeId;
         entVehicleId = other.entVehicleId;
         entNearby = other.entNearby;
+        entPushers = other.entPushers;
         reads = other.reads;
         misses = other.misses;
         uncertainHits = other.uncertainHits;

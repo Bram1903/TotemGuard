@@ -146,7 +146,7 @@ public class TGPlayer implements TGUser, EngineActor {
         this.metadataIndex = new MetadataIndex(getClientVersion());
 
         this.inventory = new PacketInventory();
-        this.worldMirror = new WorldMirror(getClientVersion());
+        this.worldMirror = new WorldMirror(getClientVersion(), user::getName);
         this.data = new Data(this);
         this.versionGates = new VersionGates(getClientVersion(), computeSupportsEndTick());
         EngineContext engineContext = new EngineContext(
@@ -186,6 +186,7 @@ public class TGPlayer implements TGUser, EngineActor {
                 new OutboundTeleportProcessor(this),
                 new OutboundMovementProcessor(this),
                 new OutboundEntityProcessor(this),
+                new OutboundTeamProcessor(this),
                 new OutboundVelocityProcessor(this),
                 new OutboundPistonProcessor(this),
                 new OutboundEffectProcessor(this),
