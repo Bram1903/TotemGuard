@@ -92,6 +92,10 @@ public class MovementData {
         if (lastFlyingWasResync) {
             lastFlyingPositionChanged = false;
             lastFlyingRotationChanged = false;
+            if ((teleportResync || serverRotationResync) && packet.hasRotationChanged()) {
+                previous = new Location(
+                        new Vector3d(previous.getX(), previous.getY(), previous.getZ()), yaw, pitch);
+            }
         } else {
             lastFlyingPositionChanged = packet.hasPositionChanged() && positionDifferent;
             lastFlyingRotationChanged = packet.hasRotationChanged() && rotationDifferent;
@@ -153,25 +157,29 @@ public class MovementData {
 
     public void handleServerSync(WrapperPlayServerPlayerPositionAndLook packet) {
         previous = copy(current);
-        current = resolveTeleportLocation(packet, previous);
+        Location target = resolveTeleportLocation(packet, previous);
+        current = new Location(
+                new Vector3d(target.getX(), target.getY(), target.getZ()),
+                previous.getYaw(),
+                previous.getPitch()
+        );
         lastServerPositionChanged = hasPositionChanged(previous, current);
-        lastServerRotationChanged = hasRotationChanged(previous, current);
+        lastServerRotationChanged = hasRotationChanged(previous, target);
+        queueServerRotationSync(target.getYaw(), target.getPitch());
     }
 
     public void handleServerSync(WrapperPlayServerPlayerRotation packet) {
-        previous = copy(current);
-
         float yaw = packet.isRelativeYaw()
-                ? normalizeRotation(previous.getYaw() + packet.getYaw())
+                ? normalizeRotation(current.getYaw() + packet.getYaw())
                 : normalizeRotation(packet.getYaw());
         float pitch = packet.isRelativePitch()
-                ? normalizeRotation(previous.getPitch() + packet.getPitch())
+                ? normalizeRotation(current.getPitch() + packet.getPitch())
                 : normalizeRotation(packet.getPitch());
 
-        current = new Location(new Vector3d(previous.getX(), previous.getY(), previous.getZ()), yaw, pitch);
         lastServerPositionChanged = false;
-        lastServerRotationChanged = hasRotationChanged(previous, current);
-        queueServerRotationSync();
+        lastServerRotationChanged = Float.compare(current.getYaw(), yaw) != 0
+                || Float.compare(current.getPitch(), pitch) != 0;
+        queueServerRotationSync(yaw, pitch);
     }
 
     public void handleCameraChange(boolean isSelf) {
@@ -269,11 +277,11 @@ public class MovementData {
         return false;
     }
 
-    private void queueServerRotationSync() {
+    private void queueServerRotationSync(float yaw, float pitch) {
         if (!lastServerRotationChanged) {
             return;
         }
-        pendingServerRotationSyncs.addLast(new ExpectedRotation(current.getYaw(), current.getPitch()));
+        pendingServerRotationSyncs.addLast(new ExpectedRotation(yaw, pitch));
     }
 
     private record ExpectedRotation(float yaw, float pitch) {
