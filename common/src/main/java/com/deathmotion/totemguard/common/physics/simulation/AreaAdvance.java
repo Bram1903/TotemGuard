@@ -143,10 +143,12 @@ public final class AreaAdvance {
     }
 
     private double bounceFloor(double advancedCeil, MotionArea area, MediumModel medium, ControlEnvelope input) {
-        if (!supportTracker.bounceCertain() || area.ceilVy() >= 0.0) return advancedCeil;
+        if (!supportTracker.bounceCertain() || area.ceilVy() >= 0.0) {
+            return gates.restitutionBounce() ? medium.advanceVertical(area.floorVy(), input) : advancedCeil;
+        }
         double least = BounceRule.reflectMin(gates.restitutionBounce(), supportTracker.bounceFactor(),
                 supportTracker.bounceBed(), area.ceilVy(), input.gravity());
-        if (least <= 0.0) return medium.advanceVertical(0.0, input);
+        if (least <= 0.0) return medium.advanceVertical(area.floorVy(), input);
         return Math.min(advancedCeil, medium.advanceVertical(least, input));
     }
 }

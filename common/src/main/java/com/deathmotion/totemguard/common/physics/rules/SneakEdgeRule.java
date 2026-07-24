@@ -19,7 +19,7 @@
 package com.deathmotion.totemguard.common.physics.rules;
 
 import com.deathmotion.totemguard.common.physics.area.AreaBounds;
-import com.deathmotion.totemguard.common.physics.collision.ContactReport;
+import com.deathmotion.totemguard.common.physics.collision.EdgeBackoff;
 import com.deathmotion.totemguard.common.physics.ground.GroundFacts;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsPreset;
 import com.deathmotion.totemguard.common.util.ClientMath;
@@ -30,12 +30,12 @@ public final class SneakEdgeRule {
     }
 
     public static boolean protectsCarry(boolean sneakHeld, GroundFacts ground, boolean landMedium,
-                                        double dy, double observedSpeed,
-                                        AreaBounds bounds, ContactReport contact, PhysicsPreset preset) {
-        return sneakHeld && ground.groundedStart() && landMedium
-                && dy <= 0.0
-                && observedSpeed < ClientMath.horizontalDistance(bounds.centerX(), bounds.centerZ())
-                + bounds.radius() - preset.horizontalFlagEpsilon()
-                && contact.supportGap() > preset.horizontalFlagEpsilon();
+                                        boolean skipsRise, double dy, double observedSpeed,
+                                        AreaBounds bounds, PhysicsPreset preset, EdgeBackoff edge) {
+        if (!sneakHeld || !ground.groundedStart() || !landMedium) return false;
+        if (skipsRise && dy > 0.0) return false;
+        double reach = ClientMath.horizontalDistance(bounds.centerX(), bounds.centerZ()) + bounds.radius();
+        if (observedSpeed >= reach - preset.horizontalFlagEpsilon()) return false;
+        return edge.clampsDisplacement(bounds.centerX(), bounds.centerZ(), bounds.radius());
     }
 }

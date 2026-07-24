@@ -24,6 +24,7 @@ public final class PreviousTick {
     public boolean flying;
     public boolean powderSnowSwept;
     public boolean deltaZeroed;
+    public boolean slimeStep;
     public int stuckSettleScans;
     public double supportGap = Double.MAX_VALUE;
 

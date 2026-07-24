@@ -80,6 +80,9 @@ public final class SelfSimulation {
     private static final int HOVER_SETBACK_LIMIT = 2;
     private static final double STEP_FROM_FALL_EPS = 1.0e-4;
     private static final int STUCK_SETTLE_SCANS = 3;
+    private static final double SLIME_STEP_VY_THRESHOLD = 0.1;
+    private static final double SLIME_STEP_BASE = 0.4;
+    private static final double SLIME_STEP_RATE = 0.2;
 
     private final EngineActor actor;
     private final Data data;
@@ -95,6 +98,7 @@ public final class SelfSimulation {
     private final ColliderBuffer colliders = new ColliderBuffer();
     private final TraitSampler traits = new TraitSampler();
     private final CollisionSweep sweep = new CollisionSweep();
+    private final EdgeBackoff edgeBackoff;
     private final ContactReport contact = new ContactReport();
     private final GroundResolver groundResolver = new GroundResolver();
     private final SupportingBlockTracker supportTracker;
@@ -149,6 +153,7 @@ public final class SelfSimulation {
         this.context = context;
         this.gates = gates;
         this.supportTracker = new SupportingBlockTracker(gates.supportingBlock());
+        this.edgeBackoff = new EdgeBackoff(gates);
         this.body = new PlayerBody(data, actor, gates);
         this.knockback = new KnockbackTracker(data.getExternalVelocityData());
         this.pistons = new PistonWindow(data.getPistonData());
@@ -559,6 +564,8 @@ public final class SelfSimulation {
         PhysicsPreset preset = state.preset;
         double dx = state.dx, dy = state.dy, dz = state.dz;
 
+        applySlimeStep(dy);
+
         supportTracker.update(colliders, reader, ground.groundedEnd(), contact.nearestSupportGap(),
                 contact.supportApproximate(),
                 current.getX() - half, current.getZ() - half,
@@ -734,8 +741,10 @@ public final class SelfSimulation {
         }
 
         boolean sneakHeld = data.isSneaking();
-        boolean sneakEdge = SneakEdgeRule.protectsCarry(sneakHeld, ground, state.landMedium, dy,
-                state.observedSpeed, chosenSlotBounds, contact, preset);
+        edgeBackoff.prepare(colliders, current.getX() - dx, current.getY() - dy, current.getZ() - dz,
+                half, height, input.stepHeight(), HARVEST_HORIZONTAL_MARGIN);
+        boolean sneakEdge = SneakEdgeRule.protectsCarry(sneakHeld, ground, state.landMedium,
+                gates.edgeBackoffSkipsRise(), dy, state.observedSpeed, chosenSlotBounds, preset, edgeBackoff);
         boolean preserveGrace = gate.inPreserveGrace();
         boolean carryPredicted = stepped || preserveGrace || sneakEdge;
 
@@ -753,8 +762,9 @@ public final class SelfSimulation {
             for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
                 if (!carried.live(slot)) continue;
                 boolean slotSneakEdge = slot == chosen ? sneakEdge
-                        : SneakEdgeRule.protectsCarry(sneakHeld, ground, state.landMedium, dy,
-                        state.observedSpeed, boundsSlots[slot], contact, preset);
+                        : SneakEdgeRule.protectsCarry(sneakHeld, ground, state.landMedium,
+                        gates.edgeBackoffSkipsRise(), dy, state.observedSpeed, boundsSlots[slot],
+                        preset, edgeBackoff);
                 boolean slotCarry = stepped || preserveGrace || slotSneakEdge;
                 carried.area(slot, advanceRules.advance(boundsSlots[slot], carried.area(slot),
                         excessSlots[slot], carried.kind(slot), slotCarry, state, spawns));
@@ -1104,11 +1114,33 @@ public final class SelfSimulation {
         data.getFireworkData().tick();
         data.getUseItemData().tick();
 
-        if (state.scanned) previous.supportGap = contact.nearestSupportGap();
+        if (state.scanned) {
+            previous.supportGap = contact.nearestSupportGap();
+            previous.slimeStep = state.ground.arrested() && !data.isSneaking()
+                    && contact.supportBounce() > 0.0 && !contact.supportBounceBed();
+        } else {
+            previous.slimeStep = false;
+        }
         trace.hypotheses(chosenSlot, carried.liveCount());
         trace.record(view, state.scanned ? contact : null, state.scanned ? sample : null,
                 state.ground, state.input, chosenBounds, verdict, reader, mitigation.buffer(), fall.engineFall(),
                 state.preCarriedX, state.preCarriedZ, state.preCarriedFloor, state.preCarriedCeil);
+    }
+
+    private void applySlimeStep(double dy) {
+        // Deferred half of SlimeBlock.stepOn: when the previous tick was a slime ground contact, its
+        // horizontal velocity was multiplied by (0.4 + |vy|*0.2) if |vy| < 0.1. stepOn runs after
+        // gravity, so the vy it tested is the post-gravity delta it produced, which is this tick's
+        // observed dy. We only know that value now, so the slowdown is applied here to the carried
+        // momentum rather than at projection time, where the bounce vy is still an uncertain interval.
+        if (!previous.slimeStep || Math.abs(dy) >= SLIME_STEP_VY_THRESHOLD) return;
+        double slow = SLIME_STEP_BASE + Math.abs(dy) * SLIME_STEP_RATE;
+        for (int slot = 0; slot < CarriedHypotheses.CAPACITY; slot++) {
+            if (!carried.live(slot)) continue;
+            MotionArea a = carried.area(slot);
+            carried.area(slot, new MotionArea(a.centerX() * slow, a.centerZ() * slow,
+                    a.slack(), a.floorVy(), a.ceilVy()));
+        }
     }
 
     private BoundBreach classify(double horizontalExcess, double ascentExcess, double descentExcess,
