@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.data.ping;
 
+import com.deathmotion.totemguard.common.util.SessionClock;
 import lombok.Getter;
 
 import java.util.List;
@@ -28,7 +29,7 @@ public class PingData {
     static final int INVALID_PING = -1;
 
     private final PendingKeepAlives keepAlives = new PendingKeepAlives();
-    private final PendingTransactions transactions = new PendingTransactions();
+    private final PendingTransactions transactions;
 
     @Getter
     private int keepAlivePing = INVALID_PING;
@@ -58,6 +59,10 @@ public class PingData {
     private boolean lastTeleportReplySkipped;
     @Getter
     private int lastSkippedTeleportReplyCount;
+
+    public PingData(SessionClock clock) {
+        this.transactions = new PendingTransactions(clock);
+    }
 
     static int clampPing(long ping) {
         if (ping < 0L || ping > Integer.MAX_VALUE) {

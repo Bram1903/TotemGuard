@@ -48,6 +48,7 @@ public final class GuiManager {
     private static final int MAX_WINDOW_ID = 127;
 
     private final TGPlatform platform;
+    private final GuiChatInput chatInput = new GuiChatInput();
     private final ConcurrentMap<UUID, GuiSession> sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, GuiViewerInventory> viewerInventories = new ConcurrentHashMap<>();
     private final ConcurrentMap<GuiSubscriptionKey, Set<UUID>> subscriptions = new ConcurrentHashMap<>();
@@ -69,21 +70,15 @@ public final class GuiManager {
         return viewerInventories.computeIfAbsent(viewerId, ignored -> new GuiViewerInventory());
     }
 
+    public GuiChatInput chatInput() {
+        return chatInput;
+    }
+
     public boolean open(Sender sender, GuiScreen screen) {
         Objects.requireNonNull(sender, "sender");
         Objects.requireNonNull(screen, "screen");
 
         if (!sender.isPlayer()) {
-            return false;
-        }
-
-        UUID senderUuid = sender.getUniqueId();
-        Object channel = PacketEvents.getAPI().getProtocolManager().getChannel(senderUuid);
-        if (channel == null) {
-            return false;
-        }
-        User user = PacketEvents.getAPI().getProtocolManager().getUser(channel);
-        if (user == null || user.getUUID() == null) {
             return false;
         }
 
@@ -93,15 +88,57 @@ public final class GuiManager {
             return false;
         }
 
+        return openResolved(sender.getUniqueId(), screen);
+    }
+
+    public boolean open(UUID senderUuid, GuiScreen screen) {
+        Objects.requireNonNull(screen, "screen");
+
+        if (!checkPermission(senderUuid, screen)) {
+            return false;
+        }
+
+        return openResolved(senderUuid, screen);
+    }
+
+    private boolean openResolved(UUID senderUuid, GuiScreen screen) {
+        User user = resolveUser(senderUuid);
+        if (user == null || user.getUUID() == null) {
+            return refuseOpen(senderUuid, screen, "no packet user is registered for them");
+        }
+
         UUID viewerId = user.getUUID();
+        chatInput.drop(viewerId);
         close(viewerId, false);
 
         GuiSession session = new GuiSession(viewerId, user, allocateWindowId(viewerId));
         session.push(screen);
-        screen.onOpen(session);
+        try {
+            screen.onOpen(session);
+        } catch (Exception exception) {
+            platform.getLogger().log(Level.WARNING,
+                    "Failed to prepare GUI screen " + screen.getClass().getSimpleName(), exception);
+            return false;
+        }
         sessions.put(viewerId, session);
         render(session, true);
         return true;
+    }
+
+    private @Nullable User resolveUser(UUID uuid) {
+        TGPlayer tracked = platform.getPlayerRepository().getPlayer(uuid);
+        if (tracked != null && tracked.getUser().getUUID() != null) {
+            return tracked.getUser();
+        }
+
+        Object channel = PacketEvents.getAPI().getProtocolManager().getChannel(uuid);
+        return channel == null ? null : PacketEvents.getAPI().getProtocolManager().getUser(channel);
+    }
+
+    private boolean refuseOpen(UUID viewerId, GuiScreen screen, String reason) {
+        platform.getLogger().warning("Could not open " + screen.getClass().getSimpleName()
+                + " for " + viewerId + ": " + reason + ".");
+        return false;
     }
 
     public boolean pushScreen(UUID viewerId, GuiScreen screen) {
@@ -212,6 +249,7 @@ public final class GuiManager {
         }
         viewerInventories.clear();
         subscriptions.clear();
+        chatInput.shutdown();
     }
 
     public int activeSessionCount() {
@@ -553,6 +591,7 @@ public final class GuiManager {
 
         close(uuid, false);
         viewerInventories.remove(uuid);
+        chatInput.drop(uuid);
     }
 
     public void refreshMonitor(UUID uuid) {

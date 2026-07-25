@@ -18,16 +18,23 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
+import com.deathmotion.totemguard.common.util.SessionClock;
 import lombok.Getter;
 
 public class CombatTracker {
 
     public static final long ACTIVE_COMBAT_WINDOW_MS = 10_000L;
 
+    private final SessionClock clock;
+
     @Getter
     private long lastOutgoingAttackMs;
     @Getter
     private int lastAttackedEntityId = -1;
+
+    public CombatTracker(SessionClock clock) {
+        this.clock = clock;
+    }
 
     public void recordOutgoingAttack(int targetEntityId, long timestamp) {
         this.lastOutgoingAttackMs = timestamp;
@@ -44,11 +51,11 @@ public class CombatTracker {
 
     public boolean inActiveCombat(long withinMs) {
         if (lastOutgoingAttackMs <= 0) return false;
-        return System.currentTimeMillis() - lastOutgoingAttackMs <= withinMs;
+        return clock.millis() - lastOutgoingAttackMs <= withinMs;
     }
 
     public long msSinceLastAttack() {
-        return lastOutgoingAttackMs <= 0 ? Long.MAX_VALUE : System.currentTimeMillis() - lastOutgoingAttackMs;
+        return lastOutgoingAttackMs <= 0 ? Long.MAX_VALUE : clock.millis() - lastOutgoingAttackMs;
     }
 
     public void reset() {

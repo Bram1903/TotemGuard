@@ -34,16 +34,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DebugOverlayManager {
 
+    private static final long PREPENDED_REFRESH_MILLIS = 500L;
+
     private final TGPlayer player;
     private final Map<String, DebugOverlayProvider> providers = new LinkedHashMap<>();
     private final AtomicBoolean dispatchScheduled = new AtomicBoolean();
 
     @Getter
     private volatile @Nullable String activeOverlayKey;
+    private volatile @Nullable DebugOverlayProvider prepended;
+    private volatile long lastPrependedDispatchMillis;
     private volatile boolean dispatchDirty;
 
     public DebugOverlayManager(TGPlayer player) {
         this.player = player;
+    }
+
+    public void prepend(@Nullable DebugOverlayProvider provider) {
+        this.prepended = provider;
+        this.lastPrependedDispatchMillis = 0L;
+        if (provider == null && activeOverlayKey == null) {
+            clear();
+        } else {
+            scheduleDispatch();
+        }
     }
 
     public void register(DebugOverlayProvider provider) {
@@ -86,7 +100,10 @@ public class DebugOverlayManager {
 
     public void refresh() {
         if (activeOverlayKey == null) {
-            return;
+            if (prepended == null) return;
+            long now = player.getClock().millis();
+            if (now - lastPrependedDispatchMillis < PREPENDED_REFRESH_MILLIS) return;
+            lastPrependedDispatchMillis = now;
         }
 
         scheduleDispatch();
@@ -141,7 +158,17 @@ public class DebugOverlayManager {
 
     private void dispatchNow() {
         DebugOverlayProvider provider = getActiveProvider();
-        Component message = provider == null ? Component.empty() : render(provider.buildFrame(player));
+        DebugOverlayProvider head = prepended;
+        Component message;
+        if (head == null) {
+            message = provider == null ? Component.empty() : render(provider.buildFrame(player));
+        } else if (provider == null) {
+            message = render(head.buildFrame(player));
+        } else {
+            message = render(head.buildFrame(player))
+                    .append(Component.text(" || ", Palette.SEPARATOR))
+                    .append(render(provider.buildFrame(player)));
+        }
         ActionBars.send(player.getUser(), message);
     }
 

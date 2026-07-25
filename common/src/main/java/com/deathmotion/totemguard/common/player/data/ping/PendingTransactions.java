@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.player.data.ping;
 
+import com.deathmotion.totemguard.common.util.SessionClock;
+
 import java.util.*;
 import java.util.function.LongConsumer;
 
@@ -25,6 +27,7 @@ final class PendingTransactions {
 
     private static final int RECENT_ACCEPTED_CAPACITY = 128;
 
+    private final SessionClock clock;
     private final Deque<PendingTransaction> pending = new ArrayDeque<>();
     private final Map<Integer, PendingTransaction> staged = new HashMap<>();
     private final Map<Integer, PendingTransaction> teleportBoundaries = new HashMap<>();
@@ -46,6 +49,10 @@ final class PendingTransactions {
     private volatile long lastThirdPartySentNanos;
     private volatile long lastAckedSentNanos;
     private volatile long lastMatchedAckNanos;
+
+    PendingTransactions(SessionClock clock) {
+        this.clock = clock;
+    }
 
     int reserveId(int maxPositiveId) {
         if (maxPositiveId < 1) {
@@ -86,7 +93,7 @@ final class PendingTransactions {
         }
 
         transaction.setSentAt(timestamp);
-        long nanos = System.nanoTime();
+        long nanos = clock.nanos();
         transaction.setSentAtNanos(nanos);
         transaction.setSequence(++sendSequence);
         lastSentNanos = nanos;
@@ -290,7 +297,7 @@ final class PendingTransactions {
             }
         }
 
-        lastMatchedAckNanos = System.nanoTime();
+        lastMatchedAckNanos = clock.nanos();
 
         // The client answers transactions on its main thread, so an ack proves the client's
         // game loop was alive at or after the moment we sent it. The newest accepted send time

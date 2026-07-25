@@ -42,11 +42,11 @@ public class InboundPingProcessor extends ProcessorInbound {
 
         if (packetType == PacketType.Play.Client.PONG) {
             WrapperPlayClientPong packet = new WrapperPlayClientPong(event);
-            pingData.transactionReceived(packet.getId(), event.getTimestamp());
+            pingData.transactionReceived(packet.getId(), player.getClock().millis());
             player.getDebugOverlayManager().refresh();
         } else if (packetType == PacketType.Play.Client.KEEP_ALIVE) {
             WrapperPlayClientKeepAlive packet = new WrapperPlayClientKeepAlive(event);
-            pingData.keepAliveReceived(packet.getId(), event.getTimestamp());
+            pingData.keepAliveReceived(packet.getId(), player.getClock().millis());
             player.getDebugOverlayManager().refresh();
         }
     }

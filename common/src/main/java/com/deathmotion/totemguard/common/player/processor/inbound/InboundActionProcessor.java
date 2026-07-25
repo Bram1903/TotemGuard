@@ -100,14 +100,14 @@ public class InboundActionProcessor extends ProcessorInbound {
             WrapperPlayClientInteractEntity packet = new WrapperPlayClientInteractEntity(event);
             if (packet.getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
                 tickData.setAttacking(true);
-                combatTracker.recordOutgoingAttack(packet.getEntityId(), event.getTimestamp());
+                combatTracker.recordOutgoingAttack(packet.getEntityId(), player.getClock().millis());
             } else {
                 tickData.setInteracting(true);
             }
         } else if (packetType == PacketType.Play.Client.ATTACK) {
             WrapperPlayClientAttack packet = new WrapperPlayClientAttack(event);
             tickData.setAttacking(true);
-            combatTracker.recordOutgoingAttack(packet.getEntityId(), event.getTimestamp());
+            combatTracker.recordOutgoingAttack(packet.getEntityId(), player.getClock().millis());
         } else if (packetType == PacketType.Play.Client.USE_ITEM) {
             tickData.setUsing(true);
             clickData.recordRightClick();
@@ -168,7 +168,7 @@ public class InboundActionProcessor extends ProcessorInbound {
                 case FINISHED_DIGGING, CANCELLED_DIGGING, START_DIGGING -> tickData.setDigging(true);
                 case STAB -> {
                     tickData.setStabbing(true);
-                    combatTracker.recordOutgoingStab(event.getTimestamp());
+                    combatTracker.recordOutgoingStab(player.getClock().millis());
                 }
             }
         } else if (packetType == PacketType.Play.Client.PICK_ITEM) {

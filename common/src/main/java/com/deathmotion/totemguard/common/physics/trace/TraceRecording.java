@@ -39,6 +39,7 @@ import com.deathmotion.totemguard.common.world.team.TeamState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
+import java.util.function.Consumer;
 
 public final class TraceRecording {
 
@@ -60,12 +61,13 @@ public final class TraceRecording {
     private TickRecorder recorder;
     private long tickCounter;
     private long lastEchoSeq;
+    private @Nullable Consumer<TraceFrame> sink;
 
     public TraceRecording(EngineActor actor, Data data, EngineContext context) {
         this.actor = actor;
         this.data = data;
         this.context = context;
-        this.dumper = new TraceDump(context.logger());
+        this.dumper = new TraceDump(context.logger(), context.clock());
     }
 
     private static int flags(@Nullable ContactReport contact, @Nullable MediumSample sample,
@@ -99,6 +101,14 @@ public final class TraceRecording {
         return recorder;
     }
 
+    public void sink(@Nullable Consumer<TraceFrame> sink) {
+        this.sink = sink;
+    }
+
+    private boolean populating() {
+        return sink != null || context.view().physicsDebugLevel().recording();
+    }
+
     public void reset() {
         if (recorder != null) recorder.clear();
         tickCounter = 0;
@@ -121,7 +131,7 @@ public final class TraceRecording {
 
     public void stageNearestStandable(EntityTracker entities, TeamState teams,
                                       double x, double y, double z, double half, double height) {
-        if (!context.view().physicsDebugLevel().recording()) {
+        if (!populating()) {
             stagedEntity = null;
             stagedAuthoritativeId = -1;
             stagedVehicleId = -1;
@@ -156,7 +166,7 @@ public final class TraceRecording {
         boolean echoLanded = echoSeq != lastEchoSeq;
         lastEchoSeq = echoSeq;
         PhysicsDebugLevel level = view.physicsDebugLevel();
-        if (!level.recording()) return;
+        if (!level.recording() && sink == null) return;
         if (recorder == null) recorder = new TickRecorder();
 
         frame.tick = tickCounter;
@@ -231,6 +241,8 @@ public final class TraceRecording {
                 | (verdict.mitigation().setbackSkipped() ? 4 : 0)
                 | (verdict.mitigation().inventoryClosed() ? 8 : 0));
         recorder.record(frame);
+        Consumer<TraceFrame> attached = this.sink;
+        if (attached != null) attached.accept(frame);
 
         Set<PhysicsDebugContext> contexts = view.physicsDebugContexts();
         if (level == PhysicsDebugLevel.TRACE) {

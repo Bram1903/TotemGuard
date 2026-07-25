@@ -137,6 +137,15 @@ public final class VehicleSimulation {
         return carried;
     }
 
+    private static BodyKind bodyKindOf(EntityType type) {
+        if (EntityRoles.boat(type)) return BodyKind.BOAT;
+        if (EntityRoles.happyGhast(type)) return BodyKind.GHAST;
+        if (EntityRoles.camel(type)) return BodyKind.CAMEL;
+        if (type == EntityTypes.STRIDER) return BodyKind.STRIDER;
+        if (type == EntityTypes.PIG) return BodyKind.PIG;
+        return BodyKind.HORSE;
+    }
+
     public void onVehicleMove(double x, double y, double z, float yaw, float pitch) {
         sawVehicleMove = true;
         ConfigView view = context.view();
@@ -145,7 +154,7 @@ public final class VehicleSimulation {
         VehicleData vehicle = data.getVehicleData();
         int vehicleId = data.getVehicleId();
         verdict = PhysicsVerdict.vehicleIdle(verdict.body());
-        silence.onPositionPacket(System.nanoTime());
+        silence.onPositionPacket(context.clock().nanos());
 
         switch (gate(vehicle, vehicleId, x, y, z, yaw, pitch)) {
             case SKIP -> {
@@ -220,11 +229,11 @@ public final class VehicleSimulation {
 
     public boolean requestSetback() {
         return setback.requestSetback(data.getMitigationService(), mounts, data.getVehicleId(),
-                System.currentTimeMillis());
+                context.clock().millis());
     }
 
     public void onRiderTick() {
-        long nowNanos = System.nanoTime();
+        long nowNanos = context.clock().nanos();
         verdict = PhysicsVerdict.vehicleIdle(verdict.body());
         boolean movedSincePrevRiderTick = sawVehicleMove;
         sawVehicleMove = false;
@@ -234,7 +243,7 @@ public final class VehicleSimulation {
             return;
         }
         TrackedEntity ridden = world.entities().resolve(vehicleId);
-        long nowMs = System.currentTimeMillis();
+        long nowMs = context.clock().millis();
         boolean resolvable = ridden != null
                 && EntityRoles.clientAuthoritativeVehicle(ridden.type())
                 && world.readiness().ready();
@@ -280,17 +289,8 @@ public final class VehicleSimulation {
         if (ridden == null || !EntityRoles.clientAuthoritativeVehicle(ridden.type())) return;
         if (!VehicleAuthority.expectsMoves(ridden.type(), ridden,
                 data.getVehicleData(), actor, gates)) return;
-        if (!silence.probeWanted(System.nanoTime())) return;
+        if (!silence.probeWanted(context.clock().nanos())) return;
         requestSetback();
-    }
-
-    private static BodyKind bodyKindOf(EntityType type) {
-        if (EntityRoles.boat(type)) return BodyKind.BOAT;
-        if (EntityRoles.happyGhast(type)) return BodyKind.GHAST;
-        if (EntityRoles.camel(type)) return BodyKind.CAMEL;
-        if (type == EntityTypes.STRIDER) return BodyKind.STRIDER;
-        if (type == EntityTypes.PIG) return BodyKind.PIG;
-        return BodyKind.HORSE;
     }
 
     public void reset() {
@@ -306,7 +306,7 @@ public final class VehicleSimulation {
             markBoostLag(vehicleId);
             return GateAction.SKIP;
         }
-        long now = System.currentTimeMillis();
+        long now = context.clock().millis();
         if (vehicleId >= 0 && mounts.reentryBlocked(vehicleId, now)
                 && data.getMitigationService().bootRider(mounts.reentryX(), mounts.reentryY(), mounts.reentryZ())) {
             markBoostLag(vehicleId);
@@ -967,7 +967,7 @@ public final class VehicleSimulation {
         setback.reset();
         boatBody.floatModel().reset();
         stuckFactor.reset();
-        silence.reset(System.nanoTime());
+        silence.reset(context.clock().nanos());
         verdict = PhysicsVerdict.vehicleIdle(BodyKind.HORSE);
     }
 

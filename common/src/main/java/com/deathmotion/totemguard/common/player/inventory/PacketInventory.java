@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.inventory.slot.InventorySlot;
+import com.deathmotion.totemguard.common.util.SessionClock;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import lombok.Getter;
@@ -36,7 +37,7 @@ import java.util.Set;
 public class PacketInventory {
 
     @Getter
-    private final CarriedItem carriedItem = new CarriedItem();
+    private final CarriedItem carriedItem;
 
     @Getter
     private final Map<Integer, InventorySlot> slots;
@@ -64,11 +65,12 @@ public class PacketInventory {
     @Setter
     private Issuer lastIssuer = Issuer.SERVER;
 
-    public PacketInventory() {
+    public PacketInventory(SessionClock clock) {
+        this.carriedItem = new CarriedItem(clock.millis());
         this.slots = new HashMap<>(InventoryConstants.INVENTORY_SIZE);
 
         for (int i = 0; i < InventoryConstants.INVENTORY_SIZE; i++) {
-            this.slots.put(i, new InventorySlot(this, i));
+            this.slots.put(i, new InventorySlot(this, i, clock.millis()));
         }
     }
 

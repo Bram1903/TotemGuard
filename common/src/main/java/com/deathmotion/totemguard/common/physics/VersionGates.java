@@ -24,6 +24,9 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Getter
 @Accessors(fluent = true)
 public final class VersionGates {
@@ -99,5 +102,41 @@ public final class VersionGates {
         this.maceCreativePenalty = client.isNewerThanOrEquals(ClientVersion.V_1_20_5);
         this.harvestOverride1214 = client.isNewerThanOrEquals(ClientVersion.V_1_21_4);
         this.harvestOverride121 = client.isNewerThanOrEquals(ClientVersion.V_1_21);
+    }
+
+    public Map<String, Boolean> snapshot() {
+        Map<String, Boolean> gates = new LinkedHashMap<>();
+        gates.put("modernTrig", modernTrig);
+        gates.put("waterEfficiencyAttribute", waterEfficiencyAttribute);
+        gates.put("sneakingSpeedAttribute", sneakingSpeedAttribute);
+        gates.put("swiftSneakInput", swiftSneakInput);
+        gates.put("speedFactorOnCenter", speedFactorOnCenter);
+        gates.put("modernFluidPush", modernFluidPush);
+        gates.put("modernMovementThreshold", modernMovementThreshold);
+        gates.put("modernBlockEffects", modernBlockEffects);
+        gates.put("restitutionBounce", restitutionBounce);
+        gates.put("glideForceExitOnClimbable", glideForceExitOnClimbable);
+        gates.put("jointHorizontalZeroing", jointHorizontalZeroing);
+        gates.put("floatWhileRidden", floatWhileRidden);
+        gates.put("modernStriderSuffocation", modernStriderSuffocation);
+        gates.put("supportingBlock", supportingBlock);
+        gates.put("claimedInput", claimedInput);
+        gates.put("squareInputRescale", squareInputRescale);
+        gates.put("doublePrecisionSprintBoost", doublePrecisionSprintBoost);
+        gates.put("edgeBackoffSkipsRise", edgeBackoffSkipsRise);
+        gates.put("edgeBackoffFeetOnly", edgeBackoffFeetOnly);
+        gates.put("edgeBackoffTightEpsilon", edgeBackoffTightEpsilon);
+        gates.put("endTick", endTick);
+        gates.put("pigSaddleAuthority", pigSaddleAuthority);
+        gates.put("striderSaddleAuthority", striderSaddleAuthority);
+        gates.put("horseSaddleAuthority", horseSaddleAuthority);
+        gates.put("boatSnapCollisionGate", boatSnapCollisionGate);
+        gates.put("blockBreakComponentEra", blockBreakComponentEra);
+        gates.put("blockBreakAttributeEra", blockBreakAttributeEra);
+        gates.put("creativeDestroyComponentEra", creativeDestroyComponentEra);
+        gates.put("maceCreativePenalty", maceCreativePenalty);
+        gates.put("harvestOverride1214", harvestOverride1214);
+        gates.put("harvestOverride121", harvestOverride121);
+        return gates;
     }
 }

@@ -143,7 +143,7 @@ public abstract class CheckImpl implements Check {
         if (!shouldFail(null)) return false;
         violations++;
 
-        TGPlatform.getInstance().getAlertRepository().alert(this, violations, null, null, Map.of());
+        player.flag(this, violations, null, null, Map.of());
         return true;
     }
 
@@ -153,7 +153,7 @@ public abstract class CheckImpl implements Check {
         if (!shouldFail(rendered)) return false;
         violations++;
 
-        TGPlatform.getInstance().getAlertRepository().alert(this, violations, rendered, compiled, Map.of());
+        player.flag(this, violations, rendered, compiled, Map.of());
         return true;
     }
 
@@ -168,7 +168,7 @@ public abstract class CheckImpl implements Check {
         if (!shouldFail(rendered)) return false;
         violations++;
 
-        TGPlatform.getInstance().getAlertRepository().alert(this, violations, rendered, compiled, extras);
+        player.flag(this, violations, rendered, compiled, extras);
         return true;
     }
 
@@ -183,14 +183,16 @@ public abstract class CheckImpl implements Check {
 
         if (!data.isOpenInventory()) return;
         if (!mitigate) return;
+        if (player.isObserveOnly()) return;
 
         if (data.isInventoryMitigated()) return;
         data.setInventoryMitigated(true);
-        player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
+        player.sendEnginePacket(InventoryConstants.SERVER_CLOSE_WINDOW);
     }
 
     protected boolean shouldFail(@Nullable String debug) {
         if (bypassed) return false;
+        if (player.isSynthetic()) return true;
         return !TGPlatform.getInstance().getEventBus().getUserFlag().fire(player, this, debug);
     }
 

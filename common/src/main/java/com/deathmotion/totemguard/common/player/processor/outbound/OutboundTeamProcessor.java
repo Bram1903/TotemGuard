@@ -47,6 +47,10 @@ public class OutboundTeamProcessor extends ProcessorOutbound {
         this.latencyHandler = player.getLatencyHandler();
     }
 
+    private static boolean resolvable(UserProfile profile) {
+        return profile != null && profile.getUUID() != null && profile.getName() != null;
+    }
+
     @Override
     public void handleOutbound(PacketSendEvent event) {
         if (event.isCancelled()) return;
@@ -120,10 +124,6 @@ public class OutboundTeamProcessor extends ProcessorOutbound {
             profiles.add(profile);
         }
         registerProfiles(event, profiles);
-    }
-
-    private static boolean resolvable(UserProfile profile) {
-        return profile != null && profile.getUUID() != null && profile.getName() != null;
     }
 
     private void registerProfiles(PacketSendEvent event, List<UserProfile> profiles) {

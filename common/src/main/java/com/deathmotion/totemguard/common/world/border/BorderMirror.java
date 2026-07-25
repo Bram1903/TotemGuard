@@ -18,9 +18,13 @@
 
 package com.deathmotion.totemguard.common.world.border;
 
+import com.deathmotion.totemguard.common.util.SessionClock;
+
 public final class BorderMirror {
 
     private static final double DEFAULT_HALF_EXTENT = 2.9999984E7;
+
+    private final SessionClock clock;
 
     private double centerX;
     private double centerZ;
@@ -30,6 +34,10 @@ public final class BorderMirror {
     private double lerpToHalfExtent;
     private long lerpStartNanos;
     private long lerpDurationNanos;
+
+    public BorderMirror(SessionClock clock) {
+        this.clock = clock;
+    }
 
     private static double clampHalfExtent(double diameter) {
         return Math.max(1.0, diameter / 2.0);
@@ -58,7 +66,7 @@ public final class BorderMirror {
         }
         this.lerpFromHalfExtent = clampHalfExtent(fromDiameter);
         this.lerpToHalfExtent = clampHalfExtent(toDiameter);
-        this.lerpStartNanos = System.nanoTime();
+        this.lerpStartNanos = clock.nanos();
         this.lerpDurationNanos = durationMillis * 1_000_000L;
         this.halfExtent = lerpFromHalfExtent;
     }
@@ -110,7 +118,7 @@ public final class BorderMirror {
 
     private double currentHalfExtent() {
         if (lerpDurationNanos <= 0) return halfExtent;
-        long elapsed = System.nanoTime() - lerpStartNanos;
+        long elapsed = clock.nanos() - lerpStartNanos;
         if (elapsed >= lerpDurationNanos) {
             halfExtent = lerpToHalfExtent;
             lerpDurationNanos = 0;

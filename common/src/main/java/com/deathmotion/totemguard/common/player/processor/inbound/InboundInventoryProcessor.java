@@ -85,7 +85,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
 
     private void handleDigging(PacketReceiveEvent event) {
         WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
-        long timestamp = event.getTimestamp();
+        long timestamp = player.getClock().millis();
         switch (packet.getAction()) {
             case DROP_ITEM_STACK -> inventory.dropItemFromHand(timestamp);
             case DROP_ITEM -> inventory.dropItemFromHand(1, timestamp);
@@ -113,7 +113,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         int slot = packet.getSlot();
         if (slot < 1 || slot > 45) return;
 
-        inventory.setItem(slot, copyItem(packet.getItemStack()), Issuer.CLIENT, SlotAction.IRRELEVANT, event.getTimestamp());
+        inventory.setItem(slot, copyItem(packet.getItemStack()), Issuer.CLIENT, SlotAction.IRRELEVANT, player.getClock().millis());
     }
 
     private void handleClickWindow(PacketReceiveEvent event) {
@@ -126,7 +126,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
 
         final int windowId = packet.getWindowId();
         final int containerSlot = packet.getSlot();
-        final long timestamp = event.getTimestamp();
+        final long timestamp = player.getClock().millis();
         final boolean inPlayerWindow = windowId == InventoryConstants.PLAYER_WINDOW_ID;
 
         final int carriedSlot = inPlayerWindow
@@ -222,7 +222,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         if (player.isModDetectionWindow(packet.getWindowId())) return;
         data.setOpenInventory(false, Issuer.CLIENT);
         inventory.resetOpenWindow();
-        inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.CLIENT, event.getTimestamp());
+        inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.CLIENT, player.getClock().millis());
         data.getVehicleData().onHorseWindowClosed();
     }
 

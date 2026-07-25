@@ -59,6 +59,7 @@ public class CommandManagerImpl {
             new PlaceholderCommand().register(commandManager);
             new TesterCommand().register(commandManager);
             new TestBanAnimationCommand().register(commandManager);
+            new ReplayCommand().register(commandManager);
         }
 
         new CheckCommand().register(commandManager);

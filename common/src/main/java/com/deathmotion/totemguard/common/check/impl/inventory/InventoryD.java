@@ -111,7 +111,7 @@ public class InventoryD extends HeuristicCheck implements PacketCheck {
         if (data.isInventoryMitigatedThisTick()) return;
         if (data.isInNetherPortal()) return;
 
-        final long timestamp = event.getTimestamp();
+        final long timestamp = player.getClock().millis();
         if (type == PacketType.Play.Client.CLICK_WINDOW) {
             int windowId = new WrapperPlayClientClickWindow(event).getWindowId();
             if (windowId != InventoryConstants.PLAYER_WINDOW_ID) return;

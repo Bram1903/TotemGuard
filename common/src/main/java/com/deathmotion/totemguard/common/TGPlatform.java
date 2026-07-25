@@ -57,6 +57,7 @@ import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckRequ
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncCheckResultPacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncTeleportRequestPacket;
 import com.deathmotion.totemguard.common.reload.ReloadService;
+import com.deathmotion.totemguard.common.replay.ReplayService;
 import com.deathmotion.totemguard.common.util.Scheduler;
 import com.deathmotion.totemguard.host.TGPluginHost;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -116,7 +117,10 @@ public abstract class TGPlatform {
     ModSessionStore modSessionStore;
     TeleportService teleportService;
     FleetCacheLifecycle fleetCacheLifecycle;
+    ReplayService replayService;
     TGPlatformAPI api;
+
+    private long serverTick;
 
     @Setter
     private boolean enabled = true;
@@ -144,7 +148,10 @@ public abstract class TGPlatform {
     }
 
     public void tickPlayers() {
+        ReplayService replay = this.replayService;
+        long tick = serverTick++;
         for (TGPlayer player : playerRepository.getPlayers()) {
+            if (replay != null) replay.onServerTick(player, tick);
             player.onServerTick();
         }
     }

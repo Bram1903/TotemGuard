@@ -138,7 +138,7 @@ public final class ApiClassInjector {
                 Throwable cause = (t != null && t.getCause() != null) ? t.getCause() : t;
                 String reason = cause == null ? "unknown"
                         : cause.getClass().getSimpleName()
-                          + (cause.getMessage() == null ? "" : ": " + cause.getMessage());
+                        + (cause.getMessage() == null ? "" : ": " + cause.getMessage());
                 failures.add(name + " [" + reason + "]");
             }
             // The throwables for the final-pass failures live on each Throwable's

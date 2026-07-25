@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.world;
 
+import com.deathmotion.totemguard.common.util.SessionClock;
 import com.deathmotion.totemguard.common.world.block.*;
 import com.deathmotion.totemguard.common.world.border.BorderMirror;
 import com.deathmotion.totemguard.common.world.entity.EntityTracker;
@@ -40,14 +41,20 @@ public final class WorldMirror {
     private final BlockReader reader;
     private final EntityTracker entities;
     private final TeamState teams;
-    private final BorderMirror border = new BorderMirror();
+    private final BorderMirror border;
     private final WorldReadiness readiness = new WorldReadiness();
     private final DimensionProfile dimension = new DimensionProfile();
 
-    public WorldMirror(ClientVersion clientVersion, Supplier<String> localName) {
-        this.reader = new BlockReader(blocks, pending, predicted, ClientStateMap.forClient(clientVersion));
+    public WorldMirror(ClientVersion clientVersion, Supplier<String> localName, SessionClock clock) {
+        this(clientVersion, localName, clock, ClientStateMap.forClient(clientVersion));
+    }
+
+    public WorldMirror(ClientVersion clientVersion, Supplier<String> localName, SessionClock clock,
+                       ClientStateMap states) {
+        this.reader = new BlockReader(blocks, pending, predicted, states);
         this.entities = new EntityTracker(clientVersion);
         this.teams = new TeamState(localName);
+        this.border = new BorderMirror(clock);
     }
 
     public void onJoin(String worldName, DimensionType dimensionType, int minY) {

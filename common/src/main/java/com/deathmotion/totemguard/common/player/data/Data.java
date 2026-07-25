@@ -129,8 +129,9 @@ public class Data {
         player.getPhysics().onInventoryToggled();
 
         if (openInventory) {
-            this.inventoryOpenedAt = System.currentTimeMillis();
+            this.inventoryOpenedAt = player.getClock().millis();
         }
+        if (player.isSynthetic()) return;
         platform.getGuiManager().refreshMonitor(player.getUuid());
 
         boolean serverInitiated = issuer == Issuer.SERVER;
@@ -143,7 +144,7 @@ public class Data {
 
     public long getInventoryOpenDurationMs() {
         if (!openInventory || inventoryOpenedAt == 0L) return 0L;
-        return System.currentTimeMillis() - inventoryOpenedAt;
+        return player.getClock().millis() - inventoryOpenedAt;
     }
 
     public void setFlying(boolean flying) {

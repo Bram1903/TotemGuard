@@ -128,7 +128,7 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
         if (predicted.has(x, y, z)) {
             boolean denial = blockId == effectiveId(x, y, z);
             latencyHandler.compensateLazy(event, () -> {
-                if (denial) predicted.recordDenial(x, y, z, System.currentTimeMillis());
+                if (denial) predicted.recordDenial(x, y, z, player.getClock().millis());
                 predicted.drop(x, y, z);
             });
         }
@@ -152,7 +152,7 @@ public class OutboundWorldProcessor extends ProcessorOutbound {
                 final int x = block.getX(), y = block.getY(), z = block.getZ();
                 final boolean denial = block.getBlockId() == effectiveId(x, y, z);
                 latencyHandler.compensateLazy(event, () -> {
-                    if (denial) predicted.recordDenial(x, y, z, System.currentTimeMillis());
+                    if (denial) predicted.recordDenial(x, y, z, player.getClock().millis());
                     predicted.drop(x, y, z);
                 });
             }

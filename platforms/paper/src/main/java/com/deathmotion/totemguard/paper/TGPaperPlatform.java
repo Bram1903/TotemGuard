@@ -118,6 +118,13 @@ public class TGPaperPlatform extends TGPlatform {
         });
     }
 
+    private static org.bukkit.permissions.PermissionDefault toBukkitDefault(PermissionDefault permissionDefault) {
+        return switch (permissionDefault) {
+            case OP -> org.bukkit.permissions.PermissionDefault.OP;
+            case FALSE -> org.bukkit.permissions.PermissionDefault.FALSE;
+        };
+    }
+
     @Override
     public PaperScheduler getScheduler() {
         return scheduler;
@@ -189,13 +196,6 @@ public class TGPaperPlatform extends TGPlatform {
             Permission registered = pluginManager.getPermission(node.node());
             if (registered != null) registered.setDefault(bukkitDefault);
         }
-    }
-
-    private static org.bukkit.permissions.PermissionDefault toBukkitDefault(PermissionDefault permissionDefault) {
-        return switch (permissionDefault) {
-            case OP -> org.bukkit.permissions.PermissionDefault.OP;
-            case FALSE -> org.bukkit.permissions.PermissionDefault.FALSE;
-        };
     }
 
     @Override

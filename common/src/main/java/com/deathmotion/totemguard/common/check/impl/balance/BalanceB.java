@@ -44,7 +44,7 @@ public class BalanceB extends CheckImpl implements PacketCheck {
 
     public BalanceB(TGPlayer player) {
         super(player);
-        this.clock = new GameClock(player, System.nanoTime() - JOIN_GRACE_NANOS);
+        this.clock = new GameClock(player, player.getClock().nanos() - JOIN_GRACE_NANOS);
         this.previousReferenceNanos = clock.referenceNanos();
     }
 
@@ -56,7 +56,7 @@ public class BalanceB extends CheckImpl implements PacketCheck {
         long referenceGap = reference - previousReferenceNanos;
         previousReferenceNanos = reference;
 
-        long now = System.nanoTime();
+        long now = player.getClock().nanos();
         if (data.isDead() || referenceGap > STREAM_GAP_NANOS || !tickingReliably()) {
             clock.raiseTo(Math.min(now, reference));
             buffer.decrease(BUFFER_DECAY);

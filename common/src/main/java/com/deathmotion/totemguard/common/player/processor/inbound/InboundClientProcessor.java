@@ -76,7 +76,7 @@ public class InboundClientProcessor extends ProcessorInbound {
                     (byte) (marlowChallengeId >>> 8),
                     (byte) marlowChallengeId
             };
-            player.getUser().sendPacket(new WrapperPlayServerPluginMessage(MARLOW_CHALLENGE_CHANNEL, payload));
+            player.sendEnginePacket(new WrapperPlayServerPluginMessage(MARLOW_CHALLENGE_CHANNEL, payload));
         } else if (MARLOW_RESPONSE_CHANNEL.equals(channel)) {
             if (!awaitingMarlowResponse) return;
             awaitingMarlowResponse = false;

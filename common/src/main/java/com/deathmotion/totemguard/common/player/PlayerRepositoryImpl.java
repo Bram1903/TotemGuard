@@ -50,7 +50,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public final class PlayerRepositoryImpl implements UserRepository {
+public final class PlayerRepositoryImpl implements UserRepository, PlayerLookup {
 
     private static final String BYPASS_PERMISSION = "TotemGuard.Bypass";
     private static final String BYPASS_ALL_PERMISSION = "TotemGuard.Bypass.*";
@@ -274,6 +274,7 @@ public final class PlayerRepositoryImpl implements UserRepository {
         clearExempt(uuid);
     }
 
+    @Override
     public @Nullable TGPlayer getPlayer(final @NotNull User user) {
         return players.get(user);
     }

@@ -42,7 +42,7 @@ public enum PhysicsDebugContext {
         return set;
     }
 
-    private static PhysicsDebugContext parseOne(String raw) {
+    public static PhysicsDebugContext parseOne(String raw) {
         if (raw == null) return null;
         return switch (raw.trim().toLowerCase()) {
             case "land", "walk", "ground", "air" -> LAND;

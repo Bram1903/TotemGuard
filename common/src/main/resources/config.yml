@@ -105,8 +105,6 @@ physics-engine:
     level: off
     context: [ ]
 
-# Kicks honest clients whose F3 Debug Modifier key collides with a movement bind
-# (a vanilla bug that allows inventory-move). Packet-level cheats are caught regardless.
 debug-modifier-kick:
   enabled: true
 

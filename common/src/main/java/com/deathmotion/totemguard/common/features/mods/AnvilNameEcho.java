@@ -55,6 +55,7 @@ final class AnvilNameEcho {
 
     static void send(TGPlayer player, int windowId, List<Question> questions) {
         if (questions.isEmpty()) return;
+        if (player.isObserveOnly()) return;
 
         boolean wrapInBundle = !player.getData().isSendingBundlePacket();
         WrapperPlayServerBundle boundary = new WrapperPlayServerBundle();

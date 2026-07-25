@@ -42,6 +42,7 @@ public final class ActionBars {
 
     public static void send(@NotNull User user, @NotNull Component message) {
         if (user.getEncoderState() != ConnectionState.PLAY) return;
+        if (user.getChannel() == null) return;
         user.sendPacket(buildPacket(user, message));
     }
 

@@ -59,6 +59,8 @@ import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
+import com.deathmotion.totemguard.common.replay.ReplayService;
+import com.deathmotion.totemguard.common.replay.capture.CaptureListener;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
 import com.deathmotion.totemguard.common.util.LoggerSuppressor;
@@ -121,6 +123,7 @@ final class TotemGuardLifecycle {
         p.sessionViolationStore = new SessionViolationStore(p.redisRepository, p.getLogger());
         p.modSessionStore = new ModSessionStore(p.redisRepository, p.getLogger());
         p.teleportService = new TeleportService(p);
+        p.replayService = new ReplayService(p);
         p.commandManager = new CommandManagerImpl();
         p.afterCommandsRegistered();
         if (!p.isManagedByLoader()) {
@@ -155,6 +158,7 @@ final class TotemGuardLifecycle {
         ModResolver modResolver = new ModResolver(p, kickThenBanTracker, logAlertTracker);
         p.modDetectionService = new ModDetectionService(p, modResolver, p.modSessionStore);
 
+        p.registerPacketListenerInternal(new CaptureListener(p.replayService, p.playerRepository));
         p.registerPacketListenerInternal(new PacketPlayerJoinQuit());
         p.registerPacketListenerInternal(new PacketCheckManagerListener(p.playerRepository));
         p.registerPacketListenerInternal(new GuiPacketListener());
@@ -232,6 +236,14 @@ final class TotemGuardLifecycle {
                 p.eventBus.getPluginShutdown().fire(reason, TGVersions.CURRENT.toString());
             } catch (Throwable t) {
                 p.getLogger().warning("TGPluginShutdownEvent dispatch threw: " + t.getMessage());
+            }
+        }
+
+        if (p.replayService != null) {
+            try {
+                p.replayService.shutdown();
+            } catch (Throwable t) {
+                p.getLogger().warning("Replay shutdown threw: " + t.getMessage());
             }
         }
 

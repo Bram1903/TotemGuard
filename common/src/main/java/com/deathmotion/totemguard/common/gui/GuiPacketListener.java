@@ -26,10 +26,13 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCreativeInventoryAction;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
+
+import java.util.UUID;
 
 public final class GuiPacketListener extends PacketListenerAbstract {
 
@@ -45,6 +48,17 @@ public final class GuiPacketListener extends PacketListenerAbstract {
 
         GuiManager guiManager = TGPlatform.getInstance().getGuiManager();
         PacketTypeCommon packetType = event.getPacketType();
+
+        if (packetType == PacketType.Play.Client.CHAT_MESSAGE) {
+            UUID viewerId = event.getUser().getUUID();
+            if (!guiManager.chatInput().waiting(viewerId)) {
+                return;
+            }
+
+            event.setCancelled(true);
+            guiManager.chatInput().deliver(viewerId, new WrapperPlayClientChatMessage(event).getMessage());
+            return;
+        }
 
         if (packetType == PacketType.Play.Client.CLICK_WINDOW) {
             WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);

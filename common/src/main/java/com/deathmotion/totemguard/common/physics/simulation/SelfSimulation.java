@@ -201,7 +201,7 @@ public final class SelfSimulation {
         double dz = current.getZ() - previousLocation.getZ();
         trust.countFlying(movement.isLastFlyingWasTeleportResync());
         if (movement.isLastFlyingCarriedPosition()) {
-            silence.onPositionPacket(System.nanoTime());
+            silence.onPositionPacket(context.clock().nanos());
         }
 
         double half = body.halfWidth();
@@ -308,6 +308,7 @@ public final class SelfSimulation {
     }
 
     public void rewriteGroundClaim(PacketReceiveEvent event) {
+        if (actor.observeOnly()) return;
         if (!state.scanned || state.ground == null) return;
         if (verdict.outcome() != TickOutcome.JUDGED) return;
         if (pistons.reaching()) return;
@@ -355,7 +356,7 @@ public final class SelfSimulation {
         if (!view.physicsEngineSetback()) return;
         if (!gate.allowsSilent(data, world, view.physicsSimulateFlying(), data.getMovementData(),
                 pendingTeleportQuietTicks)) return;
-        if (!silence.probeWanted(System.nanoTime())) return;
+        if (!silence.probeWanted(context.clock().nanos())) return;
         mitigation.probeSetback();
     }
 
@@ -384,7 +385,7 @@ public final class SelfSimulation {
         hover.reset();
         owedRiseQuiet.reset();
         owedFallQuiet.reset();
-        silence.reset(System.nanoTime());
+        silence.reset(context.clock().nanos());
         data.getSetbackController().clearRise();
         bubble.reset();
         stuckFactor.reset();
@@ -958,7 +959,7 @@ public final class SelfSimulation {
         hover.onDeclined();
         owedRiseQuiet.reset();
         owedFallQuiet.reset();
-        silence.reset(System.nanoTime());
+        silence.reset(context.clock().nanos());
         if (reason != DeclineReason.RESYNC) data.getSetbackController().clearRise();
         body.control().onDecline();
         if (reason != DeclineReason.FAST) {
@@ -992,7 +993,7 @@ public final class SelfSimulation {
         hover.onDeclined();
         owedRiseQuiet.reset();
         owedFallQuiet.reset();
-        silence.reset(System.nanoTime());
+        silence.reset(context.clock().nanos());
         data.getSetbackController().clearRise();
         supportTracker.invalidate();
         body.control().improperSprint(false);

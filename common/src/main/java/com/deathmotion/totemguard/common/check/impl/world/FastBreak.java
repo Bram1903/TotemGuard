@@ -118,6 +118,7 @@ public class FastBreak extends CheckImpl implements PacketCheck {
     }
 
     private void cancelAndResync(PacketReceiveEvent event, WrapperPlayClientPlayerDigging packet) {
+        if (player.isObserveOnly()) return;
         event.setCancelled(true);
         Vector3i position = packet.getBlockPosition();
         player.getWorldMirror().predicted().drop(position.getX(), position.getY(), position.getZ());

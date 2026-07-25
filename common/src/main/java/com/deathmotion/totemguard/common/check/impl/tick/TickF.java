@@ -58,7 +58,7 @@ public class TickF extends CheckImpl implements PacketCheck {
         if (packetType != PacketType.Play.Client.PONG) return;
         if (!player.getPingData().isLastTransactionReplyValid()) return;
 
-        long now = System.nanoTime();
+        long now = player.getClock().nanos();
         long clock = player.getPingData().getLastAckedTransactionSentNanos();
         if (!windowStarted) {
             if (clock == 0L) return;

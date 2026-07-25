@@ -37,15 +37,14 @@ public class InventorySlot {
 
     private SlotState previous;
 
-    public InventorySlot(PacketInventory inventory, int slot) {
+    public InventorySlot(PacketInventory inventory, int slot, long createdAtMillis) {
         this.inventory = inventory;
         this.slot = slot;
 
-        long now = System.currentTimeMillis();
         this.item = ItemStack.EMPTY;
         this.issuer = Issuer.SERVER;
         this.slotAction = SlotAction.IRRELEVANT;
-        this.updated = now;
+        this.updated = createdAtMillis;
 
         this.previous = new SlotState(this.item, this.issuer, this.slotAction, this.updated);
     }

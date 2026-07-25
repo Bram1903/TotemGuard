@@ -43,7 +43,7 @@ public class BalanceA extends CheckImpl implements PacketCheck {
     public BalanceA(TGPlayer player) {
         super(player);
         this.setbackController = player.getData().getSetbackController();
-        this.clock = new GameClock(player, System.nanoTime() - JOIN_GRACE_NANOS);
+        this.clock = new GameClock(player, player.getClock().nanos() - JOIN_GRACE_NANOS);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class BalanceA extends CheckImpl implements PacketCheck {
 
         clock.advance();
 
-        long now = System.nanoTime();
+        long now = player.getClock().nanos();
         runningFast = clock.virtualNanos() > now;
         if (runningFast) {
             long aheadMillis = (clock.virtualNanos() - now) / 1_000_000L;
@@ -74,6 +74,7 @@ public class BalanceA extends CheckImpl implements PacketCheck {
     @Override
     public void onPreFlying(PacketReceiveEvent event) {
         if (!mitigate || !runningFast) return;
+        if (player.isObserveOnly()) return;
         if (data.getMitigationService().setbackPending()) return;
         if (data.getTeleportData().lastPacketWasTeleport()) return;
         if (!platform.getConfigRepository().configView().physicsEngineTimerPacketCancel()) return;

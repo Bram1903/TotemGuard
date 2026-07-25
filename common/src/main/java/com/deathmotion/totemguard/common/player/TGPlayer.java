@@ -27,7 +27,10 @@ import com.deathmotion.totemguard.common.cache.CacheCodecs;
 import com.deathmotion.totemguard.common.cache.CacheKeys;
 import com.deathmotion.totemguard.common.cache.CacheRepositoryImpl;
 import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
+import com.deathmotion.totemguard.common.check.CheckImpl;
 import com.deathmotion.totemguard.common.check.CheckManagerImpl;
+import com.deathmotion.totemguard.common.check.FlagSink;
+import com.deathmotion.totemguard.common.database.util.DebugTemplate;
 import com.deathmotion.totemguard.common.features.mods.ModSession;
 import com.deathmotion.totemguard.common.features.punishment.BanAnimationImpl;
 import com.deathmotion.totemguard.common.physics.EngineActor;
@@ -52,12 +55,15 @@ import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.deathmotion.totemguard.common.player.processor.inbound.*;
 import com.deathmotion.totemguard.common.player.processor.outbound.*;
 import com.deathmotion.totemguard.common.util.MetadataIndex;
+import com.deathmotion.totemguard.common.util.SessionClock;
 import com.deathmotion.totemguard.common.world.WorldMirror;
+import com.deathmotion.totemguard.common.world.block.ClientStateMap;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import lombok.Getter;
 import lombok.Setter;
@@ -68,12 +74,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 @Getter
 public class TGPlayer implements TGUser, EngineActor {
@@ -86,6 +90,7 @@ public class TGPlayer implements TGUser, EngineActor {
     private final TGPlatform platform;
     private final UUID uuid;
     private final User user;
+    private final SessionClock clock;
     private final MetadataIndex metadataIndex;
     private final Instant sessionStart = Instant.now();
     private final PacketInventory inventory;
@@ -108,6 +113,7 @@ public class TGPlayer implements TGUser, EngineActor {
     private final AtomicBoolean hasDisconnected = new AtomicBoolean();
     private final int modDetectionWindowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
     private boolean hasLoggedIn;
+    @Setter
     private @Nullable PlatformPlayer platformPlayer;
 
     @Setter()
@@ -133,6 +139,20 @@ public class TGPlayer implements TGUser, EngineActor {
     @Setter
     private volatile boolean manualCheckActive;
 
+    @Setter
+    private volatile boolean observeOnly;
+
+    @Setter
+    private volatile boolean synthetic;
+
+    @Setter
+    @Nullable
+    private volatile Consumer<PacketWrapper<?>> enginePacketSink;
+
+    @Setter
+    @Nullable
+    private volatile FlagSink flagSink;
+
     private volatile Boolean supportsEndTickCache;
 
     @Setter
@@ -140,23 +160,34 @@ public class TGPlayer implements TGUser, EngineActor {
     private volatile ModSession modSession;
 
     public TGPlayer(@NotNull User user) {
+        this(user, SessionClock.SYSTEM);
+    }
+
+    public TGPlayer(@NotNull User user, @NotNull SessionClock clock) {
+        this(user, clock, null);
+    }
+
+    public TGPlayer(@NotNull User user, @NotNull SessionClock clock, @Nullable ClientStateMap states) {
         this.platform = TGPlatform.getInstance();
         this.uuid = user.getUUID();
         this.user = user;
+        this.clock = clock;
         this.metadataIndex = new MetadataIndex(getClientVersion());
 
-        this.inventory = new PacketInventory();
-        this.worldMirror = new WorldMirror(getClientVersion(), user::getName);
+        this.inventory = new PacketInventory(clock);
+        this.worldMirror = states == null
+                ? new WorldMirror(getClientVersion(), user::getName, clock)
+                : new WorldMirror(getClientVersion(), user::getName, clock, states);
         this.data = new Data(this);
         this.versionGates = new VersionGates(getClientVersion(), computeSupportsEndTick());
         EngineContext engineContext = new EngineContext(
-                () -> platform.getConfigRepository().configView(), platform.getLogger());
+                () -> platform.getConfigRepository().configView(), platform.getLogger(), clock);
         this.physics = new PhysicsEngine(this, data, worldMirror, engineContext, versionGates);
         this.totemData = new TotemData();
         this.clickData = new ClickData();
         this.tickData = new TickData();
-        this.pingData = new PingData();
-        this.combatTracker = new CombatTracker();
+        this.pingData = new PingData(clock);
+        this.combatTracker = new CombatTracker(clock);
         this.debugOverlayManager = new DebugOverlayManager(this);
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());
@@ -264,7 +295,27 @@ public class TGPlayer implements TGUser, EngineActor {
         disconnect("[TotemGuard] Timed out");
     }
 
+    public void sendEnginePacket(@NotNull PacketWrapper<?> packet) {
+        Consumer<PacketWrapper<?>> sink = this.enginePacketSink;
+        if (sink != null) {
+            sink.accept(packet);
+            return;
+        }
+        user.sendPacket(packet);
+    }
+
+    public void flag(@NotNull CheckImpl check, int violations, @Nullable String debug,
+                     DebugTemplate.@Nullable Compiled compiled, @NotNull Map<String, Object> extras) {
+        FlagSink sink = this.flagSink;
+        if (sink != null) {
+            sink.accept(check, violations, debug, compiled, extras);
+            return;
+        }
+        platform.getAlertRepository().alert(check, violations, debug, compiled, extras);
+    }
+
     public void disconnect(String reason) {
+        if (observeOnly || synthetic) return;
         if (!hasDisconnected.compareAndSet(false, true)) return;
         platform.getLogger().info("Disconnecting " + user.getName() + ": " + reason);
         try {
@@ -275,6 +326,7 @@ public class TGPlayer implements TGUser, EngineActor {
     }
 
     public void disconnect(Component screen, String logReason) {
+        if (observeOnly || synthetic) return;
         if (!hasDisconnected.compareAndSet(false, true)) return;
         platform.getLogger().info("Disconnecting " + user.getName() + ": " + logReason);
         try {
@@ -319,7 +371,7 @@ public class TGPlayer implements TGUser, EngineActor {
     }
 
     private void sendTransactionHeartbeat() {
-        long now = System.nanoTime();
+        long now = clock.nanos();
         long lastSent = pingData.getLastTransactionSentNanos();
         if (lastSent != 0L && now - lastSent < TRANSACTION_HEARTBEAT_NANOS) return;
 
@@ -400,6 +452,11 @@ public class TGPlayer implements TGUser, EngineActor {
     }
 
     @Override
+    public boolean observeOnly() {
+        return observeOnly;
+    }
+
+    @Override
     public ClientVersion clientVersion() {
         return getClientVersion();
     }
@@ -451,5 +508,9 @@ public class TGPlayer implements TGUser, EngineActor {
         CacheRepositoryImpl cacheRepository = platform.getCacheRepository();
         cacheRepository.put(CacheKeys.checkSnapshots(uuid),
                 checkManager.getSnapshot(), CacheCodecs.CHECK_SNAPSHOTS, CHECK_SNAPSHOT_TTL);
+    }
+
+    public void clearCachedCheckSnapshot() {
+        platform.getCacheRepository().remove(CacheKeys.checkSnapshots(uuid));
     }
 }

@@ -35,12 +35,17 @@ public final class PhysicsEngine {
     private final Data data;
     private final SelfSimulation self;
     private final VehicleSimulation vehicle;
+    private final TraceRecording trace;
 
     public PhysicsEngine(EngineActor actor, Data data, WorldMirror world, EngineContext context, VersionGates gates) {
-        TraceRecording trace = new TraceRecording(actor, data, context);
+        this.trace = new TraceRecording(actor, data, context);
         this.data = data;
         this.self = new SelfSimulation(actor, data, world, context, gates, trace);
         this.vehicle = new VehicleSimulation(actor, data, world, context, gates, trace);
+    }
+
+    public TraceRecording trace() {
+        return trace;
     }
 
     public void onVehicleMove(double x, double y, double z, float yaw, float pitch) {

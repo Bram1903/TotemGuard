@@ -28,10 +28,14 @@ public class CarriedItem {
     private ItemStack currentItem = ItemStack.EMPTY;
     private int slot = -1;
     private Issuer issuer = Issuer.SERVER;
-    private long timestamp = System.currentTimeMillis();
+    private long timestamp;
     private boolean isUpdated;
 
     private SlotState previous;
+
+    public CarriedItem(long createdAtMillis) {
+        this.timestamp = createdAtMillis;
+    }
 
     public void update(ItemStack newItem, int slot, Issuer issuer, long timestamp) {
         if (newItem.equals(this.currentItem)) return;

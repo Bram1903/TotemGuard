@@ -86,7 +86,8 @@ public final class MitigationTracker {
         buffer += BASE_GAIN + excess * EXCESS_GAIN;
         if (buffer < threshold) return;
 
-        boolean setbackWanted = view.physicsEngineSetback();
+        boolean observeOnly = data.getPlayer().isObserveOnly();
+        boolean setbackWanted = view.physicsEngineSetback() && !observeOnly;
         if (setbackWanted && service.setbackPending()) {
             buffer = threshold;
             return;
@@ -95,7 +96,7 @@ public final class MitigationTracker {
         buffer = 0.0;
         triggeredThisTick = true;
 
-        if (inventoryMove && view.physicsEngineCloseInventory()) {
+        if (inventoryMove && view.physicsEngineCloseInventory() && !observeOnly) {
             service.closeInventory();
             inventoryClosedThisTick = true;
         }

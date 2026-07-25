@@ -30,7 +30,7 @@ public abstract class HeuristicCheck extends CheckImpl {
 
     protected HeuristicCheck(TGPlayer player) {
         super(player);
-        this.lastDecayAt = System.currentTimeMillis();
+        this.lastDecayAt = player.getClock().millis();
     }
 
     @Override
@@ -101,7 +101,7 @@ public abstract class HeuristicCheck extends CheckImpl {
     }
 
     private double applyDecay() {
-        long now = System.currentTimeMillis();
+        long now = player.getClock().millis();
         double elapsedSeconds = Math.max(0L, now - lastDecayAt) / 1000.0;
         lastDecayAt = now;
         if (elapsedSeconds <= 0.0) return buffer.get();

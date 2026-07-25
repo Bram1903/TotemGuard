@@ -111,6 +111,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                                Map<String, Object> placeholderExtras,
                                boolean clearViolationsAfter) {
         TGPlayer player = check.player;
+        if (player.isObserveOnly()) return;
         UUID playerUuid = player.getUuid();
 
         boolean containsBan = containsBan(commands);

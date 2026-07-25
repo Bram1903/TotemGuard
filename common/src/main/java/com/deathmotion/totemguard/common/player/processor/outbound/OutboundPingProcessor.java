@@ -43,11 +43,11 @@ public class OutboundPingProcessor extends ProcessorOutbound {
 
         if (packetType == PacketType.Play.Server.PING) {
             WrapperPlayServerPing packet = new WrapperPlayServerPing(event);
-            pingData.transactionSent(packet.getId(), event.getTimestamp());
+            pingData.transactionSent(packet.getId(), player.getClock().millis());
             event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
         } else if (packetType == PacketType.Play.Server.KEEP_ALIVE) {
             WrapperPlayServerKeepAlive packet = new WrapperPlayServerKeepAlive(event);
-            pingData.keepAliveSent(packet.getId(), event.getTimestamp());
+            pingData.keepAliveSent(packet.getId(), player.getClock().millis());
             event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
         }
     }

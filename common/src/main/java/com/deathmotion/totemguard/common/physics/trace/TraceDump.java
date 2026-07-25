@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.physics.trace;
 
 import com.deathmotion.totemguard.common.physics.EngineActor;
 import com.deathmotion.totemguard.common.physics.preset.PhysicsDebugContext;
+import com.deathmotion.totemguard.common.util.SessionClock;
 
 import java.util.Set;
 import java.util.logging.Logger;
@@ -30,14 +31,16 @@ public final class TraceDump {
     private static final long RATE_LIMIT_NANOS = 5_000_000_000L;
 
     private final Logger logger;
+    private final SessionClock clock;
     private long lastDumpNanos;
 
-    public TraceDump(Logger logger) {
+    public TraceDump(Logger logger, SessionClock clock) {
         this.logger = logger;
+        this.clock = clock;
     }
 
     public boolean dump(EngineActor actor, TickRecorder recorder, String cause, Set<PhysicsDebugContext> contexts) {
-        long now = System.nanoTime();
+        long now = clock.nanos();
         if (now - lastDumpNanos < RATE_LIMIT_NANOS) return false;
         lastDumpNanos = now;
 

@@ -45,5 +45,7 @@ public interface EngineActor {
 
     boolean physicsBypassed();
 
+    boolean observeOnly();
+
     String name();
 }

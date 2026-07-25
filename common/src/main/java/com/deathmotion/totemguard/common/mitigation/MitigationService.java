@@ -108,6 +108,7 @@ public class MitigationService {
     }
 
     private boolean setback(Vector3d target, boolean forceTeleport) {
+        if (data.getPlayer().isObserveOnly()) return false;
         if (pendingSetback) return false;
         PlatformPlayer platformPlayer = data.getPlayer().getPlatformPlayer();
         if (platformPlayer == null) return false;
@@ -121,7 +122,7 @@ public class MitigationService {
         boolean packet = !forceTeleport
                 && dx * dx + dy * dy + dz * dz <= PACKET_SETBACK_MAX * PACKET_SETBACK_MAX;
 
-        if (TGPlatform.getInstance().getEventBus().getSetback().fire(
+        if (!data.getPlayer().isSynthetic() && TGPlatform.getInstance().getEventBus().getSetback().fire(
                 data.getPlayer(), current.getX(), current.getY(), current.getZ(),
                 target.getX(), target.getY(), target.getZ(), packet)) {
             return false;
@@ -146,6 +147,7 @@ public class MitigationService {
     }
 
     public boolean bootRider(double x, double y, double z) {
+        if (data.getPlayer().isObserveOnly()) return false;
         PlatformPlayer platformPlayer = data.getPlayer().getPlatformPlayer();
         if (platformPlayer == null) return false;
         if (!setback(new Vector3d(x, y, z), true)) return false;
@@ -156,19 +158,21 @@ public class MitigationService {
     private void sendCorrection(double x, double y, double z) {
         int id = teleportId;
         teleportId = teleportId <= Integer.MIN_VALUE + 1 ? -1 : teleportId - 1;
-        data.getPlayer().getUser().sendPacket(new WrapperPlayServerPlayerPositionAndLook(
+        data.getPlayer().sendEnginePacket(new WrapperPlayServerPlayerPositionAndLook(
                 x, y, z, 0.0F, 0.0F, ROTATION_RELATIVE, id, false));
     }
 
     public boolean closeInventory() {
+        if (data.getPlayer().isObserveOnly()) return false;
         if (!data.isOpenInventory()) return false;
         if (data.isInventoryMitigated()) return false;
         data.setInventoryMitigated(true);
-        data.getPlayer().getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
+        data.getPlayer().sendEnginePacket(InventoryConstants.SERVER_CLOSE_WINDOW);
         return true;
     }
 
     public boolean dealFallDamage(double amount) {
+        if (data.getPlayer().isObserveOnly()) return false;
         if (amount <= 0.0) return false;
         PlatformPlayer platformPlayer = data.getPlayer().getPlatformPlayer();
         if (platformPlayer == null) return false;
@@ -176,17 +180,19 @@ public class MitigationService {
     }
 
     public void resyncBlock(int x, int y, int z) {
+        if (data.getPlayer().isObserveOnly()) return;
         WorldMirror mirror = data.getPlayer().getWorldMirror();
         int pendingId = mirror.pending().peek(x, y, z);
         int serverStateId = pendingId != PendingBlocks.NONE ? pendingId : mirror.blocks().serverStateId(x, y, z);
-        data.getPlayer().getUser().sendPacket(
+        data.getPlayer().sendEnginePacket(
                 new WrapperPlayServerBlockChange(new Vector3i(x, y, z), serverStateId));
     }
 
     public void acknowledgeBlockChanges(int sequence) {
+        if (data.getPlayer().isObserveOnly()) return;
         if (sequence <= 0) return;
         if (!PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_19)) return;
-        data.getPlayer().getUser().sendPacket(new WrapperPlayServerAcknowledgeBlockChanges(sequence));
+        data.getPlayer().sendEnginePacket(new WrapperPlayServerAcknowledgeBlockChanges(sequence));
     }
 
     public void reset() {

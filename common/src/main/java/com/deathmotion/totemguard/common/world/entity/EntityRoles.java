@@ -32,6 +32,13 @@ public final class EntityRoles {
                 || EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT);
     }
 
+    public static boolean clientSimulatesFromVelocity(EntityType type) {
+        if (type == null) return true;
+        return !(EntityTypes.isTypeInstanceOf(type, EntityTypes.LIVINGENTITY)
+                || EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT)
+                || EntityTypes.isTypeInstanceOf(type, EntityTypes.MINECART_ABSTRACT));
+    }
+
     public static boolean clientSidePusher(EntityType type) {
         if (type == null) return false;
         if (type == EntityTypes.ARMOR_STAND || type == EntityTypes.BAT

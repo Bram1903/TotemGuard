@@ -27,6 +27,7 @@ import com.viaversion.viaversion.api.protocol.ProtocolPathEntry;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +41,7 @@ public final class ClientStateMap {
     private static final int MAX_CACHED_STATE_ID = 1 << 16;
     private static final int UNCOMPUTED = Integer.MIN_VALUE;
 
-    private static final Map<Integer, ClientStateMap> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Long, ClientStateMap> CACHE = new ConcurrentHashMap<>();
 
     @Getter
     private final ClientVersion clientVersion;
@@ -52,14 +53,15 @@ public final class ClientStateMap {
     private final int clientProtocol;
     private final int serverProtocol;
     private final int[] table;
+    private final boolean resolved;
 
-    private ClientStateMap(ClientVersion clientVersion) {
-        ClientVersion serverBlockVersion = PacketEvents.getAPI().getServerManager().getVersion().toClientVersion();
+    private ClientStateMap(ClientVersion clientVersion, ClientVersion serverBlockVersion) {
         this.clientVersion = clientVersion;
         this.clientProtocol = clientVersion.getProtocolVersion();
         this.serverProtocol = serverBlockVersion.getProtocolVersion();
         this.identity = !VIA_AVAILABLE || clientProtocol >= serverProtocol;
         this.stateVersion = identity ? serverBlockVersion : clientVersion;
+        this.resolved = false;
         if (identity) {
             this.table = null;
         } else {
@@ -68,8 +70,36 @@ public final class ClientStateMap {
         }
     }
 
+    private ClientStateMap(ClientVersion clientVersion, ClientVersion serverBlockVersion, int[] table) {
+        this.clientVersion = clientVersion;
+        this.clientProtocol = clientVersion.getProtocolVersion();
+        this.serverProtocol = serverBlockVersion.getProtocolVersion();
+        this.identity = false;
+        this.stateVersion = clientVersion;
+        this.resolved = true;
+        this.table = table;
+    }
+
     public static ClientStateMap forClient(ClientVersion clientVersion) {
-        return CACHE.computeIfAbsent(clientVersion.getProtocolVersion(), p -> new ClientStateMap(clientVersion));
+        return forClient(clientVersion, PacketEvents.getAPI().getServerManager().getVersion().toClientVersion());
+    }
+
+    public static ClientStateMap forClient(ClientVersion clientVersion, ClientVersion serverBlockVersion) {
+        return CACHE.computeIfAbsent(cacheKey(clientVersion, serverBlockVersion),
+                key -> new ClientStateMap(clientVersion, serverBlockVersion));
+    }
+
+    public static ClientStateMap fromTable(ClientVersion clientVersion, ClientVersion serverBlockVersion,
+                                           int[] table) {
+        if (table == null || table.length != MAX_CACHED_STATE_ID) {
+            throw new IllegalArgumentException("state table must hold " + MAX_CACHED_STATE_ID + " entries");
+        }
+        return new ClientStateMap(clientVersion, serverBlockVersion, table);
+    }
+
+    private static long cacheKey(ClientVersion clientVersion, ClientVersion serverBlockVersion) {
+        return ((long) clientVersion.getProtocolVersion() << 32)
+                | (serverBlockVersion.getProtocolVersion() & 0xFFFFFFFFL);
     }
 
     private static boolean hasClass(String name) {
@@ -83,12 +113,21 @@ public final class ClientStateMap {
 
     public int toClientId(int serverStateId) {
         if (identity || serverStateId < 0) return serverStateId;
-        if (serverStateId >= MAX_CACHED_STATE_ID) return translate(serverStateId);
+        if (serverStateId >= MAX_CACHED_STATE_ID) return resolved ? serverStateId : translate(serverStateId);
         int cached = table[serverStateId];
         if (cached != UNCOMPUTED) return cached;
-        int resolved = translate(serverStateId);
-        table[serverStateId] = resolved;
-        return resolved;
+        if (resolved) return serverStateId;
+        int translated = translate(serverStateId);
+        table[serverStateId] = translated;
+        return translated;
+    }
+
+    public int @Nullable [] snapshotTable() {
+        if (identity) return null;
+        for (int id = 0; id < MAX_CACHED_STATE_ID; id++) {
+            toClientId(id);
+        }
+        return table.clone();
     }
 
     private int translate(int serverStateId) {

@@ -19,6 +19,7 @@
 package com.deathmotion.totemguard.common.physics;
 
 import com.deathmotion.totemguard.common.config.view.ConfigView;
+import com.deathmotion.totemguard.common.util.SessionClock;
 
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -27,10 +28,12 @@ public final class EngineContext {
 
     private final Supplier<ConfigView> config;
     private final Logger logger;
+    private final SessionClock clock;
 
-    public EngineContext(Supplier<ConfigView> config, Logger logger) {
+    public EngineContext(Supplier<ConfigView> config, Logger logger, SessionClock clock) {
         this.config = config;
         this.logger = logger;
+        this.clock = clock;
     }
 
     public ConfigView view() {
@@ -39,5 +42,9 @@ public final class EngineContext {
 
     public Logger logger() {
         return logger;
+    }
+
+    public SessionClock clock() {
+        return clock;
     }
 }

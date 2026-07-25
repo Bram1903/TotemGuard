@@ -27,8 +27,11 @@ import ac.grim.grimac.api.plugin.BasicGrimPlugin;
 import ac.grim.grimac.api.plugin.GrimPlugin;
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.features.integration.Integration;
+import com.deathmotion.totemguard.common.features.integration.IntegrationInputs;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
+import com.deathmotion.totemguard.common.replay.ReplayService;
+import com.deathmotion.totemguard.common.replay.format.IntegrationInput;
 import com.deathmotion.totemguard.common.util.TGVersions;
 
 import java.io.File;
@@ -100,20 +103,20 @@ public final class GrimIntegration implements Integration {
 
     private void onTransactionReceived(GrimUser user, int transactionId, boolean packetCancelled, long timestamp) {
         if (!packetCancelled) return;
-        TGPlayer player = playerRepository.getPlayer(user.getUniqueId());
-        if (player == null) return;
-
-        player.getPingData().transactionReceived(transactionId, timestamp);
-        player.getDebugOverlayManager().refresh();
+        deliver(user, IntegrationInput.TRANSACTION, transactionId, timestamp);
     }
 
     private void onTeleport(GrimUser user, int teleportId, long timestamp) {
+        deliver(user, IntegrationInput.TELEPORT, teleportId, timestamp);
+    }
+
+    private void deliver(GrimUser user, IntegrationInput input, int id, long timestamp) {
         TGPlayer player = playerRepository.getPlayer(user.getUniqueId());
         if (player == null) return;
 
-        player.getData().getTeleportData().trackTeleport(teleportId);
-        player.getData().getMovementData().trackTeleport(teleportId, true);
-        player.getPingData().teleportSent(teleportId);
-        player.getDebugOverlayManager().refresh();
+        IntegrationInputs.apply(player, input, id, timestamp);
+
+        ReplayService replay = TGPlatform.getInstance().getReplayService();
+        if (replay != null) replay.onIntegrationInput(player, input, id, timestamp);
     }
 }

@@ -21,6 +21,9 @@ package com.deathmotion.totemguard.common.gui;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import net.kyori.adventure.text.Component;
 
+import java.util.UUID;
+import java.util.function.Function;
+
 public final class GuiClickContext {
 
     private final GuiManager manager;
@@ -44,6 +47,24 @@ public final class GuiClickContext {
 
     public int clickedSlot() {
         return packet.getSlot();
+    }
+
+    public boolean rightClick() {
+        return packet.getButton() == 1;
+    }
+
+    public void prompt(Component message, GuiScreen returnTo, Function<String, GuiScreen> onText) {
+        UUID viewerId = session.viewerId();
+        manager.close(viewerId, true);
+        this.rendered = true;
+        GuiSounds.play(session, GuiSounds.FILTER);
+        session.user().sendMessage(message);
+        manager.chatInput().request(viewerId,
+                text -> {
+                    GuiScreen next = onText.apply(text);
+                    manager.open(viewerId, next == null ? returnTo : next);
+                },
+                () -> manager.open(viewerId, returnTo));
     }
 
     public void open(GuiScreen screen) {

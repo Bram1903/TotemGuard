@@ -25,8 +25,11 @@ import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 public class PacketLatencyHandler {
@@ -34,9 +37,15 @@ public class PacketLatencyHandler {
     private final TGPlayer player;
     private final PingData pingData;
 
+    private volatile @Nullable Consumer<Runnable> eventLoopSink;
+
     public PacketLatencyHandler(TGPlayer player) {
         this.player = player;
         this.pingData = player.getPingData();
+    }
+
+    public void eventLoopSink(@Nullable Consumer<Runnable> sink) {
+        this.eventLoopSink = sink;
     }
 
     public void compensate(PacketSendEvent event, Runnable callback) {
@@ -70,6 +79,15 @@ public class PacketLatencyHandler {
     }
 
     private void runOnEventLoop(Runnable action) {
+        Consumer<Runnable> sink = this.eventLoopSink;
+        if (sink != null) {
+            sink.accept(action);
+            return;
+        }
+        runInChannelEventLoop(action);
+    }
+
+    public void runInChannelEventLoop(Runnable action) {
         Object channel = player.getUser().getChannel();
         if (channel == null || !ChannelHelper.isOpen(channel)) return;
         ChannelHelper.runInEventLoop(channel, action);
@@ -96,7 +114,7 @@ public class PacketLatencyHandler {
 
         int transactionId = pingData.reserveNextTransactionId(Integer.MAX_VALUE);
         pingData.markTransactionSynthetic(transactionId);
-        player.getUser().sendPacket(new WrapperPlayServerPing(transactionId));
+        player.sendEnginePacket(new WrapperPlayServerPing(transactionId));
     }
 
     private final class PendingPacketLatencyTask implements Runnable {

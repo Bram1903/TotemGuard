@@ -94,6 +94,10 @@ public final class TrackedEntity {
         this.uuidString = uuid == null ? null : uuid.toString();
     }
 
+    private static double step(double previous, double render, double target) {
+        return Math.max(Math.abs(target - render), Math.abs(render - previous));
+    }
+
     void snapTo(double x, double y, double z) {
         targetX = renderX = prevRenderX = x;
         targetY = renderY = prevRenderY = y;
@@ -283,10 +287,6 @@ public final class TrackedEntity {
 
     public double spanMaxZ() {
         return Math.max(Math.max(prevRenderZ, renderZ), targetZ);
-    }
-
-    private static double step(double previous, double render, double target) {
-        return Math.max(Math.abs(target - render), Math.abs(render - previous));
     }
 
     public double reachMinX() {

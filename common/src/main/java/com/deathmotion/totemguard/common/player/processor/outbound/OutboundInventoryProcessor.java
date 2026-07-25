@@ -246,7 +246,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private void trackAfterSend(PacketSendEvent event, LongConsumer callback) {
         if (event.isCancelled()) return;
-        event.getTasksAfterSend().add(() -> callback.accept(event.getTimestamp()));
+        event.getTasksAfterSend().add(() -> callback.accept(player.getClock().millis()));
     }
 
     private void syncExternalPlayerSection(int windowId, List<ItemStack> items, long timestamp) {

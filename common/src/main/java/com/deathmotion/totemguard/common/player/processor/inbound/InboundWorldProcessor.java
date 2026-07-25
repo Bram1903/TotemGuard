@@ -118,27 +118,27 @@ public class InboundWorldProcessor extends ProcessorInbound {
         final PacketTypeCommon packetType = event.getPacketType();
 
         if (packetType == PacketType.Play.Client.PLAYER_DIGGING) {
-            predicted.expire(event.getTimestamp(), predictionTimeoutMillis());
+            predicted.expire(player.getClock().millis(), predictionTimeoutMillis());
             WrapperPlayClientPlayerDigging packet = new WrapperPlayClientPlayerDigging(event);
             Vector3i position = packet.getBlockPosition();
             switch (packet.getAction()) {
-                case START_DIGGING -> onStartDigging(position, packet.getSequence(), event.getTimestamp());
+                case START_DIGGING -> onStartDigging(position, packet.getSequence(), player.getClock().millis());
                 case CANCELLED_DIGGING ->
-                        digging.onAbort(position.getX(), position.getY(), position.getZ(), event.getTimestamp());
-                case FINISHED_DIGGING -> onFinishDigging(position, packet.getSequence(), event.getTimestamp());
+                        digging.onAbort(position.getX(), position.getY(), position.getZ(), player.getClock().millis());
+                case FINISHED_DIGGING -> onFinishDigging(position, packet.getSequence(), player.getClock().millis());
                 default -> {
                 }
             }
         } else if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
-            predicted.expire(event.getTimestamp(), predictionTimeoutMillis());
+            predicted.expire(player.getClock().millis(), predictionTimeoutMillis());
             WrapperPlayClientPlayerBlockPlacement packet = new WrapperPlayClientPlayerBlockPlacement(event);
             if (packet.getFace() != BlockFace.OTHER) {
-                onPlacement(packet, event.getTimestamp());
+                onPlacement(packet, player.getClock().millis());
             }
         } else if (packetType == PacketType.Play.Client.ANIMATION
                 || WrapperPlayClientPlayerFlying.isFlying(packetType)) {
             sampleDigging();
-            predicted.expire(event.getTimestamp(), predictionTimeoutMillis());
+            predicted.expire(player.getClock().millis(), predictionTimeoutMillis());
         }
     }
 
