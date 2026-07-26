@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 public final class RealtimeAlertRoster {
 
@@ -51,9 +52,11 @@ public final class RealtimeAlertRoster {
         return matches;
     }
 
-    public void deliver(@Nullable UUID violatorUuid, @NotNull Component message) {
+    public void deliver(@Nullable UUID violatorUuid, @NotNull Component message,
+                        @NotNull Predicate<UUID> deliverable) {
         for (AlertSubscription sub : subscriptions.values()) {
             if (!sub.filter().accept(violatorUuid)) continue;
+            if (!deliverable.test(sub.viewerUuid())) continue;
             sub.viewer().sendMessage(message);
         }
     }

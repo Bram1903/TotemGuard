@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.config.key.MessagesKeys;
 import com.deathmotion.totemguard.common.gui.*;
 import com.deathmotion.totemguard.common.message.MessageService;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
+import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.replay.RecordingLibrary;
 import com.deathmotion.totemguard.common.replay.RecordingSummary;
 import com.deathmotion.totemguard.common.replay.RecordingSummaryCache;
@@ -109,6 +110,17 @@ public final class ReplayRecordingScreen extends ReplayScreen {
                 )
         ), context -> start(context, session.viewerId()));
 
+        builder.set(13, GuiItems.simple(
+                ItemTypes.ENDER_EYE,
+                messages.getComponent(MessagesKeys.GUI_REPLAY_WATCH_TITLE),
+                List.of(
+                        messages.getComponent(MessagesKeys.GUI_REPLAY_WATCH_LORE_1),
+                        messages.getComponent(MessagesKeys.GUI_REPLAY_WATCH_LORE_2),
+                        Component.empty(),
+                        messages.getComponent(MessagesKeys.GUI_STATUS_CLICK_TO_OPEN)
+                )
+        ), context -> watch(context, session.viewerId()));
+
         builder.set(15, GuiItems.simple(
                 ItemTypes.NAME_TAG,
                 messages.getComponent(MessagesKeys.GUI_REPLAY_EDIT_TITLE),
@@ -131,5 +143,19 @@ public final class ReplayRecordingScreen extends ReplayScreen {
 
         context.close();
         service.run(path, viewer::sendMessage);
+    }
+
+    private void watch(GuiClickContext context, UUID viewerId) {
+        ReplayService service = service();
+        if (service == null) return;
+
+        TGPlayer viewer = TGPlatform.getInstance().getPlayerRepository().getPlayer(viewerId);
+        if (viewer == null) return;
+
+        context.close();
+        service.viewers().watch(viewer, path, message -> {
+            PlatformPlayer target = viewer.getPlatformPlayer();
+            if (target != null) target.sendMessage(message);
+        });
     }
 }

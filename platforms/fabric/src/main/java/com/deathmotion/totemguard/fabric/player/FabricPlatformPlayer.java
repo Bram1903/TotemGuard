@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.fabric.player;
 
+import com.deathmotion.totemguard.common.platform.player.DetachedPlayer;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.fabric.FabricServerHolder;
@@ -143,6 +144,13 @@ public class FabricPlatformPlayer implements PlatformPlayer {
             if (fabricPlayer.hasDisconnected()) return;
             fabricPlayer.containerMenu.sendAllDataToRemote();
         });
+    }
+
+    @Override
+    public @Nullable DetachedPlayer detachFromWorld() {
+        MinecraftServer server = resolveServer();
+        if (server == null || fabricPlayer.hasDisconnected()) return null;
+        return FabricDetachedPlayer.detach(fabricPlayer, server);
     }
 
     @Override

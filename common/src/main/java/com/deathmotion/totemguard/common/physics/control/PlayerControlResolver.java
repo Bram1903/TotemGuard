@@ -110,7 +110,8 @@ public final class PlayerControlResolver {
         boolean jumpPossible = effectiveGroundedStart && jumpHeld && !immobile;
 
         double observedSpeed = ClientMath.horizontalDistance(observedX, observedZ);
-        boolean sprinting = !immobile && data.isSprinting() && data.getFoodData().canSprint()
+        boolean maySprint = data.isSprinting() || data.isSprintUnknown();
+        boolean sprinting = !immobile && maySprint && data.getFoodData().canSprint()
                 && sprintForward(movement, contact, state, observedX, observedZ, observedSpeed, ground.groundedStart());
         improperSprint = data.isSprinting() && !sprinting && !immobile;
 
@@ -176,7 +177,7 @@ public final class PlayerControlResolver {
 
         boolean rawAirborneSprint = data.isSprinting();
         boolean sprintTransition = rawAirborneSprint != previousAirborneSprint;
-        boolean airSprint = rawAirborneSprint || sprintTransition;
+        boolean airSprint = rawAirborneSprint || sprintTransition || data.isSprintUnknown();
         boolean airSprintFirm = rawAirborneSprint && !sprintTransition;
         previousAirborneSprint = rawAirborneSprint;
 

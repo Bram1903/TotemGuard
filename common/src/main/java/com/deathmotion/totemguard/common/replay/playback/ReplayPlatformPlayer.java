@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.replay.playback;
 
+import com.deathmotion.totemguard.common.platform.player.DetachedPlayer;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import net.kyori.adventure.text.Component;
@@ -83,6 +84,11 @@ final class ReplayPlatformPlayer implements PlatformPlayer {
 
     @Override
     public void resyncInventoryToClient() {
+    }
+
+    @Override
+    public @Nullable DetachedPlayer detachFromWorld() {
+        return null;
     }
 
     @Override

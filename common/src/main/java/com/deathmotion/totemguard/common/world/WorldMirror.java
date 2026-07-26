@@ -74,6 +74,10 @@ public final class WorldMirror {
         clearWorldState();
     }
 
+    public void onLevelRebuilt() {
+        clearWorldState();
+    }
+
     public boolean isWorldChange(WrapperPlayServerRespawn respawn) {
         return dimension.isWorldChange(respawn);
     }

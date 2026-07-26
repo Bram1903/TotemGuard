@@ -147,7 +147,9 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
             // If we initiated the close (mitigation), relay a client close-window packet to the server
             // so any server-side container (chest, etc.) also closes. Sent after the client has
-            // confirmed the close to avoid compatibility issues.
+            // confirmed the close to avoid compatibility issues. A replayed player has no channel to
+            // re-inject through, and there is no server-side container behind them either.
+            if (event.getUser().getChannel() == null) return;
             event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
         });
     }

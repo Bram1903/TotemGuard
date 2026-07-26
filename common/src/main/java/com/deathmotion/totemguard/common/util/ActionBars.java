@@ -46,6 +46,10 @@ public final class ActionBars {
         user.sendPacket(buildPacket(user, message));
     }
 
+    public static @NotNull PacketWrapper<?> packet(@NotNull User user, @NotNull Component message) {
+        return buildPacket(user, message);
+    }
+
     private static PacketWrapper<?> buildPacket(User user, Component message) {
         ClientVersion version = user.getPacketVersion();
         if (version.isNewerThanOrEquals(ClientVersion.V_1_19)) {

@@ -36,6 +36,7 @@ import com.deathmotion.totemguard.common.replay.retention.PrologueBuilder;
 import com.deathmotion.totemguard.common.replay.retention.RetentionBuffer;
 import com.deathmotion.totemguard.common.replay.retention.RetentionPolicy;
 import com.deathmotion.totemguard.common.replay.retention.RetentionSweep;
+import com.deathmotion.totemguard.common.replay.viewer.ReplayViewerService;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
@@ -70,6 +71,7 @@ public final class ReplayService {
     private final RecordingLibrary library;
     private final RecordingIndex index;
     private final RecordingSummaryCache summaries;
+    private final ReplayViewerService viewers;
     private final ConcurrentMap<String, ArmedRecording> arms = new ConcurrentHashMap<>();
     private final ConcurrentMap<User, CaptureState> captures = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, RetentionBuffer> retention = new ConcurrentHashMap<>();
@@ -84,6 +86,7 @@ public final class ReplayService {
         this.library = new RecordingLibrary(resolveDirectory(platform));
         this.index = new RecordingIndex(library, platform.getScheduler());
         this.summaries = new RecordingSummaryCache(library, platform.getScheduler());
+        this.viewers = new ReplayViewerService(platform, this);
         this.retentionEnabled = readRetentionEnabled(platform);
     }
 
@@ -113,6 +116,10 @@ public final class ReplayService {
 
     public RecordingSummaryCache summaries() {
         return summaries;
+    }
+
+    public ReplayViewerService viewers() {
+        return viewers;
     }
 
     public boolean playing() {
@@ -174,6 +181,9 @@ public final class ReplayService {
 
     private @NotNull ArmResult arm(TGPlayer player, RecordingLabel label, String scenario, String note,
                                    List<String> tags, boolean shadow) {
+        // Arming kicks, and kicking someone mid-replay would strand the session before it could put
+        // their world back. Ending the replay first makes the arm behave the way it always has.
+        viewers.stop(player);
         RecordingSession running = sessionOf(player);
         if (running != null) stop(player, "re-armed");
 
@@ -370,6 +380,8 @@ public final class ReplayService {
 
     private @Nullable RetentionBuffer retentionFor(@Nullable TGPlayer player) {
         if (!retentionEnabled || player == null || player.isSynthetic()) return null;
+        // A viewer's stream is a recording being watched, not a session worth keeping.
+        if (player.isReplayViewing()) return null;
         return retention.computeIfAbsent(player.getUuid(), uuid -> openBuffer(player));
     }
 
@@ -729,6 +741,7 @@ public final class ReplayService {
     }
 
     public void shutdown() {
+        viewers.shutdown();
         hudViewers.clear();
         for (Map.Entry<UUID, AutoSession> entry : List.copyOf(autoSessions.entrySet())) {
             autoSessions.remove(entry.getKey());

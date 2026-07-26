@@ -153,6 +153,13 @@ public final class ReplayCommand extends AbstractCommand {
         manager.command(base(manager).literal("replay").literal("run")
                 .required("file", StringParser.greedyStringParser(), RecordingSuggestionProvider.recordings())
                 .permission(perm("replay")).handler(this::run));
+
+        manager.command(base(manager).literal("replay").literal("watch")
+                .permission(perm("replay")).handler(this::watchStop));
+
+        manager.command(base(manager).literal("replay").literal("watch")
+                .required("file", StringParser.greedyStringParser(), RecordingSuggestionProvider.recordings())
+                .permission(perm("replay")).handler(this::watch));
     }
 
     private void hub(CommandContext<Sender> context) {
@@ -200,6 +207,8 @@ public final class ReplayCommand extends AbstractCommand {
                 .append(line("list [filter]", "recordings on disk, newest first, filter by name or tag"))
                 .append(line("inspect <file>", "everything the recording knows about itself"))
                 .append(line("run <file>", "replay a recording through this build"))
+                .append(line("watch <file>", "watch a recording in game, from inside it"))
+                .append(line("watch", "leave the recording you are watching"))
                 .append(Component.newline())
                 .append(Component.text("  /" + CommandDefaults.ROOT + " replay, replay record and replay list"
                         + " open the menu when a player runs them.", Palette.CAPTION));
@@ -521,6 +530,36 @@ public final class ReplayCommand extends AbstractCommand {
         }
 
         service.run(context.get("file"), sender::sendMessage);
+    }
+
+    private void watch(CommandContext<Sender> context) {
+        Sender sender = context.sender();
+        ReplayService service = service();
+        if (service == null) {
+            tell(sender, MessagesKeys.REPLAY_DISABLED, Map.of());
+            return;
+        }
+        if (!requirePlayer(sender)) return;
+        TGPlayer viewer = sender.getTGPlayer();
+        if (viewer == null) return;
+        service.viewers().watch(viewer, context.get("file"), sender::sendMessage);
+    }
+
+    private void watchStop(CommandContext<Sender> context) {
+        Sender sender = context.sender();
+        ReplayService service = service();
+        if (service == null) {
+            tell(sender, MessagesKeys.REPLAY_DISABLED, Map.of());
+            return;
+        }
+        if (!requirePlayer(sender)) return;
+        TGPlayer viewer = sender.getTGPlayer();
+        if (viewer == null) return;
+        if (service.viewers().stop(viewer)) {
+            tell(sender, MessagesKeys.REPLAY_WATCH_STOPPED, Map.of());
+            return;
+        }
+        tell(sender, MessagesKeys.REPLAY_WATCH_NOT_WATCHING, Map.of());
     }
 
     private void inspect(CommandContext<Sender> context) {

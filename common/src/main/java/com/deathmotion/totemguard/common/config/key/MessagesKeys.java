@@ -118,6 +118,14 @@ public final class MessagesKeys {
     public static final ConfigKey<String> REPLAY_WORLD_DIVERGED = ConfigKey.string("commands.replay.world-diverged");
     public static final ConfigKey<String> REPLAY_WORLD_UNSETTLED = ConfigKey.string("commands.replay.world-unsettled");
     public static final ConfigKey<String> REPLAY_WORLD_VACUOUS = ConfigKey.string("commands.replay.world-vacuous");
+    public static final ConfigKey<String> REPLAY_WATCH_STARTED = ConfigKey.string("commands.replay.watch-started");
+    public static final ConfigKey<String> REPLAY_WATCH_STOPPED = ConfigKey.string("commands.replay.watch-stopped");
+    public static final ConfigKey<String> REPLAY_WATCH_ALREADY = ConfigKey.string("commands.replay.watch-already");
+    public static final ConfigKey<String> REPLAY_WATCH_NOT_WATCHING = ConfigKey.string("commands.replay.watch-not-watching");
+    public static final ConfigKey<String> REPLAY_WATCH_REFUSED = ConfigKey.string("commands.replay.watch-refused");
+    public static final ConfigKey<String> REPLAY_WATCH_FLAG = ConfigKey.string("commands.replay.watch-flag");
+    public static final ConfigKey<String> REPLAY_WATCH_MARK = ConfigKey.string("commands.replay.watch-mark");
+    public static final ConfigKey<String> REPLAY_WATCH_ALERTS_HELD = ConfigKey.string("commands.replay.watch-alerts-held");
 
     public static final ConfigKey<String> RELOAD = ConfigKey.string("reload");
 
@@ -414,6 +422,10 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_REPLAY_RUN_LORE_1 = ConfigKey.string("gui.replay.run-lore-1");
     public static final ConfigKey<String> GUI_REPLAY_RUN_LORE_2 = ConfigKey.string("gui.replay.run-lore-2");
     public static final ConfigKey<String> GUI_REPLAY_RUN_BUSY_LORE = ConfigKey.string("gui.replay.run-busy-lore");
+    public static final ConfigKey<String> GUI_REPLAY_WATCH_TITLE = ConfigKey.string("gui.replay.watch-title");
+    public static final ConfigKey<String> GUI_REPLAY_WATCH_LORE_1 = ConfigKey.string("gui.replay.watch-lore-1");
+    public static final ConfigKey<String> GUI_REPLAY_WATCH_LORE_2 = ConfigKey.string("gui.replay.watch-lore-2");
+    public static final ConfigKey<String> GUI_REPLAY_WATCH_NEEDS_PLAYER_LORE = ConfigKey.string("gui.replay.watch-needs-player-lore");
     public static final ConfigKey<String> GUI_REPLAY_EDIT_TITLE = ConfigKey.string("gui.replay.edit-title");
     public static final ConfigKey<String> GUI_REPLAY_EDIT_LORE_1 = ConfigKey.string("gui.replay.edit-lore-1");
     public static final ConfigKey<String> GUI_REPLAY_EDIT_SCREEN_TITLE = ConfigKey.string("gui.replay.edit-screen-title");

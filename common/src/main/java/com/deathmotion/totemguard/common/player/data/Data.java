@@ -82,6 +82,8 @@ public class Data {
     @Setter(AccessLevel.NONE)
     private boolean redundantSprint;
     @Setter(AccessLevel.NONE)
+    private boolean sprintUnknown;
+    @Setter(AccessLevel.NONE)
     private boolean openInventory;
     @Setter(AccessLevel.NONE)
     private Issuer lastInventoryIssuer = Issuer.CLIENT;
@@ -169,11 +171,17 @@ public class Data {
     public void recordSprinting(boolean sprinting) {
         this.redundantSprint = lastSprinting != null && lastSprinting == sprinting;
         this.lastSprinting = sprinting;
+        this.sprintUnknown = false;
     }
 
     public void resetSprintTracking() {
         this.lastSprinting = null;
         this.redundantSprint = false;
+    }
+
+    public void forgetSprint() {
+        resetSprintTracking();
+        this.sprintUnknown = true;
     }
 
     public void updateNetherPortalContact() {

@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.paper.player;
 
+import com.deathmotion.totemguard.common.platform.player.DetachedPlayer;
 import com.deathmotion.totemguard.common.platform.player.ManualCheckHandle;
 import com.deathmotion.totemguard.common.platform.player.PlatformPlayer;
 import com.deathmotion.totemguard.paper.scheduler.PaperScheduler;
@@ -196,6 +197,12 @@ public class PaperPlatformPlayer implements PlatformPlayer {
             if (!paperPlayer.isOnline()) return;
             paperPlayer.updateInventory();
         }, null);
+    }
+
+    @Override
+    public @Nullable DetachedPlayer detachFromWorld() {
+        if (!paperPlayer.isOnline()) return null;
+        return PaperDetachedPlayer.detach(paperPlayer, plugin, scheduler);
     }
 
     private static final class DamageObserver implements Listener {

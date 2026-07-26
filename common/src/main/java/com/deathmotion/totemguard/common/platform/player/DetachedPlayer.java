@@ -18,41 +18,16 @@
 
 package com.deathmotion.totemguard.common.platform.player;
 
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Consumer;
+import java.util.UUID;
 
-public interface PlatformPlayer {
+public interface DetachedPlayer {
 
-    boolean hasPermission(@NotNull String permission);
+    @Nullable WorldAnchor anchor();
 
-    void sendMessage(@NotNull Component message);
+    void hideFrom(@NotNull UUID joined);
 
-    void kick(@NotNull Component reason);
-
-    boolean isInSurvivalOrAdventure();
-
-    boolean isInvulnerable();
-
-    @org.jetbrains.annotations.Nullable
-    String getWorldName();
-
-    void teleport(@NotNull String worldName, double x, double y, double z, float yaw, float pitch);
-
-    void stopRiding();
-
-    void resetFallDistance();
-
-    boolean dealFallDamage(double amount);
-
-    void beginManualCheck(@NotNull Consumer<@NotNull ManualCheckHandle> onStarted,
-                          @NotNull Runnable onDamageRefused);
-
-    void resyncInventoryToClient();
-
-    @Nullable DetachedPlayer detachFromWorld();
-
-    @Nullable String clientBrandName();
+    void reattach(@NotNull Runnable whenBack);
 }

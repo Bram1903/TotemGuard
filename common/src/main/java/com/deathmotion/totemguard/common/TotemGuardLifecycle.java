@@ -61,6 +61,7 @@ import com.deathmotion.totemguard.common.redis.RedisRepositoryImpl;
 import com.deathmotion.totemguard.common.reload.ReloadService;
 import com.deathmotion.totemguard.common.replay.ReplayService;
 import com.deathmotion.totemguard.common.replay.capture.CaptureListener;
+import com.deathmotion.totemguard.common.replay.viewer.ReplayViewerListener;
 import com.deathmotion.totemguard.common.util.CompatibilityUtil;
 import com.deathmotion.totemguard.common.util.ConsoleBanner;
 import com.deathmotion.totemguard.common.util.LoggerSuppressor;
@@ -158,6 +159,7 @@ final class TotemGuardLifecycle {
         ModResolver modResolver = new ModResolver(p, kickThenBanTracker, logAlertTracker);
         p.modDetectionService = new ModDetectionService(p, modResolver, p.modSessionStore);
 
+        p.registerPacketListenerInternal(new ReplayViewerListener(p.replayService.viewers()));
         p.registerPacketListenerInternal(new CaptureListener(p.replayService, p.playerRepository));
         p.registerPacketListenerInternal(new PacketPlayerJoinQuit());
         p.registerPacketListenerInternal(new PacketCheckManagerListener(p.playerRepository));

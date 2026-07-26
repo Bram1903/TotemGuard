@@ -100,6 +100,10 @@ public class PingData {
         transactions.markSynthetic(id);
     }
 
+    public void forgetPendingTransactions() {
+        transactions.forgetPending();
+    }
+
     public int getPendingTransactionCount() {
         return transactions.pendingCount();
     }

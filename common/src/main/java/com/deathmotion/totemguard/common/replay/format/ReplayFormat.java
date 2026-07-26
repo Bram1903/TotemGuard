@@ -26,7 +26,7 @@ public final class ReplayFormat {
     public static final String GOLDEN_EXTENSION = ".golden";
     public static final String FLAGS_EXTENSION = ".flags";
 
-    public static final int FILTER_VERSION = 1;
+    public static final int FILTER_VERSION = 2;
     public static final int STATE_TABLE_SIZE = 1 << 16;
 
     public static final byte FRAME_IN = 1;

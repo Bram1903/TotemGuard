@@ -146,6 +146,9 @@ public class TGPlayer implements TGUser, EngineActor {
     private volatile boolean synthetic;
 
     @Setter
+    private volatile boolean replayViewing;
+
+    @Setter
     @Nullable
     private volatile Consumer<PacketWrapper<?>> enginePacketSink;
 
@@ -259,6 +262,9 @@ public class TGPlayer implements TGUser, EngineActor {
 
         platform.getEventBus().getUserJoin().fire(this);
 
+        var replay = platform.getReplayService();
+        if (replay != null) replay.viewers().onJoin(this);
+
         platform.getScheduler().runAsyncTask(() -> {
             applyCachedData();
             hasLoggedIn = true;
@@ -370,6 +376,7 @@ public class TGPlayer implements TGUser, EngineActor {
     }
 
     public void onServerTick() {
+        if (replayViewing) return;
         data.flushNetherPortalContact();
         sendTransactionHeartbeat();
     }

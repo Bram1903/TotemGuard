@@ -44,7 +44,7 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
     @Override
     public void onPacketReceive(final PacketReceiveEvent event) {
         TGPlayer player = playerLookup.getPlayer(event.getUser());
-        if (player == null) return;
+        if (player == null || player.isReplayViewing()) return;
 
         final ConnectionState state = event.getConnectionState();
         final ProcessorInbound[] inbounds = player.getProcessorInbounds();
@@ -93,7 +93,7 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
     public void onPacketSend(final PacketSendEvent event) {
         if (event.getConnectionState() != ConnectionState.PLAY) return;
         TGPlayer player = playerLookup.getPlayer(event.getUser());
-        if (player == null) return;
+        if (player == null || player.isReplayViewing()) return;
 
         final ProcessorOutbound[] outbounds = player.getProcessorOutbounds();
 

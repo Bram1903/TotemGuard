@@ -38,6 +38,8 @@ import com.deathmotion.totemguard.common.redis.broker.MessagingTopic;
 import com.deathmotion.totemguard.common.redis.broker.packets.Packets;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncAlertMessagePacket;
 import com.deathmotion.totemguard.common.redis.broker.packets.impl.SyncFocusAlertPacket;
+import com.deathmotion.totemguard.common.replay.ReplayService;
+import com.deathmotion.totemguard.common.replay.viewer.ReplayViewerSession;
 import com.deathmotion.totemguard.common.util.MessageUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -156,7 +158,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
         UUID violatorUuid = check.player.getUuid();
         String violatorName = check.player.getName();
         Component realtimeMessage = AlertBuilder.build(check, violations, debug, extras);
-        realtimeRoster.deliver(violatorUuid, realtimeMessage);
+        realtimeRoster.deliver(violatorUuid, realtimeMessage, this::deliverable);
 
         if (platform.getRedisRepository().isClusterMode() && violatorName != null) {
             platform.getScheduler().runAsyncTask(() -> platform.getRedisRepository().publish(
@@ -208,6 +210,7 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
         Component message = payload.component();
         for (AlertSubscription sub : realtimeRoster.matching(violatorUuid)) {
             if (!(sub.filter() instanceof AlertFilter.Violator)) continue;
+            if (!deliverable(sub.viewerUuid())) continue;
             sub.viewer().sendMessage(message);
         }
     }
@@ -230,7 +233,9 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
     }
 
     private void broadcast(Component message, boolean syncRedis) {
-        enabledAlerts.values().forEach(player -> player.sendMessage(message));
+        enabledAlerts.forEach((viewerUuid, player) -> {
+            if (deliverable(viewerUuid)) player.sendMessage(message);
+        });
 
         if (!syncRedis || !platform.getRedisRepository().shouldSend(MessagingTopic.ALERTS)) {
             return;
@@ -242,10 +247,20 @@ public class AlertRepositoryImpl implements AlertRepository, PresenceListener, C
         );
     }
 
+    private boolean deliverable(UUID viewerUuid) {
+        ReplayService replay = platform.getReplayService();
+        if (replay == null) return true;
+        ReplayViewerSession session = replay.viewers().session(viewerUuid);
+        if (session == null) return true;
+        session.heldAlert();
+        return false;
+    }
+
     private void deliverToBroadcastViewers(@Nullable UUID violatorUuid, Component message, boolean remote) {
         for (Map.Entry<UUID, PlatformPlayer> entry : enabledAlerts.entrySet()) {
             UUID viewerUuid = entry.getKey();
             if (remote && localOnlyAlerts.contains(viewerUuid)) continue;
+            if (!deliverable(viewerUuid)) continue;
             AlertSubscription rt = realtimeRoster.get(viewerUuid);
             if (rt == null) {
                 entry.getValue().sendMessage(message);

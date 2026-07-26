@@ -119,6 +119,21 @@ final class PendingTransactions {
         }
     }
 
+    void forgetPending() {
+        for (PendingTransaction transaction : pending) {
+            transaction.runCallbacks(clock.millis());
+        }
+        pending.clear();
+        staged.clear();
+        teleportBoundaries.clear();
+        stagedForNext.clear();
+        pendingCount = 0;
+        pendingSyntheticCount = 0;
+        oldestPendingSentAt = 0L;
+        oldestPendingSyntheticSentAt = 0L;
+        movementSinceReply = false;
+    }
+
     void markSynthetic(int id) {
         staged(id).setSynthetic(true);
     }

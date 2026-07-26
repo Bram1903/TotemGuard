@@ -110,7 +110,8 @@ public final class CaptureFilter {
             PacketType.Play.Server.SET_PASSENGERS,
             PacketType.Play.Server.TEAMS,
             PacketType.Play.Server.PLAYER_INFO,
-            PacketType.Play.Server.PLAYER_INFO_UPDATE
+            PacketType.Play.Server.PLAYER_INFO_UPDATE,
+            PacketType.Play.Server.PLAYER_INFO_REMOVE
     );
 
     private static final Set<PacketTypeCommon> PLAYER = Set.of(
