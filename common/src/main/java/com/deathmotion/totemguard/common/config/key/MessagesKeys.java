@@ -87,6 +87,9 @@ public final class MessagesKeys {
     public static final ConfigKey<String> REPLAY_STATUS = ConfigKey.string("commands.replay.status");
     public static final ConfigKey<String> REPLAY_STATUS_ARMED = ConfigKey.string("commands.replay.status-armed");
     public static final ConfigKey<String> REPLAY_STATUS_IDLE = ConfigKey.string("commands.replay.status-idle");
+    public static final ConfigKey<String> REPLAY_STATUS_RETAINED = ConfigKey.string("commands.replay.status-retained");
+    public static final ConfigKey<String> REPLAY_DUMP_STARTED = ConfigKey.string("commands.replay.dump-started");
+    public static final ConfigKey<String> REPLAY_DUMP_UNAVAILABLE = ConfigKey.string("commands.replay.dump-unavailable");
     public static final ConfigKey<String> REPLAY_SCENARIO_INVALID = ConfigKey.string("commands.replay.scenario-invalid");
     public static final ConfigKey<String> REPLAY_STOP_REQUESTED = ConfigKey.string("commands.replay.stop-requested");
     public static final ConfigKey<String> REPLAY_HUD_ENABLED = ConfigKey.string("commands.replay.hud-enabled");
@@ -114,6 +117,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> REPLAY_WORLD_MATCHED = ConfigKey.string("commands.replay.world-matched");
     public static final ConfigKey<String> REPLAY_WORLD_DIVERGED = ConfigKey.string("commands.replay.world-diverged");
     public static final ConfigKey<String> REPLAY_WORLD_UNSETTLED = ConfigKey.string("commands.replay.world-unsettled");
+    public static final ConfigKey<String> REPLAY_WORLD_VACUOUS = ConfigKey.string("commands.replay.world-vacuous");
 
     public static final ConfigKey<String> RELOAD = ConfigKey.string("reload");
 
@@ -470,6 +474,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_REPLAY_LABEL_LEGIT_LORE = ConfigKey.string("gui.replay.label-legit-lore");
     public static final ConfigKey<String> GUI_REPLAY_LABEL_CHEAT_LORE = ConfigKey.string("gui.replay.label-cheat-lore");
     public static final ConfigKey<String> GUI_REPLAY_LABEL_SCRATCH_LORE = ConfigKey.string("gui.replay.label-scratch-lore");
+    public static final ConfigKey<String> GUI_REPLAY_LABEL_AUTO_LORE = ConfigKey.string("gui.replay.label-auto-lore");
     public static final ConfigKey<String> GUI_REPLAY_LABEL_ALL_TITLE = ConfigKey.string("gui.replay.label-all-title");
     public static final ConfigKey<String> GUI_REPLAY_LABEL_ALL_LORE = ConfigKey.string("gui.replay.label-all-lore");
     public static final ConfigKey<String> GUI_REPLAY_SETUP_BUSY_TITLE = ConfigKey.string("gui.replay.setup-busy-title");
@@ -481,6 +486,7 @@ public final class MessagesKeys {
     public static final ConfigKey<String> GUI_REPLAY_SETUP_CANCEL_TITLE = ConfigKey.string("gui.replay.setup-cancel-title");
     public static final ConfigKey<String> GUI_REPLAY_SETUP_CANCEL_LORE = ConfigKey.string("gui.replay.setup-cancel-lore");
     public static final ConfigKey<String> GUI_REPLAY_MENU_NEEDS_PLAYER = ConfigKey.string("gui.replay.menu-needs-player");
+
     private MessagesKeys() {
     }
 }

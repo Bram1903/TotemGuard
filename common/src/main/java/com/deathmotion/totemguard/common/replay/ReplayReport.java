@@ -83,6 +83,8 @@ public final class ReplayReport {
             case DIVERGED -> tell(sink, MessagesKeys.REPLAY_WORLD_DIVERGED,
                     Map.of("tg_difference", String.valueOf(worldCheck.difference())));
             case UNSETTLED -> tell(sink, MessagesKeys.REPLAY_WORLD_UNSETTLED, Map.of());
+            case VACUOUS -> tell(sink, MessagesKeys.REPLAY_WORLD_VACUOUS,
+                    Map.of("tg_difference", String.valueOf(worldCheck.difference())));
         }
 
         if (result.vacuous()) {

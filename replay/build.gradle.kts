@@ -38,6 +38,7 @@ tasks.register<JavaExec>("replay") {
     val determinism = providers.gradleProperty("verify-determinism").isPresent
     val selfTest = providers.gradleProperty("selftest").isPresent
     val analyze = providers.gradleProperty("analyze").isPresent
+    val prologue = providers.gradleProperty("prologue").orNull
     val recordedConfig = providers.gradleProperty("config").orNull == "recorded"
 
     args = buildList {
@@ -52,5 +53,6 @@ tasks.register<JavaExec>("replay") {
         if (recordedConfig) add("--config=recorded")
         if (selfTest) add("--selftest")
         if (analyze) add("--analyze")
+        if (prologue != null) add(if (prologue.isBlank()) "--prologue" else "--prologue=$prologue")
     }
 }

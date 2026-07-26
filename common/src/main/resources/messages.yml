@@ -148,6 +148,9 @@ commands:
     status: "%prefix% &#FEE067%tg_player%  &#6E6651·  &#FEE067%tg_label%/%tg_scenario%  &#6E6651·  &#E7DEC4%tg_elapsed%  &#6E6651·  &#E7DEC4%tg_size%  &#6E6651·  &#B8AC8Fframes &#E7DEC4%tg_frames%  &#6E6651·  &#B8AC8Fjudged &#E7DEC4%tg_judged%  &#6E6651·  &#B8AC8Fflags &#E7DEC4%tg_flags%"
     status-armed: "%prefix% &#B8AC8F%tg_player%: &#FEE067%tg_label%/%tg_scenario% &#B8AC8Farmed, waiting for the rejoin &#FEE067(%tg_seconds%)&#B8AC8F."
     status-idle: "%prefix% &#B8AC8FNo recordings are running and nothing is armed."
+    status-retained: "%prefix% &#B8AC8FRetaining &#FEE067%tg_player%&#B8AC8F  ·  &#FEE067%tg_elapsed%&#B8AC8F  ·  frames &#FEE067%tg_frames%&#B8AC8F  ·  dropped &#FEE067%tg_dropped%&#B8AC8F."
+    dump-started: "%prefix% &#6FB04ADumping the retained window for &#FEE067%tg_player%&#6FB04A."
+    dump-unavailable: "%prefix% &#D4452CNothing retained for &#F5A48F%tg_player%&#D4452C: retention is off, a recording already owns them, or one is already running."
     hud-enabled: "%prefix% &#6FB04ARecording action bar on."
     hud-disabled: "%prefix% &#6FB04ARecording action bar off."
     hud-following: "%prefix% &#6FB04ANow following the recording of &#FEE067%tg_player%&#6FB04A on your action bar."
@@ -173,6 +176,7 @@ commands:
     world-matched: "%prefix% &#6FB04AThe prologue rebuilt the world exactly &#FEE067(%tg_columns% columns sampled)&#6FB04A."
     world-diverged: "%prefix% &#D4452CThe retained prologue rebuilt a different world: &#F5A48F%tg_difference%&#D4452C."
     world-unsettled: "%prefix% &#D4452CThe world never settled, so the prologue could not be checked."
+    world-vacuous: "%prefix% &#D4452CThe prologue proved nothing: &#F5A48F%tg_difference%&#D4452C."
 
   clearhistory:
     clearing: "%prefix% &#B8AC8FClearing history for &#FEE067%tg_player%&#B8AC8F…"
@@ -529,6 +533,7 @@ gui:
     label-legit-lore: "&#B8AC8FKnown-good sessions. Anything that flags here is a false positive."
     label-cheat-lore: "&#B8AC8FSessions that should flag. A silent replay here is a miss."
     label-scratch-lore: "&#B8AC8FThrowaway tapes. Nothing is asserted about them."
+    label-auto-lore: "&#B8AC8FSaved unattended around a live flag. Asserts nothing. Re-label one once you know what it shows."
     label-all-title: "&#FBAF00Everything"
     label-all-lore: "&#B8AC8FEvery recording, newest first."
     setup-busy-title: "&#D4452CAlready recording"

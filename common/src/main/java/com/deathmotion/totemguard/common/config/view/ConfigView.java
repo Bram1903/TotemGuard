@@ -42,6 +42,8 @@ public final class ConfigView {
     private final EntitySpoofingOptions entitySpoofing;
     private final boolean banAnimationEnabled;
     private final boolean tickSkipKeepAliveValidation;
+    private final boolean replayRetentionEnabled;
+    private final int replayRetentionMaxMegabytesPerPlayer;
     private final boolean physicsSimulateFlying;
     private final PhysicsPreset physicsPreset;
     private final PhysicsDebugLevel physicsDebugLevel;
@@ -97,6 +99,9 @@ public final class ConfigView {
         );
         this.banAnimationEnabled = config.getBoolean(ConfigKeys.BAN_ANIMATION_ENABLED);
         this.tickSkipKeepAliveValidation = config.getBoolean(ConfigKeys.TICK_SKIP_KEEP_ALIVE_VALIDATION);
+        this.replayRetentionEnabled = config.getBoolean(ConfigKeys.REPLAY_RETENTION_ENABLED);
+        this.replayRetentionMaxMegabytesPerPlayer =
+                config.getInt(ConfigKeys.REPLAY_RETENTION_MAX_MEGABYTES_PER_PLAYER);
         this.physicsSimulateFlying = config.getBoolean(ConfigKeys.PHYSICS_ENGINE_SIMULATE_FLYING);
         this.physicsPreset = PhysicsPreset.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_PRESET));
         this.physicsDebugLevel = PhysicsDebugLevel.parse(config.getString(ConfigKeys.PHYSICS_ENGINE_DEBUG_LEVEL));
@@ -148,6 +153,14 @@ public final class ConfigView {
 
     public boolean tickSkipKeepAliveValidation() {
         return tickSkipKeepAliveValidation;
+    }
+
+    public boolean replayRetentionEnabled() {
+        return replayRetentionEnabled;
+    }
+
+    public long replayRetentionMaxBytesPerPlayer() {
+        return Math.max(0, replayRetentionMaxMegabytesPerPlayer) * 1024L * 1024L;
     }
 
     public boolean physicsSimulateFlying() {

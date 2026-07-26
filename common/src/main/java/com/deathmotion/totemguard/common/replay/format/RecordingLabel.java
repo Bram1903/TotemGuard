@@ -26,7 +26,8 @@ public enum RecordingLabel {
 
     LEGIT,
     CHEAT,
-    SCRATCH;
+    SCRATCH,
+    AUTO;
 
     public static @Nullable RecordingLabel parse(@Nullable String value) {
         if (value == null) return null;

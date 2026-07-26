@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.replay.capture;
 
+import com.deathmotion.totemguard.common.cache.data.CheckSnapshot;
 import com.deathmotion.totemguard.common.config.view.ConfigView;
 import com.deathmotion.totemguard.common.physics.trace.TraceFrame;
 import com.deathmotion.totemguard.common.physics.verdict.TickOutcome;
@@ -88,6 +89,14 @@ public final class RecordingSession {
     public RecordingSession(TGPlayer player, RecordingLabel label, String scenario, String note,
                             List<String> tags, Path file, boolean observeOnly, ConfigView config,
                             Logger logger, long startNanos, long startEpochMillis) {
+        this(player, label, scenario, note, tags, file, observeOnly, config, logger, startNanos,
+                startEpochMillis, null);
+    }
+
+    public RecordingSession(TGPlayer player, RecordingLabel label, String scenario, String note,
+                            List<String> tags, Path file, boolean observeOnly, ConfigView config,
+                            Logger logger, long startNanos, long startEpochMillis,
+                            @Nullable List<CheckSnapshot> checkSnapshot) {
         this.player = player;
         this.observeOnly = observeOnly;
         this.label = label;
@@ -101,14 +110,16 @@ public final class RecordingSession {
 
         this.queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 
-        RecordingHeader header = buildHeader(player, label, scenario, note, tags, config);
+        RecordingHeader header = buildHeader(player, label, scenario, note, tags, config,
+                checkSnapshot == null ? player.getCheckManager().getSnapshot() : checkSnapshot);
         this.writerThread = new Thread(() -> run(header), "TotemGuard-Replay-" + player.getName());
         this.writerThread.setDaemon(true);
         this.writerThread.start();
     }
 
     private RecordingHeader buildHeader(TGPlayer player, RecordingLabel label, String scenario,
-                                        String note, List<String> tags, ConfigView config) {
+                                        String note, List<String> tags, ConfigView config,
+                                        List<CheckSnapshot> checkSnapshot) {
         return new RecordingHeader(
                 ReplayFormat.VERSION,
                 TGVersions.RAW,
@@ -125,7 +136,7 @@ public final class RecordingSession {
                 note,
                 List.copyOf(tags),
                 observeOnly,
-                player.getCheckManager().getSnapshot(),
+                checkSnapshot,
                 new RecordingHeader.PhysicsConfig(
                         config.physicsPreset().name(),
                         config.physicsEngineSetback(),

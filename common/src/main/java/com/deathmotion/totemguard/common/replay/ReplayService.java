@@ -32,6 +32,11 @@ import com.deathmotion.totemguard.common.replay.format.RecordingFrame;
 import com.deathmotion.totemguard.common.replay.format.RecordingLabel;
 import com.deathmotion.totemguard.common.replay.format.RecordingTrailer;
 import com.deathmotion.totemguard.common.replay.playback.ReplayRun;
+import com.deathmotion.totemguard.common.replay.retention.PrologueBuilder;
+import com.deathmotion.totemguard.common.replay.retention.RetentionBuffer;
+import com.deathmotion.totemguard.common.replay.retention.RetentionPolicy;
+import com.deathmotion.totemguard.common.replay.retention.RetentionSweep;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
@@ -44,6 +49,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -55,6 +63,8 @@ public final class ReplayService {
     private static final int LOGIN_BUFFER_LIMIT = 64;
     private static final String DIRECTORY = "replays";
     private static final long ARM_TIMEOUT_MILLIS = 60_000L;
+    private static final DateTimeFormatter AUTO_SCENARIO =
+            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final TGPlatform platform;
     private final RecordingLibrary library;
@@ -62,14 +72,27 @@ public final class ReplayService {
     private final RecordingSummaryCache summaries;
     private final ConcurrentMap<String, ArmedRecording> arms = new ConcurrentHashMap<>();
     private final ConcurrentMap<User, CaptureState> captures = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, RetentionBuffer> retention = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, AutoSession> autoSessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, UUID> hudViewers = new ConcurrentHashMap<>();
     private final AtomicBoolean playback = new AtomicBoolean();
+
+    private volatile boolean retentionEnabled;
 
     public ReplayService(TGPlatform platform) {
         this.platform = platform;
         this.library = new RecordingLibrary(resolveDirectory(platform));
         this.index = new RecordingIndex(library, platform.getScheduler());
         this.summaries = new RecordingSummaryCache(library, platform.getScheduler());
+        this.retentionEnabled = readRetentionEnabled(platform);
+    }
+
+    private static boolean readRetentionEnabled(TGPlatform platform) {
+        try {
+            return platform.getConfigRepository().configView().replayRetentionEnabled();
+        } catch (RuntimeException unavailable) {
+            return false;
+        }
     }
 
     private static Path resolveDirectory(TGPlatform platform) {
@@ -158,7 +181,7 @@ public final class ReplayService {
 
         long now = player.getClock().millis();
         ArmedRecording arm = new ArmedRecording(player.getUuid(), player.getName(), label, scenario,
-                note, List.copyOf(tags), shadow ? Long.MAX_VALUE : now + ARM_TIMEOUT_MILLIS, shadow);
+                note, List.copyOf(tags), shadow ? Long.MAX_VALUE : now + ARM_TIMEOUT_MILLIS, shadow, false);
         ArmedRecording replaced = arms.put(key(player.getName()), arm);
 
         Map<String, Object> extras = Map.of(
@@ -206,13 +229,21 @@ public final class ReplayService {
     }
 
     public boolean hasCapture(User user) {
+        if (retentionEnabled) return true;
         return !captures.isEmpty() && captures.containsKey(user);
     }
 
     public void onPacket(User user, boolean inbound, boolean cancelled, PacketTypeCommon type,
                          ConnectionState state, int packetId, byte[] payload, @Nullable TGPlayer player) {
         CaptureState capture = captures.get(user);
-        if (capture == null || capture.aborted) return;
+        if (capture == null) {
+            RetentionBuffer buffer = retentionFor(player);
+            if (buffer != null) {
+                buffer.onPacket(inbound, cancelled, type, state, packetId, payload);
+            }
+            return;
+        }
+        if (capture.aborted) return;
 
         RecordingSession session = capture.session;
         if (session == null) {
@@ -308,17 +339,25 @@ public final class ReplayService {
         player.getLatencyHandler().eventLoopSink(null);
         player.getDebugOverlayManager().prepend(null);
         clearHuds(player);
+        RetentionBuffer buffer = retention.remove(player.getUuid());
+        if (buffer != null) buffer.detach();
     }
 
     public void onIntegrationInput(TGPlayer player, IntegrationInput input, int id, long timestamp) {
         RecordingSession session = sessionOf(player);
-        if (session == null) return;
+        if (session == null) {
+            onIntegrationRetained(player, input, id, timestamp);
+            return;
+        }
         session.offer(new RecordingFrame.Integration(player.getClock().nanos(), input, id, timestamp));
     }
 
     public void onServerTick(TGPlayer player, long tick) {
         RecordingSession session = sessionOf(player);
-        if (session == null) return;
+        if (session == null) {
+            onRetentionTick(player, tick);
+            return;
+        }
         long now = player.getClock().nanos();
         session.offer(new RecordingFrame.ServerTick(now, tick));
         if (session.expired(now)) {
@@ -327,6 +366,214 @@ public final class ReplayService {
             }
             stop(player, "length cap");
         }
+    }
+
+    private @Nullable RetentionBuffer retentionFor(@Nullable TGPlayer player) {
+        if (!retentionEnabled || player == null || player.isSynthetic()) return null;
+        return retention.computeIfAbsent(player.getUuid(), uuid -> openBuffer(player));
+    }
+
+    private RetentionBuffer openBuffer(TGPlayer player) {
+        RetentionBuffer buffer = new RetentionBuffer(player,
+                PacketEvents.getAPI().getServerManager().getVersion());
+        player.getLatencyHandler().eventLoopSink(action ->
+                player.getLatencyHandler().runInChannelEventLoop(() -> {
+                    buffer.onEventLoop();
+                    action.run();
+                }));
+        return buffer;
+    }
+
+    private void onRetentionTick(TGPlayer player, long tick) {
+        boolean enabled = platform.getConfigRepository().configView().replayRetentionEnabled();
+        if (enabled != retentionEnabled) {
+            retentionEnabled = enabled;
+            if (!enabled) releaseRetention();
+        }
+        RetentionBuffer buffer = retentionFor(player);
+        if (buffer == null) return;
+        buffer.onServerTick(tick);
+
+        AutoSession auto = autoSessions.get(player.getUuid());
+        if (auto == null || !buffer.live()) return;
+        long now = player.getClock().nanos();
+        if (now >= auto.deadlineNanos || now - auto.startedNanos >= RetentionPolicy.MAX_SESSION_NANOS) {
+            finishAuto(player, now >= auto.deadlineNanos ? "post-roll elapsed" : "length cap");
+        }
+    }
+
+    public void onIntegrationRetained(TGPlayer player, IntegrationInput input, int id, long timestamp) {
+        RetentionBuffer buffer = retention.get(player.getUuid());
+        if (buffer == null) return;
+        buffer.onFrame(new RecordingFrame.Integration(player.getClock().nanos(), input, id, timestamp));
+    }
+
+    public void onCheckFlag(TGPlayer player, String check, int violations, @Nullable String debug) {
+        if (!retentionEnabled || player.isSynthetic()) return;
+        if (captureOf(player) != null) return;
+
+        long now = player.getClock().nanos();
+        AutoSession auto = autoSessions.get(player.getUuid());
+        if (auto != null) {
+            auto.deadlineNanos = Math.max(auto.deadlineNanos, now + RetentionPolicy.POST_ROLL_NANOS);
+            return;
+        }
+
+        RetentionBuffer buffer = retention.get(player.getUuid());
+        if (buffer == null) return;
+        buffer.onFrame(new RecordingFrame.Flag(now, check, violations, debug == null ? "" : debug));
+        beginAuto(player, buffer, check, now);
+    }
+
+    public boolean dumpRetained(TGPlayer player, String reason) {
+        if (!retentionEnabled || captureOf(player) != null) return false;
+        if (autoSessions.containsKey(player.getUuid())) return false;
+        RetentionBuffer buffer = retention.get(player.getUuid());
+        if (buffer == null) return false;
+        long now = player.getClock().nanos();
+        buffer.onFrame(new RecordingFrame.Mark(now, reason));
+        beginAuto(player, buffer, reason, now);
+        return true;
+    }
+
+    private void beginAuto(TGPlayer player, RetentionBuffer buffer, String check, long now) {
+        RetentionBuffer.Claim claim = buffer.claim();
+        if (claim == null) return;
+
+        String folder = player.getUuid().toString();
+        long openedNanos = claim.keyframe().openedNanos();
+        long openedMillis = player.getClock().millis() - (now - openedNanos) / 1_000_000L;
+        String scenario = AUTO_SCENARIO.format(
+                Instant.ofEpochMilli(openedMillis).atZone(ZoneId.systemDefault()));
+
+        platform.getScheduler().runAsyncTask(() -> {
+            RecordingSession session;
+            try {
+                Path file = library.allocate(RecordingLabel.AUTO, folder, scenario,
+                        tagOf(player.getClientVersion().name()));
+                session = new RecordingSession(player, RecordingLabel.AUTO, scenario,
+                        "opened by " + check, List.of("auto", RecordingLibrary.sanitize(check)),
+                        file, false, platform.getConfigRepository().configView(), platform.getLogger(),
+                        openedNanos, openedMillis, claim.keyframe().checks());
+            } catch (RuntimeException failure) {
+                buffer.abandon();
+                platform.getLogger().warning("Retained recording for " + player.getName()
+                        + " could not be opened: " + failure.getMessage());
+                return;
+            }
+
+            if (!ChannelHelper.isOpen(player.getUser().getChannel())) {
+                buffer.abandon();
+                session.close(player.getClock().nanos());
+                discard(session);
+                return;
+            }
+
+            player.getLatencyHandler().runInChannelEventLoop(
+                    () -> materialise(player, buffer, claim, session, now, openedNanos));
+        });
+    }
+
+    private void materialise(TGPlayer player, RetentionBuffer buffer, RetentionBuffer.Claim claim,
+                             RecordingSession session, long now, long openedNanos) {
+        try {
+            var here = player.getData().getMovementData().getCurrent();
+            PrologueBuilder.Result prologue = PrologueBuilder.build(claim.keyframe(),
+                    claim.keyframe().journal().rewind(player.getWorldMirror().blocks()),
+                    player.getWorldMirror(), claim.visited(),
+                    PacketEvents.getAPI().getServerManager().getVersion(),
+                    claim.keyframe().openedNanos(),
+                    here == null ? 0.0 : here.getX(),
+                    here == null ? 0.0 : here.getY(),
+                    here == null ? 0.0 : here.getZ());
+            buffer.promote(session, prologue, claim.fromCurrentOnly());
+            autoSessions.put(player.getUuid(), new AutoSession(session, buffer, player,
+                    now + RetentionPolicy.POST_ROLL_NANOS, openedNanos));
+            attachAuto(player, session);
+            platform.getLogger().info("[Replay] retained recording opened for " + player.getName()
+                    + ": " + prologue.columns().size() + " columns, "
+                    + claim.keyframe().entities().size() + " entities"
+                    + (prologue.chunkFailures() == 0 ? "" : ", " + prologue.chunkFailures() + " chunk(s) unencodable")
+                    + (prologue.spawnFailures() == 0 ? "" : ", " + prologue.spawnFailures() + " entity spawn(s) unencodable"));
+        } catch (RuntimeException failure) {
+            autoSessions.remove(player.getUuid());
+            buffer.abandon();
+            session.close(player.getClock().nanos());
+            discard(session);
+            platform.getLogger().warning("Retained recording for " + player.getName()
+                    + " could not be built: " + failure);
+        }
+    }
+
+    private void attachAuto(TGPlayer player, RecordingSession session) {
+        player.getPhysics().trace().sink(session::onTick);
+        player.setFlagSink((check, violations, debug, compiled, extras) -> {
+            session.onFlag(check.getName(), violations, debug);
+            platform.getAlertRepository().alert(check, violations, debug, compiled, extras);
+        });
+    }
+
+    private void finishAuto(TGPlayer player, String reason) {
+        AutoSession auto = autoSessions.remove(player.getUuid());
+        if (auto == null) return;
+        player.getPhysics().trace().sink(null);
+        player.setFlagSink(null);
+        auto.buffer.demote();
+
+        long closedAt = player.getClock().nanos();
+        platform.getScheduler().runAsyncTask(() -> {
+            auto.session.close(closedAt);
+            platform.getLogger().info("[Replay] retained recording saved: " + auto.session.getFile()
+                    + " (" + auto.session.frameCount() + " frames, flags " + auto.session.flagCount()
+                    + ", reason " + reason + ")");
+            RecordingPostProcessor.run(auto.session, platform.getLogger());
+            sweepAuto(auto.player.getUuid());
+            index.invalidate();
+        });
+    }
+
+    private void sweepAuto(UUID uuid) {
+        long maxBytes = platform.getConfigRepository().configView().replayRetentionMaxBytesPerPlayer();
+        if (maxBytes <= 0L) return;
+        RetentionSweep.Result result = RetentionSweep.run(
+                library.folder(RecordingLabel.AUTO, uuid.toString()), maxBytes, platform.getLogger());
+        if (result.deleted() > 0) index.invalidate();
+    }
+
+    private void releaseRetention() {
+        for (UUID uuid : List.copyOf(autoSessions.keySet())) {
+            TGPlayer player = platform.getPlayerRepository().getPlayer(uuid);
+            if (player != null) finishAuto(player, "retention disabled");
+        }
+        for (RetentionBuffer buffer : List.copyOf(retention.values())) buffer.detach();
+        retention.clear();
+    }
+
+    private void dropRetention(UUID uuid) {
+        AutoSession auto = autoSessions.remove(uuid);
+        RetentionBuffer buffer = retention.remove(uuid);
+        if (buffer != null) buffer.detach();
+        if (auto == null) return;
+        auto.player.getPhysics().trace().sink(null);
+        auto.player.setFlagSink(null);
+        long closedAt = auto.player.getClock().nanos();
+        platform.getScheduler().runAsyncTask(() -> {
+            auto.session.close(closedAt);
+            platform.getLogger().info("[Replay] retained recording saved on disconnect: "
+                    + auto.session.getFile() + " (" + auto.session.frameCount() + " frames, flags "
+                    + auto.session.flagCount() + ")");
+            RecordingPostProcessor.run(auto.session, platform.getLogger());
+            sweepAuto(auto.player.getUuid());
+            index.invalidate();
+        });
+    }
+
+    public boolean retaining(TGPlayer player) {
+        return retention.containsKey(player.getUuid());
+    }
+
+    public @Nullable RetentionBuffer retentionOf(TGPlayer player) {
+        return retention.get(player.getUuid());
     }
 
     public boolean toggleHud(TGPlayer viewer, TGPlayer target) {
@@ -365,7 +612,11 @@ public final class ReplayService {
     }
 
     public void onDisconnect(User user) {
-        hudViewers.remove(user.getUUID());
+        UUID uuid = user.getUUID();
+        if (uuid != null) {
+            hudViewers.remove(uuid);
+            dropRetention(uuid);
+        }
         CaptureState capture = captures.remove(user);
         if (capture == null) return;
         RecordingSession session = capture.session;
@@ -479,6 +730,15 @@ public final class ReplayService {
 
     public void shutdown() {
         hudViewers.clear();
+        for (Map.Entry<UUID, AutoSession> entry : List.copyOf(autoSessions.entrySet())) {
+            autoSessions.remove(entry.getKey());
+            AutoSession auto = entry.getValue();
+            auto.session.close(auto.player.getClock().nanos());
+            platform.getLogger().info("Retained recording saved on shutdown, unverified and unpruned: "
+                    + auto.session.getFile());
+        }
+        for (RetentionBuffer buffer : List.copyOf(retention.values())) buffer.detach();
+        retention.clear();
         for (CaptureState capture : List.copyOf(captures.values())) {
             captures.values().remove(capture);
             RecordingSession session = capture.session;
@@ -500,6 +760,24 @@ public final class ReplayService {
 
         ARMED,
         REPLACED
+    }
+
+    private static final class AutoSession {
+
+        private final RecordingSession session;
+        private final RetentionBuffer buffer;
+        private final TGPlayer player;
+        private final long startedNanos;
+        private volatile long deadlineNanos;
+
+        private AutoSession(RecordingSession session, RetentionBuffer buffer, TGPlayer player,
+                            long deadlineNanos, long startedNanos) {
+            this.session = session;
+            this.buffer = buffer;
+            this.player = player;
+            this.deadlineNanos = deadlineNanos;
+            this.startedNanos = startedNanos;
+        }
     }
 
     private static final class CaptureState {

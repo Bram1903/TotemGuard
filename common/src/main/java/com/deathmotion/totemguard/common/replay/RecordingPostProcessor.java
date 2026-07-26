@@ -23,6 +23,7 @@ import com.deathmotion.totemguard.common.replay.playback.ReplayResult;
 import com.deathmotion.totemguard.common.replay.playback.ReplayRun;
 import com.deathmotion.totemguard.common.replay.prune.PruneScan;
 import com.deathmotion.totemguard.common.replay.prune.RecordingPruner;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,14 +52,14 @@ public final class RecordingPostProcessor {
             logVerification(logger, name, result);
             logWorldCheck(logger, name, result);
 
-            prune(session, file, name, scan, logger);
+            prune(session, file, name, scan, result, logger);
         } catch (Exception failure) {
             logger.warning("[Replay] post-processing " + name + " failed: " + failure);
         }
     }
 
     private static void prune(RecordingSession session, Path file, String name, PruneScan scan,
-                              Logger logger) throws IOException {
+                              ReplayResult before, Logger logger) throws IOException {
         Set<Long> droppable = scan.droppableFrames();
         if (droppable.isEmpty()) return;
 
@@ -69,11 +70,11 @@ public final class RecordingPostProcessor {
             if (dropped == 0) return;
 
             ReplayResult after = ReplayRun.run(file);
-            if (after.error() != null
-                    || after.verification().status() == ReplayResult.Verification.Status.DIVERGED) {
+            String regression = regression(before, after);
+            if (regression != null) {
                 Files.move(backup, file, StandardCopyOption.REPLACE_EXISTING);
                 logger.warning("[Replay] " + name + " kept every frame: pruning changed the verdicts ("
-                        + (after.error() != null ? after.error() : after.verification().field()) + ").");
+                        + regression + ").");
                 return;
             }
 
@@ -84,12 +85,31 @@ public final class RecordingPostProcessor {
         }
     }
 
+    private static @Nullable String regression(ReplayResult before, ReplayResult after) {
+        if (after.error() != null) return after.error();
+        if (after.verification().status() == ReplayResult.Verification.Status.DIVERGED) {
+            return after.verification().field();
+        }
+        if (after.worldCheck().status() == ReplayResult.WorldCheck.Status.DIVERGED) {
+            return "the world no longer rebuilds: " + after.worldCheck().difference();
+        }
+        if (before.digests().size() != after.digests().size()) {
+            return "tick count (" + before.digests().size() + " before, " + after.digests().size() + " after)";
+        }
+        for (int i = 0; i < before.digests().size(); i++) {
+            String field = before.digests().get(i).firstDifference(after.digests().get(i));
+            if (field != null) return "tick " + before.digests().get(i).tick() + " " + field;
+        }
+        return null;
+    }
+
     private static void logCoverage(Logger logger, String name, ReplayResult result) {
         logger.info("[Replay] " + name + " " + result.ticks() + " ticks"
                 + " judged=" + result.judged()
                 + " coasted=" + result.coasted()
                 + " declined=" + result.declined()
-                + " flags=" + result.flags().size()
+                + " flags=" + result.settledFlags().size()
+                + (result.warmUpFlags() == 0 ? "" : " (+" + result.warmUpFlags() + " in the warm-up)")
                 + (result.truncated() ? " (truncated)" : ""));
         if (!result.vacuous()) return;
         logger.warning("[Replay] " + name + " judged no ticks at all, so it proves nothing."
@@ -107,6 +127,8 @@ public final class RecordingPostProcessor {
                     + " retained prologue rebuilt a different world: " + check.difference());
             case UNSETTLED -> logger.warning("[Replay] " + name
                     + " world never settled, so the prologue could not be checked.");
+            case VACUOUS -> logger.warning("[Replay] " + name
+                    + " prologue was not checked: " + check.difference());
         }
     }
 

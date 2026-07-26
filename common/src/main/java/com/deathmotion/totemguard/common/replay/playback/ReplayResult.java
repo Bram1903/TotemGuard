@@ -45,12 +45,29 @@ public record ReplayResult(
         long elapsedMillis,
         @Nullable String error
 ) {
+    public static final int WARM_UP_TICKS = 40;
+
     public boolean vacuous() {
         return judged == 0;
     }
 
     public boolean prologued() {
         return worldCheck.status() != WorldCheck.Status.ABSENT;
+    }
+
+    public long warmUpUntilTick() {
+        if (!prologued() || digests.isEmpty()) return Long.MIN_VALUE;
+        return digests.get(0).tick() + WARM_UP_TICKS;
+    }
+
+    public List<ReplayFlag> settledFlags() {
+        long until = warmUpUntilTick();
+        if (until == Long.MIN_VALUE) return flags;
+        return flags.stream().filter(flag -> flag.tick() > until).toList();
+    }
+
+    public int warmUpFlags() {
+        return flags.size() - settledFlags().size();
     }
 
     public record FlagCheck(Status status, int recorded, int replayed, @Nullable String difference) {
@@ -89,12 +106,18 @@ public record ReplayResult(
             return new WorldCheck(Status.UNSETTLED, 0, "the world never settled before the recording ended");
         }
 
+        public static WorldCheck vacuous() {
+            return new WorldCheck(Status.VACUOUS, 0,
+                    "no column was loaded where the digest sampled, so nothing was compared");
+        }
+
         public enum Status {
 
             ABSENT,
             MATCHED,
             DIVERGED,
-            UNSETTLED
+            UNSETTLED,
+            VACUOUS
         }
     }
 

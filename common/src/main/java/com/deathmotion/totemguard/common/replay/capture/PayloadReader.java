@@ -18,20 +18,28 @@
 
 package com.deathmotion.totemguard.common.replay.capture;
 
-final class PayloadReader {
+public final class PayloadReader {
 
     private final byte[] payload;
     private int cursor;
 
-    PayloadReader(byte[] payload) {
+    public PayloadReader(byte[] payload) {
         this.payload = payload;
     }
 
-    boolean has(int bytes) {
+    public boolean has(int bytes) {
         return cursor + bytes <= payload.length;
     }
 
-    int readVarInt() {
+    public String readString() {
+        int length = readVarInt();
+        if (length < 0 || !has(length)) throw new IllegalStateException("truncated string");
+        String value = new String(payload, cursor, length, java.nio.charset.StandardCharsets.UTF_8);
+        cursor += length;
+        return value;
+    }
+
+    public int readVarInt() {
         int value = 0;
         int shift = 0;
         while (has(1)) {

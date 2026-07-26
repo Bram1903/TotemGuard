@@ -64,6 +64,7 @@ public final class ReplayRun {
     private ReplayResult.WorldCheck worldCheck = ReplayResult.WorldCheck.ABSENT;
 
     private boolean attached;
+    private boolean prologued;
     private long frames;
     private long judged;
     private long coasted;
@@ -163,6 +164,7 @@ public final class ReplayRun {
                 } else if (frame instanceof RecordingFrame.Attach) {
                     attached = true;
                 } else if (frame instanceof RecordingFrame.PrologueEnd prologue) {
+                    prologued = true;
                     expectedWorld = prologue.digest().present() ? prologue.digest() : null;
                     if (expectedWorld != null) worldCheck = ReplayResult.WorldCheck.unsettled();
                 }
@@ -300,12 +302,17 @@ public final class ReplayRun {
         this.expectedWorld = null;
         WorldDigest replayed = expected.resample(player.getWorldMirror());
         String difference = expected.firstDifference(replayed);
-        worldCheck = difference == null
-                ? ReplayResult.WorldCheck.matched(replayed.columnsLoaded())
-                : ReplayResult.WorldCheck.diverged(replayed.columnsLoaded(), difference);
+        if (difference != null) {
+            worldCheck = ReplayResult.WorldCheck.diverged(replayed.columnsLoaded(), difference);
+            return;
+        }
+        worldCheck = replayed.columnsLoaded() == 0
+                ? ReplayResult.WorldCheck.vacuous()
+                : ReplayResult.WorldCheck.matched(replayed.columnsLoaded());
     }
 
     private ReplayResult.FlagCheck compareFlags() {
+        List<ReplayFlag> flags = settledFlags();
         if (recordedFlags.isEmpty() && flags.isEmpty()) return ReplayResult.FlagCheck.ABSENT;
         int compared = Math.min(recordedFlags.size(), flags.size());
         for (int i = 0; i < compared; i++) {
@@ -326,8 +333,16 @@ public final class ReplayRun {
         return ReplayResult.FlagCheck.matched(compared);
     }
 
+    private List<ReplayFlag> settledFlags() {
+        if (!prologued || digests.isEmpty()) {
+            return flags;
+        }
+        long until = digests.get(0).tick() + ReplayResult.WARM_UP_TICKS;
+        return flags.stream().filter(flag -> flag.tick() > until).toList();
+    }
+
     private ReplayResult.Verification verify(RecordingHeader header) {
-        if (worldCheck.status() != ReplayResult.WorldCheck.Status.ABSENT) {
+        if (prologued) {
             return ReplayResult.Verification.skipped(
                     "a prologued recording starts mid-session, so the tick streams do not line up");
         }

@@ -112,6 +112,7 @@ public final class ReplayLabelsScreen extends ReplayScreen {
             case LEGIT -> MessagesKeys.GUI_REPLAY_LABEL_LEGIT_LORE;
             case CHEAT -> MessagesKeys.GUI_REPLAY_LABEL_CHEAT_LORE;
             case SCRATCH -> MessagesKeys.GUI_REPLAY_LABEL_SCRATCH_LORE;
+            case AUTO -> MessagesKeys.GUI_REPLAY_LABEL_AUTO_LORE;
         };
     }
 }

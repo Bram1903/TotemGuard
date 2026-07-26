@@ -52,6 +52,10 @@ public final class ConfigKeys {
 
     public static final ConfigKey<Boolean> TICK_SKIP_KEEP_ALIVE_VALIDATION = ConfigKey.bool("tick.skip-keep-alive-validation");
 
+    public static final ConfigKey<Boolean> REPLAY_RETENTION_ENABLED = ConfigKey.bool("replay.retention.enabled");
+    public static final ConfigKey<Integer> REPLAY_RETENTION_MAX_MEGABYTES_PER_PLAYER =
+            ConfigKey.integer("replay.retention.max-megabytes-per-player");
+
     public static final ConfigKey<Boolean> PHYSICS_ENGINE_SIMULATE_FLYING = ConfigKey.bool("physics-engine.simulate-flying");
 
     public static final ConfigKey<String> PHYSICS_ENGINE_PRESET = ConfigKey.string("physics-engine.preset");

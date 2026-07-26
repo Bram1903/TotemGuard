@@ -26,6 +26,7 @@ import com.deathmotion.totemguard.common.replay.format.*;
 import com.deathmotion.totemguard.common.replay.playback.ReplayObserver;
 import com.deathmotion.totemguard.common.replay.playback.ReplayResult;
 import com.deathmotion.totemguard.common.replay.playback.ReplayRun;
+import com.deathmotion.totemguard.common.replay.retention.RetentionSweep;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -33,7 +34,9 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.*;
+import java.util.logging.Logger;
 
 public final class SelfTest {
 
@@ -85,6 +88,7 @@ public final class SelfTest {
                             && e.trailer().judgedTicks() == 1));
 
             checkPayloadDedup(failures, scratch, written);
+            checkRetentionSweep(failures, scratch);
 
             TGPlayer[] replayed = new TGPlayer[1];
             ReplayResult result = ReplayRun.run(file, new ReplayObserver() {
@@ -168,6 +172,32 @@ public final class SelfTest {
                 true, List.of(new CheckSnapshot("SelfTest", 0.5, 3)),
                 new RecordingHeader.PhysicsConfig("strict", true, true, true, true, true),
                 gates, table, ReplayFormat.FILTER_VERSION);
+    }
+
+    private static void checkRetentionSweep(List<String> failures, Path scratch) throws Exception {
+        Path folder = scratch.resolve("sweep");
+        Files.createDirectories(folder);
+        byte[] block = new byte[400 * 1024];
+        List<Path> written = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            Path file = folder.resolve("tape" + i + ReplayFormat.EXTENSION);
+            Files.write(file, block);
+            Files.setLastModifiedTime(file, FileTime.fromMillis(1_700_000_000_000L + i * 1_000L));
+            written.add(file);
+        }
+        Files.write(folder.resolve("notes.txt"), block);
+
+        RetentionSweep.Result result = RetentionSweep.run(folder, 1024L * 1024L,
+                Logger.getLogger("SelfTest"));
+
+        check(failures, "the sweep keeps only what fits in the budget", result.keptBytes() <= 1024L * 1024L);
+        check(failures, "the sweep removes the oldest first",
+                !Files.exists(written.get(0)) && Files.exists(written.get(5)));
+        check(failures, "the sweep deleted the ones over budget", result.deleted() == 4);
+        check(failures, "the sweep leaves files it does not own alone",
+                Files.exists(folder.resolve("notes.txt")));
+        check(failures, "a budget of zero sweeps nothing",
+                RetentionSweep.run(folder, 0L, Logger.getLogger("SelfTest")).deleted() == 0);
     }
 
     private static void checkPayloadDedup(List<String> failures, Path scratch,

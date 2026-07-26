@@ -74,6 +74,14 @@ tick:
   # Enable only if a plugin or proxy alters keep-alive handling.
   skip-keep-alive-validation: false
 
+replay:
+  retention:
+    # Buffers the last 10-20s of every player. On a flag, writes it to replays/auto/<uuid>/ with the
+    # world included and keeps recording for 10s more. Costs roughly 100 KB of heap per player.
+    enabled: false
+    # Disk budget per player, oldest deleted first. 0 = keep everything.
+    max-megabytes-per-player: 10
+
 # Movement prediction engine powering the Physics check (fly, hover, speed, inventory-move).
 # Everything here applies on reload, no restart needed.
 physics-engine:

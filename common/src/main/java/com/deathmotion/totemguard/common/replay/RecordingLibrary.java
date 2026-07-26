@@ -84,7 +84,13 @@ public final class RecordingLibrary {
     }
 
     public Path allocate(RecordingLabel label, String scenario, String clientTag) {
-        Path directory = root.resolve(label.id());
+        return allocate(label, null, scenario, clientTag);
+    }
+
+    public Path allocate(RecordingLabel label, @Nullable String folder, String scenario, String clientTag) {
+        Path directory = folder == null
+                ? root.resolve(label.id())
+                : root.resolve(label.id()).resolve(sanitize(folder));
         String base = sanitize(scenario) + "." + sanitize(clientTag);
         Path candidate = directory.resolve(base + ReplayFormat.EXTENSION);
         int suffix = 2;
@@ -93,6 +99,10 @@ public final class RecordingLibrary {
             suffix++;
         }
         return candidate;
+    }
+
+    public Path folder(RecordingLabel label, String folder) {
+        return root.resolve(label.id()).resolve(sanitize(folder));
     }
 
     public List<Path> all() {

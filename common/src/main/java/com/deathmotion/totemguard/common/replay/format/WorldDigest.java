@@ -52,17 +52,25 @@ public record WorldDigest(
 
     public static WorldDigest sample(WorldMirror mirror, int centerChunkX, int centerChunkZ,
                                      int radius, int baseY, int height) {
+        return sample(mirror, centerChunkX, centerChunkZ, radius, baseY, height,
+                (x, y, z) -> mirror.blocks().serverStateId(x, y, z),
+                (chunkX, chunkZ) -> mirror.blocks().isLoaded(chunkX, chunkZ));
+    }
+
+    public static WorldDigest sample(WorldMirror mirror, int centerChunkX, int centerChunkZ,
+                                     int radius, int baseY, int height,
+                                     BlockPeek peek, ColumnPeek loaded) {
         long blockHash = FNV_OFFSET;
         int columnsLoaded = 0;
         for (int chunkX = centerChunkX - radius; chunkX <= centerChunkX + radius; chunkX++) {
             for (int chunkZ = centerChunkZ - radius; chunkZ <= centerChunkZ + radius; chunkZ++) {
-                if (!mirror.blocks().isLoaded(chunkX, chunkZ)) continue;
+                if (!loaded.isLoaded(chunkX, chunkZ)) continue;
                 columnsLoaded++;
                 for (int localX = 0; localX < 16; localX++) {
                     for (int localZ = 0; localZ < 16; localZ++) {
                         for (int offsetY = 0; offsetY < height; offsetY++) {
-                            blockHash = mix(blockHash, mirror.blocks()
-                                    .serverStateId((chunkX << 4) + localX, baseY + offsetY, (chunkZ << 4) + localZ));
+                            blockHash = mix(blockHash, peek.stateId(
+                                    (chunkX << 4) + localX, baseY + offsetY, (chunkZ << 4) + localZ));
                         }
                     }
                 }
@@ -73,7 +81,12 @@ public record WorldDigest(
         long entityHash = FNV_OFFSET;
         for (TrackedEntity entity : mirror.entities().tracked()) {
             entityCount++;
-            entityHash ^= entity.uuidString() == null ? 0L : entity.uuidString().hashCode();
+            long perEntity = entity.uuidString() == null ? 0L : entity.uuidString().hashCode();
+            perEntity = perEntity * FNV_PRIME + Double.doubleToRawLongBits(entity.halfWidth());
+            perEntity = perEntity * FNV_PRIME + Double.doubleToRawLongBits(entity.height());
+            perEntity = perEntity * FNV_PRIME + (entity.pushable() ? 0x9E3779B9L : 0L);
+            perEntity = perEntity * FNV_PRIME + (entity.standable() ? 0x7F4A7C15L : 0L);
+            entityHash ^= perEntity;
         }
 
         long borderHash = FNV_OFFSET;
@@ -118,14 +131,29 @@ public record WorldDigest(
 
     public @Nullable String firstDifference(WorldDigest other) {
         if (columnsLoaded != other.columnsLoaded) {
-            return "columnsLoaded " + columnsLoaded + " vs " + other.columnsLoaded;
+            return "columnsLoaded " + columnsLoaded + " vs " + other.columnsLoaded
+                    + " sampling chunk " + centerChunkX + "," + centerChunkZ
+                    + " radius " + radius + " from y" + baseY;
         }
         if (blockHash != other.blockHash) return "blockHash";
+        if (entityCount < 0 || other.entityCount < 0) return null;
         if (entityCount != other.entityCount) {
             return "entityCount " + entityCount + " vs " + other.entityCount;
         }
         if (entityHash != other.entityHash) return "entityHash";
         if (borderHash != other.borderHash) return "borderHash";
         return null;
+    }
+
+    @FunctionalInterface
+    public interface BlockPeek {
+
+        int stateId(int x, int y, int z);
+    }
+
+    @FunctionalInterface
+    public interface ColumnPeek {
+
+        boolean isLoaded(int chunkX, int chunkZ);
     }
 }

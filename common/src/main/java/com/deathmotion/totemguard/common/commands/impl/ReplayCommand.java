@@ -36,6 +36,7 @@ import com.deathmotion.totemguard.common.replay.*;
 import com.deathmotion.totemguard.common.replay.capture.ArmedRecording;
 import com.deathmotion.totemguard.common.replay.capture.RecordingSession;
 import com.deathmotion.totemguard.common.replay.format.RecordingLabel;
+import com.deathmotion.totemguard.common.replay.retention.RetentionBuffer;
 import com.deathmotion.totemguard.common.util.Palette;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
@@ -115,6 +116,13 @@ public final class ReplayCommand extends AbstractCommand {
         manager.command(base(manager).literal("replay").literal("stop")
                 .required("player", StringParser.stringParser(), recordingNames())
                 .permission(perm("replay")).handler(this::stop));
+
+        manager.command(base(manager).literal("replay").literal("dump")
+                .permission(perm("replay")).handler(this::dump));
+
+        manager.command(base(manager).literal("replay").literal("dump")
+                .required("player", StringParser.stringParser(), trackedNames())
+                .permission(perm("replay")).handler(this::dump));
 
         manager.command(base(manager).literal("replay").literal("mark")
                 .required("text", StringParser.greedyStringParser())
@@ -311,6 +319,38 @@ public final class ReplayCommand extends AbstractCommand {
         tell(sender, MessagesKeys.REPLAY_NOT_RECORDING, Map.of());
     }
 
+    private void dump(CommandContext<Sender> context) {
+        Sender sender = context.sender();
+        ReplayService service = service();
+        if (service == null) {
+            tell(sender, MessagesKeys.REPLAY_DISABLED, Map.of());
+            return;
+        }
+
+        String requested = context.<String>optional("player").orElse(null);
+        TGPlayer target = null;
+        if (requested == null) {
+            if (!requirePlayer(sender)) return;
+            target = sender.getTGPlayer();
+        } else {
+            for (TGPlayer candidate : TGPlatform.getInstance().getPlayerRepository().getPlayers()) {
+                if (requested.equalsIgnoreCase(candidate.getName())) {
+                    target = candidate;
+                    break;
+                }
+            }
+        }
+        if (target == null) {
+            tell(sender, MessagesKeys.REPLAY_NOT_RECORDING, Map.of());
+            return;
+        }
+
+        tell(sender, service.dumpRetained(target, "dump by " + sender.getName())
+                        ? MessagesKeys.REPLAY_DUMP_STARTED
+                        : MessagesKeys.REPLAY_DUMP_UNAVAILABLE,
+                Map.of("tg_player", target.getName()));
+    }
+
     private void mark(CommandContext<Sender> context) {
         Sender sender = context.sender();
         if (!requirePlayer(sender)) return;
@@ -346,7 +386,9 @@ public final class ReplayCommand extends AbstractCommand {
             if (only == null || only.equalsIgnoreCase(arm.name())) armed.add(arm);
         }
         if (sessions.isEmpty() && armed.isEmpty()) {
-            tell(sender, MessagesKeys.REPLAY_STATUS_IDLE, Map.of());
+            if (!retentionStatus(sender, service, only)) {
+                tell(sender, MessagesKeys.REPLAY_STATUS_IDLE, Map.of());
+            }
             return;
         }
 
@@ -370,6 +412,22 @@ public final class ReplayCommand extends AbstractCommand {
                     "tg_judged", session.judgedCount(),
                     "tg_flags", session.flagCount()));
         }
+    }
+
+    private boolean retentionStatus(Sender sender, ReplayService service, @Nullable String only) {
+        boolean any = false;
+        for (TGPlayer player : TGPlatform.getInstance().getPlayerRepository().getPlayers()) {
+            if (only != null && !only.equalsIgnoreCase(player.getName())) continue;
+            RetentionBuffer buffer = service.retentionOf(player);
+            if (buffer == null) continue;
+            any = true;
+            tell(sender, MessagesKeys.REPLAY_STATUS_RETAINED, Map.of(
+                    "tg_player", player.getName(),
+                    "tg_elapsed", ReplayText.elapsed(buffer.retainedNanos(player.getClock().nanos())),
+                    "tg_frames", buffer.retainedFrames(),
+                    "tg_dropped", buffer.droppedFrames()));
+        }
+        return any;
     }
 
     private void hud(CommandContext<Sender> context) {

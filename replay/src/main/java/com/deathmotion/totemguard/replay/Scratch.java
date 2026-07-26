@@ -16,29 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.replay.capture;
+package com.deathmotion.totemguard.replay;
 
-import com.deathmotion.totemguard.common.replay.format.RecordingLabel;
+import java.nio.file.Path;
 
-import java.util.List;
-import java.util.UUID;
+final class Scratch {
 
-public record ArmedRecording(
-        UUID uuid,
-        String name,
-        RecordingLabel label,
-        String scenario,
-        String note,
-        List<String> tags,
-        long expiresAtMillis,
-        boolean shadow,
-        boolean auto
-) {
-    public boolean expired(long nowMillis) {
-        return nowMillis >= expiresAtMillis;
+    private Scratch() {
     }
 
-    public long secondsLeft(long nowMillis) {
-        return Math.max(0L, (expiresAtMillis - nowMillis + 999L) / 1000L);
+    static Path directory(String name) {
+        return Path.of("build", name).toAbsolutePath();
     }
 }

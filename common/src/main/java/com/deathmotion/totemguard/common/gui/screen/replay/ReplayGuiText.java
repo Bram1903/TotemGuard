@@ -43,6 +43,7 @@ public final class ReplayGuiText {
         return switch (label) {
             case LEGIT -> Palette.SUCCESS;
             case CHEAT -> Palette.DANGER;
+            case AUTO -> Palette.WARN;
             case SCRATCH -> Palette.CONNECTIVE;
         };
     }
@@ -52,6 +53,7 @@ public final class ReplayGuiText {
         return switch (label) {
             case LEGIT -> ItemTypes.WRITTEN_BOOK;
             case CHEAT -> ItemTypes.WRITABLE_BOOK;
+            case AUTO -> ItemTypes.CLOCK;
             case SCRATCH -> ItemTypes.PAPER;
         };
     }

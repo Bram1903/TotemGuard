@@ -28,8 +28,10 @@ import com.github.retrooper.packetevents.protocol.world.chunk.palette.PaletteTyp
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Accessors(fluent = true)
@@ -46,18 +48,48 @@ public final class BlockStore {
     @Getter
     private int revision;
 
+    private volatile @Nullable Watcher watcher;
+
     public static long chunkKey(int chunkX, int chunkZ) {
         return ((long) chunkX & 0xFFFFFFFFL) << 32 | (chunkZ & 0xFFFFFFFFL);
     }
 
+    public static int chunkKeyX(long key) {
+        return (int) (key >> 32);
+    }
+
+    public static int chunkKeyZ(long key) {
+        return (int) key;
+    }
+
+    public static int stateIdIn(BaseChunk @Nullable [] sections, int minY, int x, int y, int z) {
+        if (sections == null) return 0;
+        int offsetY = y - minY;
+        int section = offsetY >> 4;
+        if (section < 0 || section >= sections.length) return 0;
+        BaseChunk chunk = sections[section];
+        if (chunk == null) return 0;
+        return chunk.getBlockId(x & 0xF, offsetY & 0xF, z & 0xF);
+    }
+
+    public void watcher(@Nullable Watcher watcher) {
+        this.watcher = watcher;
+    }
+
     public void loadChunk(int chunkX, int chunkZ, BaseChunk[] sections) {
-        chunks.put(chunkKey(chunkX, chunkZ), sections);
+        long key = chunkKey(chunkX, chunkZ);
+        Watcher observer = this.watcher;
+        if (observer != null) observer.beforeColumn(key, chunks.get(key), false);
+        chunks.put(key, sections);
         revision++;
     }
 
     public void mergeChunk(int chunkX, int chunkZ, BaseChunk[] sections) {
-        BaseChunk[] existing = chunks.get(chunkKey(chunkX, chunkZ));
+        long key = chunkKey(chunkX, chunkZ);
+        BaseChunk[] existing = chunks.get(key);
         if (existing == null) return;
+        Watcher observer = this.watcher;
+        if (observer != null) observer.beforeColumn(key, existing.clone(), true);
         int count = Math.min(existing.length, sections.length);
         for (int i = 0; i < count; i++) {
             if (sections[i] != null) existing[i] = sections[i];
@@ -66,17 +98,34 @@ public final class BlockStore {
     }
 
     public void unloadChunk(int chunkX, int chunkZ) {
-        chunks.remove(chunkKey(chunkX, chunkZ));
+        long key = chunkKey(chunkX, chunkZ);
+        Watcher observer = this.watcher;
+        if (observer != null) observer.beforeColumn(key, chunks.get(key), false);
+        chunks.remove(key);
         revision++;
     }
 
     public void clear() {
+        Watcher observer = this.watcher;
+        if (observer != null) observer.beforeClear();
         chunks.clear();
         revision++;
     }
 
     public boolean isLoaded(int chunkX, int chunkZ) {
         return chunks.containsKey(chunkKey(chunkX, chunkZ));
+    }
+
+    public Set<Long> loadedKeys() {
+        return Set.copyOf(chunks.keySet());
+    }
+
+    public BaseChunk @Nullable [] sections(int chunkX, int chunkZ) {
+        return chunks.get(chunkKey(chunkX, chunkZ));
+    }
+
+    public BaseChunk @Nullable [] sections(long key) {
+        return chunks.get(key);
     }
 
     BaseChunk[] columnOrNull(int chunkX, int chunkZ) {
@@ -106,6 +155,10 @@ public final class BlockStore {
             if (chunk == null) return;
             sections[section] = chunk;
         }
+        Watcher observer = this.watcher;
+        if (observer != null) {
+            observer.beforeSet(x, y, z, chunk.getBlockId(x & 0xF, offsetY & 0xF, z & 0xF));
+        }
         chunk.set(x & 0xF, offsetY & 0xF, z & 0xF, serverStateId);
     }
 
@@ -116,5 +169,14 @@ public final class BlockStore {
                 : new Chunk_v1_9(0, PaletteType.CHUNK.create());
         chunk.set(0, 0, 0, 0);
         return chunk;
+    }
+
+    public interface Watcher {
+
+        void beforeSet(int x, int y, int z, int previousStateId);
+
+        void beforeColumn(long key, BaseChunk @Nullable [] previous, boolean sharesSections);
+
+        void beforeClear();
     }
 }

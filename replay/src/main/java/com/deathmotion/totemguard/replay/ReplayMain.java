@@ -40,6 +40,10 @@ public final class ReplayMain {
             System.exit(new RecordingAnalysis(options.recordings).run());
             return;
         }
+        if (options.prologue > 0) {
+            System.exit(new PrologueRehearsal(options.recordings, options.only, options.prologue).run());
+            return;
+        }
         ReplayRunner runner = new ReplayRunner(options);
         System.exit(runner.run());
     }
@@ -59,12 +63,14 @@ public final class ReplayMain {
                   --config=recorded    run the config the recording was captured with
                   --selftest           round-trip a hand-built recording through the whole path
                   --analyze            report where the bytes in each recording went
+                  --prologue=<secs>    cut each recording there, rebuild the world from the mirror,
+                                       and report how long the tail takes to agree with the whole
                 """);
     }
 
     record Options(Path recordings, String only, boolean accept, boolean diff, String trace,
                    long from, long to, boolean verifyDeterminism, boolean recordedConfig,
-                   boolean selfTest, boolean analyze, boolean help) {
+                   boolean selfTest, boolean analyze, double prologue, boolean help) {
         static Options parse(String[] args) {
             Path recordings = Paths.get("recordings");
             String only = null;
@@ -78,9 +84,12 @@ public final class ReplayMain {
             boolean help = false;
             long from = 0;
             long to = Long.MAX_VALUE;
+            double prologue = 0.0;
 
             for (String arg : args) {
-                if (arg.startsWith("--recordings=")) recordings = Paths.get(value(arg));
+                if (arg.startsWith("--prologue=")) prologue = Double.parseDouble(value(arg));
+                else if (arg.equals("--prologue")) prologue = 10.0;
+                else if (arg.startsWith("--recordings=")) recordings = Paths.get(value(arg));
                 else if (arg.startsWith("--only=")) only = value(arg);
                 else if (arg.startsWith("--trace=")) trace = value(arg);
                 else if (arg.startsWith("--from=")) from = Long.parseLong(value(arg));
@@ -94,7 +103,7 @@ public final class ReplayMain {
                 else help = true;
             }
             return new Options(recordings, only, accept, diff, trace, from, to, determinism,
-                    recordedConfig, selfTest, analyze, help);
+                    recordedConfig, selfTest, analyze, prologue, help);
         }
 
         private static String value(String arg) {

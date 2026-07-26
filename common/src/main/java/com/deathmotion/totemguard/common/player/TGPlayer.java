@@ -306,6 +306,10 @@ public class TGPlayer implements TGUser, EngineActor {
 
     public void flag(@NotNull CheckImpl check, int violations, @Nullable String debug,
                      DebugTemplate.@Nullable Compiled compiled, @NotNull Map<String, Object> extras) {
+        if (!synthetic) {
+            var replay = platform.getReplayService();
+            if (replay != null) replay.onCheckFlag(this, check.getName(), violations, debug);
+        }
         FlagSink sink = this.flagSink;
         if (sink != null) {
             sink.accept(check, violations, debug, compiled, extras);

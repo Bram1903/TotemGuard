@@ -65,6 +65,10 @@ public final class EntityTracker {
         return entities.values();
     }
 
+    public Map<Integer, TrackedEntity> trackedById() {
+        return Collections.unmodifiableMap(entities);
+    }
+
     public TrackedEntity resolve(int entityId) {
         return entities.get(entityId);
     }

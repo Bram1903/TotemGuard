@@ -50,7 +50,7 @@ public final class ChunkPayloadCompactor {
         }
     }
 
-    private static @Nullable byte[] encode(@Nullable Column source, ServerVersion server) {
+    public static @Nullable byte[] encode(@Nullable Column source, ServerVersion server) {
         if (source == null) return null;
         Column stripped = new Column(source.getX(), source.getZ(), source.isFullChunk(),
                 source.getChunks(), NO_TILE_ENTITIES, NO_HEIGHTMAPS);

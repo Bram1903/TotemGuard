@@ -54,7 +54,7 @@ public final class ReplayRunner {
     }
 
     public int run() {
-        Path scratch = options.recordings().resolveSibling("build").resolve("replay-config");
+        Path scratch = Scratch.directory("replay-config");
         try {
             Files.createDirectories(scratch);
         } catch (IOException failure) {
@@ -286,18 +286,23 @@ public final class ReplayRunner {
                     + check.columnsLoaded() + " columns sampled)");
             case DIVERGED -> fail(name, "the retained prologue rebuilt a different world: " + check.difference());
             case UNSETTLED -> fail(name, "the world never settled, so the prologue could not be checked");
+            case VACUOUS -> fail(name, "the prologue proved nothing: " + check.difference());
         }
     }
 
     private void checkExpectations(String name, RecordingHeader header, ReplayResult result) {
+        List<ReplayFlag> flags = result.settledFlags();
+        if (result.warmUpFlags() > 0) {
+            System.out.println("    " + result.warmUpFlags() + " flag(s) inside the "
+                    + ReplayResult.WARM_UP_TICKS + "-tick warm-up ignored: the cut seeds the engine cold");
+        }
         if (header.label() == RecordingLabel.LEGIT) {
-            List<ReplayFlag> flags = result.flags();
             if (!flags.isEmpty()) {
                 fail(name, "labelled legit but flagged " + flags.size() + " time(s): " + flags.get(0).toLogRow());
             }
             return;
         }
-        if (header.label() == RecordingLabel.CHEAT && result.flags().isEmpty()) {
+        if (header.label() == RecordingLabel.CHEAT && flags.isEmpty()) {
             fail(name, "labelled cheat but nothing flagged");
         }
     }

@@ -175,7 +175,7 @@ public final class RecordingAnalysis {
     }
 
     private void writeProjection(RecordingHeader header, List<RecordingFrame> frames) throws IOException {
-        Path target = recordings.resolveSibling("build").resolve("replay-projected")
+        Path target = Scratch.directory("replay-projected")
                 .resolve(header.playerName() + ReplayFormat.EXTENSION);
         Files.createDirectories(target.getParent());
         try (RecordingWriter writer = new RecordingWriter(target, header)) {
