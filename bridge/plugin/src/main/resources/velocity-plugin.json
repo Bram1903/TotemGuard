@@ -1,0 +1,12 @@
+{
+  "id": "totemguard-bridge",
+  "name": "TotemGuard-Bridge",
+  "version": "${version}",
+  "description": "${description}",
+  "url": "https://github.com/Bram1903/TotemGuard",
+  "authors": [
+    "Bram"
+  ],
+  "main": "com.deathmotion.totemguard.proxybridge.velocity.VelocityBridgePlugin",
+  "dependencies": []
+}

@@ -1,0 +1,103 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.common.player.inventory;
+
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemType;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import com.github.retrooper.packetevents.protocol.mapper.MappedEntitySet;
+import com.github.retrooper.packetevents.protocol.recipe.RecipeDisplayEntry;
+import com.github.retrooper.packetevents.protocol.recipe.RecipeDisplayId;
+import com.github.retrooper.packetevents.protocol.recipe.category.RecipeBookCategories;
+import com.github.retrooper.packetevents.protocol.recipe.display.ShapedCraftingRecipeDisplay;
+import com.github.retrooper.packetevents.protocol.recipe.display.slot.EmptySlotDisplay;
+import com.github.retrooper.packetevents.protocol.recipe.display.slot.ItemStackSlotDisplay;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCloseWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
+
+import java.util.List;
+
+public class InventoryConstants {
+    public static final int PLAYER_WINDOW_ID = 0;
+    public static final WrapperPlayServerCloseWindow SERVER_CLOSE_WINDOW = new WrapperPlayServerCloseWindow(InventoryConstants.PLAYER_WINDOW_ID);
+    public static final WrapperPlayClientCloseWindow CLIENT_CLOSE_WINDOW = new WrapperPlayClientCloseWindow(InventoryConstants.PLAYER_WINDOW_ID);
+
+    public static final int INVENTORY_SIZE = 46;
+
+    public static final int SLOT_CRAFT_RESULT = 0;
+    public static final int SLOT_CRAFT_1 = 1;
+    public static final int SLOT_CRAFT_2 = 2;
+    public static final int SLOT_CRAFT_3 = 3;
+    public static final int SLOT_CRAFT_4 = 4;
+
+    public static final int SLOT_HELMET = 5;
+    public static final int SLOT_CHESTPLATE = 6;
+    public static final int SLOT_LEGGINGS = 7;
+    public static final int SLOT_BOOTS = 8;
+
+    public static final int ITEMS_START = 9;
+    public static final int ITEMS_END = 35;
+
+    public static final int HOTBAR_START = 36;
+    public static final int HOTBAR_END = 44;
+
+    public static final int SLOT_OFFHAND = 45;
+    public static final ItemStack RECIPE_PROBE_INGREDIENT_STACK = ItemStack.builder()
+            .type(ItemTypes.OAK_LOG)
+            .amount(1)
+            .build();
+    public static final ItemStack RECIPE_PROBE_RESULT_STACK = ItemStack.builder()
+            .type(ItemTypes.OAK_PLANKS)
+            .amount(4)
+            .build();
+    public static final ItemStackSlotDisplay RECIPE_PROBE_INGREDIENT_SLOT = new ItemStackSlotDisplay(RECIPE_PROBE_INGREDIENT_STACK);
+    public static final ItemStackSlotDisplay RECIPE_PROBE_RESULT_SLOT = new ItemStackSlotDisplay(RECIPE_PROBE_RESULT_STACK);
+    public static final ShapedCraftingRecipeDisplay RECIPE_PROBE_DISPLAY = new ShapedCraftingRecipeDisplay(
+            1,
+            1,
+            List.of(RECIPE_PROBE_INGREDIENT_SLOT),
+            RECIPE_PROBE_RESULT_SLOT,
+            EmptySlotDisplay.INSTANCE
+    );
+    public static final MappedEntitySet<ItemType> RECIPE_PROBE_INGREDIENT_SET = new MappedEntitySet<>(List.of(ItemTypes.OAK_LOG));
+
+    public static int playerInventorySlotToContainerSlot(int playerInventorySlot) {
+        if (playerInventorySlot < 0) return -1;
+        if (playerInventorySlot <= 8) return HOTBAR_START + playerInventorySlot;
+        if (playerInventorySlot <= 35) return playerInventorySlot;
+        return switch (playerInventorySlot) {
+            case 36 -> SLOT_BOOTS;
+            case 37 -> SLOT_LEGGINGS;
+            case 38 -> SLOT_CHESTPLATE;
+            case 39 -> SLOT_HELMET;
+            case 40 -> SLOT_OFFHAND;
+            default -> -1;
+        };
+    }
+
+    public static RecipeDisplayEntry createRecipeProbeEntry(RecipeDisplayId recipeId) {
+        return new RecipeDisplayEntry(
+                recipeId,
+                RECIPE_PROBE_DISPLAY,
+                null,
+                RecipeBookCategories.CRAFTING_EQUIPMENT,
+                List.of(RECIPE_PROBE_INGREDIENT_SET)
+        );
+    }
+}

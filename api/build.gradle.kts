@@ -1,38 +1,32 @@
 plugins {
-    `java-library`
-    totemguard.`java-conventions`
+    id("totemguard.java.api")
+    id("totemguard.tg-version")
+    id("totemguard.maven-publish")
 }
 
-dependencies {
-    compileOnly(libs.paper)
-    compileOnly(libs.lombok)
-    annotationProcessor(libs.lombok)
+version = "1.0.0" + if (rootProject.extra["snapshot"] as Boolean) "-SNAPSHOT" else ""
+description = "TotemGuard API"
+
+tgVersion {
+    packageName.set("com.deathmotion.totemguard.api.versioning")
+    className.set("TGAPIVersions")
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
+val artifactBaseName = "${rootProject.name}API"
+
+tasks.named<Jar>("jar") {
+    archiveFileName.set("$artifactBaseName-${project.version}.jar")
+    archiveClassifier.set(null as String?)
 }
 
-tasks {
-    jar {
-        archiveFileName = "${rootProject.name}API-${rootProject.ext["versionNoHash"]}.jar"
-        archiveClassifier = null
-    }
+tasks.named<Jar>("javadocJar") {
+    archiveFileName.set("$artifactBaseName-${project.version}-javadoc.jar")
+}
 
-    named<Jar>("javadocJar") {
-        archiveFileName.set("${rootProject.name}API-${rootProject.ext["versionNoHash"]}-javadoc.jar")
-    }
+tasks.named<Jar>("sourcesJar") {
+    archiveFileName.set("$artifactBaseName-${project.version}-sources.jar")
+}
 
-    named<Jar>("sourcesJar") {
-        archiveFileName.set("${rootProject.name}API-${rootProject.ext["versionNoHash"]}-sources.jar")
-    }
-
-    javadoc {
-        title = "TotemGuardAPI v${rootProject.ext["versionNoHash"]}"
-        options.encoding = Charsets.UTF_8.name()
-        options {
-            (this as CoreJavadocOptions).addBooleanOption("Xdoclint:none", true)
-        }
-    }
+tasks.named<Javadoc>("javadoc") {
+    title = "TotemGuard API v${project.version}"
 }

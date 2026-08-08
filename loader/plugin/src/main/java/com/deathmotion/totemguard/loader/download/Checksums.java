@@ -1,0 +1,59 @@
+/*
+ * This file is part of TotemGuard - https://github.com/Bram1903/TotemGuard
+ * Copyright (C) 2026 Bram and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.deathmotion.totemguard.loader.download;
+
+import com.deathmotion.totemguard.loader.source.Artifact;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
+public final class Checksums {
+
+    private Checksums() {
+    }
+
+    public static String hashFile(Path file, Artifact.HashAlgorithm algorithm) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(algorithm.jdkName());
+            try (InputStream in = Files.newInputStream(file)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = in.read(buffer)) != -1) digest.update(buffer, 0, read);
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IOException("JVM does not support " + algorithm.jdkName(), ex);
+        }
+    }
+
+    public static String hashBytes(byte[] bytes, Artifact.HashAlgorithm algorithm) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(algorithm.jdkName());
+            digest.update(bytes);
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IOException("JVM does not support " + algorithm.jdkName(), ex);
+        }
+    }
+}

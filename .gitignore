@@ -1,8 +1,8 @@
+# Ignore Gradle project-specific cache directory
 .gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+
+# Ignore Gradle build output directory
+build
 
 ### IntelliJ IDEA ###
 .idea/
