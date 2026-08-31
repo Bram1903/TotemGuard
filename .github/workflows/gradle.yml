@@ -2,9 +2,9 @@ name: Build & Upload
 
 on:
   push:
-    branches: [ "main", "2.0" ]
+    branches: [ "main", "legacy" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "legacy" ]
 
 jobs:
   build:
