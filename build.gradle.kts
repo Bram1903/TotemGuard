@@ -148,7 +148,6 @@ tasks {
 
         downloadPlugins {
             from(sharedPlugins)
-            url("https://cdn.modrinth.com/data/hXiIvTyT/versions/nY6VN1XH/EssentialsX-2.22.0.jar?mr_download_reason=standalone")
         }
 
         jvmArgs = jvmArgsExternal
