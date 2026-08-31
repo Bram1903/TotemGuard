@@ -19,10 +19,9 @@
 package com.deathmotion.totemguard.util;
 
 import com.deathmotion.totemguard.TotemGuard;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
-import com.github.retrooper.packetevents.util.PEVersion;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 
 import java.util.logging.Logger;
 
@@ -30,7 +29,9 @@ public final class CompatibilityUtil {
 
     private static final boolean IS_PAPER = hasClass("com.destroystokyo.paper.PaperConfig") || hasClass("io.papermc.paper.configuration.Configuration");
     private static final ServerVersion MIN_SERVER_VERSION = ServerVersion.V_1_16_5;
-    private static final PEVersion MIN_PE_VERSION = PEVersion.fromString("2.10.0");
+    private static final int[] MIN_PE_VERSION = {2, 13, 0};
+
+    private static final String PE_PLUGIN_NAME = "packetevents";
 
     public static void init() {
         // Just to make sure the ServerVersion class gets loaded before PacketEvents disables itself for incompatibility
@@ -59,9 +60,27 @@ public final class CompatibilityUtil {
         return detected != ServerVersion.ERROR && !detected.isOlderThan(MIN_SERVER_VERSION);
     }
 
-    private static boolean detectPacketEventsSupported() {
-        final PEVersion current = PacketEvents.getAPI().getVersion();
-        return !current.isOlderThan(MIN_PE_VERSION);
+    private static String format(final int[] version) {
+        return version[0] + "." + version[1] + "." + version[2];
+    }
+
+    private static boolean detectPacketEventsSupported(final String rawVersion) {
+        final String[] parts = rawVersion.replace("-SNAPSHOT", "").split("\\+")[0].split("\\.");
+        if (parts.length < 2) return false;
+
+        final int[] current = new int[3];
+        for (int i = 0; i < current.length && i < parts.length; i++) {
+            try {
+                current[i] = Integer.parseInt(parts[i]);
+            } catch (NumberFormatException ignored) {
+                return false;
+            }
+        }
+
+        for (int i = 0; i < MIN_PE_VERSION.length; i++) {
+            if (current[i] != MIN_PE_VERSION[i]) return current[i] > MIN_PE_VERSION[i];
+        }
+        return !rawVersion.contains("-SNAPSHOT");
     }
 
     private static void logUnsupportedPlatform() {
@@ -93,13 +112,12 @@ public final class CompatibilityUtil {
         logger.severe("=====================================================");
     }
 
-    private static void logUnsupportedPEVersion() {
+    private static void logUnsupportedPEVersion(final String rawVersion) {
         final Logger logger = TotemGuard.getInstance().getLogger();
-        final PEVersion current = PacketEvents.getAPI().getVersion();
         logger.severe("=====================================================");
         logger.severe(" TotemGuard cannot run with this version of PacketEvents.");
-        logger.severe(" Minimum supported PacketEvents version: " + MIN_PE_VERSION);
-        logger.severe(" Detected PacketEvents version: " + current);
+        logger.severe(" Minimum supported PacketEvents version: " + format(MIN_PE_VERSION));
+        logger.severe(" Detected PacketEvents version: " + rawVersion);
         logger.severe(" Please update the PacketEvents plugin to a supported version.");
         logger.severe("=====================================================");
     }
@@ -113,12 +131,16 @@ public final class CompatibilityUtil {
             logUnsupportedServerVersion();
             return false;
         }
-        if (!Bukkit.getPluginManager().isPluginEnabled("PacketEvents")) {
+
+        final Plugin packetEvents = Bukkit.getPluginManager().getPlugin(PE_PLUGIN_NAME);
+        if (packetEvents == null || !packetEvents.isEnabled()) {
             logPacketEventsNotLoaded();
             return false;
         }
-        if (!detectPacketEventsSupported()) {
-            logUnsupportedPEVersion();
+
+        final String rawVersion = packetEvents.getDescription().getVersion();
+        if (!detectPacketEventsSupported(rawVersion)) {
+            logUnsupportedPEVersion(rawVersion);
             return false;
         }
         return true;
