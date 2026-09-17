@@ -28,6 +28,7 @@ import com.deathmotion.totemguard.common.check.impl.inventory.InventoryC;
 import com.deathmotion.totemguard.common.check.impl.inventory.InventoryD;
 import com.deathmotion.totemguard.common.check.impl.manual.ManualTotemA;
 import com.deathmotion.totemguard.common.check.impl.mods.Mod;
+import com.deathmotion.totemguard.common.check.impl.placement.PlacementA;
 import com.deathmotion.totemguard.common.check.impl.protocol.*;
 import com.deathmotion.totemguard.common.check.impl.tick.TickA;
 import com.deathmotion.totemguard.common.check.impl.tick.TickB;
@@ -99,6 +100,7 @@ public class CheckManagerImpl {
                 .put(InventoryB.class, new InventoryB(player))
                 .put(InventoryC.class, new InventoryC(player))
                 .put(InventoryD.class, new InventoryD(player))
+                .put(PlacementA.class, new PlacementA(player))
                 .build();
 
         ImmutableClassToInstanceMap<ExtendedCheck> extendedChecks = ImmutableClassToInstanceMap.<ExtendedCheck>builder()

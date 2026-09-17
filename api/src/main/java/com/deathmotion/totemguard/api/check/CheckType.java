@@ -53,5 +53,10 @@ public enum CheckType {
     /**
      * Client-mod fingerprinting checks driven by the mod detection subsystem.
      */
-    MOD
+    MOD,
+
+    /**
+     * Placement checks, suspicious hit coordinates in block placement packets.
+     */
+    PLACEMENT
 }

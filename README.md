@@ -60,6 +60,11 @@ For per-check tuning, thresholds, and bypass details, see the [wiki](https://git
 - **AutoTotemA** - Impossible click time difference.
 - **AutoTotemB** - Suspicious totem-delay consistency (heuristic).
 
+### Placement
+
+- **PlacementA** - Suspicious hit coordinates in block placement packets. Targets most Crystal Optimizers
+  (excluding Marlow's) and mods such as ClickCrystals.
+
 ### Inventory
 
 - **InventoryA** - Impossible action while an inventory is open.

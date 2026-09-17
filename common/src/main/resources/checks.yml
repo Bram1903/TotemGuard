@@ -29,6 +29,14 @@ AutoTotemB:
   punishment-commands:
     - "%default_punishment%"
 
+PlacementA:
+  enabled: true
+  punishable: false
+  max-violations: 1
+
+  punishment-commands:
+    - "%default_punishment%"
+
 InventoryA:
   enabled: true
   punishable: true
