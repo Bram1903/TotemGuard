@@ -77,9 +77,11 @@ public abstract class ModCheck extends Check implements SignCheck {
         if (SignUtil.isSignContentValid(packetSecret, lines, keys)) {
             if (!checkSettings.isEnabled()) return;
             fail();
-            FoliaScheduler.getEntityScheduler().run(player.bukkitPlayer, TotemGuard.getInstance(), task ->
+                if (settings.isKickIllegalMods()) {
+                FoliaScheduler.getEntityScheduler().run(player.bukkitPlayer, TotemGuard.getInstance(), task ->
                     player.bukkitPlayer.kick(MessageUtil.format(messages.getIllegalMod())), () -> {
                 });
+                }
         }
     }
 }

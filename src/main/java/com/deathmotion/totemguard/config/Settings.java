@@ -52,6 +52,9 @@ public class Settings {
     @Comment("\nAnnounce client brand: Whether the client brand should be announced upon a player joining.")
     private boolean announceClientBrand = false;
 
+    @Comment("\nKick illegal mods: Whether players detected using an illegal mod should be kicked.")
+    private boolean kickIllegalMods = true;
+
     @Comment("\nAnnounces that a player is being checked by a staff member using `/tg check <player>` for those with alerts enabled.")
     private boolean announceCheckCommand = true;
 

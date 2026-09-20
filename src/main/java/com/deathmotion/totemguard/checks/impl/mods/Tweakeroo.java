@@ -47,9 +47,11 @@ public class Tweakeroo extends Check implements PacketCheck {
     public void trigger() {
         if (detected) {
             fail();
-            FoliaScheduler.getEntityScheduler().run(player.bukkitPlayer, TotemGuard.getInstance(), task ->
-                    player.bukkitPlayer.kick(MessageUtil.format(messages.getIllegalMod())), () -> {
-            });
+            if (settings.isKickIllegalMods()) {
+                FoliaScheduler.getEntityScheduler().run(player.bukkitPlayer, TotemGuard.getInstance(), task ->
+                        player.bukkitPlayer.kick(MessageUtil.format(messages.getIllegalMod())), () -> {
+                });
+            }
         }
     }
 
