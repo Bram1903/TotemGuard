@@ -109,14 +109,15 @@ public final class ModResolver {
                 late ? "{0} (late)" : "{0}", rendering.list());
         String debug = DebugTemplate.render(compiled.template(), compiled.args());
 
-        if (!modCheck.reportFlag(extras, compiled)) return;
+        boolean shouldLog = action != ModAction.KICK || snapshot.logKicks();
+        if (shouldLog && !modCheck.reportFlag(extras, compiled)) return;
 
         switch (action) {
             case NONE -> rememberLogged(player.getUuid(), alertMods);
             case KICK, KICK_THEN_BAN ->
-                    dispatchPunishment(player, alertMods, modCheck, snapshot.kickCommand(), snapshot, debug, compiled, extras, false);
+                    dispatchPunishment(player, alertMods, modCheck, snapshot.kickCommand(), snapshot, debug, compiled, extras, false, shouldLog);
             case BAN ->
-                    dispatchPunishment(player, alertMods, modCheck, snapshot.banCommand(), snapshot, debug, compiled, extras, true);
+                    dispatchPunishment(player, alertMods, modCheck, snapshot.banCommand(), snapshot, debug, compiled, extras, true, true);
         }
     }
 
@@ -176,8 +177,11 @@ public final class ModResolver {
                                     String debug,
                                     DebugTemplate.Compiled compiled,
                                     Map<String, Object> extras,
-                                    boolean ban) {
-        platform.getPunishmentRepository().punishWith(modCheck, List.of(command), debug, compiled, extras);
+                                    boolean ban,
+                                    boolean sendPunishmentWebhook) {
+        platform.getPunishmentRepository().punishWith(
+                modCheck, List.of(command), debug, compiled, extras, sendPunishmentWebhook
+        );
 
         if (ban) {
             kickThenBanTracker.clear(player.getUuid());

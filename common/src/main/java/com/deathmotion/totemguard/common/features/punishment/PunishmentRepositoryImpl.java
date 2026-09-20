@@ -85,7 +85,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
     public void punish(CheckImpl check, int violations, @Nullable String debug,
                        @Nullable DebugTemplate.Compiled compiledDebug) {
         if (!canPunish(check, violations)) return;
-        runPunishment(check, resolveCommands(check), debug, compiledDebug, Map.of(), true);
+        runPunishment(check, resolveCommands(check), debug, compiledDebug, Map.of(), true, true);
     }
 
     public void punishWith(CheckImpl check,
@@ -100,8 +100,17 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                            @Nullable String debug,
                            @Nullable DebugTemplate.Compiled compiledDebug,
                            Map<String, Object> placeholderExtras) {
+        punishWith(check, commands, debug, compiledDebug, placeholderExtras, true);
+    }
+
+    public void punishWith(CheckImpl check,
+                           List<PunishmentCommand> commands,
+                           @Nullable String debug,
+                           @Nullable DebugTemplate.Compiled compiledDebug,
+                           Map<String, Object> placeholderExtras,
+                           boolean sendPunishmentWebhook) {
         if (commands.isEmpty()) return;
-        runPunishment(check, commands, debug, compiledDebug, placeholderExtras, false);
+        runPunishment(check, commands, debug, compiledDebug, placeholderExtras, false, sendPunishmentWebhook);
     }
 
     private void runPunishment(CheckImpl check,
@@ -109,7 +118,8 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                                @Nullable String debug,
                                @Nullable DebugTemplate.Compiled compiledDebug,
                                Map<String, Object> placeholderExtras,
-                               boolean clearViolationsAfter) {
+                               boolean clearViolationsAfter,
+                               boolean sendPunishmentWebhook) {
         TGPlayer player = check.player;
         UUID playerUuid = player.getUuid();
 
@@ -131,7 +141,9 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                         return;
                     }
 
-                    platform.getDiscordWebhookService().sendPunishment(check, debug);
+                    if (sendPunishmentWebhook) {
+                        platform.getDiscordWebhookService().sendPunishment(check, debug);
+                    }
 
                     if (clearViolationsAfter) player.getCheckManager().clearAllViolations();
                     keepDistributedLock = containsBan;

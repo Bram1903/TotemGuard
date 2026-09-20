@@ -15,6 +15,9 @@ ban-command: "ban %tg_player% Unfair mods detected: %tg_mod_list%"
 # KICK_THEN_BAN: re-join with a previously warned mod -> ban; with a brand-new mod -> kick.
 kick-then-ban-window-minutes: 30
 
+# Toggles logging violations for KICK severity.
+log-kicks: true
+
 # Caps the mod list shown in messages; extras collapse into the overflow suffix.
 mod-list-limit: 8
 mod-list-overflow-format: " (+%tg_mod_overflow_count% more)"
