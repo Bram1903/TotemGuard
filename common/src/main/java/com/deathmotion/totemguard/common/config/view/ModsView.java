@@ -39,6 +39,7 @@ public final class ModsView {
     private final String banCommand;
     private final int kickThenBanWindowMinutes;
     private final int modListLimit;
+    private final boolean logKicks;
     private final String modListOverflowFormat;
     private final Map<String, ModConfig> mods;
 
@@ -55,6 +56,8 @@ public final class ModsView {
         this.kickThenBanWindowMinutes = config.getInt("kick-then-ban-window-minutes")
                 .filter(value -> value > 0)
                 .orElse(DEFAULT_KICK_THEN_BAN_WINDOW_MINUTES);
+        this.logKicks = config.getBoolean("log-kicks")
+                .orElse(true);
         this.modListLimit = config.getInt("mod-list-limit")
                 .filter(value -> value > 0)
                 .orElse(DEFAULT_MOD_LIST_LIMIT);
@@ -97,6 +100,10 @@ public final class ModsView {
 
     public int kickThenBanWindowMinutes() {
         return kickThenBanWindowMinutes;
+    }
+
+    public boolean logKicks() {
+        return logKicks;
     }
 
     public int modListLimit() {

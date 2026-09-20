@@ -87,6 +87,7 @@ public final class ModRegistry {
                 PunishmentCommand.parse("[KICK] " + view.kickCommand()),
                 PunishmentCommand.parse("[BAN] " + view.banCommand()),
                 Duration.ofMinutes(view.kickThenBanWindowMinutes()),
+                view.logKicks(),
                 view.modListLimit(),
                 view.modListOverflowFormat()
         );
@@ -163,6 +164,7 @@ public final class ModRegistry {
             @NotNull PunishmentCommand kickCommand,
             @NotNull PunishmentCommand banCommand,
             @NotNull Duration kickThenBanWindow,
+            boolean logKicks,
             int modListLimit,
             @NotNull String modListOverflowFormat
     ) {
@@ -174,6 +176,7 @@ public final class ModRegistry {
                     PunishmentCommand.parse("[KICK] kick %tg_player%"),
                     PunishmentCommand.parse("[BAN] ban %tg_player%"),
                     Duration.ofMinutes(30),
+                    true,
                     8,
                     " (+%tg_mod_overflow_count% more)"
             );
