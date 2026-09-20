@@ -18,12 +18,15 @@
 
 package com.deathmotion.totemguard.checks;
 
+import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.type.SignCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.MessageUtil;
 import com.deathmotion.totemguard.util.SignUtil;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientUpdateSign;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 
 import java.util.List;
 import java.util.UUID;
@@ -72,7 +75,11 @@ public abstract class ModCheck extends Check implements SignCheck {
         }
 
         if (SignUtil.isSignContentValid(packetSecret, lines, keys)) {
+            if (!checkSettings.isEnabled()) return;
             fail();
+            FoliaScheduler.getEntityScheduler().run(player.bukkitPlayer, TotemGuard.getInstance(), task ->
+                    player.bukkitPlayer.kick(MessageUtil.format(messages.getIllegalMod())), () -> {
+                });
         }
     }
 }

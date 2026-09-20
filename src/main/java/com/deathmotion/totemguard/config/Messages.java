@@ -44,6 +44,7 @@ public class Messages {
     private String noPermissionToggleOther = "%prefix% &cYou do not have permission to toggle alerts for other players.";
     private String alertToggleBlocked = "%prefix% &cAn external event handler is blocking your alert toggle.";
     private String alertBrand = "%prefix% &6%player% &7joined using: &6%client_brand%";
+    private String illegalMod = "%prefix% &cYou cannot join while using an unsupported mod.";
 
     @Comment("\nCommand Messages")
     private CommandMessages commandMessages = new CommandMessages();

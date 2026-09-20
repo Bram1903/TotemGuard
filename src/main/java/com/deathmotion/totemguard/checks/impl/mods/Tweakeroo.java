@@ -18,14 +18,17 @@
 
 package com.deathmotion.totemguard.checks.impl.mods;
 
+import com.deathmotion.totemguard.TotemGuard;
 import com.deathmotion.totemguard.checks.Check;
 import com.deathmotion.totemguard.checks.CheckData;
 import com.deathmotion.totemguard.checks.type.PacketCheck;
 import com.deathmotion.totemguard.models.TotemPlayer;
+import com.deathmotion.totemguard.util.MessageUtil;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import io.github.retrooper.packetevents.util.folia.FoliaScheduler;
 
 import java.nio.charset.StandardCharsets;
 
@@ -44,6 +47,9 @@ public class Tweakeroo extends Check implements PacketCheck {
     public void trigger() {
         if (detected) {
             fail();
+            FoliaScheduler.getEntityScheduler().run(player.bukkitPlayer, TotemGuard.getInstance(), task ->
+                    player.bukkitPlayer.kick(MessageUtil.format(messages.getIllegalMod())), () -> {
+            });
         }
     }
 
