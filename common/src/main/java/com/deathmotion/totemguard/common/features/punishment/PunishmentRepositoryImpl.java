@@ -37,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -134,7 +135,8 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             Runnable executeAndCleanup = () -> {
                 boolean keepDistributedLock = false;
                 try {
-                    if (!executePunishment(check, commands, debug, compiledDebug, placeholderExtras)) {
+                    ExecutionResult result = executePunishment(check, commands, debug, compiledDebug, placeholderExtras);
+                    if (!result.dispatched()) {
                         platform.getLogger().warning(
                                 "Skipped punishment for " + player.getName() + " because no punishment commands could be executed for check " + check.getName() + "."
                         );
@@ -142,7 +144,7 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                     }
 
                     if (sendPunishmentWebhook) {
-                        platform.getDiscordWebhookService().sendPunishment(check, debug);
+                        platform.getDiscordWebhookService().sendPunishment(check, debug, result.banDuration());
                     }
 
                     if (clearViolationsAfter) player.getCheckManager().clearAllViolations();
@@ -231,12 +233,13 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
         return false;
     }
 
-    private boolean executePunishment(CheckImpl check,
-                                      List<PunishmentCommand> commands,
-                                      @Nullable String debug,
-                                      @Nullable DebugTemplate.Compiled compiledDebug,
-                                      Map<String, Object> placeholderExtras) {
+    private ExecutionResult executePunishment(CheckImpl check,
+                                              List<PunishmentCommand> commands,
+                                              @Nullable String debug,
+                                              @Nullable DebugTemplate.Compiled compiledDebug,
+                                              Map<String, Object> placeholderExtras) {
         int dispatchedCommands = 0;
+        String banDuration = null;
 
         for (PunishmentCommand command : commands) {
             String processedCommand = command.raw().replace("%default_punishment%", defaultPunishmentCommand.raw()).trim();
@@ -245,8 +248,14 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             }
 
             try {
+                String commandDuration = command.banDuration();
+                if (commandDuration == null && command.raw().contains("%default_punishment%")) {
+                    commandDuration = defaultPunishmentCommand.banDuration();
+                }
+                Map<String, Object> extras = new HashMap<>(placeholderExtras);
+                if (commandDuration != null) extras.put("tg_ban_duration", commandDuration);
                 PlaceholderEngine.Capture capture = placeholderRepository.replaceCapturing(
-                        processedCommand, check.player, check, placeholderExtras);
+                        processedCommand, check.player, check, extras);
                 String dispatched = capture.dispatched().trim();
                 if (dispatched.isEmpty()) {
                     continue;
@@ -255,6 +264,9 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
                 platform.dispatchCommand(dispatched);
                 dispatchedCommands++;
                 PunishmentType effectiveType = effectiveType(command);
+                if (effectiveType == PunishmentType.BAN && commandDuration != null) {
+                    banDuration = commandDuration;
+                }
                 if (effectiveType != PunishmentType.GENERIC) {
                     recordPunishment(check, effectiveType, capture.template(), capture.args(), debug, compiledDebug);
                 }
@@ -267,7 +279,10 @@ public class PunishmentRepositoryImpl implements PunishmentRepository, Reloadabl
             }
         }
 
-        return dispatchedCommands > 0;
+        return new ExecutionResult(dispatchedCommands > 0, banDuration);
+    }
+
+    private record ExecutionResult(boolean dispatched, @Nullable String banDuration) {
     }
 
     private void recordPunishment(CheckImpl check, PunishmentType type, String commandTemplate,

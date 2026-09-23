@@ -10,6 +10,9 @@ config_version: 1
 
 # Tag each command with [BAN], [KICK], or [GENERIC]. Untagged = GENERIC.
 # GENERIC commands are dispatched but not persisted in punishment history.
+# For timed bans, use [BAN:7d] and %tg_ban_duration% in the command, for example:
+# default-punishment: "[BAN:7d] tempban %tg_player% %tg_ban_duration% Unfair Advantage"
+# The same duration is available as %tg_ban_duration% in the punishment webhook.
 
 default-punishment: "[BAN] ban %tg_player% Unfair Advantage"
 

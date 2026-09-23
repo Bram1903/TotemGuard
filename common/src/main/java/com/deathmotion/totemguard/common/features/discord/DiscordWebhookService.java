@@ -103,17 +103,27 @@ public final class DiscordWebhookService implements Reloadable {
     }
 
     public void sendPunishment(@NotNull CheckImpl check, @Nullable String debug) {
-        dispatch(punishmentChannel, check, check.getViolations(), debug);
+        sendPunishment(check, debug, null);
+    }
+
+    public void sendPunishment(@NotNull CheckImpl check, @Nullable String debug, @Nullable String banDuration) {
+        dispatch(punishmentChannel, check, check.getViolations(), debug, banDuration);
     }
 
     private void dispatch(WebhookChannel channel, CheckImpl check, int violations, @Nullable String debug) {
+        dispatch(channel, check, violations, debug, null);
+    }
+
+    private void dispatch(WebhookChannel channel, CheckImpl check, int violations, @Nullable String debug,
+                          @Nullable String banDuration) {
         ChannelConfig cfg = channel.config;
         if (cfg == null || !cfg.valid()) return;
 
         TGPlayer player = check.player;
         Map<String, Object> extras = Map.of(
                 "tg_check_violations", violations,
-                "tg_check_debug", debug == null ? UNSPECIFIED_DEBUG : debug
+                "tg_check_debug", debug == null ? UNSPECIFIED_DEBUG : debug,
+                "tg_ban_duration", banDuration == null ? "" : banDuration
         );
 
         Function<String, String> resolver = key -> resolvePlaceholder(key, player, check, extras);
@@ -128,16 +138,17 @@ public final class DiscordWebhookService implements Reloadable {
         }
 
         if (cfg.fields.length > 0) {
-            EmbedField[] fields = new EmbedField[cfg.fields.length];
-            for (int i = 0; i < cfg.fields.length; i++) {
-                CompiledField cf = cfg.fields[i];
-                fields[i] = new EmbedField(
+            List<EmbedField> fields = new ArrayList<>(cfg.fields.length);
+            for (CompiledField cf : cfg.fields) {
+                String value = render(cf.value, resolver);
+                if (value.isBlank()) continue;
+                fields.add(new EmbedField(
                         render(cf.name, resolver),
-                        render(cf.value, resolver),
+                        value,
                         cf.inline
-                );
+                ));
             }
-            embed.fields(fields);
+            if (!fields.isEmpty()) embed.fields(fields.toArray(EmbedField[]::new));
         }
 
         if (cfg.timestamp) embed.timestamp(Instant.now());
