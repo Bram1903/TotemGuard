@@ -168,8 +168,10 @@ public abstract class CheckImpl implements Check {
                 && player.getClientVersion().isOlderThan(ClientVersion.V_26_3);
     }
 
-    protected boolean tickEndMayBeMissing() {
-        return data.getTeleportData().tickEndMayBeCancelled();
+    // Polar cancels tick ends under an unconfirmed teleport and holds packets past them until the client loads
+    protected boolean ticksMayBeMerged() {
+        return data.getTeleportData().tickEndMayBeCancelled()
+                || (platform.isPolarLoaded() && data.getClientLoad().loading());
     }
 
     protected boolean shouldFail(@Nullable String debug) {

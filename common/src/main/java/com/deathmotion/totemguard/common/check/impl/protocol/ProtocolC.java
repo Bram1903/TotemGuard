@@ -44,7 +44,7 @@ public class ProtocolC extends CheckImpl implements PacketCheck {
         if (event.getPacketType() != PacketType.Play.Client.CLIENT_TICK_END) return;
 
         if (tickData.isAttacking() && tickData.isPlacing() && !tickData.isInteracting()) {
-            if (player.isMarlowOptimizer() || tickEndMayBeMissing()) return;
+            if (player.isMarlowOptimizer() || ticksMayBeMerged()) return;
             fail();
         }
     }

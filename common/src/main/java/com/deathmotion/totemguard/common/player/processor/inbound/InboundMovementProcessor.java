@@ -44,6 +44,11 @@ public class InboundMovementProcessor extends ProcessorInbound {
         if (tickBoundary) {
             player.getData().getRotationCredits().ticked();
         }
+        if (type == PacketType.Play.Client.CLIENT_TICK_END) {
+            player.getData().getClientLoad().tickEnded();
+        } else if (type == PacketType.Play.Client.PLAYER_LOADED) {
+            player.getData().getClientLoad().loaded();
+        }
     }
 
     @Override

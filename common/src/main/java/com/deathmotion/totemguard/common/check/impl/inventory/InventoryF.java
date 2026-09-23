@@ -64,7 +64,7 @@ public class InventoryF extends CheckImpl implements PacketCheck {
             return;
         }
 
-        if (!attacks(type, event) || tickEndMayBeMissing()) return;
+        if (!attacks(type, event) || ticksMayBeMerged()) return;
 
         if (closedItself) {
             fail("own close");

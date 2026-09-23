@@ -49,7 +49,7 @@ public class TickA extends CheckImpl implements PacketCheck {
                 return;
             }
 
-            if (!receivedTickEnd && !tickEndMayBeMissing()) {
+            if (!receivedTickEnd && !ticksMayBeMerged()) {
                 fail("type=flying,packets={0}", flyingPackets);
             }
             receivedTickEnd = false;
@@ -57,7 +57,7 @@ public class TickA extends CheckImpl implements PacketCheck {
         } else if (packetType == PacketType.Play.Client.CLIENT_TICK_END) {
             receivedTickEnd = true;
 
-            if (flyingPackets > 1 && !tickEndMayBeMissing()) {
+            if (flyingPackets > 1 && !ticksMayBeMerged()) {
                 fail("type=end,packets={0}", flyingPackets);
             }
             flyingPackets = 0;

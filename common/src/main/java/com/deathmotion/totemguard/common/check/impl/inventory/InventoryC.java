@@ -52,7 +52,7 @@ public class InventoryC extends CheckImpl implements PacketCheck {
             return;
         }
 
-        if (data.isInventoryMitigatedThisTick() || tickEndMayBeMissing()) return;
+        if (data.isInventoryMitigatedThisTick() || ticksMayBeMerged()) return;
 
         if (type == PacketType.Play.Client.CLICK_WINDOW) {
             int windowId = new WrapperPlayClientClickWindow(event).getWindowId();

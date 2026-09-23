@@ -45,9 +45,6 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        // Polar injects releases, cancels tick ends and runs its own ProtocolA
-        if (platform.isPolarLoaded()) return;
-
         final PacketTypeCommon type = event.getPacketType();
 
         if (type == PacketType.Play.Client.CLIENT_TICK_END) {
@@ -56,7 +53,7 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
         }
 
         if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            if (flushedBy == null) return;
+            if (flushedBy == null || ticksMayBeMerged()) return;
             fail("action={0},slot={1}", flushedBy, new WrapperPlayClientHeldItemChange(event).getSlot());
             return;
         }
@@ -66,7 +63,7 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
         }
     }
 
-    // startDestroyBlock never flushes the slot, and a drop only flushes on a 26.3 client
+    // startDestroyBlock never flushes the slot, a drop only flushes on a 26.3 client, and Polar writes releases of its own
     private @Nullable String flushingAction(PacketTypeCommon type, PacketReceiveEvent event) {
         if (type == PacketType.Play.Client.ATTACK) return "attack";
         if (type == PacketType.Play.Client.USE_ITEM) return "use";
@@ -85,7 +82,7 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
             return switch (new WrapperPlayClientPlayerDigging(event).getAction()) {
                 case CHANGE_DESTROY_DIRECTION -> "face";
                 case FINISHED_DIGGING -> "finish";
-                case RELEASE_USE_ITEM -> "release";
+                case RELEASE_USE_ITEM -> platform.isPolarLoaded() ? null : "release";
                 case STAB -> "stab";
                 case DROP_ITEM, DROP_ITEM_STACK -> player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)
                         ? "drop"

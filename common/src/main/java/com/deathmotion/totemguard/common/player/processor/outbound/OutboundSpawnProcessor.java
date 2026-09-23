@@ -23,7 +23,9 @@ import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.InputData;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -54,6 +56,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
             WrapperPlayServerJoinGame packet = new WrapperPlayServerJoinGame(event);
             data.setGameMode(packet.getGameMode());
             player.getScreen().serverJoined(event);
+            data.getClientLoad().spawned(reportsLoad());
             latencyHandler.compensate(event, inputData::reset);
         } else if (packetType == PacketType.Play.Server.CHANGE_GAME_STATE) {
             WrapperPlayServerChangeGameState packet = new WrapperPlayServerChangeGameState(event);
@@ -69,6 +72,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
             boolean resetSwimming = (packet.getKeptData() & WrapperPlayServerRespawn.KEEP_ENTITY_DATA) == 0;
             player.getScreen().serverRespawned(event);
+            data.getClientLoad().spawned(reportsLoad());
 
             latencyHandler.compensate(event, timestamp -> {
                 if (player.getClientVersion().isOlderThan(ClientVersion.V_1_16) || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
@@ -83,5 +87,10 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 data.getMovementData().reset();
             });
         }
+    }
+
+    private boolean reportsLoad() {
+        return player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_21_4)
+                && PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_21_4);
     }
 }
