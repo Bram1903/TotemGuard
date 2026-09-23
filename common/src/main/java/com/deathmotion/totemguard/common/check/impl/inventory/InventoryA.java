@@ -24,137 +24,167 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.InputData;
+import com.deathmotion.totemguard.common.player.inventory.screen.ClientScreen;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientEntityAction;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import org.jetbrains.annotations.Nullable;
 
-// Flags impossible actions while an inventory is open:
-// aiming, placing a block, using an item, changing held slot, picking an item, picking a block,
-// picking an entity, attacking, moving, interacting with an entity, digging, dropping an item (through a dig packet),
-// swapping offhand (through a dig packet), stabbing, sneaking, leaving a bed, sprinting,
-// opening a horse inventory, and starting an elytra glide.
 @CheckData(description = "Impossible action with open inventory", type = CheckType.INVENTORY)
 public class InventoryA extends CheckImpl implements PacketCheck {
 
-    private boolean movementFlagged;
+    private static final String SPRINT = "sprint";
+
+    private final ClientScreen screen;
+    private final InputData inputData;
+
+    private boolean walkReported;
+    private boolean aimReported;
+    private boolean rotationReported;
+    private boolean openingRotation = true;
+    private int revisionAtTickEnd;
+    private int selectsAtTickEnd;
+    private int sprintRaisesAtTickEnd;
+    private boolean echoConsumed;
 
     public InventoryA(TGPlayer player) {
         super(player);
-    }
-
-    private static String staticReason(PacketTypeCommon type) {
-        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
-        if (type == PacketType.Play.Client.USE_ITEM) return "use";
-        if (type == PacketType.Play.Client.PICK_ITEM) return "pick item";
-        if (type == PacketType.Play.Client.PICK_ITEM_FROM_BLOCK) return "pick block";
-        if (type == PacketType.Play.Client.PICK_ITEM_FROM_ENTITY) return "pick entity";
-        if (type == PacketType.Play.Client.ATTACK) return "attack";
-        return null;
-    }
-
-    public void validateMovement() {
-        if (!data.isOpenInventory()) {
-            movementFlagged = false;
-            return;
-        }
-        if (data.isServerOpenedInventoryThisTick()) return;
-
-        if (data.isInVehicle()) {
-            movementFlagged = false;
-            return;
-        }
-
-        boolean sprinting = data.isSprinting() && !data.isSwimming();
-        boolean hasInput = player.supportsEndTick() && data.getInputData().hasMovement();
-
-        if (!sprinting && !hasInput) {
-            movementFlagged = false;
-            return;
-        }
-        if (movementFlagged) return;
-
-        movementFlagged = true;
-        failInventory(sprinting ? "sprint" : "move");
+        this.screen = player.getScreen();
+        this.inputData = data.getInputData();
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (!data.isOpenInventory()) {
-            movementFlagged = false;
-            return;
-        }
-        if (data.isServerOpenedInventoryThisTick()) return;
-
         final PacketTypeCommon type = event.getPacketType();
 
-        if (WrapperPlayClientPlayerFlying.isFlying(type)) {
-            if (data.isInVehicle()) return;
-            if (data.getMovementData().isLastFlyingRotationChanged() && data.getGameMode() != GameMode.SPECTATOR) {
-                failInventory("aim");
+        if (type == PacketType.Play.Client.CLIENT_TICK_END) {
+            tickEnded();
+            return;
+        }
+
+        if (type == PacketType.Play.Client.PLAYER_ROTATION || type == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) {
+            rotated();
+            return;
+        }
+
+        // ViaBackwards turns every swing of an older client into a punch, menu drops included
+        if (type == PacketType.Play.Client.PUNCH) {
+            if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3) && screen.certainlyOpen()) {
+                failInventory("swing");
             }
             return;
         }
 
         if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            if (data.isClientOpenedInventoryThisTick()) return;
-            failInventory("change slot");
-            return;
-        }
-
-        String reason = staticReason(type);
-        if (reason != null) {
-            failInventory(reason);
-            return;
-        }
-
-        if (type == PacketType.Play.Client.PLAYER_INPUT && player.supportsEndTick()) {
-            // In a vehicle, PLAYER_INPUT drives vehicle controls (boat/horse), not the player.
-            if (data.isInVehicle()) {
-                movementFlagged = false;
-                return;
+            if (player.supportsEndTick()) {
+                slotChanged(new WrapperPlayClientHeldItemChange(event).getSlot());
             }
-            final InputData.State current = data.getInputData().current();
-
-            if (current == null || !current.hasMovement()) {
-                movementFlagged = false;
-                return;
-            }
-            if (movementFlagged) return;
-
-            failInventory("move");
-            movementFlagged = true;
             return;
         }
 
+        String action = action(type, event);
+        if (action == null || !screen.certainlyOpen()) return;
+        if (action.equals(SPRINT) && echoesServerSprint()) return;
+
+        failInventory(action);
+    }
+
+    // A server write can raise the client's sprint flag, and a swimmer resting on a block keeps it and echoes it
+    private boolean echoesServerSprint() {
+        return screen.getSprintRaisesLanded() != sprintRaisesAtTickEnd || screen.sprintRaisePossiblyApplied();
+    }
+
+    // Polar can deliver the Input ahead of a close the client sent before it
+    private void tickEnded() {
+        revisionAtTickEnd = screen.getRevision();
+        selectsAtTickEnd = screen.getSelectsLanded();
+        sprintRaisesAtTickEnd = screen.getSprintRaisesLanded();
+        echoConsumed = false;
+
+        if (data.isInVehicle() || !inputData.walking() || !screen.certainlyOpen()) {
+            walkReported = false;
+            return;
+        }
+        if (walkReported) return;
+
+        walkReported = true;
+        failInventory("move");
+    }
+
+    // The first rotation under a new screen can still carry mouse movement from before it opened
+    private void rotated() {
+        boolean first = !rotationReported;
+        rotationReported = true;
+
+        if (!screen.certainlyOpen()) {
+            openingRotation = true;
+            aimReported = false;
+            return;
+        }
+        if (openingRotation) {
+            openingRotation = false;
+            return;
+        }
+        if (first || data.isInVehicle() || data.getGameMode() == GameMode.SPECTATOR) return;
+        if (!data.getMovementData().isLastFlyingRotationChanged()) {
+            aimReported = false;
+            return;
+        }
+        if (aimReported || data.getTeleportData().hasPendingTeleport()) return;
+
+        aimReported = true;
+        failInventory("aim");
+    }
+
+    // gameMode.tick flushes a pending slot under any screen, so an earlier pick or a server select echo can land here
+    private void slotChanged(int slot) {
+        if (!screen.certainlyOpen()) return;
+        if (screen.getRevision() != revisionAtTickEnd) return;
+        if (!echoConsumed && echoesServerSelect(slot)) {
+            echoConsumed = true;
+            return;
+        }
+
+        failInventory("change slot {0}", slot);
+    }
+
+    private boolean echoesServerSelect(int slot) {
+        boolean landedSinceTickEnd = screen.getSelectsLanded() != selectsAtTickEnd;
+        return (landedSinceTickEnd && screen.getLastLandedSelect() == slot) || screen.selectPossiblyApplied(slot);
+    }
+
+    // Every other action has a vanilla sender that runs with a screen open
+    private static @Nullable String action(PacketTypeCommon type, PacketReceiveEvent event) {
+        if (type == PacketType.Play.Client.ATTACK) return "attack";
+        if (type == PacketType.Play.Client.USE_ITEM) return "use";
+        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
         if (type == PacketType.Play.Client.INTERACT_ENTITY) {
-            WrapperPlayClientInteractEntity.InteractAction action = new WrapperPlayClientInteractEntity(event).getAction();
-            failInventory(action == WrapperPlayClientInteractEntity.InteractAction.ATTACK ? "attack" : "interact");
-            return;
+            return new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK
+                    ? "attack"
+                    : "interact";
         }
-
         if (type == PacketType.Play.Client.PLAYER_DIGGING) {
-            switch (new WrapperPlayClientPlayerDigging(event).getAction()) {
-                case START_DIGGING, FINISHED_DIGGING, CANCELLED_DIGGING -> failInventory("dig");
-                case DROP_ITEM, DROP_ITEM_STACK -> failInventory("drop");
-                case SWAP_ITEM_WITH_OFFHAND -> failInventory("swap offhand");
-                case STAB -> failInventory("stab");
-            }
-            return;
+            return switch (new WrapperPlayClientPlayerDigging(event).getAction()) {
+                case START_DIGGING, CHANGE_DESTROY_DIRECTION, FINISHED_DIGGING -> "dig";
+                case DROP_ITEM, DROP_ITEM_STACK -> "drop";
+                default -> null;
+            };
         }
-
         if (type == PacketType.Play.Client.ENTITY_ACTION) {
-            switch (new WrapperPlayClientEntityAction(event).getAction()) {
-                case START_SNEAKING -> failInventory("sneak");
-                case LEAVE_BED -> failInventory("leave bed");
-                case START_SPRINTING -> failInventory("sprint");
-                case OPEN_HORSE_INVENTORY -> failInventory("open horse inv");
-                case START_FLYING_WITH_ELYTRA -> failInventory("start glide");
-            }
+            return switch (new WrapperPlayClientEntityAction(event).getAction()) {
+                case START_SPRINTING -> SPRINT;
+                case START_SNEAKING -> "sneak";
+                case START_FLYING_WITH_ELYTRA -> "start glide";
+                case OPEN_HORSE_INVENTORY -> "open horse inv";
+                default -> null;
+            };
         }
+        return null;
     }
 }

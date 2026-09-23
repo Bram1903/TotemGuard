@@ -24,53 +24,75 @@ import com.deathmotion.totemguard.common.check.annotations.CheckData;
 import com.deathmotion.totemguard.common.check.annotations.RequiresTickEnd;
 import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
-import com.deathmotion.totemguard.common.player.data.TeleportData;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import org.jetbrains.annotations.Nullable;
 
 @RequiresTickEnd
 @CheckData(description = "Slot change after action in same tick", type = CheckType.PROTOCOL)
 public class ProtocolA extends CheckImpl implements PacketCheck {
 
-    private String lastFlushingAction;
+    private @Nullable String flushedBy;
 
     public ProtocolA(TGPlayer player) {
         super(player);
     }
 
-    private static String flushingActionName(PacketTypeCommon type, PacketReceiveEvent event) {
-        if (type == PacketType.Play.Client.ATTACK) return "attack";
-        if (type == PacketType.Play.Client.INTERACT_ENTITY) {
-            return new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK
-                    ? "attack"
-                    : "interact";
-        }
-        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
-        return null;
-    }
-
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
+        // Polar injects releases, cancels tick ends and runs its own ProtocolA
+        if (platform.isPolarLoaded()) return;
+
         final PacketTypeCommon type = event.getPacketType();
 
         if (type == PacketType.Play.Client.CLIENT_TICK_END) {
-            lastFlushingAction = null;
+            flushedBy = null;
             return;
         }
 
         if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) {
-            if (lastFlushingAction == null) return;
-            TeleportData teleportData = player.getData().getTeleportData();
-            if (teleportData.lastTickHadTeleport() || teleportData.hasPendingTeleport()) return;
-            fail(lastFlushingAction);
+            if (flushedBy == null) return;
+            fail("action={0},slot={1}", flushedBy, new WrapperPlayClientHeldItemChange(event).getSlot());
             return;
         }
 
-        String action = flushingActionName(type, event);
-        if (action != null) {
-            lastFlushingAction = action;
+        if (flushedBy == null) {
+            flushedBy = flushingAction(type, event);
         }
+    }
+
+    // startDestroyBlock never flushes the slot, and a drop only flushes on a 26.3 client
+    private @Nullable String flushingAction(PacketTypeCommon type, PacketReceiveEvent event) {
+        if (type == PacketType.Play.Client.ATTACK) return "attack";
+        if (type == PacketType.Play.Client.USE_ITEM) return "use";
+        if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
+        if (type == PacketType.Play.Client.PICK_ITEM_FROM_BLOCK || type == PacketType.Play.Client.PICK_ITEM_FROM_ENTITY) {
+            return "pick";
+        }
+        if (type == PacketType.Play.Client.INTERACT_ENTITY) {
+            return switch (new WrapperPlayClientInteractEntity(event).getAction()) {
+                case ATTACK -> "attack";
+                case INTERACT -> "interact";
+                case INTERACT_AT -> "interact at";
+            };
+        }
+        if (type == PacketType.Play.Client.PLAYER_DIGGING) {
+            return switch (new WrapperPlayClientPlayerDigging(event).getAction()) {
+                case CHANGE_DESTROY_DIRECTION -> "face";
+                case FINISHED_DIGGING -> "finish";
+                case RELEASE_USE_ITEM -> "release";
+                case STAB -> "stab";
+                case DROP_ITEM, DROP_ITEM_STACK -> player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)
+                        ? "drop"
+                        : null;
+                default -> null;
+            };
+        }
+        return null;
     }
 }

@@ -63,7 +63,7 @@ public class TickB extends CheckImpl implements PacketCheck {
                 fail("type=keepalive,skipped={0}", pingData.getLastSkippedKeepAliveReplyCount());
             }
         } else if (packetType == PacketType.Play.Client.TELEPORT_CONFIRM) {
-            if (pingData.isLastTeleportReplySkipped()) {
+            if (pingData.isLastTeleportReplySkipped() && !teleportAcceptTranslated()) {
                 fail("type=teleport,skipped={0}", pingData.getLastSkippedTeleportReplyCount());
             }
         }

@@ -25,23 +25,31 @@ import com.deathmotion.totemguard.common.check.type.PacketCheck;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 
-@CheckData(description = "Click in a window that was never opened", type = CheckType.INVENTORY, experimental = true)
-public class InventoryD extends CheckImpl implements PacketCheck {
+@CheckData(description = "Click on a slot the window does not have", type = CheckType.INVENTORY, experimental = true)
+public class InventoryE extends CheckImpl implements PacketCheck {
 
-    public InventoryD(TGPlayer player) {
+    private static final int OUTSIDE = -999;
+    private static final int NO_SLOT = -1;
+
+    public InventoryE(TGPlayer player) {
         super(player);
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.CLICK_WINDOW) return;
+        if (data.getGameMode() == GameMode.CREATIVE) return;
 
-        int windowId = new WrapperPlayClientClickWindow(event).getWindowId();
-        if (player.isModDetectionWindow(windowId)) return;
-        if (player.getScreen().mayHold(windowId)) return;
+        WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
+        int slot = packet.getSlot();
+        if (slot == OUTSIDE || slot == NO_SLOT) return;
 
-        fail("window={0}", windowId);
+        int size = player.getScreen().menuSize(packet.getWindowId());
+        if (size < 0 || (slot >= 0 && slot < size)) return;
+
+        fail("slot={0},size={1}", slot, size);
     }
 }

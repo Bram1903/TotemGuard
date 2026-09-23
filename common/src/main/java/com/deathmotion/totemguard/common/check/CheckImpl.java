@@ -32,7 +32,9 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
-import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -153,15 +155,21 @@ public abstract class CheckImpl implements Check {
             return;
         }
 
-        if (!data.isOpenInventory()) return;
+        if (!mitigate || !player.getScreen().state().open()) return;
+        if (data.isInventoryMitigated()) return;
 
-        if (mitigate) {
-            if (data.isInventoryMitigated()) return;
-            data.setInventoryMitigated(true);
-            player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
-        } else {
-            data.setOpenInventory(false, Issuer.SERVER);
-        }
+        data.setInventoryMitigated(true);
+        player.getUser().sendPacket(InventoryConstants.SERVER_CLOSE_WINDOW);
+    }
+
+    // ViaBackwards parks an older client's confirm until its next PosRot, which can arrive long after the teleport
+    protected boolean teleportAcceptTranslated() {
+        return PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_26_3)
+                && player.getClientVersion().isOlderThan(ClientVersion.V_26_3);
+    }
+
+    protected boolean tickEndMayBeMissing() {
+        return data.getTeleportData().tickEndMayBeCancelled();
     }
 
     protected boolean shouldFail(@Nullable String debug) {

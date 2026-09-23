@@ -64,7 +64,10 @@ For per-check tuning, thresholds, and bypass details, see the [wiki](https://git
 
 - **InventoryA** - Impossible action while an inventory is open.
 - **InventoryB** - Movement during inventory interaction.
-- **InventoryC** - Inventory interaction with no inventory open.
+- **InventoryC** - Impossible close and click sequence in the same tick.
+- **InventoryD** - Click in a window that was never opened.
+- **InventoryE** - Click on a slot the window does not have.
+- **InventoryF** - Attack in the tick a screen closed.
 
 ### Protocol
 

@@ -106,6 +106,26 @@ public class PingData {
         return transactions.oldestPendingSentAt();
     }
 
+    public void packetWritten() {
+        transactions.packetWritten();
+    }
+
+    public boolean lastWriteIsUnansweredPing() {
+        return transactions.lastWriteIsUnansweredPing();
+    }
+
+    public boolean attachToLatestTransaction(LongConsumer callback) {
+        return transactions.attachToLatest(callback);
+    }
+
+    public long getSentTransactionOrdinal() {
+        return transactions.sentOrdinal();
+    }
+
+    public long getConfirmedTransactionOrdinal() {
+        return transactions.confirmedOrdinal();
+    }
+
     public void teleportSent(int teleportId) {
         transactions.trackTeleport(teleportId);
     }

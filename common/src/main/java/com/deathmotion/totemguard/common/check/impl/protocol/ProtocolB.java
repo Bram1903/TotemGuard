@@ -54,8 +54,13 @@ public class ProtocolB extends CheckImpl implements PacketCheck {
         lastSlot = slot;
     }
 
+    // Every JOIN_GAME builds a new MultiPlayerGameMode, whose last sent slot starts at 0
     @Override
     public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() == PacketType.Play.Server.JOIN_GAME) {
+            player.getLatencyHandler().compensate(event, () -> lastSlot = 0);
+            return;
+        }
         if (event.getPacketType() != PacketType.Play.Server.HELD_ITEM_CHANGE) return;
         final int slot = new WrapperPlayServerHeldItemChange(event).getSlot();
         if (slot < 0 || slot > 8) return;

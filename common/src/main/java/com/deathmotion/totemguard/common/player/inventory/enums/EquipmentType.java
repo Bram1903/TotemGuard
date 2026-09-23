@@ -18,6 +18,8 @@
 
 package com.deathmotion.totemguard.common.player.inventory.enums;
 
+import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
+import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemEquippable;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -30,7 +32,20 @@ public enum EquipmentType {
     CHEST,
     HEAD;
 
+    // From 1.21.2 any item can be made equippable, so the component decides
     public static EquipmentType getEquipmentSlotForItem(ItemStack itemStack) {
+        ItemEquippable equippable = itemStack.getComponent(ComponentTypes.EQUIPPABLE).orElse(null);
+        if (equippable != null) {
+            return switch (equippable.getSlot()) {
+                case HELMET -> HEAD;
+                case CHEST_PLATE -> CHEST;
+                case LEGGINGS -> LEGS;
+                case BOOTS -> FEET;
+                case OFF_HAND -> OFFHAND;
+                default -> MAINHAND;
+            };
+        }
+
         ItemType item = itemStack.getType();
         if (item == ItemTypes.CARVED_PUMPKIN || (item.getName().getKey().contains("SKULL") ||
                 (item.getName().getKey().contains("HEAD") && !item.getName().getKey().contains("PISTON")))) {

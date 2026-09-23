@@ -58,8 +58,23 @@ InventoryC:
 InventoryD:
   enabled: true
   punishable: false
-  mitigate: true
-  max-violations: 10
+  max-violations: 3
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryE:
+  enabled: true
+  punishable: false
+  max-violations: 3
+
+  punishment-commands:
+    - "%default_punishment%"
+
+InventoryF:
+  enabled: true
+  punishable: false
+  max-violations: 3
 
   punishment-commands:
     - "%default_punishment%"

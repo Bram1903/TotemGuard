@@ -28,15 +28,15 @@ object PaperRunDefaults {
     )
 
     val CORE_PLUGINS: List<String> = listOf(
-        "https://cdn.modrinth.com/data/HYKaKraK/versions/ap8qHs7D/packetevents-spigot-2.12.1.jar",
-        "https://github.com/ViaVersion/ViaVersion/releases/download/5.9.1/ViaVersion-5.9.1.jar",
-        "https://github.com/ViaVersion/ViaBackwards/releases/download/5.9.1/ViaBackwards-5.9.1.jar",
+        "https://ci.codemc.io/job/retrooper/job/packetevents/914/artifact/build/libs/packetevents-spigot-2.14.0-SNAPSHOT.jar",
+        "https://ci.viaversion.com/job/ViaVersion/lastSuccessfulBuild/artifact/build/libs/ViaVersion-5.12.1-SNAPSHOT.jar",
+        "https://ci.viaversion.com/job/ViaBackwards/lastSuccessfulBuild/artifact/build/libs/ViaBackwards-5.12.1-SNAPSHOT.jar",
         "https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/2.12.2/PlaceholderAPI-2.12.2.jar",
-        "https://download.luckperms.net/1643/bukkit/loader/LuckPerms-Bukkit-5.5.55.jar"
+        "https://download.luckperms.net/1672/bukkit/loader/LuckPerms-Bukkit-5.5.85.jar"
     )
 
     val PAPER_TEST_PLUGINS: List<String> = listOf(
-        "https://cdn.modrinth.com/data/hXiIvTyT/versions/Oa9ZDzZq/EssentialsX-2.21.2.jar"
+        "https://cdn.modrinth.com/data/hXiIvTyT/versions/nY6VN1XH/EssentialsX-2.22.0.jar"
     )
 
     const val DEFAULT_STAGED_PLUGIN_DIR: String = "plugins/TotemGuard-Loader/local"

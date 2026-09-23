@@ -37,6 +37,7 @@ public class TickC extends CheckImpl implements PacketCheck {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
+        if (teleportAcceptTranslated()) return;
         TeleportData teleportData = player.getData().getTeleportData();
 
         if (!teleportData.lastTeleportConfirmValid()) {

@@ -16,9 +16,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.data.ping;
+package com.deathmotion.totemguard.common.player.inventory.screen;
 
-import java.util.List;
+final class ScreenChange {
 
-record TransactionMatch(PendingTransaction matched, List<PendingTransaction> accepted) {
+    private final Kind kind;
+    private final int value;
+    private final long opensAfter;
+
+    ScreenChange(Kind kind, int value, long opensAfter) {
+        this.kind = kind;
+        this.value = value;
+        this.opensAfter = opensAfter;
+    }
+
+    Kind kind() {
+        return kind;
+    }
+
+    int value() {
+        return value;
+    }
+
+    boolean possiblyApplied(long confirmedOrdinal) {
+        return confirmedOrdinal >= opensAfter;
+    }
+
+    boolean closes() {
+        return kind == Kind.CLOSE || kind == Kind.DISPLACE || kind == Kind.RESPAWN;
+    }
+
+    enum Kind {
+        OPEN,
+        CLOSE,
+        DISPLACE,
+        RESPAWN,
+        SELECT,
+        SPRINT
+    }
 }

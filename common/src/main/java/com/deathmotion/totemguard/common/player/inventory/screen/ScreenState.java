@@ -16,9 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.deathmotion.totemguard.common.player.data.ping;
+package com.deathmotion.totemguard.common.player.inventory.screen;
 
-import java.util.List;
+public enum ScreenState {
+    NONE,
+    INFERRED,
+    CONTAINER,
+    DISPLACED;
 
-record TransactionMatch(PendingTransaction matched, List<PendingTransaction> accepted) {
+    public boolean open() {
+        return this == INFERRED || this == CONTAINER;
+    }
+
+    public boolean unknown() {
+        return this == DISPLACED;
+    }
 }

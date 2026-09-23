@@ -21,8 +21,6 @@ package com.deathmotion.totemguard.common.player.processor.outbound;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.data.InputData;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
-import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -39,14 +37,12 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
     private final Data data;
     private final InputData inputData;
     private final PacketLatencyHandler latencyHandler;
-    private final InventoryRecipeTracker recipeTracker;
 
     public OutboundSpawnProcessor(TGPlayer player) {
         super(player);
         this.data = player.getData();
         this.inputData = player.getData().getInputData();
         this.latencyHandler = player.getLatencyHandler();
-        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
@@ -57,9 +53,13 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         if (packetType == PacketType.Play.Server.JOIN_GAME) {
             WrapperPlayServerJoinGame packet = new WrapperPlayServerJoinGame(event);
             data.setGameMode(packet.getGameMode());
+            player.getScreen().serverJoined(event);
+            latencyHandler.compensate(event, inputData::reset);
         } else if (packetType == PacketType.Play.Server.CHANGE_GAME_STATE) {
             WrapperPlayServerChangeGameState packet = new WrapperPlayServerChangeGameState(event);
-            if (packet.getReason() == WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE) {
+            if (packet.getReason() == WrapperPlayServerChangeGameState.Reason.WIN_GAME) {
+                player.getScreen().serverDisplaced(event);
+            } else if (packet.getReason() == WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE) {
                 int ordinal = (int) packet.getValue();
                 if (ordinal >= 0 && ordinal < GameMode.values().length) {
                     latencyHandler.compensate(event, () -> data.setGameMode(GameMode.values()[ordinal]));
@@ -68,6 +68,7 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
         } else if (packetType == PacketType.Play.Server.RESPAWN) {
             WrapperPlayServerRespawn packet = new WrapperPlayServerRespawn(event);
             boolean resetSwimming = (packet.getKeptData() & WrapperPlayServerRespawn.KEEP_ENTITY_DATA) == 0;
+            player.getScreen().serverRespawned(event);
 
             latencyHandler.compensate(event, timestamp -> {
                 if (player.getClientVersion().isOlderThan(ClientVersion.V_1_16) || player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
@@ -75,11 +76,9 @@ public class OutboundSpawnProcessor extends ProcessorOutbound {
                 }
 
                 data.setGameMode(packet.getGameMode());
-                data.setOpenInventory(false, Issuer.SERVER);
                 data.setSprinting(false);
                 data.setVehicleId(-1);
                 if (resetSwimming) data.setSwimming(false);
-                recipeTracker.reset();
                 inputData.reset();
                 data.getMovementData().reset();
             });

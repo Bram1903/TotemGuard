@@ -24,6 +24,7 @@ import com.deathmotion.totemguard.common.player.data.TeleportData;
 import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
@@ -43,8 +44,14 @@ public class InboundTeleportProcessor extends ProcessorInbound {
     public void handleInbound(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.TELEPORT_CONFIRM) return;
         WrapperPlayClientTeleportConfirm packet = new WrapperPlayClientTeleportConfirm(event);
-        TeleportData.TeleportConfirmResult confirmResult = data.getTeleportData().validateTeleportConfirm(packet.getTeleportId());
-        data.getMovementData().handleTeleportConfirm(confirmResult);
+        boolean acceptReportsPosition = event.getServerVersion().isNewerThanOrEquals(ServerVersion.V_26_3);
+        TeleportData.TeleportConfirmResult confirmResult = data.getTeleportData()
+                .validateTeleportConfirm(packet.getTeleportId(), !acceptReportsPosition);
+        if (acceptReportsPosition) {
+            data.getMovementData().handleTeleportAccept(confirmResult, packet);
+        } else {
+            data.getMovementData().handleTeleportConfirm(confirmResult);
+        }
         pingData.teleportReceived(packet.getTeleportId(), event.getTimestamp());
         player.getDebugOverlayManager().refresh();
     }
@@ -53,11 +60,8 @@ public class InboundTeleportProcessor extends ProcessorInbound {
     public void handleInboundPost(PacketReceiveEvent event) {
         if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
             data.getTeleportData().clearLastPacketWasTeleport();
-            if (!player.supportsEndTick()) {
-                data.getTeleportData().clearLastTickHadTeleport();
-            }
         } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
-            data.getTeleportData().clearLastTickHadTeleport();
+            data.getTeleportData().tickEnded();
         }
     }
 }

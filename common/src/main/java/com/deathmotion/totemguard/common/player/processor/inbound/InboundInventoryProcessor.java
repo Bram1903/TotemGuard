@@ -23,7 +23,6 @@ import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
@@ -44,7 +43,6 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     private final GuiManager guiManager;
     private final PacketInventory inventory;
     private final Data data;
-    private final InventoryRecipeTracker recipeTracker;
 
     public InboundInventoryProcessor(TGPlayer player) {
         super(player);
@@ -52,7 +50,6 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         this.guiManager = TGPlatform.getInstance().getGuiManager();
         this.inventory = player.getInventory();
         this.data = player.getData();
-        this.recipeTracker = player.getInventoryRecipeTracker();
     }
 
     @Override
@@ -65,28 +62,14 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         else if (type == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) handleCreativeAction(event);
         else if (type == PacketType.Play.Client.CLICK_WINDOW) handleClickWindow(event);
         else if (type == PacketType.Play.Client.CLOSE_WINDOW) handleCloseWindow(event);
-        else if (type == PacketType.Play.Client.SET_RECIPE_BOOK_STATE) handleSetRecipeBookState(event);
-        else if (type == PacketType.Play.Client.SET_DISPLAYED_RECIPE) handleSetDisplayedRecipe(event);
     }
 
     @Override
     public void handleInboundPost(PacketReceiveEvent event) {
-        PacketTypeCommon type = event.getPacketType();
-        if (type == PacketType.Play.Client.CLOSE_WINDOW) {
-            WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
-            if (player.isModDetectionWindow(packet.getWindowId())) return;
-            data.setInventoryMitigatedThisTick(false);
-            return;
-        }
-
-        boolean tickBoundary = player.supportsEndTick()
-                ? type == PacketType.Play.Client.CLIENT_TICK_END
-                : WrapperPlayClientPlayerFlying.isFlying(type);
-        if (tickBoundary) {
-            data.setServerOpenedInventoryThisTick(false);
-            data.setClientOpenedInventoryThisTick(false);
-            data.applyPendingOpenInventory();
-        }
+        if (event.getPacketType() != PacketType.Play.Client.CLOSE_WINDOW) return;
+        WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
+        if (player.isModDetectionWindow(packet.getWindowId())) return;
+        data.setInventoryMitigatedThisTick(false);
     }
 
     private void handleDigging(PacketReceiveEvent event) {
@@ -125,9 +108,7 @@ public class InboundInventoryProcessor extends ProcessorInbound {
         WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
 
-        boolean wasOpen = data.isOpenInventory();
-        data.setOpenInventory(true, Issuer.CLIENT);
-        if (!wasOpen) data.setClientOpenedInventoryThisTick(true);
+        player.getScreen().clientClicked(packet.getWindowId());
 
         final int windowId = packet.getWindowId();
         final int containerSlot = packet.getSlot();
@@ -225,23 +206,9 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     private void handleCloseWindow(PacketReceiveEvent event) {
         WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
-        data.setOpenInventory(false, Issuer.CLIENT);
+        player.getScreen().clientClosed(packet.getWindowId());
         inventory.resetOpenWindow();
         inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.CLIENT, event.getTimestamp());
-        if (packet.getWindowId() == InventoryConstants.PLAYER_WINDOW_ID) {
-            recipeTracker.armAfterClientClose();
-        }
-    }
-
-    private void handleSetRecipeBookState(PacketReceiveEvent event) {
-        WrapperPlayClientSetRecipeBookState packet = new WrapperPlayClientSetRecipeBookState(event);
-        recipeTracker.recordClientState(packet.getBookType(), packet.isBookOpen(), packet.isFilterActive());
-    }
-
-    private void handleSetDisplayedRecipe(PacketReceiveEvent event) {
-        if (recipeTracker.handleDisplayedRecipe(event)) {
-            data.setVerifiedOpenInventory();
-        }
     }
 
     private ItemStack copyItem(ItemStack stack) {

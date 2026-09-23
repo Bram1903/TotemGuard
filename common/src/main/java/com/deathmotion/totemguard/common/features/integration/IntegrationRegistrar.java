@@ -20,6 +20,7 @@ package com.deathmotion.totemguard.common.features.integration;
 
 import com.deathmotion.totemguard.common.TGPlatform;
 import com.deathmotion.totemguard.common.features.integration.impl.GrimIntegration;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +29,14 @@ import java.util.function.Supplier;
 public class IntegrationRegistrar {
 
     private static final String GRIM_PLUGIN_NAME = "GrimAC";
+    private static final String POLAR_PLUGIN_NAME = "PolarLoader";
 
     private final List<Integration> integrations = new ArrayList<>();
+    @Getter
+    private final boolean polarLoaded;
 
     public IntegrationRegistrar() {
+        this.polarLoaded = TGPlatform.getInstance().isPluginEnabled(POLAR_PLUGIN_NAME);
         registerIntegrations();
     }
 

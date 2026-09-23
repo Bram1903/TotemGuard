@@ -26,6 +26,7 @@ public class InputData {
     private State current = null;
     @Nullable
     private State previous = null;
+    private boolean walkingAtTickEnd;
 
     public void setState(boolean forward, boolean backward, boolean left, boolean right, boolean jumping, boolean sneaking, boolean sprinting) {
         this.previous = this.current;
@@ -35,6 +36,20 @@ public class InputData {
     public void reset() {
         this.current = null;
         this.previous = null;
+        this.walkingAtTickEnd = false;
+    }
+
+    public boolean walking() {
+        return hasMovement(true);
+    }
+
+    // Polar can deliver the Input ahead of a click or close the client sent before it
+    public boolean walkingAtTickEnd() {
+        return walkingAtTickEnd;
+    }
+
+    public void tickEnded() {
+        walkingAtTickEnd = walking();
     }
 
     public boolean hasMovement() {

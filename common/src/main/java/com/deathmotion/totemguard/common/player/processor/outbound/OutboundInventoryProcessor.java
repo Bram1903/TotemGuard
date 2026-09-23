@@ -23,10 +23,10 @@ import com.deathmotion.totemguard.common.gui.GuiManager;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.Data;
 import com.deathmotion.totemguard.common.player.inventory.InventoryConstants;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.enums.SlotAction;
+import com.deathmotion.totemguard.common.player.inventory.screen.ClientScreen;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
 import com.deathmotion.totemguard.common.player.processor.ProcessorOutbound;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
@@ -44,7 +44,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
     private final PacketInventory inventory;
     private final PacketLatencyHandler latencyHandler;
     private final GuiManager guiManager;
-    private final InventoryRecipeTracker recipeTracker;
+    private final ClientScreen screen;
 
     public OutboundInventoryProcessor(TGPlayer player) {
         super(player);
@@ -52,7 +52,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         this.inventory = player.getInventory();
         this.latencyHandler = player.getLatencyHandler();
         this.guiManager = TGPlatform.getInstance().getGuiManager();
-        this.recipeTracker = player.getInventoryRecipeTracker();
+        this.screen = player.getScreen();
     }
 
     @Override
@@ -64,13 +64,13 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         else if (type == PacketType.Play.Server.OPEN_WINDOW) handleOpenWindow(event);
         else if (type == PacketType.Play.Server.OPEN_HORSE_WINDOW) handleOpenHorseWindow(event);
         else if (type == PacketType.Play.Server.CLOSE_WINDOW) handleCloseWindow(event);
-        else if (type == PacketType.Play.Server.RECIPE_BOOK_ADD) recipeTracker.handleRecipeAdd(event);
-        else if (type == PacketType.Play.Server.RECIPE_BOOK_REMOVE) recipeTracker.handleRecipeRemove(event);
-        else if (type == PacketType.Play.Server.RECIPE_BOOK_SETTINGS) recipeTracker.handleServerSettings(event);
         else if (type == PacketType.Play.Server.SET_PLAYER_INVENTORY) handleSetPlayerInventory(event);
         else if (type == PacketType.Play.Server.SET_SLOT) handleSetSlot(event);
         else if (type == PacketType.Play.Server.SET_CURSOR_ITEM) handleSetCursorItem(event);
         else if (type == PacketType.Play.Server.HELD_ITEM_CHANGE) handleSetHeldItem(event);
+        else if (type == PacketType.Play.Server.OPEN_BOOK || type == PacketType.Play.Server.OPEN_SIGN_EDITOR) {
+            screen.serverDisplaced(event);
+        } else if (type == PacketType.Play.Server.DEATH_COMBAT_EVENT) handleDeathCombatEvent(event);
     }
 
     private void handleWindowItems(PacketSendEvent event) {
@@ -82,6 +82,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         final boolean isGui = guiManager.isGuiWindow(event.getUser(), windowId);
 
         schedule(event, isGui, timestamp -> {
+            screen.serverFilled(windowId, items.size());
             if (carried != null) {
                 inventory.setCarriedItem(carried, -1, Issuer.SERVER, timestamp);
             }
@@ -107,32 +108,23 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         WrapperPlayServerOpenWindow packet = new WrapperPlayServerOpenWindow(event);
         final int containerId = packet.getContainerId();
         if (player.isModDetectionWindow(containerId)) return;
-        latencyHandler.compensate(event, () -> {
-            inventory.setOpenWindow(containerId, -1);
-            data.setOpenInventory(true, Issuer.SERVER);
-            data.setServerOpenedInventoryThisTick(true);
-        });
+        screen.serverOpened(event, containerId, timestamp -> inventory.setOpenWindow(containerId, -1));
     }
 
     private void handleOpenHorseWindow(PacketSendEvent event) {
         WrapperPlayServerOpenHorseWindow packet = new WrapperPlayServerOpenHorseWindow(event);
         final int windowId = packet.getWindowId();
         final int slotCount = packet.getSlotCount();
-        latencyHandler.compensate(event, () -> {
-            inventory.setOpenWindow(windowId, slotCount);
-            data.setOpenInventory(true, Issuer.SERVER);
-            data.setServerOpenedInventoryThisTick(true);
-        });
+        screen.serverOpened(event, windowId, timestamp -> inventory.setOpenWindow(windowId, slotCount));
     }
 
     private void handleCloseWindow(PacketSendEvent event) {
         WrapperPlayServerCloseWindow packet = new WrapperPlayServerCloseWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
-        latencyHandler.compensate(event, timestamp -> {
+        screen.serverClosed(event, timestamp -> {
             inventory.resetOpenWindow();
             // Server-side close abandons any cursor stack (placed back in inventory or dropped).
             inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.SERVER, timestamp);
-            data.setOpenInventory(false, Issuer.SERVER);
 
             if (!data.isInventoryMitigated()) return;
 
@@ -144,6 +136,12 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
             // confirmed the close to avoid compatibility issues.
             event.getUser().receivePacket(InventoryConstants.CLIENT_CLOSE_WINDOW);
         });
+    }
+
+    private void handleDeathCombatEvent(PacketSendEvent event) {
+        WrapperPlayServerDeathCombatEvent packet = new WrapperPlayServerDeathCombatEvent(event);
+        if (packet.getPlayerId() != event.getUser().getEntityId()) return;
+        screen.serverDisplaced(event);
     }
 
     private void handleSetPlayerInventory(PacketSendEvent event) {
@@ -212,7 +210,7 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
         final int slot = packet.getSlot();
         if (slot < 0 || slot > 8) return;
 
-        latencyHandler.compensate(event, () -> {
+        screen.serverSelected(event, slot, timestamp -> {
             if (inventory.getSelectedHotbarIndex() == slot) return;
             inventory.setSelectedHotbarIndex(slot);
             guiManager.refreshMonitor(player.getUuid());

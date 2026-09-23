@@ -50,7 +50,7 @@ public class InboundActionProcessor extends ProcessorInbound {
         if (event.isCancelled()) return;
         final PacketTypeCommon packetType = event.getPacketType();
 
-        if (packetType == PacketType.Play.Client.ANIMATION) {
+        if (packetType == PacketType.Play.Client.ANIMATION || packetType == PacketType.Play.Client.PUNCH) {
             if (tickData.isInvalidLeftClick()) return;
             clickData.recordLeftClick();
         } else if (packetType == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
@@ -104,7 +104,7 @@ public class InboundActionProcessor extends ProcessorInbound {
                 case SWAP_ITEM_WITH_OFFHAND -> tickData.setSwapping(true);
                 case DROP_ITEM, DROP_ITEM_STACK -> tickData.setDropping(true);
                 case RELEASE_USE_ITEM -> tickData.setReleasing(true);
-                case FINISHED_DIGGING, CANCELLED_DIGGING, START_DIGGING -> tickData.setDigging(true);
+                case FINISHED_DIGGING, CANCELLED_DIGGING, START_DIGGING, CHANGE_DESTROY_DIRECTION -> tickData.setDigging(true);
             }
         } else if (packetType == PacketType.Play.Client.PICK_ITEM) {
             tickData.setPicking(true);
@@ -141,6 +141,7 @@ public class InboundActionProcessor extends ProcessorInbound {
 
         if (event.getPacketType() == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick()) {
             tickData.reset();
+            inputData.tickEnded();
         }
     }
 }

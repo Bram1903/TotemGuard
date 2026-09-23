@@ -15,6 +15,7 @@ depend:
 softdepend:
   - PlaceholderAPI
   - GrimAC
+  - PolarLoader
 commands:
   tgloader:
     description: TotemGuard loader administration.

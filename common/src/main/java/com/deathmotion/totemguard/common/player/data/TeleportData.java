@@ -18,6 +18,7 @@
 
 package com.deathmotion.totemguard.common.player.data;
 
+import com.deathmotion.totemguard.common.TGPlatform;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class TeleportData {
     private final Set<Integer> pendingTeleportIds = new LinkedHashSet<>();
 
     private boolean lastPacketWasTeleport;
-    private boolean lastTickHadTeleport;
+    private boolean tickEndMayBeCancelled;
     private boolean lastTeleportConfirmValid;
     private boolean lastTeleportConfirmSkipped;
 
@@ -39,9 +40,12 @@ public class TeleportData {
 
     public void trackTeleport(int teleportId) {
         pendingTeleportIds.add(teleportId);
+        if (TGPlatform.getInstance().isPolarLoaded()) {
+            tickEndMayBeCancelled = true;
+        }
     }
 
-    public TeleportConfirmResult validateTeleportConfirm(int teleportId) {
+    public TeleportConfirmResult validateTeleportConfirm(int teleportId, boolean movementFollows) {
         lastTeleportConfirmValid = false;
         lastTeleportConfirmSkipped = false;
         lastSkippedTeleportCount = 0;
@@ -74,8 +78,7 @@ public class TeleportData {
 
         pendingTeleportIds.remove(teleportId);
 
-        lastPacketWasTeleport = true;
-        lastTickHadTeleport = true;
+        lastPacketWasTeleport = movementFollows;
         return new TeleportConfirmResult(true, teleportId, List.copyOf(skippedTeleportIds));
     }
 
@@ -95,16 +98,16 @@ public class TeleportData {
         lastPacketWasTeleport = false;
     }
 
-    public boolean lastTickHadTeleport() {
-        return lastTickHadTeleport;
-    }
-
     public boolean hasPendingTeleport() {
         return !pendingTeleportIds.isEmpty();
     }
 
-    public void clearLastTickHadTeleport() {
-        lastTickHadTeleport = false;
+    public boolean tickEndMayBeCancelled() {
+        return tickEndMayBeCancelled;
+    }
+
+    public void tickEnded() {
+        tickEndMayBeCancelled = TGPlatform.getInstance().isPolarLoaded() && hasPendingTeleport();
     }
 
     public record TeleportConfirmResult(boolean valid, int teleportId, List<Integer> skippedTeleportIds) {

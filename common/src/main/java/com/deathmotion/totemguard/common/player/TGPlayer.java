@@ -39,8 +39,8 @@ import com.deathmotion.totemguard.common.player.data.ping.PingData;
 import com.deathmotion.totemguard.common.player.debug.DebugOverlayManager;
 import com.deathmotion.totemguard.common.player.debug.provider.TotemDebugProvider;
 import com.deathmotion.totemguard.common.player.debug.provider.TransactionDebugProvider;
-import com.deathmotion.totemguard.common.player.inventory.InventoryRecipeTracker;
 import com.deathmotion.totemguard.common.player.inventory.PacketInventory;
+import com.deathmotion.totemguard.common.player.inventory.screen.ClientScreen;
 import com.deathmotion.totemguard.common.player.inventory.enums.Issuer;
 import com.deathmotion.totemguard.common.player.inventory.slot.CarriedItem;
 import com.deathmotion.totemguard.common.player.latency.PacketLatencyHandler;
@@ -84,9 +84,9 @@ public class TGPlayer implements TGUser {
     private final ClickData clickData;
     private final TickData tickData;
     private final PingData pingData;
-    private final InventoryRecipeTracker inventoryRecipeTracker;
     private final DebugOverlayManager debugOverlayManager;
     private final PacketLatencyHandler latencyHandler;
+    private final ClientScreen screen;
     private final BanAnimation banAnimation;
     private final ProcessorInbound[] processorInbounds;
     private final ProcessorOutbound[] processorOutbounds;
@@ -136,11 +136,11 @@ public class TGPlayer implements TGUser {
         this.clickData = new ClickData();
         this.tickData = new TickData();
         this.pingData = new PingData();
-        this.inventoryRecipeTracker = new InventoryRecipeTracker(this);
         this.debugOverlayManager = new DebugOverlayManager(this);
         this.debugOverlayManager.register(new TransactionDebugProvider());
         this.debugOverlayManager.register(new TotemDebugProvider());
         this.latencyHandler = new PacketLatencyHandler(this);
+        this.screen = new ClientScreen(this);
         this.banAnimation = new BanAnimationImpl(this);
         this.checkManager = new CheckManagerImpl(this);
 

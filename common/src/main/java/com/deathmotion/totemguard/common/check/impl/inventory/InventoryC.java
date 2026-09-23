@@ -35,7 +35,8 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCl
 @CheckData(description = "Impossible inventory packet sequence", type = CheckType.INVENTORY)
 public class InventoryC extends CheckImpl implements PacketCheck {
 
-    private int closesInTick;
+    private boolean closedInTick;
+    private int ownClosesInTick;
 
     public InventoryC(TGPlayer player) {
         super(player);
@@ -46,27 +47,29 @@ public class InventoryC extends CheckImpl implements PacketCheck {
         final PacketTypeCommon type = event.getPacketType();
 
         if (type == PacketType.Play.Client.CLIENT_TICK_END) {
-            closesInTick = 0;
+            closedInTick = false;
+            ownClosesInTick = 0;
             return;
         }
 
-        if (data.isInventoryMitigatedThisTick()) return;
+        if (data.isInventoryMitigatedThisTick() || tickEndMayBeMissing()) return;
 
         if (type == PacketType.Play.Client.CLICK_WINDOW) {
             int windowId = new WrapperPlayClientClickWindow(event).getWindowId();
             if (windowId != InventoryConstants.PLAYER_WINDOW_ID) return;
-            if (closesInTick > 0) {
-                fail("click after close (closes={0})", closesInTick);
+            if (closedInTick) {
+                fail("click after close");
             }
             return;
         }
 
         if (type == PacketType.Play.Client.CLOSE_WINDOW) {
             int windowId = new WrapperPlayClientCloseWindow(event).getWindowId();
+            if (player.isModDetectionWindow(windowId)) return;
+            closedInTick = true;
             if (windowId != InventoryConstants.PLAYER_WINDOW_ID) return;
-            closesInTick++;
-            if (closesInTick >= 2) {
-                fail("multiple closes (closes={0})", closesInTick);
+            if (++ownClosesInTick >= 2) {
+                fail("multiple closes (closes={0})", ownClosesInTick);
             }
         }
     }

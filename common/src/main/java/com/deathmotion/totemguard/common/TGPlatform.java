@@ -181,6 +181,11 @@ public abstract class TGPlatform {
 
     public abstract boolean isPluginEnabled(String plugin);
 
+    public boolean isPolarLoaded() {
+        IntegrationRegistrar registrar = integrationRegistrar;
+        return registrar != null && registrar.isPolarLoaded();
+    }
+
     public abstract void disablePlugin();
 
     public abstract boolean checkPlatformCompatibility();

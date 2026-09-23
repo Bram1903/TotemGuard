@@ -52,6 +52,16 @@ public class PacketLatencyHandler {
         findOrCreateTrackingTask(event).addCallback(callback);
     }
 
+    // A write made inside the send event passes the encoder before the packet in hand does
+    public void pingBefore(PacketSendEvent event) {
+        if (event.isCancelled() || pingData.lastWriteIsUnansweredPing()) return;
+        if (player.getUser().getEncoderState() != ConnectionState.PLAY) return;
+
+        int transactionId = pingData.reserveNextTransactionId(maxTransactionId());
+        pingData.markTransactionSynthetic(transactionId);
+        player.getUser().writePacket(createTransactionPacket(transactionId));
+    }
+
     public void sendTransaction(LongConsumer callback) {
         sendTransactionPacket(callback, null);
     }
@@ -116,9 +126,21 @@ public class PacketLatencyHandler {
             additionalCallbacks.add(callback);
         }
 
+        // Runs when the flush completes, so every packet flushed ahead of the latest ping is already covered by it
         @Override
         public void run() {
+            if (player.getUser().getEncoderState() == ConnectionState.PLAY && attachToLatest()) return;
             sendTransactionPacket(firstCallback, additionalCallbacks);
+        }
+
+        private boolean attachToLatest() {
+            if (firstCallback == null || !pingData.attachToLatestTransaction(firstCallback)) return false;
+            if (additionalCallbacks != null) {
+                for (LongConsumer callback : additionalCallbacks) {
+                    pingData.attachToLatestTransaction(callback);
+                }
+            }
+            return true;
         }
     }
 }

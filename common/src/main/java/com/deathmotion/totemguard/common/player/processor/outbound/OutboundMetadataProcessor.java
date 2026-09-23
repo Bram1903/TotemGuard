@@ -80,7 +80,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         int entityId = packet.getEntityId();
 
         if (entityId == player.getUser().getEntityId()) {
-            trackOwnMetadata(packet);
+            trackOwnMetadata(event, packet);
             return;
         }
 
@@ -103,7 +103,7 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
         if (modified) event.markForReEncode(true);
     }
 
-    private void trackOwnMetadata(WrapperPlayServerEntityMetadata packet) {
+    private void trackOwnMetadata(PacketSendEvent event, WrapperPlayServerEntityMetadata packet) {
         // Applied without latency compensation. Server-derived from inbound state (sprint
         // and water), so the client is already in the new state locally by the time this
         // outbound metadata is sent. Compensating would delay our view by another RTT.
@@ -112,6 +112,9 @@ public class OutboundMetadataProcessor extends ProcessorOutbound {
             Object value = meta.getValue();
             if (value instanceof Byte sharedFlags) {
                 data.setSwimming((sharedFlags & 0x10) != 0);
+                if ((sharedFlags & 0x08) != 0) {
+                    player.getScreen().serverRaisedSprint(event);
+                }
                 return;
             }
         }

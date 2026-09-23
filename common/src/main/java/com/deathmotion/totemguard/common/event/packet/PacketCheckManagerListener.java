@@ -18,7 +18,6 @@
 
 package com.deathmotion.totemguard.common.event.packet;
 
-import com.deathmotion.totemguard.common.check.CheckManagerImpl;
 import com.deathmotion.totemguard.common.player.PlayerRepositoryImpl;
 import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
@@ -28,9 +27,6 @@ import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 public class PacketCheckManagerListener extends PacketListenerAbstract {
 
@@ -61,12 +57,7 @@ public class PacketCheckManagerListener extends PacketListenerAbstract {
             processor.handleInbound(event);
         }
 
-        final CheckManagerImpl checkManager = player.getCheckManager();
-        final PacketTypeCommon packetType = event.getPacketType();
-        if (WrapperPlayClientPlayerFlying.isFlying(packetType) || (packetType == PacketType.Play.Client.CLIENT_TICK_END && player.supportsEndTick())) {
-            checkManager.getInventoryA().validateMovement();
-        }
-        checkManager.onPacketReceive(event);
+        player.getCheckManager().onPacketReceive(event);
         player.triggerInventoryEvent();
 
         for (ProcessorInbound processor : inbounds) {

@@ -30,6 +30,7 @@ final class PendingTransaction {
     private final int id;
     private final List<LongConsumer> callbacks = new ArrayList<>();
     private Long sentAt;
+    private long ordinal;
     private boolean synthetic;
 
     PendingTransaction(int id) {
@@ -42,6 +43,14 @@ final class PendingTransaction {
 
     Long sentAt() {
         return sentAt;
+    }
+
+    long ordinal() {
+        return ordinal;
+    }
+
+    void setOrdinal(long ordinal) {
+        this.ordinal = ordinal;
     }
 
     boolean synthetic() {

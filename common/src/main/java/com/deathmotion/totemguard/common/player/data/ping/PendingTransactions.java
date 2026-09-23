@@ -32,6 +32,9 @@ final class PendingTransactions {
     private volatile int acceptedTransactions;
     private volatile int acceptedSyntheticTransactions;
     private volatile long oldestPendingSentAt;
+    private volatile long sentOrdinal;
+    private volatile long confirmedOrdinal;
+    private boolean lastWriteWasPing;
 
     int reserveId(int maxPositiveId) {
         if (maxPositiveId < 1) {
@@ -58,6 +61,8 @@ final class PendingTransactions {
         }
 
         transaction.setSentAt(timestamp);
+        transaction.setOrdinal(++sentOrdinal);
+        lastWriteWasPing = true;
         pending.addLast(transaction);
         pendingCount++;
         if (transaction.synthetic()) {
@@ -87,10 +92,11 @@ final class PendingTransactions {
 
         List<PendingTransaction> accepted = match.accepted();
         recordAccepted(accepted);
+        int skippedOwn = syntheticCount(accepted) - (match.matched().synthetic() ? 1 : 0);
         PingReplyResult result = new PingReplyResult(
                 true,
-                match.skippedCount() > 0,
-                match.skippedCount(),
+                skippedOwn > 0,
+                skippedOwn,
                 match.matched().sentAt() == null ? PingData.INVALID_PING : PingData.clampPing(timestamp - match.matched().sentAt()),
                 match.matched().synthetic()
         );
@@ -125,7 +131,17 @@ final class PendingTransactions {
 
         recordAccepted(accepted);
         runCallbacks(accepted, timestamp);
-        return new TeleportReplyResult(!accepted.isEmpty(), accepted.size());
+        int skippedOwn = syntheticCount(accepted);
+        return new TeleportReplyResult(skippedOwn > 0, skippedOwn);
+    }
+
+    // Only a ping of ours going unanswered is evidence, a neighbour may take its own answers out of the stream
+    private static int syntheticCount(List<PendingTransaction> transactions) {
+        int count = 0;
+        for (PendingTransaction transaction : transactions) {
+            if (transaction.synthetic()) count++;
+        }
+        return count;
     }
 
     int pendingCount() {
@@ -146,6 +162,30 @@ final class PendingTransactions {
 
     long oldestPendingSentAt() {
         return oldestPendingSentAt;
+    }
+
+    void packetWritten() {
+        lastWriteWasPing = false;
+    }
+
+    boolean lastWriteIsUnansweredPing() {
+        return lastWriteWasPing && confirmedOrdinal < sentOrdinal;
+    }
+
+    boolean attachToLatest(LongConsumer callback) {
+        if (!lastWriteWasPing) return false;
+        PendingTransaction latest = pending.peekLast();
+        if (latest == null || !latest.synthetic()) return false;
+        latest.addCallback(callback);
+        return true;
+    }
+
+    long sentOrdinal() {
+        return sentOrdinal;
+    }
+
+    long confirmedOrdinal() {
+        return confirmedOrdinal;
     }
 
     private PendingTransaction staged(int id) {
@@ -192,6 +232,7 @@ final class PendingTransactions {
 
         for (int i = 0; i < size; i++) {
             PendingTransaction transaction = accepted.get(i);
+            this.confirmedOrdinal = Math.max(confirmedOrdinal, transaction.ordinal());
             this.acceptedTransactions++;
             if (transaction.synthetic()) {
                 pendingSyntheticCount--;

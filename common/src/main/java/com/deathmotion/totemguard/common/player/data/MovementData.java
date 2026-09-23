@@ -23,6 +23,7 @@ import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerRotation;
 import lombok.Getter;
@@ -100,6 +101,26 @@ public class MovementData {
 
         pendingTeleports.remove(confirmResult.teleportId());
         pendingTeleportResync = true;
+    }
+
+    public void handleTeleportAccept(TeleportData.TeleportConfirmResult confirmResult, WrapperPlayClientTeleportConfirm packet) {
+        if (!confirmResult.valid()) {
+            return;
+        }
+
+        for (int skippedTeleportId : confirmResult.skippedTeleportIds()) {
+            pendingTeleports.remove(skippedTeleportId);
+        }
+        pendingTeleports.remove(confirmResult.teleportId());
+
+        previous = copy(current);
+        current = new Location(
+                new Vector3d(packet.getX(), packet.getY(), packet.getZ()),
+                normalizeRotation(packet.getYaw()),
+                normalizeRotation(packet.getPitch())
+        );
+        lastFlyingPositionChanged = false;
+        lastFlyingRotationChanged = false;
     }
 
     public void handleServerSync(WrapperPlayServerPlayerPositionAndLook packet) {

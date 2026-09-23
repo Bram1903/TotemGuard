@@ -56,4 +56,12 @@ public class OutboundPingProcessor extends ProcessorOutbound {
             event.getTasksAfterSend().add(() -> player.getDebugOverlayManager().refresh());
         }
     }
+
+    @Override
+    public void handleOutboundPost(PacketSendEvent event) {
+        if (event.isCancelled()) return;
+        final PacketTypeCommon packetType = event.getPacketType();
+        if (packetType == PacketType.Play.Server.PING || packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) return;
+        pingData.packetWritten();
+    }
 }
