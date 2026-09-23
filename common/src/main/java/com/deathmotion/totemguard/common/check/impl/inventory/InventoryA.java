@@ -48,6 +48,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
     private boolean aimReported;
     private boolean rotationReported;
     private boolean openingRotation = true;
+    private int openedRevision = -1;
     private int revisionAtTickEnd;
     private int selectsAtTickEnd;
     private int sprintRaisesAtTickEnd;
@@ -127,8 +128,9 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             aimReported = false;
             return;
         }
-        if (openingRotation) {
+        if (openingRotation || screen.getRevision() != openedRevision) {
             openingRotation = false;
+            openedRevision = screen.getRevision();
             return;
         }
         if (first || data.isInVehicle() || data.getGameMode() == GameMode.SPECTATOR) return;
@@ -137,6 +139,7 @@ public class InventoryA extends CheckImpl implements PacketCheck {
             return;
         }
         if (aimReported || data.getTeleportData().hasPendingTeleport()) return;
+        if (data.getRotationCredits().inFlight() || data.getRotationCredits().spend()) return;
 
         aimReported = true;
         failInventory("aim");

@@ -33,6 +33,8 @@ import java.util.*;
 @Getter
 public class MovementData {
 
+    private static final double ROTATION_ECHO_TOLERANCE = 1.0E-3;
+
     private final Set<Integer> pendingTeleports = new LinkedHashSet<>();
     private final Deque<ExpectedRotation> pendingServerRotationSyncs = new ArrayDeque<>();
     private Location current = emptyLocation();
@@ -223,7 +225,7 @@ public class MovementData {
         int skipBeforeMatch = 0;
         while (it.hasNext()) {
             ExpectedRotation entry = it.next();
-            if (Float.compare(yaw, entry.yaw()) == 0 && Float.compare(pitch, entry.pitch()) == 0) {
+            if (sameAngle(yaw, entry.yaw()) && sameAngle(pitch, entry.pitch())) {
                 for (int i = 0; i <= skipBeforeMatch; i++) {
                     pendingServerRotationSyncs.pollFirst();
                 }
@@ -232,6 +234,11 @@ public class MovementData {
             skipBeforeMatch++;
         }
         return false;
+    }
+
+    // handleRotatePlayer adds a relative turn to the client's unwrapped yaw, so the echo can differ from ours in the last bits
+    private static boolean sameAngle(float a, float b) {
+        return Math.abs(MathUtil.clamp180(a - b)) < ROTATION_ECHO_TOLERANCE;
     }
 
     private void queueServerRotationSync() {

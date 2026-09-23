@@ -22,6 +22,8 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.deathmotion.totemguard.common.player.data.MovementData;
 import com.deathmotion.totemguard.common.player.processor.ProcessorInbound;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 
 public class InboundMovementProcessor extends ProcessorInbound {
@@ -31,6 +33,17 @@ public class InboundMovementProcessor extends ProcessorInbound {
     public InboundMovementProcessor(TGPlayer player) {
         super(player);
         this.movementData = player.getData().getMovementData();
+    }
+
+    @Override
+    public void handleInboundPost(PacketReceiveEvent event) {
+        final PacketTypeCommon type = event.getPacketType();
+        boolean tickBoundary = player.supportsEndTick()
+                ? type == PacketType.Play.Client.CLIENT_TICK_END
+                : WrapperPlayClientPlayerFlying.isFlying(type);
+        if (tickBoundary) {
+            player.getData().getRotationCredits().ticked();
+        }
     }
 
     @Override

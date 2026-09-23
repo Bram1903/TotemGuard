@@ -36,6 +36,7 @@ public class Data {
     private final TGPlayer player;
     private final TGPlatform platform;
     private final TeleportData teleportData;
+    private final RotationCredits rotationCredits;
     private final InputData inputData;
     private final MovementData movementData;
     private final WorldEntityData worldEntityData;
@@ -66,6 +67,7 @@ public class Data {
         this.player = player;
         this.platform = TGPlatform.getInstance();
         this.teleportData = new TeleportData();
+        this.rotationCredits = new RotationCredits(player);
         this.inputData = new InputData();
         this.movementData = new MovementData();
         this.worldEntityData = new WorldEntityData();
