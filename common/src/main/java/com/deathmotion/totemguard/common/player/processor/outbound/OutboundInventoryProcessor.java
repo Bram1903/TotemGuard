@@ -120,7 +120,11 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private void handleCloseWindow(PacketSendEvent event) {
         WrapperPlayServerCloseWindow packet = new WrapperPlayServerCloseWindow(event);
-        if (player.isModDetectionWindow(packet.getWindowId())) return;
+        // handleContainerClose closes whatever screen is up, so the mod detection anvil takes the player's menu with it
+        if (player.isModDetectionWindow(packet.getWindowId())) {
+            screen.serverClosed(event, null);
+            return;
+        }
         screen.serverClosed(event, timestamp -> {
             inventory.resetOpenWindow();
             // Server-side close abandons any cursor stack (placed back in inventory or dropped).
@@ -227,7 +231,9 @@ public class OutboundInventoryProcessor extends ProcessorOutbound {
 
     private void trackAfterSend(PacketSendEvent event, LongConsumer callback) {
         if (event.isCancelled()) return;
-        event.getTasksAfterSend().add(() -> callback.accept(event.getTimestamp()));
+        event.getTasksAfterSend().add(() -> {
+            if (!event.isCancelled()) callback.accept(event.getTimestamp());
+        });
     }
 
     private void syncExternalPlayerSection(int windowId, List<ItemStack> items, long timestamp) {

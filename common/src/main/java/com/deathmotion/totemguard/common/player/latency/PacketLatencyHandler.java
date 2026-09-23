@@ -28,6 +28,8 @@ import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowConfirmation;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongConsumer;
@@ -47,9 +49,18 @@ public class PacketLatencyHandler {
     }
 
     public void compensate(PacketSendEvent event, LongConsumer callback) {
-        if (event.isCancelled()) return;
+        compensate(event, callback, null);
+    }
 
-        findOrCreateTrackingTask(event).addCallback(callback);
+    public void compensate(PacketSendEvent event, LongConsumer callback, @Nullable Runnable dropped) {
+        if (event.isCancelled()) {
+            if (dropped != null) dropped.run();
+            return;
+        }
+
+        PendingPacketLatencyTask task = findOrCreateTrackingTask(event);
+        task.addCallback(callback);
+        if (dropped != null) task.addDropped(dropped);
     }
 
     // A write made inside the send event passes the encoder before the packet in hand does
@@ -73,7 +84,7 @@ public class PacketLatencyHandler {
             }
         }
 
-        PendingPacketLatencyTask pendingPacketLatencyTask = new PendingPacketLatencyTask();
+        PendingPacketLatencyTask pendingPacketLatencyTask = new PendingPacketLatencyTask(event);
         event.getTasksAfterSend().add(pendingPacketLatencyTask);
         return pendingPacketLatencyTask;
     }
@@ -112,8 +123,21 @@ public class PacketLatencyHandler {
 
     private final class PendingPacketLatencyTask implements Runnable {
 
+        private final PacketSendEvent event;
         private LongConsumer firstCallback;
         private List<LongConsumer> additionalCallbacks;
+        private List<Runnable> droppedCallbacks;
+
+        private PendingPacketLatencyTask(PacketSendEvent event) {
+            this.event = event;
+        }
+
+        private void addDropped(Runnable dropped) {
+            if (droppedCallbacks == null) {
+                droppedCallbacks = new ArrayList<>(1);
+            }
+            droppedCallbacks.add(dropped);
+        }
 
         private void addCallback(LongConsumer callback) {
             if (firstCallback == null) {
@@ -129,6 +153,11 @@ public class PacketLatencyHandler {
         // Runs when the flush completes, so every packet flushed ahead of the latest ping is already covered by it
         @Override
         public void run() {
+            // PacketEvents still completes the promise of a packet a later listener cancelled, and the client never saw it
+            if (event.isCancelled()) {
+                if (droppedCallbacks != null) droppedCallbacks.forEach(Runnable::run);
+                return;
+            }
             if (player.getUser().getEncoderState() == ConnectionState.PLAY && attachToLatest()) return;
             sendTransactionPacket(firstCallback, additionalCallbacks);
         }

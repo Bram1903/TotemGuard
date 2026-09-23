@@ -190,7 +190,7 @@ public final class ClientScreen {
         player.getLatencyHandler().compensate(event, timestamp -> {
             applyThrough(change);
             if (then != null) then.accept(timestamp);
-        });
+        }, () -> pending.remove(change));
     }
 
     private void applyThroughOpen(int openedWindowId) {

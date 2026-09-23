@@ -41,7 +41,7 @@ public final class RotationCredits {
     public void serverWrote(PacketSendEvent event) {
         if (event.isCancelled()) return;
         inFlight++;
-        player.getLatencyHandler().compensate(event, this::granted);
+        player.getLatencyHandler().compensate(event, timestamp -> granted(), this::dropped);
     }
 
     public void ticked() {
@@ -56,6 +56,10 @@ public final class RotationCredits {
         if (spendable() == 0) return false;
         spendable--;
         return true;
+    }
+
+    private void dropped() {
+        inFlight = Math.max(0, inFlight - 1);
     }
 
     private void granted() {

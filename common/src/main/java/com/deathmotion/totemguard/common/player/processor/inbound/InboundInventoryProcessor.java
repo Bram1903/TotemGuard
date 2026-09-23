@@ -54,14 +54,26 @@ public class InboundInventoryProcessor extends ProcessorInbound {
 
     @Override
     public void handleInbound(PacketReceiveEvent event) {
-        if (event.isCancelled()) return;
         final PacketTypeCommon type = event.getPacketType();
+        trackScreen(event, type);
+        if (event.isCancelled()) return;
 
         if (type == PacketType.Play.Client.PLAYER_DIGGING) handleDigging(event);
         else if (type == PacketType.Play.Client.HELD_ITEM_CHANGE) handleHeldItemChange(event);
         else if (type == PacketType.Play.Client.CREATIVE_INVENTORY_ACTION) handleCreativeAction(event);
         else if (type == PacketType.Play.Client.CLICK_WINDOW) handleClickWindow(event);
         else if (type == PacketType.Play.Client.CLOSE_WINDOW) handleCloseWindow(event);
+    }
+
+    // A plugin may cancel the packet for the server, but the client still closed or clicked its screen
+    private void trackScreen(PacketReceiveEvent event, PacketTypeCommon type) {
+        if (type == PacketType.Play.Client.CLICK_WINDOW) {
+            int windowId = new WrapperPlayClientClickWindow(event).getWindowId();
+            if (!player.isModDetectionWindow(windowId)) player.getScreen().clientClicked(windowId);
+        } else if (type == PacketType.Play.Client.CLOSE_WINDOW) {
+            int windowId = new WrapperPlayClientCloseWindow(event).getWindowId();
+            if (!player.isModDetectionWindow(windowId)) player.getScreen().clientClosed(windowId);
+        }
     }
 
     @Override
@@ -107,8 +119,6 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     private void handleClickWindow(PacketReceiveEvent event) {
         WrapperPlayClientClickWindow packet = new WrapperPlayClientClickWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
-
-        player.getScreen().clientClicked(packet.getWindowId());
 
         final int windowId = packet.getWindowId();
         final int containerSlot = packet.getSlot();
@@ -206,7 +216,6 @@ public class InboundInventoryProcessor extends ProcessorInbound {
     private void handleCloseWindow(PacketReceiveEvent event) {
         WrapperPlayClientCloseWindow packet = new WrapperPlayClientCloseWindow(event);
         if (player.isModDetectionWindow(packet.getWindowId())) return;
-        player.getScreen().clientClosed(packet.getWindowId());
         inventory.resetOpenWindow();
         inventory.setCarriedItem(ItemStack.EMPTY, -1, Issuer.CLIENT, event.getTimestamp());
     }
