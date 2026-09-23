@@ -27,10 +27,8 @@ import com.deathmotion.totemguard.common.player.TGPlayer;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import org.jetbrains.annotations.Nullable;
 
 @RequiresTickEnd
@@ -63,32 +61,12 @@ public class ProtocolA extends CheckImpl implements PacketCheck {
         }
     }
 
-    // startDestroyBlock never flushes the slot, a drop only flushes on a 26.3 client, and Polar writes releases of its own
-    private @Nullable String flushingAction(PacketTypeCommon type, PacketReceiveEvent event) {
+    private static @Nullable String flushingAction(PacketTypeCommon type, PacketReceiveEvent event) {
         if (type == PacketType.Play.Client.ATTACK) return "attack";
-        if (type == PacketType.Play.Client.USE_ITEM) return "use";
         if (type == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) return "place";
-        if (type == PacketType.Play.Client.PICK_ITEM_FROM_BLOCK || type == PacketType.Play.Client.PICK_ITEM_FROM_ENTITY) {
-            return "pick";
-        }
-        if (type == PacketType.Play.Client.INTERACT_ENTITY) {
-            return switch (new WrapperPlayClientInteractEntity(event).getAction()) {
-                case ATTACK -> "attack";
-                case INTERACT -> "interact";
-                case INTERACT_AT -> "interact at";
-            };
-        }
-        if (type == PacketType.Play.Client.PLAYER_DIGGING) {
-            return switch (new WrapperPlayClientPlayerDigging(event).getAction()) {
-                case CHANGE_DESTROY_DIRECTION -> "face";
-                case FINISHED_DIGGING -> "finish";
-                case RELEASE_USE_ITEM -> platform.isPolarLoaded() ? null : "release";
-                case STAB -> "stab";
-                case DROP_ITEM, DROP_ITEM_STACK -> player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_26_3)
-                        ? "drop"
-                        : null;
-                default -> null;
-            };
+        if (type == PacketType.Play.Client.INTERACT_ENTITY
+                && new WrapperPlayClientInteractEntity(event).getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
+            return "attack";
         }
         return null;
     }
