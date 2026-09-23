@@ -81,3 +81,7 @@ punishments:
     - name: "**Check**"
       value: "%tg_check_name%"
       inline: true
+    # Shown only when the executed [BAN:duration] command specifies a duration.
+    - name: "**Ban Duration**"
+      value: "%tg_ban_duration%"
+      inline: true

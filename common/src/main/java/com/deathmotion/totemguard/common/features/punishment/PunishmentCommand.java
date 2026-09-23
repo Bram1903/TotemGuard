@@ -22,24 +22,30 @@ import com.deathmotion.totemguard.api.punishment.PunishmentType;
 
 import java.util.Locale;
 
-public record PunishmentCommand(PunishmentType type, String raw) {
+public record PunishmentCommand(PunishmentType type, String raw, String banDuration) {
 
     public static PunishmentCommand parse(String input) {
         String trimmed = input == null ? "" : input.trim();
         if (!trimmed.startsWith("[")) {
-            return new PunishmentCommand(PunishmentType.GENERIC, trimmed);
+            return new PunishmentCommand(PunishmentType.GENERIC, trimmed, null);
         }
         int end = trimmed.indexOf(']');
         if (end <= 1) {
-            return new PunishmentCommand(PunishmentType.GENERIC, trimmed);
+            return new PunishmentCommand(PunishmentType.GENERIC, trimmed, null);
         }
         String tag = trimmed.substring(1, end).trim().toUpperCase(Locale.ROOT);
+        if (tag.startsWith("BAN:")) {
+            String duration = trimmed.substring(5, end).trim();
+            if (!duration.isEmpty() && duration.chars().noneMatch(Character::isWhitespace)) {
+                return new PunishmentCommand(PunishmentType.BAN, trimmed.substring(end + 1).trim(), duration);
+            }
+        }
         try {
             PunishmentType type = PunishmentType.valueOf(tag);
-            return new PunishmentCommand(type, trimmed.substring(end + 1).trim());
+            return new PunishmentCommand(type, trimmed.substring(end + 1).trim(), null);
         } catch (IllegalArgumentException ignored) {
             // Unknown tag, keep the line verbatim, treat as GENERIC.
-            return new PunishmentCommand(PunishmentType.GENERIC, trimmed);
+            return new PunishmentCommand(PunishmentType.GENERIC, trimmed, null);
         }
     }
 }
