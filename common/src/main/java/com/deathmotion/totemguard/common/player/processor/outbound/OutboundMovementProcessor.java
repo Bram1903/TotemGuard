@@ -87,8 +87,15 @@ public class OutboundMovementProcessor extends ProcessorOutbound {
             }
             return false;
         }
+        // From 26.3 the wrapper throws on an id outside the new table (a plugin still writing the old crit id 4),
+        // and no such id is a wake up, so it cannot write our rotation
         if (type == PacketType.Play.Server.ENTITY_ANIMATION) {
-            WrapperPlayServerEntityAnimation packet = new WrapperPlayServerEntityAnimation(event);
+            WrapperPlayServerEntityAnimation packet;
+            try {
+                packet = new WrapperPlayServerEntityAnimation(event);
+            } catch (IndexOutOfBoundsException e) {
+                return false;
+            }
             return packet.getType() == WrapperPlayServerEntityAnimation.EntityAnimationType.WAKE_UP
                     && packet.getEntityId() == player.getUser().getEntityId();
         }
