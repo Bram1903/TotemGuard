@@ -94,6 +94,7 @@ public class TGPlayer implements TGUser {
     private final AtomicBoolean hasDisconnected = new AtomicBoolean();
     private final int modDetectionWindowId = -ThreadLocalRandom.current().nextInt(10_000, Integer.MAX_VALUE);
     private boolean hasLoggedIn;
+    private volatile boolean hasLoggedOut;
     private @Nullable PlatformPlayer platformPlayer;
 
     @Setter()
@@ -195,6 +196,7 @@ public class TGPlayer implements TGUser {
     }
 
     public void onLogout() {
+        hasLoggedOut = true;
         platform.getModDetectionService().onPlayerLogout(uuid);
         platform.getScheduler().runAsyncTask(this::cacheData);
     }
