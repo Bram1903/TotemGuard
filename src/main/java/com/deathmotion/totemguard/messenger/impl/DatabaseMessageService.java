@@ -76,7 +76,7 @@ public class DatabaseMessageService {
 
         Component message = messengerService.format(messageFormat);
         Component confirm = messengerService.format(format.getConfirmButton())
-                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, command))
+                .clickEvent(ClickEvent.runCommand(command))
                 .hoverEvent(messengerService.format(format.getConfirmHover().replace("%command%", command)));
 
         message = message.replaceText(builder -> builder.matchLiteral("%confirm_button%").replacement(confirm));
