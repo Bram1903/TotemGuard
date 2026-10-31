@@ -60,10 +60,20 @@ public final class ModDetectionService implements ModDetectionRepository {
     }
 
     public void onPlayerLogin(@NotNull TGPlayer player) {
+        if (player.isHasLoggedOut()) return;
         boolean checkDebugModifier = platform.getConfigRepository().configView().debugModifierKickEnabled();
         ModSession session = new ModSession(player, ModRegistry.snapshot(), checkDebugModifier);
         sessions.put(player.getUuid(), session);
         player.setModSession(session);
+
+        // Login runs on an async task, so the player can quit before the session is stored.
+        // onPlayerLogout then finds nothing to remove, and the session would pin the player forever.
+        if (player.isHasLoggedOut()) {
+            sessions.remove(player.getUuid(), session);
+            player.setModSession(null);
+            session.cancel();
+            return;
+        }
 
         AnvilNameEcho.send(player, player.getModDetectionWindowId(), session.questions());
         player.getLatencyHandler().sendTransaction(timestamp -> onInterrogationAnswered(session));
