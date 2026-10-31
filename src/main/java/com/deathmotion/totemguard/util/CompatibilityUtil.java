@@ -29,7 +29,7 @@ public final class CompatibilityUtil {
 
     private static final boolean IS_PAPER = hasClass("com.destroystokyo.paper.PaperConfig") || hasClass("io.papermc.paper.configuration.Configuration");
     private static final ServerVersion MIN_SERVER_VERSION = ServerVersion.V_1_16_5;
-    private static final int[] MIN_PE_VERSION = {2, 13, 0};
+    private static final int[] MIN_PE_VERSION = {2, 14, 0};
 
     private static final String PE_PLUGIN_NAME = "packetevents";
 
