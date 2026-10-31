@@ -29,6 +29,8 @@ import java.util.logging.Level;
 public final class TransactionTimeoutWatchdog {
 
     private static final long TIMEOUT_MILLIS = 30_000L;
+    // Slow clients (web and legacy ones through protocol translation) can take longer than 30s to load in and answer the first one
+    private static final long FIRST_REPLY_TIMEOUT_MILLIS = 120_000L;
     private static final long PERIOD_SECONDS = 1L;
 
     private final PlayerRepositoryImpl playerRepository;
@@ -56,7 +58,8 @@ public final class TransactionTimeoutWatchdog {
             for (TGPlayer player : playerRepository.getPlayers()) {
                 long oldest = player.getPingData().getOldestPendingTransactionSentAt();
                 if (oldest == 0L) continue;
-                if (now - oldest < TIMEOUT_MILLIS) continue;
+                long timeout = player.getPingData().isObservedTransactionReply() ? TIMEOUT_MILLIS : FIRST_REPLY_TIMEOUT_MILLIS;
+                if (now - oldest < timeout) continue;
                 player.timedOut();
             }
         } catch (Exception ex) {
